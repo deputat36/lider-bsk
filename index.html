@@ -3,11 +3,1247 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>РА Лидер — рекламное агентство в Борисоглебске</title>
-  <meta name="description" content="РА Лидер в Борисоглебске: наружная реклама, баннеры, таблички, печать на пленке, плоттерная резка, оформление соцсетей, реклама в интернете, Яндекс Карты и 2ГИС.">
+
+  <title>РА Лидер — рекламное агентство в Борисоглебске: наружная реклама, баннеры, дизайн, соцсети</title>
+  <meta name="description" content="РА Лидер в Борисоглебске: наружная реклама, баннеры, таблички, наклейки, печать на пленке, плоттерная резка, дизайн макетов, ведение соцсетей, реклама в интернете, оформление Яндекс Карт и 2ГИС. Принимаем заявки онлайн.">
+  <meta name="keywords" content="рекламное агентство Борисоглебск, наружная реклама Борисоглебск, баннеры Борисоглебск, печать на пленке Борисоглебск, плоттерная резка Борисоглебск, таблички Борисоглебск, вывески Борисоглебск, оформление соцсетей, Яндекс Карты, 2ГИС, разработка логотипа">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#111827">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="РА Лидер — реклама, дизайн и оформление бизнеса">
+  <meta property="og:description" content="Наружная реклама, печать, баннеры, наклейки, соцсети, контент, Яндекс Карты, 2ГИС и дизайн для бизнеса в Борисоглебске и онлайн по России.">
+  <meta property="og:locale" content="ru_RU">
+
+  <style>
+    :root {
+      --bg: #0b1020;
+      --bg-2: #111827;
+      --card: #ffffff;
+      --card-soft: #f8fafc;
+      --text: #111827;
+      --muted: #667085;
+      --white: #ffffff;
+      --accent: #f6c343;
+      --accent-2: #ffdf78;
+      --blue: #2563eb;
+      --green: #16a34a;
+      --border: #e5e7eb;
+      --shadow: 0 24px 70px rgba(15, 23, 42, .15);
+      --radius: 24px;
+      --max: 1180px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background: #ffffff;
+      line-height: 1.55;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    img {
+      max-width: 100%;
+      display: block;
+    }
+
+    .container {
+      width: min(100% - 32px, var(--max));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      background: #080b14;
+      color: rgba(255,255,255,.84);
+      font-size: 14px;
+    }
+
+    .topbar__inner {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    .topbar strong {
+      color: var(--white);
+      font-weight: 900;
+    }
+
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(255,255,255,.94);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(229,231,235,.9);
+    }
+
+    .header__inner {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 220px;
+    }
+
+    .brand__mark {
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--accent), #fff1b8);
+      color: #111827;
+      font-weight: 900;
+      box-shadow: 0 12px 28px rgba(246, 195, 67, .35);
+    }
+
+    .brand__name {
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: .2px;
+      line-height: 1.1;
+    }
+
+    .brand__desc {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 2px;
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      font-size: 15px;
+      color: #334155;
+      font-weight: 700;
+    }
+
+    .nav a:hover {
+      color: #000;
+    }
+
+    .header__actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .phone {
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 46px;
+      padding: 12px 18px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
+      text-align: center;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn--accent {
+      background: var(--accent);
+      color: #111827;
+      box-shadow: 0 14px 30px rgba(246, 195, 67, .34);
+    }
+
+    .btn--dark {
+      background: #111827;
+      color: var(--white);
+      box-shadow: 0 14px 30px rgba(17, 24, 39, .24);
+    }
+
+    .btn--light {
+      background: rgba(255,255,255,.12);
+      color: var(--white);
+      border-color: rgba(255,255,255,.22);
+    }
+
+    .btn--outline {
+      background: #ffffff;
+      color: #111827;
+      border-color: var(--border);
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 12% 20%, rgba(246,195,67,.32), transparent 26%),
+        radial-gradient(circle at 88% 16%, rgba(37,99,235,.22), transparent 26%),
+        linear-gradient(135deg, #080b14, #111827 55%, #1f2937);
+      color: var(--white);
+      padding: 72px 0 44px;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -160px -220px auto;
+      width: 520px;
+      height: 520px;
+      border-radius: 50%;
+      background: rgba(246,195,67,.16);
+      filter: blur(6px);
+    }
+
+    .hero__grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1.12fr .88fr;
+      gap: 42px;
+      align-items: center;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border: 1px solid rgba(255,255,255,.22);
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+      color: rgba(255,255,255,.9);
+      font-weight: 800;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    .badge span {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 6px rgba(246,195,67,.16);
+    }
+
+    h1, h2, h3, p {
+      margin-top: 0;
+    }
+
+    h1 {
+      font-size: clamp(38px, 6vw, 68px);
+      line-height: .98;
+      letter-spacing: -1.8px;
+      margin-bottom: 22px;
+      font-weight: 900;
+    }
+
+    .hero__lead {
+      font-size: clamp(18px, 2vw, 23px);
+      color: rgba(255,255,255,.86);
+      max-width: 760px;
+      margin-bottom: 28px;
+    }
+
+    .hero__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 30px;
+    }
+
+    .hero__points {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      max-width: 760px;
+    }
+
+    .point {
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.09);
+      border: 1px solid rgba(255,255,255,.12);
+      color: rgba(255,255,255,.86);
+      font-weight: 700;
+    }
+
+    .hero-card {
+      background: rgba(255,255,255,.1);
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 32px;
+      padding: 26px;
+      box-shadow: 0 24px 80px rgba(0,0,0,.25);
+    }
+
+    .hero-card__title {
+      font-size: 24px;
+      font-weight: 900;
+      margin-bottom: 16px;
+    }
+
+    .mini-services {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .mini-service {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.1);
+      color: rgba(255,255,255,.9);
+      font-weight: 800;
+    }
+
+    .mini-service span:last-child {
+      color: var(--accent-2);
+      white-space: nowrap;
+    }
+
+    .hero-card__note {
+      color: rgba(255,255,255,.78);
+      font-size: 15px;
+      margin: 0;
+    }
+
+    section {
+      padding: 74px 0;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 30px;
+    }
+
+    .section-head h2 {
+      font-size: clamp(30px, 4vw, 46px);
+      line-height: 1.05;
+      letter-spacing: -1px;
+      font-weight: 900;
+      margin-bottom: 0;
+    }
+
+    .section-head p {
+      max-width: 560px;
+      color: var(--muted);
+      font-size: 17px;
+      margin-bottom: 0;
+    }
+
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .service-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, .06);
+      display: flex;
+      flex-direction: column;
+      min-height: 250px;
+    }
+
+    .service-card__icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 18px;
+      background: #fff7d6;
+      display: grid;
+      place-items: center;
+      font-size: 26px;
+      margin-bottom: 16px;
+    }
+
+    .service-card h3 {
+      font-size: 22px;
+      line-height: 1.15;
+      font-weight: 900;
+      margin-bottom: 10px;
+    }
+
+    .service-card p {
+      color: var(--muted);
+      margin-bottom: 18px;
+    }
+
+    .service-card a {
+      margin-top: auto;
+      color: #111827;
+      font-weight: 900;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .soft {
+      background: var(--card-soft);
+    }
+
+    .benefits {
+      display: grid;
+      grid-template-columns: .9fr 1.1fr;
+      gap: 28px;
+      align-items: stretch;
+    }
+
+    .benefits__main {
+      background: #111827;
+      color: var(--white);
+      border-radius: 32px;
+      padding: 34px;
+      min-height: 100%;
+      box-shadow: var(--shadow);
+    }
+
+    .benefits__main h2 {
+      font-size: clamp(30px, 4vw, 46px);
+      line-height: 1.05;
+      font-weight: 900;
+      margin-bottom: 18px;
+    }
+
+    .benefits__main p {
+      color: rgba(255,255,255,.82);
+      font-size: 18px;
+      margin-bottom: 24px;
+    }
+
+    .benefits__list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .benefit {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 24px;
+    }
+
+    .benefit b {
+      display: block;
+      font-size: 19px;
+      margin-bottom: 8px;
+      font-weight: 900;
+    }
+
+    .benefit p {
+      color: var(--muted);
+      margin-bottom: 0;
+    }
+
+    .directions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .direction {
+      border-radius: 30px;
+      padding: 28px;
+      border: 1px solid var(--border);
+      background: #fff;
+      box-shadow: 0 12px 36px rgba(15, 23, 42, .07);
+    }
+
+    .direction h3 {
+      font-size: 26px;
+      font-weight: 900;
+      margin-bottom: 14px;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .tag {
+      display: inline-flex;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: #f1f5f9;
+      color: #334155;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .audience-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .audience {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 20px;
+      min-height: 180px;
+    }
+
+    .audience h3 {
+      font-size: 19px;
+      font-weight: 900;
+      margin-bottom: 10px;
+    }
+
+    .audience p {
+      color: var(--muted);
+      margin-bottom: 0;
+      font-size: 15px;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .step {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 18px;
+      min-height: 190px;
+    }
+
+    .step__num {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      margin-bottom: 14px;
+    }
+
+    .step h3 {
+      font-size: 17px;
+      line-height: 1.2;
+      font-weight: 900;
+      margin-bottom: 8px;
+    }
+
+    .step p {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 0;
+    }
+
+    .cta {
+      background:
+        radial-gradient(circle at 12% 24%, rgba(246,195,67,.34), transparent 24%),
+        linear-gradient(135deg, #111827, #020617);
+      color: var(--white);
+      border-radius: 36px;
+      padding: 44px;
+      display: grid;
+      grid-template-columns: 1.25fr .75fr;
+      gap: 28px;
+      align-items: center;
+      box-shadow: var(--shadow);
+    }
+
+    .cta h2 {
+      font-size: clamp(30px, 4vw, 46px);
+      line-height: 1.05;
+      font-weight: 900;
+      margin-bottom: 16px;
+    }
+
+    .cta p {
+      color: rgba(255,255,255,.82);
+      font-size: 18px;
+      margin-bottom: 0;
+    }
+
+    .cta__actions {
+      display: grid;
+      gap: 12px;
+    }
+
+    .portfolio-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .portfolio-item {
+      min-height: 230px;
+      border-radius: 26px;
+      background:
+        linear-gradient(135deg, rgba(17,24,39,.88), rgba(17,24,39,.45)),
+        linear-gradient(135deg, #f6c343, #2563eb);
+      color: #fff;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .portfolio-item::before {
+      content: "";
+      position: absolute;
+      inset: 18px;
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 20px;
+      pointer-events: none;
+    }
+
+    .portfolio-item h3 {
+      position: relative;
+      z-index: 1;
+      font-size: 22px;
+      font-weight: 900;
+      margin-bottom: 8px;
+    }
+
+    .portfolio-item p {
+      position: relative;
+      z-index: 1;
+      color: rgba(255,255,255,.82);
+      margin-bottom: 0;
+    }
+
+    .faq {
+      display: grid;
+      grid-template-columns: .8fr 1.2fr;
+      gap: 28px;
+      align-items: start;
+    }
+
+    .faq__title h2 {
+      font-size: clamp(30px, 4vw, 46px);
+      line-height: 1.05;
+      font-weight: 900;
+      margin-bottom: 14px;
+    }
+
+    .faq__title p {
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    details {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 18px 20px;
+      margin-bottom: 12px;
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: 900;
+      font-size: 17px;
+    }
+
+    details p {
+      color: var(--muted);
+      margin: 12px 0 0;
+    }
+
+    .contacts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .contact-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 30px;
+      padding: 30px;
+      box-shadow: 0 12px 36px rgba(15, 23, 42, .07);
+    }
+
+    .contact-card h2 {
+      font-size: clamp(30px, 4vw, 42px);
+      line-height: 1.05;
+      font-weight: 900;
+      margin-bottom: 16px;
+    }
+
+    .contact-line {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+      font-weight: 800;
+    }
+
+    .contact-line:last-child {
+      border-bottom: 0;
+    }
+
+    .notice {
+      background: #fff7d6;
+      border: 1px solid #fde68a;
+      color: #5a3b00;
+      padding: 18px;
+      border-radius: 22px;
+      font-weight: 800;
+    }
+
+    .footer {
+      background: #080b14;
+      color: rgba(255,255,255,.74);
+      padding: 34px 0;
+    }
+
+    .footer__inner {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .footer strong {
+      color: #fff;
+      font-weight: 900;
+    }
+
+    .mobile-menu-button {
+      display: none;
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: #fff;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    @media (max-width: 1040px) {
+      .nav {
+        display: none;
+      }
+
+      .mobile-menu-button {
+        display: inline-grid;
+        place-items: center;
+      }
+
+      .hero__grid,
+      .benefits,
+      .faq,
+      .contacts,
+      .cta {
+        grid-template-columns: 1fr;
+      }
+
+      .services-grid,
+      .portfolio-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .audience-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .steps {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 720px) {
+      .topbar__inner {
+        padding: 8px 0;
+      }
+
+      .header__inner {
+        min-height: 68px;
+      }
+
+      .brand__desc,
+      .header__actions .phone {
+        display: none;
+      }
+
+      .header__actions .btn {
+        display: none;
+      }
+
+      .hero {
+        padding: 48px 0 34px;
+      }
+
+      .hero__points,
+      .services-grid,
+      .directions,
+      .benefits__list,
+      .audience-grid,
+      .steps,
+      .portfolio-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .section-head {
+        display: block;
+      }
+
+      .section-head h2 {
+        margin-bottom: 12px;
+      }
+
+      .cta {
+        padding: 28px;
+        border-radius: 28px;
+      }
+
+      section {
+        padding: 54px 0;
+      }
+    }
+  </style>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "name": "РА Лидер",
+    "description": "Рекламное агентство в Борисоглебске: наружная реклама, баннеры, таблички, наклейки, дизайн, соцсети, Яндекс Карты и 2ГИС.",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Борисоглебск",
+      "addressRegion": "Воронежская область",
+      "addressCountry": "RU"
+    },
+    "telephone": "+79802457471",
+    "areaServed": ["Борисоглебск", "Воронежская область", "Россия"],
+    "url": "https://www.lider-bsk.ru/"
+  }
+  </script>
 </head>
+
 <body>
-  <h1>РА Лидер</h1>
-  <p>Рекламное агентство в Борисоглебске. Новый сайт в разработке.</p>
+  <div class="topbar">
+    <div class="container topbar__inner">
+      <div><strong>Борисоглебск:</strong> наружная реклама, печать, таблички, баннеры и оформление бизнеса</div>
+      <div><strong>Онлайн по России:</strong> соцсети, контент, дизайн, Яндекс Карты и 2ГИС</div>
+    </div>
+  </div>
+
+  <header class="header">
+    <div class="container header__inner">
+      <a class="brand" href="#top" aria-label="РА Лидер">
+        <div class="brand__mark">Л</div>
+        <div>
+          <div class="brand__name">РА «Лидер»</div>
+          <div class="brand__desc">Реклама, дизайн и оформление бизнеса</div>
+        </div>
+      </a>
+
+      <nav class="nav" aria-label="Главное меню">
+        <a href="#services">Услуги</a>
+        <a href="#business">Для бизнеса</a>
+        <a href="#online">Онлайн</a>
+        <a href="#steps">Как заказать</a>
+        <a href="#contacts">Контакты</a>
+      </nav>
+
+      <div class="header__actions">
+        <a class="phone" href="tel:+79802457471">8 980 245-74-71</a>
+        <a class="btn btn--accent" href="#request">Рассчитать</a>
+        <button class="mobile-menu-button" type="button" onclick="document.body.classList.toggle('menu-open')">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="container hero__grid">
+        <div>
+          <div class="badge"><span></span> Заявки принимаем онлайн</div>
+          <h1>Рекламное агентство «Лидер» в Борисоглебске</h1>
+          <p class="hero__lead">Наружная реклама, баннеры, таблички, наклейки, печать на пленке, плоттерная резка, дизайн макетов, оформление соцсетей, генерация контента и продвижение бизнеса в интернете.</p>
+
+          <div class="hero__actions">
+            <a class="btn btn--accent" href="#request">Рассчитать стоимость</a>
+            <a class="btn btn--light" href="#services">Выбрать услугу</a>
+            <a class="btn btn--light" href="tel:+79802457471">Позвонить</a>
+          </div>
+
+          <div class="hero__points">
+            <div class="point">Поможем с макетом, текстом и идеей</div>
+            <div class="point">Подберем решение под бюджет</div>
+            <div class="point">Местные услуги для Борисоглебска</div>
+            <div class="point">Онлайн-услуги по всей России</div>
+          </div>
+        </div>
+
+        <aside class="hero-card" aria-label="Популярные услуги">
+          <div class="hero-card__title">Чаще всего заказывают</div>
+          <div class="mini-services">
+            <div class="mini-service"><span>Баннеры и вывески</span><span>город</span></div>
+            <div class="mini-service"><span>Наклейки и таблички</span><span>быстро</span></div>
+            <div class="mini-service"><span>Соцсети и посты</span><span>онлайн</span></div>
+            <div class="mini-service"><span>Яндекс Карты и 2ГИС</span><span>SEO</span></div>
+          </div>
+          <p class="hero-card__note">Опишите задачу в заявке. Даже если вы не знаете материал, размер или формат — мы уточним детали и предложим варианты.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section id="services">
+      <div class="container">
+        <div class="section-head">
+          <h2>Что нужно сделать?</h2>
+          <p>Выберите направление. Если задача нестандартная, оставьте заявку в свободной форме — разберем и подскажем оптимальный вариант.</p>
+        </div>
+
+        <div class="services-grid">
+          <article class="service-card">
+            <div class="service-card__icon">🏙️</div>
+            <h3>Наружная реклама</h3>
+            <p>Баннеры, вывески, таблички, указатели, режимники, оформление витрин и рекламные конструкции.</p>
+            <a href="#request">Рассчитать наружную рекламу →</a>
+          </article>
+
+          <article class="service-card">
+            <div class="service-card__icon">🖨️</div>
+            <h3>Печать и наклейки</h3>
+            <p>Печать на пленке, наклейки, стикеры, плоттерная резка, оформление стекол, авто и торговых точек.</p>
+            <a href="#request">Заказать печать →</a>
+          </article>
+
+          <article class="service-card">
+            <div class="service-card__icon">✏️</div>
+            <h3>Дизайн и макеты</h3>
+            <p>Макеты баннеров, вывесок, листовок, меню, визиток, постов, презентаций и коммерческих предложений.</p>
+            <a href="#request">Заказать макет →</a>
+          </article>
+
+          <article class="service-card">
+            <div class="service-card__icon">📱</div>
+            <h3>Соцсети и контент</h3>
+            <p>Оформление и ведение ВКонтакте и Одноклассников, посты, изображения, тексты и контент-планы.</p>
+            <a href="#request">Обсудить соцсети →</a>
+          </article>
+
+          <article class="service-card">
+            <div class="service-card__icon">📍</div>
+            <h3>Яндекс Карты и 2ГИС</h3>
+            <p>Создание и заполнение карточек, описание услуг, фото, товары, прайс, контакты, режим работы и оформление.</p>
+            <a href="#request">Оформить карточку →</a>
+          </article>
+
+          <article class="service-card">
+            <div class="service-card__icon">💼</div>
+            <h3>Логотип и стиль</h3>
+            <p>Логотипы, фирменные цвета, шрифты, элементы стиля, оформление страниц и рекламных материалов.</p>
+            <a href="#request">Заказать логотип →</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="soft">
+      <div class="container benefits">
+        <div class="benefits__main">
+          <h2>Реклама без лишней суеты</h2>
+          <p>Предпринимателю часто некогда разбираться в материалах, размерах, форматах файлов и требованиях площадок. Мы берем на себя организационную часть: уточняем задачу, подсказываем варианты, готовим макет, рассчитываем стоимость и сопровождаем заказ.</p>
+          <a class="btn btn--accent" href="#request">Оставить заявку</a>
+        </div>
+
+        <div class="benefits__list">
+          <div class="benefit">
+            <b>Можно начать онлайн</b>
+            <p>Оставьте заявку, прикрепите фото, пример или макет. Мы свяжемся и уточним детали.</p>
+          </div>
+          <div class="benefit">
+            <b>Подберем под бюджет</b>
+            <p>Не всегда нужен самый дорогой вариант. Иногда достаточно аккуратной таблички или баннера.</p>
+          </div>
+          <div class="benefit">
+            <b>Комплексный подход</b>
+            <p>Можно заказать логотип, соцсети, карточки в картах, баннеры, таблички и наклейки.</p>
+          </div>
+          <div class="benefit">
+            <b>Меньше ваших задач</b>
+            <p>Вместо поиска разных исполнителей вы обращаетесь в одно место.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="online">
+      <div class="container">
+        <div class="section-head">
+          <h2>Местные и удаленные услуги</h2>
+          <p>Часть задач выполняем для Борисоглебска и района, а часть можно заказать полностью онлайн из любого города России.</p>
+        </div>
+
+        <div class="directions">
+          <article class="direction">
+            <h3>Для Борисоглебска и района</h3>
+            <p>Наружная реклама, баннеры, таблички, наклейки, печать на пленке, плоттерная резка, оформление витрин, вывески и рекламные материалы для точек продаж.</p>
+            <div class="tags">
+              <span class="tag">Баннеры</span>
+              <span class="tag">Таблички</span>
+              <span class="tag">Наклейки</span>
+              <span class="tag">Вывески</span>
+              <span class="tag">Печать</span>
+              <span class="tag">Плоттерная резка</span>
+            </div>
+          </article>
+
+          <article class="direction">
+            <h3>Онлайн по всей России</h3>
+            <p>Дизайн, логотипы, фирменный стиль, оформление групп ВК и Одноклассников, генерация контента, тексты, презентации, коммерческие предложения, карточки Яндекс Карт и 2ГИС.</p>
+            <div class="tags">
+              <span class="tag">Соцсети</span>
+              <span class="tag">Контент</span>
+              <span class="tag">Логотипы</span>
+              <span class="tag">Яндекс Карты</span>
+              <span class="tag">2ГИС</span>
+              <span class="tag">Презентации</span>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="business" class="soft">
+      <div class="container">
+        <div class="section-head">
+          <h2>Решения для бизнеса</h2>
+          <p>Подбираем рекламу не абстрактно, а под конкретную сферу: магазин, кафе, салон, сервис, недвижимость, строительство или услуги.</p>
+        </div>
+
+        <div class="audience-grid">
+          <article class="audience">
+            <h3>Магазины</h3>
+            <p>Вывески, режим работы, наклейки на витрины, баннеры с акциями, карточки в картах и посты.</p>
+          </article>
+          <article class="audience">
+            <h3>Кафе и доставка</h3>
+            <p>Меню, наклейки, баннеры, оформление ВК, рекламные посты, акции и визуалы.</p>
+          </article>
+          <article class="audience">
+            <h3>Салоны красоты</h3>
+            <p>Оформление входа, таблички, прайсы, сертификаты, соцсети и карточки в картах.</p>
+          </article>
+          <article class="audience">
+            <h3>Сервисы</h3>
+            <p>Баннеры, указатели, наклейки, фасадное оформление, реклама услуг и карточки организаций.</p>
+          </article>
+          <article class="audience">
+            <h3>Строительство</h3>
+            <p>Баннеры на объекты, презентации, коммерческие предложения, логотипы и соцсети.</p>
+          </article>
+          <article class="audience">
+            <h3>Недвижимость</h3>
+            <p>Листовки, баннеры, объявления, презентации объектов, рекламные посты и оформление групп.</p>
+          </article>
+          <article class="audience">
+            <h3>Пункты выдачи</h3>
+            <p>Таблички, наклейки, режим работы, указатели и информационные материалы.</p>
+          </article>
+          <article class="audience">
+            <h3>Частные специалисты</h3>
+            <p>Логотип, визитки, соцсети, объявления, карточки в картах и простой набор рекламы.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="steps">
+      <div class="container">
+        <div class="section-head">
+          <h2>Как проходит заказ</h2>
+          <p>Мы стараемся сделать процесс понятным: от первой заявки до готового результата.</p>
+        </div>
+
+        <div class="steps">
+          <div class="step">
+            <div class="step__num">1</div>
+            <h3>Вы оставляете заявку</h3>
+            <p>Описываете задачу, прикрепляете фото, пример или макет.</p>
+          </div>
+          <div class="step">
+            <div class="step__num">2</div>
+            <h3>Уточняем детали</h3>
+            <p>Задаем важные вопросы и помогаем сформулировать заказ.</p>
+          </div>
+          <div class="step">
+            <div class="step__num">3</div>
+            <h3>Считаем стоимость</h3>
+            <p>Подбираем вариант под задачу, сроки и бюджет.</p>
+          </div>
+          <div class="step">
+            <div class="step__num">4</div>
+            <h3>Готовим макет</h3>
+            <p>Делаем дизайн или проверяем готовый файл.</p>
+          </div>
+          <div class="step">
+            <div class="step__num">5</div>
+            <h3>Согласовываем</h3>
+            <p>Утверждаем стоимость, сроки, материалы и внешний вид.</p>
+          </div>
+          <div class="step">
+            <div class="step__num">6</div>
+            <h3>Передаем результат</h3>
+            <p>Готовую продукцию или электронные файлы передаем клиенту.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="request" class="soft">
+      <div class="container">
+        <div class="cta">
+          <div>
+            <h2>Оставьте заявку — мы подскажем, с чего начать</h2>
+            <p>Даже если вы пока не знаете точный размер, материал или формат, опишите задачу в свободной форме. Мы уточним детали и предложим подходящее решение.</p>
+          </div>
+          <div class="cta__actions">
+            <a class="btn btn--accent" href="tel:+79802457471">Позвонить: 8 980 245-74-71</a>
+            <a class="btn btn--light" href="#contacts">Выбрать способ связи</a>
+            <a class="btn btn--light" href="mailto:zakaz@lider-bsk.ru?subject=Заявка%20с%20сайта%20РА%20Лидер">Отправить заявку на email</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="section-head">
+          <h2>Примеры задач</h2>
+          <p>Блок можно заменить реальными фотографиями работ. Пока это заготовка для будущего портфолио.</p>
+        </div>
+
+        <div class="portfolio-grid">
+          <article class="portfolio-item">
+            <h3>Оформление витрины</h3>
+            <p>Наклейки, режим работы, акции и визуальная навигация.</p>
+          </article>
+          <article class="portfolio-item">
+            <h3>Баннер для бизнеса</h3>
+            <p>Макет, подготовка к печати, подбор размера и материала.</p>
+          </article>
+          <article class="portfolio-item">
+            <h3>Соцсети и контент</h3>
+            <p>Обложки, посты, тексты, изображения и единый стиль.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="soft">
+      <div class="container faq">
+        <div class="faq__title">
+          <h2>Вопросы и ответы</h2>
+          <p>Собрали частые вопросы, которые возникают перед заказом рекламы, печати, дизайна и онлайн-оформления бизнеса.</p>
+        </div>
+
+        <div>
+          <details open>
+            <summary>Можно ли заказать без визита в офис?</summary>
+            <p>Да. Большинство задач можно обсудить онлайн. Для печати, наружной рекламы и оформления точек могут понадобиться размеры, фото места размещения или дополнительное согласование.</p>
+          </details>
+          <details>
+            <summary>Можно ли заказать только макет?</summary>
+            <p>Да. Мы можем подготовить макет для баннера, вывески, листовки, соцсетей, карточки товара, презентации или другого рекламного материала.</p>
+          </details>
+          <details>
+            <summary>Если я не знаю, какой материал нужен?</summary>
+            <p>Ничего страшного. Опишите задачу, где будет использоваться реклама и какой результат нужен. Мы подскажем подходящий вариант.</p>
+          </details>
+          <details>
+            <summary>Работаете ли вы с другими городами?</summary>
+            <p>Да, если услуга не требует личного присутствия. Удаленно можно заказать дизайн, тексты, оформление соцсетей, контент, логотип, карточки Яндекс Карт и 2ГИС.</p>
+          </details>
+          <details>
+            <summary>Сколько стоит реклама?</summary>
+            <p>Цена зависит от услуги, размера, материала, сложности макета, количества и сроков. Для расчета лучше оставить заявку и приложить исходные данные.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section id="contacts">
+      <div class="container contacts">
+        <div class="contact-card">
+          <h2>Связаться с РА «Лидер»</h2>
+          <p>Работаем с заявками онлайн. Вы можете описать задачу, прикрепить материалы и получить расчет без лишних встреч.</p>
+
+          <div class="contact-line">📞 <a href="tel:+79802457471">8 980 245-74-71</a></div>
+          <div class="contact-line">📍 Борисоглебск, Воронежская область</div>
+          <div class="contact-line">✉️ <a href="mailto:zakaz@lider-bsk.ru">zakaz@lider-bsk.ru</a></div>
+          <div class="contact-line">🌐 <a href="https://www.lider-bsk.ru/">www.lider-bsk.ru</a></div>
+        </div>
+
+        <div class="contact-card">
+          <h2>Что написать в заявке</h2>
+          <p>Чтобы быстрее рассчитать стоимость, укажите вид услуги, размер, количество, сроки, город, наличие макета и прикрепите пример или фото места размещения.</p>
+          <div class="notice">Позже сюда можно подключить Яндекс Форму, чтобы заявки автоматически попадали в таблицу для администратора.</div>
+          <div style="height: 16px"></div>
+          <a class="btn btn--dark" href="mailto:zakaz@lider-bsk.ru?subject=Заявка%20с%20сайта%20РА%20Лидер">Отправить заявку</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <div>
+        <strong>РА «Лидер»</strong><br>
+        Рекламное агентство в Борисоглебске
+      </div>
+      <div>
+        Наружная реклама, печать, наклейки, таблички, баннеры, соцсети, контент, Яндекс Карты, 2ГИС, логотипы и дизайн.
+      </div>
+      <div>
+        <a href="tel:+79802457471">8 980 245-74-71</a>
+      </div>
+    </div>
+  </footer>
 </body>
 </html>
