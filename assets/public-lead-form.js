@@ -22,24 +22,29 @@
     return 'Сайт';
   }
 
+  function uniqueId(prefix){
+    return prefix + '-' + Math.random().toString(36).slice(2, 9);
+  }
+
   function mount(target){
+    const uid=uniqueId('ll');
     target.innerHTML=`
-      <form class="leader-lead-widget" id="leaderLeadForm">
+      <form class="leader-lead-widget" data-leader-lead-widget>
         <h3>Рассчитать стоимость</h3>
         <p>Опишите задачу — уточним детали и подготовим предварительный расчёт.</p>
-        <input class="leader-lead-hp" id="llWebsite" name="website" tabindex="-1" autocomplete="off">
+        <input class="leader-lead-hp" name="website" tabindex="-1" autocomplete="off">
         <div class="leader-lead-grid">
           <div class="leader-lead-span-6">
-            <label for="llName">Имя / организация</label>
-            <input id="llName" maxlength="200" placeholder="Например, Алексей / ООО Ромашка">
+            <label for="${uid}-name">Имя / организация</label>
+            <input id="${uid}-name" name="name" maxlength="200" placeholder="Например, Алексей / ООО Ромашка">
           </div>
           <div class="leader-lead-span-6">
-            <label for="llPhone">Телефон</label>
-            <input id="llPhone" maxlength="80" placeholder="+7..." required>
+            <label for="${uid}-phone">Телефон</label>
+            <input id="${uid}-phone" name="phone" maxlength="80" placeholder="+7..." required>
           </div>
           <div class="leader-lead-span-6">
-            <label for="llService">Услуга</label>
-            <select id="llService">
+            <label for="${uid}-service">Услуга</label>
+            <select id="${uid}-service" name="service">
               <option>Баннер</option>
               <option>Наклейки</option>
               <option>Табличка</option>
@@ -55,49 +60,55 @@
             </select>
           </div>
           <div class="leader-lead-span-3">
-            <label for="llWidth">Ширина, м</label>
-            <input id="llWidth" inputmode="decimal" placeholder="3">
+            <label for="${uid}-width">Ширина, м</label>
+            <input id="${uid}-width" name="width" inputmode="decimal" placeholder="3">
           </div>
           <div class="leader-lead-span-3">
-            <label for="llHeight">Высота, м</label>
-            <input id="llHeight" inputmode="decimal" placeholder="1">
+            <label for="${uid}-height">Высота, м</label>
+            <input id="${uid}-height" name="height" inputmode="decimal" placeholder="1">
           </div>
           <div class="leader-lead-span-12">
-            <label for="llMessage">Что нужно сделать?</label>
-            <textarea id="llMessage" maxlength="2000" rows="4" placeholder="Размеры, материал, количество, сроки, нужен ли макет или монтаж..."></textarea>
+            <label for="${uid}-message">Что нужно сделать?</label>
+            <textarea id="${uid}-message" name="message" maxlength="2000" rows="4" placeholder="Размеры, материал, количество, сроки, нужен ли макет или монтаж..."></textarea>
           </div>
           <div class="leader-lead-span-12">
-            <button id="llSubmit" type="submit">Отправить заявку</button>
+            <button type="submit">Отправить заявку</button>
           </div>
         </div>
         <div class="leader-lead-note">Нажимая кнопку, вы соглашаетесь на обработку данных для связи и расчёта заказа.</div>
-        <div id="llStatus" class="leader-lead-status"></div>
+        <div class="leader-lead-status" data-leader-lead-status></div>
       </form>`;
     target.querySelector('form').addEventListener('submit', submit);
   }
 
-  function status(type,msg){
-    const s=document.getElementById('llStatus');
+  function setStatus(form,type,msg){
+    const s=form.querySelector('[data-leader-lead-status]');
     if(!s) return;
     s.className='leader-lead-status show '+type;
     s.textContent=msg;
   }
 
+  function field(form,name){
+    const el=form.querySelector('[name="'+name+'"]');
+    return el ? el.value.trim() : '';
+  }
+
   async function submit(e){
     e.preventDefault();
-    const btn=document.getElementById('llSubmit');
-    const hp=document.getElementById('llWebsite');
-    if(hp && hp.value) return;
+    const form=e.currentTarget;
+    const btn=form.querySelector('button[type="submit"]');
+    const website=field(form,'website');
+    if(website) return;
 
-    const name=document.getElementById('llName').value.trim();
-    const phone=document.getElementById('llPhone').value.trim();
-    const service=document.getElementById('llService').value;
-    const width=document.getElementById('llWidth').value.trim();
-    const height=document.getElementById('llHeight').value.trim();
-    const message=document.getElementById('llMessage').value.trim();
+    const name=field(form,'name');
+    const phone=field(form,'phone');
+    const service=field(form,'service');
+    const width=field(form,'width');
+    const height=field(form,'height');
+    const message=field(form,'message');
 
     if(!phone && !message){
-      status('err','Укажите телефон или опишите задачу.');
+      setStatus(form,'err','Укажите телефон или опишите задачу.');
       return;
     }
 
@@ -115,17 +126,21 @@
       width,
       height,
       ...utm,
-      website:hp ? hp.value : ''
+      website
     };
 
     try{
       const res=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-      if(!res.ok) throw new Error('Ошибка '+res.status);
-      status('ok','Заявка отправлена. Мы свяжемся с вами для уточнения деталей.');
-      e.target.reset();
+      if(!res.ok){
+        let text='';
+        try { text=await res.text(); } catch(e){}
+        throw new Error('Ошибка '+res.status+' '+text);
+      }
+      setStatus(form,'ok','Заявка отправлена. Мы свяжемся с вами для уточнения деталей.');
+      form.reset();
     }catch(err){
       console.error(err);
-      status('err','Не удалось отправить заявку. Позвоните нам или попробуйте ещё раз.');
+      setStatus(form,'err','Не удалось отправить заявку. Позвоните нам или попробуйте ещё раз.');
     }finally{
       btn.disabled=false;
       btn.textContent='Отправить заявку';
