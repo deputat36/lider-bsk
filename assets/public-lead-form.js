@@ -2,6 +2,10 @@
 (function(){
   const ENDPOINT='https://ofewxuqfjhamgerwzull.supabase.co/functions/v1/leader-public-lead';
 
+  function goal(name, params){
+    if (typeof window.leaderGoal === 'function') window.leaderGoal(name, params || {});
+  }
+
   function qs(){
     const p=new URLSearchParams(location.search);
     return {
@@ -168,6 +172,7 @@
       if(isHidden){
         details.removeAttribute('hidden');
         more.textContent='Скрыть подробности ↑';
+        goal('form_details_open', { page: location.href });
       }else{
         details.setAttribute('hidden','');
         more.textContent='Добавить подробности для точного расчёта ↓';
@@ -207,11 +212,13 @@
 
     if(!phone){
       setStatus(form,'err','Укажите телефон, чтобы мы могли связаться с вами.');
+      goal('form_error_no_phone', { service, page: location.href });
       return;
     }
 
     btn.disabled=true;
     btn.textContent='Отправляем...';
+    goal('form_submit_attempt', { service, page: location.href });
 
     const parts=[];
     if(message) parts.push('Задача: '+message);
@@ -251,6 +258,7 @@
         throw new Error('Ошибка '+res.status+' '+text);
       }
       setStatus(form,'ok','Заявка отправлена. Мы свяжемся с вами для уточнения деталей.');
+      goal('lead_sent', { service, page: location.href, detailed: Boolean(city || width || height || quantity || deadline || mockup || delivery) });
       form.reset();
       const details=form.querySelector('[data-leader-details]');
       const more=form.querySelector('[data-leader-more]');
@@ -258,6 +266,7 @@
     }catch(err){
       console.error(err);
       setStatus(form,'err','Не удалось отправить заявку. Позвоните нам или попробуйте ещё раз.');
+      goal('lead_send_error', { service, page: location.href });
     }finally{
       btn.disabled=false;
       btn.textContent='Отправить заявку';
