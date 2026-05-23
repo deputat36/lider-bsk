@@ -34,12 +34,14 @@
       if(href.indexOf('tel:')===0) goal('phone_click',{href,text,page:location.href});
       if(href.indexOf('#request')===0||href.endsWith('/#request')) goal('request_block_click',{text,page:location.href});
       if(/\.html($|#|\?)/.test(href)) goal('service_page_click',{href,text,page:location.href});
+      if(link.dataset&&link.dataset.scenario) goal('business_scenario_click',{scenario:link.dataset.scenario,page:location.href});
     });
   }
 
+  function homeOnly(){ return location.pathname==='/'||location.pathname.endsWith('/index.html'); }
+
   function injectServiceLinks(){
-    if(location.pathname!=='/'&&!location.pathname.endsWith('/index.html'))return;
-    if(document.getElementById('service-pages'))return;
+    if(!homeOnly()||document.getElementById('service-pages'))return;
     const services=document.getElementById('services');
     if(!services)return;
     const section=document.createElement('section');
@@ -47,6 +49,16 @@
     section.className='soft';
     section.innerHTML=`<div class="container"><div class="section-head"><h2>Популярные услуги отдельно</h2><p>Выберите конкретное направление, чтобы быстрее понять варианты и оставить заявку на нужную услугу.</p></div><div class="grid3"><article class="card"><div class="icon">🏙️</div><h3>Наружная реклама</h3><p>Баннеры, вывески, таблички, указатели и оформление входной группы в Борисоглебске.</p><a href="outdoor-advertising-borisoglebsk.html">Подробнее →</a></article><article class="card"><div class="icon">🧱</div><h3>Баннеры</h3><p>Рекламные баннеры для фасада, забора, акции, открытия, стройки или мероприятия.</p><a href="bannery-borisoglebsk.html">Подробнее →</a></article><article class="card"><div class="icon">✂️</div><h3>Наклейки и плоттерная резка</h3><p>Надписи без фона, режим работы, стикеры, наклейки на стекло, витрину и авто.</p><a href="nakleyki-plotternaya-rezka-borisoglebsk.html">Подробнее →</a></article><article class="card"><div class="icon">🏷️</div><h3>Таблички</h3><p>Режим работы, адресные, офисные, информационные и предупреждающие таблички.</p><a href="tablichki-borisoglebsk.html">Подробнее →</a></article><article class="card"><div class="icon">📱</div><h3>Соцсети и контент</h3><p>Оформление ВК и Одноклассников, посты, изображения, тексты и контент-планы.</p><a href="socseti-kontent.html">Подробнее →</a></article><article class="card"><div class="icon">📍</div><h3>Яндекс Карты и 2ГИС</h3><p>Создание, заполнение и оформление карточки компании для локального поиска.</p><a href="yandex-karty-2gis.html">Подробнее →</a></article></div></div>`;
     services.insertAdjacentElement('afterend',section);
+  }
+
+  function injectBusinessScenarios(){
+    if(!homeOnly()||document.getElementById('business-scenarios'))return;
+    const target=document.getElementById('service-pages')||document.getElementById('services');
+    if(!target)return;
+    const section=document.createElement('section');
+    section.id='business-scenarios';
+    section.innerHTML=`<div class="container"><div class="section-head"><h2>Что заказать для вашего бизнеса</h2><p>Не обязательно разбираться в материалах и форматах. Выберите ситуацию — мы подскажем оптимальный набор рекламы.</p></div><div class="grid3"><article class="card"><div class="icon">🏪</div><h3>Открываете магазин</h3><p>Вывеска или баннер, режим работы, наклейки на витрину, указатели, оформление Яндекс Карт и 2ГИС, первые рекламные посты.</p><a data-scenario="shop" href="#request">Подобрать рекламу для магазина →</a></article><article class="card"><div class="icon">☕</div><h3>Кафе, доставка, общепит</h3><p>Меню, наклейки, баннеры с акциями, оформление соцсетей, карточки в картах, изображения для постов и объявлений.</p><a data-scenario="cafe" href="#request">Подобрать для кафе →</a></article><article class="card"><div class="icon">🛠️</div><h3>Сервис, ремонт, мастерская</h3><p>Фасадная реклама, указатели, таблички, наклейки, прайс услуг, посты, карточки в картах и понятные тексты.</p><a data-scenario="service" href="#request">Подобрать для сервиса →</a></article><article class="card"><div class="icon">💇</div><h3>Салон, студия, частный мастер</h3><p>Логотип, прайс, подарочные сертификаты, оформление ВК, посты, карточка в Яндекс Картах, табличка на вход.</p><a data-scenario="beauty" href="#request">Подобрать для услуг →</a></article><article class="card"><div class="icon">🏗️</div><h3>Строительство и недвижимость</h3><p>Баннеры на объект, презентации, коммерческие предложения, листовки, рекламные макеты и оформление соцсетей.</p><a data-scenario="construction" href="#request">Подобрать для объекта →</a></article><article class="card"><div class="icon">📦</div><h3>Пункт выдачи или офис</h3><p>Таблички, режим работы, навигация, наклейки на дверь, указатели, информационные материалы и оформление карточки в картах.</p><a data-scenario="office" href="#request">Подобрать для точки →</a></article></div></div>`;
+    target.insertAdjacentElement('afterend',section);
   }
 
   function mount(target){
@@ -109,6 +121,6 @@
     finally{btn.disabled=false;btn.textContent='Отправить заявку';}
   }
 
-  function init(){loadMetrika();initClickGoals();injectServiceLinks();document.querySelectorAll('#leader-lead-form,[data-leader-lead-form]').forEach(mount);}
+  function init(){loadMetrika();initClickGoals();injectServiceLinks();injectBusinessScenarios();document.querySelectorAll('#leader-lead-form,[data-leader-lead-form]').forEach(mount);}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
