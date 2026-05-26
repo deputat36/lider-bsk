@@ -10,6 +10,7 @@
       ['Реклама мероприятий','reklama-dlya-meropriyatiy-borisoglebsk.html'],
       ['Реклама для кафе','reklama-dlya-kafe-borisoglebsk.html'],
       ['Реклама для салона','reklama-dlya-salona-krasoty-borisoglebsk.html'],
+      ['Реклама для сервиса','reklama-dlya-servisa-masterskoy-borisoglebsk.html'],
       ['Что нужно для расчёта','chto-nuzhno-dlya-rascheta.html'],
       ['Как проходит заказ','kak-prohodit-zakaz.html'],
       ['Примеры задач','portfolio.html'],
@@ -20,6 +21,7 @@
       ['Реклама для магазина','reklama-dlya-magazina-borisoglebsk.html'],
       ['Реклама для кафе и доставки','reklama-dlya-kafe-borisoglebsk.html'],
       ['Реклама для салона и мастера','reklama-dlya-salona-krasoty-borisoglebsk.html'],
+      ['Реклама для сервиса и мастерской','reklama-dlya-servisa-masterskoy-borisoglebsk.html'],
       ['Реклама мероприятий','reklama-dlya-meropriyatiy-borisoglebsk.html'],
       ['Реклама в соцсетях','reklama-v-socsetyah-borisoglebsk.html'],
       ['Комплекты рекламы','komplekty-reklamy.html'],
@@ -64,6 +66,7 @@
       ['social-ads-card','📢','Реклама в соцсетях Борисоглебска','Размещение в городских сообществах, рекламные посты, анонсы мероприятий, тексты и изображения.','reklama-v-socsetyah-borisoglebsk.html'],
       ['cafe-ads-card','☕','Реклама для кафе и доставки','Меню, посты, баннеры, наклейки, акции, доставка, карты и оформление общепита.','reklama-dlya-kafe-borisoglebsk.html'],
       ['beauty-ads-card','💇','Реклама для салона и мастера','ВК, посты, прайсы, сертификаты, таблички, наклейки, карты и стиль для салонов и частных мастеров.','reklama-dlya-salona-krasoty-borisoglebsk.html'],
+      ['service-ads-card','🛠️','Реклама для сервиса и мастерской','Вывески, баннеры, таблички, прайсы, наклейки, соцсети и карты для ремонта, сервиса и мастерских.','reklama-dlya-servisa-masterskoy-borisoglebsk.html'],
       ['events-ads-card','🎪','Реклама мероприятий','Для цирков, выставок, ярмарок, фестивалей, концертов и переездного бизнеса в Борисоглебске.','reklama-dlya-meropriyatiy-borisoglebsk.html'],
       ['store-ads-card','🏪','Реклама для магазина','Вывеска, баннер, витрина, таблички, карты, соцсети и комплект для новой торговой точки.','reklama-dlya-magazina-borisoglebsk.html'],
       ['packages-link-card','📦','Комплекты рекламы','Готовые наборы для магазина, кафе, салона, сервиса, пункта выдачи, офиса и онлайн-продвижения.','komplekty-reklamy.html'],
@@ -82,6 +85,7 @@
       ['hero-social-ads-link','reklama-v-socsetyah-borisoglebsk.html','Реклама в соцсетях Борисоглебска'],
       ['hero-cafe-ads-link','reklama-dlya-kafe-borisoglebsk.html','Реклама для кафе и доставки'],
       ['hero-beauty-ads-link','reklama-dlya-salona-krasoty-borisoglebsk.html','Реклама для салона и мастера'],
+      ['hero-service-ads-link','reklama-dlya-servisa-masterskoy-borisoglebsk.html','Реклама для сервиса и мастерской'],
       ['hero-events-ads-link','reklama-dlya-meropriyatiy-borisoglebsk.html','Реклама мероприятий и ярмарок'],
       ['hero-packages-link','komplekty-reklamy.html','Комплекты рекламы'],
       ['hero-checklist-link','chto-nuzhno-dlya-rascheta.html','Что подготовить для расчёта']
@@ -96,7 +100,7 @@
     box.id='faq-checklist-link';
     box.className='notice';
     box.style.marginTop='12px';
-    box.innerHTML='Не знаете, что указать в заявке? Откройте <a href="srochnaya-reklama-borisoglebsk.html" style="font-weight:900;text-decoration:underline">срочную рекламу</a>, <a href="reklama-dlya-salona-krasoty-borisoglebsk.html" style="font-weight:900;text-decoration:underline">рекламу для салона</a>, <a href="chto-nuzhno-dlya-rascheta.html" style="font-weight:900;text-decoration:underline">чек-лист для расчёта</a> или <a href="reklama-v-socsetyah-borisoglebsk.html" style="font-weight:900;text-decoration:underline">рекламу в соцсетях Борисоглебска</a>.';
+    box.innerHTML='Не знаете, что указать в заявке? Откройте <a href="srochnaya-reklama-borisoglebsk.html" style="font-weight:900;text-decoration:underline">срочную рекламу</a>, <a href="reklama-dlya-servisa-masterskoy-borisoglebsk.html" style="font-weight:900;text-decoration:underline">рекламу для сервиса</a>, <a href="chto-nuzhno-dlya-rascheta.html" style="font-weight:900;text-decoration:underline">чек-лист для расчёта</a> или <a href="reklama-v-socsetyah-borisoglebsk.html" style="font-weight:900;text-decoration:underline">рекламу в соцсетях Борисоглебска</a>.';
     faq.appendChild(box);
   }
 
@@ -121,6 +125,7 @@
       ['nav-urgent-link','srochnaya-reklama-borisoglebsk.html','Срочно'],
       ['nav-cafe-link','reklama-dlya-kafe-borisoglebsk.html','Кафе'],
       ['nav-beauty-link','reklama-dlya-salona-krasoty-borisoglebsk.html','Салоны'],
+      ['nav-service-link','reklama-dlya-servisa-masterskoy-borisoglebsk.html','Сервисы'],
       ['nav-social-link','reklama-v-socsetyah-borisoglebsk.html','Соцсети'],
       ['nav-prices-link','prices.html','Цены'],
       ['nav-packages-link','komplekty-reklamy.html','Комплекты']
@@ -137,7 +142,8 @@
       ['contacts-checklist-link','chto-nuzhno-dlya-rascheta.html','Что нужно для расчёта'],
       ['contacts-social-link','reklama-v-socsetyah-borisoglebsk.html','Реклама в соцсетях'],
       ['contacts-cafe-link','reklama-dlya-kafe-borisoglebsk.html','Реклама для кафе'],
-      ['contacts-beauty-link','reklama-dlya-salona-krasoty-borisoglebsk.html','Реклама для салона']
+      ['contacts-beauty-link','reklama-dlya-salona-krasoty-borisoglebsk.html','Реклама для салона'],
+      ['contacts-service-link','reklama-dlya-servisa-masterskoy-borisoglebsk.html','Реклама для сервиса']
     ];
     const mainBtn=contactCard.querySelector('a.btn');
     if(!mainBtn)return;
