@@ -17,6 +17,7 @@
     'reklama-v-socsetyah-borisoglebsk.html':{service:'Соцсети и контент',text:'Страница: реклама в соцсетях Борисоглебска. Нужно уточнить, что рекламируем, дату размещения, материалы и цель.'},
     'reklama-dlya-meropriyatiy-borisoglebsk.html':{service:'Комплексная реклама',text:'Страница: реклама мероприятия. Нужно уточнить дату, место, афишу, условия входа, контакты и желаемые размещения.'},
     'reklama-dlya-kafe-borisoglebsk.html':{service:'Комплексная реклама',text:'Страница: реклама для кафе / доставки. Нужно уточнить меню, акции, адрес, график, соцсети, карты и нужные макеты.'},
+    'reklama-dlya-salona-krasoty-borisoglebsk.html':{service:'Комплексная реклама',text:'Страница: реклама для салона / мастера. Нужно уточнить услуги, прайс, соцсети, карты, сертификаты, таблички, наклейки и оформление.'},
     'reklama-dlya-magazina-borisoglebsk.html':{service:'Комплексная реклама',text:'Страница: реклама для магазина. Нужно уточнить вход, витрину, баннер, режим работы, карты, соцсети и макеты.'},
     'outdoor-advertising-borisoglebsk.html':{service:'Вывеска / наружная реклама',text:'Страница услуги: наружная реклама. Клиент интересуется баннерами, вывесками, табличками, указателями или оформлением входной группы.'},
     'bannery-borisoglebsk.html':{service:'Баннер',text:'Страница услуги: баннер. Нужно уточнить размер, место размещения, наличие макета, срок, люверсы, доставку или монтаж.'},
@@ -55,33 +56,10 @@
     document.body.appendChild(ns);
   }
 
-  function scrollToForm(){
-    const req=document.getElementById('request')||document.getElementById('leader-lead-form')||document.querySelector('[data-leader-lead-form]');
-    if(req)req.scrollIntoView({behavior:'smooth',block:'start'});
-  }
-
-  function applyServicePreset(preset,scroll){
-    if(!preset)return;
-    document.querySelectorAll('[data-leader-lead-widget]').forEach(form=>{
-      const service=form.querySelector('[name="service"]'),message=form.querySelector('[name="message"]');
-      if(service&&preset.service)service.value=preset.service;
-      if(message&&preset.text&&!message.value.trim())message.value=preset.text;
-    });
-    if(scroll)scrollToForm();
-  }
-
-  function applyScenario(key,scroll){
-    const s=scenarios[key];
-    if(!s)return;
-    applyServicePreset(s,scroll);
-  }
-
-  function currentPreset(){
-    const q=qs();
-    if(q.service)return{service:q.service,text:'Услуга выбрана по ссылке: '+q.service};
-    return servicePresets[pageKey()]||null;
-  }
-
+  function scrollToForm(){const req=document.getElementById('request')||document.getElementById('leader-lead-form')||document.querySelector('[data-leader-lead-form]');if(req)req.scrollIntoView({behavior:'smooth',block:'start'});}
+  function applyServicePreset(preset,scroll){if(!preset)return;document.querySelectorAll('[data-leader-lead-widget]').forEach(form=>{const service=form.querySelector('[name="service"]'),message=form.querySelector('[name="message"]');if(service&&preset.service)service.value=preset.service;if(message&&preset.text&&!message.value.trim())message.value=preset.text;});if(scroll)scrollToForm();}
+  function applyScenario(key,scroll){const s=scenarios[key];if(!s)return;applyServicePreset(s,scroll);}
+  function currentPreset(){const q=qs();if(q.service)return{service:q.service,text:'Услуга выбрана по ссылке: '+q.service};return servicePresets[pageKey()]||null;}
   function field(form,name){const el=form.querySelector('[name="'+name+'"]');return el?el.value.trim():''}
   function setStatus(form,type,msg){const s=form.querySelector('[data-leader-lead-status]');if(s){s.className='leader-lead-status show '+type;s.textContent=msg}}
 
@@ -96,73 +74,24 @@
   }
 
   async function submit(e){
-    e.preventDefault();
-    const form=e.currentTarget,btn=form.querySelector('button[type="submit"]');
-    if(field(form,'website'))return;
+    e.preventDefault();const form=e.currentTarget,btn=form.querySelector('button[type="submit"]');if(field(form,'website'))return;
     const name=field(form,'name'),phone=field(form,'phone'),service=field(form,'service'),message=field(form,'message'),city=field(form,'city'),contact_method=field(form,'contact_method'),width=field(form,'width'),height=field(form,'height'),quantity=field(form,'quantity'),deadline=field(form,'deadline'),mockup=field(form,'mockup'),delivery=field(form,'delivery');
     if(!phone){setStatus(form,'err','Укажите телефон, чтобы мы могли связаться с вами.');return}
-    const parts=[];
-    if(message)parts.push('Задача: '+message);
-    if(city)parts.push('Город: '+city);
-    if(contact_method)parts.push('Связь: '+contact_method);
-    if(width||height)parts.push('Размеры: '+(width||'-')+'×'+(height||'-')+' м');
-    if(quantity)parts.push('Количество: '+quantity);
-    if(deadline)parts.push('Срок: '+deadline);
-    if(mockup)parts.push('Макет: '+mockup);
-    if(delivery)parts.push('Доставка/монтаж: '+delivery);
-    const utm=qs();
-    const payload={name,phone,service,source:sourceGuess(),message:parts.join('\n')||'Клиент оставил быструю заявку без подробного описания.',page_url:location.href,city,width,height,quantity,contact_method,deadline,mockup,delivery,...utm,website:''};
+    const parts=[];if(message)parts.push('Задача: '+message);if(city)parts.push('Город: '+city);if(contact_method)parts.push('Связь: '+contact_method);if(width||height)parts.push('Размеры: '+(width||'-')+'×'+(height||'-')+' м');if(quantity)parts.push('Количество: '+quantity);if(deadline)parts.push('Срок: '+deadline);if(mockup)parts.push('Макет: '+mockup);if(delivery)parts.push('Доставка/монтаж: '+delivery);
+    const utm=qs();const payload={name,phone,service,source:sourceGuess(),message:parts.join('\n')||'Клиент оставил быструю заявку без подробного описания.',page_url:location.href,city,width,height,quantity,contact_method,deadline,mockup,delivery,...utm,website:''};
     btn.disabled=true;btn.textContent='Отправляем...';goal('form_submit_attempt',{service,page:location.href});
-    try{
-      const res=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-      if(!res.ok)throw new Error('Ошибка '+res.status);
-      setStatus(form,'ok','Заявка отправлена. Мы свяжемся с вами для уточнения деталей.');
-      goal('lead_sent',{service,page:location.href});
-      form.reset();
-    }catch(err){
-      console.error(err);
-      setStatus(form,'err','Не удалось отправить заявку. Позвоните нам или попробуйте ещё раз.');
-      goal('lead_send_error',{service,page:location.href});
-    }finally{btn.disabled=false;btn.textContent='Отправить заявку'}
+    try{const res=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});if(!res.ok)throw new Error('Ошибка '+res.status);setStatus(form,'ok','Заявка отправлена. Мы свяжемся с вами для уточнения деталей.');goal('lead_sent',{service,page:location.href});form.reset()}catch(err){console.error(err);setStatus(form,'err','Не удалось отправить заявку. Позвоните нам или попробуйте ещё раз.');goal('lead_send_error',{service,page:location.href})}finally{btn.disabled=false;btn.textContent='Отправить заявку'}
   }
 
   function injectMobileStickyCta(){
-    if(document.getElementById('leader-mobile-sticky-cta'))return;
-    if(homeOnly() && document.querySelector('.mobile-cta'))return;
-    const request=document.getElementById('request')||document.getElementById('leader-lead-form')||document.querySelector('[data-leader-lead-form]');
-    const requestHref=request ? '#'+(request.id||'request') : '/#request';
-    const style=document.createElement('style');
-    style.id='leader-mobile-sticky-cta-style';
-    style.textContent='@media(max-width:760px){body{padding-bottom:76px}.leader-mobile-sticky-cta{position:fixed;left:0;right:0;bottom:0;z-index:9999;display:flex;gap:8px;padding:10px 12px;background:rgba(255,255,255,.96);border-top:1px solid #e5e7eb;box-shadow:0 -12px 30px rgba(15,23,42,.14);backdrop-filter:blur(12px)}.leader-mobile-sticky-cta a{flex:1;min-height:48px;border-radius:999px;display:flex;align-items:center;justify-content:center;text-decoration:none;font-family:Arial,Helvetica,sans-serif;font-weight:900}.leader-mobile-sticky-cta__lead{background:#f6c343;color:#111827}.leader-mobile-sticky-cta__phone{background:#111827;color:#fff}}@media(min-width:761px){.leader-mobile-sticky-cta{display:none}}';
-    document.head.appendChild(style);
-    const bar=document.createElement('div');
-    bar.id='leader-mobile-sticky-cta';
-    bar.className='leader-mobile-sticky-cta';
-    bar.innerHTML='<a class="leader-mobile-sticky-cta__lead" href="'+requestHref+'">Оставить заявку</a><a class="leader-mobile-sticky-cta__phone" href="tel:+79802457471">Позвонить</a>';
-    document.body.appendChild(bar);
+    if(document.getElementById('leader-mobile-sticky-cta'))return;if(homeOnly()&&document.querySelector('.mobile-cta'))return;
+    const request=document.getElementById('request')||document.getElementById('leader-lead-form')||document.querySelector('[data-leader-lead-form]');const requestHref=request?'#'+(request.id||'request'):'/#request';
+    const style=document.createElement('style');style.id='leader-mobile-sticky-cta-style';style.textContent='@media(max-width:760px){body{padding-bottom:76px}.leader-mobile-sticky-cta{position:fixed;left:0;right:0;bottom:0;z-index:9999;display:flex;gap:8px;padding:10px 12px;background:rgba(255,255,255,.96);border-top:1px solid #e5e7eb;box-shadow:0 -12px 30px rgba(15,23,42,.14);backdrop-filter:blur(12px)}.leader-mobile-sticky-cta a{flex:1;min-height:48px;border-radius:999px;display:flex;align-items:center;justify-content:center;text-decoration:none;font-family:Arial,Helvetica,sans-serif;font-weight:900}.leader-mobile-sticky-cta__lead{background:#f6c343;color:#111827}.leader-mobile-sticky-cta__phone{background:#111827;color:#fff}}@media(min-width:761px){.leader-mobile-sticky-cta{display:none}}';document.head.appendChild(style);
+    const bar=document.createElement('div');bar.id='leader-mobile-sticky-cta';bar.className='leader-mobile-sticky-cta';bar.innerHTML='<a class="leader-mobile-sticky-cta__lead" href="'+requestHref+'">Оставить заявку</a><a class="leader-mobile-sticky-cta__phone" href="tel:+79802457471">Позвонить</a>';document.body.appendChild(bar);
     bar.addEventListener('click',function(e){const a=e.target.closest('a');if(!a)return;goal(a.href.indexOf('tel:')===0?'mobile_phone_click':'mobile_cta_click',{page:location.href});});
   }
 
-  function initClicks(){
-    document.addEventListener('click',e=>{
-      const a=e.target.closest&&e.target.closest('a');
-      if(!a)return;
-      const href=a.getAttribute('href')||'',text=(a.textContent||'').trim();
-      if(href.indexOf('tel:')===0)goal('phone_click',{href,text,page:location.href});
-      if(a.dataset&&a.dataset.service){e.preventDefault();applyServicePreset({service:a.dataset.service,text:'Услуга выбрана кнопкой: '+a.dataset.service},true)}
-      if(a.dataset&&a.dataset.scenario){e.preventDefault();applyScenario(a.dataset.scenario,true)}
-      if(/\.html($|#|\?)/.test(href))goal('service_page_click',{href,text,page:location.href});
-    });
-  }
-
-  function init(){
-    loadMetrika();
-    initClicks();
-    document.querySelectorAll('#leader-lead-form,[data-leader-lead-form]').forEach(mount);
-    const s=qs().scenario;
-    if(s)applyScenario(s,false);else applyServicePreset(currentPreset(),false);
-    injectMobileStickyCta();
-  }
-
+  function initClicks(){document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('a');if(!a)return;const href=a.getAttribute('href')||'',text=(a.textContent||'').trim();if(href.indexOf('tel:')===0)goal('phone_click',{href,text,page:location.href});if(a.dataset&&a.dataset.service){e.preventDefault();applyServicePreset({service:a.dataset.service,text:'Услуга выбрана кнопкой: '+a.dataset.service},true)}if(a.dataset&&a.dataset.scenario){e.preventDefault();applyScenario(a.dataset.scenario,true)}if(/\.html($|#|\?)/.test(href))goal('service_page_click',{href,text,page:location.href});});}
+  function init(){loadMetrika();initClicks();document.querySelectorAll('#leader-lead-form,[data-leader-lead-form]').forEach(mount);const s=qs().scenario;if(s)applyScenario(s,false);else applyServicePreset(currentPreset(),false);injectMobileStickyCta();}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
