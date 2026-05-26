@@ -5,10 +5,19 @@
       ['Цены','prices.html'],
       ['Комплекты рекламы','komplekty-reklamy.html'],
       ['Реклама для бизнеса','reklama-dlya-biznesa.html'],
+      ['Реклама в соцсетях Борисоглебска','reklama-v-socsetyah-borisoglebsk.html'],
+      ['Реклама мероприятий','reklama-dlya-meropriyatiy-borisoglebsk.html'],
       ['Что нужно для расчёта','chto-nuzhno-dlya-rascheta.html'],
       ['Как проходит заказ','kak-prohodit-zakaz.html'],
       ['Примеры задач','portfolio.html'],
       ['FAQ','faq.html']
+    ],
+    landing:[
+      ['Реклама для магазина','reklama-dlya-magazina-borisoglebsk.html'],
+      ['Реклама мероприятий','reklama-dlya-meropriyatiy-borisoglebsk.html'],
+      ['Реклама в соцсетях','reklama-v-socsetyah-borisoglebsk.html'],
+      ['Комплекты рекламы','komplekty-reklamy.html'],
+      ['Реклама для бизнеса','reklama-dlya-biznesa.html']
     ],
     services:[
       ['Наружная реклама','outdoor-advertising-borisoglebsk.html'],
@@ -27,25 +36,60 @@
   function addUtilityCards(){
     const grid=document.querySelector('#service-pages .grid3');
     if(grid){
+      if(!document.getElementById('social-ads-card')){
+        const social=document.createElement('article');
+        social.className='card';
+        social.id='social-ads-card';
+        social.innerHTML='<div class="icon">📢</div><h3>Реклама в соцсетях Борисоглебска</h3><p>Размещение в городских сообществах, рекламные посты, анонсы мероприятий, тексты и изображения.</p><a href="reklama-v-socsetyah-borisoglebsk.html">Подробнее →</a>';
+        grid.insertBefore(social,grid.children[1]||null);
+      }
+      if(!document.getElementById('events-ads-card')){
+        const events=document.createElement('article');
+        events.className='card';
+        events.id='events-ads-card';
+        events.innerHTML='<div class="icon">🎪</div><h3>Реклама мероприятий</h3><p>Для цирков, выставок, ярмарок, фестивалей, концертов и переездного бизнеса в Борисоглебске.</p><a href="reklama-dlya-meropriyatiy-borisoglebsk.html">Подробнее →</a>';
+        grid.insertBefore(events,grid.children[2]||null);
+      }
+      if(!document.getElementById('store-ads-card')){
+        const store=document.createElement('article');
+        store.className='card';
+        store.id='store-ads-card';
+        store.innerHTML='<div class="icon">🏪</div><h3>Реклама для магазина</h3><p>Вывеска, баннер, витрина, таблички, карты, соцсети и комплект для новой торговой точки.</p><a href="reklama-dlya-magazina-borisoglebsk.html">Подробнее →</a>';
+        grid.insertBefore(store,grid.children[3]||null);
+      }
       if(!document.getElementById('packages-link-card')){
         const card=document.createElement('article');
         card.className='card';
         card.id='packages-link-card';
         card.innerHTML='<div class="icon">📦</div><h3>Комплекты рекламы</h3><p>Готовые наборы для магазина, кафе, салона, сервиса, пункта выдачи, офиса и онлайн-продвижения.</p><a href="komplekty-reklamy.html">Подробнее →</a>';
-        grid.insertBefore(card,grid.children[1]||null);
+        grid.insertBefore(card,grid.children[4]||null);
       }
       if(!document.getElementById('calc-checklist-card')){
         const checklist=document.createElement('article');
         checklist.className='card';
         checklist.id='calc-checklist-card';
         checklist.innerHTML='<div class="icon">✅</div><h3>Что нужно для расчёта</h3><p>Чек-лист по баннерам, наклейкам, табличкам, вывескам, витринам, дизайну, соцсетям и картам.</p><a href="chto-nuzhno-dlya-rascheta.html">Открыть чек-лист →</a>';
-        grid.insertBefore(checklist,grid.children[2]||null);
+        grid.insertBefore(checklist,grid.children[5]||null);
       }
     }
   }
   function addHeroChecklistLink(){
     const quick=document.querySelector('.hero-card .quick');
     if(!quick)return;
+    if(!document.getElementById('hero-social-ads-link')){
+      const s=document.createElement('a');
+      s.id='hero-social-ads-link';
+      s.href='reklama-v-socsetyah-borisoglebsk.html';
+      s.innerHTML='Реклама в соцсетях Борисоглебска <span>→</span>';
+      quick.appendChild(s);
+    }
+    if(!document.getElementById('hero-events-ads-link')){
+      const e=document.createElement('a');
+      e.id='hero-events-ads-link';
+      e.href='reklama-dlya-meropriyatiy-borisoglebsk.html';
+      e.innerHTML='Реклама мероприятий и ярмарок <span>→</span>';
+      quick.appendChild(e);
+    }
     if(!document.getElementById('hero-packages-link')&&!quick.querySelector('a[href="komplekty-reklamy.html"]')){
       const p=document.createElement('a');
       p.id='hero-packages-link';
@@ -68,7 +112,7 @@
     box.id='faq-checklist-link';
     box.className='notice';
     box.style.marginTop='12px';
-    box.innerHTML='Не знаете, что указать в заявке? Откройте <a href="chto-nuzhno-dlya-rascheta.html" style="font-weight:900;text-decoration:underline">чек-лист для расчёта</a> или страницу <a href="komplekty-reklamy.html" style="font-weight:900;text-decoration:underline">комплектов рекламы</a>.';
+    box.innerHTML='Не знаете, что указать в заявке? Откройте <a href="chto-nuzhno-dlya-rascheta.html" style="font-weight:900;text-decoration:underline">чек-лист для расчёта</a>, страницу <a href="komplekty-reklamy.html" style="font-weight:900;text-decoration:underline">комплектов рекламы</a> или <a href="reklama-v-socsetyah-borisoglebsk.html" style="font-weight:900;text-decoration:underline">рекламу в соцсетях Борисоглебска</a>.';
     faq.appendChild(box);
   }
   function addFooterNavigation(){
@@ -76,12 +120,12 @@
     if(!footer||document.getElementById('footer-nav-seo'))return;
     const style=document.createElement('style');
     style.id='footer-nav-seo-style';
-    style.textContent='.footer-nav-seo{margin-top:28px;display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:22px;border-top:1px solid rgba(255,255,255,.12);padding-top:24px}.footer-nav-seo h3{color:#fff;margin:0 0 10px;font-size:16px}.footer-nav-seo a{display:inline-block;margin:0 10px 8px 0;color:#fff;font-weight:800;text-decoration:none}.footer-nav-seo p{margin:0 0 8px;color:rgba(255,255,255,.68)}@media(max-width:900px){.footer-nav-seo{grid-template-columns:1fr}}';
+    style.textContent='.footer-nav-seo{margin-top:28px;display:grid;grid-template-columns:1fr 1fr 1.35fr 1fr;gap:22px;border-top:1px solid rgba(255,255,255,.12);padding-top:24px}.footer-nav-seo h3{color:#fff;margin:0 0 10px;font-size:16px}.footer-nav-seo a{display:inline-block;margin:0 10px 8px 0;color:#fff;font-weight:800;text-decoration:none}.footer-nav-seo p{margin:0 0 8px;color:rgba(255,255,255,.68)}@media(max-width:900px){.footer-nav-seo{grid-template-columns:1fr}}';
     document.head.appendChild(style);
     const block=document.createElement('div');
     block.id='footer-nav-seo';
     block.className='container footer-nav-seo';
-    block.innerHTML='<div><h3>Навигация</h3>'+links.core.map(l=>'<a href="'+l[1]+'">'+l[0]+'</a>').join('')+'</div><div><h3>Услуги</h3>'+links.services.map(l=>'<a href="'+l[1]+'">'+l[0]+'</a>').join('')+'</div><div><h3>Связаться</h3><p>РА «Лидер», Борисоглебск</p><p><a href="tel:+79802457471">8 980 245-74-71</a></p><p><a href="/#request">Оставить заявку</a></p></div>';
+    block.innerHTML='<div><h3>Навигация</h3>'+links.core.map(l=>'<a href="'+l[1]+'">'+l[0]+'</a>').join('')+'</div><div><h3>Для кого</h3>'+links.landing.map(l=>'<a href="'+l[1]+'">'+l[0]+'</a>').join('')+'</div><div><h3>Услуги</h3>'+links.services.map(l=>'<a href="'+l[1]+'">'+l[0]+'</a>').join('')+'</div><div><h3>Связаться</h3><p>РА «Лидер», Борисоглебск</p><p><a href="tel:+79802457471">8 980 245-74-71</a></p><p><a href="/#request">Оставить заявку</a></p></div>';
     footer.appendChild(block);
   }
   function addTopNavUsefulLinks(){
@@ -95,6 +139,11 @@
     packs.id='nav-packages-link';
     packs.href='komplekty-reklamy.html';
     packs.textContent='Комплекты';
+    const social=document.createElement('a');
+    social.id='nav-social-link';
+    social.href='reklama-v-socsetyah-borisoglebsk.html';
+    social.textContent='Соцсети';
+    nav.insertBefore(social,nav.querySelector('a[href="#request"]')||null);
     nav.insertBefore(prices,nav.querySelector('a[href="#request"]')||null);
     nav.insertBefore(packs,nav.querySelector('a[href="#request"]')||null);
   }
@@ -107,8 +156,14 @@
     a.href='chto-nuzhno-dlya-rascheta.html';
     a.style.marginLeft='8px';
     a.textContent='Что нужно для расчёта';
+    const b=document.createElement('a');
+    b.id='contacts-social-link';
+    b.className='btn btn--white';
+    b.href='reklama-v-socsetyah-borisoglebsk.html';
+    b.style.marginLeft='8px';
+    b.textContent='Реклама в соцсетях';
     const mainBtn=contactCard.querySelector('a.btn');
-    if(mainBtn)mainBtn.insertAdjacentElement('afterend',a);
+    if(mainBtn){mainBtn.insertAdjacentElement('afterend',a);a.insertAdjacentElement('afterend',b)}
   }
   function run(){
     addUtilityCards();
