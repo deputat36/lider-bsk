@@ -2,6 +2,7 @@
   const links={
     core:[
       ['Услуги','/#services'],
+      ['Примеры работ','primery-rabot-kejsy.html'],
       ['Срочная реклама','srochnaya-reklama-borisoglebsk.html'],
       ['Цены','prices.html'],
       ['Комплекты рекламы','komplekty-reklamy.html'],
@@ -25,6 +26,7 @@
       ['Реклама мероприятий','reklama-dlya-meropriyatiy-borisoglebsk.html'],
       ['Реклама в соцсетях','reklama-v-socsetyah-borisoglebsk.html'],
       ['Комплекты рекламы','komplekty-reklamy.html'],
+      ['Примеры работ и кейсы','primery-rabot-kejsy.html'],
       ['Реклама для бизнеса','reklama-dlya-biznesa.html']
     ],
     services:[
@@ -62,6 +64,7 @@
     const grid=document.querySelector('#service-pages .grid3');
     if(!grid)return;
     const cards=[
+      ['cases-card','📸','Примеры работ и кейсы','Карточки под реальные фото: баннеры, наклейки, таблички, витрины, макеты, посты и комплексные решения.','primery-rabot-kejsy.html'],
       ['urgent-ads-card','⚡','Срочная реклама','Баннер, макет, афиша, пост или размещение в соцсетях, когда открытие или мероприятие уже скоро.','srochnaya-reklama-borisoglebsk.html'],
       ['social-ads-card','📢','Реклама в соцсетях Борисоглебска','Размещение в городских сообществах, рекламные посты, анонсы мероприятий, тексты и изображения.','reklama-v-socsetyah-borisoglebsk.html'],
       ['cafe-ads-card','☕','Реклама для кафе и доставки','Меню, посты, баннеры, наклейки, акции, доставка, карты и оформление общепита.','reklama-dlya-kafe-borisoglebsk.html'],
@@ -81,6 +84,7 @@
     const quick=document.querySelector('.hero-card .quick');
     if(!quick)return;
     const items=[
+      ['hero-cases-link','primery-rabot-kejsy.html','Примеры работ и кейсы'],
       ['hero-urgent-ads-link','srochnaya-reklama-borisoglebsk.html','Срочно нужна реклама'],
       ['hero-social-ads-link','reklama-v-socsetyah-borisoglebsk.html','Реклама в соцсетях Борисоглебска'],
       ['hero-cafe-ads-link','reklama-dlya-kafe-borisoglebsk.html','Реклама для кафе и доставки'],
@@ -100,7 +104,7 @@
     box.id='faq-checklist-link';
     box.className='notice';
     box.style.marginTop='12px';
-    box.innerHTML='Не знаете, что указать в заявке? Откройте <a href="srochnaya-reklama-borisoglebsk.html" style="font-weight:900;text-decoration:underline">срочную рекламу</a>, <a href="reklama-dlya-servisa-masterskoy-borisoglebsk.html" style="font-weight:900;text-decoration:underline">рекламу для сервиса</a>, <a href="chto-nuzhno-dlya-rascheta.html" style="font-weight:900;text-decoration:underline">чек-лист для расчёта</a> или <a href="reklama-v-socsetyah-borisoglebsk.html" style="font-weight:900;text-decoration:underline">рекламу в соцсетях Борисоглебска</a>.';
+    box.innerHTML='Не знаете, что указать в заявке? Посмотрите <a href="primery-rabot-kejsy.html" style="font-weight:900;text-decoration:underline">примеры работ</a>, откройте <a href="srochnaya-reklama-borisoglebsk.html" style="font-weight:900;text-decoration:underline">срочную рекламу</a>, <a href="chto-nuzhno-dlya-rascheta.html" style="font-weight:900;text-decoration:underline">чек-лист для расчёта</a> или <a href="reklama-v-socsetyah-borisoglebsk.html" style="font-weight:900;text-decoration:underline">рекламу в соцсетях Борисоглебска</a>.';
     faq.appendChild(box);
   }
 
@@ -122,6 +126,7 @@
     const nav=document.querySelector('.nav');
     if(!nav||document.getElementById('nav-prices-link'))return;
     const navItems=[
+      ['nav-cases-link','primery-rabot-kejsy.html','Кейсы'],
       ['nav-urgent-link','srochnaya-reklama-borisoglebsk.html','Срочно'],
       ['nav-cafe-link','reklama-dlya-kafe-borisoglebsk.html','Кафе'],
       ['nav-beauty-link','reklama-dlya-salona-krasoty-borisoglebsk.html','Салоны'],
@@ -138,6 +143,7 @@
     const contactCard=document.querySelector('#contacts .contacts .card:last-child');
     if(!contactCard||document.getElementById('contacts-checklist-link'))return;
     const items=[
+      ['contacts-cases-link','primery-rabot-kejsy.html','Примеры работ'],
       ['contacts-urgent-link','srochnaya-reklama-borisoglebsk.html','Срочная реклама'],
       ['contacts-checklist-link','chto-nuzhno-dlya-rascheta.html','Что нужно для расчёта'],
       ['contacts-social-link','reklama-v-socsetyah-borisoglebsk.html','Реклама в соцсетях'],
