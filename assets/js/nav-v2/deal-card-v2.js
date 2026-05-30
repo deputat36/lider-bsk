@@ -19,6 +19,13 @@ function setPageStatus(text, type = 'info') {
   if (el) { el.className = 'status ' + type; el.textContent = text; }
 }
 
+function restoreScroll(y) {
+  if (!Number.isFinite(y)) return;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => window.scrollTo({ top: Math.max(0, y), behavior: 'auto' }));
+  });
+}
+
 function norm(value) { return String(value || '').trim().replace(/\s+/g, ' '); }
 function firstWord(value) {
   const text = norm(value);
@@ -257,7 +264,7 @@ function renderTabs(data) {
   ];
   return `<section class="card"><div class="tabs">${tabs.map(([id,title]) => `<button class="tab ${activeTab === id ? 'active' : ''}" data-tab="${id}" type="button">${title}</button>`).join('')}</div><div class="tab-content">${tabContent(data)}</div></section>`;
 }
-function renderCard(data) {
+function renderCard(data, options = {}) {
   currentData = data;
   const deal = data.deal;
   const docs = list(data, 'documents');
@@ -283,12 +290,14 @@ function renderCard(data) {
     ${renderTabs(data)}
   </main>`;
   bindActions();
+  restoreScroll(options.restoreScrollY);
 }
-async function reloadAfterMutation(message = 'Обновляю карточку...') {
+async function reloadAfterMutation(message = 'Обновляю карточку...', options = {}) {
   if (reloadRequest) return reloadRequest;
+  const y = Number.isFinite(options.restoreScrollY) ? options.restoreScrollY : window.scrollY;
   setPageStatus(message);
   cardRequest = null;
-  reloadRequest = load(true).finally(() => { reloadRequest = null; });
+  reloadRequest = load(true, { silent: true, restoreScrollY: y }).finally(() => { reloadRequest = null; });
   return reloadRequest;
 }
 async function runLegalAction(action) {
@@ -311,33 +320,37 @@ function bindActions() {
   document.querySelectorAll('[data-tab]').forEach((btn) => btn.onclick = () => {
     activeTab = btn.dataset.tab;
     history.replaceState(null, '', `${location.pathname}${location.search}#${activeTab}`);
-    if (currentData) renderCard(currentData);
+    if (currentData) renderCard(currentData, { restoreScrollY: window.scrollY });
   });
   document.querySelectorAll('[data-tab-shortcut]').forEach((btn) => btn.onclick = () => {
     activeTab = btn.dataset.tabShortcut;
     history.replaceState(null, '', `${location.pathname}${location.search}#${activeTab}`);
-    if (currentData) renderCard(currentData);
+    if (currentData) renderCard(currentData, { restoreScrollY: window.scrollY });
   });
   document.querySelectorAll('[data-legal-action]').forEach((btn) => btn.onclick = () => runLegalAction(btn.dataset.legalAction));
   document.querySelectorAll('[data-quick-status]').forEach((btn) => btn.onclick = async () => {
     if (!confirmDemoAction('изменить статус сделки')) return;
-    try { setPageStatus('Сохраняю быстрый статус...'); await rpc('nav_v2_update_deal_status', { p_deal_id: dealId, p_status: btn.dataset.quickStatus }); await reloadAfterMutation(); }
+    const y = window.scrollY;
+    try { setPageStatus('Сохраняю быстрый статус...'); await rpc('nav_v2_update_deal_status', { p_deal_id: dealId, p_status: btn.dataset.quickStatus }); await reloadAfterMutation('Обновляю карточку...', { restoreScrollY: y }); }
     catch (e) { setPageStatus('Ошибка быстрого действия: ' + e.message, 'error'); }
   });
   const statusBtn = document.getElementById('saveStatus');
   if (statusBtn) statusBtn.onclick = async () => {
     if (!confirmDemoAction('изменить статус сделки')) return;
-    try { setPageStatus('Сохраняю статус...'); await rpc('nav_v2_update_deal_status', { p_deal_id: dealId, p_status: document.getElementById('dealStatus').value }); await reloadAfterMutation(); }
+    const y = window.scrollY;
+    try { setPageStatus('Сохраняю статус...'); await rpc('nav_v2_update_deal_status', { p_deal_id: dealId, p_status: document.getElementById('dealStatus').value }); await reloadAfterMutation('Обновляю карточку...', { restoreScrollY: y }); }
     catch (e) { setPageStatus('Ошибка: ' + e.message, 'error'); }
   };
   document.querySelectorAll('[data-doc-id]').forEach((btn) => btn.onclick = async () => {
     if (!confirmDemoAction('изменить статус документа')) return;
-    try { setPageStatus('Обновляю документ...'); await rpc('nav_v2_update_document_status', { p_document_id: btn.dataset.docId, p_status: btn.dataset.docStatus }); await reloadAfterMutation(); }
+    const y = window.scrollY;
+    try { setPageStatus('Обновляю документ...'); await rpc('nav_v2_update_document_status', { p_document_id: btn.dataset.docId, p_status: btn.dataset.docStatus }); await reloadAfterMutation('Документ обновлён. Обновляю карточку...', { restoreScrollY: y }); }
     catch (e) { setPageStatus('Ошибка документа: ' + e.message, 'error'); }
   });
   document.querySelectorAll('[data-task-id]').forEach((btn) => btn.onclick = async () => {
     if (!confirmDemoAction('изменить статус задачи')) return;
-    try { setPageStatus('Обновляю задачу...'); await rpc('nav_v2_update_task_status', { p_task_id: btn.dataset.taskId, p_status: btn.dataset.taskStatus }); await reloadAfterMutation(); }
+    const y = window.scrollY;
+    try { setPageStatus('Обновляю задачу...'); await rpc('nav_v2_update_task_status', { p_task_id: btn.dataset.taskId, p_status: btn.dataset.taskStatus }); await reloadAfterMutation('Задача обновлена. Обновляю карточку...', { restoreScrollY: y }); }
     catch (e) { setPageStatus('Ошибка задачи: ' + e.message, 'error'); }
   });
   const add = document.getElementById('addComment');
@@ -345,20 +358,23 @@ function bindActions() {
     const body = document.getElementById('newComment').value.trim();
     if (!body) { setPageStatus('Комментарий пустой.', 'error'); return; }
     if (!confirmDemoAction('добавить комментарий')) return;
-    try { setPageStatus('Добавляю комментарий...'); await rpc('nav_v2_add_comment', { p_deal_id: dealId, p_body: body, p_visibility: 'team' }); await reloadAfterMutation(); }
+    const y = window.scrollY;
+    try { setPageStatus('Добавляю комментарий...'); await rpc('nav_v2_add_comment', { p_deal_id: dealId, p_body: body, p_visibility: 'team' }); await reloadAfterMutation('Комментарий добавлен. Обновляю карточку...', { restoreScrollY: y }); }
     catch (e) { setPageStatus('Ошибка комментария: ' + e.message, 'error'); }
   };
 }
-async function load(force = false) {
+async function load(force = false, options = {}) {
   if (!dealId) {
     document.getElementById('app').innerHTML = '<main class="nav-v2-shell"><div class="status error">Не указан id сделки.</div></main>';
     return;
   }
   if (!force && currentData) {
-    renderCard(currentData);
+    renderCard(currentData, { restoreScrollY: options.restoreScrollY });
     return;
   }
-  document.getElementById('app').innerHTML = '<main class="nav-v2-shell"><div class="status">Загружаю карточку сделки...</div></main>';
+  if (!options.silent) {
+    document.getElementById('app').innerHTML = '<main class="nav-v2-shell"><div class="status">Загружаю карточку сделки...</div></main>';
+  }
   try {
     if (force) cardRequest = null;
     if (!cardRequest) cardRequest = rpc('nav_v2_get_deal_card', { p_deal_id: dealId }, 25000);
@@ -366,9 +382,14 @@ async function load(force = false) {
     currentProfile = cardData.profile || currentProfile;
     saveCachedProfile(currentProfile);
     if (isLawyer() && !location.hash && activeTab === 'overview') activeTab = 'risks';
-    renderCard(cardData);
+    renderCard(cardData, { restoreScrollY: options.restoreScrollY });
   } catch (error) {
     cardRequest = null;
+    if (options.silent && currentData) {
+      setPageStatus('Ошибка обновления: ' + error.message, 'error');
+      restoreScroll(options.restoreScrollY);
+      return;
+    }
     document.getElementById('app').innerHTML = `<main class="nav-v2-shell"><div class="status error">Ошибка загрузки: ${esc(error.message)}</div><div class="actions" style="justify-content:flex-start"><button class="btn primary" onclick="location.reload()">Обновить страницу</button><a class="btn light" href="./deals-v2.html">К списку сделок</a></div></main>`;
   }
 }
