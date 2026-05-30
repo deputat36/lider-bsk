@@ -21,9 +21,67 @@ function setPageStatus(text, type = 'info') {
 
 function restoreScroll(y) {
   if (!Number.isFinite(y)) return;
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => window.scrollTo({ top: Math.max(0, y), behavior: 'auto' }));
-  });
+  requestAnimationFrame(() => requestAnimationFrame(() => window.scrollTo({ top: Math.max(0, y), behavior: 'auto' })));
+}
+function localStatus(target, text, type = 'ok') {
+  const box = target.closest('.list-item') || target.closest('.card') || target.parentElement;
+  if (!box) return;
+  let status = box.querySelector('.local-action-status');
+  if (!status) {
+    status = document.createElement('div');
+    status.className = 'local-action-status status';
+    status.style.marginTop = '8px';
+    box.appendChild(status);
+  }
+  status.className = `local-action-status status ${type}`;
+  status.textContent = text;
+}
+function setBusy(button, busy, text = 'Сохраняю...') {
+  if (!button) return;
+  if (busy) {
+    button.dataset.oldText = button.textContent;
+    button.disabled = true;
+    button.textContent = text;
+  } else {
+    button.disabled = false;
+    if (button.dataset.oldText) button.textContent = button.dataset.oldText;
+  }
+}
+function docStatusTitle(status) { return ({ needed: 'Нужен', received: 'Получен', checked: 'Проверен' })[status] || status || 'needed'; }
+function docStatusClass(status) { return status === 'received' || status === 'checked' ? 'green' : 'yellow'; }
+function patchDocumentStatus(documentId, status) {
+  const doc = list(currentData, 'documents').find((item) => String(item.id) === String(documentId));
+  if (doc) doc.status = status;
+}
+function patchTaskStatus(taskId, status) {
+  const task = list(currentData, 'tasks').find((item) => String(item.id) === String(taskId));
+  if (task) task.status = status;
+}
+function refreshKpiFromLocalData() {
+  const docs = list(currentData, 'documents');
+  const tasks = list(currentData, 'tasks');
+  const metrics = [...document.querySelectorAll('.kpi-row .metric')];
+  const docsMetric = metrics.find((m) => m.textContent.includes('Документы'));
+  const tasksMetric = metrics.find((m) => m.textContent.includes('Задачи'));
+  if (docsMetric) docsMetric.querySelector('b').textContent = countMissingDocs(docs);
+  if (tasksMetric) tasksMetric.querySelector('b').textContent = countOpenTasks(tasks);
+}
+function updateDocDom(button, status) {
+  const item = button.closest('.list-item');
+  const pill = item?.querySelector('.doc-status .pill');
+  if (pill) {
+    pill.className = `pill ${docStatusClass(status)}`;
+    pill.textContent = docStatusTitle(status);
+  }
+  patchDocumentStatus(button.dataset.docId, status);
+  refreshKpiFromLocalData();
+}
+function updateTaskDom(button, status) {
+  const item = button.closest('.list-item');
+  const pills = item?.querySelectorAll('.pill');
+  if (pills?.[1]) pills[1].textContent = status;
+  patchTaskStatus(button.dataset.taskId, status);
+  refreshKpiFromLocalData();
 }
 
 function norm(value) { return String(value || '').trim().replace(/\s+/g, ' '); }
@@ -133,13 +191,7 @@ function statusSelector(deal) {
 }
 function lawyerQuickActions(deal) {
   return `<section class="card">
-    <div class="section-title">
-      <div>
-        <h2>Юридические действия</h2>
-        <p class="muted">Кнопки фиксируют позицию юриста в комментариях и меняют рабочий статус сделки.</p>
-      </div>
-      ${riskPill(deal.risk_level)}
-    </div>
+    <div class="section-title"><div><h2>Юридические действия</h2><p class="muted">Кнопки фиксируют позицию юриста в комментариях и меняют рабочий статус сделки.</p></div>${riskPill(deal.risk_level)}</div>
     <div id="pageStatus" class="status">Проверьте риски, документы и условия. После проверки выберите юридическое действие.</div>
     <div class="actions" style="justify-content:flex-start">
       <button class="btn green" data-legal-action="checked" type="button">Проверено юристом</button>
@@ -153,23 +205,7 @@ function lawyerQuickActions(deal) {
 }
 function quickActions(deal) {
   if (isLawyer()) return lawyerQuickActions(deal);
-  return `<section class="card">
-    <div class="section-title">
-      <div>
-        <h2>Быстрые действия</h2>
-        <p class="muted">Кнопки меняют статус сделки и помогают быстро передать ее нужному специалисту.</p>
-      </div>
-      ${riskPill(deal.risk_level)}
-    </div>
-    <div id="pageStatus" class="status">Выберите действие или перейдите во вкладку нужного раздела.</div>
-    <div class="actions" style="justify-content:flex-start">
-      <button class="btn light" data-quick-status="need_lawyer" type="button">Передать юристу</button>
-      <button class="btn light" data-quick-status="need_broker" type="button">Передать брокеру</button>
-      <button class="btn green" data-quick-status="ready_for_deposit" type="button">Готово к задатку</button>
-      <button class="btn green" data-quick-status="ready_for_deal" type="button">Готово к сделке</button>
-      <button class="btn light" data-quick-status="need_documents" type="button">Нужны документы</button>
-    </div>
-  </section>`;
+  return `<section class="card"><div class="section-title"><div><h2>Быстрые действия</h2><p class="muted">Кнопки меняют статус сделки и помогают быстро передать ее нужному специалисту.</p></div>${riskPill(deal.risk_level)}</div><div id="pageStatus" class="status">Выберите действие или перейдите во вкладку нужного раздела.</div><div class="actions" style="justify-content:flex-start"><button class="btn light" data-quick-status="need_lawyer" type="button">Передать юристу</button><button class="btn light" data-quick-status="need_broker" type="button">Передать брокеру</button><button class="btn green" data-quick-status="ready_for_deposit" type="button">Готово к задатку</button><button class="btn green" data-quick-status="ready_for_deal" type="button">Готово к сделке</button><button class="btn light" data-quick-status="need_documents" type="button">Нужны документы</button></div></section>`;
 }
 function legalPanel(data) {
   const deal = data.deal;
@@ -177,29 +213,12 @@ function legalPanel(data) {
   const risks = list(data, 'risks');
   const missingDocs = countMissingDocs(docs);
   const redRisks = countRedRisks(risks);
-  return `<section class="card" style="border:2px solid rgba(220,38,38,.16)">
-    <div class="section-title">
-      <div><h2>Юридический профиль сделки</h2><p class="muted">Короткая карта проверки для юриста: риски, документы, дети, ипотека, расходы и расчеты.</p></div>
-      <span class="pill yellow">lawyer</span>
-    </div>
-    <div class="kpi-row">
-      ${metric('Красные риски', redRisks, redRisks ? 'red' : 'green')}
-      ${metric('Не хватает документов', missingDocs, missingDocs ? 'yellow' : 'green')}
-      ${metric('Дети / опека', deal.has_children ? 'есть' : 'нет', deal.has_children ? 'red' : 'green')}
-      ${metric('Ипотека', deal.has_mortgage ? 'есть' : 'нет', deal.has_mortgage ? 'yellow' : '')}
-    </div>
-    <div class="list">
-      <div class="list-item"><b>Статус</b>${statusText(deal.status)}</div>
-      <div class="list-item"><b>Следующий шаг</b>${esc(deal.next_action || 'Проверить юридические риски и пакет документов.')}</div>
-      <div class="list-item"><b>Расходы</b>${deal.expenses_agreed ? '<span class="pill green">согласованы</span>' : '<span class="pill yellow">не согласованы</span>'}</div>
-      <div class="list-item"><b>Расчеты</b>${deal.settlements_agreed ? '<span class="pill green">согласованы</span>' : '<span class="pill yellow">не согласованы</span>'}</div>
-    </div>
-  </section>`;
+  return `<section class="card" style="border:2px solid rgba(220,38,38,.16)"><div class="section-title"><div><h2>Юридический профиль сделки</h2><p class="muted">Короткая карта проверки для юриста: риски, документы, дети, ипотека, расходы и расчеты.</p></div><span class="pill yellow">lawyer</span></div><div class="kpi-row">${metric('Красные риски', redRisks, redRisks ? 'red' : 'green')}${metric('Не хватает документов', missingDocs, missingDocs ? 'yellow' : 'green')}${metric('Дети / опека', deal.has_children ? 'есть' : 'нет', deal.has_children ? 'red' : 'green')}${metric('Ипотека', deal.has_mortgage ? 'есть' : 'нет', deal.has_mortgage ? 'yellow' : '')}</div><div class="list"><div class="list-item"><b>Статус</b>${statusText(deal.status)}</div><div class="list-item"><b>Следующий шаг</b>${esc(deal.next_action || 'Проверить юридические риски и пакет документов.')}</div><div class="list-item"><b>Расходы</b>${deal.expenses_agreed ? '<span class="pill green">согласованы</span>' : '<span class="pill yellow">не согласованы</span>'}</div><div class="list-item"><b>Расчеты</b>${deal.settlements_agreed ? '<span class="pill green">согласованы</span>' : '<span class="pill yellow">не согласованы</span>'}</div></div></section>`;
 }
 
 function renderDocs(items) {
   if (!items.length) return '<div class="empty">Документы пока не сформированы.</div>';
-  return `<div class="list">${items.map((doc) => `<div class="list-item"><div class="doc-status"><div><b>${esc(doc.title)}</b><span class="small">${esc(doc.category)} / ${esc(doc.side)}${doc.description ? ' — ' + esc(doc.description) : ''}</span></div><span class="pill ${doc.status === 'received' || doc.status === 'checked' ? 'green' : 'yellow'}">${esc(doc.status || 'needed')}</span></div><div class="actions" style="justify-content:flex-start"><button class="btn light" data-doc-status="received" data-doc-id="${doc.id}">Получен</button><button class="btn light" data-doc-status="checked" data-doc-id="${doc.id}">Проверен</button><button class="btn light" data-doc-status="needed" data-doc-id="${doc.id}">Нужен</button></div></div>`).join('')}</div>`;
+  return `<div class="list">${items.map((doc) => `<div class="list-item"><div class="doc-status"><div><b>${esc(doc.title)}</b><span class="small">${esc(doc.category)} / ${esc(doc.side)}${doc.description ? ' — ' + esc(doc.description) : ''}</span></div><span class="pill ${docStatusClass(doc.status)}">${docStatusTitle(doc.status)}</span></div><div class="actions" style="justify-content:flex-start"><button class="btn light" data-doc-status="received" data-doc-id="${doc.id}">Получен</button><button class="btn light" data-doc-status="checked" data-doc-id="${doc.id}">Проверен</button><button class="btn light" data-doc-status="needed" data-doc-id="${doc.id}">Нужен</button></div></div>`).join('')}</div>`;
 }
 function renderRisks(items) {
   if (!items.length) return '<div class="empty">Риски не обнаружены.</div>';
@@ -229,19 +248,7 @@ function renderEvents(items) {
 }
 function overview(data) {
   const deal = data.deal;
-  return `<div class="side-by-side">
-    <div class="card" style="box-shadow:none">
-      <h3>Суть сделки</h3>
-      <div class="list">
-        <div class="list-item"><b>Адрес</b>${esc(headlineAddress(data))}</div>
-        <div class="list-item"><b>Объект</b>${esc(deal.object_type || 'не указан')}</div>
-        <div class="list-item"><b>Цена</b>${money(deal.price_total)}</div>
-        <div class="list-item"><b>Статус</b>${statusText(deal.status)}</div>
-        <div class="list-item"><b>Участники</b>${esc((participantSurnames(data).join(' / ')) || 'продавец / покупатель')}</div>
-      </div>
-    </div>
-    ${statusSelector(deal)}
-  </div>`;
+  return `<div class="side-by-side"><div class="card" style="box-shadow:none"><h3>Суть сделки</h3><div class="list"><div class="list-item"><b>Адрес</b>${esc(headlineAddress(data))}</div><div class="list-item"><b>Объект</b>${esc(deal.object_type || 'не указан')}</div><div class="list-item"><b>Цена</b>${money(deal.price_total)}</div><div class="list-item"><b>Статус</b>${statusText(deal.status)}</div><div class="list-item"><b>Участники</b>${esc((participantSurnames(data).join(' / ')) || 'продавец / покупатель')}</div></div></div>${statusSelector(deal)}</div>`;
 }
 function tabContent(data) {
   if (activeTab === 'docs') return `<h2>Документы</h2>${renderDocs(list(data,'documents'))}`;
@@ -253,15 +260,7 @@ function tabContent(data) {
   return `<h2>Сводка</h2>${overview(data)}`;
 }
 function renderTabs(data) {
-  const tabs = [
-    ['overview','Сводка'],
-    ['risks', isLawyer() ? 'Юр. риски' : 'Риски'],
-    ['docs','Документы'],
-    ['tasks','Задачи'],
-    ['expenses','Расходы'],
-    ['comments','Комментарии'],
-    ['history','История']
-  ];
+  const tabs = [['overview','Сводка'], ['risks', isLawyer() ? 'Юр. риски' : 'Риски'], ['docs','Документы'], ['tasks','Задачи'], ['expenses','Расходы'], ['comments','Комментарии'], ['history','История']];
   return `<section class="card"><div class="tabs">${tabs.map(([id,title]) => `<button class="tab ${activeTab === id ? 'active' : ''}" data-tab="${id}" type="button">${title}</button>`).join('')}</div><div class="tab-content">${tabContent(data)}</div></section>`;
 }
 function renderCard(data, options = {}) {
@@ -270,25 +269,7 @@ function renderCard(data, options = {}) {
   const docs = list(data, 'documents');
   const tasks = list(data, 'tasks');
   const risks = list(data, 'risks');
-  document.getElementById('app').innerHTML = `<main class="nav-v2-shell">
-    <section class="hero"><h1>${demoBadge(deal)}${esc(dealHeadline(data))}</h1><p>${esc(deal.next_action || (isLawyer() ? 'Проверить юридические риски, документы и условия сделки.' : 'Проверить карточку и определить следующий шаг.'))}</p></section>
-    ${dealModePanel(deal)}
-    ${isLawyer() ? legalPanel(data) : ''}
-    <div class="kpi-row">
-      ${metric('К задатку', (deal.readiness_deposit || 0) + '%', deal.readiness_deposit >= 80 ? 'green' : 'yellow')}
-      ${metric('К сделке', (deal.readiness_deal || 0) + '%', deal.readiness_deal >= 80 ? 'green' : 'yellow')}
-      ${metric('Документы', countMissingDocs(docs), countMissingDocs(docs) ? 'yellow' : 'green')}
-      ${metric('Задачи', countOpenTasks(tasks), countOpenTasks(tasks) ? 'yellow' : 'green')}
-    </div>
-    <div class="kpi-row">
-      ${metric('Статус', statusText(deal.status))}
-      ${metric('Риск', riskPill(deal.risk_level))}
-      ${metric('Красные риски', countRedRisks(risks), countRedRisks(risks) ? 'red' : 'green')}
-      ${metric('Цена', money(deal.price_total))}
-    </div>
-    ${quickActions(deal)}
-    ${renderTabs(data)}
-  </main>`;
+  document.getElementById('app').innerHTML = `<main class="nav-v2-shell"><section class="hero"><h1>${demoBadge(deal)}${esc(dealHeadline(data))}</h1><p>${esc(deal.next_action || (isLawyer() ? 'Проверить юридические риски, документы и условия сделки.' : 'Проверить карточку и определить следующий шаг.'))}</p></section>${dealModePanel(deal)}${isLawyer() ? legalPanel(data) : ''}<div class="kpi-row">${metric('К задатку', (deal.readiness_deposit || 0) + '%', deal.readiness_deposit >= 80 ? 'green' : 'yellow')}${metric('К сделке', (deal.readiness_deal || 0) + '%', deal.readiness_deal >= 80 ? 'green' : 'yellow')}${metric('Документы', countMissingDocs(docs), countMissingDocs(docs) ? 'yellow' : 'green')}${metric('Задачи', countOpenTasks(tasks), countOpenTasks(tasks) ? 'yellow' : 'green')}</div><div class="kpi-row">${metric('Статус', statusText(deal.status))}${metric('Риск', riskPill(deal.risk_level))}${metric('Красные риски', countRedRisks(risks), countRedRisks(risks) ? 'red' : 'green')}${metric('Цена', money(deal.price_total))}</div>${quickActions(deal)}${renderTabs(data)}</main>`;
   bindActions();
   restoreScroll(options.restoreScrollY);
 }
@@ -301,57 +282,55 @@ async function reloadAfterMutation(message = 'Обновляю карточку.
   return reloadRequest;
 }
 async function runLegalAction(action) {
-  const config = {
-    checked: ['preparing_deal', 'Юрист: первичная юридическая проверка выполнена. Критичных замечаний по текущей информации нет. Можно продолжать подготовку сделки.'],
-    need_documents: ['need_documents', 'Юрист: для продолжения проверки нужны дополнительные документы. СПН необходимо дозапросить пакет документов и обновить карточку сделки.'],
-    stop_factor: ['need_lawyer', 'Юрист: выявлен юридический стоп-фактор. До устранения замечаний нельзя переводить сделку к задатку/основной сделке.'],
-    return_spn: ['need_info', 'Юрист: карточка возвращена СПН на доработку. Нужно уточнить данные, документы или условия сделки.']
-  }[action];
+  const config = { checked: ['preparing_deal', 'Юрист: первичная юридическая проверка выполнена. Критичных замечаний по текущей информации нет. Можно продолжать подготовку сделки.'], need_documents: ['need_documents', 'Юрист: для продолжения проверки нужны дополнительные документы. СПН необходимо дозапросить пакет документов и обновить карточку сделки.'], stop_factor: ['need_lawyer', 'Юрист: выявлен юридический стоп-фактор. До устранения замечаний нельзя переводить сделку к задатку/основной сделке.'], return_spn: ['need_info', 'Юрист: карточка возвращена СПН на доработку. Нужно уточнить данные, документы или условия сделки.'] }[action];
   if (!config) return;
   if (!confirmDemoAction('зафиксировать юридическое действие')) return;
-  try {
-    setPageStatus('Фиксирую юридическое действие...');
-    await rpc('nav_v2_add_comment', { p_deal_id: dealId, p_body: config[1], p_visibility: 'team' });
-    await rpc('nav_v2_update_deal_status', { p_deal_id: dealId, p_status: config[0] });
-    await reloadAfterMutation();
-  } catch (e) { setPageStatus('Ошибка юридического действия: ' + e.message, 'error'); }
+  try { setPageStatus('Фиксирую юридическое действие...'); await rpc('nav_v2_add_comment', { p_deal_id: dealId, p_body: config[1], p_visibility: 'team' }); await rpc('nav_v2_update_deal_status', { p_deal_id: dealId, p_status: config[0] }); await reloadAfterMutation(); }
+  catch (e) { setPageStatus('Ошибка юридического действия: ' + e.message, 'error'); }
 }
 function bindActions() {
-  document.querySelectorAll('[data-tab]').forEach((btn) => btn.onclick = () => {
-    activeTab = btn.dataset.tab;
-    history.replaceState(null, '', `${location.pathname}${location.search}#${activeTab}`);
-    if (currentData) renderCard(currentData, { restoreScrollY: window.scrollY });
-  });
-  document.querySelectorAll('[data-tab-shortcut]').forEach((btn) => btn.onclick = () => {
-    activeTab = btn.dataset.tabShortcut;
-    history.replaceState(null, '', `${location.pathname}${location.search}#${activeTab}`);
-    if (currentData) renderCard(currentData, { restoreScrollY: window.scrollY });
-  });
+  document.querySelectorAll('[data-tab]').forEach((btn) => btn.onclick = () => { activeTab = btn.dataset.tab; history.replaceState(null, '', `${location.pathname}${location.search}#${activeTab}`); if (currentData) renderCard(currentData, { restoreScrollY: window.scrollY }); });
+  document.querySelectorAll('[data-tab-shortcut]').forEach((btn) => btn.onclick = () => { activeTab = btn.dataset.tabShortcut; history.replaceState(null, '', `${location.pathname}${location.search}#${activeTab}`); if (currentData) renderCard(currentData, { restoreScrollY: window.scrollY }); });
   document.querySelectorAll('[data-legal-action]').forEach((btn) => btn.onclick = () => runLegalAction(btn.dataset.legalAction));
   document.querySelectorAll('[data-quick-status]').forEach((btn) => btn.onclick = async () => {
     if (!confirmDemoAction('изменить статус сделки')) return;
     const y = window.scrollY;
-    try { setPageStatus('Сохраняю быстрый статус...'); await rpc('nav_v2_update_deal_status', { p_deal_id: dealId, p_status: btn.dataset.quickStatus }); await reloadAfterMutation('Обновляю карточку...', { restoreScrollY: y }); }
+    try { setPageStatus('Сохраняю быстрый статус...'); await rpc('nav_v2_update_deal_status', { p_deal_id: dealId, p_status: btn.dataset.quickStatus }); if (currentData?.deal) currentData.deal.status = btn.dataset.quickStatus; renderCard(currentData, { restoreScrollY: y }); localStatus(btn, 'Статус сделки обновлён.', 'ok'); }
     catch (e) { setPageStatus('Ошибка быстрого действия: ' + e.message, 'error'); }
   });
   const statusBtn = document.getElementById('saveStatus');
   if (statusBtn) statusBtn.onclick = async () => {
     if (!confirmDemoAction('изменить статус сделки')) return;
     const y = window.scrollY;
-    try { setPageStatus('Сохраняю статус...'); await rpc('nav_v2_update_deal_status', { p_deal_id: dealId, p_status: document.getElementById('dealStatus').value }); await reloadAfterMutation('Обновляю карточку...', { restoreScrollY: y }); }
+    const next = document.getElementById('dealStatus').value;
+    try { setPageStatus('Сохраняю статус...'); await rpc('nav_v2_update_deal_status', { p_deal_id: dealId, p_status: next }); if (currentData?.deal) currentData.deal.status = next; renderCard(currentData, { restoreScrollY: y }); }
     catch (e) { setPageStatus('Ошибка: ' + e.message, 'error'); }
   };
   document.querySelectorAll('[data-doc-id]').forEach((btn) => btn.onclick = async () => {
     if (!confirmDemoAction('изменить статус документа')) return;
     const y = window.scrollY;
-    try { setPageStatus('Обновляю документ...'); await rpc('nav_v2_update_document_status', { p_document_id: btn.dataset.docId, p_status: btn.dataset.docStatus }); await reloadAfterMutation('Документ обновлён. Обновляю карточку...', { restoreScrollY: y }); }
-    catch (e) { setPageStatus('Ошибка документа: ' + e.message, 'error'); }
+    try {
+      setBusy(btn, true);
+      localStatus(btn, 'Сохраняю документ...', '');
+      await rpc('nav_v2_update_document_status', { p_document_id: btn.dataset.docId, p_status: btn.dataset.docStatus }, 15000);
+      updateDocDom(btn, btn.dataset.docStatus);
+      localStatus(btn, `Документ: ${docStatusTitle(btn.dataset.docStatus)}. Позиция сохранена.`, 'ok');
+      restoreScroll(y);
+    } catch (e) { localStatus(btn, 'Ошибка документа: ' + e.message, 'error'); restoreScroll(y); }
+    finally { setBusy(btn, false); }
   });
   document.querySelectorAll('[data-task-id]').forEach((btn) => btn.onclick = async () => {
     if (!confirmDemoAction('изменить статус задачи')) return;
     const y = window.scrollY;
-    try { setPageStatus('Обновляю задачу...'); await rpc('nav_v2_update_task_status', { p_task_id: btn.dataset.taskId, p_status: btn.dataset.taskStatus }); await reloadAfterMutation('Задача обновлена. Обновляю карточку...', { restoreScrollY: y }); }
-    catch (e) { setPageStatus('Ошибка задачи: ' + e.message, 'error'); }
+    try {
+      setBusy(btn, true);
+      localStatus(btn, 'Сохраняю задачу...', '');
+      await rpc('nav_v2_update_task_status', { p_task_id: btn.dataset.taskId, p_status: btn.dataset.taskStatus }, 15000);
+      updateTaskDom(btn, btn.dataset.taskStatus);
+      localStatus(btn, 'Задача обновлена. Позиция сохранена.', 'ok');
+      restoreScroll(y);
+    } catch (e) { localStatus(btn, 'Ошибка задачи: ' + e.message, 'error'); restoreScroll(y); }
+    finally { setBusy(btn, false); }
   });
   const add = document.getElementById('addComment');
   if (add) add.onclick = async () => {
@@ -359,22 +338,15 @@ function bindActions() {
     if (!body) { setPageStatus('Комментарий пустой.', 'error'); return; }
     if (!confirmDemoAction('добавить комментарий')) return;
     const y = window.scrollY;
-    try { setPageStatus('Добавляю комментарий...'); await rpc('nav_v2_add_comment', { p_deal_id: dealId, p_body: body, p_visibility: 'team' }); await reloadAfterMutation('Комментарий добавлен. Обновляю карточку...', { restoreScrollY: y }); }
-    catch (e) { setPageStatus('Ошибка комментария: ' + e.message, 'error'); }
+    try { setBusy(add, true, 'Добавляю...'); await rpc('nav_v2_add_comment', { p_deal_id: dealId, p_body: body, p_visibility: 'team' }); list(currentData, 'comments').unshift({ body, visibility: 'team', created_at: new Date().toISOString(), author_name: 'текущий пользователь' }); renderCard(currentData, { restoreScrollY: y }); }
+    catch (e) { setPageStatus('Ошибка комментария: ' + e.message, 'error'); restoreScroll(y); }
+    finally { setBusy(add, false); }
   };
 }
 async function load(force = false, options = {}) {
-  if (!dealId) {
-    document.getElementById('app').innerHTML = '<main class="nav-v2-shell"><div class="status error">Не указан id сделки.</div></main>';
-    return;
-  }
-  if (!force && currentData) {
-    renderCard(currentData, { restoreScrollY: options.restoreScrollY });
-    return;
-  }
-  if (!options.silent) {
-    document.getElementById('app').innerHTML = '<main class="nav-v2-shell"><div class="status">Загружаю карточку сделки...</div></main>';
-  }
+  if (!dealId) { document.getElementById('app').innerHTML = '<main class="nav-v2-shell"><div class="status error">Не указан id сделки.</div></main>'; return; }
+  if (!force && currentData) { renderCard(currentData, { restoreScrollY: options.restoreScrollY }); return; }
+  if (!options.silent) document.getElementById('app').innerHTML = '<main class="nav-v2-shell"><div class="status">Загружаю карточку сделки...</div></main>';
   try {
     if (force) cardRequest = null;
     if (!cardRequest) cardRequest = rpc('nav_v2_get_deal_card', { p_deal_id: dealId }, 25000);
@@ -385,17 +357,9 @@ async function load(force = false, options = {}) {
     renderCard(cardData, { restoreScrollY: options.restoreScrollY });
   } catch (error) {
     cardRequest = null;
-    if (options.silent && currentData) {
-      setPageStatus('Ошибка обновления: ' + error.message, 'error');
-      restoreScroll(options.restoreScrollY);
-      return;
-    }
+    if (options.silent && currentData) { setPageStatus('Ошибка обновления: ' + error.message, 'error'); restoreScroll(options.restoreScrollY); return; }
     document.getElementById('app').innerHTML = `<main class="nav-v2-shell"><div class="status error">Ошибка загрузки: ${esc(error.message)}</div><div class="actions" style="justify-content:flex-start"><button class="btn primary" onclick="location.reload()">Обновить страницу</button><a class="btn light" href="./deals-v2.html">К списку сделок</a></div></main>`;
   }
 }
-async function init() {
-  setupTop('deals');
-  if (!getCachedUser()) return renderAuthBox(document.getElementById('app'), async () => location.reload());
-  await load();
-}
+async function init() { setupTop('deals'); if (!getCachedUser()) return renderAuthBox(document.getElementById('app'), async () => location.reload()); await load(); }
 init();
