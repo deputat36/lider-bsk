@@ -1,6 +1,39 @@
 import { rpc, esc } from './supabase-v2.js';
 
 const dealId = new URLSearchParams(location.search).get('id');
+let scrollLockTimer = null;
+let scrollLockUntil = 0;
+let scrollLockY = 0;
+
+function beginScrollLock(y) {
+  scrollLockY = Number.isFinite(y) ? y : window.scrollY;
+  scrollLockUntil = Date.now() + 3500;
+  clearInterval(scrollLockTimer);
+  scrollLockTimer = setInterval(() => {
+    if (Date.now() > scrollLockUntil) {
+      clearInterval(scrollLockTimer);
+      scrollLockTimer = null;
+      return;
+    }
+    if (Math.abs(window.scrollY - scrollLockY) > 30) {
+      window.scrollTo({ top: scrollLockY, behavior: 'auto' });
+    }
+  }, 40);
+}
+
+function endScrollLock(y) {
+  const top = Number.isFinite(y) ? y : scrollLockY;
+  setTimeout(() => window.scrollTo({ top, behavior: 'auto' }), 0);
+  setTimeout(() => window.scrollTo({ top, behavior: 'auto' }), 120);
+  setTimeout(() => window.scrollTo({ top, behavior: 'auto' }), 350);
+  setTimeout(() => window.scrollTo({ top, behavior: 'auto' }), 800);
+}
+
+function stopEvent(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation();
+}
 
 function setInlineStatus(target, text, type = 'ok') {
   const box = target.closest('.list-item') || target.closest('.card') || target.parentElement;
@@ -52,15 +85,16 @@ function setBusy(button, isBusy, text = '') {
 }
 
 async function handleDocumentStatus(event, button) {
-  event.preventDefault();
-  event.stopPropagation();
-  event.stopImmediatePropagation();
+  stopEvent(event);
+  const y = window.scrollY;
+  beginScrollLock(y);
 
   const documentId = button.dataset.docId;
   const status = button.dataset.docStatus;
   if (!documentId || !status) return;
 
   try {
+    button.blur();
     setBusy(button, true);
     setInlineStatus(button, 'Сохраняю статус документа...', '');
     await rpc('nav_v2_update_document_status', { p_document_id: documentId, p_status: status }, 15000);
@@ -70,19 +104,21 @@ async function handleDocumentStatus(event, button) {
     setInlineStatus(button, 'Ошибка документа: ' + error.message, 'error');
   } finally {
     setBusy(button, false);
+    endScrollLock(y);
   }
 }
 
 async function handleTaskStatus(event, button) {
-  event.preventDefault();
-  event.stopPropagation();
-  event.stopImmediatePropagation();
+  stopEvent(event);
+  const y = window.scrollY;
+  beginScrollLock(y);
 
   const taskId = button.dataset.taskId;
   const status = button.dataset.taskStatus;
   if (!taskId || !status) return;
 
   try {
+    button.blur();
     setBusy(button, true);
     setInlineStatus(button, 'Сохраняю статус задачи...', '');
     await rpc('nav_v2_update_task_status', { p_task_id: taskId, p_status: status }, 15000);
@@ -92,22 +128,25 @@ async function handleTaskStatus(event, button) {
     setInlineStatus(button, 'Ошибка задачи: ' + error.message, 'error');
   } finally {
     setBusy(button, false);
+    endScrollLock(y);
   }
 }
 
 async function handleAddComment(event, button) {
-  event.preventDefault();
-  event.stopPropagation();
-  event.stopImmediatePropagation();
+  stopEvent(event);
+  const y = window.scrollY;
+  beginScrollLock(y);
 
   const textarea = document.getElementById('newComment');
   const body = textarea?.value?.trim() || '';
   if (!body) {
     setInlineStatus(button, 'Комментарий пустой.', 'error');
+    endScrollLock(y);
     return;
   }
 
   try {
+    button.blur();
     setBusy(button, true, 'Добавляю...');
     setInlineStatus(button, 'Добавляю комментарий...', '');
     await rpc('nav_v2_add_comment', { p_deal_id: dealId, p_body: body, p_visibility: 'team' }, 15000);
@@ -121,16 +160,22 @@ async function handleAddComment(event, button) {
     setInlineStatus(button, 'Ошибка комментария: ' + error.message, 'error');
   } finally {
     setBusy(button, false);
+    endScrollLock(y);
   }
 }
 
-document.addEventListener('click', (event) => {
-  const docButton = event.target.closest('[data-doc-id][data-doc-status]');
+function captureAction(event) {
+  const docButton = event.target.closest?.('[data-doc-id][data-doc-status]');
   if (docButton) return handleDocumentStatus(event, docButton);
 
-  const taskButton = event.target.closest('[data-task-id][data-task-status]');
+  const taskButton = event.target.closest?.('[data-task-id][data-task-status]');
   if (taskButton) return handleTaskStatus(event, taskButton);
 
-  const addCommentButton = event.target.closest('#addComment');
+  const addCommentButton = event.target.closest?.('#addComment');
   if (addCommentButton) return handleAddComment(event, addCommentButton);
+}
+
+window.addEventListener('click', captureAction, true);
+window.addEventListener('submit', (event) => {
+  if (event.target.closest?.('.nav-v2-shell')) stopEvent(event);
 }, true);
