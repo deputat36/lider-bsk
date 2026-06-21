@@ -53,7 +53,7 @@ function statusHint(lead) {
   if (status === 'Уточнение деталей') return 'Заполните размеры, материал, сроки, монтаж и всё, что влияет на цену.';
   if (status === 'КП отправлено') return 'Поставьте следующий контакт и вернитесь к клиенту, если он не ответит.';
   if (status === 'Ждём ответ') return 'Не оставляйте заявку без даты следующего контакта.';
-  if (status === 'Согласовано') return 'Следующий этап — создать заказ из согласованного КП после переноса модуля заказов.';
+  if (status === 'Согласовано') return 'Откройте карточку согласованного КП и создайте заказ из него.';
   if (['Отказ', 'Спам'].includes(status)) return 'Заявка закрыта. При необходимости верните её в работу одной кнопкой.';
   return 'Следуйте цепочке: потребность → расчёт → КП → согласование → заказ.';
 }
@@ -154,7 +154,7 @@ function renderLeadDetails(lead) {
       </section>
 
       <section id="calculationsBox" class="v4-calculations-host"><div class="v4-empty">Расчёты загрузятся после открытия карточки.</div></section>
-      <section id="offersBox" class="v4-offers-host"><div class="v4-empty">КП будут перенесены отдельным пакетом.</div></section>
+      <section id="offersBox" class="v4-offers-host"><div class="v4-empty">Коммерческие предложения загрузятся после открытия карточки.</div></section>
 
       <section class="v4-subcard">
         <h3>Ссылки и источник</h3>
