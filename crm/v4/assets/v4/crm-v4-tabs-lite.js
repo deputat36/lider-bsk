@@ -1,3 +1,5 @@
+const MANAGED_TABS = new Set(['public_lead_audit', 'contact_control']);
+
 function setActiveTab(tab) {
   document.body.dataset.v4Tab = tab;
   document.querySelectorAll('[data-v4-tab-button]').forEach((button) => {
@@ -12,10 +14,17 @@ function setActiveTab(tab) {
     if (next) next.style.display = '';
   }
 
+  if (MANAGED_TABS.has(tab)) {
+    document.querySelectorAll('[data-v4-managed-section]').forEach((section) => {
+      section.hidden = section.dataset.v4ManagedSection !== tab;
+    });
+  }
+
   document.dispatchEvent(new CustomEvent('leader-v4:tab-opened', { detail: { tab } }));
 }
 
 function bootTabsLite() {
+  window.v4SetTab = setActiveTab;
   document.addEventListener('click', (event) => {
     const button = event.target.closest?.('[data-v4-tab-button]');
     if (!button) return;
