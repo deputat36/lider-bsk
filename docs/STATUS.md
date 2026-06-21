@@ -82,6 +82,7 @@ Supabase project:
 - `crm/v4/assets/v4/styles.css`;
 - `crm/v4/assets/v4/needs.css`;
 - `crm/v4/assets/v4/calculations.css`;
+- `crm/v4/assets/v4/calculations-saved-tools.css`;
 - `crm/v4/assets/v4/config.js`;
 - `crm/v4/assets/v4/api.js`;
 - `crm/v4/assets/v4/state.js`;
@@ -102,15 +103,17 @@ Supabase project:
 - `crm/v4/assets/v4/lead-create.css`;
 - `crm/v4/assets/v4/contact-control-v1.js`;
 - `crm/v4/assets/v4/needs.js`;
-- `crm/v4/assets/v4/calculations.js`.
+- `crm/v4/assets/v4/calculations.js`;
+- `crm/v4/assets/v4/calculations-saved-tools-v2.js`;
+- `crm/v4/assets/v4/calculations-standard.js`;
+- `crm/v4/assets/v4/calculations-advanced.js`.
 
 Критичные исправления:
 
-- `crm/v4/index.html` ссылался на `leads.js`, `lead-card.js`, `needs.js`, `calculations.js`, `supabase-client.js` и CSS-файлы, которых не было в `lider-bsk`;
-- недостающие базовые файлы добавлены;
+- `crm/v4/index.html` ссылался на модули и CSS-файлы, которых не было в `lider-bsk`; недостающие базовые файлы добавлены;
 - `lead-card.js` исправлен: возврат из карточки к списку больше не должен запускать петлю route-change;
-- `calculations.js` заменён с заглушки на рабочий базовый модуль расчётов;
-- в `crm/v4/index.html` обновлён cache-buster `calculations.js?v=20260621-2`.
+- базовый `calculations.js` остаётся в репозитории как перенесённый модуль, но в `index.html` теперь не подключается;
+- `crm/v4/index.html` переключён на расширенную связку расчётов: `calculations-saved-tools-v2.js`, `calculations-standard.js`, `calculations-advanced.js`.
 
 `crm/v4/index.html` сейчас поддерживает:
 
@@ -122,7 +125,9 @@ Supabase project:
 - сохранение следующего контакта;
 - ручное создание заявки;
 - добавление и архивирование потребностей;
-- базовый расчёт по заявке и сохранение позиций расчёта;
+- просмотр сохранённых расчётов и состава расчёта;
+- создание типового расчёта;
+- создание нестандартного расчёта;
 - контроль контактов;
 - аудит публичных заявок;
 - диагностический блок CRM.
@@ -131,8 +136,8 @@ Supabase project:
 
 - подключённые CSS/JS существуют в `crm/v4/assets/v4/`;
 - `lead-card.js` содержит исправленный `showLeadList(updateUrl = false)`;
-- `calculations.js` содержит рабочие функции `renderCalculations`, `loadCalculations`, `saveCalculation`;
-- `crm/v4/index.html` подключает `calculations.js?v=20260621-2`.
+- `calculations-saved-tools-v2.js`, `calculations-standard.js`, `calculations-advanced.js` существуют и импортируют штатные `supabase-client`, `api`, `state`, `ui`;
+- `crm/v4/index.html` подключает расширенные расчётные модули и больше не подключает `calculations.js`.
 
 Ограничение проверки:
 
@@ -143,7 +148,6 @@ Supabase project:
 Важно:
 
 - рабочая CRM v4 пока остаётся в `lidercalculator`;
-- расширенные расчётные модули `calculations-saved-tools-v2.js`, `calculations-standard.js`, `calculations-advanced.js` ещё не перенесены;
 - КП, заказы, финансы, производство, монтаж и дашборд ещё не перенесены в основной репозиторий полностью;
 - крупные JS-модули лучше переносить логическими пакетами.
 
@@ -203,13 +207,12 @@ GitHub Actions проверяет:
 
 ## Ближайшие задачи
 
-1. Проверить в браузере перенесённый базовый контур CRM v4: вход, заявки, ручное создание заявки, карточку заявки, возврат к списку, потребности, базовый расчёт, контроль контактов, аудит заявок, диагностику.
+1. Проверить в браузере перенесённый контур CRM v4: вход, заявки, ручное создание заявки, карточку заявки, возврат к списку, потребности, сохранённые/типовые/нестандартные расчёты, контроль контактов, аудит заявок, диагностику.
 2. Проверить аудит публичных заявок на реальной отправке формы.
-3. Перенести расширенный расчётный контур: сохранённые расчёты, стандартные и продвинутые расчёты.
-4. Перенести КП и создание заказа из КП.
-5. Проверить полный сценарий: заявка → потребность → расчёт → КП → заказ → финансы → производство/монтаж.
-6. Добавить оплаты, расходы и фактическую прибыль.
-7. При необходимости добавить мягкий rate-limit публичной формы.
+3. Перенести КП и создание заказа из КП.
+4. Проверить полный сценарий: заявка → потребность → расчёт → КП → заказ → финансы → производство/монтаж.
+5. Добавить оплаты, расходы и фактическую прибыль.
+6. При необходимости добавить мягкий rate-limit публичной формы.
 
 ## Ограничения
 
