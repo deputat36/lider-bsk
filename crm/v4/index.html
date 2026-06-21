@@ -8,8 +8,11 @@
 <link rel="stylesheet" href="assets/v4/styles.css?v=20260614-1">
 <link rel="stylesheet" href="assets/v4/needs.css?v=20260528-1">
 <link rel="stylesheet" href="assets/v4/calculations.css?v=20260528-1">
+<style id="v4-critical-tabs-fix">
+html,body{max-width:100%;overflow-x:hidden!important}.v4-layout-tabs{position:sticky;top:0;z-index:50;display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:rgba(248,250,252,.96);backdrop-filter:blur(10px);border:1px solid #dbeafe;border-radius:18px;padding:10px;margin:0 0 16px;box-shadow:0 10px 30px rgba(15,23,42,.08)}.v4-layout-tabs b{margin-right:auto;color:#1d4ed8}.v4-layout-tabs button{border:1px solid #cbd5e1;background:#fff;border-radius:999px;padding:10px 13px;font-weight:900}.v4-layout-tabs button.is-active{background:#1d4ed8;border-color:#1d4ed8;color:#fff}body[data-v4-tab="public_lead_audit"] #leadsSection,body[data-v4-tab="public_lead_audit"] #leadCardSection,body[data-v4-tab="public_lead_audit"] .v4-next-card{display:none!important}@media(max-width:560px){.v4-layout-tabs{border-radius:14px}.v4-layout-tabs b{width:100%;margin:0}.v4-layout-tabs button{flex:1 1 calc(50% - 8px)}}
+</style>
 </head>
-<body>
+<body data-v4-tab="leads">
 <div class="v4-shell">
   <header class="v4-hero">
     <div>
@@ -50,6 +53,17 @@
         <div><dt>Статус</dt><dd id="profileActive">—</dd></div>
       </dl>
     </section>
+
+    <nav id="v4LayoutTabs" class="v4-layout-tabs" aria-label="Разделы CRM">
+      <b>Разделы CRM</b>
+      <button type="button" data-v4-tab-button="leads" class="is-active">Заявки</button>
+      <button type="button" data-v4-tab-button="orders">Заказы</button>
+      <button type="button" data-v4-tab-button="production">Производство</button>
+      <button type="button" data-v4-tab-button="calculations">Расчёты</button>
+      <button type="button" data-v4-tab-button="offers">КП</button>
+      <button type="button" data-v4-tab-button="catalog">Номенклатура</button>
+      <button type="button" data-v4-tab-button="settings">Настройки</button>
+    </nav>
 
     <section id="leadCardSection" class="v4-card v4-lead-card-section hidden" aria-label="Карточка заявки">
       <div id="leadCardContent">
@@ -101,5 +115,6 @@
 <script type="module" src="assets/v4/lead-card.js?v=20260614-1"></script>
 <script type="module" src="assets/v4/needs.js?v=20260528-1"></script>
 <script type="module" src="assets/v4/calculations.js?v=20260528-1"></script>
+<script type="module" src="assets/v4/site-cache-note-v1.js?v=20260621-1"></script>
 </body>
 </html>
