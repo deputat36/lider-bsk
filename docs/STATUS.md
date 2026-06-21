@@ -57,14 +57,20 @@
 - `docs/STATIC_CHECKS_RUNBOOK.md`;
 - `docs/CRM_V4_TRANSFER_FILES.md`;
 - `docs/NEXT_SAFE_STEPS.md`;
+- `docs/MANUAL_TEST_CHECKLIST.md`;
 - `crm/v4/TRANSFER.md`.
 
 ### Автоматические проверки
 
-Добавлен первый контур GitHub Actions:
+Добавлен и усилен контур GitHub Actions:
 
 - проверка `robots.txt`;
 - проверка XML-структуры `sitemap.xml`;
+- проверка, что URL из `sitemap.xml` ведут на существующие файлы;
+- проверка наличия `assets/public-lead-form.css` и `assets/public-lead-form.js`;
+- проверка, что форма сайта содержит `request_id`, `page_path`, `submitted_at`;
+- проверка, что CSS формы содержит защиту от горизонтального переполнения;
+- проверка, что CSS формы повторно не скрывает логотип сайта;
 - базовый поиск случайно закоммиченных секретных ключей.
 
 ### CRM v4
