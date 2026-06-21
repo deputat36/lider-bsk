@@ -1,0 +1,61 @@
+name: Static checks
+
+on:
+  push:
+    branches: [ main, improve-site-crm ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate-static-files:
+    name: Validate SEO files and secrets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate robots.txt
+        run: |
+          test -f robots.txt
+          grep -q '^User-agent:' robots.txt
+          grep -q '^Allow:' robots.txt
+          grep -q '^Sitemap:' robots.txt
+          grep -q '^Host:' robots.txt
+          if grep -q 'User-agent: .* Allow:' robots.txt; then
+            echo "robots.txt directives must be placed on separate lines"
+            exit 1
+          fi
+
+      - name: Validate sitemap.xml
+        run: |
+          test -f sitemap.xml
+          python3 - <<'PY'
+          import sys
+          import xml.etree.ElementTree as ET
+
+          try:
+              root = ET.parse('sitemap.xml').getroot()
+          except ET.ParseError as exc:
+              print(f'sitemap.xml is not valid XML: {exc}')
+              sys.exit(1)
+
+          if not root.tag.endswith('urlset'):
+              print('sitemap.xml root must be urlset')
+              sys.exit(1)
+
+          urls = [node for node in root if node.tag.endswith('url')]
+          if not urls:
+              print('sitemap.xml must contain at least one url')
+              sys.exit(1)
+          PY
+
+      - name: Check that secret keys are not committed
+        run: |
+          if grep -RInE \
+            --exclude-dir=.git \
+            --exclude='static-checks.yml' \
+            --exclude='AUDIT_IMPROVEMENTS.md' \
+            'service_role|SUPABASE_SERVICE_ROLE|sk-[A-Za-z0-9_-]{20,}' .; then
+            echo "Possible secret key found. Remove it from repository."
+            exit 1
+          fi
