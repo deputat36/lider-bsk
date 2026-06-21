@@ -15,15 +15,21 @@
 В основной репозиторий уже перенесены:
 
 - `crm/v4/assets/v4/auth.js`;
+- `crm/v4/assets/v4/auth-session-reset-v1.js`;
 - `crm/v4/assets/v4/functions-client.js`;
 - `crm/v4/assets/v4/crm-v4-tabs-lite.js`;
+- `crm/v4/assets/v4/crm-diagnostics-v1.js`;
 - `crm/v4/assets/v4/site-cache-note-v1.js`;
 - `crm/v4/assets/v4/crm-ui-selfcheck-v1.js`;
-- `crm/v4/assets/v4/public-lead-audit-v1.js`.
+- `crm/v4/assets/v4/public-lead-audit-v1.js`;
+- `crm/v4/assets/v4/lead-create.js`;
+- `crm/v4/assets/v4/lead-create.css`;
+- `crm/v4/assets/v4/contact-control-v1.js`.
 
 `crm/v4/index.html` обновлён так, чтобы показывать только реально подключённые рабочие разделы переноса:
 
 - `Заявки`;
+- `Контроль контактов`, который добавляется модулем `contact-control-v1.js`;
 - `Аудит заявок`, который добавляется модулем `public-lead-audit-v1.js`.
 
 Кнопки ещё не перенесённых разделов временно не выводятся, чтобы пользователь не видел нерабочие вкладки.
@@ -32,19 +38,18 @@
 
 ## Рекомендуемый порядок переноса
 
-1. Довести базовые зависимости и проверить вход:
-   - `config.js`;
-   - `api.js`;
-   - `state.js`;
-   - `ui.js`;
-   - `supabase-client.js`;
-   - `functions-client.js`;
-   - `auth.js`;
-   - `router.js`.
+1. Проверить в браузере перенесённый базовый контур:
+   - вход и выход;
+   - сброс зависшей сессии;
+   - загрузка заявок;
+   - ручное создание заявки;
+   - контроль контактов;
+   - аудит публичных заявок;
+   - диагностический блок CRM.
 
-2. Затем перенести заявки и карточку заявки:
-   - `leads.js`;
-   - `lead-card.js`;
+2. Затем перенести актуальные модули заявки и расчётов:
+   - свежий `leads.js`;
+   - свежий `lead-card.js`;
    - `needs.js`;
    - актуальные модульные файлы расчётов;
    - файлы сохранённых расчётов.
