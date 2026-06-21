@@ -179,12 +179,12 @@ function showLeadCard() {
   if (typeof window.v4SetTab === 'function') window.v4SetTab('card');
 }
 
-function showLeadList() {
+function showLeadList(updateUrl = false) {
   const listSection = byId('leadsSection');
   const cardSection = byId('leadCardSection');
   if (listSection) listSection.classList.remove('hidden');
   if (cardSection) cardSection.classList.add('hidden');
-  clearLeadUrl();
+  if (updateUrl) clearLeadUrl();
   if (typeof window.v4SetTab === 'function') window.v4SetTab('leads');
 }
 
@@ -290,7 +290,7 @@ async function handleNextContact(kind, button) {
 
 function bindLeadCardEvents() {
   byId('leadCardSection')?.addEventListener('click', (event) => {
-    if (event.target.closest('#backToLeadsBtn')) { showLeadList(); return; }
+    if (event.target.closest('#backToLeadsBtn')) { showLeadList(true); return; }
     if (event.target.closest('#refreshLeadBtn')) { loadLead(v4State.route.leadId); return; }
     const statusButton = event.target.closest('[data-lead-status]');
     if (statusButton) { handleStatus(statusButton.dataset.leadStatus, statusButton); return; }
@@ -300,7 +300,7 @@ function bindLeadCardEvents() {
   document.addEventListener('leader-v4:route-change', (event) => {
     const id = event.detail?.leadId || null;
     if (id) loadLead(id);
-    else showLeadList();
+    else showLeadList(false);
   });
   document.addEventListener('leader-v4:crm-ready', () => {
     if (v4State.route.leadId) loadLead(v4State.route.leadId);
