@@ -28,6 +28,13 @@ create index if not exists ix_leader_public_lead_audit_phone_created_at
   on public.leader_public_lead_audit (phone_normalized, created_at desc)
   where phone_normalized is not null;
 
+drop policy if exists "leader_public_lead_audit_insert_public" on public.leader_public_lead_audit;
+create policy "leader_public_lead_audit_insert_public"
+  on public.leader_public_lead_audit
+  for insert
+  to anon
+  with check (true);
+
 drop policy if exists "leader_public_lead_audit_select_staff" on public.leader_public_lead_audit;
 create policy "leader_public_lead_audit_select_staff"
   on public.leader_public_lead_audit
