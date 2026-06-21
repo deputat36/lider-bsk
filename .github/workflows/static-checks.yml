@@ -8,7 +8,7 @@ on:
 
 jobs:
   validate-static-files:
-    name: Validate SEO files and secrets
+    name: Validate SEO files, assets and secrets
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -30,8 +30,10 @@ jobs:
         run: |
           test -f sitemap.xml
           python3 - <<'PY'
+          import pathlib
           import sys
           import xml.etree.ElementTree as ET
+          from urllib.parse import urlparse
 
           try:
               root = ET.parse('sitemap.xml').getroot()
@@ -47,7 +49,37 @@ jobs:
           if not urls:
               print('sitemap.xml must contain at least one url')
               sys.exit(1)
+
+          for node in urls:
+              loc_node = next((child for child in node if child.tag.endswith('loc')), None)
+              if loc_node is None or not (loc_node.text or '').strip():
+                  print('Every sitemap url must contain loc')
+                  sys.exit(1)
+              loc = loc_node.text.strip()
+              parsed = urlparse(loc)
+              if parsed.netloc != 'www.lider-bsk.ru':
+                  print(f'Unexpected sitemap host: {loc}')
+                  sys.exit(1)
+              path = parsed.path.lstrip('/') or 'index.html'
+              if path.endswith('/'):
+                  path += 'index.html'
+              if not pathlib.Path(path).exists():
+                  print(f'Sitemap points to missing file: {path}')
+                  sys.exit(1)
           PY
+
+      - name: Validate public lead assets
+        run: |
+          test -f assets/public-lead-form.css
+          test -f assets/public-lead-form.js
+          grep -q 'overflow-x:hidden' assets/public-lead-form.css
+          grep -q 'request_id' assets/public-lead-form.js
+          grep -q 'page_path' assets/public-lead-form.js
+          grep -q 'submitted_at' assets/public-lead-form.js
+          if grep -q 'header .brand .mark,.*display:none!important' assets/public-lead-form.css; then
+            echo "The site logo mark must not be hidden by public-lead-form.css"
+            exit 1
+          fi
 
       - name: Check that secret keys are not committed
         run: |
