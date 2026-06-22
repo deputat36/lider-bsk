@@ -35,7 +35,9 @@ Supabase project:
 - лишние GRANT для `anon` на event-таблицах отозваны миграцией `harden_leader_event_tables_anon_access`;
 - доступ `authenticated` к event-таблицам ужат до `SELECT` и `INSERT` миграцией `tighten_leader_event_tables_authenticated_access`;
 - политики event-таблиц разделены на `SELECT` и `INSERT`, без `UPDATE`, `DELETE`, `TRUNCATE`;
-- вставка событий проверяет `leader_has_access()` и не позволяет записывать `created_by` от чужого пользователя.
+- вставка событий проверяет `leader_has_access()` и не позволяет записывать `created_by` от чужого пользователя;
+- insert-политика `leader_public_lead_audit_insert_public` ужата миграцией `tighten_public_lead_audit_insert_policy` и больше не использует открытый `WITH CHECK true`;
+- публичная запись аудита ограничена ожидаемой формой события: `request_id`, допустимый `result`, JSON-object `payload`, лимит размера `payload`, временное окно `created_at` и лимиты длины технических полей.
 
 ## Перенос CRM v4
 
@@ -153,7 +155,7 @@ Supabase project:
 - создана таблица `leader_public_lead_audit`;
 - RLS для `leader_public_lead_audit` включён;
 - чтение аудита доступно активным сотрудникам ролей `owner`, `admin`, `manager`;
-- запись аудита разрешена публичному anon-контуру Edge Function;
+- запись аудита разрешена публичному anon-контуру Edge Function, но ограничена ожидаемой формой события;
 - `leader-public-lead` пишет аудит для событий `accepted`, `suspicious`, `rejected`, `error`;
 - ошибка записи аудита не блокирует получение основной заявки.
 
