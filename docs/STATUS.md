@@ -35,25 +35,25 @@ Supabase project:
 - лишние GRANT для `anon` на event-таблицах отозваны миграцией `harden_leader_event_tables_anon_access`;
 - доступ `authenticated` к event-таблицам ужат до `SELECT` и `INSERT` миграцией `tighten_leader_event_tables_authenticated_access`;
 - политики event-таблиц разделены на `SELECT` и `INSERT`, без `UPDATE`, `DELETE`, `TRUNCATE`;
-- вставка событий проверяет `leader_has_access()` и не позволяет записывать `created_by` от чужого пользователя;
+- вставка событий проверяет `leader_private.leader_has_access()` и не позволяет записывать `created_by` от чужого пользователя;
 - insert-политика `leader_public_lead_audit_insert_public` ужата миграцией `tighten_public_lead_audit_insert_policy` и больше не использует открытый `WITH CHECK true`;
 - публичная запись аудита ограничена ожидаемой формой события: `request_id`, допустимый `result`, JSON-object `payload`, лимит размера `payload`, временное окно `created_at` и лимиты длины технических полей;
 - прямой RPC-доступ к служебной функции `leader_log` отозван у `public`, `anon` и `authenticated` миграцией `revoke_authenticated_execute_leader_log`;
 - прямой RPC-доступ к legacy-функции `leader_get_leads_for_crm()` отозван у `public`, `anon` и `authenticated` миграцией `revoke_authenticated_execute_legacy_leads_rpc`;
 - прямой RPC-доступ к legacy-функции `leader_create_order_rpc(jsonb)` отозван у `public`, `anon` и `authenticated` миграцией `revoke_authenticated_execute_legacy_order_rpc`;
 - `leader_ensure_profile(user_email text)` усилена миграцией `harden_leader_ensure_profile_email_source`: email берётся из `auth.email()`, а переданный `user_email` должен совпадать с email текущей сессии;
+- RLS-helper функции `leader_has_access()` и `leader_is_admin()` перенесены из `public` в приватную схему `leader_private` миграцией `move_leader_access_helpers_to_private_schema`;
+- `public.leader_has_access()` и `public.leader_is_admin()` отсутствуют, поэтому больше не должны быть доступны как public REST RPC;
+- RLS smoke-test под ролью `authenticated` после переноса helper-функций прошёл;
 - `service_role` сохранил выполнение `leader_log`, `leader_get_leads_for_crm()` и `leader_create_order_rpc(jsonb)` для служебных сценариев;
 - добавлен документ `docs/SUPABASE_SECURITY_ADVISOR.md` с решениями по закрытым и оставшимся Advisor-предупреждениям.
 
-После повторной проверки Supabase Security Advisor по `leader_*` остались только:
+После повторной проверки Supabase Security Advisor по `leader_*` осталось только:
 
-- `leader_ensure_profile(user_email text)`;
-- `leader_has_access()`;
-- `leader_is_admin()`.
+- `leader_ensure_profile(user_email text)`.
 
 Оставлено без автоматического изменения:
 
-- `leader_has_access()` и `leader_is_admin()` используются в RLS-политиках, поэтому отзыв `EXECUTE` у `authenticated` может сломать чтение и запись рабочих таблиц;
 - `leader_ensure_profile()` используется входом CRM v4, но теперь не доверяет произвольному email от клиента.
 
 ## Перенос CRM v4
