@@ -1,4 +1,4 @@
-const MANAGED_TABS = new Set(['orders', 'order_control', 'finance_control', 'production', 'public_lead_audit', 'contact_control']);
+const MANAGED_TABS = new Set(['management_dashboard', 'orders', 'order_control', 'finance_control', 'production', 'public_lead_audit', 'contact_control']);
 
 function showElement(id) {
   const element = document.getElementById(id);
