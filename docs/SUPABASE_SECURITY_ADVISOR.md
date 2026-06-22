@@ -38,6 +38,21 @@
 
 Прямой клиентский вызов `leader_create_order_rpc(jsonb)` больше не используется.
 
+## Что усилено без отзыва EXECUTE
+
+Функция `leader_ensure_profile(user_email text)` нужна входу CRM v4, поэтому `EXECUTE` для `authenticated` пока сохранён.
+
+При этом функция усилена миграцией:
+
+`supabase/migrations/20260622_harden_leader_ensure_profile_email_source.sql`
+
+Изменение:
+
+- email профиля берётся из `auth.email()` текущей сессии;
+- переданный клиентом `user_email` допускается только если совпадает с `auth.email()`;
+- несовпадающий email отклоняется ошибкой;
+- `anon` по-прежнему не может выполнять функцию.
+
 ## Что осталось в Advisor по leader_*
 
 Supabase Security Advisor ещё показывает предупреждение `authenticated_security_definer_function_executable` для:
@@ -60,7 +75,7 @@ Supabase Security Advisor ещё показывает предупреждени
 
 Проверка live DB показала:
 
-- `leader_ensure_profile` доступна `authenticated`, не доступна `anon`;
+- `leader_ensure_profile` доступна `authenticated`, не доступна `anon`, использует `auth.email()` и отклоняет несовпадающий email;
 - `leader_has_access` доступна `authenticated`, не доступна `anon`, имеет RLS-зависимости;
 - `leader_is_admin` доступна `authenticated`, не доступна `anon`, имеет RLS-зависимости;
 - закрытые legacy-функции не доступны `authenticated` и `anon`.
