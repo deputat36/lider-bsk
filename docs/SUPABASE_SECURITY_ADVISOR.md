@@ -44,6 +44,10 @@
 
 `v8`, JWT включён.
 
+Исходник live-функции сохранён в основном репозитории:
+
+`supabase/functions/leader-crm-leads/index.ts`
+
 Фронтенд больше не вызывает `supabaseClient.rpc('leader_ensure_profile', ...)` напрямую. Обновлены:
 
 - `crm/v4/assets/v4/auth.js` в `deputat36/lider-bsk`;
