@@ -1,6 +1,6 @@
 # Аудит публичных заявок РА «Лидер»
 
-Дата: 2026-06-21.
+Дата: 2026-06-22.
 
 ## Зачем нужен аудит
 
@@ -54,7 +54,9 @@ RLS включён.
 
 Запись:
 
-- разрешена публичному `anon`-контуру, чтобы `leader-public-lead` могла писать аудит через REST.
+- разрешена публичному `anon`-контуру, чтобы `leader-public-lead` могла писать аудит через REST;
+- insert-политика больше не использует открытый `WITH CHECK true`;
+- публичная вставка ограничена ожидаемой формой события: обязательный `request_id`, допустимый `result`, JSON-object в `payload`, ограничение размера `payload`, временное окно `created_at`, лимиты длины технических полей.
 
 Чтение:
 
@@ -138,9 +140,10 @@ RLS включён.
 
 ## Где лежит код
 
-Миграция:
+Миграции:
 
-`supabase/migrations/20260621_leader_public_lead_audit.sql`
+- `supabase/migrations/20260621_leader_public_lead_audit.sql`;
+- `supabase/migrations/20260622_tighten_public_lead_audit_insert_policy.sql`.
 
 Edge Function:
 
