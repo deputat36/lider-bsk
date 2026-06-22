@@ -148,6 +148,9 @@ function boot() {
   document.addEventListener('leader-v4:tab-opened', (event) => {
     if (event.detail?.tab === 'production') setTimeout(() => refreshProductionAlerts(true), 900);
   });
+  document.addEventListener('leader-v4:production-board-rendered', () => {
+    setTimeout(() => refreshProductionAlerts(true), 100);
+  });
   document.addEventListener('leader-v4-order-updated', () => {
     if (document.body.dataset.v4Tab === 'production') setTimeout(() => refreshProductionAlerts(true), 900);
   });
