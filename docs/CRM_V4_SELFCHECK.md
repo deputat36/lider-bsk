@@ -33,6 +33,18 @@ CRM v4:
 
 - `crm-ui-selfcheck-v1.js?v=20260622-2`.
 
+## Автоматическая защита
+
+GitHub Actions `Static checks` теперь дополнительно проверяет CRM v4:
+
+- наличие `crm/v4/index.html`;
+- наличие `auth.js`, `functions-client.js`, `site-cache-note-v1.js`, `crm-ui-selfcheck-v1.js`;
+- актуальные версии подключения `auth.js`, `site-cache-note-v1.js`, `crm-ui-selfcheck-v1.js`;
+- что `auth.js` использует `leader-crm-leads` action `ensure_profile`;
+- что `auth.js` не вызывает `leader_ensure_profile` напрямую.
+
+Это не заменяет ручной вход в CRM, но ловит типовые ошибки кэша и подключения файлов до ручной проверки.
+
 ## Как проверить владельцу или администратору
 
 1. Открыть CRM v4.
@@ -84,3 +96,5 @@ CRM v4:
 - `leader-public-lead` v6, публичная, без JWT;
 - `leader-crm-leads` v8, JWT включён;
 - `leader-crm-orders` v2, JWT включён.
+
+Дополнительно проверено: в `public` нет `SECURITY DEFINER` функций с префиксом `leader_`, которые напрямую исполняются ролями `anon` или `authenticated`.
