@@ -32,8 +32,10 @@ Supabase project:
 - в `leader-crm-leads` есть действие `create_order_from_offer`;
 - `leader_lead_events` и `leader_commercial_offer_events` существуют в live DB;
 - RLS для event-таблиц включён;
-- политики event-таблиц дают доступ `authenticated` через `leader_has_access()`;
-- лишние GRANT для `anon` на event-таблицах отозваны миграцией `harden_leader_event_tables_anon_access`.
+- лишние GRANT для `anon` на event-таблицах отозваны миграцией `harden_leader_event_tables_anon_access`;
+- доступ `authenticated` к event-таблицам ужат до `SELECT` и `INSERT` миграцией `tighten_leader_event_tables_authenticated_access`;
+- политики event-таблиц разделены на `SELECT` и `INSERT`, без `UPDATE`, `DELETE`, `TRUNCATE`;
+- вставка событий проверяет `leader_has_access()` и не позволяет записывать `created_by` от чужого пользователя.
 
 ## Перенос CRM v4
 
@@ -115,6 +117,7 @@ Supabase project:
 - `index.html` подключает дашборд, расширенное меню, UI-полировку, адаптивные стили, followups, таймлайн заявки, расширенные расчёты, КП, связанный заказ, быстрый список заказов, карточку заказа, контроль заказов, финансовый контроль, производство и карточки производственных/монтажных заданий;
 - `followups.js` использует существующие поля `leader_leads.next_contact_at` и не требует новой таблицы;
 - `lead-timeline.js` использует существующие live-таблицы `leader_lead_events` и `leader_commercial_offer_events`;
+- event-таблицы таймлайна сделаны append-only для сотрудников: можно читать и добавлять, нельзя менять или удалять записи через клиентский authenticated-контур;
 - `responsive-ui-v2.js` из временной CRM не переносился, потому что управляет другим набором вкладок (`clients`, `catalog`, `settings`) и может конфликтовать с текущим меню;
 - `crm-v4-expanded-menu-v1.js` добавляет только реально перенесённые вкладки и выставляет единый порядок без дублей;
 - `crm-ui-selfcheck-v1.js` теперь проверяет фактические перенесённые вкладки и показывает дубли кнопок меню;
