@@ -38,6 +38,26 @@
 
 Прямой клиентский вызов `leader_create_order_rpc(jsonb)` больше не используется.
 
+## Что вынесено из public
+
+RLS-helper функции перенесены из exposed-схемы `public` в приватную схему `leader_private`:
+
+- `leader_private.leader_has_access()`;
+- `leader_private.leader_is_admin()`.
+
+Миграция:
+
+`supabase/migrations/20260622_move_leader_access_helpers_to_private_schema.sql`
+
+Что важно:
+
+- RLS-политики автоматически продолжают ссылаться на те же функции по зависимостям, теперь как `leader_private.*`;
+- `authenticated` сохранил `EXECUTE`, чтобы RLS-проверки работали;
+- `anon` не имеет `EXECUTE`;
+- функций `public.leader_has_access()` и `public.leader_is_admin()` больше нет, поэтому они не должны быть доступны как public REST RPC.
+
+Проверка RLS smoke-test под ролью `authenticated` прошла на чтении `leader_leads`.
+
 ## Что усилено без отзыва EXECUTE
 
 Функция `leader_ensure_profile(user_email text)` нужна входу CRM v4, поэтому `EXECUTE` для `authenticated` пока сохранён.
@@ -57,36 +77,30 @@
 
 Supabase Security Advisor ещё показывает предупреждение `authenticated_security_definer_function_executable` для:
 
-- `leader_ensure_profile(user_email text)`;
-- `leader_has_access()`;
-- `leader_is_admin()`.
+- `leader_ensure_profile(user_email text)`.
 
-Эти функции пока не закрыты автоматически.
+Причина:
 
-Причины:
-
-- `leader_has_access()` используется в RLS-политиках рабочих таблиц;
-- `leader_is_admin()` используется в RLS-политиках административных таблиц;
 - `leader_ensure_profile(user_email text)` используется входом CRM v4 для подготовки профиля пользователя.
 
-Прямой отзыв `EXECUTE` у `authenticated` для этих функций может сломать вход CRM или RLS-доступ к рабочим таблицам.
+Прямой отзыв `EXECUTE` у `authenticated` для этой функции может сломать вход CRM.
 
 ## Текущая проверка
 
 Проверка live DB показала:
 
 - `leader_ensure_profile` доступна `authenticated`, не доступна `anon`, использует `auth.email()` и отклоняет несовпадающий email;
-- `leader_has_access` доступна `authenticated`, не доступна `anon`, имеет RLS-зависимости;
-- `leader_is_admin` доступна `authenticated`, не доступна `anon`, имеет RLS-зависимости;
+- `leader_private.leader_has_access()` доступна `authenticated`, не доступна `anon`, имеет RLS-зависимости;
+- `leader_private.leader_is_admin()` доступна `authenticated`, не доступна `anon`, имеет RLS-зависимости;
+- `public.leader_has_access()` и `public.leader_is_admin()` отсутствуют;
 - закрытые legacy-функции не доступны `authenticated` и `anon`.
 
 ## Дальнейшее безопасное решение
 
-Чтобы убрать оставшиеся Advisor-предупреждения без поломки CRM, нужен отдельный рефакторинг:
+Чтобы убрать последнее Advisor-предупреждение без поломки CRM, нужен отдельный рефакторинг входа:
 
-1. Перенести helper-функции доступа из exposed-схемы `public` в приватную схему или заменить RLS-политики на безопасные inline-проверки.
-2. Проверить все RLS-политики, которые зависят от `leader_has_access()` и `leader_is_admin()`.
-3. Перепроверить вход CRM v4 без прямого вызова `leader_ensure_profile()` или заменить его серверным действием с JWT.
-4. Только после этого отзывать `EXECUTE` у `authenticated` для оставшихся функций.
+1. Перепроверить вход CRM v4 без прямого вызова `leader_ensure_profile()` или заменить его серверным действием с JWT.
+2. Перенести подготовку профиля в Edge Function или другой закрытый серверный контур.
+3. Только после этого отзывать `EXECUTE` у `authenticated` для `leader_ensure_profile(user_email text)`.
 
-До такого рефакторинга эти предупреждения считаются известным остаточным риском, а не задачей для автоматического массового отзыва прав.
+До такого рефакторинга это предупреждение считается известным остаточным риском, а не задачей для автоматического массового отзыва прав.
