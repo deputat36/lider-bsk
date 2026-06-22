@@ -142,6 +142,7 @@ function render(kind = document.body.dataset.productionBoardKind || 'production'
   const overdueCount = state.production.filter((job) => isOverdue(job.deadline, doneProduction(job.production_status))).length + state.installation.filter((job) => isOverdue(job.scheduled_at, doneInstall(job.install_status))).length;
   const items = kind === 'installation' ? state.installation : state.production;
   box.innerHTML = `<div class="v4-prod-light"><div class="v4-prod-light-head"><div><p class="v4-kicker">Быстрая производственная доска</p><h2>Производство и монтаж</h2><p>Облегчённая загрузка без тяжёлых запросов. Карточка заказа открывается из каждого задания.</p></div><div class="v4-prod-light-actions"><button type="button" data-production-light-refresh>Обновить</button></div></div>${state.warning ? `<div class="v4-prod-light-warning">Часть данных не загрузилась: ${esc(state.warning)}</div>` : ''}<div class="v4-prod-light-summary"><div><span>Производственных</span><b>${state.production.length}</b></div><div><span>Производство открыто</span><b>${productionOpen}</b></div><div><span>Монтажей</span><b>${state.installation.length}</b></div><div><span>Монтаж открыт</span><b>${installationOpen}</b></div><div><span>Просрочено</span><b>${overdueCount}</b></div></div><div class="v4-prod-light-tabs"><button type="button" class="${kind === 'production' ? 'is-active' : ''}" data-production-light-kind="production">Производство</button><button type="button" class="${kind === 'installation' ? 'is-active' : ''}" data-production-light-kind="installation">Монтаж</button></div><div class="v4-prod-light-grid">${items.length ? items.map((job) => card(job, kind)).join('') : '<div class="v4-empty">Заданий в этой группе нет.</div>'}</div></div>`;
+  document.dispatchEvent(new CustomEvent('leader-v4:production-board-rendered', { detail: { kind } }));
 }
 
 async function loadProductionBoard(force = false) {
@@ -167,6 +168,7 @@ async function loadProductionBoard(force = false) {
 function openProduction() {
   showProductionTab();
   loadProductionBoard(false);
+  document.dispatchEvent(new CustomEvent('leader-v4:tab-opened', { detail: { tab: 'production' } }));
 }
 
 function boot() {
