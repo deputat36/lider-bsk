@@ -40,13 +40,13 @@ Supabase project:
 - публичная запись аудита ограничена ожидаемой формой события: `request_id`, допустимый `result`, JSON-object `payload`, лимит размера `payload`, временное окно `created_at` и лимиты длины технических полей;
 - прямой RPC-доступ к служебной функции `leader_log` отозван у `public`, `anon` и `authenticated` миграцией `revoke_authenticated_execute_leader_log`;
 - прямой RPC-доступ к legacy-функции `leader_get_leads_for_crm()` отозван у `public`, `anon` и `authenticated` миграцией `revoke_authenticated_execute_legacy_leads_rpc`;
-- `service_role` сохранил выполнение `leader_log` и `leader_get_leads_for_crm()` для служебных сценариев.
+- прямой RPC-доступ к legacy-функции `leader_create_order_rpc(jsonb)` отозван у `public`, `anon` и `authenticated` миграцией `revoke_authenticated_execute_legacy_order_rpc`;
+- `service_role` сохранил выполнение `leader_log`, `leader_get_leads_for_crm()` и `leader_create_order_rpc(jsonb)` для служебных сценариев.
 
 Оставлено без автоматического изменения:
 
 - `leader_has_access()` и `leader_is_admin()` используются в RLS-политиках, поэтому отзыв `EXECUTE` у `authenticated` может сломать чтение и запись рабочих таблиц;
-- `leader_ensure_profile()` используется входом CRM v4;
-- `leader_create_order_rpc()` больше не найден в текущем основном коде, но требует отдельного решения по обратной совместимости перед отзывом прав.
+- `leader_ensure_profile()` используется входом CRM v4.
 
 ## Перенос CRM v4
 
@@ -130,6 +130,7 @@ Supabase project:
 - `lead-timeline.js` использует существующие live-таблицы `leader_lead_events` и `leader_commercial_offer_events`;
 - event-таблицы таймлайна сделаны append-only для сотрудников: можно читать и добавлять, нельзя менять или удалять записи через клиентский authenticated-контур;
 - старый diagnostic-модуль временной CRM больше не вызывает `leader_get_leads_for_crm()` и проверяет `leader_leads` через обычный RLS-контур;
+- прямое клиентское создание заказа через `leader_create_order_rpc(jsonb)` закрыто; актуальный путь создания заказа — через Edge Function `leader-crm-leads` и действие `create_order_from_offer`;
 - `responsive-ui-v2.js` из временной CRM не переносился, потому что управляет другим набором вкладок (`clients`, `catalog`, `settings`) и может конфликтовать с текущим меню;
 - `crm-v4-expanded-menu-v1.js` добавляет только реально перенесённые вкладки и выставляет единый порядок без дублей;
 - `crm-ui-selfcheck-v1.js` теперь проверяет фактические перенесённые вкладки и показывает дубли кнопок меню;
