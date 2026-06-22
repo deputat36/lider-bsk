@@ -81,6 +81,22 @@ jobs:
             exit 1
           fi
 
+      - name: Validate CRM v4 assets
+        run: |
+          test -f crm/v4/index.html
+          test -f crm/v4/assets/v4/auth.js
+          test -f crm/v4/assets/v4/functions-client.js
+          test -f crm/v4/assets/v4/site-cache-note-v1.js
+          test -f crm/v4/assets/v4/crm-ui-selfcheck-v1.js
+          grep -q 'assets/v4/auth.js?v=20260622-1' crm/v4/index.html
+          grep -q 'assets/v4/site-cache-note-v1.js?v=20260622-2' crm/v4/index.html
+          grep -q "crm-ui-selfcheck-v1.js?v=20260622-2" crm/v4/assets/v4/site-cache-note-v1.js
+          grep -q "invokeLeaderFunction('leader-crm-leads', { action: 'ensure_profile' }" crm/v4/assets/v4/auth.js
+          if grep -q 'leader_ensure_profile' crm/v4/assets/v4/auth.js; then
+            echo "CRM auth.js must not call leader_ensure_profile directly"
+            exit 1
+          fi
+
       - name: Check that secret keys are not committed
         run: |
           if grep -RInE \
