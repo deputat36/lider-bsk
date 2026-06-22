@@ -29,6 +29,7 @@ Supabase project:
 - `leader-public-lead` активна, версия 6, публичная, без JWT;
 - `leader-crm-leads` активна, версия 8, JWT включён;
 - `leader-crm-orders` активна, версия 2, JWT включён;
+- исходник `leader-crm-leads v8` сохранён в основном репозитории: `supabase/functions/leader-crm-leads/index.ts`;
 - в `leader-crm-leads` есть действия `ensure_profile` и `create_order_from_offer`;
 - подготовка профиля CRM v4 перенесена из прямого RPC `leader_ensure_profile` в Edge Function `leader-crm-leads`;
 - прямой RPC-доступ к `leader_ensure_profile(user_email text)` отозван у `public`, `anon` и `authenticated` миграцией `revoke_authenticated_execute_leader_ensure_profile`;
