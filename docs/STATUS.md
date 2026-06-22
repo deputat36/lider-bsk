@@ -41,6 +41,7 @@ Supabase project:
 - прямой RPC-доступ к служебной функции `leader_log` отозван у `public`, `anon` и `authenticated` миграцией `revoke_authenticated_execute_leader_log`;
 - прямой RPC-доступ к legacy-функции `leader_get_leads_for_crm()` отозван у `public`, `anon` и `authenticated` миграцией `revoke_authenticated_execute_legacy_leads_rpc`;
 - прямой RPC-доступ к legacy-функции `leader_create_order_rpc(jsonb)` отозван у `public`, `anon` и `authenticated` миграцией `revoke_authenticated_execute_legacy_order_rpc`;
+- `leader_ensure_profile(user_email text)` усилена миграцией `harden_leader_ensure_profile_email_source`: email берётся из `auth.email()`, а переданный `user_email` должен совпадать с email текущей сессии;
 - `service_role` сохранил выполнение `leader_log`, `leader_get_leads_for_crm()` и `leader_create_order_rpc(jsonb)` для служебных сценариев;
 - добавлен документ `docs/SUPABASE_SECURITY_ADVISOR.md` с решениями по закрытым и оставшимся Advisor-предупреждениям.
 
@@ -53,7 +54,7 @@ Supabase project:
 Оставлено без автоматического изменения:
 
 - `leader_has_access()` и `leader_is_admin()` используются в RLS-политиках, поэтому отзыв `EXECUTE` у `authenticated` может сломать чтение и запись рабочих таблиц;
-- `leader_ensure_profile()` используется входом CRM v4.
+- `leader_ensure_profile()` используется входом CRM v4, но теперь не доверяет произвольному email от клиента.
 
 ## Перенос CRM v4
 
