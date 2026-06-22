@@ -41,7 +41,14 @@ Supabase project:
 - прямой RPC-доступ к служебной функции `leader_log` отозван у `public`, `anon` и `authenticated` миграцией `revoke_authenticated_execute_leader_log`;
 - прямой RPC-доступ к legacy-функции `leader_get_leads_for_crm()` отозван у `public`, `anon` и `authenticated` миграцией `revoke_authenticated_execute_legacy_leads_rpc`;
 - прямой RPC-доступ к legacy-функции `leader_create_order_rpc(jsonb)` отозван у `public`, `anon` и `authenticated` миграцией `revoke_authenticated_execute_legacy_order_rpc`;
-- `service_role` сохранил выполнение `leader_log`, `leader_get_leads_for_crm()` и `leader_create_order_rpc(jsonb)` для служебных сценариев.
+- `service_role` сохранил выполнение `leader_log`, `leader_get_leads_for_crm()` и `leader_create_order_rpc(jsonb)` для служебных сценариев;
+- добавлен документ `docs/SUPABASE_SECURITY_ADVISOR.md` с решениями по закрытым и оставшимся Advisor-предупреждениям.
+
+После повторной проверки Supabase Security Advisor по `leader_*` остались только:
+
+- `leader_ensure_profile(user_email text)`;
+- `leader_has_access()`;
+- `leader_is_admin()`.
 
 Оставлено без автоматического изменения:
 
