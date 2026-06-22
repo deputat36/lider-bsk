@@ -1,4 +1,4 @@
-const MANAGED_TABS = new Set(['public_lead_audit', 'contact_control']);
+const MANAGED_TABS = new Set(['orders', 'public_lead_audit', 'contact_control']);
 
 function showElement(id) {
   const element = document.getElementById(id);
@@ -12,6 +12,16 @@ function hideElement(id) {
   return element;
 }
 
+function showNextCard() {
+  const next = document.querySelector('.v4-next-card');
+  if (next) next.style.display = '';
+}
+
+function hideNextCard() {
+  const next = document.querySelector('.v4-next-card');
+  if (next) next.style.display = 'none';
+}
+
 function setActiveTab(tab) {
   document.body.dataset.v4Tab = tab;
   document.querySelectorAll('[data-v4-tab-button]').forEach((button) => {
@@ -23,8 +33,7 @@ function setActiveTab(tab) {
     showElement('leadsSection');
     const card = showElement('leadCardSection');
     if (card) card.classList.add('hidden');
-    const next = document.querySelector('.v4-next-card');
-    if (next) next.style.display = '';
+    showNextCard();
   }
 
   if (tab === 'card') {
@@ -32,11 +41,13 @@ function setActiveTab(tab) {
     hideElement('leadsSection');
     const card = showElement('leadCardSection');
     if (card) card.classList.remove('hidden');
-    const next = document.querySelector('.v4-next-card');
-    if (next) next.style.display = 'none';
+    hideNextCard();
   }
 
   if (MANAGED_TABS.has(tab)) {
+    hideElement('leadsSection');
+    hideElement('leadCardSection');
+    hideNextCard();
     document.querySelectorAll('[data-v4-managed-section]').forEach((section) => {
       section.hidden = section.dataset.v4ManagedSection !== tab;
     });
@@ -51,9 +62,9 @@ function bootTabsLite() {
     const button = event.target.closest?.('[data-v4-tab-button]');
     if (!button) return;
     const tab = button.dataset.v4TabButton;
-    if (tab !== 'leads') return;
+    if (!tab || (!MANAGED_TABS.has(tab) && tab !== 'leads')) return;
     event.preventDefault();
-    setActiveTab('leads');
+    setActiveTab(tab);
   });
 }
 
