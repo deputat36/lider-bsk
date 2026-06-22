@@ -39,13 +39,13 @@ Supabase project:
 - insert-политика `leader_public_lead_audit_insert_public` ужата миграцией `tighten_public_lead_audit_insert_policy` и больше не использует открытый `WITH CHECK true`;
 - публичная запись аудита ограничена ожидаемой формой события: `request_id`, допустимый `result`, JSON-object `payload`, лимит размера `payload`, временное окно `created_at` и лимиты длины технических полей;
 - прямой RPC-доступ к служебной функции `leader_log` отозван у `public`, `anon` и `authenticated` миграцией `revoke_authenticated_execute_leader_log`;
-- `service_role` сохранил выполнение `leader_log` для служебных сценариев.
+- прямой RPC-доступ к legacy-функции `leader_get_leads_for_crm()` отозван у `public`, `anon` и `authenticated` миграцией `revoke_authenticated_execute_legacy_leads_rpc`;
+- `service_role` сохранил выполнение `leader_log` и `leader_get_leads_for_crm()` для служебных сценариев.
 
 Оставлено без автоматического изменения:
 
 - `leader_has_access()` и `leader_is_admin()` используются в RLS-политиках, поэтому отзыв `EXECUTE` у `authenticated` может сломать чтение и запись рабочих таблиц;
 - `leader_ensure_profile()` используется входом CRM v4;
-- `leader_get_leads_for_crm()` используется старым диагностическим модулем временной CRM;
 - `leader_create_order_rpc()` больше не найден в текущем основном коде, но требует отдельного решения по обратной совместимости перед отзывом прав.
 
 ## Перенос CRM v4
@@ -129,6 +129,7 @@ Supabase project:
 - `followups.js` использует существующие поля `leader_leads.next_contact_at` и не требует новой таблицы;
 - `lead-timeline.js` использует существующие live-таблицы `leader_lead_events` и `leader_commercial_offer_events`;
 - event-таблицы таймлайна сделаны append-only для сотрудников: можно читать и добавлять, нельзя менять или удалять записи через клиентский authenticated-контур;
+- старый diagnostic-модуль временной CRM больше не вызывает `leader_get_leads_for_crm()` и проверяет `leader_leads` через обычный RLS-контур;
 - `responsive-ui-v2.js` из временной CRM не переносился, потому что управляет другим набором вкладок (`clients`, `catalog`, `settings`) и может конфликтовать с текущим меню;
 - `crm-v4-expanded-menu-v1.js` добавляет только реально перенесённые вкладки и выставляет единый порядок без дублей;
 - `crm-ui-selfcheck-v1.js` теперь проверяет фактические перенесённые вкладки и показывает дубли кнопок меню;
