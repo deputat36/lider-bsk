@@ -98,10 +98,12 @@
 - `leader_lead_events` существует в live DB;
 - `leader_commercial_offer_events` существует в live DB;
 - RLS на обеих таблицах включён;
-- политики обеих таблиц разрешают доступ роли `authenticated` через `leader_has_access()`;
 - у `leader_lead_events.owner_id` есть default `auth.uid()`, поэтому клиентская вставка комментария не обязана передавать `owner_id` вручную;
 - лишние GRANT роли `anon` на обеих event-таблицах отозваны миграцией `harden_leader_event_tables_anon_access`;
-- миграция зафиксирована в `supabase/migrations/20260622_harden_leader_event_tables_anon_access.sql`.
+- доступ роли `authenticated` ужат до `SELECT` и `INSERT` миграцией `tighten_leader_event_tables_authenticated_access`;
+- политики RLS разделены на `SELECT` и `INSERT`, без клиентского `UPDATE`, `DELETE`, `TRUNCATE`;
+- insert-политики проверяют `leader_has_access()` и не позволяют записывать `created_by` от чужого пользователя;
+- миграции зафиксированы в `supabase/migrations/20260622_harden_leader_event_tables_anon_access.sql` и `supabase/migrations/20260622_tighten_leader_event_tables_authenticated_access.sql`.
 
 ## Важные решения
 
@@ -109,6 +111,7 @@
 - `crm/v4/index.html` подключает только реально перенесённые рабочие модули.
 - `followups.js` перенесён как безопасный модуль: он использует `leader_leads.next_contact_at` и не требует новой таблицы.
 - `lead-timeline.js` и `lead-timeline-hooks.js` перенесены после проверки live DB и RLS для event-таблиц.
+- Event-таблицы таймлайна сделаны append-only для клиентского authenticated-контура: сотрудники могут читать и добавлять события, но не менять и не удалять историю.
 - `ui-polish.css` и `responsive-ui-v2.css` перенесены как безопасный CSS-пакет улучшения читаемости, карточек, статусов, списков и мобильной адаптации.
 - `responsive-ui-v2.js` из временной CRM не переносился, потому что управляет вкладками `clients`, `catalog`, `settings` и может конфликтовать с уже собранным меню основного контура.
 - `crm-v4-expanded-menu-v1.js` стабилизирует меню и добавляет только рабочие вкладки: `Дашборд`, `Заявки`, `Заказы`, `Контроль заказов`, `Финансы`, `Производство`, `Контроль контактов`, `Аудит заявок`.
@@ -148,7 +151,9 @@
 - `leader-crm-leads` активна, версия 7, `verify_jwt=true`;
 - `leader-crm-orders` активна, версия 2, `verify_jwt=true`;
 - `leader-crm-leads` содержит действие `create_order_from_offer`;
-- event-таблицы таймлайна существуют, RLS включён, `anon` GRANT отозван.
+- event-таблицы таймлайна существуют, RLS включён, `anon` GRANT отозван;
+- для `authenticated` на event-таблицах остались только `SELECT` и `INSERT`;
+- security advisor после ужесточения не показал новых предупреждений по event-таблицам.
 
 Ограничение проверки:
 
