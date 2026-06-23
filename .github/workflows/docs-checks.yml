@@ -1,0 +1,43 @@
+name: Docs checks
+
+on:
+  push:
+    branches: [ main, improve-site-crm ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate-crm-access-docs:
+    name: Validate CRM access docs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate CRM v4 test access docs
+        run: |
+          set -euo pipefail
+          access_doc='docs/CRM_V4_TEST_ACCESS.md'
+          checklist='docs/CRM_V4_TESTER_CHECKLIST.md'
+
+          test -f "$access_doc"
+          test -f "$checklist"
+
+          grep -Fq 'https://deputat36.github.io/lidercalculator/app-v4.html' "$access_doc"
+          grep -Fq 'docs/CRM_V4_TESTER_CHECKLIST.md' "$access_doc"
+          grep -Fq 'leader_user_profiles' "$access_doc"
+          grep -Fq 'user_metadata' "$access_doc"
+          grep -Fq 'nav_*' "$access_doc"
+          grep -Fq 'owner' "$access_doc"
+          grep -Fq 'admin' "$access_doc"
+          grep -Fq 'manager' "$access_doc"
+          grep -Fq 'is_active = false' "$access_doc"
+          grep -Fq 'Снятие доступа' "$access_doc"
+
+          grep -Fq 'docs/CRM_V4_TEST_ACCESS.md' "$checklist"
+          grep -Fq 'https://deputat36.github.io/lidercalculator/app-v4.html' "$checklist"
+          grep -Fq 'Ctrl + F5' "$checklist"
+          grep -Fq 'Проверить CRM' "$checklist"
+          grep -Fq 'Аудит заявок' "$checklist"
+          grep -Fq 'request_id' "$checklist"
+          grep -Fq 'Технические данные' "$checklist"
