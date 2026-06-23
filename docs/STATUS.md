@@ -186,6 +186,7 @@ GitHub Actions `Docs checks` проверяет:
 - наличие `docs/CRM_ADMIN_TESTER_ONBOARDING.md`;
 - наличие `docs/NEXT_SAFE_STEPS.md`;
 - наличие `docs/CRM_V4_BROWSER_TEST_REPORT.md`;
+- наличие `docs/STATIC_CHECKS_RUNBOOK.md`;
 - наличие `.github/ISSUE_TEMPLATE/crm-v4-browser-test.md`;
 - рабочую ссылку временной CRM v4;
 - связь инструкции доступа с чек-листом тестировщика;
@@ -199,6 +200,7 @@ GitHub Actions `Docs checks` проверяет:
 - актуальность `docs/NEXT_SAFE_STEPS.md`: дата 2026-06-23, версии `leader-public-lead v6`, `leader-crm-leads v8`, `leader-crm-orders v2`, ссылки на чек-лист и браузерный отчёт, описание `leader_public_lead_audit`, правило не менять live Supabase без плана, миграции и проверки;
 - защиту `docs/NEXT_SAFE_STEPS.md` от возврата устаревшего плана, где аудит публичных заявок описан как ещё не сделанная будущая задача;
 - ключевые поля шаблона отчёта: email входа, диагностика CRM, видимость ссылки `Создать GitHub issue CRM v4 browser test`, 404 по assets, аудит заявок, `request_id`, ссылка на GitHub issue, критичность ошибки и итог проверки;
+- ключевые поля runbook: создание GitHub issue при ошибках, указание статуса заполнения браузерного отчёта и ссылка или место заполненного отчёта;
 - ключевые поля GitHub issue template: название `CRM v4 browser test`, email входа, диагностика CRM, 404 по assets, аудит заявок, `request_id`, критичность ошибки, ссылка на `docs/CRM_V4_BROWSER_TEST_REPORT.md`, поле `Отчёт docs/CRM_V4_BROWSER_TEST_REPORT.md заполнен` и поле `Ссылка/место заполненного отчёта`.
 
 В `deputat36/lidercalculator` также есть workflow `.github/workflows/static-checks.yml`, который проверяет рабочую временную CRM v4: подключение `site-cache-note-v1.js?v=20260623-2`, импорт `crm-ui-selfcheck-v1.js?v=20260623-2`, импорт аудита `public-lead-audit-v1.js?v=20260623-1`, ключевые поля самопроверки для тестировщика, ссылку на GitHub issue template, а также наличие `Referer` и раскрываемых `Технических данных` в модуле аудита.
