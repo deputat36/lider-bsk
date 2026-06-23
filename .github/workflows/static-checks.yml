@@ -145,6 +145,11 @@ jobs:
           grep -q 'assets/v4/auth.js?v=20260622-1' crm/v4/index.html
           grep -q 'assets/v4/site-cache-note-v1.js?v=20260622-2' crm/v4/index.html
           grep -q "crm-ui-selfcheck-v1.js?v=20260622-2" crm/v4/assets/v4/site-cache-note-v1.js
+          grep -q 'supabaseClient.auth.getSession()' crm/v4/assets/v4/functions-client.js
+          grep -q 'session.access_token' crm/v4/assets/v4/functions-client.js
+          grep -q 'Authorization: `Bearer ${session.access_token}`' crm/v4/assets/v4/functions-client.js
+          grep -q '/functions/v1/' crm/v4/assets/v4/functions-client.js
+          grep -q 'encodeURIComponent(name)' crm/v4/assets/v4/functions-client.js
           grep -q "invokeLeaderFunction('leader-crm-leads', { action: 'ensure_profile' }" crm/v4/assets/v4/auth.js
           if grep -q 'leader_ensure_profile' crm/v4/assets/v4/auth.js; then
             echo "CRM auth.js must not call leader_ensure_profile directly"
@@ -152,6 +157,10 @@ jobs:
           fi
           if grep -RInE 'leader_ensure_profile|leader_get_leads_for_crm|leader_create_order_rpc|leader_log' crm/v4/assets/v4; then
             echo "CRM frontend assets must not call closed leader RPC functions directly"
+            exit 1
+          fi
+          if grep -RInE 'SUPABASE_SERVICE_ROLE|SERVICE_ROLE_KEY|sb_secret_' crm/v4/assets/v4; then
+            echo "CRM frontend assets must not contain service-role or secret keys"
             exit 1
           fi
 
