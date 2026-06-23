@@ -122,7 +122,8 @@ Supabase project:
 - инструкция по выдаче и снятию доступа оформлена в `docs/CRM_V4_TEST_ACCESS.md`: права задаются через `leader_user_profiles`, а не через `user_metadata`;
 - инструкция для администратора-тестировщика оформлена в `docs/CRM_V4_TESTER_CHECKLIST.md` и первым делом требует проверить email, роль, активность профиля и разделы CRM через самодиагностику;
 - шаблон `docs/CRM_V4_BROWSER_TEST_REPORT.md` связан с чек-листом тестировщика, персональным onboarding и `docs/NEXT_SAFE_STEPS.md`, содержит проверку видимости ссылки `Создать GitHub issue CRM v4 browser test` и поля `GitHub issue создан` / `Ссылка на GitHub issue`;
-- GitHub issue template `.github/ISSUE_TEMPLATE/crm-v4-browser-test.md` дублирует ключевые поля браузерного отчёта для заведения ошибок и замечаний;
+- GitHub issue template `.github/ISSUE_TEMPLATE/crm-v4-browser-test.md` дублирует ключевые поля браузерного отчёта, содержит поля `Отчёт docs/CRM_V4_BROWSER_TEST_REPORT.md заполнен` и `Ссылка/место заполненного отчёта`;
+- runbook `docs/STATIC_CHECKS_RUNBOOK.md` требует при ошибках указывать в GitHub issue, заполнен ли браузерный отчёт и где он расположен;
 - персональная инструкция для `kvmbsk@yandex.ru` связана с `docs/CRM_V4_TEST_ACCESS.md`, `docs/CRM_V4_TESTER_CHECKLIST.md` и `docs/CRM_V4_BROWSER_TEST_REPORT.md`, а снятие доступа зафиксировано через `leader_user_profiles.is_active = false`;
 - старый diagnostic-модуль временной CRM больше не вызывает `leader_get_leads_for_crm()`;
 - прямое клиентское создание заказа через `leader_create_order_rpc(jsonb)` закрыто;
@@ -198,14 +199,14 @@ GitHub Actions `Docs checks` проверяет:
 - актуальность `docs/NEXT_SAFE_STEPS.md`: дата 2026-06-23, версии `leader-public-lead v6`, `leader-crm-leads v8`, `leader-crm-orders v2`, ссылки на чек-лист и браузерный отчёт, описание `leader_public_lead_audit`, правило не менять live Supabase без плана, миграции и проверки;
 - защиту `docs/NEXT_SAFE_STEPS.md` от возврата устаревшего плана, где аудит публичных заявок описан как ещё не сделанная будущая задача;
 - ключевые поля шаблона отчёта: email входа, диагностика CRM, видимость ссылки `Создать GitHub issue CRM v4 browser test`, 404 по assets, аудит заявок, `request_id`, ссылка на GitHub issue, критичность ошибки и итог проверки;
-- ключевые поля GitHub issue template: название `CRM v4 browser test`, email входа, диагностика CRM, 404 по assets, аудит заявок, `request_id`, критичность ошибки и ссылка на `docs/CRM_V4_BROWSER_TEST_REPORT.md`.
+- ключевые поля GitHub issue template: название `CRM v4 browser test`, email входа, диагностика CRM, 404 по assets, аудит заявок, `request_id`, критичность ошибки, ссылка на `docs/CRM_V4_BROWSER_TEST_REPORT.md`, поле `Отчёт docs/CRM_V4_BROWSER_TEST_REPORT.md заполнен` и поле `Ссылка/место заполненного отчёта`.
 
 В `deputat36/lidercalculator` также есть workflow `.github/workflows/static-checks.yml`, который проверяет рабочую временную CRM v4: подключение `site-cache-note-v1.js?v=20260623-2`, импорт `crm-ui-selfcheck-v1.js?v=20260623-2`, импорт аудита `public-lead-audit-v1.js?v=20260623-1`, ключевые поля самопроверки для тестировщика, ссылку на GitHub issue template, а также наличие `Referer` и раскрываемых `Технических данных` в модуле аудита.
 
 ## Ближайшие задачи
 
 1. Проверить в браузере перенесённый контур CRM v4: вход, меню, заявки, карточку заявки, таймлайн, потребности, расчёты, КП, создание заказа, связанный заказ, список заказов, карточку заказа, контроль заказов, финансы, производство, монтаж, контроль контактов, аудит заявок, диагностику.
-2. Заполнить `docs/CRM_V4_BROWSER_TEST_REPORT.md` по результатам проверки или создать GitHub issue через шаблон `CRM v4 browser test` при ошибках.
+2. Заполнить `docs/CRM_V4_BROWSER_TEST_REPORT.md` по результатам проверки или создать GitHub issue через шаблон `CRM v4 browser test` при ошибках; в issue указать, заполнен ли отчёт и где он расположен.
 3. Проверить аудит публичных заявок на реальной отправке формы.
 4. Проверить полный сценарий: заявка → потребность → расчёт → КП → заказ → финансы → производство/монтаж.
 5. При необходимости перенести отдельный рабочий стол менеджера.
