@@ -111,7 +111,8 @@ Supabase project:
 
 - вход CRM больше не вызывает `leader_ensure_profile` напрямую, а использует `leader-crm-leads` action `ensure_profile`;
 - `auth.js` подключён с обновлённым cache-buster `v=20260622-1`, чтобы браузер не брал старый файл из кэша;
-- `site-cache-note-v1.js` подключён с cache-buster `v=20260622-2` и импортирует свежую самопроверку `crm-ui-selfcheck-v1.js?v=20260622-2`;
+- `site-cache-note-v1.js` подключён с обновлённым cache-buster `v=20260623-1` и импортирует свежую самопроверку `crm-ui-selfcheck-v1.js?v=20260622-2`;
+- `site-cache-note-v1.js` импортирует свежий аудит `public-lead-audit-v1.js?v=20260623-1`, чтобы браузер не оставался на старом модуле аудита;
 - рабочая временная CRM в `lidercalculator` обновлена тем же способом;
 - инструкция для администратора-тестировщика обновлена и теперь первым делом требует проверить email, роль, активность профиля и разделы CRM через самодиагностику;
 - старый diagnostic-модуль временной CRM больше не вызывает `leader_get_leads_for_crm()`;
@@ -154,12 +155,13 @@ GitHub Actions `Static checks` проверяет:
 - полный набор обязательных вкладок в расширенном меню и самопроверке CRM v4: `Дашборд`, `Заявки`, `Заказы`, `Контроль заказов`, `Финансы`, `Производство`, `Контроль контактов`, `Аудит заявок`;
 - ключевые подключения модулей разделов CRM v4 в `crm/v4/index.html`: дашборд, заявки, контроль контактов, заказы, карточка заказа, контроль заказов, финансы, производство, производственные и монтажные карточки;
 - lazy-import самопроверки и аудита публичных заявок через `site-cache-note-v1.js`;
+- актуальную цепочку кэша аудита: `site-cache-note-v1.js?v=20260623-1` в `index.html` и `public-lead-audit-v1.js?v=20260623-1` внутри lazy-import;
 - CRM-модуль `public-lead-audit-v1.js`: чтение `leader_public_lead_audit`, сортировку по дате, лимит 80 событий, поля `request_id`, нормализованный телефон, `source_page_path`, `page_url`, `user_agent`, `referer`, UTM, `result`, `reason`, `payload`, отображение referer и раскрываемого payload, фильтры по статусам;
 - защищённый клиент Edge Functions `functions-client.js`: получение текущей сессии, передачу `Authorization: Bearer <access_token>`, вызов `/functions/v1/`;
 - отсутствие `SUPABASE_SERVICE_ROLE`, `SERVICE_ROLE_KEY` и `sb_secret_*` в браузерных assets CRM v4;
 - отсутствие случайно закоммиченных секретных ключей по точным признакам ключей и env-присваиваний;
 - наличие ключевых файлов CRM v4;
-- актуальные версии `auth.js`, `site-cache-note-v1.js` и `crm-ui-selfcheck-v1.js`;
+- актуальные версии `auth.js`, `site-cache-note-v1.js`, `crm-ui-selfcheck-v1.js` и `public-lead-audit-v1.js`;
 - что CRM v4 использует `leader-crm-leads` action `ensure_profile`, а не прямой клиентский вызов `leader_ensure_profile`;
 - что CRM v4 assets не содержат прямых вызовов закрытых RPC `leader_ensure_profile`, `leader_get_leads_for_crm`, `leader_create_order_rpc`, `leader_log`;
 - наличие миграции `supabase/migrations/20260623_tighten_leader_leads_grants.sql`;
