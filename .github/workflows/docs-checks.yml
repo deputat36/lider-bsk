@@ -51,3 +51,6 @@ jobs:
           grep -Fq 'kvmbsk@yandex.ru' "$onboarding"
           grep -Fq 'роль admin' "$onboarding"
           grep -Fq 'Проверка загруженных разделов и доступа CRM' "$onboarding"
+          grep -Fq 'docs/CRM_V4_TEST_ACCESS.md' "$onboarding"
+          grep -Fq 'docs/CRM_V4_TESTER_CHECKLIST.md' "$onboarding"
+          grep -Fq 'leader_user_profiles.is_active = false' "$onboarding"
