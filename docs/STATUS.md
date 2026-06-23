@@ -135,6 +135,7 @@ Supabase project:
 - табличные права аудита приведены к минимальной модели: `anon INSERT`, `authenticated SELECT`;
 - табличные права `leader_leads` приведены к минимальной модели для текущего контура: `anon INSERT`, `authenticated SELECT/INSERT/UPDATE/DELETE`;
 - `leader-public-lead` пишет аудит для событий `accepted`, `suspicious`, `rejected`, `error`;
+- CRM-раздел `Аудит заявок` показывает referer и раскрываемый payload в карточке события;
 - ошибка записи аудита не блокирует получение основной заявки.
 
 ## Автоматические проверки
@@ -153,7 +154,7 @@ GitHub Actions `Static checks` проверяет:
 - полный набор обязательных вкладок в расширенном меню и самопроверке CRM v4: `Дашборд`, `Заявки`, `Заказы`, `Контроль заказов`, `Финансы`, `Производство`, `Контроль контактов`, `Аудит заявок`;
 - ключевые подключения модулей разделов CRM v4 в `crm/v4/index.html`: дашборд, заявки, контроль контактов, заказы, карточка заказа, контроль заказов, финансы, производство, производственные и монтажные карточки;
 - lazy-import самопроверки и аудита публичных заявок через `site-cache-note-v1.js`;
-- CRM-модуль `public-lead-audit-v1.js`: чтение `leader_public_lead_audit`, сортировку по дате, лимит 80 событий, поля `request_id`, нормализованный телефон, `source_page_path`, `page_url`, `user_agent`, `referer`, UTM, `result`, `reason`, `payload` и фильтры по статусам;
+- CRM-модуль `public-lead-audit-v1.js`: чтение `leader_public_lead_audit`, сортировку по дате, лимит 80 событий, поля `request_id`, нормализованный телефон, `source_page_path`, `page_url`, `user_agent`, `referer`, UTM, `result`, `reason`, `payload`, отображение referer и раскрываемого payload, фильтры по статусам;
 - защищённый клиент Edge Functions `functions-client.js`: получение текущей сессии, передачу `Authorization: Bearer <access_token>`, вызов `/functions/v1/`;
 - отсутствие `SUPABASE_SERVICE_ROLE`, `SERVICE_ROLE_KEY` и `sb_secret_*` в браузерных assets CRM v4;
 - отсутствие случайно закоммиченных секретных ключей по точным признакам ключей и env-присваиваний;
