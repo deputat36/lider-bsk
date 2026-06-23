@@ -20,10 +20,12 @@ jobs:
           access_doc='docs/CRM_V4_TEST_ACCESS.md'
           checklist='docs/CRM_V4_TESTER_CHECKLIST.md'
           onboarding='docs/CRM_ADMIN_TESTER_ONBOARDING.md'
+          next_steps='docs/NEXT_SAFE_STEPS.md'
 
           test -f "$access_doc"
           test -f "$checklist"
           test -f "$onboarding"
+          test -f "$next_steps"
 
           grep -Fq 'https://deputat36.github.io/lidercalculator/app-v4.html' "$access_doc"
           grep -Fq 'docs/CRM_V4_TESTER_CHECKLIST.md' "$access_doc"
@@ -54,3 +56,13 @@ jobs:
           grep -Fq 'docs/CRM_V4_TEST_ACCESS.md' "$onboarding"
           grep -Fq 'docs/CRM_V4_TESTER_CHECKLIST.md' "$onboarding"
           grep -Fq 'leader_user_profiles.is_active = false' "$onboarding"
+
+          grep -Fq 'Дата: 2026-06-23.' "$next_steps"
+          grep -Fq 'leader-public-lead v6' "$next_steps"
+          grep -Fq 'leader-crm-leads v8' "$next_steps"
+          grep -Fq 'leader-crm-orders v2' "$next_steps"
+          grep -Fq 'docs/CRM_V4_TESTER_CHECKLIST.md' "$next_steps"
+          grep -Fq 'docs/CRM_ADMIN_TESTER_ONBOARDING.md' "$next_steps"
+          grep -Fq 'leader_public_lead_audit' "$next_steps"
+          grep -Fq 'Security Advisor больше не показывает предупреждений по `leader_*`' "$next_steps"
+          grep -Fq 'не менять без понятного плана, миграции и проверки' "$next_steps"
