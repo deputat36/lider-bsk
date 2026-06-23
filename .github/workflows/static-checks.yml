@@ -210,10 +210,22 @@ jobs:
                   print(f'- {item}')
               sys.exit(1)
           PY
+          grep -q 'assets/v4/management-dashboard-v3.js?v=20260622-1' crm/v4/index.html
           grep -q 'assets/v4/crm-v4-expanded-menu-v1.js?v=20260622-1' crm/v4/index.html
           grep -q 'assets/v4/auth.js?v=20260622-1' crm/v4/index.html
+          grep -q 'assets/v4/leads.js?v=20260528-2' crm/v4/index.html
+          grep -q 'assets/v4/contact-control-v1.js?v=20260621-1' crm/v4/index.html
+          grep -q 'assets/v4/orders-fast-loader-v1.js?v=20260622-2' crm/v4/index.html
+          grep -q 'assets/v4/order-card-v1.js?v=20260622-1' crm/v4/index.html
+          grep -q 'assets/v4/order-control-v2.js?v=20260622-1' crm/v4/index.html
+          grep -q 'assets/v4/finance-control-v2.js?v=20260622-1' crm/v4/index.html
+          grep -q 'assets/v4/production-board-v3.js?v=20260622-3' crm/v4/index.html
+          grep -q 'assets/v4/production-alerts-v1.js?v=20260622-2' crm/v4/index.html
+          grep -q 'assets/v4/production-job-card-v2.js?v=20260622-1' crm/v4/index.html
+          grep -q 'assets/v4/installation-job-card-v2.js?v=20260622-1' crm/v4/index.html
           grep -q 'assets/v4/site-cache-note-v1.js?v=20260622-2' crm/v4/index.html
           grep -q "crm-ui-selfcheck-v1.js?v=20260622-2" crm/v4/assets/v4/site-cache-note-v1.js
+          grep -q "public-lead-audit-v1.js?v=20260621-1" crm/v4/assets/v4/site-cache-note-v1.js
           grep -q 'supabaseClient.auth.getSession()' crm/v4/assets/v4/functions-client.js
           grep -q 'session.access_token' crm/v4/assets/v4/functions-client.js
           grep -q 'Authorization: `Bearer ${session.access_token}`' crm/v4/assets/v4/functions-client.js
