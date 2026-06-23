@@ -67,11 +67,12 @@ Supabase project:
 5. Подготовлены инструкции для тестирования и обучения:
    - `docs/CRM_V4_TEST_ACCESS.md`;
    - `docs/CRM_V4_TESTER_CHECKLIST.md`;
-   - `docs/CRM_ADMIN_TESTER_ONBOARDING.md`.
+   - `docs/CRM_ADMIN_TESTER_ONBOARDING.md`;
+   - `docs/CRM_V4_BROWSER_TEST_REPORT.md`.
 
 6. Добавлены автоматические проверки:
    - `Static checks` для сайта, CRM v4, Edge Functions, миграций и защит от случайных секретов;
-   - `Docs checks` для инструкций доступа, чек-листа тестировщика и onboarding администратора-тестировщика;
+   - `Docs checks` для инструкций доступа, чек-листа тестировщика, onboarding администратора-тестировщика, шаблона браузерного отчёта и актуального плана следующих шагов;
    - отдельный workflow в `deputat36/lidercalculator` для проверки цепочки загрузки временной CRM v4.
 
 ## Что проверить вручную в первую очередь
@@ -87,6 +88,7 @@ Supabase project:
 6. Открыть разделы: `Дашборд`, `Заявки`, `Заказы`, `Контроль заказов`, `Финансы`, `Производство`, `Контроль контактов`, `Аудит заявок`.
 7. Проверить консоль браузера: не должно быть 404 по `assets/v4/*.js` и `assets/v4/*.css`.
 8. Выполнить сценарий из `docs/CRM_V4_TESTER_CHECKLIST.md`.
+9. Заполнить отчёт по шаблону `docs/CRM_V4_BROWSER_TEST_REPORT.md`.
 
 ## Проверка публичной заявки и аудита
 
@@ -101,6 +103,7 @@ Supabase project:
 6. Проверить запись со статусом `Принято`.
 7. Проверить поля: дата, причина, телефон, `request_id`, страница, UTM, user-agent, referer, `Технические данные`.
 8. Проверить, что заявка появилась в обычном списке заявок.
+9. Зафиксировать результат в `docs/CRM_V4_BROWSER_TEST_REPORT.md`.
 
 ## Что делать дальше
 
@@ -110,9 +113,10 @@ Supabase project:
 
 - `docs/CRM_V4_TESTER_CHECKLIST.md`;
 - `docs/CRM_ADMIN_TESTER_ONBOARDING.md`;
+- `docs/CRM_V4_BROWSER_TEST_REPORT.md`;
 - `docs/MANUAL_TEST_CHECKLIST.md`.
 
-Фиксировать ошибки с разделом, скриншотом, временем проверки и email пользователя.
+Фиксировать ошибки с разделом, скриншотом, временем проверки, email пользователя и критичностью. Итог проверки оформлять в `docs/CRM_V4_BROWSER_TEST_REPORT.md`.
 
 ### Шаг 2. Исправить ошибки по результатам проверки
 
