@@ -1,6 +1,6 @@
 # Аудит публичных заявок РА «Лидер»
 
-Дата: 2026-06-22.
+Дата: 2026-06-23.
 
 ## Зачем нужен аудит
 
@@ -48,9 +48,15 @@
 - `rejected` — отклонено, например нет телефона и сообщения;
 - `error` — ошибка записи заявки.
 
-## RLS и доступ
+## RLS, GRANT и доступ
 
 RLS включён.
+
+Табличные права после ужатия 2026-06-23:
+
+- `anon` — только `INSERT`;
+- `authenticated` — только `SELECT`;
+- `service_role` — служебный доступ сохранён.
 
 Запись:
 
@@ -64,6 +70,11 @@ RLS включён.
   - `owner`;
   - `admin`;
   - `manager`.
+
+Важно:
+
+- `anon` не должен иметь `SELECT`, `UPDATE`, `DELETE`, `TRUNCATE`, `REFERENCES`, `TRIGGER`;
+- `authenticated` не должен иметь `INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`, `REFERENCES`, `TRIGGER`.
 
 ## Edge Function
 
@@ -136,14 +147,17 @@ RLS включён.
 - все события имеют статус `error`;
 - раздел `Аудит заявок` не появляется после Ctrl + F5;
 - сотрудник с ролью `owner/admin/manager` не может прочитать аудит;
-- публичная форма начала возвращать ошибку после внедрения аудита.
+- публичная форма начала возвращать ошибку после внедрения аудита;
+- `anon` имеет любые права на аудит, кроме `INSERT`;
+- `authenticated` имеет любые права на аудит, кроме `SELECT`.
 
 ## Где лежит код
 
 Миграции:
 
 - `supabase/migrations/20260621_leader_public_lead_audit.sql`;
-- `supabase/migrations/20260622_tighten_public_lead_audit_insert_policy.sql`.
+- `supabase/migrations/20260622_tighten_public_lead_audit_insert_policy.sql`;
+- `supabase/migrations/20260623_tighten_leader_public_lead_audit_grants.sql`.
 
 Edge Function:
 
