@@ -30,7 +30,9 @@ Supabase project:
 - `leader-crm-leads` активна, версия 8, JWT включён;
 - `leader-crm-orders` активна, версия 2, JWT включён;
 - исходник `leader-crm-leads v8` сохранён в основном репозитории: `supabase/functions/leader-crm-leads/index.ts`;
+- исходник `leader-crm-orders v2` сохранён в основном репозитории: `supabase/functions/leader-crm-orders/index.ts`;
 - в `leader-crm-leads` есть действия `ensure_profile` и `create_order_from_offer`;
+- в `leader-crm-orders` есть действия `list` и `update`;
 - подготовка профиля CRM v4 перенесена из прямого RPC `leader_ensure_profile` в Edge Function `leader-crm-leads`;
 - прямой RPC-доступ к `leader_ensure_profile(user_email text)` отозван у `public`, `anon` и `authenticated` миграцией `revoke_authenticated_execute_leader_ensure_profile`;
 - `service_role` сохранил выполнение `leader_ensure_profile`, `leader_log`, `leader_get_leads_for_crm()` и `leader_create_order_rpc(jsonb)` для служебных сценариев;
@@ -145,6 +147,7 @@ GitHub Actions `Static checks` проверяет:
 - защиту от повторного скрытия логотипа публичным CSS формы;
 - публичную Edge Function `leader-public-lead`: аудит, `on_conflict=request_id`, ignore-duplicates, honeypot, отказ без телефона/сообщения, статусы аудита и неблокирующую запись аудита;
 - CRM Edge Function `leader-crm-leads`: service-role только серверно, JWT-проверку через `/auth/v1/user`, активный профиль, `ensure_profile`, `create_order_from_offer`, защиту от несогласованного КП и повторного заказа;
+- CRM Edge Function `leader-crm-orders`: service-role только серверно, JWT-проверку через `/auth/v1/user`, активный профиль, list/update заказов и разрешённые поля обновления;
 - отсутствие случайно закоммиченных секретных ключей по точным признакам ключей и env-присваиваний;
 - наличие ключевых файлов CRM v4;
 - актуальные версии `auth.js`, `site-cache-note-v1.js` и `crm-ui-selfcheck-v1.js`;
