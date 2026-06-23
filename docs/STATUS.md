@@ -94,6 +94,7 @@ Supabase project:
 - карточка производственного задания;
 - карточка монтажного задания;
 - самодиагностика CRM v4 с проверкой статуса входа, email, роли, активности профиля, текущего раздела, URL и основных вкладок;
+- отдельная инструкция по выдаче доступа тестировщику: `docs/CRM_V4_TEST_ACCESS.md`;
 - отдельный чек-лист тестировщика: `docs/CRM_V4_TESTER_CHECKLIST.md`.
 
 `crm/v4/index.html` сейчас поддерживает:
@@ -115,6 +116,7 @@ Supabase project:
 - `site-cache-note-v1.js` подключён с обновлённым cache-buster `v=20260623-1` и импортирует свежую самопроверку `crm-ui-selfcheck-v1.js?v=20260622-2`;
 - `site-cache-note-v1.js` импортирует свежий аудит `public-lead-audit-v1.js?v=20260623-1`, чтобы браузер не оставался на старом модуле аудита;
 - рабочая временная CRM в `lidercalculator` обновлена тем же способом и `app-v4.html` теперь явно подключает `site-cache-note-v1.js?v=20260623-1`;
+- инструкция по выдаче и снятию доступа оформлена в `docs/CRM_V4_TEST_ACCESS.md`: права задаются через `leader_user_profiles`, а не через `user_metadata`;
 - инструкция для администратора-тестировщика оформлена в `docs/CRM_V4_TESTER_CHECKLIST.md` и первым делом требует проверить email, роль, активность профиля и разделы CRM через самодиагностику;
 - старый diagnostic-модуль временной CRM больше не вызывает `leader_get_leads_for_crm()`;
 - прямое клиентское создание заказа через `leader_create_order_rpc(jsonb)` закрыто;
@@ -168,6 +170,18 @@ GitHub Actions `Static checks` проверяет:
 - наличие миграции `supabase/migrations/20260623_tighten_leader_leads_grants.sql`;
 - наличие миграции `supabase/migrations/20260623_tighten_leader_public_lead_audit_grants.sql`;
 - что миграции фиксируют минимальные права для публичной формы и аудита.
+
+GitHub Actions `Docs checks` проверяет:
+
+- наличие `docs/CRM_V4_TEST_ACCESS.md`;
+- наличие `docs/CRM_V4_TESTER_CHECKLIST.md`;
+- рабочую ссылку временной CRM v4;
+- связь инструкции доступа с чек-листом тестировщика;
+- использование `leader_user_profiles` как источника прав;
+- предупреждение не использовать `user_metadata` как источник прав;
+- запрет трогать `nav_*`;
+- роли `owner`, `admin`, `manager`;
+- инструкцию снятия доступа через `is_active = false`.
 
 В `deputat36/lidercalculator` также добавлен отдельный workflow `.github/workflows/static-checks.yml`, который проверяет рабочую временную CRM v4: подключение `site-cache-note-v1.js?v=20260623-1`, импорт свежей самопроверки и аудита, а также наличие `Referer` и раскрываемых `Технических данных` в модуле аудита.
 
