@@ -121,8 +121,9 @@ Supabase project:
 - рабочая временная CRM в `lidercalculator` обновлена: `app-v4.html` подключает `site-cache-note-v1.js?v=20260623-2`, loader импортирует `crm-ui-selfcheck-v1.js?v=20260623-2`, а самопроверка показывает доступ, вкладки, URL и прямую ссылку на GitHub issue template `crm-v4-browser-test.md`;
 - инструкция по выдаче и снятию доступа оформлена в `docs/CRM_V4_TEST_ACCESS.md`: права задаются через `leader_user_profiles`, а не через `user_metadata`;
 - инструкция для администратора-тестировщика оформлена в `docs/CRM_V4_TESTER_CHECKLIST.md` и первым делом требует проверить email, роль, активность профиля и разделы CRM через самодиагностику;
-- шаблон `docs/CRM_V4_BROWSER_TEST_REPORT.md` связан с чек-листом тестировщика, персональным onboarding и `docs/NEXT_SAFE_STEPS.md`, содержит проверку видимости ссылки `Создать GitHub issue CRM v4 browser test` и поля `GitHub issue создан` / `Ссылка на GitHub issue`;
+- шаблон `docs/CRM_V4_BROWSER_TEST_REPORT.md` связан с чек-листом тестировщика, персональным onboarding и `docs/NEXT_SAFE_STEPS.md`, содержит проверку видимости ссылки `Создать GitHub issue CRM v4 browser test`, поля `GitHub issue создан` / `Ссылка на GitHub issue`, а также проверку, что в issue указан статус заполнения отчёта и ссылка или место отчёта;
 - GitHub issue template `.github/ISSUE_TEMPLATE/crm-v4-browser-test.md` дублирует ключевые поля браузерного отчёта, содержит поля `Отчёт docs/CRM_V4_BROWSER_TEST_REPORT.md заполнен` и `Ссылка/место заполненного отчёта`;
+- чек-лист тестировщика и onboarding для `kvmbsk@yandex.ru` прямо требуют при создании issue указать, заполнен ли `docs/CRM_V4_BROWSER_TEST_REPORT.md`, и где лежит заполненный отчёт;
 - runbook `docs/STATIC_CHECKS_RUNBOOK.md` требует при ошибках указывать в GitHub issue, заполнен ли браузерный отчёт и где он расположен;
 - персональная инструкция для `kvmbsk@yandex.ru` связана с `docs/CRM_V4_TEST_ACCESS.md`, `docs/CRM_V4_TESTER_CHECKLIST.md` и `docs/CRM_V4_BROWSER_TEST_REPORT.md`, а снятие доступа зафиксировано через `leader_user_profiles.is_active = false`;
 - старый diagnostic-модуль временной CRM больше не вызывает `leader_get_leads_for_crm()`;
@@ -201,6 +202,7 @@ GitHub Actions `Docs checks` проверяет:
 - защиту `docs/NEXT_SAFE_STEPS.md` от возврата устаревшего плана, где аудит публичных заявок описан как ещё не сделанная будущая задача;
 - ключевые поля шаблона отчёта: email входа, диагностика CRM, видимость ссылки `Создать GitHub issue CRM v4 browser test`, 404 по assets, аудит заявок, `request_id`, ссылка на GitHub issue, критичность ошибки и итог проверки;
 - ключевые поля runbook: создание GitHub issue при ошибках, указание статуса заполнения браузерного отчёта и ссылка или место заполненного отчёта;
+- ключевые поля чек-листа и onboarding: требование указать в GitHub issue, заполнен ли `docs/CRM_V4_BROWSER_TEST_REPORT.md`, и ссылку или место заполненного отчёта;
 - ключевые поля GitHub issue template: название `CRM v4 browser test`, email входа, диагностика CRM, 404 по assets, аудит заявок, `request_id`, критичность ошибки, ссылка на `docs/CRM_V4_BROWSER_TEST_REPORT.md`, поле `Отчёт docs/CRM_V4_BROWSER_TEST_REPORT.md заполнен` и поле `Ссылка/место заполненного отчёта`.
 
 В `deputat36/lidercalculator` также есть workflow `.github/workflows/static-checks.yml`, который проверяет рабочую временную CRM v4: подключение `site-cache-note-v1.js?v=20260623-2`, импорт `crm-ui-selfcheck-v1.js?v=20260623-2`, импорт аудита `public-lead-audit-v1.js?v=20260623-1`, ключевые поля самопроверки для тестировщика, ссылку на GitHub issue template, а также наличие `Referer` и раскрываемых `Технических данных` в модуле аудита.
