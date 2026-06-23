@@ -14,6 +14,10 @@
 
 `docs/CRM_V4_TESTER_CHECKLIST.md`
 
+Персональная инструкция для администратора-тестировщика:
+
+`docs/CRM_ADMIN_TESTER_ONBOARDING.md`
+
 ## Кого можно допускать
 
 Для тестирования CRM v4 использовать только пользователей, которым реально можно показывать заявки, заказы и аудит.
@@ -33,12 +37,61 @@
 3. Создать пользователя с email тестировщика или отправить invitation/magic link штатными средствами Supabase Auth.
 4. Убедиться, что пользователь может войти по email и паролю или по выданной ссылке.
 5. В таблице `leader_user_profiles` создать или обновить профиль пользователя:
+   - `user_id` — id пользователя из `auth.users`;
    - `email` — email тестировщика;
    - `role` — `admin` или `manager`;
    - `is_active` — `true`;
    - `full_name` — имя тестировщика, если известно.
 6. Не использовать `user_metadata` как источник прав CRM. Права CRM должны проверяться через `leader_user_profiles`.
 7. Не менять таблицы `nav_*`: они относятся к другому проектному контуру.
+
+## SQL-шаблон проверки профиля
+
+Этот шаблон предназначен для Supabase SQL Editor. Перед запуском заменить email и роль на нужные.
+
+Проверить Auth-пользователя:
+
+```sql
+select id, email, email_confirmed_at, created_at
+from auth.users
+where lower(email) = lower('test@example.com');
+```
+
+Проверить CRM-профиль:
+
+```sql
+select user_id, email, full_name, role, is_active, created_at, updated_at
+from public.leader_user_profiles
+where lower(email) = lower('test@example.com');
+```
+
+Создать профиль, если его нет:
+
+```sql
+insert into public.leader_user_profiles (user_id, email, role, is_active, full_name)
+select id, lower(email), 'manager', true, 'Тестировщик CRM'
+from auth.users
+where lower(email) = lower('test@example.com')
+  and not exists (
+    select 1
+    from public.leader_user_profiles p
+    where p.user_id = auth.users.id
+  );
+```
+
+Обновить роль и активность существующего профиля:
+
+```sql
+update public.leader_user_profiles p
+set role = 'manager',
+    is_active = true,
+    updated_at = now()
+from auth.users u
+where p.user_id = u.id
+  and lower(u.email) = lower('test@example.com');
+```
+
+Для претендента на администратора заменить `manager` на `admin`, если владелец проекта действительно разрешил административную проверку.
 
 ## Что отправить тестировщику
 
@@ -86,6 +139,17 @@ https://deputat36.github.io/lidercalculator/app-v4.html
 3. При необходимости отключить или удалить пользователя в Supabase Auth.
 4. Попросить пользователя выйти из CRM.
 5. Если доступ был чувствительным, проверить свежую сессию повторным входом: неактивный профиль не должен проходить доступ к CRM Edge Functions.
+
+SQL-шаблон снятия доступа:
+
+```sql
+update public.leader_user_profiles p
+set is_active = false,
+    updated_at = now()
+from auth.users u
+where p.user_id = u.id
+  and lower(u.email) = lower('test@example.com');
+```
 
 ## Что считать проблемой доступа
 
