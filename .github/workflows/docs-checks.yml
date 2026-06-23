@@ -66,3 +66,6 @@ jobs:
           grep -Fq 'leader_public_lead_audit' "$next_steps"
           grep -Fq 'Security Advisor больше не показывает предупреждений по `leader_*`' "$next_steps"
           grep -Fq 'не менять без понятного плана, миграции и проверки' "$next_steps"
+          ! grep -Fq '### Шаг 3. Добавить серверный аудит публичных заявок' "$next_steps"
+          ! grep -Fq 'Добавить таблицу аудита отправок' "$next_steps"
+          ! grep -Fq 'Логировать подозрительные отправки' "$next_steps"
