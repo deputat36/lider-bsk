@@ -120,7 +120,7 @@ Supabase project:
 - рабочая временная CRM в `lidercalculator` обновлена тем же способом и `app-v4.html` теперь явно подключает `site-cache-note-v1.js?v=20260623-1`;
 - инструкция по выдаче и снятию доступа оформлена в `docs/CRM_V4_TEST_ACCESS.md`: права задаются через `leader_user_profiles`, а не через `user_metadata`;
 - инструкция для администратора-тестировщика оформлена в `docs/CRM_V4_TESTER_CHECKLIST.md` и первым делом требует проверить email, роль, активность профиля и разделы CRM через самодиагностику;
-- шаблон `docs/CRM_V4_BROWSER_TEST_REPORT.md` связан с чек-листом тестировщика и персональным onboarding;
+- шаблон `docs/CRM_V4_BROWSER_TEST_REPORT.md` связан с чек-листом тестировщика, персональным onboarding и `docs/NEXT_SAFE_STEPS.md`;
 - персональная инструкция для `kvmbsk@yandex.ru` связана с `docs/CRM_V4_TEST_ACCESS.md`, `docs/CRM_V4_TESTER_CHECKLIST.md` и `docs/CRM_V4_BROWSER_TEST_REPORT.md`, а снятие доступа зафиксировано через `leader_user_profiles.is_active = false`;
 - старый diagnostic-модуль временной CRM больше не вызывает `leader_get_leads_for_crm()`;
 - прямое клиентское создание заказа через `leader_create_order_rpc(jsonb)` закрыто;
@@ -189,9 +189,9 @@ GitHub Actions `Docs checks` проверяет:
 - запрет трогать `nav_*`;
 - роли `owner`, `admin`, `manager`;
 - инструкцию снятия доступа через `is_active = false`;
-- связь чек-листа и onboarding с шаблоном `docs/CRM_V4_BROWSER_TEST_REPORT.md`;
+- связь чек-листа, onboarding и `docs/NEXT_SAFE_STEPS.md` с шаблоном `docs/CRM_V4_BROWSER_TEST_REPORT.md`;
 - персональную инструкцию `kvmbsk@yandex.ru`: роль `admin`, блок `Проверка загруженных разделов и доступа CRM`, ссылки на `docs/CRM_V4_TEST_ACCESS.md`, `docs/CRM_V4_TESTER_CHECKLIST.md` и `docs/CRM_V4_BROWSER_TEST_REPORT.md`, снятие доступа через `leader_user_profiles.is_active = false`;
-- актуальность `docs/NEXT_SAFE_STEPS.md`: дата 2026-06-23, версии `leader-public-lead v6`, `leader-crm-leads v8`, `leader-crm-orders v2`, ссылка на чек-лист, описание `leader_public_lead_audit`, правило не менять live Supabase без плана, миграции и проверки;
+- актуальность `docs/NEXT_SAFE_STEPS.md`: дата 2026-06-23, версии `leader-public-lead v6`, `leader-crm-leads v8`, `leader-crm-orders v2`, ссылки на чек-лист и браузерный отчёт, описание `leader_public_lead_audit`, правило не менять live Supabase без плана, миграции и проверки;
 - защиту `docs/NEXT_SAFE_STEPS.md` от возврата устаревшего плана, где аудит публичных заявок описан как ещё не сделанная будущая задача;
 - ключевые поля шаблона отчёта: email входа, диагностика CRM, 404 по assets, аудит заявок, `request_id`, критичность ошибки и итог проверки.
 
