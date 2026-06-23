@@ -22,12 +22,14 @@ jobs:
           onboarding='docs/CRM_ADMIN_TESTER_ONBOARDING.md'
           next_steps='docs/NEXT_SAFE_STEPS.md'
           browser_report='docs/CRM_V4_BROWSER_TEST_REPORT.md'
+          issue_template='.github/ISSUE_TEMPLATE/crm-v4-browser-test.md'
 
           test -f "$access_doc"
           test -f "$checklist"
           test -f "$onboarding"
           test -f "$next_steps"
           test -f "$browser_report"
+          test -f "$issue_template"
 
           grep -Fq 'https://deputat36.github.io/lidercalculator/app-v4.html' "$access_doc"
           grep -Fq 'docs/CRM_V4_TESTER_CHECKLIST.md' "$access_doc"
@@ -83,3 +85,13 @@ jobs:
           grep -Fq 'request_id' "$browser_report"
           grep -Fq 'Критичность: блокер / высокая / средняя / низкая' "$browser_report"
           grep -Fq 'Итог: прошло / прошло с замечаниями / не прошло' "$browser_report"
+
+          grep -Fq 'CRM v4 browser test' "$issue_template"
+          grep -Fq 'Отчёт или ошибка по браузерной проверке CRM v4' "$issue_template"
+          grep -Fq 'Email входа в CRM' "$issue_template"
+          grep -Fq 'Блок `Проверка загруженных разделов и доступа CRM` виден' "$issue_template"
+          grep -Fq 'Есть 404 по `assets/v4/*.js` или `assets/v4/*.css`' "$issue_template"
+          grep -Fq 'Аудит заявок' "$issue_template"
+          grep -Fq 'request_id' "$issue_template"
+          grep -Fq 'Критичность: блокер / высокая / средняя / низкая' "$issue_template"
+          grep -Fq 'docs/CRM_V4_BROWSER_TEST_REPORT.md' "$issue_template"
