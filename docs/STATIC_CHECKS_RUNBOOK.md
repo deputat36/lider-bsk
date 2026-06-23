@@ -47,6 +47,8 @@ Workflow:
 - наличие ключевых файлов CRM v4;
 - что все локальные CSS/JS ссылки из `crm/v4/index.html` ведут на существующие файлы;
 - что расширенное меню `crm-v4-expanded-menu-v1.js` и самопроверка `crm-ui-selfcheck-v1.js` содержат одинаковый обязательный набор вкладок CRM v4;
+- что `crm/v4/index.html` подключает ключевые модульные файлы разделов CRM v4;
+- что `site-cache-note-v1.js` lazy-import подключает `crm-ui-selfcheck-v1.js` и `public-lead-audit-v1.js`;
 - актуальные cache-buster версии `auth.js`, `site-cache-note-v1.js`, `crm-ui-selfcheck-v1.js`;
 - наличие защищённого клиента Edge Functions `crm/v4/assets/v4/functions-client.js`;
 - что `functions-client.js` берёт текущую Supabase-сессию и передаёт `Authorization: Bearer <access_token>`;
@@ -69,6 +71,22 @@ Workflow:
 - `production` — `Производство`;
 - `contact_control` — `Контроль контактов`;
 - `public_lead_audit` — `Аудит заявок`.
+
+Ключевые модульные подключения CRM v4:
+
+- `management-dashboard-v3.js`;
+- `crm-v4-expanded-menu-v1.js`;
+- `leads.js`;
+- `contact-control-v1.js`;
+- `orders-fast-loader-v1.js`;
+- `order-card-v1.js`;
+- `order-control-v2.js`;
+- `finance-control-v2.js`;
+- `production-board-v3.js`;
+- `production-alerts-v1.js`;
+- `production-job-card-v2.js`;
+- `installation-job-card-v2.js`;
+- `site-cache-note-v1.js`.
 
 Для `leader-public-lead` статическая проверка контролирует:
 
