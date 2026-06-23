@@ -1,6 +1,6 @@
 # Supabase Security Advisor: РА «Лидер»
 
-Дата: 2026-06-22.
+Дата: 2026-06-23.
 
 ## Контур
 
@@ -66,6 +66,25 @@ RLS-helper функции перенесены из exposed-схемы `public` 
 
 RLS-политики продолжают работать через зависимости на перенесённые функции.
 
+## Аудит публичных заявок
+
+Таблица:
+
+`public.leader_public_lead_audit`
+
+Проверено и ужато 2026-06-23:
+
+- RLS включён;
+- `anon` имеет только `INSERT`;
+- `authenticated` имеет только `SELECT`;
+- `service_role` сохранён для служебного доступа;
+- политика `leader_public_lead_audit_insert_public` разрешает публичную запись только ожидаемой формы события;
+- политика `leader_public_lead_audit_select_staff` разрешает чтение только активным сотрудникам ролей `owner`, `admin`, `manager`.
+
+Миграция:
+
+`supabase/migrations/20260623_tighten_leader_public_lead_audit_grants.sql`
+
 ## Проверка
 
 Проверка live DB показала:
@@ -73,6 +92,7 @@ RLS-политики продолжают работать через завис
 - `leader_ensure_profile` не доступна `public`, `anon`, `authenticated`;
 - `leader_ensure_profile` доступна `service_role`;
 - в `public` больше нет `leader_*` `SECURITY DEFINER` функций, доступных `authenticated`;
+- у `leader_public_lead_audit` минимальные табличные права: `anon INSERT`, `authenticated SELECT`;
 - Supabase Security Advisor больше не показывает предупреждений по `leader_*`.
 
 Остаточные Advisor-предупреждения относятся к:
