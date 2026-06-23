@@ -49,6 +49,7 @@ Workflow:
 - что расширенное меню `crm-v4-expanded-menu-v1.js` и самопроверка `crm-ui-selfcheck-v1.js` содержат одинаковый обязательный набор вкладок CRM v4;
 - что `crm/v4/index.html` подключает ключевые модульные файлы разделов CRM v4;
 - что `site-cache-note-v1.js` lazy-import подключает `crm-ui-selfcheck-v1.js` и `public-lead-audit-v1.js`;
+- что `public-lead-audit-v1.js` читает `leader_public_lead_audit`, берёт последние 80 событий, сортирует по дате и содержит фильтры по статусам;
 - актуальные cache-buster версии `auth.js`, `site-cache-note-v1.js`, `crm-ui-selfcheck-v1.js`;
 - наличие защищённого клиента Edge Functions `crm/v4/assets/v4/functions-client.js`;
 - что `functions-client.js` берёт текущую Supabase-сессию и передаёт `Authorization: Bearer <access_token>`;
@@ -87,6 +88,15 @@ Workflow:
 - `production-job-card-v2.js`;
 - `installation-job-card-v2.js`;
 - `site-cache-note-v1.js`.
+
+Для CRM-модуля `public-lead-audit-v1.js` статическая проверка контролирует:
+
+- чтение таблицы `leader_public_lead_audit`;
+- сортировку по `created_at`;
+- лимит последних 80 событий;
+- вывод `request_id`, телефона, страницы, user-agent и UTM;
+- фильтры `Все`, `Принято`, `Подозрительно`, `Отклонено`, `Ошибки`;
+- статусы `accepted`, `suspicious`, `rejected`, `error`.
 
 Для `leader-public-lead` статическая проверка контролирует:
 
