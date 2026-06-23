@@ -44,11 +44,21 @@ Workflow:
 - наличие ключевых файлов CRM v4;
 - актуальные cache-buster версии `auth.js`, `site-cache-note-v1.js`, `crm-ui-selfcheck-v1.js`;
 - отсутствие прямого клиентского вызова `leader_ensure_profile` из `crm/v4/assets/v4/auth.js`;
+- отсутствие прямых клиентских вызовов закрытых RPC в `crm/v4/assets/v4`;
 - использование `leader-crm-leads` action `ensure_profile` в CRM-авторизации;
 - наличие миграции `supabase/migrations/20260623_tighten_leader_leads_grants.sql`;
 - наличие миграции `supabase/migrations/20260623_tighten_leader_public_lead_audit_grants.sql`;
 - что миграция `leader_leads` фиксирует минимальную модель прав: `anon INSERT`, `authenticated SELECT/INSERT/UPDATE/DELETE`;
 - что миграция `leader_public_lead_audit` фиксирует минимальную модель прав: `anon INSERT`, `authenticated SELECT`.
+
+Закрытые RPC, которые браузерная CRM не должна вызывать напрямую:
+
+- `leader_ensure_profile`;
+- `leader_get_leads_for_crm`;
+- `leader_create_order_rpc`;
+- `leader_log`.
+
+Для этих сценариев использовать Edge Function `leader-crm-leads` с JWT.
 
 ## Что проверять перед изменениями Supabase
 
@@ -90,3 +100,5 @@ Live GRANT-проверка показала:
 
 - `leader_leads`: `anon INSERT`, `authenticated DELETE/INSERT/SELECT/UPDATE`;
 - `leader_public_lead_audit`: `anon INSERT`, `authenticated SELECT`.
+
+Live RPC-проверка показала, что `leader_ensure_profile`, `leader_get_leads_for_crm`, `leader_create_order_rpc` и `leader_log` не исполняются ролями `anon` и `authenticated`.
