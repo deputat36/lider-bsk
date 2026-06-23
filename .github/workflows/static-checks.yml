@@ -142,6 +142,7 @@ jobs:
           test -f crm/v4/assets/v4/functions-client.js
           test -f crm/v4/assets/v4/site-cache-note-v1.js
           test -f crm/v4/assets/v4/crm-ui-selfcheck-v1.js
+          test -f crm/v4/assets/v4/public-lead-audit-v1.js
           python3 - <<'PY'
           import pathlib
           import sys
@@ -226,6 +227,19 @@ jobs:
           grep -q 'assets/v4/site-cache-note-v1.js?v=20260622-2' crm/v4/index.html
           grep -q "crm-ui-selfcheck-v1.js?v=20260622-2" crm/v4/assets/v4/site-cache-note-v1.js
           grep -q "public-lead-audit-v1.js?v=20260621-1" crm/v4/assets/v4/site-cache-note-v1.js
+          grep -q 'leader_public_lead_audit' crm/v4/assets/v4/public-lead-audit-v1.js
+          grep -q 'limit(80)' crm/v4/assets/v4/public-lead-audit-v1.js
+          grep -q "order('created_at'" crm/v4/assets/v4/public-lead-audit-v1.js
+          grep -q 'phone_normalized' crm/v4/assets/v4/public-lead-audit-v1.js
+          grep -q 'request_id' crm/v4/assets/v4/public-lead-audit-v1.js
+          grep -q 'user_agent' crm/v4/assets/v4/public-lead-audit-v1.js
+          grep -q 'utm_source' crm/v4/assets/v4/public-lead-audit-v1.js
+          grep -q 'data-public-lead-audit-refresh' crm/v4/assets/v4/public-lead-audit-v1.js
+          grep -q 'data-public-lead-audit-filter' crm/v4/assets/v4/public-lead-audit-v1.js
+          grep -q 'accepted' crm/v4/assets/v4/public-lead-audit-v1.js
+          grep -q 'suspicious' crm/v4/assets/v4/public-lead-audit-v1.js
+          grep -q 'rejected' crm/v4/assets/v4/public-lead-audit-v1.js
+          grep -q 'error' crm/v4/assets/v4/public-lead-audit-v1.js
           grep -q 'supabaseClient.auth.getSession()' crm/v4/assets/v4/functions-client.js
           grep -q 'session.access_token' crm/v4/assets/v4/functions-client.js
           grep -q 'Authorization: `Bearer ${session.access_token}`' crm/v4/assets/v4/functions-client.js
