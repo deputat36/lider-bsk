@@ -45,7 +45,7 @@ async function writeAudit(params: {
   payload?: Record<string, unknown>
 }) {
   try {
-    await fetch(params.supabaseUrl + '/rest/v1/leader_public_lead_audit', {
+    const auditRes = await fetch(params.supabaseUrl + '/rest/v1/leader_public_lead_audit', {
       method: 'POST',
       headers: {
         'apikey': params.anonKey,
@@ -68,8 +68,25 @@ async function writeAudit(params: {
         payload: params.payload || {},
       }),
     })
-  } catch (_) {
+
+    if (!auditRes.ok) {
+      console.error('leader_public_lead_audit_insert_failed', {
+        status: auditRes.status,
+        request_id: params.requestId || null,
+        result: params.result,
+        details: cleanText(await auditRes.text(), 500),
+      })
+      return false
+    }
+    return true
+  } catch (error) {
+    console.error('leader_public_lead_audit_request_failed', {
+      request_id: params.requestId || null,
+      result: params.result,
+      message: cleanText(error instanceof Error ? error.message : error, 500),
+    })
     // Аудит не должен блокировать получение заявки.
+    return false
   }
 }
 
@@ -110,7 +127,7 @@ Deno.serve(async (req: Request) => {
   }
 
   if (cleanText(body.website, 200)) {
-    await writeAudit({ ...auditBase, result: 'suspicious', reason: 'honeypot_filled', payload: { form: 'site_public_form_v6' } })
+    await writeAudit({ ...auditBase, result: 'suspicious', reason: 'honeypot_filled', payload: { form: 'site_public_form_v7' } })
     return json(200, { ok: true })
   }
 
@@ -119,13 +136,13 @@ Deno.serve(async (req: Request) => {
   const message = cleanText(body.message, 3000)
   const contactMethod = cleanText(body.contact_method, 120)
   if (!phone && !message) {
-    await writeAudit({ ...auditBase, result: 'rejected', reason: 'phone_or_message_required', payload: { form: 'site_public_form_v6', service } })
+    await writeAudit({ ...auditBase, result: 'rejected', reason: 'phone_or_message_required', payload: { form: 'site_public_form_v7', service } })
     return json(400, { error: 'phone_or_message_required' })
   }
 
   const budgetText = cleanText(body.budget, 120)
   const payload = {
-    form: 'site_public_form_v6',
+    form: 'site_public_form_v7',
     request_id: requestId,
     page_title: cleanText(body.page_title, 300),
     page_path: pagePath,
@@ -181,7 +198,7 @@ Deno.serve(async (req: Request) => {
 
   if (!res.ok) {
     const details = await res.text()
-    await writeAudit({ ...auditBase, result: 'error', reason: 'insert_failed', payload: { form: 'site_public_form_v6', details: details.slice(0, 500) } })
+    await writeAudit({ ...auditBase, result: 'error', reason: 'insert_failed', payload: { form: 'site_public_form_v7', details: details.slice(0, 500) } })
     return json(500, { error: 'insert_failed', details })
   }
 
