@@ -95,7 +95,8 @@ Supabase project:
 - карточка монтажного задания;
 - самодиагностика CRM v4 с проверкой статуса входа, email, роли, активности профиля, текущего раздела, URL и основных вкладок;
 - отдельная инструкция по выдаче доступа тестировщику: `docs/CRM_V4_TEST_ACCESS.md`;
-- отдельный чек-лист тестировщика: `docs/CRM_V4_TESTER_CHECKLIST.md`.
+- отдельный чек-лист тестировщика: `docs/CRM_V4_TESTER_CHECKLIST.md`;
+- персональная инструкция для администратора-тестировщика `kvmbsk@yandex.ru`: `docs/CRM_ADMIN_TESTER_ONBOARDING.md`.
 
 `crm/v4/index.html` сейчас поддерживает:
 
@@ -118,6 +119,7 @@ Supabase project:
 - рабочая временная CRM в `lidercalculator` обновлена тем же способом и `app-v4.html` теперь явно подключает `site-cache-note-v1.js?v=20260623-1`;
 - инструкция по выдаче и снятию доступа оформлена в `docs/CRM_V4_TEST_ACCESS.md`: права задаются через `leader_user_profiles`, а не через `user_metadata`;
 - инструкция для администратора-тестировщика оформлена в `docs/CRM_V4_TESTER_CHECKLIST.md` и первым делом требует проверить email, роль, активность профиля и разделы CRM через самодиагностику;
+- персональная инструкция для `kvmbsk@yandex.ru` связана с `docs/CRM_V4_TEST_ACCESS.md` и `docs/CRM_V4_TESTER_CHECKLIST.md`, а снятие доступа зафиксировано через `leader_user_profiles.is_active = false`;
 - старый diagnostic-модуль временной CRM больше не вызывает `leader_get_leads_for_crm()`;
 - прямое клиентское создание заказа через `leader_create_order_rpc(jsonb)` закрыто;
 - актуальный путь создания заказа — через Edge Function `leader-crm-leads` и действие `create_order_from_offer`.
@@ -175,13 +177,15 @@ GitHub Actions `Docs checks` проверяет:
 
 - наличие `docs/CRM_V4_TEST_ACCESS.md`;
 - наличие `docs/CRM_V4_TESTER_CHECKLIST.md`;
+- наличие `docs/CRM_ADMIN_TESTER_ONBOARDING.md`;
 - рабочую ссылку временной CRM v4;
 - связь инструкции доступа с чек-листом тестировщика;
 - использование `leader_user_profiles` как источника прав;
 - предупреждение не использовать `user_metadata` как источник прав;
 - запрет трогать `nav_*`;
 - роли `owner`, `admin`, `manager`;
-- инструкцию снятия доступа через `is_active = false`.
+- инструкцию снятия доступа через `is_active = false`;
+- персональную инструкцию `kvmbsk@yandex.ru`: роль `admin`, блок `Проверка загруженных разделов и доступа CRM`, ссылки на `docs/CRM_V4_TEST_ACCESS.md` и `docs/CRM_V4_TESTER_CHECKLIST.md`, снятие доступа через `leader_user_profiles.is_active = false`.
 
 В `deputat36/lidercalculator` также добавлен отдельный workflow `.github/workflows/static-checks.yml`, который проверяет рабочую временную CRM v4: подключение `site-cache-note-v1.js?v=20260623-1`, импорт свежей самопроверки и аудита, а также наличие `Referer` и раскрываемых `Технических данных` в модуле аудита.
 
