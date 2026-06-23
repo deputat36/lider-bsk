@@ -145,7 +145,10 @@ GitHub Actions `Static checks` проверяет:
 - отсутствие случайно закоммиченных секретных ключей;
 - наличие ключевых файлов CRM v4;
 - актуальные версии `auth.js`, `site-cache-note-v1.js` и `crm-ui-selfcheck-v1.js`;
-- что CRM v4 использует `leader-crm-leads` action `ensure_profile`, а не прямой клиентский вызов `leader_ensure_profile`.
+- что CRM v4 использует `leader-crm-leads` action `ensure_profile`, а не прямой клиентский вызов `leader_ensure_profile`;
+- наличие миграции `supabase/migrations/20260623_tighten_leader_leads_grants.sql`;
+- наличие миграции `supabase/migrations/20260623_tighten_leader_public_lead_audit_grants.sql`;
+- что миграции фиксируют минимальные права для публичной формы и аудита.
 
 ## Ближайшие задачи
 
