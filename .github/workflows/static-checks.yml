@@ -275,14 +275,14 @@ jobs:
         run: |
           checklist='docs/CRM_V4_TESTER_CHECKLIST.md'
           test -f "$checklist"
-          grep -q 'https://deputat36.github.io/lidercalculator/app-v4.html' "$checklist"
-          grep -q 'Ctrl + F5' "$checklist"
-          grep -q 'Проверить CRM' "$checklist"
-          grep -q 'Аудит заявок' "$checklist"
-          grep -q 'request_id' "$checklist"
-          grep -q 'Технические данные' "$checklist"
-          grep -q 'Что считать ошибкой' "$checklist"
-          grep -q '404 по файлам `assets/v4/*.js` или `assets/v4/*.css`' "$checklist"
+          grep -Fq 'https://deputat36.github.io/lidercalculator/app-v4.html' "$checklist"
+          grep -Fq 'Ctrl + F5' "$checklist"
+          grep -Fq 'Проверить CRM' "$checklist"
+          grep -Fq 'Аудит заявок' "$checklist"
+          grep -Fq 'request_id' "$checklist"
+          grep -Fq 'Технические данные' "$checklist"
+          grep -Fq 'Что считать ошибкой' "$checklist"
+          grep -Fq '404 по файлам `assets/v4/*.js` или `assets/v4/*.css`' "$checklist"
 
       - name: Validate Supabase hardening migrations
         run: |
