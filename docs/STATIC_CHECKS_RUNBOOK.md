@@ -45,6 +45,7 @@ Workflow:
 - CRM Edge Function `leader-crm-orders`;
 - отсутствие случайно закоммиченных секретных ключей;
 - наличие ключевых файлов CRM v4;
+- что все локальные CSS/JS ссылки из `crm/v4/index.html` ведут на существующие файлы;
 - актуальные cache-buster версии `auth.js`, `site-cache-note-v1.js`, `crm-ui-selfcheck-v1.js`;
 - наличие защищённого клиента Edge Functions `crm/v4/assets/v4/functions-client.js`;
 - что `functions-client.js` берёт текущую Supabase-сессию и передаёт `Authorization: Bearer <access_token>`;
