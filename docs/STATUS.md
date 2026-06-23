@@ -93,7 +93,7 @@ Supabase project:
 - индикатор срочных производственных задач;
 - карточка производственного задания;
 - карточка монтажного задания;
-- самодиагностика CRM v4 с проверкой статуса входа, email, роли, активности профиля, текущего раздела, URL и основных вкладок;
+- самодиагностика CRM v4 с проверкой статуса входа, email, роли, активности профиля, текущего раздела, URL, основных вкладок и прямой ссылкой на GitHub issue template `crm-v4-browser-test.md`;
 - отдельная инструкция по выдаче доступа тестировщику: `docs/CRM_V4_TEST_ACCESS.md`;
 - отдельный чек-лист тестировщика: `docs/CRM_V4_TESTER_CHECKLIST.md`;
 - шаблон отчёта по браузерной проверке: `docs/CRM_V4_BROWSER_TEST_REPORT.md`;
@@ -116,7 +116,7 @@ Supabase project:
 
 - вход CRM больше не вызывает `leader_ensure_profile` напрямую, а использует `leader-crm-leads` action `ensure_profile`;
 - `auth.js` подключён с обновлённым cache-buster `v=20260622-1`, чтобы браузер не брал старый файл из кэша;
-- `site-cache-note-v1.js` подключён с обновлённым cache-buster `v=20260623-1` и импортирует свежую самопроверку `crm-ui-selfcheck-v1.js?v=20260622-2`;
+- основной контур `lider-bsk/crm/v4/index.html` подключает `site-cache-note-v1.js?v=20260623-2`, loader импортирует `crm-ui-selfcheck-v1.js?v=20260623-2`, а самопроверка содержит прямую ссылку на GitHub issue template `crm-v4-browser-test.md`;
 - `site-cache-note-v1.js` импортирует свежий аудит `public-lead-audit-v1.js?v=20260623-1`, чтобы браузер не оставался на старом модуле аудита;
 - рабочая временная CRM в `lidercalculator` обновлена: `app-v4.html` подключает `site-cache-note-v1.js?v=20260623-2`, loader импортирует `crm-ui-selfcheck-v1.js?v=20260623-2`, а самопроверка показывает доступ, вкладки, URL и прямую ссылку на GitHub issue template `crm-v4-browser-test.md`;
 - инструкция по выдаче и снятию доступа оформлена в `docs/CRM_V4_TEST_ACCESS.md`: права задаются через `leader_user_profiles`, а не через `user_metadata`;
@@ -162,9 +162,10 @@ GitHub Actions `Static checks` проверяет:
 - CRM Edge Function `leader-crm-orders`: service-role только серверно, JWT-проверку через `/auth/v1/user`, активный профиль, list/update заказов и разрешённые поля обновления;
 - все локальные CSS/JS ссылки из `crm/v4/index.html` на существование файлов;
 - полный набор обязательных вкладок в расширенном меню и самопроверке CRM v4: `Дашборд`, `Заявки`, `Заказы`, `Контроль заказов`, `Финансы`, `Производство`, `Контроль контактов`, `Аудит заявок`;
+- ключевые поля самопроверки CRM v4: роли `owner/admin/manager`, ссылка на GitHub issue template `crm-v4-browser-test.md`, текст `Создать GitHub issue CRM v4 browser test`, статусы `нет кнопки` и `дублей`;
 - ключевые подключения модулей разделов CRM v4 в `crm/v4/index.html`: дашборд, заявки, контроль контактов, заказы, карточка заказа, контроль заказов, финансы, производство, производственные и монтажные карточки;
 - lazy-import самопроверки и аудита публичных заявок через `site-cache-note-v1.js`;
-- актуальную цепочку кэша аудита: `site-cache-note-v1.js?v=20260623-1` в `index.html` и `public-lead-audit-v1.js?v=20260623-1` внутри lazy-import;
+- актуальную цепочку кэша: `site-cache-note-v1.js?v=20260623-2` в `index.html`, `crm-ui-selfcheck-v1.js?v=20260623-2` и `public-lead-audit-v1.js?v=20260623-1` внутри lazy-import;
 - CRM-модуль `public-lead-audit-v1.js`: чтение `leader_public_lead_audit`, сортировку по дате, лимит 80 событий, поля `request_id`, нормализованный телефон, `source_page_path`, `page_url`, `user_agent`, `referer`, UTM, `result`, `reason`, `payload`, отображение referer и раскрываемого payload, фильтры по статусам;
 - защищённый клиент Edge Functions `functions-client.js`: получение текущей сессии, передачу `Authorization: Bearer <access_token>`, вызов `/functions/v1/`;
 - отсутствие `SUPABASE_SERVICE_ROLE`, `SERVICE_ROLE_KEY` и `sb_secret_*` в браузерных assets CRM v4;
