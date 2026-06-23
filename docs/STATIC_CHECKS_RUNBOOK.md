@@ -42,6 +42,7 @@ Workflow:
 - публичную форму заявки;
 - публичную Edge Function `leader-public-lead`;
 - CRM Edge Function `leader-crm-leads`;
+- CRM Edge Function `leader-crm-orders`;
 - отсутствие случайно закоммиченных секретных ключей;
 - наличие ключевых файлов CRM v4;
 - актуальные cache-buster версии `auth.js`, `site-cache-note-v1.js`, `crm-ui-selfcheck-v1.js`;
@@ -73,6 +74,17 @@ Workflow:
 - запрет создания заказа из несогласованного КП через `offer_not_approved`;
 - защиту от повторного создания заказа через `already_created`;
 - связь заказа с КП, расчётом, заявкой и событием `leader_commercial_offer_events`;
+- ответ `unknown_action` для неизвестных действий.
+
+Для `leader-crm-orders` статическая проверка контролирует:
+
+- наличие серверного `SUPABASE_SERVICE_ROLE_KEY` только внутри Edge Function;
+- проверку JWT через `/auth/v1/user`;
+- ответы `missing_token`, `bad_token`, `access_denied`;
+- проверку активного профиля в `leader_user_profiles`;
+- действия `list` и `update`;
+- чтение `leader_orders` с сортировкой по дате;
+- обновление `status`, `payment_status`, `layout_status`, `production_status`, `layout_comment`, `deadline`;
 - ответ `unknown_action` для неизвестных действий.
 
 Закрытые RPC, которые браузерная CRM не должна вызывать напрямую:
@@ -137,4 +149,5 @@ Live RPC-проверка показала, что `leader_ensure_profile`, `lea
 Live Edge Function-проверка показала:
 
 - `leader-public-lead` активна, версия 6, `verify_jwt=false`;
-- `leader-crm-leads` активна, версия 8, `verify_jwt=true`.
+- `leader-crm-leads` активна, версия 8, `verify_jwt=true`;
+- `leader-crm-orders` активна, версия 2, `verify_jwt=true`.
