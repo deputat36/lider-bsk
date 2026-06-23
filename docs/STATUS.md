@@ -43,10 +43,14 @@ Supabase project:
 - публичная запись аудита ограничена ожидаемой формой события;
 - табличные GRANT для `leader_public_lead_audit` ужаты: `anon` имеет только `INSERT`, `authenticated` имеет только `SELECT`;
 - миграция для фиксации прав аудита добавлена: `supabase/migrations/20260623_tighten_leader_public_lead_audit_grants.sql`;
+- табличные GRANT для `leader_leads` ужаты: `anon` имеет только `INSERT`, `authenticated` имеет `SELECT`, `INSERT`, `UPDATE`, `DELETE`;
+- у `leader_leads` отозваны лишние табличные права `TRUNCATE`, `REFERENCES`, `TRIGGER`, а для `anon` также `SELECT`, `UPDATE`, `DELETE`;
+- миграция для фиксации прав публичных заявок добавлена: `supabase/migrations/20260623_tighten_leader_leads_grants.sql`;
 - прямой RPC-доступ к `leader_log`, `leader_get_leads_for_crm()` и `leader_create_order_rpc(jsonb)` отозван у `public`, `anon` и `authenticated`;
 - RLS-helper функции `leader_has_access()` и `leader_is_admin()` перенесены из `public` в приватную схему `leader_private`;
 - `public.leader_has_access()` и `public.leader_is_admin()` отсутствуют;
 - RLS smoke-test под ролью `authenticated` после переноса helper-функций прошёл;
+- rollback smoke-test публичной вставки в `leader_leads` под ролью `anon` прошёл без создания постоянной тестовой записи;
 - в `public` нет `leader_*` `SECURITY DEFINER` функций, доступных `anon` или `authenticated`;
 - Supabase Security Advisor больше не показывает предупреждений по `leader_*`.
 
@@ -125,6 +129,7 @@ Supabase project:
 - чтение аудита доступно активным сотрудникам ролей `owner`, `admin`, `manager`;
 - запись аудита разрешена публичному anon-контуру Edge Function, но ограничена ожидаемой формой события;
 - табличные права аудита приведены к минимальной модели: `anon INSERT`, `authenticated SELECT`;
+- табличные права `leader_leads` приведены к минимальной модели для текущего контура: `anon INSERT`, `authenticated SELECT/INSERT/UPDATE/DELETE`;
 - `leader-public-lead` пишет аудит для событий `accepted`, `suspicious`, `rejected`, `error`;
 - ошибка записи аудита не блокирует получение основной заявки.
 
