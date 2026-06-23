@@ -224,9 +224,9 @@ jobs:
           grep -q 'assets/v4/production-alerts-v1.js?v=20260622-2' crm/v4/index.html
           grep -q 'assets/v4/production-job-card-v2.js?v=20260622-1' crm/v4/index.html
           grep -q 'assets/v4/installation-job-card-v2.js?v=20260622-1' crm/v4/index.html
-          grep -q 'assets/v4/site-cache-note-v1.js?v=20260622-2' crm/v4/index.html
+          grep -q 'assets/v4/site-cache-note-v1.js?v=20260623-1' crm/v4/index.html
           grep -q "crm-ui-selfcheck-v1.js?v=20260622-2" crm/v4/assets/v4/site-cache-note-v1.js
-          grep -q "public-lead-audit-v1.js?v=20260621-1" crm/v4/assets/v4/site-cache-note-v1.js
+          grep -q "public-lead-audit-v1.js?v=20260623-1" crm/v4/assets/v4/site-cache-note-v1.js
           grep -q 'leader_public_lead_audit' crm/v4/assets/v4/public-lead-audit-v1.js
           grep -q 'limit(80)' crm/v4/assets/v4/public-lead-audit-v1.js
           grep -q "order('created_at'" crm/v4/assets/v4/public-lead-audit-v1.js
