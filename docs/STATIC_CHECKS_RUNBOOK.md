@@ -60,6 +60,13 @@ Workflow:
 
 Для этих сценариев использовать Edge Function `leader-crm-leads` с JWT.
 
+Проверка секретов ищет признаки реальных ключей и env-присваиваний, а не каждое текстовое упоминание роли `service_role` в документации:
+
+- `SUPABASE_SERVICE_ROLE` / `SUPABASE_SERVICE_ROLE_KEY` с `:` или `=`;
+- `SERVICE_ROLE_KEY` с `:` или `=`;
+- ключи формата `sb_secret_*`;
+- ключи формата `sk-*`.
+
 ## Что проверять перед изменениями Supabase
 
 1. Используются только таблицы `leader_*`.
