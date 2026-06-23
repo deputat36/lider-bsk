@@ -73,6 +73,7 @@ Workflow:
 - наличие `docs/CRM_V4_TESTER_CHECKLIST.md`;
 - наличие `docs/CRM_ADMIN_TESTER_ONBOARDING.md`;
 - наличие `docs/NEXT_SAFE_STEPS.md`;
+- наличие `docs/CRM_V4_BROWSER_TEST_REPORT.md`;
 - рабочую ссылку `https://deputat36.github.io/lidercalculator/app-v4.html`;
 - связь инструкции доступа с чек-листом тестировщика;
 - использование `leader_user_profiles` как источника прав CRM;
@@ -81,9 +82,11 @@ Workflow:
 - роли `owner`, `admin`, `manager`;
 - инструкцию снятия доступа через `is_active = false`;
 - наличие в чек-листе Ctrl + F5, `Проверить CRM`, `Аудит заявок`, `request_id` и `Технические данные`;
-- персональную инструкцию для `kvmbsk@yandex.ru`: роль `admin`, самодиагностика, ссылки на документы доступа и чек-лист, снятие доступа через `leader_user_profiles.is_active = false`;
+- связь чек-листа и onboarding с шаблоном `docs/CRM_V4_BROWSER_TEST_REPORT.md`;
+- персональную инструкцию для `kvmbsk@yandex.ru`: роль `admin`, самодиагностика, ссылки на документы доступа, чек-лист и шаблон отчёта, снятие доступа через `leader_user_profiles.is_active = false`;
 - актуальность `docs/NEXT_SAFE_STEPS.md`: дата 2026-06-23, версии `leader-public-lead v6`, `leader-crm-leads v8`, `leader-crm-orders v2`, ссылка на чек-лист, описание `leader_public_lead_audit`, правило не менять live Supabase без плана, миграции и проверки;
-- защиту `docs/NEXT_SAFE_STEPS.md` от возврата устаревшего плана, где аудит публичных заявок описан как ещё не сделанная будущая задача.
+- защиту `docs/NEXT_SAFE_STEPS.md` от возврата устаревшего плана, где аудит публичных заявок описан как ещё не сделанная будущая задача;
+- ключевые поля шаблона отчёта: email входа, диагностика CRM, 404 по assets, аудит заявок, `request_id`, критичность ошибки и итог проверки.
 
 Обязательные вкладки CRM v4:
 
@@ -217,6 +220,7 @@ Workflow:
 [ ] Для тестировщика создан активный профиль в leader_user_profiles
 [ ] Документ CRM_V4_TEST_ACCESS.md актуален
 [ ] Документ NEXT_SAFE_STEPS.md актуален
+[ ] Документ CRM_V4_BROWSER_TEST_REPORT.md заполнен после проверки
 [ ] Заявки отображаются
 [ ] Карточка заявки открывается
 [ ] Нет ошибок в консоли браузера на основном сценарии
