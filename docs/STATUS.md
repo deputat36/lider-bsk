@@ -118,7 +118,7 @@ Supabase project:
 - `auth.js` подключён с обновлённым cache-buster `v=20260622-1`, чтобы браузер не брал старый файл из кэша;
 - `site-cache-note-v1.js` подключён с обновлённым cache-buster `v=20260623-1` и импортирует свежую самопроверку `crm-ui-selfcheck-v1.js?v=20260622-2`;
 - `site-cache-note-v1.js` импортирует свежий аудит `public-lead-audit-v1.js?v=20260623-1`, чтобы браузер не оставался на старом модуле аудита;
-- рабочая временная CRM в `lidercalculator` обновлена тем же способом и `app-v4.html` теперь явно подключает `site-cache-note-v1.js?v=20260623-1`;
+- рабочая временная CRM в `lidercalculator` обновлена: `app-v4.html` подключает `site-cache-note-v1.js?v=20260623-2`, loader импортирует `crm-ui-selfcheck-v1.js?v=20260623-2`, а самопроверка показывает доступ, вкладки, URL и прямую ссылку на GitHub issue template `crm-v4-browser-test.md`;
 - инструкция по выдаче и снятию доступа оформлена в `docs/CRM_V4_TEST_ACCESS.md`: права задаются через `leader_user_profiles`, а не через `user_metadata`;
 - инструкция для администратора-тестировщика оформлена в `docs/CRM_V4_TESTER_CHECKLIST.md` и первым делом требует проверить email, роль, активность профиля и разделы CRM через самодиагностику;
 - шаблон `docs/CRM_V4_BROWSER_TEST_REPORT.md` связан с чек-листом тестировщика, персональным onboarding и `docs/NEXT_SAFE_STEPS.md`;
@@ -199,7 +199,7 @@ GitHub Actions `Docs checks` проверяет:
 - ключевые поля шаблона отчёта: email входа, диагностика CRM, 404 по assets, аудит заявок, `request_id`, критичность ошибки и итог проверки;
 - ключевые поля GitHub issue template: название `CRM v4 browser test`, email входа, диагностика CRM, 404 по assets, аудит заявок, `request_id`, критичность ошибки и ссылка на `docs/CRM_V4_BROWSER_TEST_REPORT.md`.
 
-В `deputat36/lidercalculator` также добавлен отдельный workflow `.github/workflows/static-checks.yml`, который проверяет рабочую временную CRM v4: подключение `site-cache-note-v1.js?v=20260623-1`, импорт свежей самопроверки и аудита, а также наличие `Referer` и раскрываемых `Технических данных` в модуле аудита.
+В `deputat36/lidercalculator` также есть workflow `.github/workflows/static-checks.yml`, который проверяет рабочую временную CRM v4: подключение `site-cache-note-v1.js?v=20260623-2`, импорт `crm-ui-selfcheck-v1.js?v=20260623-2`, импорт аудита `public-lead-audit-v1.js?v=20260623-1`, ключевые поля самопроверки для тестировщика, ссылку на GitHub issue template, а также наличие `Referer` и раскрываемых `Технических данных` в модуле аудита.
 
 ## Ближайшие задачи
 
