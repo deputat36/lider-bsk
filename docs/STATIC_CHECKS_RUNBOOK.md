@@ -40,6 +40,7 @@ Workflow:
 - `robots.txt`;
 - `sitemap.xml`;
 - публичную форму заявки;
+- публичную Edge Function `leader-public-lead`;
 - отсутствие случайно закоммиченных секретных ключей;
 - наличие ключевых файлов CRM v4;
 - актуальные cache-buster версии `auth.js`, `site-cache-note-v1.js`, `crm-ui-selfcheck-v1.js`;
@@ -50,6 +51,16 @@ Workflow:
 - наличие миграции `supabase/migrations/20260623_tighten_leader_public_lead_audit_grants.sql`;
 - что миграция `leader_leads` фиксирует минимальную модель прав: `anon INSERT`, `authenticated SELECT/INSERT/UPDATE/DELETE`;
 - что миграция `leader_public_lead_audit` фиксирует минимальную модель прав: `anon INSERT`, `authenticated SELECT`.
+
+Для `leader-public-lead` статическая проверка контролирует:
+
+- запись в `leader_public_lead_audit`;
+- вставку в `leader_leads` через `on_conflict=request_id`;
+- `Prefer: resolution=ignore-duplicates,return=minimal`;
+- отказ `phone_or_message_required`;
+- honeypot-статус `honeypot_filled`;
+- события аудита `accepted`, `suspicious`, `rejected`, `error`;
+- правило, что ошибка аудита не блокирует получение заявки.
 
 Закрытые RPC, которые браузерная CRM не должна вызывать напрямую:
 
@@ -109,3 +120,5 @@ Live GRANT-проверка показала:
 - `leader_public_lead_audit`: `anon INSERT`, `authenticated SELECT`.
 
 Live RPC-проверка показала, что `leader_ensure_profile`, `leader_get_leads_for_crm`, `leader_create_order_rpc` и `leader_log` не исполняются ролями `anon` и `authenticated`.
+
+Live Edge Function-проверка показала, что `leader-public-lead` активна, версия 6, `verify_jwt=false`.
