@@ -182,6 +182,35 @@ jobs:
                   print(f'- {ref}')
               sys.exit(1)
           PY
+          python3 - <<'PY'
+          import pathlib
+          import sys
+
+          expected_tabs = [
+              ('management_dashboard', 'Дашборд'),
+              ('leads', 'Заявки'),
+              ('orders', 'Заказы'),
+              ('order_control', 'Контроль заказов'),
+              ('finance_control', 'Финансы'),
+              ('production', 'Производство'),
+              ('contact_control', 'Контроль контактов'),
+              ('public_lead_audit', 'Аудит заявок'),
+          ]
+          menu = pathlib.Path('crm/v4/assets/v4/crm-v4-expanded-menu-v1.js').read_text(encoding='utf-8')
+          selfcheck = pathlib.Path('crm/v4/assets/v4/crm-ui-selfcheck-v1.js').read_text(encoding='utf-8')
+          failed = []
+          for key, label in expected_tabs:
+              if f"tab: '{key}'" not in menu or f"label: '{label}'" not in menu:
+                  failed.append(f'menu missing {key} / {label}')
+              if f"key: '{key}'" not in selfcheck or f"label: '{label}'" not in selfcheck:
+                  failed.append(f'selfcheck missing {key} / {label}')
+          if failed:
+              print('CRM v4 expected tabs are incomplete:')
+              for item in failed:
+                  print(f'- {item}')
+              sys.exit(1)
+          PY
+          grep -q 'assets/v4/crm-v4-expanded-menu-v1.js?v=20260622-1' crm/v4/index.html
           grep -q 'assets/v4/auth.js?v=20260622-1' crm/v4/index.html
           grep -q 'assets/v4/site-cache-note-v1.js?v=20260622-2' crm/v4/index.html
           grep -q "crm-ui-selfcheck-v1.js?v=20260622-2" crm/v4/assets/v4/site-cache-note-v1.js
