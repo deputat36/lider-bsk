@@ -97,6 +97,24 @@ jobs:
           grep -q 'catch (_)' "$fn"
           grep -q 'Аудит не должен блокировать получение заявки' "$fn"
 
+      - name: Validate CRM leads edge function
+        run: |
+          fn='supabase/functions/leader-crm-leads/index.ts'
+          test -f "$fn"
+          grep -q "Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')" "$fn"
+          grep -q '/auth/v1/user' "$fn"
+          grep -q 'missing_token' "$fn"
+          grep -q 'bad_token' "$fn"
+          grep -q 'access_denied' "$fn"
+          grep -q 'leader_user_profiles?user_id=eq.' "$fn"
+          grep -q "if (action === 'ensure_profile')" "$fn"
+          grep -q "if (action === 'create_order_from_offer')" "$fn"
+          grep -q 'offer_not_approved' "$fn"
+          grep -q 'already_created' "$fn"
+          grep -q "created_from: 'create_order_from_offer'" "$fn"
+          grep -q 'leader_commercial_offer_events' "$fn"
+          grep -q 'unknown_action' "$fn"
+
       - name: Validate CRM v4 assets
         run: |
           test -f crm/v4/index.html
