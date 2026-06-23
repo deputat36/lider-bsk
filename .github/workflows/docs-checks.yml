@@ -103,3 +103,5 @@ jobs:
           grep -Fq 'request_id' "$issue_template"
           grep -Fq 'Критичность: блокер / высокая / средняя / низкая' "$issue_template"
           grep -Fq 'docs/CRM_V4_BROWSER_TEST_REPORT.md' "$issue_template"
+          grep -Fq 'Отчёт docs/CRM_V4_BROWSER_TEST_REPORT.md заполнен' "$issue_template"
+          grep -Fq 'Ссылка/место заполненного отчёта' "$issue_template"
