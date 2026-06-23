@@ -84,7 +84,7 @@ Workflow:
 - наличие в чек-листе Ctrl + F5, `Проверить CRM`, `Аудит заявок`, `request_id` и `Технические данные`;
 - связь чек-листа и onboarding с шаблоном `docs/CRM_V4_BROWSER_TEST_REPORT.md`;
 - персональную инструкцию для `kvmbsk@yandex.ru`: роль `admin`, самодиагностика, ссылки на документы доступа, чек-лист и шаблон отчёта, снятие доступа через `leader_user_profiles.is_active = false`;
-- актуальность `docs/NEXT_SAFE_STEPS.md`: дата 2026-06-23, версии `leader-public-lead v6`, `leader-crm-leads v8`, `leader-crm-orders v2`, ссылка на чек-лист, описание `leader_public_lead_audit`, правило не менять live Supabase без плана, миграции и проверки;
+- актуальность `docs/NEXT_SAFE_STEPS.md`: дата 2026-06-23, версии `leader-public-lead v6`, `leader-crm-leads v8`, `leader-crm-orders v2`, ссылки на чек-лист и шаблон браузерного отчёта, описание `leader_public_lead_audit`, правило не менять live Supabase без плана, миграции и проверки;
 - защиту `docs/NEXT_SAFE_STEPS.md` от возврата устаревшего плана, где аудит публичных заявок описан как ещё не сделанная будущая задача;
 - ключевые поля шаблона отчёта: email входа, диагностика CRM, 404 по assets, аудит заявок, `request_id`, критичность ошибки и итог проверки.
 
