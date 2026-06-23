@@ -81,6 +81,22 @@ jobs:
             exit 1
           fi
 
+      - name: Validate public lead edge function
+        run: |
+          fn='supabase/functions/leader-public-lead/index.ts'
+          test -f "$fn"
+          grep -q 'leader_public_lead_audit' "$fn"
+          grep -q 'leader_leads?on_conflict=request_id' "$fn"
+          grep -q 'resolution=ignore-duplicates,return=minimal' "$fn"
+          grep -q 'phone_or_message_required' "$fn"
+          grep -q 'honeypot_filled' "$fn"
+          grep -q "result: 'accepted'" "$fn"
+          grep -q "result: 'suspicious'" "$fn"
+          grep -q "result: 'rejected'" "$fn"
+          grep -q "result: 'error'" "$fn"
+          grep -q 'catch (_)' "$fn"
+          grep -q 'Аудит не должен блокировать получение заявки' "$fn"
+
       - name: Validate CRM v4 assets
         run: |
           test -f crm/v4/index.html
