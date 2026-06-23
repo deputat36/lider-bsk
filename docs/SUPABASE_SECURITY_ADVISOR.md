@@ -66,6 +66,31 @@ RLS-helper функции перенесены из exposed-схемы `public` 
 
 RLS-политики продолжают работать через зависимости на перенесённые функции.
 
+## Публичные заявки
+
+Таблица:
+
+`public.leader_leads`
+
+Проверено и ужато 2026-06-23:
+
+- RLS включён;
+- `anon` имеет только `INSERT`;
+- `authenticated` имеет `SELECT`, `INSERT`, `UPDATE`, `DELETE` для текущих CRM-сценариев;
+- `TRUNCATE`, `REFERENCES`, `TRIGGER` отозваны у публичных ролей;
+- `SELECT`, `UPDATE`, `DELETE` дополнительно отозваны у `anon`;
+- RLS-политика публичной вставки требует наличие телефона или сообщения и ограничивает длину основных полей;
+- RLS-политики чтения, обновления и удаления завязаны на `leader_private.leader_has_access()` и `leader_private.leader_is_admin()`.
+
+Миграция:
+
+`supabase/migrations/20260623_tighten_leader_leads_grants.sql`
+
+Проверка:
+
+- rollback smoke-test вставки под ролью `anon` прошёл;
+- постоянные тестовые записи не создавались.
+
 ## Аудит публичных заявок
 
 Таблица:
@@ -92,6 +117,7 @@ RLS-политики продолжают работать через завис
 - `leader_ensure_profile` не доступна `public`, `anon`, `authenticated`;
 - `leader_ensure_profile` доступна `service_role`;
 - в `public` больше нет `leader_*` `SECURITY DEFINER` функций, доступных `authenticated`;
+- у `leader_leads` минимальные табличные права для текущей архитектуры: `anon INSERT`, `authenticated SELECT/INSERT/UPDATE/DELETE`;
 - у `leader_public_lead_audit` минимальные табличные права: `anon INSERT`, `authenticated SELECT`;
 - Supabase Security Advisor больше не показывает предупреждений по `leader_*`.
 
