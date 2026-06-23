@@ -97,6 +97,30 @@ jobs:
             exit 1
           fi
 
+      - name: Validate Supabase hardening migrations
+        run: |
+          leads_migration='supabase/migrations/20260623_tighten_leader_leads_grants.sql'
+          audit_migration='supabase/migrations/20260623_tighten_leader_public_lead_audit_grants.sql'
+
+          test -f "$leads_migration"
+          test -f "$audit_migration"
+
+          grep -q 'on table public.leader_leads' "$leads_migration"
+          grep -q 'from anon;' "$leads_migration"
+          grep -q 'from authenticated;' "$leads_migration"
+          grep -q 'grant insert' "$leads_migration"
+          grep -q 'grant select, insert, update, delete' "$leads_migration"
+          grep -q 'revoke select, update, delete, truncate, references, trigger' "$leads_migration"
+          grep -q 'revoke truncate, references, trigger' "$leads_migration"
+
+          grep -q 'on table public.leader_public_lead_audit' "$audit_migration"
+          grep -q 'from anon;' "$audit_migration"
+          grep -q 'from authenticated;' "$audit_migration"
+          grep -q 'grant insert' "$audit_migration"
+          grep -q 'grant select' "$audit_migration"
+          grep -q 'revoke select, update, delete, truncate, references, trigger' "$audit_migration"
+          grep -q 'revoke insert, update, delete, truncate, references, trigger' "$audit_migration"
+
       - name: Check that secret keys are not committed
         run: |
           if grep -RInE \
