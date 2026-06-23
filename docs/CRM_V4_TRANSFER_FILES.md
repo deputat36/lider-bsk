@@ -1,6 +1,6 @@
 # CRM v4 transfer notes
 
-Дата: 2026-06-22.
+Дата: 2026-06-23.
 
 Рабочая ссылка для проверки:
 
@@ -15,6 +15,10 @@
 заявка → история → потребность → расчёт → КП → связанный заказ.
 
 Также перенесены управленческий дашборд, стабильное расширенное меню, UI-полировка, адаптивные стили, followups-панель `Кому связаться сегодня`, отдельный быстрый раздел `Заказы`, базовая модальная карточка заказа, раздел `Контроль заказов`, раздел `Финансы`, доска `Производство`, карточка производственного задания и карточка монтажного задания.
+
+Рабочая временная CRM в `lidercalculator` дополнительно синхронизирована по загрузчику `site-cache-note-v1.js`: `app-v4.html` теперь подключает `assets/v4/site-cache-note-v1.js?v=20260623-1`, а сам загрузчик подтягивает свежие `crm-ui-selfcheck-v1.js?v=20260622-2` и `public-lead-audit-v1.js?v=20260623-1`.
+
+В `deputat36/lidercalculator` добавлен GitHub Actions workflow `.github/workflows/static-checks.yml`, который проверяет цепочку загрузки CRM v4 и наличие диагностических полей аудита публичных заявок.
 
 ## Уже перенесено
 
@@ -127,6 +131,7 @@
 - `production-alerts-v1.js` адаптирован под лёгкую доску `production-board-v3.js` и обновляется после фактического рендера доски.
 - `crm-v4-tabs-lite.js` управляет вкладками `management_dashboard`, `orders`, `order_control`, `finance_control`, `production`, `contact_control` и `public_lead_audit` вместе с базовой вкладкой `leads`.
 - `calculations.js` остаётся в репозитории как перенесённый базовый модуль, но `index.html` использует расширенную связку расчётов.
+- Во временной рабочей CRM `app-v4.html` теперь явно подключает `site-cache-note-v1.js`, чтобы `Аудит заявок` и самопроверка загружались не только в основном `crm/v4/index.html`.
 
 ## Проверка, выполненная из Codex
 
@@ -143,12 +148,16 @@
 - `orders-fast-loader-v1.js`, `order-card-v1.js`, `order-control-v2.js`, `finance-control-v2.js`, `production-board-v3.js`, `production-alerts-v1.js`, `production-job-card-v2.js` и `installation-job-card-v2.js` существуют;
 - `crm/v4/index.html` подключает дашборд, расширенное меню, UI-полировку, адаптивные стили, followups, таймлайн заявки, пакет КП, связанный заказ, быстрый список заказов, карточку заказа, контроль заказов, финансовый контроль, производство и карточки производственных/монтажных заданий после карточки заявки и расчётных модулей;
 - `lead-card.js` содержит исправленный `showLeadList(updateUrl = false)`;
-- `crm/v4/index.html` подключает расширенные расчётные модули и больше не подключает `calculations.js`.
+- `crm/v4/index.html` подключает расширенные расчётные модули и больше не подключает `calculations.js`;
+- во временной CRM `deputat36/lidercalculator/app-v4.html` подключает `assets/v4/site-cache-note-v1.js?v=20260623-1`;
+- во временной CRM `site-cache-note-v1.js` импортирует `crm-ui-selfcheck-v1.js?v=20260622-2` и `public-lead-audit-v1.js?v=20260623-1`;
+- во временной CRM `public-lead-audit-v1.js` содержит `payloadText`, `Referer:`, `v4-audit-payload` и `Технические данные`;
+- в `deputat36/lidercalculator` создан workflow `.github/workflows/static-checks.yml` для проверки этой цепочки.
 
 Проверено через Supabase connector:
 
 - `leader-public-lead` активна, версия 6, `verify_jwt=false`;
-- `leader-crm-leads` активна, версия 7, `verify_jwt=true`;
+- `leader-crm-leads` активна, версия 8, `verify_jwt=true`;
 - `leader-crm-orders` активна, версия 2, `verify_jwt=true`;
 - `leader-crm-leads` содержит действие `create_order_from_offer`;
 - event-таблицы таймлайна существуют, RLS включён, `anon` GRANT отозван;
@@ -159,6 +168,7 @@
 
 - HTTP-запрос из текущего окружения к `https://deputat36.github.io/lider-bsk/crm/v4/` возвращает `403`;
 - raw GitHub download и `git clone` из текущего окружения через терминал тоже возвращают `403`, поэтому локальный `node --check` через checkout не выполнен;
+- GitHub combined status для новых коммитов `lidercalculator` пока вернул пустой список статусов, поэтому результат Actions нужно проверить после запуска в GitHub;
 - нужна ручная проверка в обычном браузере владельца после Ctrl + F5.
 
 ## Рекомендуемый порядок проверки
