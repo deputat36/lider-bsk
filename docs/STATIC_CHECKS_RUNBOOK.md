@@ -74,6 +74,7 @@ Workflow:
 - наличие `docs/CRM_ADMIN_TESTER_ONBOARDING.md`;
 - наличие `docs/NEXT_SAFE_STEPS.md`;
 - наличие `docs/CRM_V4_BROWSER_TEST_REPORT.md`;
+- наличие `.github/ISSUE_TEMPLATE/crm-v4-browser-test.md`;
 - рабочую ссылку `https://deputat36.github.io/lidercalculator/app-v4.html`;
 - связь инструкции доступа с чек-листом тестировщика;
 - использование `leader_user_profiles` как источника прав CRM;
@@ -86,7 +87,8 @@ Workflow:
 - персональную инструкцию для `kvmbsk@yandex.ru`: роль `admin`, самодиагностика, ссылки на документы доступа, чек-лист и шаблон отчёта, снятие доступа через `leader_user_profiles.is_active = false`;
 - актуальность `docs/NEXT_SAFE_STEPS.md`: дата 2026-06-23, версии `leader-public-lead v6`, `leader-crm-leads v8`, `leader-crm-orders v2`, ссылки на чек-лист и шаблон браузерного отчёта, описание `leader_public_lead_audit`, правило не менять live Supabase без плана, миграции и проверки;
 - защиту `docs/NEXT_SAFE_STEPS.md` от возврата устаревшего плана, где аудит публичных заявок описан как ещё не сделанная будущая задача;
-- ключевые поля шаблона отчёта: email входа, диагностика CRM, 404 по assets, аудит заявок, `request_id`, критичность ошибки и итог проверки.
+- ключевые поля шаблона отчёта: email входа, диагностика CRM, 404 по assets, аудит заявок, `request_id`, критичность ошибки и итог проверки;
+- ключевые поля GitHub issue template: название `CRM v4 browser test`, email входа, диагностика CRM, 404 по assets, аудит заявок, `request_id`, критичность ошибки и ссылка на `docs/CRM_V4_BROWSER_TEST_REPORT.md`.
 
 Обязательные вкладки CRM v4:
 
@@ -221,6 +223,7 @@ Workflow:
 [ ] Документ CRM_V4_TEST_ACCESS.md актуален
 [ ] Документ NEXT_SAFE_STEPS.md актуален
 [ ] Документ CRM_V4_BROWSER_TEST_REPORT.md заполнен после проверки
+[ ] При ошибках создан GitHub issue через шаблон CRM v4 browser test
 [ ] Заявки отображаются
 [ ] Карточка заявки открывается
 [ ] Нет ошибок в консоли браузера на основном сценарии
