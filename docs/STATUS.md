@@ -51,6 +51,7 @@ Supabase project:
 - `public.leader_has_access()` и `public.leader_is_admin()` отсутствуют;
 - RLS smoke-test под ролью `authenticated` после переноса helper-функций прошёл;
 - rollback smoke-test публичной вставки в `leader_leads` под ролью `anon` прошёл без создания постоянной тестовой записи;
+- live RPC-проверка подтвердила, что `leader_ensure_profile`, `leader_get_leads_for_crm`, `leader_create_order_rpc` и `leader_log` не исполняются ролями `anon` и `authenticated`;
 - в `public` нет `leader_*` `SECURITY DEFINER` функций, доступных `anon` или `authenticated`;
 - Supabase Security Advisor больше не показывает предупреждений по `leader_*`.
 
@@ -146,6 +147,7 @@ GitHub Actions `Static checks` проверяет:
 - наличие ключевых файлов CRM v4;
 - актуальные версии `auth.js`, `site-cache-note-v1.js` и `crm-ui-selfcheck-v1.js`;
 - что CRM v4 использует `leader-crm-leads` action `ensure_profile`, а не прямой клиентский вызов `leader_ensure_profile`;
+- что CRM v4 assets не содержат прямых вызовов закрытых RPC `leader_ensure_profile`, `leader_get_leads_for_crm`, `leader_create_order_rpc`, `leader_log`;
 - наличие миграции `supabase/migrations/20260623_tighten_leader_leads_grants.sql`;
 - наличие миграции `supabase/migrations/20260623_tighten_leader_public_lead_audit_grants.sql`;
 - что миграции фиксируют минимальные права для публичной формы и аудита.
