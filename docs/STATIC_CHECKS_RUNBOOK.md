@@ -46,6 +46,9 @@ Workflow:
 - отсутствие случайно закоммиченных секретных ключей;
 - наличие ключевых файлов CRM v4;
 - актуальные cache-buster версии `auth.js`, `site-cache-note-v1.js`, `crm-ui-selfcheck-v1.js`;
+- наличие защищённого клиента Edge Functions `crm/v4/assets/v4/functions-client.js`;
+- что `functions-client.js` берёт текущую Supabase-сессию и передаёт `Authorization: Bearer <access_token>`;
+- что браузерные assets CRM v4 не содержат `SUPABASE_SERVICE_ROLE`, `SERVICE_ROLE_KEY` или `sb_secret_*`;
 - отсутствие прямого клиентского вызова `leader_ensure_profile` из `crm/v4/assets/v4/auth.js`;
 - отсутствие прямых клиентских вызовов закрытых RPC в `crm/v4/assets/v4`;
 - использование `leader-crm-leads` action `ensure_profile` в CRM-авторизации;
@@ -94,7 +97,7 @@ Workflow:
 - `leader_create_order_rpc`;
 - `leader_log`.
 
-Для этих сценариев использовать Edge Function `leader-crm-leads` с JWT.
+Для этих сценариев использовать Edge Function `leader-crm-leads` с JWT. Браузерная CRM должна вызывать Edge Functions через `crm/v4/assets/v4/functions-client.js`, который получает текущую Supabase-сессию и отправляет пользовательский JWT в заголовке `Authorization`.
 
 Проверка секретов ищет признаки реальных ключей и env-присваиваний, а не каждое текстовое упоминание роли `service_role` в документации:
 
