@@ -85,9 +85,12 @@ jobs:
           grep -Fq 'CRM v4 browser test report' "$browser_report"
           grep -Fq 'Email входа в CRM' "$browser_report"
           grep -Fq 'Блок `Проверка загруженных разделов и доступа CRM` виден' "$browser_report"
+          grep -Fq 'Ссылка `Создать GitHub issue CRM v4 browser test` видна' "$browser_report"
           grep -Fq 'Есть 404 по `assets/v4/*.js` или `assets/v4/*.css`' "$browser_report"
           grep -Fq 'Аудит заявок' "$browser_report"
           grep -Fq 'request_id' "$browser_report"
+          grep -Fq 'Ссылка на GitHub issue' "$browser_report"
+          grep -Fq 'GitHub issue создан: да/нет' "$browser_report"
           grep -Fq 'Критичность: блокер / высокая / средняя / низкая' "$browser_report"
           grep -Fq 'Итог: прошло / прошло с замечаниями / не прошло' "$browser_report"
 
