@@ -242,6 +242,10 @@ jobs:
           grep -q 'result' crm/v4/assets/v4/public-lead-audit-v1.js
           grep -q 'reason' crm/v4/assets/v4/public-lead-audit-v1.js
           grep -q 'payload' crm/v4/assets/v4/public-lead-audit-v1.js
+          grep -q 'payloadText' crm/v4/assets/v4/public-lead-audit-v1.js
+          grep -q 'Referer:' crm/v4/assets/v4/public-lead-audit-v1.js
+          grep -q 'Технические данные' crm/v4/assets/v4/public-lead-audit-v1.js
+          grep -q 'v4-audit-payload' crm/v4/assets/v4/public-lead-audit-v1.js
           grep -q 'data-public-lead-audit-refresh' crm/v4/assets/v4/public-lead-audit-v1.js
           grep -q 'data-public-lead-audit-filter' crm/v4/assets/v4/public-lead-audit-v1.js
           grep -q 'accepted' crm/v4/assets/v4/public-lead-audit-v1.js
