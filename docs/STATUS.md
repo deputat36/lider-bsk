@@ -72,6 +72,7 @@ Supabase project:
 - панель контактов на сегодня;
 - история и комментарии заявки;
 - авторизация, состояние, роутер, UI-хелперы и Supabase-клиент;
+- защищённый клиент Edge Functions `functions-client.js`, который отправляет JWT текущей Supabase-сессии;
 - стабильное расширенное меню CRM;
 - управленческий дашборд;
 - список заявок, карточка заявки, ручное создание заявки;
@@ -148,6 +149,8 @@ GitHub Actions `Static checks` проверяет:
 - публичную Edge Function `leader-public-lead`: аудит, `on_conflict=request_id`, ignore-duplicates, honeypot, отказ без телефона/сообщения, статусы аудита и неблокирующую запись аудита;
 - CRM Edge Function `leader-crm-leads`: service-role только серверно, JWT-проверку через `/auth/v1/user`, активный профиль, `ensure_profile`, `create_order_from_offer`, защиту от несогласованного КП и повторного заказа;
 - CRM Edge Function `leader-crm-orders`: service-role только серверно, JWT-проверку через `/auth/v1/user`, активный профиль, list/update заказов и разрешённые поля обновления;
+- защищённый клиент Edge Functions `functions-client.js`: получение текущей сессии, передачу `Authorization: Bearer <access_token>`, вызов `/functions/v1/`;
+- отсутствие `SUPABASE_SERVICE_ROLE`, `SERVICE_ROLE_KEY` и `sb_secret_*` в браузерных assets CRM v4;
 - отсутствие случайно закоммиченных секретных ключей по точным признакам ключей и env-присваиваний;
 - наличие ключевых файлов CRM v4;
 - актуальные версии `auth.js`, `site-cache-note-v1.js` и `crm-ui-selfcheck-v1.js`;
