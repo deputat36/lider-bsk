@@ -149,6 +149,7 @@ GitHub Actions `Static checks` проверяет:
 - публичную Edge Function `leader-public-lead`: аудит, `on_conflict=request_id`, ignore-duplicates, honeypot, отказ без телефона/сообщения, статусы аудита и неблокирующую запись аудита;
 - CRM Edge Function `leader-crm-leads`: service-role только серверно, JWT-проверку через `/auth/v1/user`, активный профиль, `ensure_profile`, `create_order_from_offer`, защиту от несогласованного КП и повторного заказа;
 - CRM Edge Function `leader-crm-orders`: service-role только серверно, JWT-проверку через `/auth/v1/user`, активный профиль, list/update заказов и разрешённые поля обновления;
+- все локальные CSS/JS ссылки из `crm/v4/index.html` на существование файлов;
 - защищённый клиент Edge Functions `functions-client.js`: получение текущей сессии, передачу `Authorization: Bearer <access_token>`, вызов `/functions/v1/`;
 - отсутствие `SUPABASE_SERVICE_ROLE`, `SERVICE_ROLE_KEY` и `sb_secret_*` в браузерных assets CRM v4;
 - отсутствие случайно закоммиченных секретных ключей по точным признакам ключей и env-присваиваний;
