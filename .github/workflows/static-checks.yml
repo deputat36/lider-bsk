@@ -230,10 +230,18 @@ jobs:
           grep -q 'leader_public_lead_audit' crm/v4/assets/v4/public-lead-audit-v1.js
           grep -q 'limit(80)' crm/v4/assets/v4/public-lead-audit-v1.js
           grep -q "order('created_at'" crm/v4/assets/v4/public-lead-audit-v1.js
-          grep -q 'phone_normalized' crm/v4/assets/v4/public-lead-audit-v1.js
           grep -q 'request_id' crm/v4/assets/v4/public-lead-audit-v1.js
+          grep -q 'phone_normalized' crm/v4/assets/v4/public-lead-audit-v1.js
+          grep -q 'source_page_path' crm/v4/assets/v4/public-lead-audit-v1.js
+          grep -q 'page_url' crm/v4/assets/v4/public-lead-audit-v1.js
           grep -q 'user_agent' crm/v4/assets/v4/public-lead-audit-v1.js
+          grep -q 'referer' crm/v4/assets/v4/public-lead-audit-v1.js
           grep -q 'utm_source' crm/v4/assets/v4/public-lead-audit-v1.js
+          grep -q 'utm_medium' crm/v4/assets/v4/public-lead-audit-v1.js
+          grep -q 'utm_campaign' crm/v4/assets/v4/public-lead-audit-v1.js
+          grep -q 'result' crm/v4/assets/v4/public-lead-audit-v1.js
+          grep -q 'reason' crm/v4/assets/v4/public-lead-audit-v1.js
+          grep -q 'payload' crm/v4/assets/v4/public-lead-audit-v1.js
           grep -q 'data-public-lead-audit-refresh' crm/v4/assets/v4/public-lead-audit-v1.js
           grep -q 'data-public-lead-audit-filter' crm/v4/assets/v4/public-lead-audit-v1.js
           grep -q 'accepted' crm/v4/assets/v4/public-lead-audit-v1.js
