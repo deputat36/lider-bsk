@@ -1,6 +1,6 @@
 # Статус проекта РА «Лидер»
 
-Дата обновления: 2026-06-22.
+Дата обновления: 2026-06-23.
 
 ## Основной контур
 
@@ -41,10 +41,13 @@ Supabase project:
 - политики event-таблиц разделены на `SELECT` и `INSERT`, без `UPDATE`, `DELETE`, `TRUNCATE`;
 - insert-политика `leader_public_lead_audit_insert_public` ужата и больше не использует открытый `WITH CHECK true`;
 - публичная запись аудита ограничена ожидаемой формой события;
+- табличные GRANT для `leader_public_lead_audit` ужаты: `anon` имеет только `INSERT`, `authenticated` имеет только `SELECT`;
+- миграция для фиксации прав аудита добавлена: `supabase/migrations/20260623_tighten_leader_public_lead_audit_grants.sql`;
 - прямой RPC-доступ к `leader_log`, `leader_get_leads_for_crm()` и `leader_create_order_rpc(jsonb)` отозван у `public`, `anon` и `authenticated`;
 - RLS-helper функции `leader_has_access()` и `leader_is_admin()` перенесены из `public` в приватную схему `leader_private`;
 - `public.leader_has_access()` и `public.leader_is_admin()` отсутствуют;
 - RLS smoke-test под ролью `authenticated` после переноса helper-функций прошёл;
+- в `public` нет `leader_*` `SECURITY DEFINER` функций, доступных `anon` или `authenticated`;
 - Supabase Security Advisor больше не показывает предупреждений по `leader_*`.
 
 Оставшиеся Advisor-предупреждения относятся к `nav_*` объектам другого проектного контура и к настройке Auth leaked password protection. Их не меняли.
@@ -102,6 +105,7 @@ Supabase project:
 - `auth.js` подключён с обновлённым cache-buster `v=20260622-1`, чтобы браузер не брал старый файл из кэша;
 - `site-cache-note-v1.js` подключён с cache-buster `v=20260622-2` и импортирует свежую самопроверку `crm-ui-selfcheck-v1.js?v=20260622-2`;
 - рабочая временная CRM в `lidercalculator` обновлена тем же способом;
+- инструкция для администратора-тестировщика обновлена и теперь первым делом требует проверить email, роль, активность профиля и разделы CRM через самодиагностику;
 - старый diagnostic-модуль временной CRM больше не вызывает `leader_get_leads_for_crm()`;
 - прямое клиентское создание заказа через `leader_create_order_rpc(jsonb)` закрыто;
 - актуальный путь создания заказа — через Edge Function `leader-crm-leads` и действие `create_order_from_offer`.
@@ -120,6 +124,7 @@ Supabase project:
 - RLS для `leader_public_lead_audit` включён;
 - чтение аудита доступно активным сотрудникам ролей `owner`, `admin`, `manager`;
 - запись аудита разрешена публичному anon-контуру Edge Function, но ограничена ожидаемой формой события;
+- табличные права аудита приведены к минимальной модели: `anon INSERT`, `authenticated SELECT`;
 - `leader-public-lead` пишет аудит для событий `accepted`, `suspicious`, `rejected`, `error`;
 - ошибка записи аудита не блокирует получение основной заявки.
 
