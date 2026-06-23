@@ -115,6 +115,26 @@ jobs:
           grep -q 'leader_commercial_offer_events' "$fn"
           grep -q 'unknown_action' "$fn"
 
+      - name: Validate CRM orders edge function
+        run: |
+          fn='supabase/functions/leader-crm-orders/index.ts'
+          test -f "$fn"
+          grep -q "Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')" "$fn"
+          grep -q '/auth/v1/user' "$fn"
+          grep -q 'missing_token' "$fn"
+          grep -q 'bad_token' "$fn"
+          grep -q 'access_denied' "$fn"
+          grep -q 'leader_user_profiles?user_id=eq.' "$fn"
+          grep -q "if (action === 'list')" "$fn"
+          grep -q "if (action === 'update')" "$fn"
+          grep -q 'leader_orders?select=' "$fn"
+          grep -q 'order=created_at.desc&limit=80' "$fn"
+          grep -q 'order_update_failed' "$fn"
+          grep -q 'production_status' "$fn"
+          grep -q 'payment_status' "$fn"
+          grep -q 'layout_status' "$fn"
+          grep -q 'unknown_action' "$fn"
+
       - name: Validate CRM v4 assets
         run: |
           test -f crm/v4/index.html
