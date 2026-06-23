@@ -46,6 +46,7 @@ Workflow:
 - отсутствие случайно закоммиченных секретных ключей;
 - наличие ключевых файлов CRM v4;
 - что все локальные CSS/JS ссылки из `crm/v4/index.html` ведут на существующие файлы;
+- что расширенное меню `crm-v4-expanded-menu-v1.js` и самопроверка `crm-ui-selfcheck-v1.js` содержат одинаковый обязательный набор вкладок CRM v4;
 - актуальные cache-buster версии `auth.js`, `site-cache-note-v1.js`, `crm-ui-selfcheck-v1.js`;
 - наличие защищённого клиента Edge Functions `crm/v4/assets/v4/functions-client.js`;
 - что `functions-client.js` берёт текущую Supabase-сессию и передаёт `Authorization: Bearer <access_token>`;
@@ -57,6 +58,17 @@ Workflow:
 - наличие миграции `supabase/migrations/20260623_tighten_leader_public_lead_audit_grants.sql`;
 - что миграция `leader_leads` фиксирует минимальную модель прав: `anon INSERT`, `authenticated SELECT/INSERT/UPDATE/DELETE`;
 - что миграция `leader_public_lead_audit` фиксирует минимальную модель прав: `anon INSERT`, `authenticated SELECT`.
+
+Обязательные вкладки CRM v4:
+
+- `management_dashboard` — `Дашборд`;
+- `leads` — `Заявки`;
+- `orders` — `Заказы`;
+- `order_control` — `Контроль заказов`;
+- `finance_control` — `Финансы`;
+- `production` — `Производство`;
+- `contact_control` — `Контроль контактов`;
+- `public_lead_audit` — `Аудит заявок`.
 
 Для `leader-public-lead` статическая проверка контролирует:
 
