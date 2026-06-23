@@ -21,11 +21,13 @@ jobs:
           checklist='docs/CRM_V4_TESTER_CHECKLIST.md'
           onboarding='docs/CRM_ADMIN_TESTER_ONBOARDING.md'
           next_steps='docs/NEXT_SAFE_STEPS.md'
+          browser_report='docs/CRM_V4_BROWSER_TEST_REPORT.md'
 
           test -f "$access_doc"
           test -f "$checklist"
           test -f "$onboarding"
           test -f "$next_steps"
+          test -f "$browser_report"
 
           grep -Fq 'https://deputat36.github.io/lidercalculator/app-v4.html' "$access_doc"
           grep -Fq 'docs/CRM_V4_TESTER_CHECKLIST.md' "$access_doc"
@@ -43,6 +45,7 @@ jobs:
           grep -Fq 'Снятие доступа' "$access_doc"
 
           grep -Fq 'docs/CRM_V4_TEST_ACCESS.md' "$checklist"
+          grep -Fq 'docs/CRM_V4_BROWSER_TEST_REPORT.md' "$checklist"
           grep -Fq 'https://deputat36.github.io/lidercalculator/app-v4.html' "$checklist"
           grep -Fq 'Ctrl + F5' "$checklist"
           grep -Fq 'Проверить CRM' "$checklist"
@@ -55,6 +58,7 @@ jobs:
           grep -Fq 'Проверка загруженных разделов и доступа CRM' "$onboarding"
           grep -Fq 'docs/CRM_V4_TEST_ACCESS.md' "$onboarding"
           grep -Fq 'docs/CRM_V4_TESTER_CHECKLIST.md' "$onboarding"
+          grep -Fq 'docs/CRM_V4_BROWSER_TEST_REPORT.md' "$onboarding"
           grep -Fq 'leader_user_profiles.is_active = false' "$onboarding"
 
           grep -Fq 'Дата: 2026-06-23.' "$next_steps"
@@ -69,3 +73,12 @@ jobs:
           ! grep -Fq '### Шаг 3. Добавить серверный аудит публичных заявок' "$next_steps"
           ! grep -Fq 'Добавить таблицу аудита отправок' "$next_steps"
           ! grep -Fq 'Логировать подозрительные отправки' "$next_steps"
+
+          grep -Fq 'CRM v4 browser test report' "$browser_report"
+          grep -Fq 'Email входа в CRM' "$browser_report"
+          grep -Fq 'Блок `Проверка загруженных разделов и доступа CRM` виден' "$browser_report"
+          grep -Fq 'Есть 404 по `assets/v4/*.js` или `assets/v4/*.css`' "$browser_report"
+          grep -Fq 'Аудит заявок' "$browser_report"
+          grep -Fq 'request_id' "$browser_report"
+          grep -Fq 'Критичность: блокер / высокая / средняя / низкая' "$browser_report"
+          grep -Fq 'Итог: прошло / прошло с замечаниями / не прошло' "$browser_report"
