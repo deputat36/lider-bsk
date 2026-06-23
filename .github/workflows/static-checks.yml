@@ -94,7 +94,11 @@ jobs:
           grep -q "result: 'suspicious'" "$fn"
           grep -q "result: 'rejected'" "$fn"
           grep -q "result: 'error'" "$fn"
-          grep -q 'catch (_)' "$fn"
+          grep -q 'const auditRes = await fetch' "$fn"
+          grep -q 'if (!auditRes.ok)' "$fn"
+          grep -q 'leader_public_lead_audit_insert_failed' "$fn"
+          grep -q 'leader_public_lead_audit_request_failed' "$fn"
+          grep -q 'site_public_form_v7' "$fn"
           grep -q 'Аудит не должен блокировать получение заявки' "$fn"
 
       - name: Validate CRM leads edge function
@@ -213,7 +217,7 @@ jobs:
           PY
           grep -q 'assets/v4/management-dashboard-v3.js?v=20260622-1' crm/v4/index.html
           grep -q 'assets/v4/crm-v4-expanded-menu-v1.js?v=20260622-1' crm/v4/index.html
-          grep -q 'assets/v4/auth.js?v=20260622-1' crm/v4/index.html
+          grep -q 'assets/v4/auth.js?v=20260623-session-2' crm/v4/index.html
           grep -q 'assets/v4/leads.js?v=20260528-2' crm/v4/index.html
           grep -q 'assets/v4/contact-control-v1.js?v=20260621-1' crm/v4/index.html
           grep -q 'assets/v4/orders-fast-loader-v1.js?v=20260622-2' crm/v4/index.html
