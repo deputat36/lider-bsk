@@ -96,6 +96,10 @@ jobs:
             echo "CRM auth.js must not call leader_ensure_profile directly"
             exit 1
           fi
+          if grep -RInE 'leader_ensure_profile|leader_get_leads_for_crm|leader_create_order_rpc|leader_log' crm/v4/assets/v4; then
+            echo "CRM frontend assets must not call closed leader RPC functions directly"
+            exit 1
+          fi
 
       - name: Validate Supabase hardening migrations
         run: |
