@@ -63,6 +63,23 @@ Workflow:
 - что миграция `leader_leads` фиксирует минимальную модель прав: `anon INSERT`, `authenticated SELECT/INSERT/UPDATE/DELETE`;
 - что миграция `leader_public_lead_audit` фиксирует минимальную модель прав: `anon INSERT`, `authenticated SELECT`.
 
+Workflow:
+
+`Docs checks`
+
+После изменений проверить, что workflow контролирует документы доступа CRM v4:
+
+- наличие `docs/CRM_V4_TEST_ACCESS.md`;
+- наличие `docs/CRM_V4_TESTER_CHECKLIST.md`;
+- рабочую ссылку `https://deputat36.github.io/lidercalculator/app-v4.html`;
+- связь инструкции доступа с чек-листом тестировщика;
+- использование `leader_user_profiles` как источника прав CRM;
+- предупреждение не использовать `user_metadata` как источник прав;
+- запрет трогать `nav_*`;
+- роли `owner`, `admin`, `manager`;
+- инструкцию снятия доступа через `is_active = false`;
+- наличие в чек-листе Ctrl + F5, `Проверить CRM`, `Аудит заявок`, `request_id` и `Технические данные`.
+
 Обязательные вкладки CRM v4:
 
 - `management_dashboard` — `Дашборд`;
@@ -192,6 +209,8 @@ Workflow:
 [ ] Самодиагностика CRM показывает корректный email, роль и активный профиль
 [ ] Все ключевые разделы CRM в самодиагностике имеют статус OK
 [ ] Тестировщик получил ссылку и чек-лист CRM v4
+[ ] Для тестировщика создан активный профиль в leader_user_profiles
+[ ] Документ CRM_V4_TEST_ACCESS.md актуален
 [ ] Заявки отображаются
 [ ] Карточка заявки открывается
 [ ] Нет ошибок в консоли браузера на основном сценарии
