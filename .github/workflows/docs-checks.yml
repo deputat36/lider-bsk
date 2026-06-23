@@ -22,6 +22,7 @@ jobs:
           onboarding='docs/CRM_ADMIN_TESTER_ONBOARDING.md'
           next_steps='docs/NEXT_SAFE_STEPS.md'
           browser_report='docs/CRM_V4_BROWSER_TEST_REPORT.md'
+          runbook='docs/STATIC_CHECKS_RUNBOOK.md'
           issue_template='.github/ISSUE_TEMPLATE/crm-v4-browser-test.md'
 
           test -f "$access_doc"
@@ -29,6 +30,7 @@ jobs:
           test -f "$onboarding"
           test -f "$next_steps"
           test -f "$browser_report"
+          test -f "$runbook"
           test -f "$issue_template"
 
           grep -Fq 'https://deputat36.github.io/lidercalculator/app-v4.html' "$access_doc"
@@ -93,6 +95,10 @@ jobs:
           grep -Fq 'GitHub issue создан: да/нет' "$browser_report"
           grep -Fq 'Критичность: блокер / высокая / средняя / низкая' "$browser_report"
           grep -Fq 'Итог: прошло / прошло с замечаниями / не прошло' "$browser_report"
+
+          grep -Fq 'При ошибках создан GitHub issue через шаблон CRM v4 browser test' "$runbook"
+          grep -Fq 'В GitHub issue указано, заполнен ли docs/CRM_V4_BROWSER_TEST_REPORT.md' "$runbook"
+          grep -Fq 'В GitHub issue указана ссылка или место заполненного отчёта' "$runbook"
 
           grep -Fq 'CRM v4 browser test' "$issue_template"
           grep -Fq 'Отчёт или ошибка по браузерной проверке CRM v4' "$issue_template"
