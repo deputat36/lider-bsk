@@ -144,6 +144,7 @@ GitHub Actions `Static checks` проверяет:
 - наличие и базовую полноту публичной формы заявки;
 - защиту от повторного скрытия логотипа публичным CSS формы;
 - публичную Edge Function `leader-public-lead`: аудит, `on_conflict=request_id`, ignore-duplicates, honeypot, отказ без телефона/сообщения, статусы аудита и неблокирующую запись аудита;
+- CRM Edge Function `leader-crm-leads`: service-role только серверно, JWT-проверку через `/auth/v1/user`, активный профиль, `ensure_profile`, `create_order_from_offer`, защиту от несогласованного КП и повторного заказа;
 - отсутствие случайно закоммиченных секретных ключей по точным признакам ключей и env-присваиваний;
 - наличие ключевых файлов CRM v4;
 - актуальные версии `auth.js`, `site-cache-note-v1.js` и `crm-ui-selfcheck-v1.js`;
