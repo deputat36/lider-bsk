@@ -1,6 +1,6 @@
 # Проверки после релиза сайта и CRM РА «Лидер»
 
-Дата: 2026-06-22.
+Дата: 2026-06-23.
 
 ## Что проверять после каждого изменения сайта
 
@@ -44,7 +44,11 @@ Workflow:
 - наличие ключевых файлов CRM v4;
 - актуальные cache-buster версии `auth.js`, `site-cache-note-v1.js`, `crm-ui-selfcheck-v1.js`;
 - отсутствие прямого клиентского вызова `leader_ensure_profile` из `crm/v4/assets/v4/auth.js`;
-- использование `leader-crm-leads` action `ensure_profile` в CRM-авторизации.
+- использование `leader-crm-leads` action `ensure_profile` в CRM-авторизации;
+- наличие миграции `supabase/migrations/20260623_tighten_leader_leads_grants.sql`;
+- наличие миграции `supabase/migrations/20260623_tighten_leader_public_lead_audit_grants.sql`;
+- что миграция `leader_leads` фиксирует минимальную модель прав: `anon INSERT`, `authenticated SELECT/INSERT/UPDATE/DELETE`;
+- что миграция `leader_public_lead_audit` фиксирует минимальную модель прав: `anon INSERT`, `authenticated SELECT`.
 
 ## Что проверять перед изменениями Supabase
 
@@ -56,6 +60,7 @@ Workflow:
 6. Для новых таблиц в `public` явно проверены GRANT для Data API и RLS-политики.
 7. `SECURITY DEFINER` функции `leader_*` не должны быть исполняемы напрямую ролями `anon` и `authenticated`, если это не отдельное осознанное решение.
 8. Браузерная CRM должна обращаться к служебным действиям через Edge Function, а не через прямые RPC к чувствительным функциям.
+9. Для публичной формы базовая модель прав должна оставаться минимальной: `leader_leads` — `anon INSERT`, `leader_public_lead_audit` — `anon INSERT`.
 
 ## Минимальный post-release checklist
 
@@ -77,6 +82,11 @@ Workflow:
 [ ] Не затронуты nav_* и другие чужие контуры
 ```
 
-## Проверено 2026-06-22
+## Проверено 2026-06-23
 
 Supabase-запрос показал, что в `public` нет `SECURITY DEFINER` функций с префиксом `leader_`, которые напрямую исполняются ролями `anon` или `authenticated`.
+
+Live GRANT-проверка показала:
+
+- `leader_leads`: `anon INSERT`, `authenticated DELETE/INSERT/SELECT/UPDATE`;
+- `leader_public_lead_audit`: `anon INSERT`, `authenticated SELECT`.
