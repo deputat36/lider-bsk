@@ -50,7 +50,7 @@ Workflow:
 - что `crm/v4/index.html` подключает ключевые модульные файлы разделов CRM v4;
 - что `site-cache-note-v1.js` lazy-import подключает `crm-ui-selfcheck-v1.js` и `public-lead-audit-v1.js`;
 - что `public-lead-audit-v1.js` читает `leader_public_lead_audit`, берёт последние 80 событий, сортирует по дате, содержит диагностические поля, показывает referer, раскрываемый payload и фильтры по статусам;
-- актуальные cache-buster версии `auth.js`, `site-cache-note-v1.js`, `crm-ui-selfcheck-v1.js`;
+- актуальные cache-buster версии `auth.js`, `site-cache-note-v1.js`, `crm-ui-selfcheck-v1.js`, `public-lead-audit-v1.js`;
 - наличие защищённого клиента Edge Functions `crm/v4/assets/v4/functions-client.js`;
 - что `functions-client.js` берёт текущую Supabase-сессию и передаёт `Authorization: Bearer <access_token>`;
 - что браузерные assets CRM v4 не содержат `SUPABASE_SERVICE_ROLE`, `SERVICE_ROLE_KEY` или `sb_secret_*`;
@@ -88,6 +88,11 @@ Workflow:
 - `production-job-card-v2.js`;
 - `installation-job-card-v2.js`;
 - `site-cache-note-v1.js`.
+
+Актуальная цепочка кэша для аудита заявок:
+
+- `crm/v4/index.html` подключает `site-cache-note-v1.js?v=20260623-1`;
+- `site-cache-note-v1.js` lazy-import подключает `public-lead-audit-v1.js?v=20260623-1`.
 
 Для CRM-модуля `public-lead-audit-v1.js` статическая проверка контролирует:
 
