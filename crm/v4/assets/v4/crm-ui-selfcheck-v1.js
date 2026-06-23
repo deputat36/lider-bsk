@@ -10,6 +10,7 @@ const EXPECTED_TABS = [
 ];
 
 const ACCESS_ROLES = ['owner', 'admin', 'manager'];
+const CRM_TEST_ISSUE_URL = 'https://github.com/deputat36/lider-bsk/issues/new?template=crm-v4-browser-test.md';
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
@@ -58,6 +59,10 @@ function renderRows(title, rows) {
   return `<div style="display:grid;gap:6px"><b style="margin-top:4px;color:#0f172a">${esc(title)}</b>${rows.map((item) => `<div style="display:flex;justify-content:space-between;gap:10px;border:1px solid #e2e8f0;border-radius:12px;padding:8px;background:#fff"><b>${esc(item.label)}</b><span style="font-weight:900;color:${item.ok ? '#166534' : '#92400e'};text-align:right;overflow-wrap:anywhere">${esc(item.message)}</span></div>`).join('')}</div>`;
 }
 
+function renderIssueLink() {
+  return `<div style="display:grid;gap:6px;border:1px solid #bfdbfe;background:#eff6ff;border-radius:12px;padding:10px"><b style="color:#1e3a8a">Если есть ошибка</b><span style="color:#334155">Зафиксируйте email, роль, раздел, красные ошибки консоли и 404 по assets. Затем создайте GitHub issue по шаблону браузерной проверки.</span><a href="${CRM_TEST_ISSUE_URL}" target="_blank" rel="noopener" style="font-weight:900;color:#1d4ed8">Создать GitHub issue CRM v4 browser test</a></div>`;
+}
+
 function render() {
   const host = document.querySelector('#crmDiagnosticsBox') || document.querySelector('#crmWorkspace .v4-card') || document.getElementById('crmWorkspace');
   if (!host || document.getElementById('crmUiSelfcheckV1')) return;
@@ -74,7 +79,8 @@ function refresh() {
   if (!result) return;
   result.innerHTML = [
     renderRows('Доступ', checkAccess()),
-    renderRows('Разделы', checkTabs())
+    renderRows('Разделы', checkTabs()),
+    renderIssueLink()
   ].join('');
 }
 
