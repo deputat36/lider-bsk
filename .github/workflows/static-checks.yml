@@ -142,6 +142,46 @@ jobs:
           test -f crm/v4/assets/v4/functions-client.js
           test -f crm/v4/assets/v4/site-cache-note-v1.js
           test -f crm/v4/assets/v4/crm-ui-selfcheck-v1.js
+          python3 - <<'PY'
+          import pathlib
+          import sys
+          from html.parser import HTMLParser
+          from urllib.parse import urlparse
+
+          root = pathlib.Path('crm/v4')
+          html_path = root / 'index.html'
+          refs = []
+
+          class AssetParser(HTMLParser):
+              def handle_starttag(self, tag, attrs):
+                  values = dict(attrs)
+                  if tag == 'script' and values.get('src'):
+                      refs.append(values['src'])
+                  if tag == 'link' and values.get('href'):
+                      refs.append(values['href'])
+
+          AssetParser().feed(html_path.read_text(encoding='utf-8'))
+          missing = []
+          for ref in refs:
+              parsed = urlparse(ref)
+              if parsed.scheme or parsed.netloc or parsed.path.startswith('/'):
+                  continue
+              if not parsed.path or parsed.path.startswith('#'):
+                  continue
+              path = (root / parsed.path).resolve()
+              try:
+                  path.relative_to(root.resolve())
+              except ValueError:
+                  print(f'CRM asset reference leaves crm/v4: {ref}')
+                  sys.exit(1)
+              if not path.is_file():
+                  missing.append(ref)
+          if missing:
+              print('Missing CRM v4 referenced assets:')
+              for ref in missing:
+                  print(f'- {ref}')
+              sys.exit(1)
+          PY
           grep -q 'assets/v4/auth.js?v=20260622-1' crm/v4/index.html
           grep -q 'assets/v4/site-cache-note-v1.js?v=20260622-2' crm/v4/index.html
           grep -q "crm-ui-selfcheck-v1.js?v=20260622-2" crm/v4/assets/v4/site-cache-note-v1.js
