@@ -71,6 +71,8 @@ Workflow:
 
 - наличие `docs/CRM_V4_TEST_ACCESS.md`;
 - наличие `docs/CRM_V4_TESTER_CHECKLIST.md`;
+- наличие `docs/CRM_ADMIN_TESTER_ONBOARDING.md`;
+- наличие `docs/NEXT_SAFE_STEPS.md`;
 - рабочую ссылку `https://deputat36.github.io/lidercalculator/app-v4.html`;
 - связь инструкции доступа с чек-листом тестировщика;
 - использование `leader_user_profiles` как источника прав CRM;
@@ -78,7 +80,9 @@ Workflow:
 - запрет трогать `nav_*`;
 - роли `owner`, `admin`, `manager`;
 - инструкцию снятия доступа через `is_active = false`;
-- наличие в чек-листе Ctrl + F5, `Проверить CRM`, `Аудит заявок`, `request_id` и `Технические данные`.
+- наличие в чек-листе Ctrl + F5, `Проверить CRM`, `Аудит заявок`, `request_id` и `Технические данные`;
+- персональную инструкцию для `kvmbsk@yandex.ru`: роль `admin`, самодиагностика, ссылки на документы доступа и чек-лист, снятие доступа через `leader_user_profiles.is_active = false`;
+- актуальность `docs/NEXT_SAFE_STEPS.md`: дата 2026-06-23, версии `leader-public-lead v6`, `leader-crm-leads v8`, `leader-crm-orders v2`, ссылка на чек-лист, описание `leader_public_lead_audit`, отсутствие устаревшего плана по ещё несуществующему аудиту и правило не менять live Supabase без плана, миграции и проверки.
 
 Обязательные вкладки CRM v4:
 
@@ -211,26 +215,10 @@ Workflow:
 [ ] Тестировщик получил ссылку и чек-лист CRM v4
 [ ] Для тестировщика создан активный профиль в leader_user_profiles
 [ ] Документ CRM_V4_TEST_ACCESS.md актуален
+[ ] Документ NEXT_SAFE_STEPS.md актуален
 [ ] Заявки отображаются
 [ ] Карточка заявки открывается
 [ ] Нет ошибок в консоли браузера на основном сценарии
 [ ] Нет 404 по assets/v4
 [ ] Не затронуты nav_* и другие чужие контуры
 ```
-
-## Проверено 2026-06-23
-
-Supabase-запрос показал, что в `public` нет `SECURITY DEFINER` функций с префиксом `leader_`, которые напрямую исполняются ролями `anon` или `authenticated`.
-
-Live GRANT-проверка показала:
-
-- `leader_leads`: `anon INSERT`, `authenticated DELETE/INSERT/SELECT/UPDATE`;
-- `leader_public_lead_audit`: `anon INSERT`, `authenticated SELECT`.
-
-Live RPC-проверка показала, что `leader_ensure_profile`, `leader_get_leads_for_crm`, `leader_create_order_rpc` и `leader_log` не исполняются ролями `anon` и `authenticated`.
-
-Live Edge Function-проверка показала:
-
-- `leader-public-lead` активна, версия 6, `verify_jwt=false`;
-- `leader-crm-leads` активна, версия 8, `verify_jwt=true`;
-- `leader-crm-orders` активна, версия 2, `verify_jwt=true`.
