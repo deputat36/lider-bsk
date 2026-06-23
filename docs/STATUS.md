@@ -178,6 +178,7 @@ GitHub Actions `Docs checks` проверяет:
 - наличие `docs/CRM_V4_TEST_ACCESS.md`;
 - наличие `docs/CRM_V4_TESTER_CHECKLIST.md`;
 - наличие `docs/CRM_ADMIN_TESTER_ONBOARDING.md`;
+- наличие `docs/NEXT_SAFE_STEPS.md`;
 - рабочую ссылку временной CRM v4;
 - связь инструкции доступа с чек-листом тестировщика;
 - использование `leader_user_profiles` как источника прав;
@@ -185,7 +186,9 @@ GitHub Actions `Docs checks` проверяет:
 - запрет трогать `nav_*`;
 - роли `owner`, `admin`, `manager`;
 - инструкцию снятия доступа через `is_active = false`;
-- персональную инструкцию `kvmbsk@yandex.ru`: роль `admin`, блок `Проверка загруженных разделов и доступа CRM`, ссылки на `docs/CRM_V4_TEST_ACCESS.md` и `docs/CRM_V4_TESTER_CHECKLIST.md`, снятие доступа через `leader_user_profiles.is_active = false`.
+- персональную инструкцию `kvmbsk@yandex.ru`: роль `admin`, блок `Проверка загруженных разделов и доступа CRM`, ссылки на `docs/CRM_V4_TEST_ACCESS.md` и `docs/CRM_V4_TESTER_CHECKLIST.md`, снятие доступа через `leader_user_profiles.is_active = false`;
+- актуальность `docs/NEXT_SAFE_STEPS.md`: дата 2026-06-23, версии `leader-public-lead v6`, `leader-crm-leads v8`, `leader-crm-orders v2`, ссылка на чек-лист, описание `leader_public_lead_audit`, правило не менять live Supabase без плана, миграции и проверки;
+- защиту `docs/NEXT_SAFE_STEPS.md` от возврата устаревшего плана, где аудит публичных заявок описан как ещё не сделанная будущая задача.
 
 В `deputat36/lidercalculator` также добавлен отдельный workflow `.github/workflows/static-checks.yml`, который проверяет рабочую временную CRM v4: подключение `site-cache-note-v1.js?v=20260623-1`, импорт свежей самопроверки и аудита, а также наличие `Referer` и раскрываемых `Технических данных` в модуле аудита.
 
