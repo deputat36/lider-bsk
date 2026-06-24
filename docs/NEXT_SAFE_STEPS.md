@@ -5,6 +5,7 @@
 ## Текущее состояние
 
 - публичный сайт: `https://www.lider-bsk.ru`;
+- страница проверки заявки: `https://www.lider-bsk.ru/request.html`;
 - временная CRM v4: `https://deputat36.github.io/lidercalculator/app-v4.html`;
 - основной CRM-контур: `https://deputat36.github.io/lider-bsk/crm/v4/`;
 - основной репозиторий: `deputat36/lider-bsk`;
@@ -17,12 +18,15 @@
 1. Публичные заявки:
    - `leader-public-lead v7` активна;
    - работает защита от дублей по `request_id`;
-   - аудит журналирует `leader_public_lead_audit_insert_failed` и `leader_public_lead_audit_request_failed` без блокировки заявки.
+   - аудит журналирует `leader_public_lead_audit_insert_failed` и `leader_public_lead_audit_request_failed` без блокировки заявки;
+   - honeypot передаётся в Edge Function и фиксируется как `suspicious`;
+   - страница `request.html` после успешной отправки показывает номер обращения, равный `request_id`.
 
 2. Supabase CRM:
    - `leader-crm-leads v8` и `leader-crm-orders v2` активны с JWT;
    - прямой клиентский доступ к служебным RPC закрыт;
-   - Security Advisor больше не показывает предупреждений по `leader_*`;
+   - у `leader_*` нет отсутствующих индексов внешних ключей;
+   - RLS чтения аудита оптимизирован через `(select auth.uid())` без изменения доступа;
    - live Supabase не менять без понятного плана, миграции и проверки.
 
 3. Авторизация и контуры:
@@ -39,12 +43,6 @@
    - перенесены заявки, карточка, история, потребности, расчёты и КП;
    - работают создание заказа, список и карточка заказа;
    - подключены контроль заказов, финансы, производство, монтаж, контроль контактов, аудит и дашборд.
-
-5. Документы:
-   - `docs/CRM_V4_TESTER_CHECKLIST.md`;
-   - `docs/CRM_ADMIN_TESTER_ONBOARDING.md`;
-   - `docs/CRM_V4_BROWSER_TEST_REPORT.md`;
-   - `docs/PUBLIC_LEAD_AUDIT.md`.
 
 ## Обязательная проверка изоляции
 
@@ -64,12 +62,15 @@
 
 ## Проверка заявки и аудита
 
-1. Открыть `https://www.lider-bsk.ru`.
+1. Открыть `https://www.lider-bsk.ru/request.html` и нажать Ctrl + F5.
 2. Отправить заявку с пометкой `Тест CRM v4 audit v7`.
-3. Открыть `Аудит заявок`.
-4. Сопоставить заявку и событие по `request_id`.
-5. Проверить телефон, страницу, UTM, user-agent, referer и технические данные.
-6. Зафиксировать результат в `docs/CRM_V4_BROWSER_TEST_REPORT.md`.
+3. Записать номер обращения из зелёного сообщения об успешной отправке.
+4. Открыть основной CRM-контур и раздел `Аудит заявок`.
+5. Нажать `Обновить аудит`.
+6. Найти событие по записанному номеру обращения (`request_id`).
+7. Убедиться, что заявка с тем же `request_id` появилась в CRM.
+8. Проверить телефон, страницу, UTM, user-agent, referer и технические данные.
+9. Зафиксировать результат в `docs/CRM_V4_BROWSER_TEST_REPORT.md`.
 
 ## Полный бизнес-сценарий
 
