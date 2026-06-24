@@ -136,7 +136,6 @@
     const form=e.currentTarget;
     const btn=form.querySelector('button[type="submit"]');
     if(form.dataset.submitting==='1')return;
-    if(field(form,'website'))return;
 
     const name=field(form,'name');
     const phone=field(form,'phone');
@@ -193,7 +192,7 @@
       budget,
       business,
       ...utm,
-      website:''
+      website:field(form,'website')
     };
 
     form.dataset.submitting='1';
