@@ -1,0 +1,51 @@
+name: Request reference check
+
+on:
+  push:
+    branches: [main, improve-site-crm]
+    paths:
+      - request.html
+      - assets/public-lead-reference-v1.js
+      - assets/public-lead-form.js
+      - .github/workflows/request-reference-check.yml
+  pull_request:
+    branches: [main]
+    paths:
+      - request.html
+      - assets/public-lead-reference-v1.js
+      - assets/public-lead-form.js
+      - .github/workflows/request-reference-check.yml
+
+jobs:
+  validate-request-reference:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate request reference integration
+        shell: bash
+        run: |
+          set -euo pipefail
+          helper='assets/public-lead-reference-v1.js'
+          page='request.html'
+          form='assets/public-lead-form.js'
+
+          test -f "$helper"
+          node --check "$helper"
+          grep -Fq "detail.goal!=='lead_sent'" "$helper"
+          grep -Fq 'params.request_id' "$helper"
+          grep -Fq 'form.dataset.lastRequestId=requestId' "$helper"
+          grep -Fq 'Номер обращения:' "$helper"
+          grep -Fq "goal('lead_sent',{service,page:location.href,request_id:rid})" "$form"
+          grep -Fq 'assets/public-lead-reference-v1.js?v=1' "$page"
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          page = Path('request.html').read_text(encoding='utf-8')
+          helper = 'assets/public-lead-reference-v1.js?v=1'
+          form = 'assets/public-lead-form.js?v=4'
+          assert page.count(helper) == 1
+          assert page.count(form) == 1
+          assert page.index(helper) < page.index(form)
+          PY
