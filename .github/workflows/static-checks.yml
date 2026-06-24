@@ -43,12 +43,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          form='assets/public-lead-form.js'
           test -f assets/public-lead-form.css
-          test -f assets/public-lead-form.js
+          test -f "$form"
           grep -q 'overflow-x:hidden' assets/public-lead-form.css
-          grep -q 'request_id' assets/public-lead-form.js
-          grep -q 'page_path' assets/public-lead-form.js
-          grep -q 'submitted_at' assets/public-lead-form.js
+          grep -q 'request_id' "$form"
+          grep -q 'page_path' "$form"
+          grep -q 'submitted_at' "$form"
+          grep -Fq "website:field(form,'website')" "$form"
+          if grep -Fq "if(field(form,'website'))return" "$form"; then
+            echo 'Client-side honeypot bypasses the server audit.' >&2
+            exit 1
+          fi
           fn='supabase/functions/leader-public-lead/index.ts'
           test -f "$fn"
           grep -q 'leader_leads?on_conflict=request_id' "$fn"
