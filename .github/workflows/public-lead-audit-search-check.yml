@@ -1,0 +1,37 @@
+name: Public lead audit search check
+
+on:
+  push:
+    branches: [main, improve-site-crm]
+    paths:
+      - crm/v4/assets/v4/public-lead-audit-v1.js
+      - crm/v4/assets/v4/site-cache-note-v1.js
+      - .github/workflows/public-lead-audit-search-check.yml
+  pull_request:
+    branches: [main]
+    paths:
+      - crm/v4/assets/v4/public-lead-audit-v1.js
+      - crm/v4/assets/v4/site-cache-note-v1.js
+      - .github/workflows/public-lead-audit-search-check.yml
+
+jobs:
+  validate-audit-search:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate audit search integration
+        shell: bash
+        run: |
+          set -euo pipefail
+          audit='crm/v4/assets/v4/public-lead-audit-v1.js'
+          loader='crm/v4/assets/v4/site-cache-note-v1.js'
+
+          node --check "$audit"
+          grep -Fq "let search = '';" "$audit"
+          grep -Fq 'data-public-lead-audit-search' "$audit"
+          grep -Fq 'row.request_id' "$audit"
+          grep -Fq 'row.phone_normalized' "$audit"
+          grep -Fq 'row.utm_campaign' "$audit"
+          grep -Fq 'По этому номеру обращения' "$audit"
+          grep -Fq "public-lead-audit-v1.js?v=20260624-search-1" "$loader"
