@@ -1,0 +1,58 @@
+name: Apply public form honeypot fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/apply-public-form-honeypot-fix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply-fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch public form without rewriting unrelated code
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('assets/public-lead-form.js')
+          text = path.read_text(encoding='utf-8')
+
+          early_return = "    if(field(form,'website'))return;\n"
+          payload_value = "      website:''"
+
+          if text.count(early_return) != 1:
+              raise SystemExit('Expected exactly one client-side honeypot early return')
+          if text.count(payload_value) != 1:
+              raise SystemExit('Expected exactly one empty honeypot payload value')
+
+          text = text.replace(early_return, '', 1)
+          text = text.replace(payload_value, "      website:field(form,'website')", 1)
+          path.write_text(text, encoding='utf-8')
+          PY
+
+          grep -Fq "website:field(form,'website')" assets/public-lead-form.js
+          if grep -Fq "if(field(form,'website'))return" assets/public-lead-form.js; then
+            echo 'Client-side honeypot still bypasses the server audit.' >&2
+            exit 1
+          fi
+
+      - name: Commit the targeted fix and remove this workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/apply-public-form-honeypot-fix.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/public-lead-form.js .github/workflows/apply-public-form-honeypot-fix.yml
+          git commit -m 'Route honeypot submissions through lead audit'
+          git push origin HEAD:main
