@@ -1,0 +1,56 @@
+name: Apply public form cache check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/apply-public-form-cache-check.yml
+
+permissions:
+  contents: write
+
+jobs:
+  add-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Add cache version assertions to static checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/workflows/static-checks.yml')
+          text = path.read_text(encoding='utf-8')
+          marker = "          grep -Fq \"website:field(form,'website')\" \"$form\"\n"
+          addition = (
+              marker
+              + "          grep -lF 'assets/public-lead-form.js?v=4' -- *.html >/dev/null\n"
+              + "          if grep -lF 'assets/public-lead-form.js?v=3' -- *.html; then\n"
+              + "            echo 'Old public form cache version remains.' >&2\n"
+              + "            exit 1\n"
+              + "          fi\n"
+          )
+
+          if text.count(marker) != 1:
+              raise SystemExit('Expected one honeypot payload assertion')
+          if "assets/public-lead-form.js?v=4" in text:
+              raise SystemExit('Cache version assertion already exists')
+
+          path.write_text(text.replace(marker, addition, 1), encoding='utf-8')
+          PY
+
+      - name: Commit static check and remove this workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/apply-public-form-cache-check.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows/static-checks.yml .github/workflows/apply-public-form-cache-check.yml
+          git commit -m 'Validate public lead form cache version'
+          git push origin HEAD:main
