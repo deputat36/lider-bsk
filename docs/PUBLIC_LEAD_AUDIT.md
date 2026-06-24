@@ -66,10 +66,12 @@ RLS включён.
 
 Чтение:
 
-- доступно только авторизованным активным сотрудникам из `leader_user_profiles` с ролями `owner`, `admin`, `manager`.
+- доступно только авторизованным активным сотрудникам из `leader_user_profiles` с ролями `owner`, `admin`, `manager`;
+- с 2026-06-24 `auth.uid()` вычисляется через init-plan `(select auth.uid())`, чтобы не повторять вызов для каждой строки аудита.
 
 Важно:
 
+- оптимизация RLS не меняет роли и доступные операции;
 - `anon` не должен иметь `SELECT`, `UPDATE`, `DELETE`, `TRUNCATE`, `REFERENCES`, `TRIGGER`;
 - `authenticated` не должен иметь `INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`, `REFERENCES`, `TRIGGER`.
 
@@ -157,7 +159,8 @@ RLS включён.
 
 - `supabase/migrations/20260621_leader_public_lead_audit.sql`;
 - `supabase/migrations/20260622_tighten_public_lead_audit_insert_policy.sql`;
-- `supabase/migrations/20260623_tighten_leader_public_lead_audit_grants.sql`.
+- `supabase/migrations/20260623_tighten_leader_public_lead_audit_grants.sql`;
+- `supabase/migrations/20260624075510_optimize_leader_public_lead_audit_rls.sql`.
 
 Edge Function:
 
