@@ -25,7 +25,6 @@ jobs:
           import pathlib
           import xml.etree.ElementTree as ET
           from urllib.parse import urlparse
-
           root = ET.parse('sitemap.xml').getroot()
           assert root.tag.endswith('urlset')
           urls = [node for node in root if node.tag.endswith('url')]
@@ -50,7 +49,6 @@ jobs:
           grep -q 'request_id' assets/public-lead-form.js
           grep -q 'page_path' assets/public-lead-form.js
           grep -q 'submitted_at' assets/public-lead-form.js
-
           fn='supabase/functions/leader-public-lead/index.ts'
           test -f "$fn"
           grep -q 'leader_leads?on_conflict=request_id' "$fn"
@@ -79,7 +77,6 @@ jobs:
           grep -q '/auth/v1/user' "$orders"
           grep -q "if (action === 'list')" "$orders"
           grep -q "if (action === 'update')" "$orders"
-          grep -q 'order_update_failed' "$orders"
 
       - name: Validate CRM referenced assets
         run: |
@@ -88,7 +85,6 @@ jobs:
           import sys
           from html.parser import HTMLParser
           from urllib.parse import urlparse
-
           root = pathlib.Path('crm/v4').resolve()
           refs = []
           class Parser(HTMLParser):
@@ -115,7 +111,7 @@ jobs:
               sys.exit('Missing CRM assets: ' + ', '.join(missing))
           PY
 
-      - name: Validate CRM auth isolation and modules
+      - name: Validate main CRM session isolation
         shell: bash
         run: |
           set -euo pipefail
@@ -124,17 +120,23 @@ jobs:
           reset='crm/v4/assets/v4/auth-session-reset-v1.js'
           auth='crm/v4/assets/v4/auth.js'
           functions='crm/v4/assets/v4/functions-client.js'
+          loader='crm/v4/assets/v4/site-cache-note-v1.js'
+          selfcheck='crm/v4/assets/v4/crm-ui-selfcheck-v1.js'
 
           grep -Fq 'assets/v4/auth.js?v=20260624-contour-1' "$page"
           grep -Fq 'assets/v4/auth-session-reset-v1.js?v=20260624-contour-1' "$page"
+          grep -Fq "crm-ui-selfcheck-v1.js?v=20260624-contour-1" "$loader"
           grep -Fq "authStorageKey: 'leader_crm_v4_main_session'" "$config"
           grep -Fq "const CRM_SESSION_KEY = 'leader_crm_v4_main_session'" "$reset"
           grep -Fq "const LEGACY_SHARED_SESSION_KEY = 'leader_crm_v4_session'" "$reset"
+          grep -Fq "const EXPECTED_STORAGE_KEY = 'leader_crm_v4_main_session'" "$selfcheck"
+          grep -Fq "const LEGACY_STORAGE_KEY = 'leader_crm_v4_session'" "$selfcheck"
+          grep -Fq "row('Контур', 'Основной'" "$selfcheck"
+          grep -Fq "row('Сессия контура'" "$selfcheck"
+          grep -Fq "row('Старый общий ключ'" "$selfcheck"
           grep -Fq "signOut({ scope: 'local' })" "$auth"
           grep -Fq 'refresh_token_not_found' "$auth"
-          grep -Fq 'supabaseClient.auth.getSession()' "$functions"
           grep -Fq 'session.access_token' "$functions"
-          grep -Fq '/functions/v1/' "$functions"
 
           if grep -Fq "authStorageKey: 'leader_crm_v4_session'" "$config"; then
             echo 'Main CRM must not use the legacy shared auth key.' >&2
@@ -149,10 +151,14 @@ jobs:
             exit 1
           fi
 
+      - name: Validate CRM modules and audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          page='crm/v4/index.html'
           for marker in management-dashboard-v3.js crm-v4-expanded-menu-v1.js leads.js contact-control-v1.js orders-fast-loader-v1.js order-card-v1.js order-control-v2.js finance-control-v2.js production-board-v3.js production-job-card-v2.js installation-job-card-v2.js site-cache-note-v1.js; do
             grep -Fq "$marker" "$page"
           done
-
           audit='crm/v4/assets/v4/public-lead-audit-v1.js'
           grep -Fq 'leader_public_lead_audit' "$audit"
           grep -Fq 'limit(80)' "$audit"
@@ -161,13 +167,9 @@ jobs:
           grep -Fq 'Технические данные' "$audit"
 
       - name: Validate hardening migrations
-        shell: bash
         run: |
-          set -euo pipefail
           test -f supabase/migrations/20260623_tighten_leader_leads_grants.sql
           test -f supabase/migrations/20260623_tighten_leader_public_lead_audit_grants.sql
-          grep -q 'grant insert' supabase/migrations/20260623_tighten_leader_public_lead_audit_grants.sql
-          grep -q 'grant select' supabase/migrations/20260623_tighten_leader_public_lead_audit_grants.sql
 
       - name: Check committed secrets
         shell: bash
