@@ -51,6 +51,11 @@ jobs:
           grep -q 'page_path' "$form"
           grep -q 'submitted_at' "$form"
           grep -Fq "website:field(form,'website')" "$form"
+          grep -lF 'assets/public-lead-form.js?v=4' -- *.html >/dev/null
+          if grep -lF 'assets/public-lead-form.js?v=3' -- *.html; then
+            echo 'Old public form cache version remains.' >&2
+            exit 1
+          fi
           if grep -Fq "if(field(form,'website'))return" "$form"; then
             echo 'Client-side honeypot bypasses the server audit.' >&2
             exit 1
