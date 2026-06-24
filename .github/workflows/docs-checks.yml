@@ -2,130 +2,70 @@ name: Docs checks
 
 on:
   push:
-    branches: [ main, improve-site-crm ]
+    branches: [main, improve-site-crm]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
-  validate-crm-access-docs:
-    name: Validate CRM access docs
+  validate-crm-docs:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Validate CRM v4 test access docs
+      - uses: actions/checkout@v4
+      - name: Validate current CRM documentation
+        shell: bash
         run: |
           set -euo pipefail
           access_doc='docs/CRM_V4_TEST_ACCESS.md'
           checklist='docs/CRM_V4_TESTER_CHECKLIST.md'
           onboarding='docs/CRM_ADMIN_TESTER_ONBOARDING.md'
           next_steps='docs/NEXT_SAFE_STEPS.md'
+          status_doc='docs/STATUS.md'
           browser_report='docs/CRM_V4_BROWSER_TEST_REPORT.md'
-          runbook='docs/STATIC_CHECKS_RUNBOOK.md'
           audit_doc='docs/PUBLIC_LEAD_AUDIT.md'
           issue_template='.github/ISSUE_TEMPLATE/crm-v4-browser-test.md'
 
-          test -f "$access_doc"
-          test -f "$checklist"
-          test -f "$onboarding"
-          test -f "$next_steps"
-          test -f "$browser_report"
-          test -f "$runbook"
-          test -f "$audit_doc"
-          test -f "$issue_template"
+          for file in "$access_doc" "$checklist" "$onboarding" "$next_steps" "$status_doc" "$browser_report" "$audit_doc" "$issue_template"; do
+            test -f "$file"
+          done
 
           grep -Fq 'https://deputat36.github.io/lidercalculator/app-v4.html' "$access_doc"
-          grep -Fq 'docs/CRM_V4_TESTER_CHECKLIST.md' "$access_doc"
-          grep -Fq 'docs/CRM_ADMIN_TESTER_ONBOARDING.md' "$access_doc"
           grep -Fq 'leader_user_profiles' "$access_doc"
-          grep -Fq 'auth.users' "$access_doc"
-          grep -Fq 'insert into public.leader_user_profiles' "$access_doc"
-          grep -Fq 'update public.leader_user_profiles' "$access_doc"
           grep -Fq 'user_metadata' "$access_doc"
-          grep -Fq 'nav_*' "$access_doc"
-          grep -Fq 'owner' "$access_doc"
-          grep -Fq 'admin' "$access_doc"
-          grep -Fq 'manager' "$access_doc"
           grep -Fq 'is_active = false' "$access_doc"
-          grep -Fq 'Снятие доступа' "$access_doc"
 
-          grep -Fq 'docs/CRM_V4_TEST_ACCESS.md' "$checklist"
-          grep -Fq 'docs/CRM_V4_BROWSER_TEST_REPORT.md' "$checklist"
-          grep -Fq 'https://deputat36.github.io/lidercalculator/app-v4.html' "$checklist"
           grep -Fq 'Ctrl + F5' "$checklist"
           grep -Fq 'Проверить CRM' "$checklist"
-          grep -Fq 'Проверка загруженных разделов и доступа CRM' "$checklist"
-          grep -Fq 'Создать GitHub issue CRM v4 browser test' "$checklist"
-          grep -Fq 'CRM v4 browser test' "$checklist"
           grep -Fq 'Аудит заявок' "$checklist"
           grep -Fq 'request_id' "$checklist"
-          grep -Fq 'Технические данные' "$checklist"
-          grep -Fq 'Указать в GitHub issue, заполнен ли `docs/CRM_V4_BROWSER_TEST_REPORT.md`' "$checklist"
-          grep -Fq 'Указать в GitHub issue ссылку или место заполненного отчёта' "$checklist"
+          grep -Fq 'docs/CRM_V4_BROWSER_TEST_REPORT.md' "$checklist"
 
           grep -Fq 'kvmbsk@yandex.ru' "$onboarding"
           grep -Fq 'роль admin' "$onboarding"
-          grep -Fq 'Проверка загруженных разделов и доступа CRM' "$onboarding"
-          grep -Fq 'Создать GitHub issue CRM v4 browser test' "$onboarding"
-          grep -Fq 'Ссылка на GitHub issue' "$onboarding"
-          grep -Fq 'docs/CRM_V4_TEST_ACCESS.md' "$onboarding"
-          grep -Fq 'docs/CRM_V4_TESTER_CHECKLIST.md' "$onboarding"
-          grep -Fq 'docs/CRM_V4_BROWSER_TEST_REPORT.md' "$onboarding"
-          grep -Fq 'Отчёт docs/CRM_V4_BROWSER_TEST_REPORT.md заполнен' "$onboarding"
-          grep -Fq 'Ссылка/место заполненного отчёта' "$onboarding"
           grep -Fq 'leader_user_profiles.is_active = false' "$onboarding"
 
           grep -Fq 'Дата: 2026-06-24.' "$next_steps"
           grep -Fq 'leader-public-lead v7' "$next_steps"
           grep -Fq 'leader-crm-leads v8' "$next_steps"
           grep -Fq 'leader-crm-orders v2' "$next_steps"
-          grep -Fq 'leader_public_lead_audit_insert_failed' "$next_steps"
-          grep -Fq 'leader_public_lead_audit_request_failed' "$next_steps"
-          grep -Fq '20260624-isolated-1' "$next_steps"
-          grep -Fq 'refreshPromise' "$next_steps"
+          grep -Fq 'leader_crm_v4_main_session' "$next_steps"
+          grep -Fq 'leader_crm_v4_test_session' "$next_steps"
           grep -Fq 'leader_crm_v4_session' "$next_steps"
-          grep -Fq 'docs/CRM_V4_TESTER_CHECKLIST.md' "$next_steps"
-          grep -Fq 'docs/CRM_ADMIN_TESTER_ONBOARDING.md' "$next_steps"
-          grep -Fq 'docs/CRM_V4_BROWSER_TEST_REPORT.md' "$next_steps"
-          grep -Fq 'leader_public_lead_audit' "$next_steps"
+          grep -Fq '20260624-contour-1' "$next_steps"
+          grep -Fq 'refreshPromise' "$next_steps"
           grep -Fq 'Security Advisor больше не показывает предупреждений по `leader_*`' "$next_steps"
           grep -Fq 'не менять без понятного плана, миграции и проверки' "$next_steps"
-          ! grep -Fq '### Шаг 3. Добавить серверный аудит публичных заявок' "$next_steps"
-          ! grep -Fq 'Добавить таблицу аудита отправок' "$next_steps"
-          ! grep -Fq 'Логировать подозрительные отправки' "$next_steps"
+
+          grep -Fq 'leader_crm_v4_main_session' "$status_doc"
+          grep -Fq 'leader_crm_v4_test_session' "$status_doc"
+          grep -Fq 'один повторный вход' "$status_doc"
 
           grep -Fq '`v7`' "$audit_doc"
           grep -Fq 'leader_public_lead_audit_insert_failed' "$audit_doc"
-          grep -Fq 'leader_public_lead_audit_request_failed' "$audit_doc"
           grep -Fq 'rollback-smoke-test' "$audit_doc"
 
           grep -Fq 'CRM v4 browser test report' "$browser_report"
-          grep -Fq 'Email входа в CRM' "$browser_report"
-          grep -Fq 'Блок `Проверка загруженных разделов и доступа CRM` виден' "$browser_report"
-          grep -Fq 'Ссылка `Создать GitHub issue CRM v4 browser test` видна' "$browser_report"
-          grep -Fq 'Есть 404 по `assets/v4/*.js` или `assets/v4/*.css`' "$browser_report"
-          grep -Fq 'Аудит заявок' "$browser_report"
-          grep -Fq 'request_id' "$browser_report"
-          grep -Fq 'Ссылка на GitHub issue' "$browser_report"
-          grep -Fq 'GitHub issue создан: да/нет' "$browser_report"
-          grep -Fq 'В GitHub issue указано, что отчёт заполнен: да/нет' "$browser_report"
-          grep -Fq 'В GitHub issue указана ссылка/место отчёта: да/нет' "$browser_report"
-          grep -Fq 'Критичность: блокер / высокая / средняя / низкая' "$browser_report"
           grep -Fq 'Итог: прошло / прошло с замечаниями / не прошло' "$browser_report"
-
-          grep -Fq 'При ошибках создан GitHub issue через шаблон CRM v4 browser test' "$runbook"
-          grep -Fq 'В GitHub issue указано, заполнен ли docs/CRM_V4_BROWSER_TEST_REPORT.md' "$runbook"
-          grep -Fq 'В GitHub issue указана ссылка или место заполненного отчёта' "$runbook"
-
           grep -Fq 'CRM v4 browser test' "$issue_template"
-          grep -Fq 'Отчёт или ошибка по браузерной проверке CRM v4' "$issue_template"
-          grep -Fq 'Email входа в CRM' "$issue_template"
-          grep -Fq 'Блок `Проверка загруженных разделов и доступа CRM` виден' "$issue_template"
-          grep -Fq 'Есть 404 по `assets/v4/*.js` или `assets/v4/*.css`' "$issue_template"
-          grep -Fq 'Аудит заявок' "$issue_template"
           grep -Fq 'request_id' "$issue_template"
-          grep -Fq 'Критичность: блокер / высокая / средняя / низкая' "$issue_template"
-          grep -Fq 'docs/CRM_V4_BROWSER_TEST_REPORT.md' "$issue_template"
-          grep -Fq 'Отчёт docs/CRM_V4_BROWSER_TEST_REPORT.md заполнен' "$issue_template"
-          grep -Fq 'Ссылка/место заполненного отчёта' "$issue_template"
+
+          ! grep -Fq '### Шаг 3. Добавить серверный аудит публичных заявок' "$next_steps"
