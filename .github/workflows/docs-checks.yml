@@ -39,6 +39,14 @@ jobs:
           grep -Fq 'Аудит заявок' "$checklist"
           grep -Fq 'request_id' "$checklist"
           grep -Fq 'docs/CRM_V4_BROWSER_TEST_REPORT.md' "$checklist"
+          grep -Fq 'https://www.lider-bsk.ru/request.html' "$checklist"
+          grep -Fq 'Тест CRM v4 audit v8' "$checklist"
+          grep -Fq 'Скопировать request_id' "$checklist"
+          grep -Fq 'docs/CRM_V4_AUDIT_V8_CHECK.md' "$checklist"
+          if grep -Fq 'Тест CRM v4 audit v7' "$checklist"; then
+            echo 'CRM_V4_TESTER_CHECKLIST.md must use audit v8 wording.' >&2
+            exit 1
+          fi
 
           grep -Fq 'Проверка аудита публичной заявки v8' "$audit_v8_check"
           grep -Fq 'Тест CRM v4 audit v8' "$audit_v8_check"
