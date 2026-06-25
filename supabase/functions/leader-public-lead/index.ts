@@ -28,6 +28,11 @@ function requestIdFromBody(body: Record<string, unknown>) {
   return 'server-' + crypto.randomUUID()
 }
 
+function isDuplicateRequest(details: string) {
+  const text = details.toLowerCase()
+  return text.includes('duplicate key') || text.includes('leader_leads_request_id_key') || text.includes('23505')
+}
+
 async function writeAudit(params: {
   supabaseUrl: string
   anonKey: string
@@ -85,7 +90,6 @@ async function writeAudit(params: {
       result: params.result,
       message: cleanText(error instanceof Error ? error.message : error, 500),
     })
-    // Аудит не должен блокировать получение заявки.
     return false
   }
 }
@@ -128,7 +132,7 @@ Deno.serve(async (req: Request) => {
 
   if (cleanText(body.website, 200)) {
     await writeAudit({ ...auditBase, result: 'suspicious', reason: 'honeypot_filled', payload: { form: 'site_public_form_v7' } })
-    return json(200, { ok: true })
+    return json(200, { ok: true, request_id: requestId })
   }
 
   const name = cleanText(body.name, 200)
@@ -137,7 +141,7 @@ Deno.serve(async (req: Request) => {
   const contactMethod = cleanText(body.contact_method, 120)
   if (!phone && !message) {
     await writeAudit({ ...auditBase, result: 'rejected', reason: 'phone_or_message_required', payload: { form: 'site_public_form_v7', service } })
-    return json(400, { error: 'phone_or_message_required' })
+    return json(400, { error: 'phone_or_message_required', request_id: requestId })
   }
 
   const budgetText = cleanText(body.budget, 120)
@@ -185,23 +189,27 @@ Deno.serve(async (req: Request) => {
     payload,
   }
 
-  const res = await fetch(supabaseUrl + '/rest/v1/leader_leads?on_conflict=request_id', {
+  const res = await fetch(supabaseUrl + '/rest/v1/leader_leads', {
     method: 'POST',
     headers: {
       'apikey': anonKey,
       'Authorization': 'Bearer ' + anonKey,
       'Content-Type': 'application/json',
-      'Prefer': 'resolution=ignore-duplicates,return=minimal',
+      'Prefer': 'return=minimal',
     },
     body: JSON.stringify(insertBody),
   })
 
   if (!res.ok) {
     const details = await res.text()
+    if (res.status === 409 || isDuplicateRequest(details)) {
+      await writeAudit({ ...auditBase, result: 'duplicate', reason: 'request_id_conflict', payload: { form: 'site_public_form_v7', request_id: requestId } })
+      return json(200, { ok: true, request_id: requestId, duplicate: true })
+    }
     await writeAudit({ ...auditBase, result: 'error', reason: 'insert_failed', payload: { form: 'site_public_form_v7', details: details.slice(0, 500) } })
-    return json(500, { error: 'insert_failed', details })
+    return json(500, { error: 'insert_failed', request_id: requestId, details })
   }
 
-  await writeAudit({ ...auditBase, result: 'accepted', reason: 'lead_insert_requested', payload })
+  await writeAudit({ ...auditBase, result: 'accepted', reason: 'lead_insert_created', payload })
   return json(200, { ok: true, request_id: requestId })
 })
