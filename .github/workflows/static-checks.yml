@@ -62,8 +62,20 @@ jobs:
           fi
           fn='supabase/functions/leader-public-lead/index.ts'
           test -f "$fn"
-          grep -q 'leader_leads?on_conflict=request_id' "$fn"
-          grep -q 'resolution=ignore-duplicates,return=minimal' "$fn"
+          grep -q "/rest/v1/leader_leads'" "$fn"
+          grep -q "result: 'accepted'" "$fn"
+          grep -q "result: 'duplicate'" "$fn"
+          grep -q "reason: 'request_id_conflict'" "$fn"
+          grep -q 'isDuplicateRequest' "$fn"
+          grep -q 'duplicate: true' "$fn"
+          if grep -q 'leader_leads?on_conflict=request_id' "$fn"; then
+            echo 'Public lead v8 must not hide duplicates with on_conflict.' >&2
+            exit 1
+          fi
+          if grep -q 'resolution=ignore-duplicates' "$fn"; then
+            echo 'Public lead v8 must write duplicate audit events explicitly.' >&2
+            exit 1
+          fi
           grep -q 'leader_public_lead_audit' "$fn"
           grep -q 'if (!auditRes.ok)' "$fn"
           grep -q 'leader_public_lead_audit_insert_failed' "$fn"
