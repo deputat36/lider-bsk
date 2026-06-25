@@ -57,4 +57,5 @@ comment on view public.leader_request_trace is 'РА Лидер: read-only тр�
 
 revoke all on public.leader_request_trace from public;
 revoke all on public.leader_request_trace from anon;
+revoke all on public.leader_request_trace from authenticated;
 grant select on public.leader_request_trace to authenticated;
