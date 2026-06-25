@@ -1,0 +1,34 @@
+name: Request trace view check
+
+on:
+  push:
+    branches: [main, improve-site-crm]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-request-trace-view:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate request trace view migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          view_migration='supabase/migrations/20260625_create_leader_request_trace_view.sql'
+          grants_migration='supabase/migrations/20260625_tighten_leader_request_trace_view_grants.sql'
+          test -f "$view_migration"
+          test -f "$grants_migration"
+          grep -Fq 'create or replace view public.leader_request_trace' "$view_migration"
+          grep -Fq 'with (security_invoker = true)' "$view_migration"
+          grep -Fq 'leader_leads' "$view_migration"
+          grep -Fq 'leader_public_lead_audit' "$view_migration"
+          grep -Fq 'trace_status' "$view_migration"
+          grep -Fq 'lead_without_audit' "$view_migration"
+          grep -Fq 'audit_without_lead' "$view_migration"
+          grep -Fq 'revoke all on public.leader_request_trace from public;' "$view_migration"
+          grep -Fq 'revoke all on public.leader_request_trace from anon;' "$view_migration"
+          grep -Fq 'revoke all on public.leader_request_trace from authenticated;' "$view_migration"
+          grep -Fq 'grant select on public.leader_request_trace to authenticated;' "$view_migration"
+          grep -Fq 'revoke all on public.leader_request_trace from authenticated;' "$grants_migration"
+          grep -Fq 'grant select on public.leader_request_trace to authenticated;' "$grants_migration"
