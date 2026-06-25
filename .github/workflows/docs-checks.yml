@@ -62,9 +62,15 @@ jobs:
           grep -Fq 'один повторный вход' "$status_doc"
           grep -Fq 'duplicate' "$status_doc"
 
-          grep -Fq '`v7`' "$audit_doc"
+          grep -Fq '`v8`' "$audit_doc"
+          grep -Fq 'duplicate' "$audit_doc"
+          grep -Fq 'Скопировать request_id' "$audit_doc"
           grep -Fq 'leader_public_lead_audit_insert_failed' "$audit_doc"
           grep -Fq 'rollback-smoke-test' "$audit_doc"
+          if grep -Fq '`v7`' "$audit_doc"; then
+            echo 'PUBLIC_LEAD_AUDIT.md must describe v8, not v7.' >&2
+            exit 1
+          fi
 
           grep -Fq 'CRM v4 browser test report' "$browser_report"
           grep -Fq 'Итог: прошло / прошло с замечаниями / не прошло' "$browser_report"
