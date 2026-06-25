@@ -22,9 +22,10 @@ jobs:
           status_doc='docs/STATUS.md'
           browser_report='docs/CRM_V4_BROWSER_TEST_REPORT.md'
           audit_doc='docs/PUBLIC_LEAD_AUDIT.md'
+          audit_v8_check='docs/CRM_V4_AUDIT_V8_CHECK.md'
           issue_template='.github/ISSUE_TEMPLATE/crm-v4-browser-test.md'
 
-          for file in "$access_doc" "$checklist" "$onboarding" "$next_steps" "$status_doc" "$browser_report" "$audit_doc" "$issue_template"; do
+          for file in "$access_doc" "$checklist" "$onboarding" "$next_steps" "$status_doc" "$browser_report" "$audit_doc" "$audit_v8_check" "$issue_template"; do
             test -f "$file"
           done
 
@@ -38,6 +39,11 @@ jobs:
           grep -Fq 'Аудит заявок' "$checklist"
           grep -Fq 'request_id' "$checklist"
           grep -Fq 'docs/CRM_V4_BROWSER_TEST_REPORT.md' "$checklist"
+
+          grep -Fq 'Проверка аудита публичной заявки v8' "$audit_v8_check"
+          grep -Fq 'Тест CRM v4 audit v8' "$audit_v8_check"
+          grep -Fq 'Скопировать request_id' "$audit_v8_check"
+          grep -Fq 'Дубль' "$audit_v8_check"
 
           grep -Fq 'kvmbsk@yandex.ru' "$onboarding"
           grep -Fq 'роль admin' "$onboarding"
