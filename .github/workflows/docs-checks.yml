@@ -51,6 +51,8 @@ jobs:
           grep -Fq 'Проверка аудита публичной заявки v8' "$audit_v8_check"
           grep -Fq 'Тест CRM v4 audit v8' "$audit_v8_check"
           grep -Fq 'Скопировать request_id' "$audit_v8_check"
+          grep -Fq 'Проверить request_id' "$audit_v8_check"
+          grep -Fq 'Цепочка полная' "$audit_v8_check"
           grep -Fq 'Дубль' "$audit_v8_check"
 
           grep -Fq 'kvmbsk@yandex.ru' "$onboarding"
@@ -75,6 +77,8 @@ jobs:
           grep -Fq 'leader_crm_v4_test_session' "$status_doc"
           grep -Fq 'один повторный вход' "$status_doc"
           grep -Fq 'duplicate' "$status_doc"
+          grep -Fq 'Проверить request_id' "$status_doc"
+          grep -Fq 'Цепочка полная' "$status_doc"
 
           grep -Fq '`v8`' "$audit_doc"
           grep -Fq 'duplicate' "$audit_doc"
