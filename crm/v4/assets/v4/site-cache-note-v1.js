@@ -13,6 +13,6 @@ function bootSiteCacheNote() {
   }
   import('./crm-ui-selfcheck-v1.js?v=20260624-contour-1').catch(() => {});
   import('./public-lead-audit-v1.js?v=20260625-duplicate-copy-1').catch(() => {});
-  import('./public-lead-audit-helper-v1.js?v=20260625-helper-1').catch(() => {});
+  import('./public-lead-audit-helper-v1.js?v=20260625-trace-widget-1').catch(() => {});
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootSiteCacheNote); else bootSiteCacheNote();
