@@ -20,12 +20,13 @@ jobs:
           onboarding='docs/CRM_ADMIN_TESTER_ONBOARDING.md'
           next_steps='docs/NEXT_SAFE_STEPS.md'
           status_doc='docs/STATUS.md'
+          decisions_doc='docs/DECISIONS.md'
           browser_report='docs/CRM_V4_BROWSER_TEST_REPORT.md'
           audit_doc='docs/PUBLIC_LEAD_AUDIT.md'
           audit_v8_check='docs/CRM_V4_AUDIT_V8_CHECK.md'
           issue_template='.github/ISSUE_TEMPLATE/crm-v4-browser-test.md'
 
-          for file in "$access_doc" "$checklist" "$onboarding" "$next_steps" "$status_doc" "$browser_report" "$audit_doc" "$audit_v8_check" "$issue_template"; do
+          for file in "$access_doc" "$checklist" "$onboarding" "$next_steps" "$status_doc" "$decisions_doc" "$browser_report" "$audit_doc" "$audit_v8_check" "$issue_template"; do
             test -f "$file"
           done
 
@@ -54,6 +55,16 @@ jobs:
           grep -Fq 'Проверить request_id' "$audit_v8_check"
           grep -Fq 'Цепочка полная' "$audit_v8_check"
           grep -Fq 'Дубль' "$audit_v8_check"
+
+          grep -Fq 'ADR-008. Идемпотентность публичных заявок и явный audit дублей' "$decisions_doc"
+          grep -Fq 'ADR-009. Трассировка request_id через read-only view' "$decisions_doc"
+          grep -Fq 'leader_request_trace' "$decisions_doc"
+          grep -Fq 'security_invoker = true' "$decisions_doc"
+          grep -Fq 'request_id_conflict' "$decisions_doc"
+          if grep -Fq 'ignore-duplicates' "$decisions_doc"; then
+            echo 'DECISIONS.md must describe public lead v8, not the old ignore-duplicates flow.' >&2
+            exit 1
+          fi
 
           grep -Fq 'kvmbsk@yandex.ru' "$onboarding"
           grep -Fq 'роль admin' "$onboarding"
