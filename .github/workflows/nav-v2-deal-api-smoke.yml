@@ -1,0 +1,53 @@
+name: Navigator v2 deal API smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      deal_id:
+        description: 'Deal UUID to smoke-test with the authenticated user JWT'
+        required: true
+        type: string
+      compare_direct_rpc:
+        description: 'Also compare payload shape with direct nav_v2_get_deal_card RPC'
+        required: false
+        default: false
+        type: boolean
+      supabase_url:
+        description: 'Supabase project URL'
+        required: false
+        default: 'https://ofewxuqfjhamgerwzull.supabase.co'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-nav-v2-deal-api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate smoke test script
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check tools/nav_v2_deal_api_smoke_test.mjs
+
+      - name: Run smoke test
+        shell: bash
+        env:
+          NAV_V2_JWT: ${{ secrets.NAV_V2_JWT }}
+          NAV_V2_DEAL_ID: ${{ inputs.deal_id }}
+          NAV_V2_SUPABASE_URL: ${{ inputs.supabase_url }}
+          INPUT_COMPARE_DIRECT_RPC: ${{ inputs.compare_direct_rpc }}
+        run: |
+          set -euo pipefail
+          if [ -z "${NAV_V2_JWT:-}" ]; then
+            echo 'Repository secret NAV_V2_JWT is required for this manual smoke test.' >&2
+            exit 1
+          fi
+          compare='0'
+          if [ "${INPUT_COMPARE_DIRECT_RPC}" = 'true' ]; then
+            compare='1'
+          fi
+          NAV_V2_COMPARE_DIRECT_RPC="$compare" node tools/nav_v2_deal_api_smoke_test.mjs
