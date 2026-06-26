@@ -4,7 +4,7 @@
 
 Цель: синхронизировать GitHub с тем, что уже применено в Supabase project `ofewxuqfjhamgerwzull`.
 
-## Уже перенесено в GitHub маленькими SQL-файлами
+## Перенесено в GitHub SQL-файлами
 
 1. `20260626_01_leader_user_invites_table.sql`
    - таблица `leader_user_invites`;
@@ -20,37 +20,53 @@
    - `leader_normalize_invite_email()`;
    - trigger `leader_user_invites_normalize_trg`.
 
-4. `20260626_05_leader_ensure_profile_pending.sql`
+4. `20260626_04_leader_apply_profile_invite.sql`
+   - `leader_apply_profile_invite()`;
+   - trigger `leader_apply_profile_invite_trg`;
+   - активация нового CRM-профиля только по действующему invite;
+   - новый пользователь без invite остаётся inactive/pending.
+
+5. `20260626_05_leader_ensure_profile_pending.sql`
    - обновлённая `leader_ensure_profile(text)`;
    - email берётся из `auth.email()`;
    - новый пользователь без invite создаётся как `is_active=false`.
 
-5. `20260626_07_leader_profile_function_grants.sql`
+6. `20260626_06_leader_order_from_offer_rpc.sql`
+   - `leader_create_order_from_offer_rpc(jsonb)`;
+   - атомарная конвертация согласованного КП в заказ;
+   - блокировка КП, расчёта и заявки на время операции;
+   - защита от повторного создания дубля заказа;
+   - перенос позиций расчёта в позиции заказа;
+   - запись события КП и истории статуса заказа.
+
+7. `20260626_07_leader_profile_function_grants.sql`
    - `leader_ensure_profile(text)` доступна `authenticated`;
    - `leader_apply_profile_invite()` закрыта от прямого execute для `anon`, `authenticated`, `public`.
 
-## Уже перенесено в GitHub по Edge Function
+## Перенесено в GitHub по Edge Function
 
 - `supabase/functions/leader-crm-leads/index.ts` соответствует deployed version 10.
 - `ensure_profile` вызывает `/rest/v1/rpc/leader_ensure_profile` с JWT пользователя.
 - Прямая вставка активного профиля через service role удалена.
 - `create_order_from_offer` вызывает `leader_create_order_from_offer_rpc`.
 
-## Временно зафиксировано как `.sql.todo`
+## `.sql.todo`
 
-1. `20260626_04_leader_apply_profile_invite_manual.sql.todo`
-   - реальная функция и trigger уже есть в Supabase;
-   - GitHub connector заблокировал создание полного SQL-файла;
-   - нужно заменить `.todo` на исполняемую миграцию через local Git или GitHub web editor.
+В ветке больше нет `.sql.todo`-заглушек. Оба временных файла заменены исполняемыми SQL-миграциями.
 
-2. `20260626_06_leader_order_from_offer_rpc_manual.sql.todo`
-   - реальная RPC уже есть в Supabase;
-   - GitHub connector заблокировал создание полного SQL-файла;
-   - нужно заменить `.todo` на исполняемую миграцию через local Git или GitHub web editor.
+## Проверка Supabase
+
+Проверено по живой базе:
+
+- `leader_create_order_from_offer_rpc(p_payload jsonb)` существует;
+- результат функции: `jsonb`;
+- `security definer`: включён;
+- `search_path=public`;
+- тело функции в базе: 9341 символ.
 
 ## CI
 
-CI по commit `1a47d88132f9051b220dd71daa50f8c6dc93c805` зелёный:
+CI по commit `4b0288c9b4d5fbf6e07c1f82382b6d0b28a2f97c` зелёный:
 
 - Static checks;
 - CRM auth checks;
@@ -62,4 +78,11 @@ CI по commit `1a47d88132f9051b220dd71daa50f8c6dc93c805` зелёный:
 
 ## Текущее безопасное правило
 
-PR #13 не переводить из draft и не мержить, пока `.sql.todo` не заменены реальными SQL-файлами и ветка не синхронизирована с последним `main`.
+PR #13 не переводить из draft и не мержить, пока ветка не синхронизирована с последним `main` и CI не пройдёт повторно уже после синхронизации.
+
+На момент проверки ветка разошлась с `main`:
+
+- ahead: 25 commits;
+- behind: 3 commits.
+
+Коммиты, которые есть в `main`, относятся к Open Graph/публичным HTML-страницам и не пересекаются с CRM/Supabase-файлами этого PR, но синхронизацию всё равно нужно выполнить перед merge.
