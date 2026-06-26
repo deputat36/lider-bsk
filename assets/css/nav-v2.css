@@ -1,0 +1,149 @@
+body.nav-v2 {
+  margin: 0;
+  min-height: 100vh;
+  background: #f5f7fb;
+  color: #172033;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.nav-v2-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 20px;
+  border-bottom: 1px solid #dfe5ef;
+  background: #ffffff;
+}
+
+.nav-v2-menu,
+.nav-v2-user,
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nav-v2-menu a {
+  border-radius: 8px;
+  color: #334155;
+  padding: 8px 10px;
+  text-decoration: none;
+}
+
+.nav-v2-menu a.active,
+.nav-v2-menu a:hover {
+  background: #e8eef8;
+  color: #0f172a;
+}
+
+.nav-v2-shell {
+  margin: 0 auto;
+  max-width: 1180px;
+  padding: 24px 20px;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid #dfe5ef;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.auth-card {
+  max-width: 420px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0;
+}
+
+.field label {
+  color: #475569;
+  font-size: 14px;
+}
+
+.field input {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font: inherit;
+  padding: 10px 12px;
+}
+
+.btn {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+  padding: 9px 12px;
+}
+
+.btn.primary {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  color: #ffffff;
+}
+
+.btn.light {
+  background: #ffffff;
+  color: #334155;
+}
+
+.btn:disabled {
+  cursor: default;
+  opacity: 0.65;
+}
+
+.muted,
+.status {
+  color: #64748b;
+}
+
+.status.ok {
+  color: #047857;
+}
+
+.status.error {
+  color: #b91c1c;
+}
+
+.pill {
+  border-radius: 999px;
+  display: inline-block;
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+.pill.red {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.pill.yellow {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.pill.green {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.pill.blue {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+@media (max-width: 720px) {
+  .nav-v2-top,
+  .nav-v2-user {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .nav-v2-menu {
+    flex-wrap: wrap;
+  }
+}
