@@ -1,0 +1,4 @@
+project_id = "ofewxuqfjhamgerwzull"
+
+[functions.nav-v2-deal-api]
+verify_jwt = true
