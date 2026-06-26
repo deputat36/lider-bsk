@@ -2,16 +2,18 @@ name: Navigator v2 deal API check
 
 on:
   push:
-    branches: [main, nav-v2-deal-api-get-card-bridge-20260626]
+    branches: [main, nav-v2-deal-api-get-card-bridge-20260626, nav-v2-deal-api-smoke-test-20260626]
     paths:
       - 'supabase/config.toml'
       - 'supabase/functions/nav-v2-deal-api/**'
+      - 'tools/nav_v2_deal_api_smoke_test.mjs'
       - '.github/workflows/nav-v2-deal-api-check.yml'
   pull_request:
     branches: [main]
     paths:
       - 'supabase/config.toml'
       - 'supabase/functions/nav-v2-deal-api/**'
+      - 'tools/nav_v2_deal_api_smoke_test.mjs'
       - '.github/workflows/nav-v2-deal-api-check.yml'
 
 jobs:
@@ -75,3 +77,27 @@ jobs:
           assert 'nav_v2_update_document_status' not in text
           assert 'nav_v2_update_task_status' not in text
           PY
+
+      - name: Validate smoke test tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          smoke='tools/nav_v2_deal_api_smoke_test.mjs'
+          test -f "$smoke"
+          grep -Fq 'NAV_V2_JWT' "$smoke"
+          grep -Fq 'NAV_V2_DEAL_ID' "$smoke"
+          grep -Fq 'NAV_V2_API_KEY' "$smoke"
+          grep -Fq 'NAV_V2_COMPARE_DIRECT_RPC' "$smoke"
+          grep -Fq '/functions/v1/nav-v2-deal-api' "$smoke"
+          grep -Fq '/rest/v1/rpc/nav_v2_get_deal_card' "$smoke"
+          grep -Fq 'assertDealCardPayload' "$smoke"
+          grep -Fq 'compared_direct_rpc' "$smoke"
+          node --check "$smoke"
+          if grep -nE 'sb_secret_|SUPABASE_SERVICE_ROLE|SERVICE_ROLE_KEY' "$smoke"; then
+            echo 'Smoke test must not contain service role or secret key markers.' >&2
+            exit 1
+          fi
+          if grep -nE 'eyJ[a-zA-Z0-9_-]{20,}' "$smoke"; then
+            echo 'Smoke test must not contain literal JWTs.' >&2
+            exit 1
+          fi
