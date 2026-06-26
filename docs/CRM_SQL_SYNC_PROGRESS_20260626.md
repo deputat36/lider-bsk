@@ -49,6 +49,12 @@
    - повторно закрывает прямой execute `leader_create_order_from_offer_rpc(jsonb)` для `anon`, `authenticated`, `public`;
    - оставляет execute только для `service_role`.
 
+9. `20260626_09_leader_ensure_profile_authenticated_execute_restore.sql`
+   - follow-up restore после обнаруженного live ACL drift;
+   - явно возвращает `EXECUTE` на `leader_ensure_profile(text)` роли `authenticated`;
+   - оставляет `service_role`;
+   - закрывает `anon` и `public`.
+
 ## Перенесено в GitHub по Edge Function
 
 - `supabase/functions/leader-crm-leads/index.ts` соответствует deployed version 10.
@@ -71,12 +77,14 @@
 - тело функции в базе: 9341 символа;
 - md5 тела функции: `85a8b2b5d0c352f79fce0f516a9f26dc`;
 - execute на `leader_create_order_from_offer_rpc(jsonb)` есть только у `postgres` и `service_role`;
+- execute на `leader_apply_profile_invite()` есть только у `postgres` и `service_role`;
+- execute на `leader_ensure_profile(text)` есть у `authenticated`, `postgres`, `service_role`;
 - `leader_user_invites` существует и имеет включённый RLS;
 - invite policies и оба trigger установлены.
 
 ## CI
 
-CI на PR #24 был зелёный на head `222c4880a10008ba3a734f9a902ce9fc1ea70122`:
+CI на PR #24 был зелёный на head `aa30c7144fa3a6145c6efb710714360457126eb9`:
 
 - Static checks;
 - CRM auth checks;
@@ -86,8 +94,8 @@ CI на PR #24 был зелёный на head `222c4880a10008ba3a734f9a902ce9fc
 - Order card finance check;
 - Public lead audit helper/copy checks.
 
-После синхронизации ветки с последним `main` CI должен пройти повторно.
+После добавления `20260626_09` CI должен пройти повторно.
 
 ## Текущее безопасное правило
 
-PR #24 не переводить из draft и не мержить, пока не пройдёт CI на синхронизированной ветке и не будут вручную проверены CRM-сценарии входа, pending-доступа, вкладки `Доступ`, приглашений и конвертации КП в заказ без дублей.
+PR #24 не переводить из draft и не мержить, пока не пройдёт CI на текущей ветке и не будут вручную проверены CRM-сценарии входа, pending-доступа, вкладки `Доступ`, приглашений и конвертации КП в заказ без дублей.
