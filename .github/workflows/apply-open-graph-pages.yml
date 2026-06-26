@@ -1,0 +1,42 @@
+name: Apply Open Graph pages
+
+on:
+  push:
+    branches: [public-og-apply-pages-20260626]
+    paths:
+      - '.github/workflows/apply-open-graph-pages.yml'
+      - 'tools/apply_open_graph.py'
+      - 'tools/open_graph_pages.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply-open-graph:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: public-og-apply-pages-20260626
+
+      - name: Apply configured Open Graph tags
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/apply_open_graph.py --apply
+          python3 tools/apply_open_graph.py --check
+
+      - name: Commit generated page updates
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo 'No generated Open Graph changes.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html prices.html portfolio.html bannery-borisoglebsk.html vyveski-borisoglebsk.html nakleyki-plotternaya-rezka-borisoglebsk.html outdoor-advertising-borisoglebsk.html reklama-dlya-biznesa.html reklama-dlya-magazina-borisoglebsk.html reklama-dlya-kafe-borisoglebsk.html reklama-v-soobshchestvah-borisoglebska.html yandex-karty-2gis.html
+          git commit -m 'seo: apply Open Graph tags to core pages'
+          git push origin HEAD:public-og-apply-pages-20260626
