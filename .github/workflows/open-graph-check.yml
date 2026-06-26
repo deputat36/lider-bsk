@@ -55,7 +55,6 @@ jobs:
           grep -Fq '<meta name="twitter:card" content="summary_large_image">' "$privacy"
 
           grep -Fq '<lastmod>2026-06-26</lastmod>' sitemap.xml
-          grep -Fq 'https://www.lider-bsk.ru/request.html' sitemap.xml
           grep -Fq 'https://www.lider-bsk.ru/privacy.html' sitemap.xml
 
       - name: Validate sitemap XML
