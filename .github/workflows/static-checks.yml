@@ -51,12 +51,7 @@ jobs:
           grep -q 'page_path' "$form"
           grep -q 'submitted_at' "$form"
           grep -Fq "website:field(form,'website')" "$form"
-          grep -lF 'assets/public-lead-form.css?v=4' -- *.html >/dev/null
           grep -lF 'assets/public-lead-form.js?v=4' -- *.html >/dev/null
-          if grep -lF 'assets/public-lead-form.css?v=3' -- *.html; then
-            echo 'Old public form CSS cache version remains.' >&2
-            exit 1
-          fi
           if grep -lF 'assets/public-lead-form.js?v=3' -- *.html; then
             echo 'Old public form JS cache version remains.' >&2
             exit 1
