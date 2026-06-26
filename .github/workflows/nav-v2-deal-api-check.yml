@@ -2,7 +2,7 @@ name: Navigator v2 deal API check
 
 on:
   push:
-    branches: [main, nav-v2-deal-api-skeleton-20260626]
+    branches: [main, nav-v2-deal-api-get-card-bridge-20260626]
     paths:
       - 'supabase/config.toml'
       - 'supabase/functions/nav-v2-deal-api/**'
@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate function skeleton
+      - name: Validate function bridge
         shell: bash
         run: |
           set -euo pipefail
@@ -35,6 +35,11 @@ jobs:
           grep -Fq '/auth/v1/user' "$fn"
           grep -Fq 'SUPABASE_URL' "$fn"
           grep -Fq 'SUPABASE_ANON_KEY' "$fn"
+          grep -Fq 'callUserRpc' "$fn"
+          grep -Fq '/rest/v1/rpc/' "$fn"
+          grep -Fq 'nav_v2_get_deal_card' "$fn"
+          grep -Fq 'parseDealId' "$fn"
+          grep -Fq 'uuidRe' "$fn"
           grep -Fq 'get_deal_card' "$fn"
           grep -Fq 'add_comment' "$fn"
           grep -Fq 'update_deal_status' "$fn"
@@ -46,7 +51,7 @@ jobs:
             exit 1
           fi
 
-      - name: Validate action whitelist is not empty
+      - name: Validate action boundaries
         shell: bash
         run: |
           set -euo pipefail
@@ -62,6 +67,11 @@ jobs:
           }
           missing = [item for item in sorted(required) if text.count(f'"{item}"') < 2]
           assert not missing, f'missing actions in type or whitelist: {missing}'
-          assert 'SUPABASE_SERVICE_ROLE_KEY' not in text, 'skeleton must not use service-role before explicit authorization implementation'
-          assert 'supabase.rpc(' not in text, 'skeleton must not proxy arbitrary RPC calls'
+          assert 'SUPABASE_SERVICE_ROLE_KEY' not in text, 'bridge must not use service-role before explicit authorization implementation'
+          assert 'supabase.rpc(' not in text, 'bridge must not proxy arbitrary supabase-js RPC calls'
+          assert text.count('nav_v2_get_deal_card') == 1, 'only get_deal_card may bridge to an existing RPC in this phase'
+          assert 'nav_v2_add_comment' not in text
+          assert 'nav_v2_update_deal_status' not in text
+          assert 'nav_v2_update_document_status' not in text
+          assert 'nav_v2_update_task_status' not in text
           PY
