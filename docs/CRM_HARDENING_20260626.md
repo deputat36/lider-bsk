@@ -20,7 +20,8 @@
 - policies `leader_user_invites_admin_select`, `leader_user_invites_admin_insert`, `leader_user_invites_admin_update` установлены для роли `authenticated` через admin-предикат;
 - trigger `leader_user_invites_normalize_trg` установлен на insert/update;
 - trigger `leader_apply_profile_invite_trg` установлен на insert в `leader_user_profiles`;
-- `leader_ensure_profile(text)` доступна роли `authenticated`, потому что Edge Function вызывает её с пользовательским JWT.
+- `leader_ensure_profile(text)` доступна роли `authenticated`, потому что Edge Function вызывает её с пользовательским JWT;
+- FK indexes `leader_user_invites_invited_by_idx` и `leader_user_invites_accepted_user_id_idx` созданы.
 
 ### Атомарное создание заказа из КП
 
@@ -55,13 +56,20 @@ PR содержит:
 - модуль `crm/v4/assets/v4/user-admin-v1.js`;
 - обновлённый `auth.js` с pending-состоянием;
 - Edge Function `supabase/functions/leader-crm-leads/index.ts`, соответствующую deployed version 10;
-- исполняемые SQL-миграции `20260626_01`–`20260626_09`;
+- исполняемые SQL-миграции `20260626_01`–`20260626_10`;
 - hardening-миграцию `20260626_08_leader_order_rpc_restrict_execute.sql`;
 - follow-up restore `20260626_09_leader_ensure_profile_authenticated_execute_restore.sql`;
+- FK index migration `20260626_10_leader_user_invites_fk_indexes.sql`;
 - grants для profile functions;
 - документацию по текущему состоянию.
 
 В ветке больше нет `.sql.todo`-заглушек.
+
+## Advisors
+
+Supabase performance advisor больше не показывает `unindexed_foreign_keys` для `leader_user_invites` после добавления FK indexes.
+
+Security advisor предупреждает, что `leader_ensure_profile(text)` является `SECURITY DEFINER` и доступна `authenticated`. Это ожидаемое состояние для bootstrap/pending flow: RPC вызывается через Edge Function с JWT пользователя, проверяет `auth.uid()`, использует `auth.email()` как источник email и не доверяет произвольному входному email.
 
 ## Почему PR пока draft
 
