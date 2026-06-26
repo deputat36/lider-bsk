@@ -43,9 +43,25 @@ Preflight fix path:
 
 Do not start the Edge Function migration unless `Navigator v2 check` is green.
 
+## Phase 2 status
+
+A repository-only skeleton for `nav-v2-deal-api` has been added under `supabase/functions/nav-v2-deal-api/index.ts`.
+
+Current skeleton behavior:
+
+- `verify_jwt=true` is recorded in `supabase/config.toml`;
+- handles `OPTIONS` and `POST` only;
+- validates the incoming bearer token with `/auth/v1/user` using `SUPABASE_URL` and `SUPABASE_ANON_KEY`;
+- accepts only the planned action whitelist;
+- returns `501` for every action because behavior parity has not been ported yet;
+- does not use `SUPABASE_SERVICE_ROLE_KEY` yet;
+- does not call current RPC and does not mutate data.
+
+The function is not wired into browser code and should not replace direct RPC until `get_deal_card` is implemented and manually verified.
+
 ## Target architecture
 
-Add one authenticated Edge Function, for example:
+Add one authenticated Edge Function:
 
 `nav-v2-deal-api`
 

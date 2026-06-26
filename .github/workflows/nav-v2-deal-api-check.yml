@@ -1,0 +1,67 @@
+name: Navigator v2 deal API check
+
+on:
+  push:
+    branches: [main, nav-v2-deal-api-skeleton-20260626]
+    paths:
+      - 'supabase/config.toml'
+      - 'supabase/functions/nav-v2-deal-api/**'
+      - '.github/workflows/nav-v2-deal-api-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/config.toml'
+      - 'supabase/functions/nav-v2-deal-api/**'
+      - '.github/workflows/nav-v2-deal-api-check.yml'
+
+jobs:
+  validate-nav-v2-deal-api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate function skeleton
+        shell: bash
+        run: |
+          set -euo pipefail
+          fn='supabase/functions/nav-v2-deal-api/index.ts'
+          config='supabase/config.toml'
+          test -f "$fn"
+          test -f "$config"
+          grep -Fq '[functions.nav-v2-deal-api]' "$config"
+          grep -Fq 'verify_jwt = true' "$config"
+          grep -Fq 'Deno.serve' "$fn"
+          grep -Fq 'getAuthUser' "$fn"
+          grep -Fq '/auth/v1/user' "$fn"
+          grep -Fq 'SUPABASE_URL' "$fn"
+          grep -Fq 'SUPABASE_ANON_KEY' "$fn"
+          grep -Fq 'get_deal_card' "$fn"
+          grep -Fq 'add_comment' "$fn"
+          grep -Fq 'update_deal_status' "$fn"
+          grep -Fq 'update_document_status' "$fn"
+          grep -Fq 'update_task_status' "$fn"
+          grep -Fq '501' "$fn"
+          if grep -R -nE 'sb_secret_|eyJ[a-zA-Z0-9_-]{20,}' supabase/functions/nav-v2-deal-api; then
+            echo 'Function source must not contain literal Supabase secret keys or JWTs.' >&2
+            exit 1
+          fi
+
+      - name: Validate action whitelist is not empty
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          text = Path('supabase/functions/nav-v2-deal-api/index.ts').read_text(encoding='utf-8')
+          required = {
+              'get_deal_card',
+              'add_comment',
+              'update_deal_status',
+              'update_document_status',
+              'update_task_status',
+          }
+          missing = [item for item in sorted(required) if text.count(f'"{item}"') < 2]
+          assert not missing, f'missing actions in type or whitelist: {missing}'
+          assert 'SUPABASE_SERVICE_ROLE_KEY' not in text, 'skeleton must not use service-role before explicit authorization implementation'
+          assert 'supabase.rpc(' not in text, 'skeleton must not proxy arbitrary RPC calls'
+          PY
