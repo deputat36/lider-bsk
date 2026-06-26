@@ -1,0 +1,26 @@
+-- TODO: manually add the real SQL migration via local Git or GitHub web editor.
+-- The RPC is already applied in Supabase project ofewxuqfjhamgerwzull.
+-- GitHub connector blocked creating the full SQL file in this branch.
+
+-- Required function:
+-- public.leader_create_order_from_offer_rpc(p_payload jsonb)
+
+-- Required behavior:
+-- 1. Require authenticated active CRM user.
+-- 2. Require p_payload.offer_id.
+-- 3. Lock commercial offer, calculation and lead rows for update.
+-- 4. Allow conversion only when offer.status = 'Согласовано'.
+-- 5. If offer/calculation/lead already has order_id, return existing order without duplicate.
+-- 6. Create or reuse client.
+-- 7. Create leader_orders row.
+-- 8. Copy leader_lead_calculation_items into leader_order_items.
+-- 9. Link calculation, offer and lead to created order.
+-- 10. Write leader_commercial_offer_events and leader_order_status_history.
+
+-- Access model already applied in production:
+-- execute granted to authenticated and service_role.
+-- execute not granted to anon.
+
+-- Source of truth until this file is replaced by real SQL:
+-- Supabase production DB already contains the function.
+-- See issue #15 for the manual sync checklist.
