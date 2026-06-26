@@ -2,7 +2,7 @@ name: Navigator v2 check
 
 on:
   push:
-    branches: [main, nav-v2-fix-deals-entry-20260626]
+    branches: [main, nav-v2-fix-deals-entry-20260626, nav-v2-deal-api-client-flag-20260627]
     paths:
       - 'deal-card-v2.html'
       - 'deals-v2.html'
@@ -95,15 +95,35 @@ jobs:
           client='assets/js/nav-v2/supabase-v2.js'
           menu='assets/js/nav-v2/role-menu-v2.js'
           deals='assets/js/nav-v2/deals-v2.js'
+          card='assets/js/nav-v2/deal-card-v2.js'
           test -f "$client"
           test -f "$menu"
           test -f "$deals"
+          test -f "$card"
           grep -Fq "sb_publishable_" "$client"
           grep -Fq "leader_crm_v4_main_session" "$client"
           grep -Fq "export async function rpc" "$client"
+          grep -Fq "export async function edgeFunction" "$client"
+          grep -Fq "dealApiEdgeFlagKey" "$client"
+          grep -Fq "leader_nav_v2_use_deal_api_edge" "$client"
+          grep -Fq "edge_api" "$client"
+          grep -Fq "nav-v2-deal-api" "$client"
+          grep -Fq "get_deal_card" "$client"
+          grep -Fq "nav_v2_get_deal_card" "$client"
+          grep -Fq "/functions/v1/" "$client"
+          grep -Fq "Authorization" "$client"
+          grep -Fq "apikey" "$client"
           grep -Fq "export function renderAuthBox" "$client"
           grep -Fq "export function statusText" "$client"
+          grep -Fq "?id=..." "$deals"
+          node --check "$client"
+          node --check "$deals"
+          node --check "$card"
           if grep -R -nE 'SUPABASE_SERVICE_ROLE|SERVICE_ROLE_KEY|sb_secret_' assets/js/nav-v2; then
             echo 'Navigator v2 browser assets must not expose service role secrets.' >&2
+            exit 1
+          fi
+          if grep -R -nE 'eyJ[a-zA-Z0-9_-]{20,}' assets/js/nav-v2; then
+            echo 'Navigator v2 browser assets must not contain literal JWTs.' >&2
             exit 1
           fi
