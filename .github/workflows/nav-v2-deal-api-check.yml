@@ -2,12 +2,13 @@ name: Navigator v2 deal API check
 
 on:
   push:
-    branches: [main, nav-v2-deal-api-get-card-bridge-20260626, nav-v2-deal-api-smoke-test-20260626]
+    branches: [main, nav-v2-deal-api-get-card-bridge-20260626, nav-v2-deal-api-smoke-test-20260626, nav-v2-deal-api-smoke-workflow-20260627]
     paths:
       - 'supabase/config.toml'
       - 'supabase/functions/nav-v2-deal-api/**'
       - 'tools/nav_v2_deal_api_smoke_test.mjs'
       - '.github/workflows/nav-v2-deal-api-check.yml'
+      - '.github/workflows/nav-v2-deal-api-smoke.yml'
   pull_request:
     branches: [main]
     paths:
@@ -15,6 +16,7 @@ on:
       - 'supabase/functions/nav-v2-deal-api/**'
       - 'tools/nav_v2_deal_api_smoke_test.mjs'
       - '.github/workflows/nav-v2-deal-api-check.yml'
+      - '.github/workflows/nav-v2-deal-api-smoke.yml'
 
 jobs:
   validate-nav-v2-deal-api:
@@ -99,5 +101,29 @@ jobs:
           fi
           if grep -nE 'eyJ[a-zA-Z0-9_-]{20,}' "$smoke"; then
             echo 'Smoke test must not contain literal JWTs.' >&2
+            exit 1
+          fi
+
+      - name: Validate manual smoke workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          workflow='.github/workflows/nav-v2-deal-api-smoke.yml'
+          test -f "$workflow"
+          grep -Fq 'workflow_dispatch' "$workflow"
+          grep -Fq 'deal_id' "$workflow"
+          grep -Fq 'compare_direct_rpc' "$workflow"
+          grep -Fq 'supabase_url' "$workflow"
+          grep -Fq 'secrets.NAV_V2_JWT' "$workflow"
+          grep -Fq 'NAV_V2_DEAL_ID' "$workflow"
+          grep -Fq 'NAV_V2_COMPARE_DIRECT_RPC' "$workflow"
+          grep -Fq 'node --check tools/nav_v2_deal_api_smoke_test.mjs' "$workflow"
+          grep -Fq 'node tools/nav_v2_deal_api_smoke_test.mjs' "$workflow"
+          if grep -nE 'sb_secret_|SUPABASE_SERVICE_ROLE|SERVICE_ROLE_KEY' "$workflow"; then
+            echo 'Manual smoke workflow must not contain service role or secret key markers.' >&2
+            exit 1
+          fi
+          if grep -nE 'eyJ[a-zA-Z0-9_-]{20,}' "$workflow"; then
+            echo 'Manual smoke workflow must not contain literal JWTs.' >&2
             exit 1
           fi

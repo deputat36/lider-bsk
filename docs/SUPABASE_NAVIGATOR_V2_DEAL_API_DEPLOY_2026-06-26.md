@@ -95,6 +95,22 @@ The smoke test intentionally reads the user JWT and deal id from environment var
 
 CI validates the smoke-test source with `node --check` and secret/JWT marker scans, but CI does not execute a successful runtime call because that would require a live user JWT.
 
+## Manual GitHub Actions smoke workflow
+
+A manual workflow is available after PR `#39`:
+
+- workflow name: `Navigator v2 deal API smoke`;
+- workflow file: `.github/workflows/nav-v2-deal-api-smoke.yml`;
+- trigger: `workflow_dispatch` only;
+- required repository secret: `NAV_V2_JWT`;
+- required workflow input: `deal_id`;
+- optional workflow input: `compare_direct_rpc`;
+- optional workflow input: `supabase_url`, defaulting to `https://ofewxuqfjhamgerwzull.supabase.co`.
+
+Use a short-lived test-user access token for `NAV_V2_JWT`. Rotate or remove the secret after the smoke-test window. Do not use a service-role key, production admin personal token, or long-lived real user session for this workflow.
+
+When `compare_direct_rpc=true`, the workflow also calls direct `nav_v2_get_deal_card` with the same user JWT and compares the response shape with the Edge Function response.
+
 ## Still required before browser migration
 
 Before changing `deal-card-v2.js` to call the Edge Function:
