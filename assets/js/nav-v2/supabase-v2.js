@@ -3,7 +3,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const NAV_V2_CONFIG = Object.freeze({
   supabaseUrl: 'https://ofewxuqfjhamgerwzull.supabase.co',
   supabasePublishableKey: 'sb_publishable_ZiX8_Mnf0dY6S__tKO2A4A_uD94G2cs',
-  authStorageKey: 'leader_crm_v4_main_session'
+  authStorageKey: 'leader_crm_v4_main_session',
+  dealApiEdgeFlagKey: 'leader_nav_v2_use_deal_api_edge'
 });
 
 const supabase = createClient(
@@ -124,10 +125,39 @@ export async function setupTop(active = '') {
   return cachedUser;
 }
 
-export async function rpc(name, params = {}, timeoutMs = 20000) {
+async function getAccessToken() {
   const { data: sessionData } = await supabase.auth.getSession();
   cachedUser = sessionData?.session?.user || cachedUser;
-  if (!sessionData?.session?.access_token) throw new Error('Сначала войдите в CRM');
+  const token = sessionData?.session?.access_token;
+  if (!token) throw new Error('Сначала войдите в CRM');
+  return token;
+}
+
+function shouldUseDealApiEdge() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('edge_api') === '1') return true;
+    if (params.get('edge_api') === '0') return false;
+    return window.localStorage.getItem(NAV_V2_CONFIG.dealApiEdgeFlagKey) === '1';
+  } catch (_) {
+    return false;
+  }
+}
+
+function assertDealApiResponse(json) {
+  if (json?.ok !== true || json?.action !== 'get_deal_card' || !json?.data) {
+    throw new Error('Edge Function вернула неожиданный ответ get_deal_card');
+  }
+  return json.data;
+}
+
+export async function rpc(name, params = {}, timeoutMs = 20000) {
+  await getAccessToken();
+
+  if (name === 'nav_v2_get_deal_card' && params?.p_deal_id && shouldUseDealApiEdge()) {
+    const json = await edgeFunction('nav-v2-deal-api', { action: 'get_deal_card', deal_id: params.p_deal_id }, timeoutMs);
+    return assertDealApiResponse(json);
+  }
 
   const request = supabase.rpc(name, params);
   const timeout = new Promise((_, reject) => {
@@ -137,6 +167,41 @@ export async function rpc(name, params = {}, timeoutMs = 20000) {
     const { data, error } = await Promise.race([request, timeout]);
     if (error) throw error;
     return data;
+  } catch (error) {
+    throw new Error(error?.message || String(error));
+  }
+}
+
+export async function edgeFunction(name, body = {}, timeoutMs = 20000) {
+  const token = await getAccessToken();
+  const url = `${NAV_V2_CONFIG.supabaseUrl}/functions/v1/${encodeURIComponent(name)}`;
+  const request = fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      apikey: NAV_V2_CONFIG.supabasePublishableKey,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+  const timeout = new Promise((_, reject) => {
+    window.setTimeout(() => reject(new Error('Supabase Edge Function не ответила вовремя')), timeoutMs);
+  });
+
+  try {
+    const response = await Promise.race([request, timeout]);
+    const text = await response.text();
+    let json = null;
+    try {
+      json = text ? JSON.parse(text) : null;
+    } catch (_) {
+      throw new Error(`Edge Function вернула не-JSON ответ: ${text.slice(0, 160)}`);
+    }
+    if (!response.ok) {
+      const message = json?.error || json?.message || `HTTP ${response.status}`;
+      throw new Error(message);
+    }
+    return json;
   } catch (error) {
     throw new Error(error?.message || String(error));
   }
