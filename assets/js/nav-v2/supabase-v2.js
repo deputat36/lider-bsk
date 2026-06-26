@@ -19,8 +19,28 @@ const supabase = createClient(
   }
 );
 
-let cachedUser = null;
-let cachedProfile = null;
+let cachedUser = readStoredUser();
+let cachedProfile = readStoredProfile();
+
+function readStoredUser() {
+  try {
+    const raw = window.localStorage.getItem(NAV_V2_CONFIG.authStorageKey);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed?.user || parsed?.currentSession?.user || parsed?.session?.user || null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function readStoredProfile() {
+  try {
+    const raw = window.localStorage.getItem('leader_nav_v2_profile');
+    return raw ? JSON.parse(raw) : null;
+  } catch (_) {
+    return null;
+  }
+}
 
 export function esc(value) {
   return String(value ?? '')
@@ -67,6 +87,7 @@ export function riskPill(level) {
 }
 
 export function getCachedUser() {
+  cachedUser = cachedUser || readStoredUser();
   return cachedUser;
 }
 
@@ -85,15 +106,21 @@ function setTopStatus(text) {
 }
 
 export async function setupTop(active = '') {
-  const { data } = await supabase.auth.getSession();
-  cachedUser = data?.session?.user || null;
   const top = document.querySelector('[data-nav-v2-top]');
   if (top) {
     top.querySelectorAll('[data-nav-section]').forEach((item) => {
       item.classList.toggle('active', item.dataset.navSection === active);
     });
   }
-  setTopStatus(cachedUser ? 'Вход выполнен' : 'Нужен вход');
+  setTopStatus(getCachedUser() ? 'Вход выполнен' : 'Нужен вход');
+
+  try {
+    const { data } = await supabase.auth.getSession();
+    cachedUser = data?.session?.user || cachedUser;
+    setTopStatus(cachedUser ? 'Вход выполнен' : 'Нужен вход');
+  } catch (error) {
+    console.warn('Navigator v2 session check warning:', error);
+  }
   return cachedUser;
 }
 
@@ -102,17 +129,16 @@ export async function rpc(name, params = {}, timeoutMs = 20000) {
   cachedUser = sessionData?.session?.user || cachedUser;
   if (!sessionData?.session?.access_token) throw new Error('Сначала войдите в CRM');
 
-  const controller = new AbortController();
-  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+  const request = supabase.rpc(name, params);
+  const timeout = new Promise((_, reject) => {
+    window.setTimeout(() => reject(new Error('Supabase не ответил вовремя')), timeoutMs);
+  });
   try {
-    const { data, error } = await supabase.rpc(name, params, { signal: controller.signal });
+    const { data, error } = await Promise.race([request, timeout]);
     if (error) throw error;
     return data;
   } catch (error) {
-    if (error?.name === 'AbortError') throw new Error('Supabase не ответил вовремя');
     throw new Error(error?.message || String(error));
-  } finally {
-    window.clearTimeout(timer);
   }
 }
 
