@@ -1,0 +1,30 @@
+name: Order card finance check
+
+on:
+  push:
+    branches: [main, improve-site-crm]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-order-card-finance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate actual finance markers
+        shell: bash
+        run: |
+          set -euo pipefail
+          index='crm/v4/index.html'
+          card='crm/v4/assets/v4/order-card-v1.js'
+          test -f "$index"
+          test -f "$card"
+          grep -Fq 'order-card-v1.js?v=20260626-finance-1' "$index"
+          grep -Fq "from('leader_payments')" "$card"
+          grep -Fq "from('leader_expenses')" "$card"
+          grep -Fq 'Факт по финансам' "$card"
+          grep -Fq 'Получено оплат' "$card"
+          grep -Fq 'Долг клиента' "$card"
+          grep -Fq 'Факт расходы' "$card"
+          grep -Fq 'Факт прибыль' "$card"
+          grep -Fq 'План / факт' "$card"
