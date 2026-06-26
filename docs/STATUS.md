@@ -33,7 +33,8 @@ CRM использует Edge Functions с JWT. Прямой доступ бра
 - `leader_leads.request_id` защищён уникальным ограничением `leader_leads_request_id_key`;
 - `leader_public_lead_audit` используется для событий `accepted`, `duplicate`, `suspicious`, `rejected`, `error`;
 - гранты по публичной цепочке соответствуют текущей модели: `anon` имеет `INSERT` в `leader_leads` и `leader_public_lead_audit`, `authenticated` имеет чтение аудита и `leader_request_trace`;
-- Security Advisor по-прежнему показывает предупреждения по `nav_*` SECURITY DEFINER и leaked password protection, контур РА «Лидер» и публичный сайт в рамках этой задачи не менялись.
+- Security Advisor по-прежнему показывает предупреждения по `nav_*` SECURITY DEFINER и leaked password protection, контур РА «Лидер» и публичный сайт в рамках этой задачи не менялись;
+- после этапа Open Graph Supabase не изменялся: Edge Functions, таблицы, RLS, политики и данные не трогались.
 
 Проверка 2026-06-25:
 
@@ -88,15 +89,33 @@ CRM использует Edge Functions с JWT. Прямой доступ бра
 - проведён аудит публичного сайта без изменения CRM и без DDL в Supabase;
 - выводы и план сохранены в `docs/PUBLIC_SITE_AUDIT.md`;
 - добавлена защитная проверка `.github/workflows/public-site-audit-check.yml`;
-- проверка контролирует `robots.txt`, `sitemap.xml`, sitemap-домен, отсутствие CRM/nav в sitemap, SEO-базу публичных страниц, контракт публичной формы, порядок подключения `request_id` helper на `request.html`, отсутствие service-role маркеров в публичных HTML/assets;
-- GitHub/Supabase доступ подтверждён, работа велась в `deputat36/lider-bsk`;
+- проверка контролирует `robots.txt`, `sitemap.xml`, sitemap-домен, отсутствие CRM/nav в sitemap, контракт публичной формы, порядок подключения `request_id` helper на `request.html`, отсутствие service-role маркеров в публичных HTML/assets;
+- GitHub/Supabase доступ подтверждён, работа ведётся в `deputat36/lider-bsk`;
 - безопасный этап не меняет `leader-public-lead`, таблицы, политики, RLS и данные.
+
+Этап формы и `request_id` 2026-06-26:
+
+- общий обработчик `assets/public-lead-form.js` читает `request_id` из ответа `leader-public-lead`;
+- после успешной отправки форма показывает пользователю номер обращения на всех страницах, где используется общий виджет;
+- для дубля с тем же `request_id` показывается сообщение, что заявка уже была отправлена ранее, и выводится тот же номер;
+- `Request reference check`, `Static checks` и `Public site audit check` успешно прошли перед merge предыдущего PR;
+- endpoint, payload, Supabase Edge Function, таблицы, политики и CRM не менялись.
+
+Этап Open Graph 2026-06-26:
+
+- добавлен общий фирменный OG-образ `assets/og-lider-default.svg` с холстом `1200×630`;
+- на `request.html` добавлены `canonical`, Open Graph и Twitter Card мета-теги;
+- на `privacy.html` добавлены `description`, `canonical`, Open Graph и Twitter Card мета-теги;
+- в `sitemap.xml` добавлен `lastmod` для всех публичных URL;
+- добавлена документация `docs/OPEN_GRAPH.md`;
+- добавлена проверка `.github/workflows/open-graph-check.yml`;
+- ограничение: для максимальной совместимости с ВК/Telegram желательно следующим визуальным этапом подготовить PNG/JPG 1200×630 и заменить `og:image` с SVG на PNG/JPG.
 
 Найденные приоритеты:
 
 - критично: выполнить реальную ручную проверку заявки после v8 и проверить цепочку по показанному `request_id`;
-- критично: показывать номер обращения после успешной отправки на всех страницах с формой, а не только на `request.html`;
-- важно: добавить полноценный Open Graph для ВК/Telegram с PNG/JPG-картинкой 1200×630;
+- важно: заменить временный SVG OG-образ на PNG/JPG 1200×630 для максимальной совместимости социальных сетей;
+- важно: массово добавить полноценный Open Graph на главную и коммерческие посадочные страницы;
 - важно: унифицировать посадочные страницы услуг в фирменном чёрно-оранжевом стиле;
 - важно: унифицировать микроразметку `LocalBusiness`, `Service`, `FAQPage`, `BreadcrumbList`;
 - желательно: вынести общий публичный CSS в кэшируемый файл и вести единый журнал cache-buster версий.
@@ -110,7 +129,7 @@ CRM использует Edge Functions с JWT. Прямой доступ бра
 
 Отличие v8: повторная отправка с тем же `request_id` больше не маскируется под `accepted`. При конфликте уникального номера обращения функция пишет audit-событие `duplicate` и возвращает клиенту `200 OK` с тем же `request_id`.
 
-Общий обработчик сайта передаёт фактическое значение honeypot в Edge Function, а публичные HTML-страницы используют cache-buster `public-lead-form.js?v=4`. Заполненный honeypot фиксируется как `suspicious` и не создаёт заявку.
+Общий обработчик сайта передаёт фактическое значение honeypot в Edge Function. Заполненный honeypot фиксируется как `suspicious` и не создаёт заявку.
 
 На `request.html` подключён `public-lead-reference-v1.js`: после успешной отправки он показывает номер обращения из события `lead_sent`. Этот номер равен `request_id` и предназначен для точного сопоставления сайта, заявки и аудита. Порядок подключения и обязательные маркеры защищены отдельной GitHub Actions-проверкой `Request reference check`.
 
@@ -163,9 +182,10 @@ RLS и GRANT аудита проверены. Нужна одна реальна
 9. Открыть карточку заказа и проверить блок `Факт по финансам`.
 10. Повторно отправить ту же заявку с тем же `request_id` техническим тестом и убедиться, что audit показывает `duplicate`, а не `accepted`.
 11. Пройти сценарий заявка → расчёт → КП → заказ → производство/монтаж.
-12. После слияния аудита сайта открыть GitHub Actions и проверить `Public site audit check`.
-13. На 3–5 посадочных страницах вручную проверить мобильный вид, CTA и форму.
-14. После следующего этапа проверить, что номер обращения показывается на всех формах сайта.
+12. После слияния этапа Open Graph открыть GitHub Actions и проверить `Open Graph check`, `Public site audit check`, `Static checks`.
+13. Открыть `request.html`, проверить наличие номерa обращения после отправки заявки.
+14. Проверить предпросмотр ссылки `request.html` в Telegram/ВК.
+15. После подготовки PNG/JPG заменить `og:image` на PNG/JPG и проверить предпросмотр повторно.
 
 ## Ограничения
 
@@ -175,4 +195,5 @@ RLS и GRANT аудита проверены. Нужна одна реальна
 - `nav_*` не изменять в задачах РА «Лидер»;
 - POST-проверки из текущего окружения блокируются внешним фильтром;
 - push-запуски GitHub Actions не отображаются в combined status API;
-- публичный аудит 2026-06-26 не менял боевую функцию `leader-public-lead` и не выполнял DDL в Supabase.
+- публичный аудит 2026-06-26 не менял боевую функцию `leader-public-lead` и не выполнял DDL в Supabase;
+- этап Open Graph не меняет Supabase и CRM, только публичные SEO-файлы GitHub.
