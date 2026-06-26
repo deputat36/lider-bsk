@@ -1,6 +1,7 @@
 import { setupTop, getCachedUser, renderAuthBox, rpc, esc, money, riskPill, saveCachedProfile, statusText } from './supabase-v2.js';
 
-const dealId = new URLSearchParams(location.search).get('id');
+const query = new URLSearchParams(location.search);
+const dealId = query.get('id') || query.get('deal_id');
 let currentData = null;
 let currentProfile = null;
 let cardRequest = null;
@@ -344,7 +345,7 @@ function bindActions() {
   };
 }
 async function load(force = false, options = {}) {
-  if (!dealId) { document.getElementById('app').innerHTML = '<main class="nav-v2-shell"><div class="status error">Не указан id сделки.</div></main>'; return; }
+  if (!dealId) { document.getElementById('app').innerHTML = '<main class="nav-v2-shell"><div class="status error">Не указан id или deal_id сделки.</div></main>'; return; }
   if (!force && currentData) { renderCard(currentData, { restoreScrollY: options.restoreScrollY }); return; }
   if (!options.silent) document.getElementById('app').innerHTML = '<main class="nav-v2-shell"><div class="status">Загружаю карточку сделки...</div></main>';
   try {

@@ -2,7 +2,7 @@ name: Navigator v2 check
 
 on:
   push:
-    branches: [main, nav-v2-fix-deals-entry-20260626, nav-v2-deal-api-client-flag-20260627]
+    branches: [main, nav-v2-fix-deals-entry-20260626, nav-v2-deal-api-client-flag-20260627, nav-v2-deal-id-alias-20260627]
     paths:
       - 'deal-card-v2.html'
       - 'deals-v2.html'
@@ -116,6 +116,8 @@ jobs:
           grep -Fq "export function renderAuthBox" "$client"
           grep -Fq "export function statusText" "$client"
           grep -Fq "?id=..." "$deals"
+          grep -Fq "query.get('id') || query.get('deal_id')" "$card"
+          grep -Fq "Не указан id или deal_id сделки" "$card"
           node --check "$client"
           node --check "$deals"
           node --check "$card"

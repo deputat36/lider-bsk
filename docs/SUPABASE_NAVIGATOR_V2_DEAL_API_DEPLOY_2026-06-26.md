@@ -122,6 +122,11 @@ An opt-in browser path is available after PR `#40`:
 - enable locally with `localStorage.setItem('leader_nav_v2_use_deal_api_edge', '1')`;
 - disable locally with `localStorage.removeItem('leader_nav_v2_use_deal_api_edge')`.
 
+After PR `#41`, `deal-card-v2.html` accepts both deal id query names:
+
+- primary: `?id=<deal-uuid>`;
+- compatibility alias: `?deal_id=<deal-uuid>`.
+
 The opt-in path affects only the read action `get_deal_card`. Write actions still call their existing direct RPC functions because the Edge Function write actions intentionally return `501` in this phase.
 
 ## Still required before default browser migration
@@ -134,5 +139,6 @@ Before making the Edge Function the default path in `deal-card-v2.js`:
 4. Verify a disabled profile is denied.
 5. Compare payload shape against direct `nav_v2_get_deal_card` output.
 6. Test the browser opt-in path with `?edge_api=1` on a real deal card URL.
+7. Test both browser URL forms: `?id=<deal-uuid>` and `?deal_id=<deal-uuid>`.
 
 This deployment is a runtime preflight step, not the final hardening step. It still relies on the existing `authenticated` EXECUTE grant for `nav_v2_get_deal_card`.
