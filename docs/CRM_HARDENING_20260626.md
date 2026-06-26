@@ -19,7 +19,8 @@
 - RLS включён;
 - policies `leader_user_invites_admin_select`, `leader_user_invites_admin_insert`, `leader_user_invites_admin_update` установлены для роли `authenticated` через admin-предикат;
 - trigger `leader_user_invites_normalize_trg` установлен на insert/update;
-- trigger `leader_apply_profile_invite_trg` установлен на insert в `leader_user_profiles`.
+- trigger `leader_apply_profile_invite_trg` установлен на insert в `leader_user_profiles`;
+- `leader_ensure_profile(text)` доступна роли `authenticated`, потому что Edge Function вызывает её с пользовательским JWT.
 
 ### Атомарное создание заказа из КП
 
@@ -54,8 +55,9 @@ PR содержит:
 - модуль `crm/v4/assets/v4/user-admin-v1.js`;
 - обновлённый `auth.js` с pending-состоянием;
 - Edge Function `supabase/functions/leader-crm-leads/index.ts`, соответствующую deployed version 10;
-- исполняемые SQL-миграции `20260626_01`–`20260626_08`;
+- исполняемые SQL-миграции `20260626_01`–`20260626_09`;
 - hardening-миграцию `20260626_08_leader_order_rpc_restrict_execute.sql`;
+- follow-up restore `20260626_09_leader_ensure_profile_authenticated_execute_restore.sql`;
 - grants для profile functions;
 - документацию по текущему состоянию.
 
@@ -76,4 +78,4 @@ SQL и Edge Function синхронизированы с тем, что прим
 
 ## Безопасное текущее состояние
 
-Боевой Supabase-контур уже защищает новых пользователей и атомарно создаёт заказ из согласованного КП. Прямая RPC-конвертация заказа закрыта для обычных авторизованных пользователей и доступна только через Edge Function/service role.
+Боевой Supabase-контур уже защищает новых пользователей и атомарно создаёт заказ из согласованного КП. Прямая RPC-конвертация заказа закрыта для обычных авторизованных пользователей и доступна только через Edge Function/service role. `leader_ensure_profile(text)` доступна `authenticated` для bootstrap/pending flow через JWT пользователя.
