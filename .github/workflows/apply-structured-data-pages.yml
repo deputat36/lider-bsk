@@ -1,0 +1,43 @@
+name: Apply structured data pages
+
+on:
+  push:
+    branches: [structured-data-apply-pages-20260626]
+    paths:
+      - '.github/structured-data-apply.trigger'
+      - 'tools/apply_structured_data.py'
+      - 'tools/structured_data_pages.json'
+      - '.github/workflows/apply-structured-data-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply-structured-data:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: structured-data-apply-pages-20260626
+
+      - name: Apply configured structured data
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/apply_structured_data.py --apply
+          python3 tools/apply_structured_data.py --check
+
+      - name: Commit generated page updates
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo 'No generated structured data changes.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html prices.html portfolio.html bannery-borisoglebsk.html vyveski-borisoglebsk.html nakleyki-plotternaya-rezka-borisoglebsk.html outdoor-advertising-borisoglebsk.html reklama-dlya-biznesa.html reklama-dlya-magazina-borisoglebsk.html reklama-dlya-kafe-borisoglebsk.html reklama-v-soobshchestvah-borisoglebska.html yandex-karty-2gis.html
+          git commit -m 'seo: apply JSON-LD structured data to core pages'
+          git push origin HEAD:structured-data-apply-pages-20260626
