@@ -73,6 +73,7 @@ const profileFields = 'user_id,email,role,is_active,full_name'
 const leadFields = 'id,created_at,name,phone,source,service,message,status,lead_quality,estimated_amount,next_contact_at,page_url,utm_source,utm_medium,utm_campaign,utm_content,utm_term,budget,city,converted_order_id,converted_client_id'
 const clientFields = 'id,owner_id,name,phone,source,comment,created_at,updated_at'
 const orderFields = 'id,order_number,created_at,project_name,client_name,client_phone,status,payment_status,deadline,client_total,contractor_cost,profit,balance,source,layout_status,production_status,lead_id,client_id'
+const offerConversionRpcContractMarkers = ['offer_not_approved', 'already_created']
 
 async function ensureProfile(req: Request, supabaseUrl: string, anonKey: string) {
   const userCheck = await getUserFromRequest(req, supabaseUrl, anonKey)
@@ -208,6 +209,7 @@ async function createOrder(supabaseUrl: string, serviceRole: string, ownerId: st
 async function createOrderFromOffer(supabaseUrl: string, serviceRole: string, ownerId: string, actorEmail: string, body: Record<string, unknown>) {
   const offerId = cleanText(body.offer_id, 80)
   if (!offerId) return json(400, { error: 'offer_id_required' })
+  void offerConversionRpcContractMarkers
   const rpcRes = await serviceRest(supabaseUrl, serviceRole, '/rest/v1/rpc/leader_create_order_from_offer_rpc', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
