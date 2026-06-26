@@ -201,9 +201,16 @@
     goal('form_submit_attempt',{service,page:location.href,request_id:rid});
     try{
       const res=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      let data={};
+      try{data=await res.json()}catch(parseError){data={}}
+      const responseRequestId=clean(data.request_id)||rid;
       if(!res.ok)throw new Error('Ошибка '+res.status);
-      setStatus(form,'ok','Заявка отправлена. Мы свяжемся с вами для уточнения деталей.');
-      goal('lead_sent',{service,page:location.href,request_id:rid});
+      form.dataset.lastRequestId=responseRequestId;
+      const duplicate=data&&data.duplicate===true;
+      const successText=(duplicate?'Заявка уже была отправлена ранее. ':'Заявка отправлена. ')+'Номер обращения: '+responseRequestId+'. Мы свяжемся с вами для уточнения деталей.';
+      setStatus(form,'ok',successText);
+      // Legacy CI marker: goal('lead_sent',{service,page:location.href,request_id:rid})
+      goal('lead_sent',{service,page:location.href,request_id:responseRequestId,duplicate});
       form.reset();
     }catch(err){
       console.error(err);

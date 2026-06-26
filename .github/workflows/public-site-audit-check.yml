@@ -1,0 +1,106 @@
+name: Public site audit check
+
+on:
+  push:
+    branches: [main, public-site-audit-20260626]
+    paths:
+      - '*.html'
+      - 'assets/public-lead-form.js'
+      - 'assets/public-lead-form.css'
+      - 'assets/public-lead-reference-v1.js'
+      - 'robots.txt'
+      - 'sitemap.xml'
+      - '.github/workflows/public-site-audit-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '*.html'
+      - 'assets/public-lead-form.js'
+      - 'assets/public-lead-form.css'
+      - 'assets/public-lead-reference-v1.js'
+      - 'robots.txt'
+      - 'sitemap.xml'
+      - '.github/workflows/public-site-audit-check.yml'
+
+jobs:
+  public-site-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate robots and sitemap basics
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f robots.txt
+          test -f sitemap.xml
+          grep -Fq 'User-agent: *' robots.txt
+          grep -Fq 'Allow: /' robots.txt
+          grep -Fq 'Host: https://www.lider-bsk.ru' robots.txt
+          grep -Fq 'Sitemap: https://www.lider-bsk.ru/sitemap.xml' robots.txt
+          grep -Fq '<urlset' sitemap.xml
+          grep -Fq 'https://www.lider-bsk.ru/' sitemap.xml
+          if grep -Fq '/crm/' sitemap.xml || grep -Fq 'nav_' sitemap.xml; then
+            echo 'sitemap.xml must not include CRM/nav contour.' >&2
+            exit 1
+          fi
+
+      - name: Validate public lead form contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          form='assets/public-lead-form.js'
+          css='assets/public-lead-form.css'
+          helper='assets/public-lead-reference-v1.js'
+          request='request.html'
+          test -f "$form"
+          test -f "$css"
+          test -f "$helper"
+          test -f "$request"
+          grep -Fq 'leader-public-lead' "$form"
+          grep -Fq 'METRIKA_ID=109387236' "$form"
+          grep -Fq 'request_id' "$form"
+          grep -Fq 'responseRequestId' "$form"
+          grep -Fq 'form.dataset.lastRequestId=responseRequestId' "$form"
+          grep -Fq 'Номер обращения: ' "$form"
+          grep -Fq "website:field(form,'website')" "$form"
+          grep -Fq 'page_path' "$form"
+          grep -Fq 'submitted_at' "$form"
+          grep -Fq "goal('lead_sent',{service,page:location.href,request_id:responseRequestId,duplicate})" "$form"
+          grep -Fq 'leader-lead-hp' "$css"
+          grep -Fq 'overflow-x:hidden' "$css"
+          grep -Fq 'params.request_id' "$helper"
+          grep -Fq 'Номер обращения:' "$helper"
+          if grep -Fq "if(field(form,'website'))return" "$form"; then
+            echo 'Client-side honeypot must not bypass server audit.' >&2
+            exit 1
+          fi
+
+      - name: Validate request page script order
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          page = Path('request.html').read_text(encoding='utf-8')
+          helper = 'assets/public-lead-reference-v1.js?v=1'
+          form = 'assets/public-lead-form.js?v=4'
+          assert page.count(helper) == 1
+          assert page.count(form) == 1
+          assert page.index(helper) < page.index(form)
+          PY
+
+      - name: Check public scripts syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check assets/public-lead-form.js
+          node --check assets/public-lead-reference-v1.js
+
+      - name: Report Open Graph gaps as notices
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! grep -R -n 'og:image' -- *.html >/tmp/og-image-pages.txt; then
+            echo '::notice title=Open Graph image::No og:image markers found yet. Add a 1200x630 image in the next SEO stage.'
+          fi

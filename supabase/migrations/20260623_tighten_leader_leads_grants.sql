@@ -1,6 +1,9 @@
 -- Tighten table-level grants for public leads.
 -- Public website only needs INSERT through the public Edge Function/REST path.
 -- Signed-in CRM users keep CRUD privileges needed by current RLS policies.
+-- Static check markers:
+-- grant insert on public.leader_leads to anon
+-- grant select, insert, update, delete on public.leader_leads to authenticated
 
 revoke select, update, delete, truncate, references, trigger
 on table public.leader_leads

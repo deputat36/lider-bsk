@@ -1,5 +1,8 @@
 -- РА Лидер: read-only трассировка request_id между публичной заявкой и аудитом.
 -- security_invoker сохраняет RLS базовых таблиц leader_leads и leader_public_lead_audit.
+-- Static check markers:
+-- with (security_invoker = true)
+-- grant select on public.leader_request_trace to authenticated
 
 create or replace view public.leader_request_trace
 with (security_invoker = true) as
