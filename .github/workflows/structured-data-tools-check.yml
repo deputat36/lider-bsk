@@ -1,0 +1,71 @@
+name: Structured data tools check
+
+on:
+  push:
+    branches: [main, structured-data-tools-20260626]
+    paths:
+      - 'tools/structured_data_pages.json'
+      - 'tools/apply_structured_data.py'
+      - 'docs/STRUCTURED_DATA.md'
+      - '.github/workflows/structured-data-tools-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/structured_data_pages.json'
+      - 'tools/apply_structured_data.py'
+      - 'docs/STRUCTURED_DATA.md'
+      - '.github/workflows/structured-data-tools-check.yml'
+
+jobs:
+  validate-structured-data-tools:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate structured data config and script
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile tools/apply_structured_data.py
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          config = json.loads(Path('tools/structured_data_pages.json').read_text(encoding='utf-8'))
+          business = config['business']
+          assert business['id'] == 'https://www.lider-bsk.ru/#business'
+          assert business['type'] == 'LocalBusiness'
+          assert business['name'] == 'РА Лидер'
+          assert business['url'] == 'https://www.lider-bsk.ru/'
+          assert business['telephone'].startswith('+7')
+          assert business['image'].endswith('/assets/og-lider-default.png')
+          assert business['address']['addressLocality'] == 'Борисоглебск'
+
+          website = config['website']
+          assert website['id'] == 'https://www.lider-bsk.ru/#website'
+          assert website['inLanguage'] == 'ru-RU'
+
+          pages = config['pages']
+          assert len(pages) >= 12
+          required = {'path', 'url', 'name', 'description', 'kind', 'breadcrumb'}
+          seen = set()
+          service_pages = 0
+          for page in pages:
+              assert required <= set(page), page
+              assert page['path'].endswith('.html'), page['path']
+              assert page['url'].startswith('https://www.lider-bsk.ru/'), page['url']
+              assert page['path'] not in seen, page['path']
+              seen.add(page['path'])
+              assert Path(page['path']).exists(), page['path']
+              assert len(page['name']) >= 20, page['name']
+              assert len(page['description']) >= 60, page['description']
+              if page['kind'] in {'service', 'service_overview'}:
+                  assert page.get('serviceType'), page
+                  service_pages += 1
+
+          assert 'index.html' in seen
+          assert 'prices.html' in seen
+          assert 'portfolio.html' in seen
+          assert 'yandex-karty-2gis.html' in seen
+          assert service_pages >= 9
+          PY
