@@ -1,0 +1,82 @@
+{
+  "image": "https://www.lider-bsk.ru/assets/og-lider-default.png",
+  "image_type": "image/png",
+  "image_width": "1200",
+  "image_height": "630",
+  "site_name": "РА Лидер",
+  "locale": "ru_RU",
+  "pages": [
+    {
+      "path": "index.html",
+      "url": "https://www.lider-bsk.ru/",
+      "title": "РА Лидер — реклама и оформление бизнеса в Борисоглебске",
+      "description": "Баннеры, вывески, таблички, наклейки, дизайн, соцсети и оформление карточек в Яндекс Картах и 2ГИС. Оставьте заявку онлайн."
+    },
+    {
+      "path": "prices.html",
+      "url": "https://www.lider-bsk.ru/prices.html",
+      "title": "Цены на рекламу в Борисоглебске — РА Лидер",
+      "description": "Ориентиры по стоимости баннеров, наклеек, табличек, дизайна, печати, соцсетей и онлайн-услуг. Расскажем, что влияет на цену."
+    },
+    {
+      "path": "portfolio.html",
+      "url": "https://www.lider-bsk.ru/portfolio.html",
+      "title": "Портфолио и примеры работ — РА Лидер",
+      "description": "Примеры рекламных задач: баннеры, таблички, наклейки, оформление бизнеса, дизайн и комплексная реклама в Борисоглебске."
+    },
+    {
+      "path": "bannery-borisoglebsk.html",
+      "url": "https://www.lider-bsk.ru/bannery-borisoglebsk.html",
+      "title": "Баннеры в Борисоглебске — РА Лидер",
+      "description": "Баннеры для фасада, забора, открытия, акции, стройки и мероприятий. Поможем с макетом, размером и расчётом стоимости."
+    },
+    {
+      "path": "vyveski-borisoglebsk.html",
+      "url": "https://www.lider-bsk.ru/vyveski-borisoglebsk.html",
+      "title": "Вывески и наружная реклама в Борисоглебске — РА Лидер",
+      "description": "Оформление входа, фасада, точки продаж и наружной рекламы: вывески, указатели, таблички, баннеры и монтажные решения."
+    },
+    {
+      "path": "nakleyki-plotternaya-rezka-borisoglebsk.html",
+      "url": "https://www.lider-bsk.ru/nakleyki-plotternaya-rezka-borisoglebsk.html",
+      "title": "Наклейки и плоттерная резка в Борисоглебске — РА Лидер",
+      "description": "Наклейки, режим работы, логотипы, надписи без фона, оформление витрин, дверей, авто и оборудования."
+    },
+    {
+      "path": "outdoor-advertising-borisoglebsk.html",
+      "url": "https://www.lider-bsk.ru/outdoor-advertising-borisoglebsk.html",
+      "title": "Наружная реклама в Борисоглебске — РА Лидер",
+      "description": "Баннеры, вывески, таблички, витрины, фасадное оформление и рекламные материалы для бизнеса в Борисоглебске."
+    },
+    {
+      "path": "reklama-dlya-biznesa.html",
+      "url": "https://www.lider-bsk.ru/reklama-dlya-biznesa.html",
+      "title": "Реклама для бизнеса в Борисоглебске — РА Лидер",
+      "description": "Комплексная реклама для магазина, кафе, салона, сервиса, ПВЗ и локального бизнеса: от идеи и макета до заявки и расчёта."
+    },
+    {
+      "path": "reklama-dlya-magazina-borisoglebsk.html",
+      "url": "https://www.lider-bsk.ru/reklama-dlya-magazina-borisoglebsk.html",
+      "title": "Реклама для магазина в Борисоглебске — РА Лидер",
+      "description": "Вывески, баннеры, витрины, наклейки, акции, оформление соцсетей и карточек в картах для магазинов Борисоглебска."
+    },
+    {
+      "path": "reklama-dlya-kafe-borisoglebsk.html",
+      "url": "https://www.lider-bsk.ru/reklama-dlya-kafe-borisoglebsk.html",
+      "title": "Реклама для кафе и доставки в Борисоглебске — РА Лидер",
+      "description": "Меню, баннеры, акции, соцсети, карточки в картах, наружное оформление и рекламные материалы для кафе и доставки."
+    },
+    {
+      "path": "reklama-v-soobshchestvah-borisoglebska.html",
+      "url": "https://www.lider-bsk.ru/reklama-v-soobshchestvah-borisoglebska.html",
+      "title": "Реклама в сообществах Борисоглебска — РА Лидер",
+      "description": "Размещение рекламы в городских сообществах, подготовка постов, макетов и объявлений для локальной аудитории Борисоглебска."
+    },
+    {
+      "path": "yandex-karty-2gis.html",
+      "url": "https://www.lider-bsk.ru/yandex-karty-2gis.html",
+      "title": "Яндекс Карты и 2ГИС для бизнеса — РА Лидер",
+      "description": "Оформление и улучшение карточек компании в Яндекс Картах и 2ГИС: описание, фото, услуги, рубрики и заявки."
+    }
+  ]
+}

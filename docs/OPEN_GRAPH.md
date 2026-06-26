@@ -23,7 +23,7 @@
 
 `assets/og-lider-default.svg`
 
-## Что добавлено
+## Что уже добавлено вручную
 
 1. Добавлен общий фирменный PNG OG-образ:
 
@@ -69,20 +69,42 @@
    - наличие `description` и `canonical` на `privacy.html`;
    - наличие `lastmod` в sitemap.
 
-## Рекомендуемый следующий шаг
+## Автоматизация для основных коммерческих страниц
 
-Массово добавить OG-набор на основные коммерческие страницы:
+Чтобы не править вручную длинные HTML-файлы с большими inline-стилями, добавлены:
 
-- главная;
-- цены;
-- портфолио;
-- баннеры;
-- вывески;
-- наклейки;
-- реклама для бизнеса;
-- реклама для магазина;
-- реклама для кафе;
-- реклама в сообществах;
-- Яндекс Карты и 2ГИС.
+- `tools/open_graph_pages.json` — единый конфиг страниц, URL, `og:title` и `og:description`;
+- `tools/apply_open_graph.py` — dependency-free инструмент для проверки и вставки OG/Twitter-метатегов.
 
-Для каждой страницы использовать свой `og:title` и `og:description`, а общий `og:image` оставить единым.
+Проверка:
+
+```bash
+python3 tools/apply_open_graph.py --check
+```
+
+Применение:
+
+```bash
+python3 tools/apply_open_graph.py --apply
+```
+
+После применения нужно посмотреть diff и закоммитить изменённые HTML-файлы.
+
+## Страницы в конфиге
+
+- `index.html` — главная;
+- `prices.html` — цены;
+- `portfolio.html` — портфолио;
+- `bannery-borisoglebsk.html` — баннеры;
+- `vyveski-borisoglebsk.html` — вывески;
+- `nakleyki-plotternaya-rezka-borisoglebsk.html` — наклейки и плоттерная резка;
+- `outdoor-advertising-borisoglebsk.html` — наружная реклама;
+- `reklama-dlya-biznesa.html` — реклама для бизнеса;
+- `reklama-dlya-magazina-borisoglebsk.html` — реклама для магазина;
+- `reklama-dlya-kafe-borisoglebsk.html` — реклама для кафе;
+- `reklama-v-soobshchestvah-borisoglebska.html` — реклама в сообществах;
+- `yandex-karty-2gis.html` — Яндекс Карты и 2ГИС.
+
+## Следующий шаг
+
+Запустить `python3 tools/apply_open_graph.py --apply` в рабочей копии репозитория или через Codex/локальное окружение, проверить diff и открыть отдельный PR с уже изменёнными HTML-страницами.
