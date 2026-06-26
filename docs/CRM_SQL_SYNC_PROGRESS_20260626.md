@@ -55,6 +55,11 @@
    - оставляет `service_role`;
    - закрывает `anon` и `public`.
 
+10. `20260626_10_leader_user_invites_fk_indexes.sql`
+    - закрывает Supabase performance advisor `unindexed_foreign_keys` для новой таблицы invite;
+    - добавляет `leader_user_invites_invited_by_idx`;
+    - добавляет `leader_user_invites_accepted_user_id_idx`.
+
 ## Перенесено в GitHub по Edge Function
 
 - `supabase/functions/leader-crm-leads/index.ts` соответствует deployed version 10.
@@ -80,11 +85,19 @@
 - execute на `leader_apply_profile_invite()` есть только у `postgres` и `service_role`;
 - execute на `leader_ensure_profile(text)` есть у `authenticated`, `postgres`, `service_role`;
 - `leader_user_invites` существует и имеет включённый RLS;
-- invite policies и оба trigger установлены.
+- invite policies и оба trigger установлены;
+- FK indexes `leader_user_invites_invited_by_idx` и `leader_user_invites_accepted_user_id_idx` созданы;
+- Supabase performance advisor больше не показывает `unindexed_foreign_keys` для `leader_user_invites`.
+
+## Advisors
+
+Оставшееся security advisor-предупреждение по `leader_ensure_profile(text)` ожидаемо: это `SECURITY DEFINER` RPC, сознательно доступная роли `authenticated`, потому что Edge Function `ensure_profile` вызывает её с пользовательским JWT для bootstrap/pending flow. Функция проверяет `auth.uid()`, берёт email из `auth.email()` и отклоняет несовпадающий входной email.
+
+Новые индексы `leader_user_invites_*_idx` могут временно отображаться как `unused_index`, пока по ним нет статистики использования.
 
 ## CI
 
-CI на PR #24 был зелёный на head `aa30c7144fa3a6145c6efb710714360457126eb9`:
+CI был зелёный на head `aa105cdf7fa1be698955a8e594cc2541a74d4bf2`:
 
 - Static checks;
 - CRM auth checks;
@@ -94,7 +107,7 @@ CI на PR #24 был зелёный на head `aa30c7144fa3a6145c6efb7107143604
 - Order card finance check;
 - Public lead audit helper/copy checks.
 
-После добавления `20260626_09` CI должен пройти повторно.
+После добавления `20260626_10` CI должен пройти повторно на новом head.
 
 ## Текущее безопасное правило
 
