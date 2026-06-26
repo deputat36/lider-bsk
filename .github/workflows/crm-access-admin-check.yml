@@ -1,0 +1,58 @@
+name: CRM access admin check
+
+on:
+  push:
+    branches: [main, crm-hardening-main-20260626]
+    paths:
+      - 'crm/v4/assets/v4/auth.js'
+      - 'crm/v4/assets/v4/crm-v4-expanded-menu-v1.js'
+      - 'crm/v4/assets/v4/crm-v4-tabs-lite.js'
+      - 'crm/v4/assets/v4/user-admin-v1.js'
+      - '.github/workflows/crm-access-admin-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/auth.js'
+      - 'crm/v4/assets/v4/crm-v4-expanded-menu-v1.js'
+      - 'crm/v4/assets/v4/crm-v4-tabs-lite.js'
+      - 'crm/v4/assets/v4/user-admin-v1.js'
+      - '.github/workflows/crm-access-admin-check.yml'
+
+jobs:
+  crm-access-admin-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate CRM access admin markers
+        shell: bash
+        run: |
+          set -euo pipefail
+          menu='crm/v4/assets/v4/crm-v4-expanded-menu-v1.js'
+          tabs='crm/v4/assets/v4/crm-v4-tabs-lite.js'
+          auth='crm/v4/assets/v4/auth.js'
+          admin='crm/v4/assets/v4/user-admin-v1.js'
+
+          test -f "$menu"
+          test -f "$tabs"
+          test -f "$auth"
+          test -f "$admin"
+
+          grep -Fq "{ tab: 'user_admin', label: 'Доступ' }" "$menu"
+          grep -Fq "user_admin" "$tabs"
+          grep -Fq "import './user-admin-v1.js';" "$auth"
+          grep -Fq "Доступ ожидает активации" "$auth"
+          grep -Fq "CRM access admin v1" "$admin"
+          grep -Fq "leader_user_invites" "$admin"
+          grep -Fq "leader_user_profiles" "$admin"
+          grep -Fq "data-v4-managed-section" "$admin"
+          grep -Fq "user_admin" "$admin"
+
+      - name: Check JS syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check crm/v4/assets/v4/auth.js
+          node --check crm/v4/assets/v4/crm-v4-expanded-menu-v1.js
+          node --check crm/v4/assets/v4/crm-v4-tabs-lite.js
+          node --check crm/v4/assets/v4/user-admin-v1.js
