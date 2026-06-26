@@ -66,6 +66,35 @@ Verified through Supabase connector:
 - deployed function source is readable;
 - Edge Function logs are currently empty, meaning no runtime invocation has been observed yet.
 
+## Smoke test tooling
+
+A local smoke test is available:
+
+```bash
+NAV_V2_JWT='user-access-token' \
+NAV_V2_DEAL_ID='deal-uuid' \
+node tools/nav_v2_deal_api_smoke_test.mjs
+```
+
+Optional direct RPC shape comparison:
+
+```bash
+NAV_V2_JWT='user-access-token' \
+NAV_V2_DEAL_ID='deal-uuid' \
+NAV_V2_COMPARE_DIRECT_RPC=1 \
+node tools/nav_v2_deal_api_smoke_test.mjs
+```
+
+Optional override for the public API key:
+
+```bash
+NAV_V2_API_KEY='sb_publishable_...' node tools/nav_v2_deal_api_smoke_test.mjs
+```
+
+The smoke test intentionally reads the user JWT and deal id from environment variables. Do not commit JWTs, real user sessions, or private test data.
+
+CI validates the smoke-test source with `node --check` and secret/JWT marker scans, but CI does not execute a successful runtime call because that would require a live user JWT.
+
 ## Still required before browser migration
 
 Before changing `deal-card-v2.js` to call the Edge Function:
