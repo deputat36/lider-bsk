@@ -25,6 +25,17 @@
    - email берётся из `auth.email()`;
    - новый пользователь без invite создаётся как `is_active=false`.
 
+5. `20260626_07_leader_profile_function_grants.sql`
+   - `leader_ensure_profile(text)` доступна `authenticated`;
+   - `leader_apply_profile_invite()` закрыта от прямого execute для `anon`, `authenticated`, `public`.
+
+## Уже перенесено в GitHub по Edge Function
+
+- `supabase/functions/leader-crm-leads/index.ts` соответствует deployed version 10.
+- `ensure_profile` вызывает `/rest/v1/rpc/leader_ensure_profile` с JWT пользователя.
+- Прямая вставка активного профиля через service role удалена.
+- `create_order_from_offer` вызывает `leader_create_order_from_offer_rpc`.
+
 ## Временно зафиксировано как `.sql.todo`
 
 1. `20260626_04_leader_apply_profile_invite_manual.sql.todo`
@@ -37,10 +48,18 @@
    - GitHub connector заблокировал создание полного SQL-файла;
    - нужно заменить `.todo` на исполняемую миграцию через local Git или GitHub web editor.
 
-## Ещё не перенесено
+## CI
 
-- `supabase/functions/leader-crm-leads/index.ts`, соответствующий deployed version 9.
+CI по commit `1a47d88132f9051b220dd71daa50f8c6dc93c805` зелёный:
+
+- Static checks;
+- CRM auth checks;
+- CRM access admin check;
+- Docs checks;
+- Request trace view check;
+- Order card finance check;
+- Public lead audit helper/copy checks.
 
 ## Текущее безопасное правило
 
-PR #13 не переводить из draft и не мержить, пока `.sql.todo` не заменены реальными SQL-файлами и Edge Function в GitHub не соответствует deployed version 9.
+PR #13 не переводить из draft и не мержить, пока `.sql.todo` не заменены реальными SQL-файлами и ветка не синхронизирована с последним `main`.
