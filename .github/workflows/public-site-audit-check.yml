@@ -1,0 +1,190 @@
+name: Public site audit check
+
+on:
+  push:
+    branches: [main, public-site-audit-20260626]
+    paths:
+      - '*.html'
+      - 'assets/public-lead-form.js'
+      - 'assets/public-lead-form.css'
+      - 'assets/public-lead-reference-v1.js'
+      - 'robots.txt'
+      - 'sitemap.xml'
+      - '.github/workflows/public-site-audit-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '*.html'
+      - 'assets/public-lead-form.js'
+      - 'assets/public-lead-form.css'
+      - 'assets/public-lead-reference-v1.js'
+      - 'robots.txt'
+      - 'sitemap.xml'
+      - '.github/workflows/public-site-audit-check.yml'
+
+jobs:
+  public-site-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate public site contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib
+          import re
+          import sys
+          import xml.etree.ElementTree as ET
+          from html.parser import HTMLParser
+          from urllib.parse import urlparse
+
+          ROOT = pathlib.Path('.')
+          DOMAIN = 'www.lider-bsk.ru'
+          FORM_JS = pathlib.Path('assets/public-lead-form.js')
+          FORM_CSS = pathlib.Path('assets/public-lead-form.css')
+          REQUEST_PAGE = pathlib.Path('request.html')
+          REQUEST_HELPER = 'assets/public-lead-reference-v1.js?v=1'
+          FORM_SRC = 'assets/public-lead-form.js?v=4'
+
+          def read(path):
+              return pathlib.Path(path).read_text(encoding='utf-8')
+
+          def fail(message):
+              print(message, file=sys.stderr)
+              sys.exit(1)
+
+          class HeadParser(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.in_title = False
+                  self.title = ''
+                  self.meta = {}
+                  self.links = {}
+                  self.scripts = []
+                  self.ids = set()
+
+              def handle_starttag(self, tag, attrs):
+                  values = dict(attrs)
+                  if tag == 'title':
+                      self.in_title = True
+                  if tag == 'meta':
+                      key = values.get('name') or values.get('property')
+                      if key and 'content' in values:
+                          self.meta[key] = values['content']
+                  if tag == 'link' and values.get('rel') and values.get('href'):
+                      self.links[values['rel'].lower()] = values['href']
+                  if tag == 'script' and values.get('src'):
+                      self.scripts.append(values['src'])
+                  if values.get('id'):
+                      self.ids.add(values['id'])
+
+              def handle_endtag(self, tag):
+                  if tag == 'title':
+                      self.in_title = False
+
+              def handle_data(self, data):
+                  if self.in_title:
+                      self.title += data.strip()
+
+          robots = read('robots.txt')
+          for marker in ('User-agent: *', 'Allow: /', 'Host: https://www.lider-bsk.ru', 'Sitemap: https://www.lider-bsk.ru/sitemap.xml'):
+              if marker not in robots:
+                  fail(f'robots.txt misses marker: {marker}')
+
+          root = ET.parse('sitemap.xml').getroot()
+          urls = []
+          for loc in root.findall('.//{*}loc'):
+              value = (loc.text or '').strip()
+              if value:
+                  urls.append(value)
+          if not urls:
+              fail('sitemap.xml has no urls')
+          if len(urls) != len(set(urls)):
+              fail('sitemap.xml has duplicate urls')
+          if len(urls) < 20:
+              fail('sitemap.xml unexpectedly has too few public pages')
+
+          parsed_pages = {}
+          for url in urls:
+              parsed = urlparse(url)
+              if parsed.scheme != 'https' or parsed.netloc != DOMAIN:
+                  fail(f'sitemap URL must use https://{DOMAIN}: {url}')
+              if '/crm/' in parsed.path or 'nav_' in parsed.path:
+                  fail(f'sitemap must not include CRM/nav contour: {url}')
+              path = parsed.path.lstrip('/') or 'index.html'
+              if path.endswith('/'):
+                  path += 'index.html'
+              file_path = ROOT / path
+              if not file_path.is_file():
+                  fail(f'sitemap URL points to missing file: {url} -> {path}')
+              html = read(file_path)
+              parser = HeadParser()
+              parser.feed(html)
+              parsed_pages[path] = parser
+              if not parser.title:
+                  fail(f'{path} has no <title>')
+              if path != 'privacy.html' and 'description' not in parser.meta:
+                  fail(f'{path} has no meta description')
+              if path != 'privacy.html' and parser.links.get('canonical') != url:
+                  fail(f'{path} has no matching canonical URL')
+
+          form_js = read(FORM_JS)
+          form_css = read(FORM_CSS)
+          public_contract_markers = [
+              'leader-public-lead',
+              'METRIKA_ID=109387236',
+              'request_id',
+              "website:field(form,'website')",
+              "goal('lead_sent',{service,page:location.href,request_id:rid})",
+              'form.dataset.submitting',
+              'page_path',
+              'submitted_at',
+          ]
+          for marker in public_contract_markers:
+              if marker not in form_js:
+                  fail(f'public lead form misses marker: {marker}')
+          if "if(field(form,'website'))return" in form_js:
+              fail('public lead form must not hide honeypot submissions from server audit')
+          if 'leader-lead-hp' not in form_css or 'overflow-x:hidden' not in form_css:
+              fail('public lead form CSS misses honeypot/adaptive markers')
+
+          request_html = read(REQUEST_PAGE)
+          if request_html.count(REQUEST_HELPER) != 1:
+              fail('request.html must include request reference helper once')
+          if request_html.count(FORM_SRC) != 1:
+              fail('request.html must include public lead form v4 once')
+          if request_html.index(REQUEST_HELPER) > request_html.index(FORM_SRC):
+              fail('request reference helper must be loaded before public lead form')
+
+          for path in pathlib.Path('.').glob('*.html'):
+              html = read(path)
+              if 'id="leader-lead-form"' in html or 'data-leader-lead-form' in html:
+                  if FORM_SRC not in html:
+                      fail(f'{path} has public form mount but does not load {FORM_SRC}')
+                  if 'assets/public-lead-form.js?v=3' in html:
+                      fail(f'{path} still loads old public lead form cache version v3')
+
+          secret_re = re.compile(r'(SUPABASE_SERVICE_ROLE|SERVICE_ROLE_KEY|sb_secret_)')
+          public_files = list(pathlib.Path('.').glob('*.html')) + list(pathlib.Path('assets').glob('*'))
+          for path in public_files:
+              if path.is_file() and secret_re.search(read(path)):
+                  fail(f'potential secret marker found in public asset: {path}')
+
+          missing_og_image = [path for path, parser in parsed_pages.items() if path != 'privacy.html' and 'og:image' not in parser.meta]
+          missing_og_text = [path for path, parser in parsed_pages.items() if path != 'privacy.html' and ('og:title' not in parser.meta or 'og:description' not in parser.meta)]
+          if missing_og_image:
+              print('::notice title=Open Graph image::Pages without og:image: ' + ', '.join(missing_og_image[:12]) + ('...' if len(missing_og_image) > 12 else ''))
+          if missing_og_text:
+              print('::notice title=Open Graph text::Pages without complete og:title/og:description: ' + ', '.join(missing_og_text[:12]) + ('...' if len(missing_og_text) > 12 else ''))
+
+          print(f'Validated {len(urls)} sitemap URLs and public lead form contract.')
+          PY
+
+      - name: Syntax check public lead scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check assets/public-lead-form.js
+          node --check assets/public-lead-reference-v1.js
