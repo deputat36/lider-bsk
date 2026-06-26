@@ -2,55 +2,77 @@
 
 Проект Supabase: `ofewxuqfjhamgerwzull`.
 
-## Цель проверки
+## Текущее состояние
 
-После сокращения прямой RPC-поверхности `SECURITY DEFINER` функций осталась группа access helper-ов:
+После серии REVOKE-миграций на 2026-06-26 в `public` осталось:
 
-- `nav_v2_can_view_deal(p_deal_id uuid, p_uid uuid)`;
-- `nav_v2_can_edit_deal(p_deal_id uuid, p_uid uuid)`;
-- `nav_v2_my_role(p_uid uuid)`;
-- `nav_v2_is_owner_or_admin(p_uid uuid)`;
-- `nav_v2_is_active_user(p_uid uuid)`;
-- legacy helper-ы `nav_can_view_deal`, `nav_can_edit_deal`, `nav_current_role`, `nav_is_admin`, `nav_is_management`, `nav_user_role_of`.
+- `64` SECURITY DEFINER функций;
+- `15` SECURITY DEFINER функций, исполняемых ролью `authenticated`;
+- `49` SECURITY DEFINER функций, не исполняемых ролью `authenticated`.
 
-Их нельзя закрывать тем же простым `REVOKE EXECUTE ... FROM authenticated`, пока не проверены зависимости: часть helper-ов используется в RLS-политиках.
+Security Advisor продолжает показывать warning `authenticated_security_definer_function_executable` для этих 15 функций. Эти warning-и больше не являются списком простых кандидатов на `REVOKE`: часть функций используется в RLS-политиках, а часть является активным browser-facing API Navigator v2.
 
-## Проверка frontend-вызовов
+## Оставшиеся функции
 
-В репозитории `deputat36/lider-bsk` прямых frontend-вызовов для основных v2 helper-ов не найдено, кроме упоминаний в документации аудита:
+### RLS helper-функции
 
-- `nav_v2_can_view_deal` — прямой вызов из frontend не найден;
-- `nav_v2_can_edit_deal` — прямой вызов из frontend не найден;
-- `nav_v2_my_role` — прямой вызов из frontend не найден;
-- `nav_v2_is_owner_or_admin` — прямой вызов из frontend не найден;
-- `nav_v2_is_active_user` — прямой вызов из frontend не найден.
+Эти функции участвуют в RLS-политиках. Простой `REVOKE EXECUTE ... FROM authenticated` может сломать SELECT/INSERT/UPDATE/DELETE на связанных таблицах.
 
-## Проверка RLS-политик
-
-Read-only запрос к `pg_policies` показал, что helper-ы активно используются в политиках таблиц:
-
-| Таблица | Примеры политик / helper-ов |
+| Функция | Основная причина оставить до отдельного RLS-рефакторинга |
 |---|---|
-| `nav_deals_v2` | `nav_v2_can_view_deal`, `nav_v2_can_edit_deal`, `nav_v2_is_active_user` |
-| `nav_deal_documents_v2` | `nav_v2_can_view_deal`, `nav_v2_can_edit_deal` |
-| `nav_deal_comments_v2` | `nav_v2_can_view_deal` |
-| `nav_deal_reviews_v2` | `nav_v2_can_view_deal`, `nav_v2_my_role` |
-| `nav_deal_risks_v2` | `nav_v2_can_view_deal`, `nav_v2_can_edit_deal` |
-| `nav_deal_tasks_v2` | `nav_v2_can_view_deal` |
-| `nav_deal_participants_v2` | `nav_v2_can_view_deal`, `nav_v2_can_edit_deal` |
-| `nav_deal_answers_v2` | `nav_v2_can_view_deal`, `nav_v2_can_edit_deal` |
-| `nav_user_profiles` | `nav_v2_is_owner_or_admin`, `nav_v2_my_role` |
-| legacy `nav_*` tables | `nav_can_view_deal`, `nav_can_edit_deal`, `nav_current_role`, `nav_is_admin` |
+| `nav_can_create_deal(p_uid uuid)` | legacy `nav_deals_insert_own`; также упоминается в `nav_save_wizard_deal`, у которого уже закрыт public RPC-доступ |
+| `nav_can_edit_deal(p_deal_id uuid, p_uid uuid)` | legacy policies на `nav_deals`, `nav_deal_participants`, `nav_deal_tasks` |
+| `nav_can_view_deal(p_deal_id uuid, p_uid uuid)` | legacy policies на `nav_deals`, comments, events, participants, reviews, tasks |
+| `nav_current_role()` | legacy policies для events/reviews |
+| `nav_is_admin()` | legacy policies для events, participants, profiles |
+| `nav_v2_can_edit_deal(p_deal_id uuid, p_uid uuid)` | v2 write policies для deals, documents, expenses, participants, risks, answers |
+| `nav_v2_can_view_deal(p_deal_id uuid, p_uid uuid)` | v2 select/insert policies для deals, documents, comments, events, expenses, participants, reviews, risks, tasks, answers |
+| `nav_v2_is_active_user(p_uid uuid)` | v2 insert policy на `nav_deals_v2` |
+| `nav_v2_is_owner_or_admin(p_uid uuid)` | v2 profile policies на `nav_user_profiles`; также используется внутренними admin/user helper-функциями |
+| `nav_v2_my_role(p_uid uuid)` | v2 review/profile policies; также используется внутренними action helper-функциями |
+
+### Активные Navigator v2 RPC
+
+Эти функции вызываются текущим frontend-кодом `assets/js/nav-v2/deal-card-v2.js`.
+
+| Функция | Где используется |
+|---|---|
+| `nav_v2_get_deal_card(p_deal_id uuid)` | загрузка карточки сделки |
+| `nav_v2_add_comment(p_deal_id uuid, p_body text, p_visibility text)` | комментарии и юридические quick actions |
+| `nav_v2_update_deal_status(p_deal_id uuid, p_status nav_v2_deal_status)` | смена статуса сделки, quick actions, юридические действия |
+| `nav_v2_update_document_status(p_document_id uuid, p_status text)` | смена статуса документов |
+| `nav_v2_update_task_status(p_task_id uuid, p_status nav_v2_task_status)` | смена статуса задач |
+
+## Уже закрытые helper/RPC из этой группы
+
+Эти функции больше не исполняются ролью `authenticated`:
+
+- `leader_ensure_profile(user_email text)`;
+- `nav_is_management()`;
+- `nav_user_role_of(p_uid uuid)`;
+- `nav_save_wizard_deal(p_result jsonb)`;
+- `nav_v2_save_wizard_result(p_result jsonb)`;
+- `nav_v2_submit_spn_rework(p_deal_id uuid, p_body text)`;
+- `nav_v2_return_spn_rework(p_deal_id uuid, p_body text)`;
+- `nav_v2_add_deal_review(p_deal_id uuid, p_decision text, p_body text, p_blocks_deposit boolean, p_blocks_deal boolean)`;
+- `nav_v2_get_deal_responsibility_snapshot(p_deal_id uuid)`;
+- `nav_v2_get_my_profile()`.
+
+Соответствующие миграции записаны в репозитории:
+
+- `supabase/migrations/20260626204149_revoke_authenticated_legacy_wizard_rework_profile_rpcs_20260626.sql`;
+- `supabase/migrations/20260626204925_revoke_authenticated_orphan_security_definer_helpers_20260626.sql`.
 
 ## Решение
 
-DDL не применялся.
+Новый DDL на этом этапе не применяется.
 
-`REVOKE EXECUTE` для access helper-ов сейчас не выполняется, потому что это может сломать RLS-проверки и доступ к таблицам. Эти функции нужно выносить в отдельный этап с тестом RLS negative/positive cases.
+Оставшиеся 15 функций нужно закрывать только через отдельный архитектурный этап:
 
-## Безопасный следующий шаг
+1. Для RLS helper-функций: переписать политики или вынести helper-логику так, чтобы RLS не зависел от публично исполняемых SECURITY DEFINER функций.
+2. Для активных Navigator v2 RPC: либо принять их как публичный authenticated API с внутренними проверками доступа, либо перенести действия за Edge Function/API layer и закрыть прямой RPC-доступ.
+3. Перед любым `REVOKE` нужны positive/negative regression-тесты по сделкам, документам, комментариям, задачам и профилям.
 
-1. Проверить, требуют ли RLS-политики `EXECUTE` у `authenticated` для helper-функций во время выполнения запросов.
-2. Если да — оставить helper-ы доступными и принять advisor-warning как намеренную внутреннюю поверхность, либо перенести helper-ы/политики в более безопасную архитектуру.
-3. Если нет — закрывать только после тестов на реальные таблицы: сделки, документы, комментарии, задачи, профили.
-4. Следующим более безопасным кандидатом для hardening остаются legacy/wizard/rework RPC, которые не являются RLS-helper-ами.
+## Auth warning
+
+Отдельный warning `auth_leaked_password_protection` остаётся вне SQL-области. Его нужно включать в Supabase Auth settings, если политика проекта допускает проверку паролей через HaveIBeenPwned.
