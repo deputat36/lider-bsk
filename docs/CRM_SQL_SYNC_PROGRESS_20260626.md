@@ -37,18 +37,24 @@
    - блокировка КП, расчёта и заявки на время операции;
    - защита от повторного создания дубля заказа;
    - перенос позиций расчёта в позиции заказа;
-   - запись события КП и истории статуса заказа.
+   - запись события КП и истории статуса заказа;
+   - прямой execute закрыт для `anon`, `authenticated`, `public`, вызов оставлен только для `service_role`.
 
 7. `20260626_07_leader_profile_function_grants.sql`
    - `leader_ensure_profile(text)` доступна `authenticated`;
    - `leader_apply_profile_invite()` закрыта от прямого execute для `anon`, `authenticated`, `public`.
+
+8. `20260626_08_leader_order_rpc_restrict_execute.sql`
+   - hardening-миграция для уже применённых контуров;
+   - повторно закрывает прямой execute `leader_create_order_from_offer_rpc(jsonb)` для `anon`, `authenticated`, `public`;
+   - оставляет execute только для `service_role`.
 
 ## Перенесено в GitHub по Edge Function
 
 - `supabase/functions/leader-crm-leads/index.ts` соответствует deployed version 10.
 - `ensure_profile` вызывает `/rest/v1/rpc/leader_ensure_profile` с JWT пользователя.
 - Прямая вставка активного профиля через service role удалена.
-- `create_order_from_offer` вызывает `leader_create_order_from_offer_rpc`.
+- `create_order_from_offer` вызывает `leader_create_order_from_offer_rpc` через service role.
 
 ## `.sql.todo`
 
@@ -62,11 +68,12 @@
 - результат функции: `jsonb`;
 - `security definer`: включён;
 - `search_path=public`;
-- тело функции в базе: 9341 символ.
+- тело функции в базе: 9341 символ;
+- execute на `leader_create_order_from_offer_rpc(jsonb)` есть только у `postgres` и `service_role`.
 
 ## CI
 
-CI по commit `4b0288c9b4d5fbf6e07c1f82382b6d0b28a2f97c` зелёный:
+CI по commit `0ac1170dab56e634095939e0881dbef38554bd92` был зелёный:
 
 - Static checks;
 - CRM auth checks;
@@ -76,13 +83,15 @@ CI по commit `4b0288c9b4d5fbf6e07c1f82382b6d0b28a2f97c` зелёный:
 - Order card finance check;
 - Public lead audit helper/copy checks.
 
+После hardening-миграции head сдвинулся, поэтому CI должен пройти повторно.
+
 ## Текущее безопасное правило
 
 PR #13 не переводить из draft и не мержить, пока ветка не синхронизирована с последним `main` и CI не пройдёт повторно уже после синхронизации.
 
 На момент проверки ветка разошлась с `main`:
 
-- ahead: 25 commits;
-- behind: 3 commits.
+- ahead: 29 commits;
+- behind: 5 commits.
 
 Коммиты, которые есть в `main`, относятся к Open Graph/публичным HTML-страницам и не пересекаются с CRM/Supabase-файлами этого PR, но синхронизацию всё равно нужно выполнить перед merge.
