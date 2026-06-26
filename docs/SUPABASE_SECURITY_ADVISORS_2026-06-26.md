@@ -142,6 +142,61 @@ revoke execute on function public.nav_v2_update_task_due_date(uuid, date) from a
 
 Эти четыре широкие update-функции больше не входят в список предупреждений `authenticated_security_definer_function_executable`.
 
+### Unused read/create RPC
+
+После проверки frontend-вызовов закрыт прямой вызов неиспользуемых read/create RPC для роли `authenticated`:
+
+- `public.nav_v2_add_document(...)`;
+- `public.nav_v2_add_expense(...)`;
+- `public.nav_v2_add_risk(...)`;
+- `public.nav_v2_add_task(...)`;
+- `public.nav_v2_get_access_audit()`;
+- `public.nav_v2_get_dashboard()`;
+- `public.nav_v2_get_deals_list(...)`;
+- `public.nav_v2_get_deal_card_lite(...)`;
+- `public.nav_v2_get_deal_status_options(...)`;
+- `public.nav_v2_get_handoff_scores(...)`;
+- `public.nav_v2_get_lawyer_queue(...)`;
+- `public.nav_v2_get_lawyer_review_summary()`.
+
+При этом намеренно оставлены доступными для `authenticated` функции, которые реально используются текущим UI:
+
+- `public.nav_v2_get_deal_card(...)`;
+- `public.nav_v2_add_comment(...)`.
+
+Применена production-миграция:
+
+```sql
+revoke execute on function public.nav_v2_add_document(uuid, public.nav_v2_side, text, text, boolean, boolean, text, text) from authenticated;
+revoke execute on function public.nav_v2_add_expense(uuid, public.nav_v2_side, text, text, numeric, text, boolean, boolean, boolean, text) from authenticated;
+revoke execute on function public.nav_v2_add_risk(uuid, public.nav_v2_risk_level, text, text, text, text, boolean, boolean, public.nav_v2_user_role) from authenticated;
+revoke execute on function public.nav_v2_add_task(uuid, text, text, public.nav_v2_user_role, public.nav_v2_task_priority, text) from authenticated;
+revoke execute on function public.nav_v2_get_access_audit() from authenticated;
+revoke execute on function public.nav_v2_get_dashboard() from authenticated;
+revoke execute on function public.nav_v2_get_deals_list(integer) from authenticated;
+revoke execute on function public.nav_v2_get_deal_card_lite(uuid) from authenticated;
+revoke execute on function public.nav_v2_get_deal_status_options(uuid) from authenticated;
+revoke execute on function public.nav_v2_get_handoff_scores(jsonb) from authenticated;
+revoke execute on function public.nav_v2_get_lawyer_queue(integer) from authenticated;
+revoke execute on function public.nav_v2_get_lawyer_review_summary() from authenticated;
+```
+
+Запись в `supabase_migrations.schema_migrations`:
+
+| Version | Name |
+|---|---|
+| `20260626202730` | `navigator_revoke_authenticated_unused_read_create_rpcs_20260626` |
+
+Проверенный ACL после миграции:
+
+| Function | ACL |
+|---|---|
+| `nav_v2_add_comment` | `{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}` |
+| `nav_v2_get_deal_card` | `{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}` |
+| Остальные 12 read/create RPC из этой группы | `{postgres=X/postgres,service_role=X/postgres}` |
+
+Эти 12 неиспользуемых read/create-функций больше не входят в список предупреждений `authenticated_security_definer_function_executable`.
+
 ## Проверка документации Supabase
 
 По текущей документации Supabase:
@@ -209,26 +264,35 @@ Supabase security advisor показывает предупреждения ти
 | Из них доступны роли `authenticated` | 37 |
 | Не доступны роли `authenticated` | 27 |
 
+После отзыва `EXECUTE` у 12 неиспользуемых read/create RPC:
+
+| Показатель | Количество |
+|---|---:|
+| `SECURITY DEFINER` функций в `public` | 64 |
+| Из них доступны роли `authenticated` | 25 |
+| Не доступны роли `authenticated` | 39 |
+
 ## Группы функций, доступных `authenticated`
 
 | Группа | Примеры | Риск | Рекомендуемое действие |
 |---|---|---|---|
-| Access helpers | `nav_current_role`, `nav_is_admin`, `nav_is_management`, `nav_can_view_deal`, `nav_v2_can_edit_deal` | Средний/высокий | Проверить, не раскрывают ли helper-ы данные по произвольному `p_uid`; по возможности заменить параметры пользователя на `auth.uid()` внутри функции. |
-| Read API | `nav_v2_get_dashboard`, `nav_v2_get_deals_list`, `nav_v2_get_deal_card`, `nav_v2_get_lawyer_queue` | Высокий | Оставлять доступ только если внутри функции есть строгая проверка роли и области видимости. Для внутренних API лучше использовать service role через Edge Function. |
-| Create mutations | `nav_v2_add_comment`, `nav_v2_add_document`, `nav_v2_add_expense`, `nav_v2_add_risk`, `nav_v2_add_task` | Высокий | Проверить каждую функцию на `auth.uid()`, роль пользователя, права на сделку и ограничения статусов. |
+| Client read/comment RPC | `nav_v2_get_deal_card`, `nav_v2_add_comment` | Средний/высокий | Это намеренная клиентская RPC-граница текущего UI. Оставить `EXECUTE` у `authenticated`, регулярно проверять guard `auth.uid()` → `nav_v2_can_view_deal`. |
 | Client status mutations | `nav_v2_update_deal_status`, `nav_v2_update_document_status`, `nav_v2_update_task_status` | Средний/высокий | Это намеренная клиентская RPC-граница. Оставить `EXECUTE` у `authenticated`, но регулярно проверять guard-цепочку `auth.uid()` → `nav_v2_can_*`. |
+| Access helpers | `nav_current_role`, `nav_is_admin`, `nav_is_management`, `nav_can_view_deal`, `nav_v2_can_edit_deal` | Средний/высокий | Проверить, не раскрывают ли helper-ы данные по произвольному `p_uid`; по возможности заменить параметры пользователя на `auth.uid()` внутри функции. |
+| Legacy/wizard/rework RPC | `nav_save_wizard_deal`, `nav_v2_save_wizard_result`, `nav_v2_submit_spn_rework`, `nav_v2_return_spn_rework` | Высокий | Найти frontend-вызовы, проверить guards и решить, какие функции остаются клиентскими. |
 | Wide update mutations | `nav_v2_update_deal_parties`, `nav_v2_update_document_assignment`, `nav_v2_update_document_workflow`, `nav_v2_update_task_due_date` | Закрыто | `EXECUTE` у `authenticated` отозван миграцией `navigator_revoke_authenticated_unused_update_rpcs_20260626`; прямой вызов оставлен только `postgres` и `service_role`. |
+| Read/create RPC | `nav_v2_get_dashboard`, `nav_v2_get_deals_list`, `nav_v2_add_document`, `nav_v2_add_expense`, `nav_v2_add_risk`, `nav_v2_add_task` | Закрыто | Неиспользуемые read/create RPC закрыты миграцией `navigator_revoke_authenticated_unused_read_create_rpcs_20260626`; текущий UI сохраняет `nav_v2_get_deal_card` и `nav_v2_add_comment`. |
 | Demo/admin functions | `nav_v2_clear_demo_data`, `nav_v2_seed_demo_data` | Закрыто | `EXECUTE` у `authenticated` отозван миграцией `navigator_revoke_authenticated_demo_admin_rpcs_20260626`; прямой вызов оставлен только `postgres` и `service_role`. |
 | Admin user functions | `nav_v2_update_user_profile`, `nav_v2_link_user_by_email`, `nav_v2_list_users` | Закрыто | `EXECUTE` у `authenticated` отозван миграцией `navigator_revoke_authenticated_admin_user_rpcs_20260626`; прямой вызов оставлен только `postgres` и `service_role`. |
 | Leader CRM | `leader_ensure_profile` | Средний | Проверить необходимость прямого вызова с клиента. Функция уже была предметом отдельных hardening-миграций, поэтому менять только после проверки текущего frontend-flow. |
 
 ## Приоритет исправлений
 
-1. Read API функции очередей и карточек — проверить, что пользователь видит только разрешённые сделки.
-2. Create mutations — проверить, что создание комментариев, документов, расходов, рисков и задач всегда проверяет доступ к сделке.
-3. Access helpers — проверить, не доверяют ли helper-ы произвольному `p_uid` из клиента.
-4. `leader_ensure_profile` — проверить, можно ли заменить прямой client RPC на server-side flow без поломки входа в CRM.
-5. Client status mutations — оставить клиентскими, но отдельно проверить negative cases для `nav_v2_can_change_deal_status`, `nav_v2_can_change_document_status`, `nav_v2_can_change_task_status`.
+1. Access helpers — проверить, не доверяют ли helper-ы произвольному `p_uid` из клиента и можно ли закрыть прямой RPC-вызов helper-ов без поломки внутренних вызовов.
+2. Legacy/wizard/rework RPC — найти реальные frontend-вызовы и закрыть устаревшие функции.
+3. `leader_ensure_profile` — проверить, можно ли заменить прямой client RPC на server-side flow без поломки входа в CRM.
+4. Client status mutations — оставить клиентскими, но отдельно проверить negative cases для `nav_v2_can_change_deal_status`, `nav_v2_can_change_document_status`, `nav_v2_can_change_task_status`.
+5. Client read/comment RPC — оставить клиентскими, но проверить negative cases для `nav_v2_get_deal_card` и `nav_v2_add_comment`.
 
 ## Безопасный порядок следующего этапа
 
@@ -248,26 +312,27 @@ Supabase security advisor показывает предупреждения ти
 
 ## Чего не делать без проверки
 
-- Не отзывать `EXECUTE` массово у всех 37 оставшихся функций одним SQL-запросом.
+- Не отзывать `EXECUTE` массово у всех 25 оставшихся функций одним SQL-запросом.
 - Не переводить все функции с `SECURITY DEFINER` на `SECURITY INVOKER` автоматически.
 - Не менять функции, которые участвуют в RLS-политиках или триггерах, без проверки зависимостей.
 - Не доверять параметрам `p_uid`, `p_role`, `p_user_id`, если они приходят из клиента.
 
 ## Следующий практический шаг
 
-Перейти к Read API и Create mutations:
+Перейти к access helpers и legacy/wizard RPC:
 
-- `nav_v2_get_deal_card`;
-- `nav_v2_get_deals_list`;
-- `nav_v2_get_dashboard`;
-- `nav_v2_add_comment`;
-- `nav_v2_add_document`;
-- `nav_v2_add_expense`;
-- `nav_v2_add_risk`;
-- `nav_v2_add_task`.
+- `nav_v2_can_view_deal`;
+- `nav_v2_can_edit_deal`;
+- `nav_v2_my_role`;
+- `nav_v2_is_owner_or_admin`;
+- `nav_v2_is_active_user`;
+- `nav_save_wizard_deal`;
+- `nav_v2_save_wizard_result`;
+- `nav_v2_submit_spn_rework`;
+- `nav_v2_return_spn_rework`.
 
 Для них нужно:
 
 1. Найти frontend-вызовы.
-2. Проверить тело функций и authorization guard.
-3. Решить, какие функции являются намеренной клиентской RPC-границей, а какие можно закрыть и вызывать только через server-side слой.
+2. Проверить зависимости в функциях и RLS-политиках.
+3. Решить, можно ли закрыть прямой RPC-вызов helper-ов, оставив их только для внутренних вызовов.
