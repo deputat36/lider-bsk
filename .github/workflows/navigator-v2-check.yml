@@ -5,12 +5,14 @@ on:
     branches: [main, nav-v2-restore-missing-modules-20260626]
     paths:
       - 'deal-card-v2.html'
+      - 'assets/css/nav-v2.css'
       - 'assets/js/nav-v2/**'
       - '.github/workflows/navigator-v2-check.yml'
   pull_request:
     branches: [main]
     paths:
       - 'deal-card-v2.html'
+      - 'assets/css/nav-v2.css'
       - 'assets/js/nav-v2/**'
       - '.github/workflows/navigator-v2-check.yml'
 
