@@ -47,6 +47,7 @@ jobs:
           REQUEST_PAGE = pathlib.Path('request.html')
           REQUEST_HELPER = 'assets/public-lead-reference-v1.js?v=1'
           FORM_SRC = 'assets/public-lead-form.js?v=4'
+          TEXT_EXTENSIONS = {'.html', '.js', '.css', '.txt', '.xml', '.json', '.md', '.svg', '.yml', '.yaml'}
 
           def read(path):
               return pathlib.Path(path).read_text(encoding='utf-8')
@@ -172,7 +173,9 @@ jobs:
           secret_re = re.compile(r'(SUPABASE_SERVICE_ROLE|SERVICE_ROLE_KEY|sb_secret_)')
           public_files = list(pathlib.Path('.').glob('*.html')) + list(pathlib.Path('assets').glob('*'))
           for path in public_files:
-              if path.is_file() and secret_re.search(read(path)):
+              if not path.is_file() or path.suffix.lower() not in TEXT_EXTENSIONS:
+                  continue
+              if secret_re.search(read(path)):
                   fail(f'potential secret marker found in public asset: {path}')
 
           missing_og_image = [path for path, parser in parsed_pages.items() if path != 'privacy.html' and 'og:image' not in parser.meta]
