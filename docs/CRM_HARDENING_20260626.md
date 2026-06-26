@@ -9,19 +9,18 @@
 В базе создана модель приглашений:
 
 - `leader_user_invites`;
-- trigger активации профиля по приглашению;
-- обновлённая логика `leader_ensure_profile(text)`;
-- новые пользователи без приглашения получают неактивный профиль и ждут подтверждения владельцем или администратором.
+- admin policies для owner/admin;
+- trigger нормализации email;
+- trigger активации профиля по действующему приглашению;
+- обновлённая логика `leader_ensure_profile(text)`.
 
-Проверено в живой базе:
+Новый пользователь без активного invite получает inactive/pending профиль. Пользователь с действующим invite активируется автоматически при создании профиля.
 
-- `leader_user_invites` существует;
-- RLS включён;
-- policies `leader_user_invites_admin_select`, `leader_user_invites_admin_insert`, `leader_user_invites_admin_update` установлены для роли `authenticated` через admin-предикат;
-- trigger `leader_user_invites_normalize_trg` установлен на insert/update;
-- trigger `leader_apply_profile_invite_trg` установлен на insert в `leader_user_profiles`;
-- `leader_ensure_profile(text)` доступна роли `authenticated`, потому что Edge Function вызывает её с пользовательским JWT;
-- FK indexes `leader_user_invites_invited_by_idx` и `leader_user_invites_accepted_user_id_idx` созданы.
+### Edge Function bootstrap
+
+Live Edge Function `leader-crm-leads` активна как version 11, `verify_jwt=true`.
+
+В version 11 действие `ensure_profile` больше не вызывает публичный RPC `leader_ensure_profile` с пользовательским JWT. Функция проверяет JWT пользователя через Supabase Auth, а профиль читает/создаёт через service role REST. Поэтому `leader_ensure_profile(text)` в live ACL закрыта от `authenticated` и доступна только `postgres`/`service_role`.
 
 ### Атомарное создание заказа из КП
 
@@ -34,20 +33,18 @@
 - принять `offer_id` согласованного КП;
 - заблокировать КП, расчёт и заявку на время операции;
 - проверить статус `Согласовано`;
-- вернуть уже созданный заказ, если он уже связан с КП/расчётом/заявкой;
+- вернуть уже созданный заказ без дубля;
 - создать или найти клиента;
 - создать заказ;
 - перенести позиции расчёта в позиции заказа;
 - связать КП, расчёт и заявку с заказом;
 - записать событие КП и историю статуса заказа.
 
-Edge Function `leader-crm-leads` задеплоена в Supabase как version 10, `verify_jwt=true`, `ACTIVE`. Действие `create_order_from_offer` вызывает эту RPC через `service_role`.
-
-После security hardening прямой execute `leader_create_order_from_offer_rpc(jsonb)` закрыт для `anon`, `authenticated`, `public`. В живой базе execute остался только у `postgres` и `service_role`.
+Прямой execute `leader_create_order_from_offer_rpc(jsonb)` закрыт для `anon`, `authenticated`, `public`. В live базе execute остался только у `postgres` и `service_role`.
 
 ## Что есть в GitHub
 
-Активный PR: #24 `CRM: access admin and Supabase SQL synced with main`.
+Активный replacement PR: #31 `CRM: access admin and Supabase SQL synced with latest main`.
 
 PR содержит:
 
@@ -55,35 +52,31 @@ PR содержит:
 - разрешение вкладки `user_admin` в таб-роутере;
 - модуль `crm/v4/assets/v4/user-admin-v1.js`;
 - обновлённый `auth.js` с pending-состоянием;
-- Edge Function `supabase/functions/leader-crm-leads/index.ts`, соответствующую deployed version 10;
-- исполняемые SQL-миграции `20260626_01`–`20260626_10`;
-- hardening-миграцию `20260626_08_leader_order_rpc_restrict_execute.sql`;
-- follow-up restore `20260626_09_leader_ensure_profile_authenticated_execute_restore.sql`;
-- FK index migration `20260626_10_leader_user_invites_fk_indexes.sql`;
-- grants для profile functions;
+- SQL-миграции pending/invite flow;
+- SQL-миграцию `leader_create_order_from_offer_rpc(jsonb)`;
+- hardening execute-прав без возврата `authenticated` на `leader_ensure_profile(text)`;
+- FK index migration для `leader_user_invites`;
 - документацию по текущему состоянию.
 
-В ветке больше нет `.sql.todo`-заглушек.
+Edge Function в PR синхронизирована с текущей live/main v11, чтобы PR не откатывал hardening из `main`.
 
 ## Advisors
 
 Supabase performance advisor больше не показывает `unindexed_foreign_keys` для `leader_user_invites` после добавления FK indexes.
 
-Security advisor предупреждает, что `leader_ensure_profile(text)` является `SECURITY DEFINER` и доступна `authenticated`. Это ожидаемое состояние для bootstrap/pending flow: RPC вызывается через Edge Function с JWT пользователя, проверяет `auth.uid()`, использует `auth.email()` как источник email и не доверяет произвольному входному email.
+Security advisor больше не требует отдельного restore для `leader_ensure_profile(text)`: live ACL показывает execute только у `postgres` и `service_role`.
 
 ## Почему PR пока draft
 
-SQL и Edge Function синхронизированы с тем, что применено в Supabase. Оставшаяся причина держать PR draft — ручная проверка CRM-сценариев.
-
-Перед merge нужно проверить:
+CI должен быть зелёным на текущем head. После этого остаётся ручная проверка CRM-сценариев:
 
 1. Вход активного пользователя.
 2. Pending-доступ нового пользователя.
-3. Вкладку `Доступ`.
+3. Вкладка `Доступ`.
 4. Создание и закрытие приглашения.
 5. Сценарий заявка → расчёт → КП `Согласовано` → заказ.
 6. Повторное создание заказа из того же КП без дубля.
 
 ## Безопасное текущее состояние
 
-Боевой Supabase-контур уже защищает новых пользователей и атомарно создаёт заказ из согласованного КП. Прямая RPC-конвертация заказа закрыта для обычных авторизованных пользователей и доступна только через Edge Function/service role. `leader_ensure_profile(text)` доступна `authenticated` для bootstrap/pending flow через JWT пользователя.
+Боевой Supabase-контур уже защищает новых пользователей и закрывает прямой execute опасных CRM RPC для обычных авторизованных пользователей. PR #31 не должен возвращать `authenticated` execute на `leader_ensure_profile(text)`.
