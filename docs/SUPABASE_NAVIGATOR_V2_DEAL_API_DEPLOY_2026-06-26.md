@@ -68,7 +68,16 @@ Verified through Supabase connector:
 
 ## Smoke test tooling
 
-A local smoke test is available:
+A no-secret auth guard test is available after PR `#42`:
+
+```bash
+NAV_V2_DEAL_ID='deal-uuid' \
+node tools/nav_v2_deal_api_auth_guard_test.mjs
+```
+
+It sends `get_deal_card` without an `Authorization` header and expects a `401` or `403` rejection without a successful data payload.
+
+A local authenticated smoke test is available:
 
 ```bash
 NAV_V2_JWT='user-access-token' \
@@ -91,21 +100,27 @@ Optional override for the public API key:
 NAV_V2_API_KEY='sb_publishable_...' node tools/nav_v2_deal_api_smoke_test.mjs
 ```
 
-The smoke test intentionally reads the user JWT and deal id from environment variables. Do not commit JWTs, real user sessions, or private test data.
+The smoke tests intentionally read user JWT and deal id values from environment variables. Do not commit JWTs, real user sessions, or private test data.
 
-CI validates the smoke-test source with `node --check` and secret/JWT marker scans, but CI does not execute a successful runtime call because that would require a live user JWT.
+CI validates the smoke-test source with `node --check` and secret/JWT marker scans, but CI does not execute a successful authenticated runtime call because that would require a live user JWT.
 
 ## Manual GitHub Actions smoke workflow
 
-A manual workflow is available after PR `#39`:
+A manual workflow is available after PR `#39` and includes an auth guard preflight after PR `#42`:
 
 - workflow name: `Navigator v2 deal API smoke`;
 - workflow file: `.github/workflows/nav-v2-deal-api-smoke.yml`;
 - trigger: `workflow_dispatch` only;
-- required repository secret: `NAV_V2_JWT`;
+- required repository secret for authenticated smoke: `NAV_V2_JWT`;
 - required workflow input: `deal_id`;
 - optional workflow input: `compare_direct_rpc`;
 - optional workflow input: `supabase_url`, defaulting to `https://ofewxuqfjhamgerwzull.supabase.co`.
+
+Workflow order:
+
+1. Validate smoke scripts with `node --check`.
+2. Run `nav_v2_deal_api_auth_guard_test.mjs` without `Authorization` and require `401` or `403`.
+3. Run `nav_v2_deal_api_smoke_test.mjs` with `secrets.NAV_V2_JWT`.
 
 Use a short-lived test-user access token for `NAV_V2_JWT`. Rotate or remove the secret after the smoke-test window. Do not use a service-role key, production admin personal token, or long-lived real user session for this workflow.
 
@@ -122,6 +137,11 @@ An opt-in browser path is available after PR `#40`:
 - enable locally with `localStorage.setItem('leader_nav_v2_use_deal_api_edge', '1')`;
 - disable locally with `localStorage.removeItem('leader_nav_v2_use_deal_api_edge')`.
 
+After PR `#41`, `deal-card-v2.html` accepts both deal id query names:
+
+- primary: `?id=<deal-uuid>`;
+- compatibility alias: `?deal_id=<deal-uuid>`.
+
 The opt-in path affects only the read action `get_deal_card`. Write actions still call their existing direct RPC functions because the Edge Function write actions intentionally return `501` in this phase.
 
 ## Still required before default browser migration
@@ -134,5 +154,6 @@ Before making the Edge Function the default path in `deal-card-v2.js`:
 4. Verify a disabled profile is denied.
 5. Compare payload shape against direct `nav_v2_get_deal_card` output.
 6. Test the browser opt-in path with `?edge_api=1` on a real deal card URL.
+7. Test both browser URL forms: `?id=<deal-uuid>` and `?deal_id=<deal-uuid>`.
 
 This deployment is a runtime preflight step, not the final hardening step. It still relies on the existing `authenticated` EXECUTE grant for `nav_v2_get_deal_card`.

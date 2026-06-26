@@ -27,13 +27,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate smoke test script
+      - name: Validate smoke test scripts
         shell: bash
         run: |
           set -euo pipefail
+          node --check tools/nav_v2_deal_api_auth_guard_test.mjs
           node --check tools/nav_v2_deal_api_smoke_test.mjs
 
-      - name: Run smoke test
+      - name: Verify unauthenticated requests are rejected
+        shell: bash
+        env:
+          NAV_V2_DEAL_ID: ${{ inputs.deal_id }}
+          NAV_V2_SUPABASE_URL: ${{ inputs.supabase_url }}
+        run: |
+          set -euo pipefail
+          node tools/nav_v2_deal_api_auth_guard_test.mjs
+
+      - name: Run authenticated smoke test
         shell: bash
         env:
           NAV_V2_JWT: ${{ secrets.NAV_V2_JWT }}
