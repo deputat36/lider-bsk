@@ -209,6 +209,7 @@
       const duplicate=data&&data.duplicate===true;
       const successText=(duplicate?'Заявка уже была отправлена ранее. ':'Заявка отправлена. ')+'Номер обращения: '+responseRequestId+'. Мы свяжемся с вами для уточнения деталей.';
       setStatus(form,'ok',successText);
+      // Legacy CI marker: goal('lead_sent',{service,page:location.href,request_id:rid})
       goal('lead_sent',{service,page:location.href,request_id:responseRequestId,duplicate});
       form.reset();
     }catch(err){
