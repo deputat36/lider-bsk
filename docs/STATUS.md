@@ -34,7 +34,7 @@ CRM использует Edge Functions с JWT. Прямой доступ бра
 - `leader_public_lead_audit` используется для событий `accepted`, `duplicate`, `suspicious`, `rejected`, `error`;
 - гранты по публичной цепочке соответствуют текущей модели: `anon` имеет `INSERT` в `leader_leads` и `leader_public_lead_audit`, `authenticated` имеет чтение аудита и `leader_request_trace`;
 - Security Advisor по-прежнему показывает предупреждения по `nav_*` SECURITY DEFINER и leaked password protection, контур РА «Лидер» и публичный сайт в рамках этой задачи не менялись;
-- после этапа Open Graph Supabase не изменялся: Edge Functions, таблицы, RLS, политики и данные не трогались.
+- после этапов Open Graph и PNG-обложки Supabase не изменялся: Edge Functions, таблицы, RLS, политики и данные не трогались.
 
 Проверка 2026-06-25:
 
@@ -108,13 +108,21 @@ CRM использует Edge Functions с JWT. Прямой доступ бра
 - на `privacy.html` добавлены `description`, `canonical`, Open Graph и Twitter Card мета-теги;
 - в `sitemap.xml` добавлен `lastmod` для всех публичных URL;
 - добавлена документация `docs/OPEN_GRAPH.md`;
-- добавлена проверка `.github/workflows/open-graph-check.yml`;
-- ограничение: для максимальной совместимости с ВК/Telegram желательно следующим визуальным этапом подготовить PNG/JPG 1200×630 и заменить `og:image` с SVG на PNG/JPG.
+- добавлена проверка `.github/workflows/open-graph-check.yml`.
+
+Этап PNG-обложки Open Graph 2026-06-26:
+
+- добавлен бинарный файл `assets/og-lider-default.png` с холстом `1200×630` для лучшей совместимости ВК/Telegram;
+- `request.html` переведён с SVG на PNG в `og:image` и `twitter:image`;
+- `privacy.html` переведён с SVG на PNG в `og:image` и `twitter:image`;
+- `og:image:type` обновлён на `image/png`;
+- SVG оставлен как редактируемый исходник;
+- `Open Graph check` усилен: проверяет наличие PNG, PNG-сигнатуру и мета-теги на PNG;
+- Supabase, CRM, Edge Functions, таблицы, политики и данные не менялись.
 
 Найденные приоритеты:
 
 - критично: выполнить реальную ручную проверку заявки после v8 и проверить цепочку по показанному `request_id`;
-- важно: заменить временный SVG OG-образ на PNG/JPG 1200×630 для максимальной совместимости социальных сетей;
 - важно: массово добавить полноценный Open Graph на главную и коммерческие посадочные страницы;
 - важно: унифицировать посадочные страницы услуг в фирменном чёрно-оранжевом стиле;
 - важно: унифицировать микроразметку `LocalBusiness`, `Service`, `FAQPage`, `BreadcrumbList`;
@@ -182,10 +190,10 @@ RLS и GRANT аудита проверены. Нужна одна реальна
 9. Открыть карточку заказа и проверить блок `Факт по финансам`.
 10. Повторно отправить ту же заявку с тем же `request_id` техническим тестом и убедиться, что audit показывает `duplicate`, а не `accepted`.
 11. Пройти сценарий заявка → расчёт → КП → заказ → производство/монтаж.
-12. После слияния этапа Open Graph открыть GitHub Actions и проверить `Open Graph check`, `Public site audit check`, `Static checks`.
+12. После слияния этапа PNG-обложки открыть GitHub Actions и проверить `Open Graph check`, `Public site audit check`, `Static checks`.
 13. Открыть `request.html`, проверить наличие номерa обращения после отправки заявки.
-14. Проверить предпросмотр ссылки `request.html` в Telegram/ВК.
-15. После подготовки PNG/JPG заменить `og:image` на PNG/JPG и проверить предпросмотр повторно.
+14. Проверить предпросмотр ссылки `request.html` в Telegram/ВК: он должен использовать `assets/og-lider-default.png`.
+15. Следующим SEO-этапом добавить OG-набор на главную и основные коммерческие посадочные страницы.
 
 ## Ограничения
 
@@ -196,4 +204,4 @@ RLS и GRANT аудита проверены. Нужна одна реальна
 - POST-проверки из текущего окружения блокируются внешним фильтром;
 - push-запуски GitHub Actions не отображаются в combined status API;
 - публичный аудит 2026-06-26 не менял боевую функцию `leader-public-lead` и не выполнял DDL в Supabase;
-- этап Open Graph не меняет Supabase и CRM, только публичные SEO-файлы GitHub.
+- этапы Open Graph и PNG-обложки не меняют Supabase и CRM, только публичные SEO-файлы GitHub.
