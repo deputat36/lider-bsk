@@ -3,7 +3,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const NAV_V2_CONFIG = Object.freeze({
   supabaseUrl: 'https://ofewxuqfjhamgerwzull.supabase.co',
   supabasePublishableKey: 'sb_publishable_ZiX8_Mnf0dY6S__tKO2A4A_uD94G2cs',
-  authStorageKey: 'leader_crm_v4_main_session'
+  authStorageKey: 'leader_crm_v4_main_session',
+  dealApiEdgeFlagKey: 'leader_nav_v2_use_deal_api_edge'
 });
 
 const supabase = createClient(
@@ -132,8 +133,31 @@ async function getAccessToken() {
   return token;
 }
 
+function shouldUseDealApiEdge() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('edge_api') === '1') return true;
+    if (params.get('edge_api') === '0') return false;
+    return window.localStorage.getItem(NAV_V2_CONFIG.dealApiEdgeFlagKey) === '1';
+  } catch (_) {
+    return false;
+  }
+}
+
+function assertDealApiResponse(json) {
+  if (json?.ok !== true || json?.action !== 'get_deal_card' || !json?.data) {
+    throw new Error('Edge Function вернула неожиданный ответ get_deal_card');
+  }
+  return json.data;
+}
+
 export async function rpc(name, params = {}, timeoutMs = 20000) {
   await getAccessToken();
+
+  if (name === 'nav_v2_get_deal_card' && params?.p_deal_id && shouldUseDealApiEdge()) {
+    const json = await edgeFunction('nav-v2-deal-api', { action: 'get_deal_card', deal_id: params.p_deal_id }, timeoutMs);
+    return assertDealApiResponse(json);
+  }
 
   const request = supabase.rpc(name, params);
   const timeout = new Promise((_, reject) => {
