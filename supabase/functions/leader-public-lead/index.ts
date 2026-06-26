@@ -1,8 +1,38 @@
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Content-Type': 'application/json; charset=utf-8',
+const DEFAULT_ALLOWED_ORIGINS = [
+  'https://www.lider-bsk.ru',
+  'https://lider-bsk.ru',
+]
+const MAX_BODY_BYTES = 25_000
+
+function allowedOrigins() {
+  const configured = Deno.env.get('LEADER_PUBLIC_ALLOWED_ORIGINS')
+  if (!configured) return DEFAULT_ALLOWED_ORIGINS
+  return configured
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+}
+
+function originFromRequest(req: Request) {
+  return req.headers.get('origin') || ''
+}
+
+function isAllowedOrigin(req: Request) {
+  const origin = originFromRequest(req)
+  if (!origin) return true
+  return allowedOrigins().includes(origin)
+}
+
+function corsHeadersFor(req: Request) {
+  const origin = originFromRequest(req)
+  const allowOrigin = origin && allowedOrigins().includes(origin) ? origin : DEFAULT_ALLOWED_ORIGINS[0]
+  return {
+    'Access-Control-Allow-Origin': allowOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Content-Type': 'application/json; charset=utf-8',
+    'Vary': 'Origin',
+  }
 }
 
 function cleanText(value: unknown, max = 1000) {
@@ -18,8 +48,8 @@ function normalizePhone(value: unknown) {
   return digits
 }
 
-function json(status: number, body: unknown) {
-  return new Response(JSON.stringify(body), { status, headers: corsHeaders })
+function json(req: Request, status: number, body: unknown) {
+  return new Response(JSON.stringify(body), { status, headers: corsHeadersFor(req) })
 }
 
 function requestIdFromBody(body: Record<string, unknown>) {
@@ -95,15 +125,19 @@ async function writeAudit(params: {
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
-  if (req.method !== 'POST') return json(405, { error: 'method_not_allowed' })
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeadersFor(req) })
+  if (req.method !== 'POST') return json(req, 405, { error: 'method_not_allowed' })
+  if (!isAllowedOrigin(req)) return json(req, 403, { error: 'origin_not_allowed' })
+
+  const contentLength = Number(req.headers.get('content-length') || '0')
+  if (contentLength > MAX_BODY_BYTES) return json(req, 413, { error: 'payload_too_large' })
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY')
-  if (!supabaseUrl || !anonKey) return json(500, { error: 'server_not_configured' })
+  if (!supabaseUrl || !anonKey) return json(req, 500, { error: 'server_not_configured' })
 
   let body: Record<string, unknown>
-  try { body = await req.json() } catch (_) { return json(400, { error: 'bad_json' }) }
+  try { body = await req.json() } catch (_) { return json(req, 400, { error: 'bad_json' }) }
 
   const requestId = requestIdFromBody(body)
   const phone = cleanText(body.phone, 80)
@@ -132,7 +166,7 @@ Deno.serve(async (req: Request) => {
 
   if (cleanText(body.website, 200)) {
     await writeAudit({ ...auditBase, result: 'suspicious', reason: 'honeypot_filled', payload: { form: 'site_public_form_v7' } })
-    return json(200, { ok: true, request_id: requestId })
+    return json(req, 200, { ok: true, request_id: requestId })
   }
 
   const name = cleanText(body.name, 200)
@@ -141,7 +175,7 @@ Deno.serve(async (req: Request) => {
   const contactMethod = cleanText(body.contact_method, 120)
   if (!phone && !message) {
     await writeAudit({ ...auditBase, result: 'rejected', reason: 'phone_or_message_required', payload: { form: 'site_public_form_v7', service } })
-    return json(400, { error: 'phone_or_message_required', request_id: requestId })
+    return json(req, 400, { error: 'phone_or_message_required', request_id: requestId })
   }
 
   const budgetText = cleanText(body.budget, 120)
@@ -204,12 +238,17 @@ Deno.serve(async (req: Request) => {
     const details = await res.text()
     if (res.status === 409 || isDuplicateRequest(details)) {
       await writeAudit({ ...auditBase, result: 'duplicate', reason: 'request_id_conflict', payload: { form: 'site_public_form_v7', request_id: requestId } })
-      return json(200, { ok: true, request_id: requestId, duplicate: true })
+      return json(req, 200, { ok: true, request_id: requestId, duplicate: true })
     }
+    console.error('leader_public_lead_insert_failed', {
+      status: res.status,
+      request_id: requestId,
+      details: cleanText(details, 500),
+    })
     await writeAudit({ ...auditBase, result: 'error', reason: 'insert_failed', payload: { form: 'site_public_form_v7', details: details.slice(0, 500) } })
-    return json(500, { error: 'insert_failed', request_id: requestId, details })
+    return json(req, 500, { error: 'insert_failed', request_id: requestId })
   }
 
   await writeAudit({ ...auditBase, result: 'accepted', reason: 'lead_insert_created', payload })
-  return json(200, { ok: true, request_id: requestId })
+  return json(req, 200, { ok: true, request_id: requestId })
 })
