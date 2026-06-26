@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const SUPABASE_URL = process.env.NAV_V2_SUPABASE_URL || 'https://ofewxuqfjhamgerwzull.supabase.co';
+const API_KEY = process.env.NAV_V2_API_KEY || 'sb_publishable_ZiX8_Mnf0dY6S__tKO2A4A_uD94G2cs';
 const JWT = process.env.NAV_V2_JWT;
 const DEAL_ID = process.env.NAV_V2_DEAL_ID;
 const COMPARE_DIRECT_RPC = process.env.NAV_V2_COMPARE_DIRECT_RPC === '1';
@@ -17,7 +18,7 @@ async function postJson(url, body) {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${JWT}`,
-      apikey: JWT,
+      apikey: API_KEY,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(body),
