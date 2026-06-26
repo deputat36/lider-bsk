@@ -1,0 +1,92 @@
+name: Navigator v2 check
+
+on:
+  push:
+    branches: [main, nav-v2-restore-missing-modules-20260626]
+    paths:
+      - 'deal-card-v2.html'
+      - 'assets/js/nav-v2/**'
+      - '.github/workflows/navigator-v2-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'deal-card-v2.html'
+      - 'assets/js/nav-v2/**'
+      - '.github/workflows/navigator-v2-check.yml'
+
+jobs:
+  validate-navigator-v2-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate Navigator v2 referenced assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib
+          import re
+          import sys
+          from html.parser import HTMLParser
+          from urllib.parse import urlparse
+
+          root = pathlib.Path('.').resolve()
+          missing = []
+          html_refs = []
+
+          class Parser(HTMLParser):
+              def handle_starttag(self, tag, attrs):
+                  values = dict(attrs)
+                  if tag == 'script' and values.get('src'):
+                      html_refs.append(values['src'])
+                  if tag == 'link' and values.get('href'):
+                      html_refs.append(values['href'])
+
+          html_path = pathlib.Path('deal-card-v2.html')
+          Parser().feed(html_path.read_text(encoding='utf-8'))
+
+          for ref in html_refs:
+              parsed = urlparse(ref)
+              if parsed.scheme or parsed.netloc:
+                  continue
+              target = (html_path.parent / parsed.path).resolve()
+              if not str(target).startswith(str(root)):
+                  continue
+              if not target.is_file():
+                  missing.append(f'{html_path}: missing referenced asset {parsed.path}')
+
+          import_re = re.compile(r'''(?:import\s+(?:[^'";]+?\s+from\s+)?|export\s+[^'";]+?\s+from\s+|import\s*\()(?P<quote>['"])(?P<path>\.{1,2}/[^'"]+)(?P=quote)''')
+          for js_path in pathlib.Path('assets/js/nav-v2').glob('*.js'):
+              text = js_path.read_text(encoding='utf-8')
+              for match in import_re.finditer(text):
+                  raw = match.group('path')
+                  parsed = urlparse(raw)
+                  target = (js_path.parent / parsed.path).resolve()
+                  if not str(target).startswith(str(root)):
+                      missing.append(f'{js_path}: import escapes repository root: {raw}')
+                  elif not target.is_file():
+                      missing.append(f'{js_path}: missing module import {raw}')
+
+          if missing:
+              print('\n'.join(missing))
+              sys.exit(1)
+          PY
+
+      - name: Validate Navigator v2 Supabase client guardrails
+        shell: bash
+        run: |
+          set -euo pipefail
+          client='assets/js/nav-v2/supabase-v2.js'
+          menu='assets/js/nav-v2/role-menu-v2.js'
+          test -f "$client"
+          test -f "$menu"
+          grep -Fq "sb_publishable_" "$client"
+          grep -Fq "leader_crm_v4_main_session" "$client"
+          grep -Fq "export async function rpc" "$client"
+          grep -Fq "export function renderAuthBox" "$client"
+          grep -Fq "export function statusText" "$client"
+          if grep -R -nE 'SUPABASE_SERVICE_ROLE|SERVICE_ROLE_KEY|sb_secret_' assets/js/nav-v2; then
+            echo 'Navigator v2 browser assets must not expose service role secrets.' >&2
+            exit 1
+          fi
