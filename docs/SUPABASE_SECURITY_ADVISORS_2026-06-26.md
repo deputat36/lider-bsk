@@ -28,6 +28,74 @@
 - status: `ACTIVE`;
 - `verify_jwt`: `false`.
 
+### Demo/admin RPC
+
+После первичного аудита закрыт прямой вызов demo/admin функций для роли `authenticated`:
+
+- `public.nav_v2_clear_demo_data()`;
+- `public.nav_v2_seed_demo_data()`.
+
+Применена production-миграция:
+
+```sql
+revoke execute on function public.nav_v2_clear_demo_data() from authenticated;
+revoke execute on function public.nav_v2_seed_demo_data() from authenticated;
+```
+
+Запись в `supabase_migrations.schema_migrations`:
+
+| Version | Name |
+|---|---|
+| `20260626193324` | `navigator_revoke_authenticated_demo_admin_rpcs_20260626` |
+
+Проверенный ACL после миграции:
+
+| Function | ACL |
+|---|---|
+| `nav_v2_clear_demo_data` | `{postgres=X/postgres,service_role=X/postgres}` |
+| `nav_v2_seed_demo_data` | `{postgres=X/postgres,service_role=X/postgres}` |
+
+Эти две функции больше не входят в список предупреждений `authenticated_security_definer_function_executable`.
+
+### Admin user RPC
+
+Следующим шагом закрыт прямой вызов admin/user-management RPC для роли `authenticated`:
+
+- `public.nav_v2_update_user_profile(...)`;
+- `public.nav_v2_link_user_by_email(...)`;
+- `public.nav_v2_list_users()`.
+
+Перед изменением проверено:
+
+- прямых вызовов этих RPC в репозитории `deputat36/lider-bsk` не найдено;
+- активные Edge Functions не используют эти RPC;
+- `nav-invite-user` управляет пользователями через service role и прямую запись профиля;
+- внутри самих RPC уже был guard `auth.uid()` + `nav_v2_is_owner_or_admin`, но advisor всё равно считал их прямой `authenticated` RPC-поверхностью.
+
+Применена production-миграция:
+
+```sql
+revoke execute on function public.nav_v2_update_user_profile(uuid, text, public.nav_v2_user_role, uuid, text, boolean) from authenticated;
+revoke execute on function public.nav_v2_link_user_by_email(text, text, public.nav_v2_user_role, uuid, text) from authenticated;
+revoke execute on function public.nav_v2_list_users() from authenticated;
+```
+
+Запись в `supabase_migrations.schema_migrations`:
+
+| Version | Name |
+|---|---|
+| `20260626193722` | `navigator_revoke_authenticated_admin_user_rpcs_20260626` |
+
+Проверенный ACL после миграции:
+
+| Function | Arguments | ACL |
+|---|---|---|
+| `nav_v2_link_user_by_email` | `p_email text, p_full_name text, p_role nav_v2_user_role, p_manager_id uuid, p_phone text` | `{postgres=X/postgres,service_role=X/postgres}` |
+| `nav_v2_list_users` | none | `{postgres=X/postgres,service_role=X/postgres}` |
+| `nav_v2_update_user_profile` | `p_user_id uuid, p_full_name text, p_role nav_v2_user_role, p_manager_id uuid, p_phone text, p_is_active boolean` | `{postgres=X/postgres,service_role=X/postgres}` |
+
+Эти три функции больше не входят в список предупреждений `authenticated_security_definer_function_executable`.
+
 ## Проверка документации Supabase
 
 По текущей документации Supabase:
@@ -63,13 +131,29 @@ Supabase security advisor показывает предупреждения ти
 
 ## Read-only инвентаризация
 
-На момент проверки:
+На момент первичной проверки:
 
 | Показатель | Количество |
 |---|---:|
 | `SECURITY DEFINER` функций в `public` | 64 |
 | Из них доступны роли `authenticated` | 46 |
 | Не доступны роли `authenticated` | 18 |
+
+После отзыва `EXECUTE` у двух demo/admin RPC:
+
+| Показатель | Количество |
+|---|---:|
+| `SECURITY DEFINER` функций в `public` | 64 |
+| Из них доступны роли `authenticated` | 44 |
+| Не доступны роли `authenticated` | 20 |
+
+После отзыва `EXECUTE` у трёх admin/user-management RPC:
+
+| Показатель | Количество |
+|---|---:|
+| `SECURITY DEFINER` функций в `public` | 64 |
+| Из них доступны роли `authenticated` | 41 |
+| Не доступны роли `authenticated` | 23 |
 
 ## Группы функций, доступных `authenticated`
 
@@ -78,17 +162,18 @@ Supabase security advisor показывает предупреждения ти
 | Access helpers | `nav_current_role`, `nav_is_admin`, `nav_is_management`, `nav_can_view_deal`, `nav_v2_can_edit_deal` | Средний/высокий | Проверить, не раскрывают ли helper-ы данные по произвольному `p_uid`; по возможности заменить параметры пользователя на `auth.uid()` внутри функции. |
 | Read API | `nav_v2_get_dashboard`, `nav_v2_get_deals_list`, `nav_v2_get_deal_card`, `nav_v2_get_lawyer_queue` | Высокий | Оставлять доступ только если внутри функции есть строгая проверка роли и области видимости. Для внутренних API лучше использовать service role через Edge Function. |
 | Create mutations | `nav_v2_add_comment`, `nav_v2_add_document`, `nav_v2_add_expense`, `nav_v2_add_risk`, `nav_v2_add_task` | Высокий | Проверить каждую функцию на `auth.uid()`, роль пользователя, права на сделку и ограничения статусов. |
-| Update mutations | `nav_v2_update_deal_status`, `nav_v2_update_document_status`, `nav_v2_update_task_status`, `nav_v2_update_user_profile` | Критичный | Приоритетная проверка. Обновляющие RPC должны иметь внутренний authorization guard и не доверять `p_uid` из клиента. |
-| Demo/admin functions | `nav_v2_clear_demo_data`, `nav_v2_seed_demo_data` | Критичный | Убрать `EXECUTE` у `authenticated`, если функции не нужны обычным пользователям. Если нужны только администратору — оставить через отдельную admin Edge Function или строгий guard. |
+| Update mutations | `nav_v2_update_deal_status`, `nav_v2_update_document_status`, `nav_v2_update_task_status` | Критичный | Приоритетная проверка. Обновляющие RPC должны иметь внутренний authorization guard и не доверять `p_uid` из клиента. |
+| Demo/admin functions | `nav_v2_clear_demo_data`, `nav_v2_seed_demo_data` | Закрыто | `EXECUTE` у `authenticated` отозван миграцией `navigator_revoke_authenticated_demo_admin_rpcs_20260626`; прямой вызов оставлен только `postgres` и `service_role`. |
+| Admin user functions | `nav_v2_update_user_profile`, `nav_v2_link_user_by_email`, `nav_v2_list_users` | Закрыто | `EXECUTE` у `authenticated` отозван миграцией `navigator_revoke_authenticated_admin_user_rpcs_20260626`; прямой вызов оставлен только `postgres` и `service_role`. |
 | Leader CRM | `leader_ensure_profile` | Средний | Проверить необходимость прямого вызова с клиента. Функция уже была предметом отдельных hardening-миграций, поэтому менять только после проверки текущего frontend-flow. |
 
 ## Приоритет исправлений
 
-1. `nav_v2_clear_demo_data`, `nav_v2_seed_demo_data` — demo/admin функции не должны быть массово доступны обычным authenticated-пользователям.
-2. `nav_v2_update_user_profile` — особенно чувствительная функция, потому что может затрагивать роли, менеджера, телефон и активность пользователя.
-3. `nav_v2_update_deal_status`, `nav_v2_update_document_status`, `nav_v2_update_task_status` — функции изменения статусов должны строго проверять права и допустимые переходы.
-4. `nav_v2_link_user_by_email`, `nav_v2_list_users` — админские операции с пользователями требуют отдельной проверки.
-5. Read API функции очередей и карточек — проверить, что пользователь видит только разрешённые сделки.
+1. `nav_v2_update_deal_status`, `nav_v2_update_document_status`, `nav_v2_update_task_status` — функции изменения статусов должны строго проверять права и допустимые переходы.
+2. `nav_v2_update_deal_parties`, `nav_v2_update_document_assignment`, `nav_v2_update_document_workflow`, `nav_v2_update_task_due_date` — обновляющие RPC нужно проверить на область доступа и допустимые поля.
+3. Read API функции очередей и карточек — проверить, что пользователь видит только разрешённые сделки.
+4. Access helpers — проверить, не доверяют ли helper-ы произвольному `p_uid` из клиента.
+5. `leader_ensure_profile` — проверить, можно ли заменить прямой client RPC на server-side flow без поломки входа в CRM.
 
 ## Безопасный порядок следующего этапа
 
@@ -108,20 +193,25 @@ Supabase security advisor показывает предупреждения ти
 
 ## Чего не делать без проверки
 
-- Не отзывать `EXECUTE` массово у всех 46 функций одним SQL-запросом.
+- Не отзывать `EXECUTE` массово у всех 41 оставшейся функции одним SQL-запросом.
 - Не переводить все функции с `SECURITY DEFINER` на `SECURITY INVOKER` автоматически.
 - Не менять функции, которые участвуют в RLS-политиках или триггерах, без проверки зависимостей.
 - Не доверять параметрам `p_uid`, `p_role`, `p_user_id`, если они приходят из клиента.
 
 ## Следующий практический шаг
 
-Начать с группы demo/admin:
+Перейти к update/status RPC:
 
-- `nav_v2_clear_demo_data()`;
-- `nav_v2_seed_demo_data()`.
+- `nav_v2_update_deal_status`;
+- `nav_v2_update_document_status`;
+- `nav_v2_update_task_status`;
+- `nav_v2_update_deal_parties`;
+- `nav_v2_update_document_assignment`;
+- `nav_v2_update_document_workflow`;
+- `nav_v2_update_task_due_date`.
 
 Для них нужно:
 
 1. Найти frontend-вызовы.
-2. Подтвердить, используются ли они в production UI.
-3. Если не используются обычными пользователями — подготовить миграцию на отзыв `EXECUTE` у `authenticated`.
+2. Проверить тело функций и authorization guard.
+3. Решить, должны ли они оставаться прямыми клиентскими RPC, или их лучше закрыть и вызывать только через server-side слой.
