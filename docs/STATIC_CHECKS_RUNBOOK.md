@@ -1,16 +1,20 @@
 # Проверки после релиза сайта и CRM РА «Лидер»
 
-Дата: 2026-06-23.
+Дата: 2026-06-25.
 
 ## Что проверять после каждого изменения сайта
 
 1. Главная страница открывается без ошибок.
 2. `robots.txt` открывается и содержит отдельные строки `User-agent`, `Allow`, `Host`, `Sitemap`.
 3. `sitemap.xml` открывается и является корректным XML.
-4. Форма заявки отправляет данные в CRM.
-5. После отправки заявки менеджер видит её в CRM.
-6. Повторный клик по кнопке не создаёт дубль, если серверная идемпотентность уже внедрена.
-7. Событие отправки появляется в CRM-разделе `Аудит заявок`.
+4. Страница `https://www.lider-bsk.ru/request.html` открывается после Ctrl + F5.
+5. Форма заявки отправляет данные в CRM.
+6. После отправки сайт показывает номер обращения.
+7. После отправки менеджер видит заявку в CRM.
+8. Событие отправки появляется в CRM-разделе `Аудит заявок`.
+9. Номер обращения совпадает с `request_id`.
+10. Виджет `Проверить request_id` показывает `Цепочка полная`.
+11. Повторный `request_id` фиксируется как `Дубль`, а не как новая заявка.
 
 ## Что проверять после каждого изменения CRM
 
@@ -29,8 +33,12 @@
 13. Повторное создание заказа из того же КП блокируется.
 14. Роли пользователей не меняются самовольно.
 15. В консоли браузера нет 404 по файлам `assets/v4/`.
+16. Раздел `Аудит заявок` содержит кнопку `Скопировать request_id`.
+17. Раздел `Аудит заявок` содержит виджет `Проверить request_id`.
 
 ## Что проверять в GitHub Actions
+
+### Static checks
 
 Workflow:
 
@@ -51,9 +59,10 @@ Workflow:
 - что расширенное меню `crm-v4-expanded-menu-v1.js` и самопроверка `crm-ui-selfcheck-v1.js` содержат одинаковый обязательный набор вкладок CRM v4;
 - что самопроверка `crm-ui-selfcheck-v1.js` содержит прямую ссылку на GitHub issue template `crm-v4-browser-test.md`;
 - что `crm/v4/index.html` подключает ключевые модульные файлы разделов CRM v4;
-- что `site-cache-note-v1.js` lazy-import подключает `crm-ui-selfcheck-v1.js` и `public-lead-audit-v1.js`;
-- что `public-lead-audit-v1.js` читает `leader_public_lead_audit`, берёт последние 80 событий, сортирует по дате, содержит диагностические поля, показывает referer, раскрываемый payload и фильтры по статусам;
-- актуальные cache-buster версии `auth.js`, `site-cache-note-v1.js`, `crm-ui-selfcheck-v1.js`, `public-lead-audit-v1.js`;
+- что `site-cache-note-v1.js` lazy-import подключает `crm-ui-selfcheck-v1.js`, `public-lead-audit-v1.js` и `public-lead-audit-helper-v1.js`;
+- что `public-lead-audit-v1.js` читает `leader_public_lead_audit`, берёт последние 80 событий, сортирует по дате, содержит diagnostic fields, referer, payload, фильтры по статусам и кнопку `Скопировать request_id`;
+- что `public-lead-audit-helper-v1.js` читает `leader_request_trace` и содержит форму `Проверить request_id`;
+- актуальные cache-buster версии `crm-ui-selfcheck-v1.js?v=20260624-contour-1`, `public-lead-audit-v1.js?v=20260625-duplicate-copy-1`, `public-lead-audit-helper-v1.js?v=20260625-trace-widget-1`;
 - наличие защищённого клиента Edge Functions `crm/v4/assets/v4/functions-client.js`;
 - что `functions-client.js` берёт текущую Supabase-сессию и передаёт `Authorization: Bearer <access_token>`;
 - что браузерные assets CRM v4 не содержат `SUPABASE_SERVICE_ROLE`, `SERVICE_ROLE_KEY` или `sb_secret_*`;
@@ -62,8 +71,10 @@ Workflow:
 - использование `leader-crm-leads` action `ensure_profile` в CRM-авторизации;
 - наличие миграции `supabase/migrations/20260623_tighten_leader_leads_grants.sql`;
 - наличие миграции `supabase/migrations/20260623_tighten_leader_public_lead_audit_grants.sql`;
-- что миграция `leader_leads` фиксирует минимальную модель прав: `anon INSERT`, `authenticated SELECT/INSERT/UPDATE/DELETE`;
-- что миграция `leader_public_lead_audit` фиксирует минимальную модель прав: `anon INSERT`, `authenticated SELECT`.
+- наличие миграций `leader_request_trace`;
+- что миграция `leader_request_trace` использует `security_invoker = true` и даёт `authenticated` только `SELECT`.
+
+### Docs checks
 
 Workflow:
 
@@ -75,26 +86,69 @@ Workflow:
 - наличие `docs/CRM_V4_TESTER_CHECKLIST.md`;
 - наличие `docs/CRM_ADMIN_TESTER_ONBOARDING.md`;
 - наличие `docs/NEXT_SAFE_STEPS.md`;
+- наличие `docs/STATUS.md`;
+- наличие `docs/DECISIONS.md`;
 - наличие `docs/CRM_V4_BROWSER_TEST_REPORT.md`;
+- наличие `docs/CRM_V4_AUDIT_V8_CHECK.md`;
 - наличие `.github/ISSUE_TEMPLATE/crm-v4-browser-test.md`;
 - рабочую ссылку `https://deputat36.github.io/lidercalculator/app-v4.html`;
-- связь инструкции доступа с чек-листом тестировщика;
 - использование `leader_user_profiles` как источника прав CRM;
 - предупреждение не использовать `user_metadata` как источник прав;
-- запрет трогать `nav_*`;
-- роли `owner`, `admin`, `manager`;
 - инструкцию снятия доступа через `is_active = false`;
-- наличие в чек-листе Ctrl + F5, `Проверить CRM`, `Аудит заявок`, `request_id` и `Технические данные`;
-- связь чек-листа и onboarding с шаблоном `docs/CRM_V4_BROWSER_TEST_REPORT.md`;
-- персональную инструкцию для `kvmbsk@yandex.ru`: роль `admin`, самодиагностика, ссылки на документы доступа, чек-лист и шаблон отчёта, снятие доступа через `leader_user_profiles.is_active = false`;
-- актуальность `docs/NEXT_SAFE_STEPS.md`: дата 2026-06-23, версии `leader-public-lead v6`, `leader-crm-leads v8`, `leader-crm-orders v2`, ссылки на чек-лист и шаблон браузерного отчёта, описание `leader_public_lead_audit`, правило не менять live Supabase без плана, миграции и проверки;
-- защиту `docs/NEXT_SAFE_STEPS.md` от возврата устаревшего плана, где аудит публичных заявок описан как ещё не сделанная будущая задача;
-- ключевые поля шаблона отчёта: email входа, диагностика CRM, 404 по assets, аудит заявок, `request_id`, критичность ошибки и итог проверки;
-- ключевые поля GitHub issue template: название `CRM v4 browser test`, email входа, диагностика CRM, 404 по assets, аудит заявок, `request_id`, критичность ошибки и ссылка на `docs/CRM_V4_BROWSER_TEST_REPORT.md`;
-- наличие в GitHub issue template поля `Отчёт docs/CRM_V4_BROWSER_TEST_REPORT.md заполнен`;
-- наличие в GitHub issue template поля `Ссылка/место заполненного отчёта`.
+- наличие в чек-листе Ctrl + F5, `Проверить CRM`, `Аудит заявок`, `request_id`, `Скопировать request_id`, `Проверить request_id`, `Цепочка полная`;
+- актуальность `docs/NEXT_SAFE_STEPS.md`: дата 2026-06-25, версии `leader-public-lead v8`, `leader-crm-leads v8`, `leader-crm-orders v2`, ключи сессий, `refreshPromise` и правило не менять live Supabase без плана, миграции и проверки;
+- актуальность `docs/PUBLIC_LEAD_AUDIT.md`: `v8`, `duplicate`, `Скопировать request_id`, диагностические маркеры аудита;
+- актуальность `docs/DECISIONS.md`: ADR-008 про явный audit дублей и ADR-009 про трассировку через `leader_request_trace`;
+- защиту документов от возврата к устаревшему `audit v7`.
 
-Обязательные вкладки CRM v4:
+### Request trace view check
+
+Workflow:
+
+`Request trace view check`
+
+Проверяет:
+
+- миграцию `supabase/migrations/20260625_create_leader_request_trace_view.sql`;
+- corrective-миграцию `supabase/migrations/20260625_tighten_leader_request_trace_view_grants.sql`;
+- наличие `create or replace view public.leader_request_trace`;
+- наличие `security_invoker = true`;
+- связь с `leader_leads`;
+- связь с `leader_public_lead_audit`;
+- статусы `lead_without_audit` и `audit_without_lead`;
+- отзыв всех прав у `public`, `anon`, `authenticated` перед выдачей `SELECT` для `authenticated`.
+
+### Public lead audit helper check
+
+Workflow:
+
+`Public lead audit helper check`
+
+Проверяет:
+
+- актуальное подключение `public-lead-audit-helper-v1.js?v=20260625-trace-widget-1`;
+- ссылку на `request.html`;
+- пометку `Тест CRM v4 audit v8`;
+- форму `publicLeadTraceFormV1`;
+- кнопку `Проверить request_id`;
+- чтение `leader_request_trace`;
+- статусы `trace_status`, `lead_without_audit`, `audit_without_lead`.
+
+### Public lead audit copy check
+
+Workflow:
+
+`Public lead audit copy check`
+
+Проверяет:
+
+- актуальное подключение `public-lead-audit-v1.js?v=20260625-duplicate-copy-1`;
+- кнопку `Скопировать request_id`;
+- фильтр `duplicate`;
+- счётчик `Дубли`;
+- уведомление `request_id скопирован`.
+
+## Обязательные вкладки CRM v4
 
 - `management_dashboard` — `Дашборд`;
 - `leads` — `Заявки`;
@@ -105,7 +159,7 @@ Workflow:
 - `contact_control` — `Контроль контактов`;
 - `public_lead_audit` — `Аудит заявок`.
 
-Ключевые модульные подключения CRM v4:
+## Ключевые модульные подключения CRM v4
 
 - `management-dashboard-v3.js`;
 - `crm-v4-expanded-menu-v1.js`;
@@ -119,130 +173,24 @@ Workflow:
 - `production-alerts-v1.js`;
 - `production-job-card-v2.js`;
 - `installation-job-card-v2.js`;
-- `site-cache-note-v1.js`.
+- `site-cache-note-v1.js`;
+- `public-lead-audit-v1.js`;
+- `public-lead-audit-helper-v1.js`.
 
-Актуальная цепочка кэша для аудита заявок и самопроверки:
+## Актуальная цепочка кэша для аудита заявок и самопроверки
 
-- `crm/v4/index.html` подключает `site-cache-note-v1.js?v=20260623-2`;
-- `site-cache-note-v1.js` lazy-import подключает `crm-ui-selfcheck-v1.js?v=20260623-2`;
-- `site-cache-note-v1.js` lazy-import подключает `public-lead-audit-v1.js?v=20260623-1`.
+- `crm/v4/index.html` подключает `site-cache-note-v1.js`;
+- `site-cache-note-v1.js` lazy-import подключает `crm-ui-selfcheck-v1.js?v=20260624-contour-1`;
+- `site-cache-note-v1.js` lazy-import подключает `public-lead-audit-v1.js?v=20260625-duplicate-copy-1`;
+- `site-cache-note-v1.js` lazy-import подключает `public-lead-audit-helper-v1.js?v=20260625-trace-widget-1`.
 
-Для `docs/CRM_V4_TESTER_CHECKLIST.md` статическая проверка контролирует:
+## Что остаётся ручной проверкой
 
-- наличие рабочей ссылки `https://deputat36.github.io/lidercalculator/app-v4.html`;
-- инструкцию по Ctrl + F5;
-- проверку диагностического блока `Проверить CRM`;
-- наличие раздела `Аудит заявок`;
-- проверку `request_id` и блока `Технические данные`;
-- раздел `Что считать ошибкой`;
-- требование фиксировать 404 по файлам `assets/v4/*.js` и `assets/v4/*.css`.
-
-Для CRM-модуля `crm-ui-selfcheck-v1.js` статическая проверка контролирует:
-
-- наличие обязательных вкладок CRM v4;
-- проверку ролей `owner`, `admin`, `manager`;
-- ссылку на GitHub issue template `crm-v4-browser-test.md`;
-- текст `Создать GitHub issue CRM v4 browser test`;
-- статусы `нет кнопки` и `дублей`.
-
-Для CRM-модуля `public-lead-audit-v1.js` статическая проверка контролирует:
-
-- чтение таблицы `leader_public_lead_audit`;
-- сортировку по `created_at`;
-- лимит последних 80 событий;
-- вывод `request_id`, нормализованного телефона, `source_page_path`, `page_url`, `user_agent`, `referer` и UTM (`utm_source`, `utm_medium`, `utm_campaign`);
-- вывод `referer` отдельной строкой в карточке события;
-- вывод диагностических полей `result`, `reason`, `payload`;
-- раскрываемый блок `Технические данные` для `payload`;
-- фильтры `Все`, `Принято`, `Подозрительно`, `Отклонено`, `Ошибки`;
-- статусы `accepted`, `suspicious`, `rejected`, `error`.
-
-Для `leader-public-lead` статическая проверка контролирует:
-
-- запись в `leader_public_lead_audit`;
-- вставку в `leader_leads` через `on_conflict=request_id`;
-- `Prefer: resolution=ignore-duplicates,return=minimal`;
-- отказ `phone_or_message_required`;
-- honeypot-статус `honeypot_filled`;
-- события аудита `accepted`, `suspicious`, `rejected`, `error`;
-- правило, что ошибка аудита не блокирует получение заявки.
-
-Для `leader-crm-leads` статическая проверка контролирует:
-
-- наличие серверного `SUPABASE_SERVICE_ROLE_KEY` только внутри Edge Function;
-- проверку JWT через `/auth/v1/user`;
-- ответы `missing_token`, `bad_token`, `access_denied`;
-- проверку активного профиля в `leader_user_profiles`;
-- действия `ensure_profile` и `create_order_from_offer`;
-- запрет создания заказа из несогласованного КП через `offer_not_approved`;
-- защиту от повторного создания заказа через `already_created`;
-- связь заказа с КП, расчётом, заявкой и событием `leader_commercial_offer_events`;
-- ответ `unknown_action` для неизвестных действий.
-
-Для `leader-crm-orders` статическая проверка контролирует:
-
-- наличие серверного `SUPABASE_SERVICE_ROLE_KEY` только внутри Edge Function;
-- проверку JWT через `/auth/v1/user`;
-- ответы `missing_token`, `bad_token`, `access_denied`;
-- проверку активного профиля в `leader_user_profiles`;
-- действия `list` и `update`;
-- чтение `leader_orders` с сортировкой по дате;
-- обновление `status`, `payment_status`, `layout_status`, `production_status`, `layout_comment`, `deadline`;
-- ответ `unknown_action` для неизвестных действий.
-
-Закрытые RPC, которые браузерная CRM не должна вызывать напрямую:
-
-- `leader_ensure_profile`;
-- `leader_get_leads_for_crm`;
-- `leader_create_order_rpc`;
-- `leader_log`.
-
-Для этих сценариев использовать Edge Function `leader-crm-leads` с JWT. Браузерная CRM должна вызывать Edge Functions через `crm/v4/assets/v4/functions-client.js`, который получает текущую Supabase-сессию и отправляет пользовательский JWT в заголовке `Authorization`.
-
-Проверка секретов ищет признаки реальных ключей и env-присваиваний, а не каждое текстовое упоминание роли `service_role` в документации:
-
-- `SUPABASE_SERVICE_ROLE` / `SUPABASE_SERVICE_ROLE_KEY` с `:` или `=`;
-- `SERVICE_ROLE_KEY` с `:` или `=`;
-- ключи формата `sb_secret_*`;
-- ключи формата `sk-*`.
-
-## Что проверять перед изменениями Supabase
-
-1. Используются только таблицы `leader_*`.
-2. Таблицы `nav_*` не затрагиваются.
-3. Изменение оформлено миграцией, если меняется схема или права.
-4. Нет удаления данных, полей, RLS, функций и триггеров без отдельного подтверждения владельца.
-5. Понятен план отката.
-6. Для новых таблиц в `public` явно проверены GRANT для Data API и RLS-политики.
-7. `SECURITY DEFINER` функции `leader_*` не должны быть исполняемы напрямую ролями `anon` и `authenticated`, если это не отдельное осознанное решение.
-8. Браузерная CRM должна обращаться к служебным действиям через Edge Function, а не через прямые RPC к чувствительным функциям.
-9. Для публичной формы базовая модель прав должна оставаться минимальной: `leader_leads` — `anon INSERT`, `leader_public_lead_audit` — `anon INSERT`.
-
-## Минимальный post-release checklist
-
-```text
-[ ] Главная страница работает
-[ ] robots.txt валиден
-[ ] sitemap.xml валиден
-[ ] Форма заявки открывается
-[ ] Тестовая заявка попадает в CRM
-[ ] Событие тестовой заявки видно в аудите
-[ ] CRM v4 открывается
-[ ] Вход в CRM работает
-[ ] Самодиагностика CRM показывает корректный email, роль и активный профиль
-[ ] Все ключевые разделы CRM в самодиагностике имеют статус OK
-[ ] Самодиагностика CRM содержит ссылку на GitHub issue template
-[ ] Тестировщик получил ссылку и чек-лист CRM v4
-[ ] Для тестировщика создан активный профиль в leader_user_profiles
-[ ] Документ CRM_V4_TEST_ACCESS.md актуален
-[ ] Документ NEXT_SAFE_STEPS.md актуален
-[ ] Документ CRM_V4_BROWSER_TEST_REPORT.md заполнен после проверки
-[ ] При ошибках создан GitHub issue через шаблон CRM v4 browser test
-[ ] В GitHub issue указано, заполнен ли docs/CRM_V4_BROWSER_TEST_REPORT.md
-[ ] В GitHub issue указана ссылка или место заполненного отчёта
-[ ] Заявки отображаются
-[ ] Карточка заявки открывается
-[ ] Нет ошибок в консоли браузера на основном сценарии
-[ ] Нет 404 по assets/v4
-[ ] Не затронуты nav_* и другие чужие контуры
-```
+1. Нажать Ctrl + F5 в CRM.
+2. Отправить реальную тестовую заявку через `request.html`.
+3. Скопировать номер обращения.
+4. Найти событие в `Аудит заявок`.
+5. Нажать `Скопировать request_id`.
+6. Вставить номер в `Проверить request_id`.
+7. Убедиться, что виджет показывает `Цепочка полная`.
+8. Проверить, что заявка появилась в CRM только один раз.
