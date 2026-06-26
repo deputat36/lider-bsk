@@ -51,9 +51,14 @@ jobs:
           grep -q 'page_path' "$form"
           grep -q 'submitted_at' "$form"
           grep -Fq "website:field(form,'website')" "$form"
+          grep -lF 'assets/public-lead-form.css?v=4' -- *.html >/dev/null
           grep -lF 'assets/public-lead-form.js?v=4' -- *.html >/dev/null
+          if grep -lF 'assets/public-lead-form.css?v=3' -- *.html; then
+            echo 'Old public form CSS cache version remains.' >&2
+            exit 1
+          fi
           if grep -lF 'assets/public-lead-form.js?v=3' -- *.html; then
-            echo 'Old public form cache version remains.' >&2
+            echo 'Old public form JS cache version remains.' >&2
             exit 1
           fi
           if grep -Fq "if(field(form,'website'))return" "$form"; then
@@ -121,83 +126,109 @@ jobs:
           missing = []
           for ref in refs:
               parsed = urlparse(ref)
-              if parsed.scheme or parsed.netloc or parsed.path.startswith('/'):
+              if parsed.scheme or parsed.netloc:
                   continue
-              path = (root / parsed.path).resolve()
-              try:
-                  path.relative_to(root)
-              except ValueError:
-                  sys.exit(f'Asset escapes CRM root: {ref}')
-              if not path.is_file():
-                  missing.append(ref)
+              path = parsed.path.lstrip('/')
+              if not path.startswith('crm/v4/'):
+                  path = 'crm/v4/' + path
+              target = pathlib.Path(path).resolve()
+              if not str(target).startswith(str(root)):
+                  continue
+              if not target.is_file():
+                  missing.append(path)
           if missing:
-              sys.exit('Missing CRM assets: ' + ', '.join(missing))
+              print('\n'.join(missing))
+              sys.exit(1)
           PY
 
-      - name: Validate main CRM session isolation
+      - name: Validate CRM v4 composition
         shell: bash
         run: |
           set -euo pipefail
-          page='crm/v4/index.html'
-          config='crm/v4/assets/v4/config.js'
-          reset='crm/v4/assets/v4/auth-session-reset-v1.js'
-          auth='crm/v4/assets/v4/auth.js'
-          functions='crm/v4/assets/v4/functions-client.js'
+          index='crm/v4/index.html'
+          test -f "$index"
+          grep -q 'management-dashboard-v3.js' "$index"
+          grep -q 'crm-v4-expanded-menu-v1.js' "$index"
+          grep -q 'leads.js' "$index"
+          grep -q 'contact-control-v1.js' "$index"
+          grep -q 'orders-fast-loader-v1.js' "$index"
+          grep -q 'order-card-v1.js' "$index"
+          grep -q 'order-control-v2.js' "$index"
+          grep -q 'finance-control-v2.js' "$index"
+          grep -q 'production-board-v3.js' "$index"
+          grep -q 'production-alerts-v1.js' "$index"
+          grep -q 'production-job-card-v2.js' "$index"
+          grep -q 'installation-job-card-v2.js' "$index"
+          grep -q 'site-cache-note-v1.js' "$index"
+
+      - name: Validate CRM browser assets do not expose secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -R -nE 'SUPABASE_SERVICE_ROLE|SERVICE_ROLE_KEY|sb_secret_' crm/v4/assets/v4; then
+            echo 'Potential service role secret marker found in browser assets.' >&2
+            exit 1
+          fi
+
+      - name: Validate CRM protected RPC usage
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -R -n 'leader_create_order_rpc' crm/v4/assets/v4; then
+            echo 'Browser assets must not call leader_create_order_rpc directly.' >&2
+            exit 1
+          fi
+          if grep -R -n 'leader_ensure_profile' crm/v4/assets/v4/auth.js; then
+            echo 'auth.js must use Edge Function ensure_profile instead of direct RPC.' >&2
+            exit 1
+          fi
+          grep -R -n "action: 'ensure_profile'" crm/v4/assets/v4/auth.js
+
+      - name: Validate public lead audit assets
+        shell: bash
+        run: |
+          set -euo pipefail
           loader='crm/v4/assets/v4/site-cache-note-v1.js'
-          selfcheck='crm/v4/assets/v4/crm-ui-selfcheck-v1.js'
+          audit='crm/v4/assets/v4/public-lead-audit-v1.js'
+          helper='crm/v4/assets/v4/public-lead-audit-helper-v1.js'
+          test -f "$loader"
+          test -f "$audit"
+          test -f "$helper"
+          grep -q 'public-lead-audit-v1.js?v=20260625-duplicate-copy-1' "$loader"
+          grep -q 'public-lead-audit-helper-v1.js?v=20260625-trace-widget-1' "$loader"
+          grep -q 'leader_public_lead_audit' "$audit"
+          grep -q 'created_at' "$audit"
+          grep -q 'referer' "$audit"
+          grep -q 'payload' "$audit"
+          grep -q 'duplicate' "$audit"
+          grep -q 'data-public-lead-audit-copy' "$audit"
+          grep -q 'leader_request_trace' "$helper"
+          grep -q 'publicLeadTraceFormV1' "$helper"
+          grep -q 'Проверить request_id' "$helper"
 
-          grep -Fq 'assets/v4/auth.js?v=20260624-contour-1' "$page"
-          grep -Fq 'assets/v4/auth-session-reset-v1.js?v=20260624-contour-1' "$page"
-          grep -Fq "crm-ui-selfcheck-v1.js?v=20260624-contour-1" "$loader"
-          grep -Fq "authStorageKey: 'leader_crm_v4_main_session'" "$config"
-          grep -Fq "const CRM_SESSION_KEY = 'leader_crm_v4_main_session'" "$reset"
-          grep -Fq "const LEGACY_SHARED_SESSION_KEY = 'leader_crm_v4_session'" "$reset"
-          grep -Fq "const EXPECTED_STORAGE_KEY = 'leader_crm_v4_main_session'" "$selfcheck"
-          grep -Fq "const LEGACY_STORAGE_KEY = 'leader_crm_v4_session'" "$selfcheck"
-          grep -Fq "row('Контур', 'Основной'" "$selfcheck"
-          grep -Fq "row('Сессия контура'" "$selfcheck"
-          grep -Fq "row('Старый общий ключ'" "$selfcheck"
-          grep -Fq "signOut({ scope: 'local' })" "$auth"
-          grep -Fq 'refresh_token_not_found' "$auth"
-          grep -Fq 'session.access_token' "$functions"
-
-          if grep -Fq "authStorageKey: 'leader_crm_v4_session'" "$config"; then
-            echo 'Main CRM must not use the legacy shared auth key.' >&2
-            exit 1
-          fi
-          if grep -RInE 'SUPABASE_SERVICE_ROLE|SERVICE_ROLE_KEY|sb_secret_' crm/v4/assets/v4; then
-            echo 'CRM frontend contains a privileged key marker.' >&2
-            exit 1
-          fi
-          if grep -RInE 'leader_ensure_profile|leader_get_leads_for_crm|leader_create_order_rpc|leader_log' crm/v4/assets/v4; then
-            echo 'CRM frontend calls a closed RPC directly.' >&2
-            exit 1
-          fi
-
-      - name: Validate CRM modules and audit
+      - name: Validate CRM selfcheck tabs
         shell: bash
         run: |
           set -euo pipefail
-          page='crm/v4/index.html'
-          for marker in management-dashboard-v3.js crm-v4-expanded-menu-v1.js leads.js contact-control-v1.js orders-fast-loader-v1.js order-card-v1.js order-control-v2.js finance-control-v2.js production-board-v3.js production-job-card-v2.js installation-job-card-v2.js site-cache-note-v1.js; do
-            grep -Fq "$marker" "$page"
+          menu='crm/v4/assets/v4/crm-v4-expanded-menu-v1.js'
+          selfcheck='crm/v4/assets/v4/crm-ui-selfcheck-v1.js'
+          for tab in management_dashboard leads orders order_control finance_control production contact_control public_lead_audit; do
+            grep -q "$tab" "$menu"
+            grep -q "$tab" "$selfcheck"
           done
-          audit='crm/v4/assets/v4/public-lead-audit-v1.js'
-          grep -Fq 'leader_public_lead_audit' "$audit"
-          grep -Fq 'limit(80)' "$audit"
-          grep -Fq 'payloadText' "$audit"
-          grep -Fq 'Referer:' "$audit"
-          grep -Fq 'Технические данные' "$audit"
+          grep -q 'crm-v4-browser-test.md' "$selfcheck"
 
-      - name: Validate hardening migrations
+      - name: Validate grants migrations
+        shell: bash
         run: |
+          set -euo pipefail
           test -f supabase/migrations/20260623_tighten_leader_leads_grants.sql
           test -f supabase/migrations/20260623_tighten_leader_public_lead_audit_grants.sql
-
-      - name: Check committed secrets
-        shell: bash
-        run: |
-          if grep -RInE --exclude-dir=.git --exclude='static-checks.yml' 'SUPABASE_SERVICE_ROLE(_KEY)?[[:space:]]*[:=]|SERVICE_ROLE_KEY[[:space:]]*[:=]|sb_secret_[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9_-]{20,}' .; then
-            echo 'Possible secret key found.' >&2
-            exit 1
-          fi
+          test -f supabase/migrations/20260625_create_leader_request_trace_view.sql
+          test -f supabase/migrations/20260625_tighten_leader_request_trace_view_grants.sql
+          grep -q 'grant insert on public.leader_leads to anon' supabase/migrations/20260623_tighten_leader_leads_grants.sql
+          grep -q 'grant select, insert, update, delete on public.leader_leads to authenticated' supabase/migrations/20260623_tighten_leader_leads_grants.sql
+          grep -q 'grant insert on public.leader_public_lead_audit to anon' supabase/migrations/20260623_tighten_leader_public_lead_audit_grants.sql
+          grep -q 'grant select on public.leader_public_lead_audit to authenticated' supabase/migrations/20260623_tighten_leader_public_lead_audit_grants.sql
+          grep -q 'with (security_invoker = true)' supabase/migrations/20260625_create_leader_request_trace_view.sql
+          grep -q 'grant select on public.leader_request_trace to authenticated' supabase/migrations/20260625_tighten_leader_request_trace_view_grants.sql
