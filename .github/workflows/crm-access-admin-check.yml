@@ -45,7 +45,7 @@ jobs:
           grep -Fq "CRM access admin v1" "$admin"
           grep -Fq "leader_user_invites" "$admin"
           grep -Fq "leader_user_profiles" "$admin"
-          grep -Fq "data-v4-managed-section" "$admin"
+          grep -Fq "dataset.v4ManagedSection" "$admin"
           grep -Fq "user_admin" "$admin"
 
       - name: Check JS syntax
