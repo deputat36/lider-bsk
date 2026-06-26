@@ -96,6 +96,52 @@ revoke execute on function public.nav_v2_list_users() from authenticated;
 
 Эти три функции больше не входят в список предупреждений `authenticated_security_definer_function_executable`.
 
+### Unused wide update RPC
+
+После проверки frontend-вызовов закрыт прямой вызов четырёх широких update RPC, которые не используются текущим фронтендом:
+
+- `public.nav_v2_update_deal_parties(...)`;
+- `public.nav_v2_update_document_assignment(...)`;
+- `public.nav_v2_update_document_workflow(...)`;
+- `public.nav_v2_update_task_due_date(...)`.
+
+При этом намеренно оставлены доступными для `authenticated` рабочие клиентские RPC, которые реально вызываются из `assets/js/nav-v2/deal-card-v2.js` и `assets/js/nav-v2/deal-card-stay-v2.js`:
+
+- `public.nav_v2_update_deal_status(...)`;
+- `public.nav_v2_update_document_status(...)`;
+- `public.nav_v2_update_task_status(...)`.
+
+`nav_v2_update_document_status(...)` остаётся публичной wrapper-функцией и вызывает `nav_v2_update_document_workflow(...)` внутри `SECURITY DEFINER` контекста.
+
+Применена production-миграция:
+
+```sql
+revoke execute on function public.nav_v2_update_deal_parties(uuid, text, text, text, text, text) from authenticated;
+revoke execute on function public.nav_v2_update_document_assignment(uuid, uuid, public.nav_v2_user_role, date, boolean, boolean) from authenticated;
+revoke execute on function public.nav_v2_update_document_workflow(uuid, text, uuid, public.nav_v2_user_role, date, text) from authenticated;
+revoke execute on function public.nav_v2_update_task_due_date(uuid, date) from authenticated;
+```
+
+Запись в `supabase_migrations.schema_migrations`:
+
+| Version | Name |
+|---|---|
+| `20260626194022` | `navigator_revoke_authenticated_unused_update_rpcs_20260626` |
+
+Проверенный ACL после миграции:
+
+| Function | ACL |
+|---|---|
+| `nav_v2_update_deal_parties` | `{postgres=X/postgres,service_role=X/postgres}` |
+| `nav_v2_update_document_assignment` | `{postgres=X/postgres,service_role=X/postgres}` |
+| `nav_v2_update_document_workflow` | `{postgres=X/postgres,service_role=X/postgres}` |
+| `nav_v2_update_task_due_date` | `{postgres=X/postgres,service_role=X/postgres}` |
+| `nav_v2_update_deal_status` | `{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}` |
+| `nav_v2_update_document_status` | `{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}` |
+| `nav_v2_update_task_status` | `{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}` |
+
+Эти четыре широкие update-функции больше не входят в список предупреждений `authenticated_security_definer_function_executable`.
+
 ## Проверка документации Supabase
 
 По текущей документации Supabase:
@@ -155,6 +201,14 @@ Supabase security advisor показывает предупреждения ти
 | Из них доступны роли `authenticated` | 41 |
 | Не доступны роли `authenticated` | 23 |
 
+После отзыва `EXECUTE` у четырёх неиспользуемых широких update RPC:
+
+| Показатель | Количество |
+|---|---:|
+| `SECURITY DEFINER` функций в `public` | 64 |
+| Из них доступны роли `authenticated` | 37 |
+| Не доступны роли `authenticated` | 27 |
+
 ## Группы функций, доступных `authenticated`
 
 | Группа | Примеры | Риск | Рекомендуемое действие |
@@ -162,18 +216,19 @@ Supabase security advisor показывает предупреждения ти
 | Access helpers | `nav_current_role`, `nav_is_admin`, `nav_is_management`, `nav_can_view_deal`, `nav_v2_can_edit_deal` | Средний/высокий | Проверить, не раскрывают ли helper-ы данные по произвольному `p_uid`; по возможности заменить параметры пользователя на `auth.uid()` внутри функции. |
 | Read API | `nav_v2_get_dashboard`, `nav_v2_get_deals_list`, `nav_v2_get_deal_card`, `nav_v2_get_lawyer_queue` | Высокий | Оставлять доступ только если внутри функции есть строгая проверка роли и области видимости. Для внутренних API лучше использовать service role через Edge Function. |
 | Create mutations | `nav_v2_add_comment`, `nav_v2_add_document`, `nav_v2_add_expense`, `nav_v2_add_risk`, `nav_v2_add_task` | Высокий | Проверить каждую функцию на `auth.uid()`, роль пользователя, права на сделку и ограничения статусов. |
-| Update mutations | `nav_v2_update_deal_status`, `nav_v2_update_document_status`, `nav_v2_update_task_status` | Критичный | Приоритетная проверка. Обновляющие RPC должны иметь внутренний authorization guard и не доверять `p_uid` из клиента. |
+| Client status mutations | `nav_v2_update_deal_status`, `nav_v2_update_document_status`, `nav_v2_update_task_status` | Средний/высокий | Это намеренная клиентская RPC-граница. Оставить `EXECUTE` у `authenticated`, но регулярно проверять guard-цепочку `auth.uid()` → `nav_v2_can_*`. |
+| Wide update mutations | `nav_v2_update_deal_parties`, `nav_v2_update_document_assignment`, `nav_v2_update_document_workflow`, `nav_v2_update_task_due_date` | Закрыто | `EXECUTE` у `authenticated` отозван миграцией `navigator_revoke_authenticated_unused_update_rpcs_20260626`; прямой вызов оставлен только `postgres` и `service_role`. |
 | Demo/admin functions | `nav_v2_clear_demo_data`, `nav_v2_seed_demo_data` | Закрыто | `EXECUTE` у `authenticated` отозван миграцией `navigator_revoke_authenticated_demo_admin_rpcs_20260626`; прямой вызов оставлен только `postgres` и `service_role`. |
 | Admin user functions | `nav_v2_update_user_profile`, `nav_v2_link_user_by_email`, `nav_v2_list_users` | Закрыто | `EXECUTE` у `authenticated` отозван миграцией `navigator_revoke_authenticated_admin_user_rpcs_20260626`; прямой вызов оставлен только `postgres` и `service_role`. |
 | Leader CRM | `leader_ensure_profile` | Средний | Проверить необходимость прямого вызова с клиента. Функция уже была предметом отдельных hardening-миграций, поэтому менять только после проверки текущего frontend-flow. |
 
 ## Приоритет исправлений
 
-1. `nav_v2_update_deal_status`, `nav_v2_update_document_status`, `nav_v2_update_task_status` — функции изменения статусов должны строго проверять права и допустимые переходы.
-2. `nav_v2_update_deal_parties`, `nav_v2_update_document_assignment`, `nav_v2_update_document_workflow`, `nav_v2_update_task_due_date` — обновляющие RPC нужно проверить на область доступа и допустимые поля.
-3. Read API функции очередей и карточек — проверить, что пользователь видит только разрешённые сделки.
-4. Access helpers — проверить, не доверяют ли helper-ы произвольному `p_uid` из клиента.
-5. `leader_ensure_profile` — проверить, можно ли заменить прямой client RPC на server-side flow без поломки входа в CRM.
+1. Read API функции очередей и карточек — проверить, что пользователь видит только разрешённые сделки.
+2. Create mutations — проверить, что создание комментариев, документов, расходов, рисков и задач всегда проверяет доступ к сделке.
+3. Access helpers — проверить, не доверяют ли helper-ы произвольному `p_uid` из клиента.
+4. `leader_ensure_profile` — проверить, можно ли заменить прямой client RPC на server-side flow без поломки входа в CRM.
+5. Client status mutations — оставить клиентскими, но отдельно проверить negative cases для `nav_v2_can_change_deal_status`, `nav_v2_can_change_document_status`, `nav_v2_can_change_task_status`.
 
 ## Безопасный порядок следующего этапа
 
@@ -193,25 +248,26 @@ Supabase security advisor показывает предупреждения ти
 
 ## Чего не делать без проверки
 
-- Не отзывать `EXECUTE` массово у всех 41 оставшейся функции одним SQL-запросом.
+- Не отзывать `EXECUTE` массово у всех 37 оставшихся функций одним SQL-запросом.
 - Не переводить все функции с `SECURITY DEFINER` на `SECURITY INVOKER` автоматически.
 - Не менять функции, которые участвуют в RLS-политиках или триггерах, без проверки зависимостей.
 - Не доверять параметрам `p_uid`, `p_role`, `p_user_id`, если они приходят из клиента.
 
 ## Следующий практический шаг
 
-Перейти к update/status RPC:
+Перейти к Read API и Create mutations:
 
-- `nav_v2_update_deal_status`;
-- `nav_v2_update_document_status`;
-- `nav_v2_update_task_status`;
-- `nav_v2_update_deal_parties`;
-- `nav_v2_update_document_assignment`;
-- `nav_v2_update_document_workflow`;
-- `nav_v2_update_task_due_date`.
+- `nav_v2_get_deal_card`;
+- `nav_v2_get_deals_list`;
+- `nav_v2_get_dashboard`;
+- `nav_v2_add_comment`;
+- `nav_v2_add_document`;
+- `nav_v2_add_expense`;
+- `nav_v2_add_risk`;
+- `nav_v2_add_task`.
 
 Для них нужно:
 
 1. Найти frontend-вызовы.
 2. Проверить тело функций и authorization guard.
-3. Решить, должны ли они оставаться прямыми клиентскими RPC, или их лучше закрыть и вызывать только через server-side слой.
+3. Решить, какие функции являются намеренной клиентской RPC-границей, а какие можно закрыть и вызывать только через server-side слой.
