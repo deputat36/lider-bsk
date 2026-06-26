@@ -1,0 +1,39 @@
+name: Navigator v2 deal API auth guard
+
+on:
+  workflow_dispatch:
+    inputs:
+      deal_id:
+        description: 'Deal UUID used only as request payload for unauthenticated rejection check'
+        required: false
+        default: '00000000-0000-0000-0000-000000000000'
+        type: string
+      supabase_url:
+        description: 'Supabase project URL'
+        required: false
+        default: 'https://ofewxuqfjhamgerwzull.supabase.co'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  verify-auth-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate auth guard script
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check tools/nav_v2_deal_api_auth_guard_test.mjs
+
+      - name: Verify unauthenticated requests are rejected
+        shell: bash
+        env:
+          NAV_V2_DEAL_ID: ${{ inputs.deal_id }}
+          NAV_V2_SUPABASE_URL: ${{ inputs.supabase_url }}
+        run: |
+          set -euo pipefail
+          node tools/nav_v2_deal_api_auth_guard_test.mjs

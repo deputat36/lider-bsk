@@ -77,6 +77,16 @@ node tools/nav_v2_deal_api_auth_guard_test.mjs
 
 It sends `get_deal_card` without an `Authorization` header and expects a `401` or `403` rejection without a successful data payload.
 
+A standalone no-secret GitHub Actions workflow is available after PR `#43`:
+
+- workflow name: `Navigator v2 deal API auth guard`;
+- workflow file: `.github/workflows/nav-v2-deal-api-auth-guard.yml`;
+- trigger: `workflow_dispatch` only;
+- inputs: optional `deal_id`, optional `supabase_url`;
+- secrets: none.
+
+Use it when you want to verify only the public auth boundary without configuring `NAV_V2_JWT`.
+
 A local authenticated smoke test is available:
 
 ```bash
