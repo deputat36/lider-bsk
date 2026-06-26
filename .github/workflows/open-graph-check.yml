@@ -1,0 +1,75 @@
+name: Open Graph check
+
+on:
+  push:
+    branches: [main, public-og-seo-20260626]
+    paths:
+      - 'request.html'
+      - 'privacy.html'
+      - 'sitemap.xml'
+      - 'assets/og-lider-default.svg'
+      - 'docs/OPEN_GRAPH.md'
+      - '.github/workflows/open-graph-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'request.html'
+      - 'privacy.html'
+      - 'sitemap.xml'
+      - 'assets/og-lider-default.svg'
+      - 'docs/OPEN_GRAPH.md'
+      - '.github/workflows/open-graph-check.yml'
+
+jobs:
+  validate-open-graph:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate Open Graph assets and tags
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f assets/og-lider-default.svg
+          grep -Fq '<svg' assets/og-lider-default.svg
+          grep -Fq 'width="1200" height="630"' assets/og-lider-default.svg
+          grep -Fq 'РА Лидер' assets/og-lider-default.svg
+
+          request='request.html'
+          grep -Fq '<link rel="canonical" href="https://www.lider-bsk.ru/request.html">' "$request"
+          grep -Fq '<meta property="og:type" content="website">' "$request"
+          grep -Fq '<meta property="og:locale" content="ru_RU">' "$request"
+          grep -Fq '<meta property="og:site_name" content="РА Лидер">' "$request"
+          grep -Fq '<meta property="og:url" content="https://www.lider-bsk.ru/request.html">' "$request"
+          grep -Fq '<meta property="og:title" content="Оставить заявку — РА Лидер">' "$request"
+          grep -Fq '<meta property="og:image" content="https://www.lider-bsk.ru/assets/og-lider-default.svg">' "$request"
+          grep -Fq '<meta property="og:image:width" content="1200">' "$request"
+          grep -Fq '<meta property="og:image:height" content="630">' "$request"
+          grep -Fq '<meta name="twitter:card" content="summary_large_image">' "$request"
+          grep -Fq '<meta name="twitter:image" content="https://www.lider-bsk.ru/assets/og-lider-default.svg">' "$request"
+
+          privacy='privacy.html'
+          grep -Fq '<meta name="description"' "$privacy"
+          grep -Fq '<link rel="canonical" href="https://www.lider-bsk.ru/privacy.html">' "$privacy"
+          grep -Fq '<meta property="og:image" content="https://www.lider-bsk.ru/assets/og-lider-default.svg">' "$privacy"
+          grep -Fq '<meta name="twitter:card" content="summary_large_image">' "$privacy"
+
+          grep -Fq '<lastmod>2026-06-26</lastmod>' sitemap.xml
+          grep -Fq 'https://www.lider-bsk.ru/request.html' sitemap.xml
+          grep -Fq 'https://www.lider-bsk.ru/privacy.html' sitemap.xml
+
+      - name: Validate sitemap XML
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          root = ET.parse('sitemap.xml').getroot()
+          urls = root.findall('.//{*}url')
+          assert urls, 'sitemap has no urls'
+          for item in urls:
+              loc = item.find('{*}loc')
+              lastmod = item.find('{*}lastmod')
+              assert loc is not None and loc.text, 'url without loc'
+              assert lastmod is not None and lastmod.text, f'url without lastmod: {loc.text}'
+          PY
