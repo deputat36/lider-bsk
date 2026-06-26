@@ -2,12 +2,13 @@ name: Open Graph check
 
 on:
   push:
-    branches: [main, public-og-seo-20260626]
+    branches: [main, public-og-png-20260626]
     paths:
       - 'request.html'
       - 'privacy.html'
       - 'sitemap.xml'
       - 'assets/og-lider-default.svg'
+      - 'assets/og-lider-default.png'
       - 'docs/OPEN_GRAPH.md'
       - '.github/workflows/open-graph-check.yml'
   pull_request:
@@ -17,6 +18,7 @@ on:
       - 'privacy.html'
       - 'sitemap.xml'
       - 'assets/og-lider-default.svg'
+      - 'assets/og-lider-default.png'
       - 'docs/OPEN_GRAPH.md'
       - '.github/workflows/open-graph-check.yml'
 
@@ -31,9 +33,16 @@ jobs:
         run: |
           set -euo pipefail
           test -f assets/og-lider-default.svg
+          test -f assets/og-lider-default.png
           grep -Fq '<svg' assets/og-lider-default.svg
           grep -Fq 'width="1200" height="630"' assets/og-lider-default.svg
           grep -Fq 'РА Лидер' assets/og-lider-default.svg
+          python3 - <<'PY'
+          from pathlib import Path
+          data = Path('assets/og-lider-default.png').read_bytes()
+          assert data.startswith(b'\x89PNG\r\n\x1a\n'), 'og-lider-default.png is not a PNG file'
+          assert len(data) > 1000, 'og-lider-default.png is unexpectedly small'
+          PY
 
           request='request.html'
           grep -Fq '<link rel="canonical" href="https://www.lider-bsk.ru/request.html">' "$request"
@@ -42,16 +51,18 @@ jobs:
           grep -Fq '<meta property="og:site_name" content="РА Лидер">' "$request"
           grep -Fq '<meta property="og:url" content="https://www.lider-bsk.ru/request.html">' "$request"
           grep -Fq '<meta property="og:title" content="Оставить заявку — РА Лидер">' "$request"
-          grep -Fq '<meta property="og:image" content="https://www.lider-bsk.ru/assets/og-lider-default.svg">' "$request"
+          grep -Fq '<meta property="og:image" content="https://www.lider-bsk.ru/assets/og-lider-default.png">' "$request"
+          grep -Fq '<meta property="og:image:type" content="image/png">' "$request"
           grep -Fq '<meta property="og:image:width" content="1200">' "$request"
           grep -Fq '<meta property="og:image:height" content="630">' "$request"
           grep -Fq '<meta name="twitter:card" content="summary_large_image">' "$request"
-          grep -Fq '<meta name="twitter:image" content="https://www.lider-bsk.ru/assets/og-lider-default.svg">' "$request"
+          grep -Fq '<meta name="twitter:image" content="https://www.lider-bsk.ru/assets/og-lider-default.png">' "$request"
 
           privacy='privacy.html'
           grep -Fq '<meta name="description"' "$privacy"
           grep -Fq '<link rel="canonical" href="https://www.lider-bsk.ru/privacy.html">' "$privacy"
-          grep -Fq '<meta property="og:image" content="https://www.lider-bsk.ru/assets/og-lider-default.svg">' "$privacy"
+          grep -Fq '<meta property="og:image" content="https://www.lider-bsk.ru/assets/og-lider-default.png">' "$privacy"
+          grep -Fq '<meta property="og:image:type" content="image/png">' "$privacy"
           grep -Fq '<meta name="twitter:card" content="summary_large_image">' "$privacy"
 
           grep -Fq '<lastmod>2026-06-26</lastmod>' sitemap.xml
