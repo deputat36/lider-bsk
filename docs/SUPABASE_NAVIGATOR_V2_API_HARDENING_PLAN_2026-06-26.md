@@ -45,19 +45,24 @@ Do not start the Edge Function migration unless `Navigator v2 check` is green.
 
 ## Phase 2 status
 
-A repository-only skeleton for `nav-v2-deal-api` has been added under `supabase/functions/nav-v2-deal-api/index.ts`.
+A repository-only Edge Function source for `nav-v2-deal-api` exists under `supabase/functions/nav-v2-deal-api/index.ts`.
 
-Current skeleton behavior:
+Current bridge behavior:
 
 - `verify_jwt=true` is recorded in `supabase/config.toml`;
 - handles `OPTIONS` and `POST` only;
 - validates the incoming bearer token with `/auth/v1/user` using `SUPABASE_URL` and `SUPABASE_ANON_KEY`;
 - accepts only the planned action whitelist;
-- returns `501` for every action because behavior parity has not been ported yet;
-- does not use `SUPABASE_SERVICE_ROLE_KEY` yet;
-- does not call current RPC and does not mutate data.
+- implements only `get_deal_card`;
+- validates `deal_id` as a UUID before calling the backend;
+- calls only `nav_v2_get_deal_card` through `/rest/v1/rpc/nav_v2_get_deal_card` using the caller's JWT and anon key;
+- leaves write actions returning `501`;
+- does not use `SUPABASE_SERVICE_ROLE_KEY`;
+- does not mutate data.
 
-The function is not wired into browser code and should not replace direct RPC until `get_deal_card` is implemented and manually verified.
+Important limitation: this is a read-only user-context bridge for parity testing. It still depends on the existing direct `authenticated` EXECUTE grant for `nav_v2_get_deal_card`, so it does not reduce Security Advisor warnings yet. The final hardening step still requires implementing explicit authorization checks and then revoking direct browser RPC grants.
+
+The function is not wired into browser code and should not replace direct RPC until `get_deal_card` is deployed and manually verified against real role coverage.
 
 ## Target architecture
 
@@ -163,18 +168,18 @@ Must preserve:
 - Confirm the actual browser RPC helper implementation.
 - Add or update a static check that fails when `deal-card-v2.html` or Navigator v2 modules reference missing files.
 
-### Phase 2 — Edge Function skeleton
+### Phase 2 — Edge Function read bridge
 
 - Add `supabase/functions/nav-v2-deal-api/index.ts`.
-- Implement CORS, JSON responses, JWT validation, service-role REST helpers.
-- Implement only `get_deal_card` first.
+- Implement CORS, JSON responses, JWT validation, and action whitelist.
+- Implement only `get_deal_card` as a user-context bridge to preserve `auth.uid()` behavior.
 - Keep browser code on the old RPC while the function is verified manually.
 
 ### Phase 3 — read flow migration
 
-- Change the deal card load path from direct `rpc('nav_v2_get_deal_card', ...)` to the Edge Function action `get_deal_card`.
-- Verify owner/admin/manager/spn/lawyer/broker views.
-- Verify a user without access receives `403`.
+- Deploy `nav-v2-deal-api` with `verify_jwt=true`.
+- Manually verify the `get_deal_card` action for owner/admin/manager/spn/lawyer/broker and denied users.
+- Change the deal card load path from direct `rpc('nav_v2_get_deal_card', ...)` to the Edge Function action `get_deal_card` only after deploy verification.
 
 ### Phase 4 — write flow migration
 
@@ -192,7 +197,7 @@ After each action:
 - verify event logging;
 - verify no regression in `deal-card-stay-v2.js` scroll behavior.
 
-### Phase 5 — REVOKE direct browser RPC
+### Phase 5 — service-role hardening and REVOKE direct browser RPC
 
 Only after all browser calls are migrated and tested:
 
