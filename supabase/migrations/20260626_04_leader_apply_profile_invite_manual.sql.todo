@@ -1,0 +1,18 @@
+-- TODO: manually add this SQL migration via local Git or GitHub web editor.
+-- The function is already applied in Supabase project ofewxuqfjhamgerwzull.
+-- GitHub connector blocked creating the full SQL file in this branch.
+
+-- Required database object:
+-- public.leader_apply_profile_invite()
+-- Trigger:
+-- leader_apply_profile_invite_trg before insert on public.leader_user_profiles
+
+-- Expected behavior:
+-- 1. Normalize new CRM profile email and role.
+-- 2. If active unused invite exists for auth email, activate profile and apply invite role/full_name.
+-- 3. Mark invite as accepted and inactive.
+-- 4. If no invite exists, keep new user inactive and pending owner/admin activation.
+
+-- Source of truth until this file is replaced by real SQL:
+-- Supabase production DB already contains the function and trigger.
+-- See issue #15 for the manual sync checklist.
