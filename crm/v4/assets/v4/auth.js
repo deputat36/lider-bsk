@@ -3,7 +3,7 @@ import { supabaseClient } from './supabase-client.js';
 import { timeout, friendlyError, isNetworkError } from './api.js';
 import { invokeLeaderFunction } from './functions-client.js';
 import { setState, resetAuthState, v4State } from './state.js';
-import { bindAuthUi, readCredentials, renderProfile, setAuthBusy, setProfileNotice, setStatus, showLoggedIn, showLoggedOut, toast } from './ui.js';
+import { bindAuthUi, byId, readCredentials, renderProfile, setAuthBusy, setProfileNotice, setStatus, showLoggedIn, showLoggedOut, toast } from './ui.js';
 
 function isInvalidStoredSession(error) {
   const details = `${error?.code || ''} ${error?.message || ''}`.toLowerCase();
@@ -34,6 +34,24 @@ async function clearLocalSession() {
   }
 }
 
+function applyLoadedProfile(profile) {
+  if (!profile || typeof profile !== 'object') return false;
+
+  setState({ profile, profileLoaded: true });
+  renderProfile(profile);
+
+  if (profile.is_active === false) {
+    byId('crmWorkspace')?.classList.add('hidden');
+    setStatus('Доступ ожидает активации', 'warn');
+    setProfileNotice('Профиль создан, но доступ к CRM ещё не активирован владельцем или администратором.');
+    return true;
+  }
+
+  byId('crmWorkspace')?.classList.remove('hidden');
+  setProfileNotice('');
+  return true;
+}
+
 async function loadProfileInBackground(user) {
   if (!user?.id) return;
   const hadProfile = Boolean(v4State.profileLoaded && v4State.profile);
@@ -45,24 +63,14 @@ async function loadProfileInBackground(user) {
       .eq('user_id', user.id)
       .maybeSingle();
     if (response.error) throw response.error;
-    if (response.data) {
-      setState({ profile: response.data, profileLoaded: true });
-      renderProfile(response.data);
-      setProfileNotice('');
-      return;
-    }
+    if (response.data && applyLoadedProfile(response.data)) return;
 
     const ensured = await invokeLeaderFunction('leader-crm-leads', { action: 'ensure_profile' }, {
       timeoutMs: Math.max(V4_CONFIG.timeouts.profileMs + 7000, 12000),
       timeoutMessage: 'Профиль доступа не подготовился вовремя'
     });
     const profile = ensured.profile || ensured.data || ensured;
-    if (profile && typeof profile === 'object') {
-      setState({ profile, profileLoaded: true });
-      renderProfile(profile);
-      setProfileNotice('');
-      return;
-    }
+    if (applyLoadedProfile(profile)) return;
 
     if (!hadProfile) {
       setState({ profile: null, profileLoaded: false });
@@ -74,7 +82,14 @@ async function loadProfileInBackground(user) {
     if (!hadProfile) {
       setState({ profile: null, profileLoaded: false });
       renderProfile(null);
-      setProfileNotice('');
+      const message = `${error?.message || ''}`.toLowerCase();
+      if (message.includes('access_denied')) {
+        byId('crmWorkspace')?.classList.add('hidden');
+        setStatus('Доступ не активирован', 'warn');
+        setProfileNotice('Вход выполнен, но профиль CRM не активирован. Обратитесь к владельцу или администратору.');
+      } else {
+        setProfileNotice('');
+      }
     }
   }
 }
