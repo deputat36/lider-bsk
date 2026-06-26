@@ -1,3 +1,4 @@
+import './user-admin-v1.js';
 import { V4_CONFIG } from './config.js';
 import { supabaseClient } from './supabase-client.js';
 import { timeout, friendlyError, isNetworkError } from './api.js';
