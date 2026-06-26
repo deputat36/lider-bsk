@@ -31,19 +31,17 @@ The current deal card UI calls these RPC from `assets/js/nav-v2/deal-card-v2.js`
 
 These cannot be revoked immediately because the current browser flow depends on them.
 
-## Preflight issue
+## Preflight status
 
-`deal-card-v2.js` and `deal-card-stay-v2.js` import `./supabase-v2.js`.
+Earlier audit found that `deal-card-v2.js` and `deal-card-stay-v2.js` import `./supabase-v2.js`, while `deal-card-v2.html` imports `./assets/js/nav-v2/role-menu-v2.js`; both modules were missing from GitHub Contents API/search.
 
-During this audit, GitHub code search found only imports of `supabase-v2.js`; fetching `assets/js/nav-v2/supabase-v2.js` through the GitHub Contents API returned `404`.
+Preflight fix path:
 
-Before implementing the API migration, verify one of the following:
+- restore `assets/js/nav-v2/supabase-v2.js` with the expected exports used by the deal card UI;
+- restore `assets/js/nav-v2/role-menu-v2.js` as a safe browser-only helper;
+- add `.github/workflows/navigator-v2-check.yml` to verify `deal-card-v2.html` references and relative ES module imports under `assets/js/nav-v2/**`.
 
-- the file exists under a different path or is generated/deployed outside GitHub;
-- the static site currently has a missing module and the Navigator v2 deal card is already broken;
-- the GitHub connector search missed the file due repository indexing limitations.
-
-Do not start the API migration before resolving this inventory mismatch.
+Do not start the Edge Function migration unless `Navigator v2 check` is green.
 
 ## Target architecture
 
@@ -145,9 +143,9 @@ Must preserve:
 
 ### Phase 1 — inventory fix
 
-- Resolve the `supabase-v2.js` path mismatch.
+- Resolve the `supabase-v2.js` and `role-menu-v2.js` path mismatches.
 - Confirm the actual browser RPC helper implementation.
-- Add or update a static check that fails when `deal-card-v2.js` imports a missing module.
+- Add or update a static check that fails when `deal-card-v2.html` or Navigator v2 modules reference missing files.
 
 ### Phase 2 — Edge Function skeleton
 
