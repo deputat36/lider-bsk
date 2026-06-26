@@ -20,6 +20,8 @@ const allowedActions = new Set<NavV2Action>([
   "update_task_status",
 ]);
 
+const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -86,6 +88,44 @@ function parseAction(body: Record<string, unknown>): NavV2Action {
   return action as NavV2Action;
 }
 
+function parseDealId(body: Record<string, unknown>): string {
+  const value = body.deal_id ?? body.id ?? body.p_deal_id;
+  if (typeof value !== "string" || !uuidRe.test(value)) {
+    throw new Error("deal_id must be a valid UUID");
+  }
+  return value;
+}
+
+async function callUserRpc<T>(req: Request, rpcName: string, payload: Record<string, unknown>): Promise<T> {
+  const token = getBearerToken(req);
+  if (!token) throw new Error("Missing bearer token");
+
+  const supabaseUrl = requireEnv("SUPABASE_URL");
+  const anonKey = requireEnv("SUPABASE_ANON_KEY");
+  const response = await fetch(`${supabaseUrl}/rest/v1/rpc/${rpcName}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      apikey: anonKey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const text = await response.text();
+  const data = text ? JSON.parse(text) : null;
+  if (!response.ok) {
+    const message = typeof data?.message === "string" ? data.message : `RPC ${rpcName} failed`;
+    throw new Error(message);
+  }
+  return data as T;
+}
+
+async function getDealCard(req: Request, body: Record<string, unknown>): Promise<unknown> {
+  const dealId = parseDealId(body);
+  return await callUserRpc(req, "nav_v2_get_deal_card", { p_deal_id: dealId });
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -96,6 +136,11 @@ Deno.serve(async (req: Request) => {
   try {
     const [user, body] = await Promise.all([getAuthUser(req), readBody(req)]);
     const action = parseAction(body);
+
+    if (action === "get_deal_card") {
+      const data = await getDealCard(req, body);
+      return jsonResponse({ ok: true, action, user_id: user.id, data });
+    }
 
     return jsonResponse(
       {
