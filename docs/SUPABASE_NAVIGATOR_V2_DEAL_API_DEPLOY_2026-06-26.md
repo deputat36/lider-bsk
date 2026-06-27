@@ -13,7 +13,7 @@ Edge Function deployed to Supabase production:
 - current observed deployed SHA: `3f438c82f2dbffdf03fbfb745369367507b9f61ddaa62b6b3d2d229d937ec455`;
 - deployed source path: `supabase/functions/nav-v2-deal-api/index.ts`.
 
-Original version `1` was deployed from the implementation merged in PR `#36` with SHA `c311af455cf701497ba94627b87b251a2ded78ad682a18268370869fc5092335`.
+Original version `1` was deployed from the implementation merged in PR `#36` with SHA `c311af455cf701497ba94627b87b251a2ded78ad68270869fc5092335`.
 
 After PR `#62`, the GitHub source file `supabase/functions/nav-v2-deal-api/index.ts` is synchronized with the already deployed Supabase version `2`. This was a repository source sync only: no Supabase deploy was performed by PR `#62`.
 
@@ -51,10 +51,10 @@ This repository sync did not change:
 - browser default routing;
 - Edge Function deployment state.
 
-Current SECURITY DEFINER baseline observed on 2026-06-27 after the already deployed version `2` was detected:
+Current SECURITY DEFINER baseline observed on 2026-06-27 after PR `#64` read-only connector check:
 
-- SECURITY DEFINER functions in `public`: `68`;
-- executable by `authenticated`: `42`;
+- SECURITY DEFINER functions in `public`: `69`;
+- executable by `authenticated`: `43`;
 - not executable by `authenticated`: `26`.
 
 This is a read-only observation of the current Supabase project state, not a change introduced by this repository documentation/source sync.
@@ -105,6 +105,15 @@ NAV_V2_DEAL_ID='deal-uuid' \
 node tools/nav_v2_deal_api_smoke_test.mjs
 ```
 
+After PR `#64`, choose the read action with `NAV_V2_ACTION`. Supported values are `get_deal_card` and `get_deal_card_lite`; the default remains `get_deal_card`:
+
+```bash
+NAV_V2_JWT='user-access-token' \
+NAV_V2_DEAL_ID='deal-uuid' \
+NAV_V2_ACTION='get_deal_card_lite' \
+node tools/nav_v2_deal_api_smoke_test.mjs
+```
+
 Optional direct RPC shape comparison:
 
 ```bash
@@ -113,6 +122,8 @@ NAV_V2_DEAL_ID='deal-uuid' \
 NAV_V2_COMPARE_DIRECT_RPC=1 \
 node tools/nav_v2_deal_api_smoke_test.mjs
 ```
+
+When `NAV_V2_ACTION=get_deal_card_lite`, direct comparison uses `nav_v2_get_deal_card_lite`. Otherwise it uses `nav_v2_get_deal_card`.
 
 Optional local preflight-only validation:
 
@@ -123,7 +134,7 @@ NAV_V2_PREFLIGHT_ONLY=1 \
 node tools/nav_v2_deal_api_smoke_test.mjs
 ```
 
-`NAV_V2_PREFLIGHT_ONLY=1` runs the local environment/JWT/API-key checks and exits before any Edge Function or direct RPC request. It does not prove runtime access to a deal.
+`NAV_V2_PREFLIGHT_ONLY=1` runs the local environment/JWT/API-key/read-action checks and exits before any Edge Function or direct RPC request. It does not prove runtime access to a deal.
 
 Optional override for the public API key:
 
@@ -154,6 +165,8 @@ After PR `#55`, `tools/nav_v2_deal_api_smoke_preflight_test.mjs` runs no-secret 
 
 After PR `#56`, the preflight test suite also verifies a positive synthetic user-token case through `NAV_V2_PREFLIGHT_ONLY=1`, confirming the local checks can pass without making a network request.
 
+After PR `#64`, the preflight test suite also verifies `NAV_V2_ACTION=get_deal_card_lite` and rejects unsupported actions such as write actions in the read smoke script.
+
 After PR `#57`, the manual `Navigator v2 deal API smoke` workflow exposes the same local-only behavior through its `preflight_only` input. Set `preflight_only=true` to validate `secrets.NAV_V2_JWT`, `deal_id`, `supabase_url`, and API-key guardrails without calling the Edge Function or direct RPC from the authenticated smoke step. This mode does not prove runtime access to a deal.
 
 After PR `#58`, the same manual workflow also skips the no-secret auth guard step when `preflight_only=true`. In this mode the entire workflow performs only checkout, script syntax validation, local input validation, and local JWT/API-key preflight checks; it does not call the Edge Function or direct RPC.
@@ -179,6 +192,7 @@ A manual workflow is available after PR `#39` and includes an auth guard preflig
 - trigger: `workflow_dispatch` only;
 - required repository secret for authenticated smoke: `NAV_V2_JWT`;
 - required workflow input: `deal_id`;
+- optional workflow input after PR `#64`: `read_action` (`get_deal_card` or `get_deal_card_lite`);
 - optional workflow input: `compare_direct_rpc`;
 - optional workflow input: `preflight_only`;
 - `supabase_url` must match `https://ofewxuqfjhamgerwzull.supabase.co` in this workflow.
@@ -197,14 +211,17 @@ After PR `#60`, record runtime smoke results with the `Navigator v2 deal API run
 
 After PR `#63`, use the same issue template to record v2 read-lite and write-action smoke results. For write actions, use only reversible test data and include whether cleanup completed.
 
+After PR `#64`, the manual workflow can run either `get_deal_card` or `get_deal_card_lite` via the `read_action` input. The workflow still does not run write actions.
+
 Workflow order:
 
 1. Validate smoke scripts with `node --check`.
 2. Validate workflow input `deal_id` as UUID.
-3. Validate workflow input `supabase_url` against the production project URL.
-4. Validate smoke mode inputs and reject `preflight_only=true` with `compare_direct_rpc=true`.
-5. Run `nav_v2_deal_api_auth_guard_test.mjs` and require each no-secret auth guard case to return `401` or `403`, unless `preflight_only=true`.
-6. Run `nav_v2_deal_api_smoke_test.mjs` with `secrets.NAV_V2_JWT`, or run its local-only preflight path when `preflight_only=true`.
+3. Validate workflow input `read_action` as `get_deal_card` or `get_deal_card_lite`.
+4. Validate workflow input `supabase_url` against the production project URL.
+5. Validate smoke mode inputs and reject `preflight_only=true` with `compare_direct_rpc=true`.
+6. Run `nav_v2_deal_api_auth_guard_test.mjs` and require each no-secret auth guard case to return `401` or `403`, unless `preflight_only=true`.
+7. Run `nav_v2_deal_api_smoke_test.mjs` with `secrets.NAV_V2_JWT`, or run its local-only preflight path when `preflight_only=true`.
 
 After PR `#44`, both runtime steps write compact JSON output to the GitHub Actions Step Summary:
 
@@ -213,7 +230,7 @@ After PR `#44`, both runtime steps write compact JSON output to the GitHub Actio
 
 Use a short-lived test-user access token for `NAV_V2_JWT`. Rotate or remove the secret after the smoke-test window. Do not use a service-role key, anon key, production admin personal token, anonymous-user token, or long-lived real user session for this workflow.
 
-When `compare_direct_rpc=true`, the workflow also calls direct `nav_v2_get_deal_card` with the same user JWT and compares the response shape with the Edge Function response. When `preflight_only=true`, the workflow exits before the auth guard, the authenticated Edge Function call, and the direct RPC comparison.
+When `compare_direct_rpc=true`, the workflow also calls the matching direct read RPC with the same user JWT and compares the response shape with the Edge Function response. When `preflight_only=true`, the workflow exits before the auth guard, the authenticated Edge Function call, and the direct RPC comparison.
 
 ## Browser opt-in preflight
 
