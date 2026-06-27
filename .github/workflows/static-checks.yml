@@ -93,9 +93,18 @@ jobs:
           grep -q "Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')" "$leads"
           grep -q '/auth/v1/user' "$leads"
           grep -q "if (action === 'ensure_profile')" "$leads"
+          grep -q "role: 'manager', is_active: false" "$leads"
           grep -q "if (action === 'create_order_from_offer')" "$leads"
-          grep -q 'offer_not_approved' "$leads"
-          grep -q 'already_created' "$leads"
+          grep -q 'leader_create_order_from_offer_rpc' "$leads"
+          grep -q 'body: JSON.stringify({ p_payload: payload })' "$leads"
+          if grep -q 'offer_not_approved' "$leads"; then
+            echo 'create_order_from_offer must delegate validation to leader_create_order_from_offer_rpc.' >&2
+            exit 1
+          fi
+          if grep -q 'calculation_items_read_failed' "$leads"; then
+            echo 'create_order_from_offer must not use the old multi-request manual conversion path.' >&2
+            exit 1
+          fi
           grep -q "Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')" "$orders"
           grep -q '/auth/v1/user' "$orders"
           grep -q "if (action === 'list')" "$orders"
@@ -258,6 +267,4 @@ jobs:
           grep -q 'grant insert on public.leader_leads to anon' supabase/migrations/20260623_tighten_leader_leads_grants.sql
           grep -q 'grant select, insert, update, delete on public.leader_leads to authenticated' supabase/migrations/20260623_tighten_leader_leads_grants.sql
           grep -q 'grant insert on public.leader_public_lead_audit to anon' supabase/migrations/20260623_tighten_leader_public_lead_audit_grants.sql
-          grep -q 'grant select on public.leader_public_lead_audit to authenticated' supabase/migrations/20260623_tighten_leader_public_lead_audit_grants.sql
-          grep -q 'with (security_invoker = true)' supabase/migrations/20260625_create_leader_request_trace_view.sql
-          grep -q 'grant select on public.leader_request_trace to authenticated' supabase/migrations/20260625_tighten_leader_request_trace_view_grants.sql
+          grep -q 'grant select on public.leader_public_lead_audit to authenticated' supabase/migrations/20260623_tighten_leader_request_trace_view_grants.sql
