@@ -38,6 +38,9 @@ function assertUserAccessJwt(value) {
   if (payload.iss !== expectedJwtIssuer()) {
     throw new Error('NAV_V2_JWT issuer must match NAV_V2_SUPABASE_URL');
   }
+  if (payload.aud !== 'authenticated') {
+    throw new Error('NAV_V2_JWT audience must be authenticated');
+  }
   if (payload.role !== 'authenticated') {
     throw new Error('NAV_V2_JWT must be a user access token with role=authenticated');
   }
