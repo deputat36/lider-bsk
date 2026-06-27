@@ -20,10 +20,14 @@ jobs:
           runbook='docs/CRM_ACCESS_TAB_CHECK_2026-06-27.md'
           status='docs/STATUS.md'
           issue_template='.github/ISSUE_TEMPLATE/crm-v4-browser-test.md'
+          checklist='docs/CRM_V4_TESTER_CHECKLIST.md'
+          report='docs/CRM_V4_BROWSER_TEST_REPORT.md'
           test -f "$index"
           test -f "$runbook"
           test -f "$status"
           test -f "$issue_template"
+          test -f "$checklist"
+          test -f "$report"
           grep -Fq 'href="?tab=user_admin"' "$index"
           grep -Fq 'Открыть доступ CRM' "$index"
           grep -Fq 'data-v4-tab-button="user_admin"' "$index"
@@ -42,3 +46,11 @@ jobs:
           grep -Fq 'CRM build: 20260627-access-route-1' "$issue_template"
           grep -Fq 'Доступ: ok / ошибка / не проверялось' "$issue_template"
           grep -Fq 'CRM_ACCESS_TAB_CHECK_2026-06-27.md' "$issue_template"
+          grep -Fq 'Проверка доступа CRM' "$checklist"
+          grep -Fq 'Открыть доступ CRM' "$checklist"
+          grep -Fq 'CRM build: 20260627-access-route-1' "$checklist"
+          grep -Fq 'Доступ`.' "$checklist"
+          grep -Fq 'Проверка доступа CRM' "$report"
+          grep -Fq 'Открыть доступ CRM' "$report"
+          grep -Fq 'CRM build: 20260627-access-route-1' "$report"
+          grep -Fq 'Доступ: ok / ошибка / не проверялось' "$report"
