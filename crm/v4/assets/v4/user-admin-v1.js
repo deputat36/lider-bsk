@@ -100,6 +100,16 @@ function ensureSection() {
   else workspace.appendChild(node);
 }
 
+function resyncCurrentTab() {
+  if (document.body?.dataset?.v4Tab !== 'user_admin') return;
+  if (typeof window.v4SetTab === 'function') {
+    window.v4SetTab('user_admin');
+    return;
+  }
+  const current = section();
+  if (current) current.hidden = false;
+}
+
 function renderMessage(message) {
   if (root()) root().innerHTML = `<div class="v4-access-alert">${esc(message)}</div>`;
 }
@@ -255,11 +265,17 @@ async function cancelInvite(id) {
 }
 
 document.addEventListener('leader-v4:tab-opened', (event) => {
-  if (event.detail?.tab === 'user_admin') reload();
+  if (event.detail?.tab === 'user_admin') {
+    ensureSection();
+    reload();
+  }
 });
 
 document.addEventListener('leader-v4:crm-ready', () => {
-  if (document.body?.dataset?.v4Tab === 'user_admin') window.setTimeout(reload, 250);
+  if (document.body?.dataset?.v4Tab === 'user_admin') {
+    resyncCurrentTab();
+    window.setTimeout(reload, 250);
+  }
 });
 
 document.addEventListener('submit', async (event) => {
@@ -298,6 +314,7 @@ document.addEventListener('change', async (event) => {
 
 function boot() {
   ensureSection();
+  resyncCurrentTab();
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
