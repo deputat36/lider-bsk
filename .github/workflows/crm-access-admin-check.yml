@@ -9,6 +9,7 @@ on:
       - 'crm/v4/assets/v4/crm-v4-expanded-menu-v1.js'
       - 'crm/v4/assets/v4/crm-v4-tabs-lite.js'
       - 'crm/v4/assets/v4/user-admin-v1.js'
+      - 'docs/CRM_ACCESS_TAB_CHECK_2026-06-27.md'
       - '.github/workflows/crm-access-admin-check.yml'
   pull_request:
     branches: [main]
@@ -18,6 +19,7 @@ on:
       - 'crm/v4/assets/v4/crm-v4-expanded-menu-v1.js'
       - 'crm/v4/assets/v4/crm-v4-tabs-lite.js'
       - 'crm/v4/assets/v4/user-admin-v1.js'
+      - 'docs/CRM_ACCESS_TAB_CHECK_2026-06-27.md'
       - '.github/workflows/crm-access-admin-check.yml'
 
 jobs:
@@ -35,12 +37,14 @@ jobs:
           tabs='crm/v4/assets/v4/crm-v4-tabs-lite.js'
           auth='crm/v4/assets/v4/auth.js'
           admin='crm/v4/assets/v4/user-admin-v1.js'
+          runbook='docs/CRM_ACCESS_TAB_CHECK_2026-06-27.md'
 
           test -f "$page"
           test -f "$menu"
           test -f "$tabs"
           test -f "$auth"
           test -f "$admin"
+          test -f "$runbook"
 
           grep -Fq "{ tab: 'user_admin', label: 'Доступ' }" "$menu"
           grep -Fq "data-v4-tab-button=\"user_admin\"" "$page"
@@ -64,6 +68,10 @@ jobs:
           grep -Fq "function resyncCurrentTab()" "$admin"
           grep -Fq "window.v4SetTab('user_admin')" "$admin"
           grep -Fq "user_admin" "$admin"
+          grep -Fq "https://deputat36.github.io/lider-bsk/crm/v4/?tab=user_admin" "$runbook"
+          grep -Fq "20260627-access-route-1" "$runbook"
+          grep -Fq "active `owner`" "$runbook"
+          grep -Fq "active `admin`" "$runbook"
 
       - name: Check JS syntax
         shell: bash
