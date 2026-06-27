@@ -7,55 +7,57 @@ Project: `ofewxuqfjhamgerwzull`.
 Edge Function deployed to Supabase production:
 
 - slug: `nav-v2-deal-api`;
-- version: `1`;
+- current observed version: `2`;
 - status: `ACTIVE`;
 - `verify_jwt`: `true`;
-- deployed SHA: `c311af455cf701497ba94627b87b251a2ded78ad682a18268370869fc5092335`;
+- current observed deployed SHA: `3f438c82f2dbffdf03fbfb745369367507b9f61ddaa62b6b3d2d229d937ec455`;
 - deployed source path: `supabase/functions/nav-v2-deal-api/index.ts`.
 
-The deployed source matches the GitHub implementation merged in PR `#36`.
+Original version `1` was deployed from the implementation merged in PR `#36` with SHA `c311af455cf701497ba94627b87b251a2ded78ad682a18268370869fc5092335`.
+
+After PR `#62`, the GitHub source file `supabase/functions/nav-v2-deal-api/index.ts` is synchronized with the already deployed Supabase version `2`. This was a repository source sync only: no Supabase deploy was performed by PR `#62`.
 
 ## Current behavior
 
-Implemented action:
+Implemented actions in the current observed deployed version:
 
-- `get_deal_card`.
-
-The action:
-
-- requires a valid user JWT because `verify_jwt=true`;
-- validates the incoming bearer token through `/auth/v1/user`;
-- validates `deal_id` as UUID;
-- calls `/rest/v1/rpc/nav_v2_get_deal_card` with the caller's JWT and `SUPABASE_ANON_KEY`;
-- returns the RPC payload under `data`.
-
-Not implemented yet:
-
+- `get_deal_card`;
+- `get_deal_card_lite`;
 - `add_comment`;
 - `update_deal_status`;
 - `update_document_status`;
+- `update_document_workflow`;
 - `update_task_status`.
 
-Those actions still return `501`.
+The function:
+
+- requires a valid user JWT because `verify_jwt=true`;
+- validates the incoming bearer token through `/auth/v1/user`;
+- validates UUID inputs before calling RPCs;
+- validates enum inputs for deal, document, task, visibility, and role fields;
+- calls explicit `/rest/v1/rpc/nav_v2_*` functions with the caller's JWT and `SUPABASE_ANON_KEY`;
+- returns the RPC payload under `data`.
+
+The function does not use service-role keys and does not proxy arbitrary RPC names from the request body.
 
 ## Explicit non-changes
 
-This deployment did not change:
+This repository sync did not change:
 
 - database schema;
 - migrations;
 - RLS policies;
 - grants;
-- browser code;
-- direct Navigator v2 RPC grants.
+- browser default routing;
+- Edge Function deployment state.
 
-Current SECURITY DEFINER baseline observed on 2026-06-27:
+Current SECURITY DEFINER baseline observed on 2026-06-27 after the already deployed version `2` was detected:
 
-- SECURITY DEFINER functions in `public`: `66`;
+- SECURITY DEFINER functions in `public`: `68`;
 - executable by `authenticated`: `42`;
-- not executable by `authenticated`: `24`.
+- not executable by `authenticated`: `26`.
 
-This is a read-only observation of the current Supabase project state, not a change introduced by this Navigator v2 workflow hardening chain.
+This is a read-only observation of the current Supabase project state, not a change introduced by this repository documentation/source sync.
 
 ## Verification performed
 
@@ -63,10 +65,11 @@ Verified through Supabase connector:
 
 - project status: `ACTIVE_HEALTHY`;
 - `nav-v2-deal-api` appears in Edge Functions list;
-- deployed version is `1`;
+- deployed version is `2`;
 - deployed function has `verify_jwt=true`;
+- deployed SHA is `3f438c82f2dbffdf03fbfb745369367507b9f61ddaa62b6b3d2d229d937ec455`;
 - deployed function source is readable;
-- Edge Function logs are currently empty, meaning no runtime invocation has been observed yet.
+- Edge Function logs are currently empty in the connector result.
 
 ## Smoke test tooling
 
@@ -159,6 +162,8 @@ After PR `#59`, the manual workflow rejects `preflight_only=true` together with 
 
 After PR `#60`, a GitHub issue template is available at `.github/ISSUE_TEMPLATE/nav-v2-deal-api-smoke.md` for recording manual runtime smoke results without secrets or full deal payloads.
 
+After PR `#62`, CI validates the version-2 function source shape, including the explicit action allowlist and explicit RPC bridges for read and write actions. Browser routing is still separately protected by `navigator-v2-check.yml` and remains opt-in for `get_deal_card` only.
+
 The smoke tests intentionally read user JWT and deal id values from environment variables. Do not commit JWTs, real user sessions, service-role keys, secret API keys, or private test data.
 
 CI validates the smoke-test source with `node --check`, secret/JWT marker scans, and no-secret preflight cases. CI does not execute a successful authenticated runtime call because that would require a live user JWT.
@@ -231,7 +236,7 @@ After PR `#41`, `deal-card-v2.html` accepts both deal id query names:
 - primary: `?id=<deal-uuid>`;
 - compatibility alias: `?deal_id=<deal-uuid>`.
 
-The opt-in path affects only the read action `get_deal_card`. Write actions still call their existing direct RPC functions because the Edge Function write actions intentionally return `501` in this phase.
+The browser opt-in path still affects only the read action `get_deal_card`. Even though the deployed Edge Function version `2` can proxy write RPCs, browser write actions must stay on their existing direct RPC paths until a separate reviewed browser migration explicitly changes that behavior.
 
 ## Still required before default browser migration
 
@@ -246,4 +251,4 @@ Before making the Edge Function the default path in `deal-card-v2.js`:
 7. Test both browser URL forms: `?id=<deal-uuid>` and `?deal_id=<deal-uuid>`.
 8. Capture the result in `.github/ISSUE_TEMPLATE/nav-v2-deal-api-smoke.md` without secrets, personal client data, or full payloads.
 
-This deployment is a runtime preflight step, not the final hardening step. It still relies on the existing `authenticated` EXECUTE grant for `nav_v2_get_deal_card`.
+This deployment is a runtime preflight step, not the final browser migration step. It still relies on the existing authenticated RPC grants for the underlying `nav_v2_*` functions.
