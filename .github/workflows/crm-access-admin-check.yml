@@ -44,16 +44,19 @@ jobs:
 
           grep -Fq "{ tab: 'user_admin', label: 'Доступ' }" "$menu"
           grep -Fq "data-v4-tab-button=\"user_admin\"" "$page"
+          grep -Fq "body[data-v4-tab=\"user_admin\"]" "$page"
           grep -Fq "user_admin" "$tabs"
-          grep -Fq "import './user-admin-v1.js?v=20260627-access-2';" "$auth"
+          grep -Fq "import './user-admin-v1.js?v=20260627-access-3';" "$auth"
           grep -Fq "assets/v4/crm-v4-tabs-lite.js?v=20260627-access-1" "$page"
           grep -Fq "assets/v4/crm-v4-expanded-menu-v1.js?v=20260627-access-1" "$page"
-          grep -Fq "assets/v4/auth.js?v=20260627-access-2" "$page"
+          grep -Fq "assets/v4/auth.js?v=20260627-access-3" "$page"
           grep -Fq "Доступ ожидает активации" "$auth"
           grep -Fq "CRM access admin v1" "$admin"
           grep -Fq "leader_user_invites" "$admin"
           grep -Fq "leader_user_profiles" "$admin"
           grep -Fq "dataset.v4ManagedSection" "$admin"
+          grep -Fq "function resyncCurrentTab()" "$admin"
+          grep -Fq "window.v4SetTab('user_admin')" "$admin"
           grep -Fq "user_admin" "$admin"
 
       - name: Check JS syntax
