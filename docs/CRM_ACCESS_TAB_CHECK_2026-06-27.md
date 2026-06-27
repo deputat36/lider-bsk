@@ -13,6 +13,10 @@ The route is implemented in `crm/v4/assets/v4/crm-v4-tabs-lite.js` and loaded wi
 
 `assets/v4/crm-v4-tabs-lite.js?v=20260627-access-route-1`
 
+The cache note script is also loaded with the same marker:
+
+`assets/v4/site-cache-note-v1.js?v=20260627-access-route-1`
+
 ## Expected behavior
 
 After login:
@@ -30,8 +34,9 @@ Check in this order:
    - temporary: `https://deputat36.github.io/lidercalculator/app-v4.html`
 2. Hard refresh the page with `Ctrl + F5`.
 3. Confirm that the loaded HTML contains `20260627-access-route-1`.
-4. Confirm the signed-in user has an active CRM profile.
-5. If the section opens but shows a role message, the code is working and the user is not owner/admin.
+4. Confirm that the bottom-left cache note shows `CRM build: 20260627-access-route-1` after a fresh load.
+5. Confirm the signed-in user has an active CRM profile.
+6. If the section opens but shows a role message, the code is working and the user is not owner/admin.
 
 ## Repository markers
 
@@ -41,7 +46,8 @@ The access tab depends on these markers:
 - `{ tab: 'user_admin', label: 'Доступ' }` in `crm-v4-expanded-menu-v1.js`;
 - `ROUTABLE_TABS` and `URLSearchParams` in `crm-v4-tabs-lite.js`;
 - `import './user-admin-v1.js?v=20260627-access-3';` in `auth.js`;
-- `CRM access admin v1` in `user-admin-v1.js`.
+- `CRM access admin v1` in `user-admin-v1.js`;
+- `CRM build: 20260627-access-route-1` in `site-cache-note-v1.js`.
 
 ## Live Supabase check
 
