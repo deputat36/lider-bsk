@@ -12,6 +12,11 @@ on:
         required: false
         default: false
         type: boolean
+      preflight_only:
+        description: 'Only validate JWT, deal id, and API key locally; do not call Edge Function/direct RPC'
+        required: false
+        default: false
+        type: boolean
       supabase_url:
         description: 'Supabase project URL'
         required: false
@@ -85,6 +90,7 @@ jobs:
           NAV_V2_DEAL_ID: ${{ inputs.deal_id }}
           NAV_V2_SUPABASE_URL: ${{ inputs.supabase_url }}
           INPUT_COMPARE_DIRECT_RPC: ${{ inputs.compare_direct_rpc }}
+          INPUT_PREFLIGHT_ONLY: ${{ inputs.preflight_only }}
         run: |
           set -euo pipefail
           if [ -z "${NAV_V2_JWT:-}" ]; then
@@ -95,12 +101,20 @@ jobs:
           if [ "${INPUT_COMPARE_DIRECT_RPC}" = 'true' ]; then
             compare='1'
           fi
-          result="$(NAV_V2_COMPARE_DIRECT_RPC="$compare" node tools/nav_v2_deal_api_smoke_test.mjs)"
+          preflight='0'
+          if [ "${INPUT_PREFLIGHT_ONLY}" = 'true' ]; then
+            preflight='1'
+          fi
+          result="$(NAV_V2_COMPARE_DIRECT_RPC="$compare" NAV_V2_PREFLIGHT_ONLY="$preflight" node tools/nav_v2_deal_api_smoke_test.mjs)"
           echo "$result"
+          summary='Authenticated get_deal_card smoke test completed.'
+          if [ "$preflight" = '1' ]; then
+            summary='Authenticated smoke preflight-only validation completed without Edge Function or direct RPC calls.'
+          fi
           {
             echo '### Navigator v2 deal API authenticated smoke'
             echo ''
-            echo 'Authenticated get_deal_card smoke test completed.'
+            echo "$summary"
             echo ''
             echo '```json'
             echo "$result"
