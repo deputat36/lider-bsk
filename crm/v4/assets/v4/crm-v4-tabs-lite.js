@@ -1,4 +1,5 @@
 const MANAGED_TABS = new Set(['management_dashboard', 'orders', 'order_control', 'finance_control', 'production', 'public_lead_audit', 'contact_control', 'user_admin']);
+const ROUTABLE_TABS = new Set([...MANAGED_TABS, 'leads']);
 
 function showElement(id) {
   const element = document.getElementById(id);
@@ -22,13 +23,30 @@ function hideNextCard() {
   if (next) next.style.display = 'none';
 }
 
+function normalizeTab(tab) {
+  const value = String(tab || '').trim();
+  return ROUTABLE_TABS.has(value) ? value : '';
+}
+
+function readInitialTab() {
+  const params = new URLSearchParams(window.location.search || '');
+  const queryTab = normalizeTab(params.get('tab'));
+  if (queryTab) return queryTab;
+
+  const hashTab = normalizeTab((window.location.hash || '').replace(/^#/, ''));
+  if (hashTab) return hashTab;
+
+  return '';
+}
+
 function setActiveTab(tab) {
-  document.body.dataset.v4Tab = tab;
+  const activeTab = normalizeTab(tab) || 'leads';
+  document.body.dataset.v4Tab = activeTab;
   document.querySelectorAll('[data-v4-tab-button]').forEach((button) => {
-    button.classList.toggle('is-active', button.dataset.v4TabButton === tab);
+    button.classList.toggle('is-active', button.dataset.v4TabButton === activeTab);
   });
 
-  if (tab === 'leads') {
+  if (activeTab === 'leads') {
     document.querySelectorAll('[data-v4-managed-section]').forEach((section) => { section.hidden = true; });
     showElement('leadsSection');
     const card = showElement('leadCardSection');
@@ -36,7 +54,7 @@ function setActiveTab(tab) {
     showNextCard();
   }
 
-  if (tab === 'card') {
+  if (activeTab === 'card') {
     document.querySelectorAll('[data-v4-managed-section]').forEach((section) => { section.hidden = true; });
     hideElement('leadsSection');
     const card = showElement('leadCardSection');
@@ -44,16 +62,16 @@ function setActiveTab(tab) {
     hideNextCard();
   }
 
-  if (MANAGED_TABS.has(tab)) {
+  if (MANAGED_TABS.has(activeTab)) {
     hideElement('leadsSection');
     hideElement('leadCardSection');
     hideNextCard();
     document.querySelectorAll('[data-v4-managed-section]').forEach((section) => {
-      section.hidden = section.dataset.v4ManagedSection !== tab;
+      section.hidden = section.dataset.v4ManagedSection !== activeTab;
     });
   }
 
-  document.dispatchEvent(new CustomEvent('leader-v4:tab-opened', { detail: { tab } }));
+  document.dispatchEvent(new CustomEvent('leader-v4:tab-opened', { detail: { tab: activeTab } }));
 }
 
 function bootTabsLite() {
@@ -61,11 +79,14 @@ function bootTabsLite() {
   document.addEventListener('click', (event) => {
     const button = event.target.closest?.('[data-v4-tab-button]');
     if (!button) return;
-    const tab = button.dataset.v4TabButton;
-    if (!tab || (!MANAGED_TABS.has(tab) && tab !== 'leads')) return;
+    const tab = normalizeTab(button.dataset.v4TabButton);
+    if (!tab) return;
     event.preventDefault();
     setActiveTab(tab);
   });
+
+  const initialTab = readInitialTab();
+  if (initialTab) window.setTimeout(() => setActiveTab(initialTab), 0);
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootTabsLite); else bootTabsLite();
