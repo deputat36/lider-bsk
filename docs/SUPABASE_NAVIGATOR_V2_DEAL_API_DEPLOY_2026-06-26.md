@@ -115,7 +115,12 @@ Optional override for the public API key:
 NAV_V2_API_KEY='sb_publishable_...' node tools/nav_v2_deal_api_smoke_test.mjs
 ```
 
-The smoke tests intentionally read user JWT and deal id values from environment variables. Do not commit JWTs, real user sessions, or private test data.
+After PR `#49`, `tools/nav_v2_deal_api_smoke_test.mjs` rejects unsafe `NAV_V2_API_KEY` values before network calls:
+
+- secret keys with the `sb_` + `secret_` prefix;
+- JWT API keys whose decoded payload has `role = service_role`.
+
+The smoke tests intentionally read user JWT and deal id values from environment variables. Do not commit JWTs, real user sessions, service-role keys, secret API keys, or private test data.
 
 CI validates the smoke-test source with `node --check` and secret/JWT marker scans, but CI does not execute a successful authenticated runtime call because that would require a live user JWT.
 
