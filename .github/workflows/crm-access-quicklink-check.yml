@@ -19,9 +19,11 @@ jobs:
           index='crm/v4/index.html'
           runbook='docs/CRM_ACCESS_TAB_CHECK_2026-06-27.md'
           status='docs/STATUS.md'
+          issue_template='.github/ISSUE_TEMPLATE/crm-v4-browser-test.md'
           test -f "$index"
           test -f "$runbook"
           test -f "$status"
+          test -f "$issue_template"
           grep -Fq 'href="?tab=user_admin"' "$index"
           grep -Fq 'Открыть доступ CRM' "$index"
           grep -Fq 'data-v4-tab-button="user_admin"' "$index"
@@ -35,3 +37,8 @@ jobs:
           grep -Fq '?tab=user_admin' "$status"
           grep -Fq 'active access admins' "$status"
           grep -Fq 'inactive profiles: 0' "$status"
+          grep -Fq 'Проверка доступа CRM' "$issue_template"
+          grep -Fq 'Открыть доступ CRM' "$issue_template"
+          grep -Fq 'CRM build: 20260627-access-route-1' "$issue_template"
+          grep -Fq 'Доступ: ok / ошибка / не проверялось' "$issue_template"
+          grep -Fq 'CRM_ACCESS_TAB_CHECK_2026-06-27.md' "$issue_template"
