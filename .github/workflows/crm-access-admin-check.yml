@@ -43,6 +43,7 @@ jobs:
           test -f "$admin"
 
           grep -Fq "{ tab: 'user_admin', label: 'Доступ' }" "$menu"
+          grep -Fq "data-v4-tab-button=\"user_admin\"" "$page"
           grep -Fq "user_admin" "$tabs"
           grep -Fq "import './user-admin-v1.js?v=20260627-access-2';" "$auth"
           grep -Fq "assets/v4/crm-v4-tabs-lite.js?v=20260627-access-1" "$page"
