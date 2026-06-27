@@ -13,6 +13,11 @@ function requireEnv(name, value) {
   return value;
 }
 
+function expectedJwtIssuer() {
+  const baseUrl = requireEnv('NAV_V2_SUPABASE_URL', SUPABASE_URL).replace(/\/+$/, '');
+  return `${baseUrl}/auth/v1`;
+}
+
 function decodeJwtPayloadMaybe(value) {
   const parts = String(value || '').split('.');
   if (parts.length !== 3) return null;
@@ -29,6 +34,9 @@ function assertUserAccessJwt(value) {
   const payload = decodeJwtPayloadMaybe(token);
   if (!payload) {
     throw new Error('NAV_V2_JWT must be a JWT access token');
+  }
+  if (payload.iss !== expectedJwtIssuer()) {
+    throw new Error('NAV_V2_JWT issuer must match NAV_V2_SUPABASE_URL');
   }
   if (payload.role !== 'authenticated') {
     throw new Error('NAV_V2_JWT must be a user access token with role=authenticated');
