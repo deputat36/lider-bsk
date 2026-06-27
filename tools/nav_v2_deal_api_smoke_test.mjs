@@ -24,6 +24,24 @@ function decodeJwtPayloadMaybe(value) {
   }
 }
 
+function assertUserAccessJwt(value) {
+  const token = requireEnv('NAV_V2_JWT', value).trim();
+  const payload = decodeJwtPayloadMaybe(token);
+  if (!payload) {
+    throw new Error('NAV_V2_JWT must be a JWT access token');
+  }
+  if (payload.role !== 'authenticated') {
+    throw new Error('NAV_V2_JWT must be a user access token with role=authenticated');
+  }
+  if (!payload.sub) {
+    throw new Error('NAV_V2_JWT must include a user subject claim');
+  }
+  if (!Number.isFinite(Number(payload.exp))) {
+    throw new Error('NAV_V2_JWT must include an exp claim');
+  }
+  return token;
+}
+
 function assertApiKeyIsPublic(value) {
   const key = requireEnv('NAV_V2_API_KEY', value).trim();
   const secretPrefix = 'sb_' + 'secret_';
@@ -81,7 +99,7 @@ function comparableShape(payload) {
 }
 
 async function main() {
-  requireEnv('NAV_V2_JWT', JWT);
+  assertUserAccessJwt(JWT);
   requireEnv('NAV_V2_DEAL_ID', DEAL_ID);
   assertApiKeyIsPublic(API_KEY);
 
