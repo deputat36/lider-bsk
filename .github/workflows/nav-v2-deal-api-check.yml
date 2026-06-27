@@ -2,7 +2,7 @@ name: Navigator v2 deal API check
 
 on:
   push:
-    branches: [main, nav-v2-deal-api-get-card-bridge-20260626, nav-v2-deal-api-smoke-test-20260626, nav-v2-deal-api-smoke-workflow-20260627, nav-v2-deal-api-auth-guard-20260627, nav-v2-deal-api-auth-guard-workflow-20260627, nav-v2-deal-api-step-summary-20260627, nav-v2-deal-api-invalid-token-guard-20260627, nav-v2-deal-api-smoke-input-guard-20260627]
+    branches: [main, nav-v2-deal-api-get-card-bridge-20260626, nav-v2-deal-api-smoke-test-20260626, nav-v2-deal-api-smoke-workflow-20260627, nav-v2-deal-api-auth-guard-20260627, nav-v2-deal-api-auth-guard-workflow-20260627, nav-v2-deal-api-step-summary-20260627, nav-v2-deal-api-invalid-token-guard-20260627, nav-v2-deal-api-smoke-input-guard-20260627, nav-v2-deal-api-smoke-url-guard-20260627]
     paths:
       - 'supabase/config.toml'
       - 'supabase/functions/nav-v2-deal-api/**'
@@ -138,6 +138,11 @@ jobs:
           grep -Fq 'workflow_dispatch input deal_id must be a UUID.' "$workflow"
           grep -Fq 'Deal id input has UUID format.' "$workflow"
           grep -Fq '[0-9a-fA-F]{8}' "$workflow"
+          grep -Fq 'Validate Supabase URL input' "$workflow"
+          grep -Fq 'NAV_V2_ALLOWED_SUPABASE_URL' "$workflow"
+          grep -Fq 'https://ofewxuqfjhamgerwzull.supabase.co' "$workflow"
+          grep -Fq 'workflow_dispatch input supabase_url must match the production Supabase project URL.' "$workflow"
+          grep -Fq 'Supabase URL input matches the production project.' "$workflow"
           grep -Fq 'Verify unauthenticated requests are rejected' "$workflow"
           grep -Fq 'Run authenticated smoke test' "$workflow"
           grep -Fq 'GITHUB_STEP_SUMMARY' "$workflow"
