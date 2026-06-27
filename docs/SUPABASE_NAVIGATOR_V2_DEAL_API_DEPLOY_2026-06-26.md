@@ -132,6 +132,8 @@ After PR `#52`, the same smoke script also rejects `NAV_V2_JWT` values issued by
 
 After PR `#53`, the same smoke script also rejects `NAV_V2_JWT` values whose decoded `aud` value is not `authenticated` before network calls.
 
+After PR `#54`, the same smoke script also rejects anonymous-user JWTs when the decoded `is_anonymous` claim is `true` before network calls.
+
 The smoke tests intentionally read user JWT and deal id values from environment variables. Do not commit JWTs, real user sessions, service-role keys, secret API keys, or private test data.
 
 CI validates the smoke-test source with `node --check` and secret/JWT marker scans, but CI does not execute a successful authenticated runtime call because that would require a live user JWT.
@@ -165,7 +167,7 @@ After PR `#44`, both runtime steps write compact JSON output to the GitHub Actio
 - `Navigator v2 deal API auth guard`;
 - `Navigator v2 deal API authenticated smoke`.
 
-Use a short-lived test-user access token for `NAV_V2_JWT`. Rotate or remove the secret after the smoke-test window. Do not use a service-role key, anon key, production admin personal token, or long-lived real user session for this workflow.
+Use a short-lived test-user access token for `NAV_V2_JWT`. Rotate or remove the secret after the smoke-test window. Do not use a service-role key, anon key, production admin personal token, anonymous-user token, or long-lived real user session for this workflow.
 
 When `compare_direct_rpc=true`, the workflow also calls direct `nav_v2_get_deal_card` with the same user JWT and compares the response shape with the Edge Function response.
 
