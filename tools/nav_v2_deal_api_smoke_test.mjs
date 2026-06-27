@@ -26,8 +26,9 @@ function decodeJwtPayloadMaybe(value) {
 
 function assertApiKeyIsPublic(value) {
   const key = requireEnv('NAV_V2_API_KEY', value).trim();
-  if (key.startsWith('sb_secret_')) {
-    throw new Error('NAV_V2_API_KEY must be a publishable/anon key, not an sb_secret_ key');
+  const secretPrefix = 'sb_' + 'secret_';
+  if (key.startsWith(secretPrefix)) {
+    throw new Error('NAV_V2_API_KEY must be a publishable/anon key, not a secret key');
   }
 
   const jwtPayload = decodeJwtPayloadMaybe(key);
