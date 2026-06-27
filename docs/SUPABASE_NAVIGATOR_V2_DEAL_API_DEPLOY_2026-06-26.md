@@ -51,11 +51,11 @@ This repository sync did not change:
 - browser default routing;
 - Edge Function deployment state.
 
-Current SECURITY DEFINER baseline observed on 2026-06-27 after PR `#65` read-only connector check:
+Current SECURITY DEFINER baseline observed on 2026-06-27 after PR `#66` read-only connector check:
 
 - SECURITY DEFINER functions in `public`: `70`;
-- executable by `authenticated`: `44`;
-- not executable by `authenticated`: `26`.
+- executable by `authenticated`: `46`;
+- not executable by `authenticated`: `24`.
 
 This is a read-only observation of the current Supabase project state, not a change introduced by this repository documentation/source sync.
 
@@ -189,9 +189,11 @@ After PR `#63`, the runtime smoke issue template covers version-2 actions explic
 
 After PR `#65`, the no-secret auth guard script and workflows can send either read action. The manual smoke workflow passes its selected `read_action` into both the unauthenticated auth guard step and the authenticated smoke step when `preflight_only=false`.
 
+After PR `#66`, CI also executes the auth guard script with an unsupported `NAV_V2_ACTION` and an intentionally unreachable Supabase URL. The expected local error must be `NAV_V2_ACTION must be one of: get_deal_card, get_deal_card_lite`, proving the action whitelist fails before any runtime Edge Function call is required.
+
 The smoke tests intentionally read user JWT and deal id values from environment variables. Do not commit JWTs, real user sessions, service-role keys, secret API keys, or private test data.
 
-CI validates the smoke-test source with `node --check`, secret/JWT marker scans, and no-secret preflight cases. CI does not execute a successful authenticated runtime call because that would require a live user JWT.
+CI validates the smoke-test source with `node --check`, secret/JWT marker scans, no-secret preflight cases, and the auth guard unsupported-action fail-fast case. CI does not execute a successful authenticated runtime call because that would require a live user JWT.
 
 ## Manual GitHub Actions smoke workflow
 
