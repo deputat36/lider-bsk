@@ -44,6 +44,9 @@ function assertUserAccessJwt(value) {
   if (payload.role !== 'authenticated') {
     throw new Error('NAV_V2_JWT must be a user access token with role=authenticated');
   }
+  if (payload.is_anonymous === true) {
+    throw new Error('NAV_V2_JWT must not be an anonymous user token');
+  }
   if (!payload.sub) {
     throw new Error('NAV_V2_JWT must include a user subject claim');
   }
