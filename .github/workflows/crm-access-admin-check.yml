@@ -4,6 +4,7 @@ on:
   push:
     branches: [main, crm-hardening-main-20260626]
     paths:
+      - 'crm/v4/index.html'
       - 'crm/v4/assets/v4/auth.js'
       - 'crm/v4/assets/v4/crm-v4-expanded-menu-v1.js'
       - 'crm/v4/assets/v4/crm-v4-tabs-lite.js'
@@ -12,6 +13,7 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - 'crm/v4/index.html'
       - 'crm/v4/assets/v4/auth.js'
       - 'crm/v4/assets/v4/crm-v4-expanded-menu-v1.js'
       - 'crm/v4/assets/v4/crm-v4-tabs-lite.js'
@@ -28,11 +30,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          page='crm/v4/index.html'
           menu='crm/v4/assets/v4/crm-v4-expanded-menu-v1.js'
           tabs='crm/v4/assets/v4/crm-v4-tabs-lite.js'
           auth='crm/v4/assets/v4/auth.js'
           admin='crm/v4/assets/v4/user-admin-v1.js'
 
+          test -f "$page"
           test -f "$menu"
           test -f "$tabs"
           test -f "$auth"
@@ -40,7 +44,10 @@ jobs:
 
           grep -Fq "{ tab: 'user_admin', label: 'Доступ' }" "$menu"
           grep -Fq "user_admin" "$tabs"
-          grep -Fq "import './user-admin-v1.js';" "$auth"
+          grep -Fq "import './user-admin-v1.js?v=20260627-access-2';" "$auth"
+          grep -Fq "assets/v4/crm-v4-tabs-lite.js?v=20260627-access-1" "$page"
+          grep -Fq "assets/v4/crm-v4-expanded-menu-v1.js?v=20260627-access-1" "$page"
+          grep -Fq "assets/v4/auth.js?v=20260627-access-2" "$page"
           grep -Fq "Доступ ожидает активации" "$auth"
           grep -Fq "CRM access admin v1" "$admin"
           grep -Fq "leader_user_invites" "$admin"
