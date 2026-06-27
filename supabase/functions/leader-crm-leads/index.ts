@@ -70,10 +70,6 @@ const profileFields = 'user_id,email,role,is_active,full_name'
 const leadFields = 'id,created_at,name,phone,source,service,message,status,lead_quality,estimated_amount,next_contact_at,page_url,utm_source,utm_medium,utm_campaign,utm_content,utm_term,budget,city,converted_order_id,converted_client_id'
 const clientFields = 'id,owner_id,name,phone,source,comment,created_at,updated_at'
 const orderFields = 'id,order_number,created_at,project_name,client_name,client_phone,status,payment_status,deadline,client_total,contractor_cost,profit,balance,source,layout_status,production_status,lead_id,client_id'
-const offerFields = 'id,lead_id,calculation_id,client_id,order_id,offer_number,offer_type,title,total_sum,status,created_at,updated_at'
-const calcFields = 'id,lead_id,need_id,client_id,title,status,client_total,contractor_cost,profit,margin_percent,warning_level,public_comment,internal_comment,commercial_offer_id,order_id,created_at,updated_at'
-const calcItemFields = 'id,calculation_id,lead_id,catalog_id,category,item_type,name,unit,qty,contractor_price,contractor_sum,markup_percent,client_price,client_sum,profit,margin_percent,comment,data,sort_order'
-const needFields = 'id,lead_id,client_id,need_type,title,description,structured_data,need_design,need_installation,deadline_date,status'
 
 async function ensureProfile(req: Request, supabaseUrl: string, anonKey: string, serviceRole: string) {
   const userCheck = await getUserFromRequest(req, supabaseUrl, anonKey)
@@ -104,14 +100,10 @@ async function ensureProfile(req: Request, supabaseUrl: string, anonKey: string,
     return json(200, { ok: true, profile: existing })
   }
 
-  const ownerRes = await rest(supabaseUrl, serviceRole, '/rest/v1/leader_user_profiles?role=eq.owner&is_active=eq.true&select=user_id&limit=1')
-  if (!ownerRes.ok) return json(500, { error: 'owner_check_failed', details: await ownerRes.text() })
-  const ownerRows = await ownerRes.json()
-  const role = Array.isArray(ownerRows) && ownerRows.length ? 'manager' : 'owner'
   const insertRes = await rest(supabaseUrl, serviceRole, '/rest/v1/leader_user_profiles?select=' + encodeURIComponent(profileFields), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
-    body: JSON.stringify({ user_id: userId, email, role, is_active: true }),
+    body: JSON.stringify({ user_id: userId, email, role: 'manager', is_active: false }),
   })
   if (!insertRes.ok) return json(500, { error: 'profile_insert_failed', details: await insertRes.text() })
   const rows = await insertRes.json()
@@ -238,65 +230,14 @@ async function createOrder(supabaseUrl: string, serviceRole: string, ownerId: st
 async function createOrderFromOffer(supabaseUrl: string, serviceRole: string, ownerId: string, actorEmail: string, body: Record<string, unknown>) {
   const offerId = cleanText(body.offer_id, 80)
   if (!offerId) return json(400, { error: 'offer_id_required' })
-  const offer = await readOne(supabaseUrl, serviceRole, '/rest/v1/leader_commercial_offers?id=eq.' + encodeURIComponent(offerId) + '&select=' + encodeURIComponent(offerFields) + '&limit=1')
-  if (!offer) return json(404, { error: 'offer_not_found' })
-  if (offer.status !== 'Согласовано') return json(400, { error: 'offer_not_approved' })
-  if (offer.order_id) {
-    const order = await readOne(supabaseUrl, serviceRole, '/rest/v1/leader_orders?id=eq.' + encodeURIComponent(offer.order_id) + '&select=' + encodeURIComponent(orderFields) + '&limit=1')
-    return json(200, { ok: true, already_created: true, order })
-  }
-  if (!offer.calculation_id) return json(400, { error: 'calculation_required' })
-  const calculation = await readOne(supabaseUrl, serviceRole, '/rest/v1/leader_lead_calculations?id=eq.' + encodeURIComponent(offer.calculation_id) + '&select=' + encodeURIComponent(calcFields) + '&limit=1')
-  if (!calculation) return json(404, { error: 'calculation_not_found' })
-  if (calculation.order_id) {
-    await rest(supabaseUrl, serviceRole, '/rest/v1/leader_commercial_offers?id=eq.' + encodeURIComponent(offer.id), { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, body: JSON.stringify({ order_id: calculation.order_id, updated_at: new Date().toISOString() }) })
-    const order = await readOne(supabaseUrl, serviceRole, '/rest/v1/leader_orders?id=eq.' + encodeURIComponent(calculation.order_id) + '&select=' + encodeURIComponent(orderFields) + '&limit=1')
-    return json(200, { ok: true, already_created: true, order })
-  }
-  const leadId = calculation.lead_id || offer.lead_id
-  if (!leadId) return json(400, { error: 'lead_required' })
-  const lead = await readOne(supabaseUrl, serviceRole, '/rest/v1/leader_leads?id=eq.' + encodeURIComponent(leadId) + '&select=' + encodeURIComponent(leadFields) + '&limit=1')
-  if (!lead) return json(404, { error: 'lead_not_found' })
-  if (lead.converted_order_id) {
-    await rest(supabaseUrl, serviceRole, '/rest/v1/leader_commercial_offers?id=eq.' + encodeURIComponent(offer.id), { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, body: JSON.stringify({ order_id: lead.converted_order_id, updated_at: new Date().toISOString() }) })
-    await rest(supabaseUrl, serviceRole, '/rest/v1/leader_lead_calculations?id=eq.' + encodeURIComponent(calculation.id), { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, body: JSON.stringify({ order_id: lead.converted_order_id, status: 'Создан заказ', updated_at: new Date().toISOString() }) })
-    const order = await readOne(supabaseUrl, serviceRole, '/rest/v1/leader_orders?id=eq.' + encodeURIComponent(lead.converted_order_id) + '&select=' + encodeURIComponent(orderFields) + '&limit=1')
-    return json(200, { ok: true, already_created: true, order })
-  }
-  const itemsRes = await rest(supabaseUrl, serviceRole, '/rest/v1/leader_lead_calculation_items?calculation_id=eq.' + encodeURIComponent(calculation.id) + '&select=' + encodeURIComponent(calcItemFields) + '&order=sort_order.asc&limit=160')
-  if (!itemsRes.ok) return json(500, { error: 'calculation_items_read_failed', details: await itemsRes.text() })
-  const items = await itemsRes.json()
-  if (!Array.isArray(items) || !items.length) return json(400, { error: 'order_items_required' })
-  let need: any = null
-  if (calculation.need_id) need = await readOne(supabaseUrl, serviceRole, '/rest/v1/leader_lead_needs?id=eq.' + encodeURIComponent(calculation.need_id) + '&select=' + encodeURIComponent(needFields) + '&limit=1')
-  const clientResult = await ensureClient(supabaseUrl, serviceRole, ownerId, { name: lead.name, phone: lead.phone, source: lead.source || 'CRM v4', comment: cleanText(body.comment, 1000) || 'Клиент создан при конвертации КП в заказ' })
-  if (!clientResult.ok) return json(500, clientResult)
-  const clientTotal = num(calculation.client_total || offer.total_sum)
-  const contractorCost = num(calculation.contractor_cost)
-  const prepayment = Math.max(0, num(body.prepayment))
-  const orderPayload = { owner_id: ownerId, client_id: clientResult.client?.id || null, lead_id: lead.id, project_name: cleanText(body.project_name, 300) || offer.title || calculation.title || 'Заказ из КП', client_name: cleanText(lead.name, 200), client_phone: cleanText(lead.phone, 80), status: 'Новый', payment_status: cleanText(body.payment_status, 80) || 'Не оплачено', deadline: cleanText(body.deadline, 40) || need?.deadline_date || null, contractor_cost: contractorCost, client_total: clientTotal, profit: num(calculation.profit || (clientTotal - contractorCost)), prepayment, balance: Math.max(clientTotal - prepayment, 0), source: cleanText(lead.source, 120) || 'CRM v4', layout_status: cleanText(body.layout_status, 120) || (need?.need_design ? 'Нужен дизайн' : 'Макета нет'), layout_comment: cleanText(body.comment, 2000) || calculation.public_comment || need?.description || '', production_status: 'Не передано', data: { order_type: cleanText(body.order_type, 80) || 'Смешанный', source_ui: 'crm_v4', created_from: 'create_order_from_offer', offer_id: offer.id, calculation_id: calculation.id, lead_id: lead.id } }
-  const orderRes = await rest(supabaseUrl, serviceRole, '/rest/v1/leader_orders?select=' + encodeURIComponent(orderFields), { method: 'POST', headers: { 'Content-Type': 'application/json', 'Prefer': 'return=representation' }, body: JSON.stringify(orderPayload) })
-  if (!orderRes.ok) return json(500, { error: 'order_insert_failed', details: await orderRes.text() })
-  const orderRows = await orderRes.json()
-  const order = Array.isArray(orderRows) ? orderRows[0] : null
-  if (!order?.id) return json(500, { error: 'order_not_returned' })
-  const itemRows = items.map((item: Record<string, unknown>) => {
-    const data = item.data && typeof item.data === 'object' ? item.data as Record<string, unknown> : {}
-    return { owner_id: ownerId, order_id: order.id, catalog_id: item.catalog_id || null, category: item.category || null, item_type: item.item_type || null, calculation_mode: data.calculation_mode || null, min_client_price: data.min_client_price ?? null, default_client_price: data.default_client_price ?? null, markup_percent: item.markup_percent ?? null, name: `[${cleanText(item.item_type, 80) || 'Услуга'}] ${cleanText(item.name, 300) || 'Позиция'}`, unit: cleanText(item.unit, 50) || 'шт', quantity: num(item.qty || 1), contractor_price: num(item.contractor_price), contractor_sum: num(item.contractor_sum), client_sum: num(item.client_sum), comment: cleanText(item.comment, 1000), data }
-  }).filter((item: Record<string, unknown>) => cleanText(item.name, 300))
-  const itemRes = await rest(supabaseUrl, serviceRole, '/rest/v1/leader_order_items', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, body: JSON.stringify(itemRows) })
-  if (!itemRes.ok) return json(500, { error: 'order_items_insert_failed', details: await itemRes.text(), order })
-  const now = new Date().toISOString()
-  const linkErrors: string[] = []
-  const linkRequests = [
-    rest(supabaseUrl, serviceRole, '/rest/v1/leader_lead_calculations?id=eq.' + encodeURIComponent(calculation.id), { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, body: JSON.stringify({ order_id: order.id, status: 'Создан заказ', updated_at: now }) }),
-    rest(supabaseUrl, serviceRole, '/rest/v1/leader_commercial_offers?id=eq.' + encodeURIComponent(offer.id), { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, body: JSON.stringify({ order_id: order.id, updated_at: now }) }),
-    rest(supabaseUrl, serviceRole, '/rest/v1/leader_leads?id=eq.' + encodeURIComponent(lead.id), { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, body: JSON.stringify({ status: 'Создан заказ', converted_order_id: order.id, converted_client_id: clientResult.client?.id || null, converted_at: now, updated_at: now }) }),
-    rest(supabaseUrl, serviceRole, '/rest/v1/leader_commercial_offer_events', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, body: JSON.stringify({ offer_id: offer.id, lead_id: lead.id, calculation_id: calculation.id, event_type: 'Создан заказ', old_status: offer.status, new_status: offer.status, comment: `Создан заказ ${order.order_number || order.id}`, created_by: ownerId, created_by_email: actorEmail || null }) }),
-  ]
-  const results = await Promise.all(linkRequests)
-  for (const r of results) if (!r.ok) linkErrors.push(await r.text())
-  return json(200, { ok: true, order, client: clientResult.client, client_existed: clientResult.existed, link_errors: linkErrors, items_created: itemRows.length })
+  const payload = { ...body, offer_id: offerId, actor_id: ownerId, actor_email: actorEmail }
+  const res = await rest(supabaseUrl, serviceRole, '/rest/v1/rpc/leader_create_order_from_offer_rpc', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ p_payload: payload }),
+  })
+  if (!res.ok) return json(500, { error: 'order_from_offer_rpc_failed', details: await res.text() })
+  return json(200, await res.json())
 }
 
 Deno.serve(async (req: Request) => {
