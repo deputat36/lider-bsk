@@ -17,6 +17,14 @@ The cache note script is also loaded with the same marker:
 
 `assets/v4/site-cache-note-v1.js?v=20260627-access-route-1`
 
+## In-app quick link
+
+After login, the `CRM готова` card contains a direct button-link:
+
+`Открыть доступ CRM`
+
+It points to `?tab=user_admin` and opens the same `Доступ` route as the direct check URL. This is the fallback path if the sticky tab menu is hard to see on a small screen or an old cached layout is still visible.
+
 ## Expected behavior
 
 After login:
@@ -35,14 +43,16 @@ Check in this order:
 2. Hard refresh the page with `Ctrl + F5`.
 3. Confirm that the loaded HTML contains `20260627-access-route-1`.
 4. Confirm that the bottom-left cache note shows `CRM build: 20260627-access-route-1` after a fresh load.
-5. Confirm the signed-in user has an active CRM profile.
-6. If the section opens but shows a role message, the code is working and the user is not owner/admin.
+5. After login, use `Открыть доступ CRM` in the `CRM готова` card if the sticky menu tab is still not visible.
+6. Confirm the signed-in user has an active CRM profile.
+7. If the section opens but shows a role message, the code is working and the user is not owner/admin.
 
 ## Repository markers
 
 The access tab depends on these markers:
 
 - `data-v4-tab-button="user_admin"` in `crm/v4/index.html`;
+- `href="?tab=user_admin"` and `Открыть доступ CRM` in `crm/v4/index.html`;
 - `{ tab: 'user_admin', label: 'Доступ' }` in `crm-v4-expanded-menu-v1.js`;
 - `ROUTABLE_TABS` and `URLSearchParams` in `crm-v4-tabs-lite.js`;
 - `import './user-admin-v1.js?v=20260627-access-3';` in `auth.js`;
@@ -53,12 +63,14 @@ The access tab depends on these markers:
 
 Last checked on 2026-06-27:
 
+- active access admins (`owner` + `admin`): 3;
 - active `owner`: 2;
 - active `admin`: 1;
-- active `manager`: 1.
+- active `manager`: 1;
+- inactive profiles: 0.
 
 No personal emails are required for this check.
 
 ## Production note
 
-This document does not require a Supabase production change. It documents browser verification for existing CRM access controls and the direct access-tab route.
+This document does not require a Supabase production change. It documents browser verification for existing CRM access controls, the direct access-tab route, and the in-app quick link.
