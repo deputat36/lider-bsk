@@ -2,7 +2,7 @@ name: Navigator v2 check
 
 on:
   push:
-    branches: [main, nav-v2-fix-deals-entry-20260626, nav-v2-deal-api-client-flag-20260627, nav-v2-deal-id-alias-20260627]
+    branches: [main, nav-v2-fix-deals-entry-20260626, nav-v2-deal-api-client-flag-20260627, nav-v2-deal-id-alias-20260627, nav-v2-edge-opt-in-guard-20260627]
     paths:
       - 'deal-card-v2.html'
       - 'deals-v2.html'
@@ -129,3 +129,47 @@ jobs:
             echo 'Navigator v2 browser assets must not contain literal JWTs.' >&2
             exit 1
           fi
+
+      - name: Validate Navigator v2 Edge opt-in behavior
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib
+          import re
+
+          client = pathlib.Path('assets/js/nav-v2/supabase-v2.js').read_text(encoding='utf-8')
+          should_use = re.search(r'function shouldUseDealApiEdge\(\) \{(?P<body>.*?)\n\}', client, re.S)
+          assert should_use, 'missing shouldUseDealApiEdge()'
+          body = should_use.group('body')
+
+          required_body_markers = [
+              "const params = new URLSearchParams(window.location.search);",
+              "if (params.get('edge_api') === '1') return true;",
+              "if (params.get('edge_api') === '0') return false;",
+              "window.localStorage.getItem(NAV_V2_CONFIG.dealApiEdgeFlagKey) === '1'",
+              'return false;',
+          ]
+          for marker in required_body_markers:
+              assert marker in body, f'missing opt-in marker: {marker}'
+
+          edge_route = "name === 'nav_v2_get_deal_card' && params?.p_deal_id && shouldUseDealApiEdge()"
+          assert edge_route in client, 'get_deal_card Edge route must stay behind shouldUseDealApiEdge()'
+          assert client.count("edgeFunction('nav-v2-deal-api'") == 1, 'only one browser Edge Function route is allowed in this phase'
+          assert "{ action: 'get_deal_card', deal_id: params.p_deal_id }" in client, 'Edge route must send only get_deal_card payload'
+          assert 'return assertDealApiResponse(json);' in client, 'Edge response must be shape-checked before returning data'
+          assert 'const request = supabase.rpc(name, params);' in client, 'direct RPC fallback must remain present'
+
+          disallowed_edge_writes = [
+              'nav_v2_add_comment',
+              'nav_v2_update_deal_status',
+              'nav_v2_update_document_status',
+              'nav_v2_update_task_status',
+              "action: 'add_comment'",
+              "action: 'update_deal_status'",
+              "action: 'update_document_status'",
+              "action: 'update_task_status'",
+          ]
+          for marker in disallowed_edge_writes:
+              assert marker not in client, f'write action must not be routed through Edge yet: {marker}'
+          PY
