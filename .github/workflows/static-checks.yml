@@ -230,12 +230,15 @@ jobs:
           loader='crm/v4/assets/v4/site-cache-note-v1.js'
           audit='crm/v4/assets/v4/public-lead-audit-v1.js'
           helper='crm/v4/assets/v4/public-lead-audit-helper-v1.js'
+          selfcheck='crm/v4/assets/v4/crm-ui-selfcheck-v1.js'
           test -f "$loader"
           test -f "$audit"
           test -f "$helper"
+          test -f "$selfcheck"
           grep -q 'CRM_ACCESS_ROUTE_VERSION' "$loader"
           grep -q 'CRM build:' "$loader"
           grep -q '20260627-access-route-1' "$loader"
+          grep -q 'crm-ui-selfcheck-v1.js?v=20260627-access-route-1' "$loader"
           grep -q 'public-lead-audit-v1.js?v=20260625-duplicate-copy-1' "$loader"
           grep -q 'public-lead-audit-helper-v1.js?v=20260625-trace-widget-1' "$loader"
           grep -q 'leader_public_lead_audit' "$audit"
@@ -254,10 +257,15 @@ jobs:
           set -euo pipefail
           menu='crm/v4/assets/v4/crm-v4-expanded-menu-v1.js'
           selfcheck='crm/v4/assets/v4/crm-ui-selfcheck-v1.js'
-          for tab in management_dashboard leads orders order_control finance_control production contact_control public_lead_audit; do
+          for tab in management_dashboard leads orders order_control finance_control production contact_control public_lead_audit user_admin; do
             grep -q "$tab" "$menu"
             grep -q "$tab" "$selfcheck"
           done
+          grep -q 'CRM_ACCESS_ROUTE_VERSION' "$selfcheck"
+          grep -q 'Маршрут Доступ' "$selfcheck"
+          grep -q 'Прямой маршрут Доступ' "$selfcheck"
+          grep -q 'Build marker' "$selfcheck"
+          grep -q 'siteCacheNoteV1' "$selfcheck"
           grep -q 'crm-v4-browser-test.md' "$selfcheck"
 
       - name: Validate project status documentation
