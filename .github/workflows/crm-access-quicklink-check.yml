@@ -1,0 +1,25 @@
+name: CRM access quick link check
+
+on:
+  push:
+    branches: [main, improve-site-crm]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-crm-access-quick-link:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate CRM access quick link
+        shell: bash
+        run: |
+          set -euo pipefail
+          index='crm/v4/index.html'
+          test -f "$index"
+          grep -Fq 'href="?tab=user_admin"' "$index"
+          grep -Fq 'Открыть доступ CRM' "$index"
+          grep -Fq 'data-v4-tab-button="user_admin"' "$index"
+          grep -Fq 'crm-v4-tabs-lite.js?v=20260627-access-route-1' "$index"
+          grep -Fq 'auth.js?v=20260627-access-3' "$index"
