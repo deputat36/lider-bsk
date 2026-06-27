@@ -256,6 +256,30 @@ jobs:
           done
           grep -q 'crm-v4-browser-test.md' "$selfcheck"
 
+      - name: Validate project status documentation
+        shell: bash
+        run: |
+          set -euo pipefail
+          status='docs/STATUS.md'
+          history='docs/SUPABASE_MIGRATION_HISTORY_NORMALIZATION_2026-06-27.md'
+          test -f "$status"
+          test -f "$history"
+          grep -Fq 'leader-public-lead v9' "$status"
+          grep -Fq 'leader-crm-leads v12' "$status"
+          grep -Fq 'leader-crm-orders v2' "$status"
+          grep -Fq 'verify_jwt=false' "$status"
+          grep -Fq 'verify_jwt=true' "$status"
+          grep -Fq 'leader_user_profiles' "$status"
+          grep -Fq 'leader_user_invites' "$status"
+          grep -Fq 'public.leader_%' "$status"
+          grep -Fq 'SECURITY DEFINER' "$status"
+          grep -Fq 'SUPABASE_MIGRATION_HISTORY_NORMALIZATION_2026-06-27.md' "$status"
+          grep -Fq 'final-state snapshots' "$history"
+          grep -Fq 'supabase db push' "$history"
+          grep -Fq 'leader_create_order_from_offer_rpc' "$history"
+          grep -Fq 'user-admin-v1.js' "$status"
+          grep -Fq '20260627-access-3' "$status"
+
       - name: Validate grants migrations
         shell: bash
         run: |
