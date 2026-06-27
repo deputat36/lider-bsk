@@ -128,6 +128,8 @@ After PR `#50`, `tools/nav_v2_deal_api_smoke_test.mjs` also rejects unsafe `NAV_
 
 After PR `#51`, the same smoke script also rejects expired `NAV_V2_JWT` values before network calls. The decoded `exp` value must be later than the current runner time.
 
+After PR `#52`, the same smoke script also rejects `NAV_V2_JWT` values issued by a different Supabase project before network calls. The decoded `iss` value must match `${NAV_V2_SUPABASE_URL}/auth/v1` after trimming trailing slashes from `NAV_V2_SUPABASE_URL`.
+
 The smoke tests intentionally read user JWT and deal id values from environment variables. Do not commit JWTs, real user sessions, service-role keys, secret API keys, or private test data.
 
 CI validates the smoke-test source with `node --check` and secret/JWT marker scans, but CI does not execute a successful authenticated runtime call because that would require a live user JWT.
