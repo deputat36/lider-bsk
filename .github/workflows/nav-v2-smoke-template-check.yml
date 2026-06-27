@@ -2,7 +2,7 @@ name: Navigator v2 smoke template check
 
 on:
   push:
-    branches: [main, nav-v2-runtime-smoke-issue-template-20260627]
+    branches: [main]
     paths:
       - '.github/ISSUE_TEMPLATE/nav-v2-deal-api-smoke.md'
       - '.github/workflows/nav-v2-smoke-template-check.yml'
@@ -11,6 +11,7 @@ on:
     paths:
       - '.github/ISSUE_TEMPLATE/nav-v2-deal-api-smoke.md'
       - '.github/workflows/nav-v2-smoke-template-check.yml'
+  workflow_dispatch:
 
 jobs:
   validate-nav-v2-smoke-template:
