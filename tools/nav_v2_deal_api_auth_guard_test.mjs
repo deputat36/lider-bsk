@@ -4,6 +4,7 @@ const SUPABASE_URL = process.env.NAV_V2_SUPABASE_URL || 'https://ofewxuqfjhamger
 const API_KEY = process.env.NAV_V2_API_KEY || 'sb_publishable_ZiX8_Mnf0dY6S__tKO2A4A_uD94G2cs';
 const DEAL_ID = process.env.NAV_V2_DEAL_ID || '00000000-0000-0000-0000-000000000000';
 const ACTION = process.env.NAV_V2_ACTION || 'get_deal_card';
+const PREFLIGHT_ONLY = process.env.NAV_V2_AUTH_GUARD_PREFLIGHT_ONLY === '1';
 const READ_ACTIONS = new Set(['get_deal_card', 'get_deal_card_lite']);
 const ALLOWED_REJECTION_STATUSES = new Set([401, 403]);
 
@@ -59,6 +60,11 @@ async function postWithoutValidAuth(testCase, action) {
 
 async function main() {
   assertReadAction(ACTION);
+  if (PREFLIGHT_ONLY) {
+    console.log(JSON.stringify({ ok: true, preflight_only: true, action: ACTION }, null, 2));
+    return;
+  }
+
   const checks = [];
   for (const testCase of CASES) {
     checks.push(await postWithoutValidAuth(testCase, ACTION));
