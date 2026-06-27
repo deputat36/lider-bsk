@@ -2,9 +2,11 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 type NavV2Action =
   | "get_deal_card"
+  | "get_deal_card_lite"
   | "add_comment"
   | "update_deal_status"
   | "update_document_status"
+  | "update_document_workflow"
   | "update_task_status";
 
 type AuthUser = {
@@ -14,11 +16,34 @@ type AuthUser = {
 
 const allowedActions = new Set<NavV2Action>([
   "get_deal_card",
+  "get_deal_card_lite",
   "add_comment",
   "update_deal_status",
   "update_document_status",
+  "update_document_workflow",
   "update_task_status",
 ]);
+
+const dealStatuses = new Set([
+  "draft",
+  "need_info",
+  "need_lawyer",
+  "need_broker",
+  "need_documents",
+  "ready_for_deposit",
+  "deposit_done",
+  "preparing_deal",
+  "ready_for_deal",
+  "registration",
+  "registered",
+  "closed",
+  "cancelled",
+]);
+
+const documentStatuses = new Set(["needed", "missing", "requested", "received", "checked", "problem"]);
+const taskStatuses = new Set(["open", "in_progress", "done", "cancelled"]);
+const commentVisibilities = new Set(["team", "private", "public"]);
+const roles = new Set(["owner", "admin", "manager", "spn", "lawyer", "broker", "viewer"]);
 
 const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -50,6 +75,52 @@ function requireEnv(name: string): string {
   return value;
 }
 
+function getString(body: Record<string, unknown>, keys: string[], label: string, required = true): string | null {
+  for (const key of keys) {
+    const value = body[key];
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (trimmed) return trimmed;
+    }
+  }
+
+  if (required) throw new Error(`${label} is required`);
+  return null;
+}
+
+function parseUuid(body: Record<string, unknown>, keys: string[], label: string): string {
+  const value = getString(body, keys, label, true);
+  if (!value || !uuidRe.test(value)) throw new Error(`${label} must be a valid UUID`);
+  return value;
+}
+
+function parseEnum(body: Record<string, unknown>, keys: string[], allowed: Set<string>, label: string): string {
+  const value = getString(body, keys, label, true);
+  if (!value || !allowed.has(value)) throw new Error(`Unsupported ${label}`);
+  return value;
+}
+
+function parseOptionalUuid(body: Record<string, unknown>, keys: string[], label: string): string | null {
+  const value = getString(body, keys, label, false);
+  if (!value) return null;
+  if (!uuidRe.test(value)) throw new Error(`${label} must be a valid UUID`);
+  return value;
+}
+
+function parseOptionalRole(body: Record<string, unknown>, keys: string[], label: string): string | null {
+  const value = getString(body, keys, label, false);
+  if (!value) return null;
+  if (!roles.has(value)) throw new Error(`Unsupported ${label}`);
+  return value;
+}
+
+function parseOptionalDate(body: Record<string, unknown>, keys: string[], label: string): string | null {
+  const value = getString(body, keys, label, false);
+  if (!value) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) throw new Error(`${label} must be YYYY-MM-DD`);
+  return value;
+}
+
 async function getAuthUser(req: Request): Promise<AuthUser> {
   const token = getBearerToken(req);
   if (!token) throw new Error("Missing bearer token");
@@ -75,8 +146,12 @@ async function readBody(req: Request): Promise<Record<string, unknown>> {
   if (!contentType.toLowerCase().includes("application/json")) {
     throw new Error("Content-Type must be application/json");
   }
+
   const body = await req.json();
-  if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("Request body must be a JSON object");
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    throw new Error("Request body must be a JSON object");
+  }
+
   return body as Record<string, unknown>;
 }
 
@@ -86,14 +161,6 @@ function parseAction(body: Record<string, unknown>): NavV2Action {
     throw new Error("Unsupported Navigator v2 action");
   }
   return action as NavV2Action;
-}
-
-function parseDealId(body: Record<string, unknown>): string {
-  const value = body.deal_id ?? body.id ?? body.p_deal_id;
-  if (typeof value !== "string" || !uuidRe.test(value)) {
-    throw new Error("deal_id must be a valid UUID");
-  }
-  return value;
 }
 
 async function callUserRpc<T>(req: Request, rpcName: string, payload: Record<string, unknown>): Promise<T> {
@@ -121,9 +188,67 @@ async function callUserRpc<T>(req: Request, rpcName: string, payload: Record<str
   return data as T;
 }
 
-async function getDealCard(req: Request, body: Record<string, unknown>): Promise<unknown> {
-  const dealId = parseDealId(body);
-  return await callUserRpc(req, "nav_v2_get_deal_card", { p_deal_id: dealId });
+async function handleAction(req: Request, action: NavV2Action, body: Record<string, unknown>): Promise<unknown> {
+  if (action === "get_deal_card" || action === "get_deal_card_lite") {
+    const dealId = parseUuid(body, ["deal_id", "id", "p_deal_id"], "deal_id");
+    const wantsLite = action === "get_deal_card_lite" || body.lite === true;
+    return await callUserRpc(req, wantsLite ? "nav_v2_get_deal_card_lite" : "nav_v2_get_deal_card", { p_deal_id: dealId });
+  }
+
+  if (action === "add_comment") {
+    const dealId = parseUuid(body, ["deal_id", "p_deal_id"], "deal_id");
+    const bodyText = getString(body, ["body", "comment", "p_body"], "body", true);
+    const visibility = getString(body, ["visibility", "p_visibility"], "visibility", false) || "team";
+    if (!commentVisibilities.has(visibility)) throw new Error("Unsupported visibility");
+    return await callUserRpc(req, "nav_v2_add_comment", {
+      p_deal_id: dealId,
+      p_body: bodyText,
+      p_visibility: visibility,
+    });
+  }
+
+  if (action === "update_deal_status") {
+    const dealId = parseUuid(body, ["deal_id", "p_deal_id"], "deal_id");
+    const status = parseEnum(body, ["status", "p_status"], dealStatuses, "deal status");
+    return await callUserRpc(req, "nav_v2_update_deal_status", {
+      p_deal_id: dealId,
+      p_status: status,
+    });
+  }
+
+  if (action === "update_document_status") {
+    const documentId = parseUuid(body, ["document_id", "p_document_id", "id"], "document_id");
+    const status = parseEnum(body, ["status", "p_status"], documentStatuses, "document status");
+    return await callUserRpc(req, "nav_v2_update_document_status", {
+      p_document_id: documentId,
+      p_status: status,
+    });
+  }
+
+  if (action === "update_document_workflow") {
+    const documentId = parseUuid(body, ["document_id", "p_document_id", "id"], "document_id");
+    const status = getString(body, ["status", "p_status"], "document status", false);
+    if (status && !documentStatuses.has(status)) throw new Error("Unsupported document status");
+    return await callUserRpc(req, "nav_v2_update_document_workflow", {
+      p_document_id: documentId,
+      p_status: status,
+      p_assigned_to: parseOptionalUuid(body, ["assigned_to", "p_assigned_to"], "assigned_to"),
+      p_responsible_role: parseOptionalRole(body, ["responsible_role", "p_responsible_role"], "responsible_role"),
+      p_due_date: parseOptionalDate(body, ["due_date", "p_due_date"], "due_date"),
+      p_note: getString(body, ["note", "p_note"], "note", false),
+    });
+  }
+
+  if (action === "update_task_status") {
+    const taskId = parseUuid(body, ["task_id", "p_task_id", "id"], "task_id");
+    const status = parseEnum(body, ["status", "p_status"], taskStatuses, "task status");
+    return await callUserRpc(req, "nav_v2_update_task_status", {
+      p_task_id: taskId,
+      p_status: status,
+    });
+  }
+
+  throw new Error("Unsupported Navigator v2 action");
 }
 
 Deno.serve(async (req: Request) => {
@@ -136,21 +261,8 @@ Deno.serve(async (req: Request) => {
   try {
     const [user, body] = await Promise.all([getAuthUser(req), readBody(req)]);
     const action = parseAction(body);
-
-    if (action === "get_deal_card") {
-      const data = await getDealCard(req, body);
-      return jsonResponse({ ok: true, action, user_id: user.id, data });
-    }
-
-    return jsonResponse(
-      {
-        ok: false,
-        error: "Navigator v2 action is not implemented yet",
-        action,
-        user_id: user.id,
-      },
-      501,
-    );
+    const data = await handleAction(req, action, body);
+    return jsonResponse({ ok: true, action, user_id: user.id, data });
   } catch (error) {
     return jsonResponse({ ok: false, error: error instanceof Error ? error.message : "Unknown error" }, 400);
   }
