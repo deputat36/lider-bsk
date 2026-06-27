@@ -1,5 +1,7 @@
 import { V4_CONFIG } from './config.js';
 
+const CRM_ACCESS_ROUTE_VERSION = '20260627-access-route-1';
+
 const EXPECTED_TABS = [
   { key: 'management_dashboard', label: 'Дашборд' },
   { key: 'leads', label: 'Заявки' },
@@ -8,7 +10,8 @@ const EXPECTED_TABS = [
   { key: 'finance_control', label: 'Финансы' },
   { key: 'production', label: 'Производство' },
   { key: 'contact_control', label: 'Контроль контактов' },
-  { key: 'public_lead_audit', label: 'Аудит заявок' }
+  { key: 'public_lead_audit', label: 'Аудит заявок' },
+  { key: 'user_admin', label: 'Доступ' }
 ];
 
 const ACCESS_ROLES = ['owner', 'admin', 'manager'];
@@ -55,6 +58,22 @@ function checkTabs() {
   });
 }
 
+function checkAccessRoute() {
+  const url = new URL(window.location.href);
+  const directRoute = url.searchParams.get('tab') === 'user_admin' || url.hash === '#user_admin';
+  const bodyCanRoute = document.body?.dataset?.v4Tab === 'user_admin' || typeof window.v4SetTab === 'function';
+  const accessSection = document.getElementById('userAdminSection');
+  const buildNote = document.getElementById('siteCacheNoteV1');
+  const buildText = buildNote?.textContent || '';
+  return [
+    row('Прямой маршрут Доступ', directRoute ? 'открыт по URL' : '?tab=user_admin не в URL', true),
+    row('Роутер вкладок', typeof window.v4SetTab === 'function' ? 'OK' : 'нет window.v4SetTab', typeof window.v4SetTab === 'function'),
+    row('Секция Доступ', accessSection ? 'создана' : 'пока не создана', Boolean(accessSection)),
+    row('Версия доступа', CRM_ACCESS_ROUTE_VERSION, true),
+    row('Build marker', buildText.includes(CRM_ACCESS_ROUTE_VERSION) ? 'виден' : 'проверьте Ctrl + F5', buildText.includes(CRM_ACCESS_ROUTE_VERSION) || bodyCanRoute)
+  ];
+}
+
 function checkAccess() {
   const authStatus = text('#authStatus') || '—';
   const email = text('#userEmail') || text('#profileEmail') || '—';
@@ -96,6 +115,7 @@ function refresh() {
   result.innerHTML = [
     renderRows('Контур и сессия', checkSessionIsolation()),
     renderRows('Доступ', checkAccess()),
+    renderRows('Маршрут Доступ', checkAccessRoute()),
     renderRows('Разделы', checkTabs()),
     renderIssueLink()
   ].join('');
