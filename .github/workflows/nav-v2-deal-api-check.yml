@@ -2,11 +2,12 @@ name: Navigator v2 deal API check
 
 on:
   push:
-    branches: [main, nav-v2-deal-api-get-card-bridge-20260626, nav-v2-deal-api-smoke-test-20260626, nav-v2-deal-api-smoke-workflow-20260627, nav-v2-deal-api-auth-guard-20260627, nav-v2-deal-api-auth-guard-workflow-20260627, nav-v2-deal-api-step-summary-20260627, nav-v2-deal-api-invalid-token-guard-20260627, nav-v2-deal-api-smoke-input-guard-20260627, nav-v2-deal-api-smoke-url-guard-20260627, nav-v2-smoke-api-key-guard-20260627, nav-v2-smoke-jwt-guard-20260627, nav-v2-smoke-jwt-exp-guard-20260627, nav-v2-smoke-jwt-issuer-guard-20260627, nav-v2-smoke-jwt-audience-guard-20260627, nav-v2-smoke-jwt-anonymous-guard-20260627]
+    branches: [main, nav-v2-deal-api-get-card-bridge-20260626, nav-v2-deal-api-smoke-test-20260626, nav-v2-deal-api-smoke-workflow-20260627, nav-v2-deal-api-auth-guard-20260627, nav-v2-deal-api-auth-guard-workflow-20260627, nav-v2-deal-api-step-summary-20260627, nav-v2-deal-api-invalid-token-guard-20260627, nav-v2-deal-api-smoke-input-guard-20260627, nav-v2-deal-api-smoke-url-guard-20260627, nav-v2-smoke-api-key-guard-20260627, nav-v2-smoke-jwt-guard-20260627, nav-v2-smoke-jwt-exp-guard-20260627, nav-v2-smoke-jwt-issuer-guard-20260627, nav-v2-smoke-jwt-audience-guard-20260627, nav-v2-smoke-jwt-anonymous-guard-20260627, nav-v2-smoke-preflight-test-20260627]
     paths:
       - 'supabase/config.toml'
       - 'supabase/functions/nav-v2-deal-api/**'
       - 'tools/nav_v2_deal_api_smoke_test.mjs'
+      - 'tools/nav_v2_deal_api_smoke_preflight_test.mjs'
       - 'tools/nav_v2_deal_api_auth_guard_test.mjs'
       - '.github/workflows/nav-v2-deal-api-check.yml'
       - '.github/workflows/nav-v2-deal-api-smoke.yml'
@@ -17,6 +18,7 @@ on:
       - 'supabase/config.toml'
       - 'supabase/functions/nav-v2-deal-api/**'
       - 'tools/nav_v2_deal_api_smoke_test.mjs'
+      - 'tools/nav_v2_deal_api_smoke_preflight_test.mjs'
       - 'tools/nav_v2_deal_api_auth_guard_test.mjs'
       - '.github/workflows/nav-v2-deal-api-check.yml'
       - '.github/workflows/nav-v2-deal-api-smoke.yml'
@@ -89,8 +91,10 @@ jobs:
         run: |
           set -euo pipefail
           smoke='tools/nav_v2_deal_api_smoke_test.mjs'
+          preflight='tools/nav_v2_deal_api_smoke_preflight_test.mjs'
           auth_guard='tools/nav_v2_deal_api_auth_guard_test.mjs'
           test -f "$smoke"
+          test -f "$preflight"
           test -f "$auth_guard"
           grep -Fq 'NAV_V2_JWT' "$smoke"
           grep -Fq 'NAV_V2_DEAL_ID' "$smoke"
@@ -119,6 +123,9 @@ jobs:
           grep -Fq "jwtPayload?.role === 'service_role'" "$smoke"
           grep -Fq 'NAV_V2_API_KEY must be a publishable/anon key, not a secret key' "$smoke"
           grep -Fq 'NAV_V2_API_KEY must not be a service_role JWT' "$smoke"
+          grep -Fq 'expectPreflightFailure' "$preflight"
+          grep -Fq 'synthetic-signature' "$preflight"
+          grep -Fq 'cases: 9' "$preflight"
           grep -Fq '/functions/v1/nav-v2-deal-api' "$smoke"
           grep -Fq '/rest/v1/rpc/nav_v2_get_deal_card' "$smoke"
           grep -Fq 'assertDealCardPayload' "$smoke"
@@ -133,12 +140,14 @@ jobs:
           grep -Fq 'Authorization' "$smoke"
           grep -Fq 'Authorization' "$auth_guard"
           node --check "$smoke"
+          node --check "$preflight"
           node --check "$auth_guard"
-          if grep -nE 'sb_secret_|SUPABASE_SERVICE_ROLE|SERVICE_ROLE_KEY' "$smoke" "$auth_guard"; then
+          node "$preflight"
+          if grep -nE 'sb_secret_|SUPABASE_SERVICE_ROLE|SERVICE_ROLE_KEY' "$smoke" "$preflight" "$auth_guard"; then
             echo 'Smoke tests must not contain service role or secret key markers.' >&2
             exit 1
           fi
-          if grep -nE 'eyJ[a-zA-Z0-9_-]{20,}' "$smoke" "$auth_guard"; then
+          if grep -nE 'eyJ[a-zA-Z0-9_-]{20,}' "$smoke" "$preflight" "$auth_guard"; then
             echo 'Smoke tests must not contain literal JWTs.' >&2
             exit 1
           fi
