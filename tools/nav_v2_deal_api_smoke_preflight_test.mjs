@@ -78,6 +78,18 @@ expectPreflightSuccess('valid preflight-only token', {
   NAV_V2_PREFLIGHT_ONLY: '1',
 }, '"preflight_only": true');
 
+expectPreflightSuccess('valid preflight-only lite action', {
+  NAV_V2_JWT: fakeJwt(accessPayload()),
+  NAV_V2_ACTION: 'get_deal_card_lite',
+  NAV_V2_PREFLIGHT_ONLY: '1',
+}, '"action": "get_deal_card_lite"');
+
+expectPreflightFailure('unsupported read action', {
+  NAV_V2_JWT: fakeJwt(accessPayload()),
+  NAV_V2_ACTION: 'add_comment',
+  NAV_V2_PREFLIGHT_ONLY: '1',
+}, 'NAV_V2_ACTION must be one of: get_deal_card, get_deal_card_lite');
+
 expectPreflightFailure('malformed jwt', {
   NAV_V2_JWT: 'not-a-jwt',
 }, 'NAV_V2_JWT must be a JWT access token');
@@ -116,4 +128,4 @@ expectPreflightFailure('service-role api key jwt', {
   NAV_V2_API_KEY: serviceRoleApiKey(),
 }, 'NAV_V2_API_KEY must not be a service_role JWT');
 
-console.log(JSON.stringify({ ok: true, cases: 10 }, null, 2));
+console.log(JSON.stringify({ ok: true, cases: 12 }, null, 2));
