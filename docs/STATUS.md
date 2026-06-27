@@ -195,12 +195,14 @@ RLS и GRANT аудита проверены. Нужна одна реальна
 
 - есть в базовом HTML меню CRM v4;
 - есть в expanded menu;
+- прямая кнопка `Открыть доступ CRM` есть в карточке `CRM готова` и ведёт на `?tab=user_admin`;
 - прямой URL проверки: `https://deputat36.github.io/lider-bsk/crm/v4/?tab=user_admin`;
 - route/cache marker: `20260627-access-route-1`;
 - cache note показывает `CRM build: 20260627-access-route-1` после свежей загрузки;
 - модуль `user-admin-v1.js` подключается через `auth.js?v=20260627-access-3`;
 - самодиагностика `Проверка загруженных разделов и доступа CRM` проверяет `Доступ`, `Маршрут Доступ`, `Прямой маршрут Доступ`, `Версия доступа` и `Build marker`;
 - runbook проверки сохранён в `docs/CRM_ACCESS_TAB_CHECK_2026-06-27.md`;
+- active access admins (`owner` + `admin`): 3; active `manager`: 1; inactive profiles: 0;
 - новые пользователи без invite остаются pending/inactive;
 - активировать и приглашать пользователей должны owner/admin;
 - прямой execute CRM SECURITY DEFINER RPC закрыт для `anon`, `authenticated`, `public`.
@@ -212,7 +214,7 @@ RLS и GRANT аудита проверены. Нужна одна реальна
 3. Открыть обе CRM одновременно.
 4. Выйти из временной CRM и убедиться, что основная осталась авторизована.
 5. Повторить в обратную сторону.
-6. Открыть `https://deputat36.github.io/lider-bsk/crm/v4/?tab=user_admin` и проверить вкладку `Доступ` под owner/admin.
+6. Открыть `https://deputat36.github.io/lider-bsk/crm/v4/?tab=user_admin` или нажать `Открыть доступ CRM` в карточке `CRM готова` и проверить вкладку `Доступ` под owner/admin.
 7. Открыть `Проверка загруженных разделов и доступа CRM` и убедиться, что есть `Доступ`, `Маршрут Доступ`, `Версия доступа: 20260627-access-route-1` и `Build marker`.
 8. Отправить тестовую заявку через `request.html`, записать показанный номер обращения и найти его в аудите.
 9. Вставить номер обращения в виджет `Проверить request_id` и убедиться, что цепочка показывает `Цепочка полная`.
