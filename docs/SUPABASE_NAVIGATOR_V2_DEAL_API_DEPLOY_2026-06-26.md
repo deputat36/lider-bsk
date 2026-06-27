@@ -109,6 +109,17 @@ NAV_V2_COMPARE_DIRECT_RPC=1 \
 node tools/nav_v2_deal_api_smoke_test.mjs
 ```
 
+Optional local preflight-only validation:
+
+```bash
+NAV_V2_JWT='user-access-token' \
+NAV_V2_DEAL_ID='deal-uuid' \
+NAV_V2_PREFLIGHT_ONLY=1 \
+node tools/nav_v2_deal_api_smoke_test.mjs
+```
+
+`NAV_V2_PREFLIGHT_ONLY=1` runs the local environment/JWT/API-key checks and exits before any Edge Function or direct RPC request. It does not prove runtime access to a deal.
+
 Optional override for the public API key:
 
 ```bash
@@ -135,6 +146,8 @@ After PR `#53`, the same smoke script also rejects `NAV_V2_JWT` values whose dec
 After PR `#54`, the same smoke script also rejects anonymous-user JWTs when the decoded `is_anonymous` claim is `true` before network calls.
 
 After PR `#55`, `tools/nav_v2_deal_api_smoke_preflight_test.mjs` runs no-secret preflight cases with synthetic unsigned JWTs. It verifies that malformed, wrong-issuer, wrong-audience, wrong-role, anonymous, missing-subject, expired, secret-key, and service-role API-key cases fail before any Edge Function or direct RPC call can be made.
+
+After PR `#56`, the preflight test suite also verifies a positive synthetic user-token case through `NAV_V2_PREFLIGHT_ONLY=1`, confirming the local checks can pass without making a network request.
 
 The smoke tests intentionally read user JWT and deal id values from environment variables. Do not commit JWTs, real user sessions, service-role keys, secret API keys, or private test data.
 

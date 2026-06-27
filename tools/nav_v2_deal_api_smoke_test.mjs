@@ -5,6 +5,7 @@ const API_KEY = process.env.NAV_V2_API_KEY || 'sb_publishable_ZiX8_Mnf0dY6S__tKO
 const JWT = process.env.NAV_V2_JWT;
 const DEAL_ID = process.env.NAV_V2_DEAL_ID;
 const COMPARE_DIRECT_RPC = process.env.NAV_V2_COMPARE_DIRECT_RPC === '1';
+const PREFLIGHT_ONLY = process.env.NAV_V2_PREFLIGHT_ONLY === '1';
 
 function requireEnv(name, value) {
   if (!value) {
@@ -121,6 +122,11 @@ async function main() {
   assertUserAccessJwt(JWT);
   requireEnv('NAV_V2_DEAL_ID', DEAL_ID);
   assertApiKeyIsPublic(API_KEY);
+
+  if (PREFLIGHT_ONLY) {
+    console.log(JSON.stringify({ ok: true, preflight_only: true, deal_id: DEAL_ID }, null, 2));
+    return;
+  }
 
   const edgeUrl = `${SUPABASE_URL}/functions/v1/nav-v2-deal-api`;
   const edge = await postJson(edgeUrl, { action: 'get_deal_card', deal_id: DEAL_ID });

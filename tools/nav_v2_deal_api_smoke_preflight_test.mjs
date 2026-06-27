@@ -51,6 +51,17 @@ function runSmoke(env) {
   });
 }
 
+function expectPreflightSuccess(name, env, expectedMessage) {
+  const result = runSmoke(env);
+  const output = `${result.stdout || ''}${result.stderr || ''}`;
+  if (result.status !== 0) {
+    throw new Error(`${name}: expected success, got status ${result.status}: ${JSON.stringify(output)}`);
+  }
+  if (!output.includes(expectedMessage)) {
+    throw new Error(`${name}: expected message ${JSON.stringify(expectedMessage)}, got ${JSON.stringify(output)}`);
+  }
+}
+
 function expectPreflightFailure(name, env, expectedMessage) {
   const result = runSmoke(env);
   const output = `${result.stdout || ''}${result.stderr || ''}`;
@@ -61,6 +72,11 @@ function expectPreflightFailure(name, env, expectedMessage) {
     throw new Error(`${name}: expected message ${JSON.stringify(expectedMessage)}, got ${JSON.stringify(output)}`);
   }
 }
+
+expectPreflightSuccess('valid preflight-only token', {
+  NAV_V2_JWT: fakeJwt(accessPayload()),
+  NAV_V2_PREFLIGHT_ONLY: '1',
+}, '"preflight_only": true');
 
 expectPreflightFailure('malformed jwt', {
   NAV_V2_JWT: 'not-a-jwt',
@@ -100,4 +116,4 @@ expectPreflightFailure('service-role api key jwt', {
   NAV_V2_API_KEY: serviceRoleApiKey(),
 }, 'NAV_V2_API_KEY must not be a service_role JWT');
 
-console.log(JSON.stringify({ ok: true, cases: 9 }, null, 2));
+console.log(JSON.stringify({ ok: true, cases: 10 }, null, 2));

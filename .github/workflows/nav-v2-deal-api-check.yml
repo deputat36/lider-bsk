@@ -2,7 +2,7 @@ name: Navigator v2 deal API check
 
 on:
   push:
-    branches: [main, nav-v2-deal-api-get-card-bridge-20260626, nav-v2-deal-api-smoke-test-20260626, nav-v2-deal-api-smoke-workflow-20260627, nav-v2-deal-api-auth-guard-20260627, nav-v2-deal-api-auth-guard-workflow-20260627, nav-v2-deal-api-step-summary-20260627, nav-v2-deal-api-invalid-token-guard-20260627, nav-v2-deal-api-smoke-input-guard-20260627, nav-v2-deal-api-smoke-url-guard-20260627, nav-v2-smoke-api-key-guard-20260627, nav-v2-smoke-jwt-guard-20260627, nav-v2-smoke-jwt-exp-guard-20260627, nav-v2-smoke-jwt-issuer-guard-20260627, nav-v2-smoke-jwt-audience-guard-20260627, nav-v2-smoke-jwt-anonymous-guard-20260627, nav-v2-smoke-preflight-test-20260627]
+    branches: [main, nav-v2-deal-api-get-card-bridge-20260626, nav-v2-deal-api-smoke-test-20260626, nav-v2-deal-api-smoke-workflow-20260627, nav-v2-deal-api-auth-guard-20260627, nav-v2-deal-api-auth-guard-workflow-20260627, nav-v2-deal-api-step-summary-20260627, nav-v2-deal-api-invalid-token-guard-20260627, nav-v2-deal-api-smoke-input-guard-20260627, nav-v2-deal-api-smoke-url-guard-20260627, nav-v2-smoke-api-key-guard-20260627, nav-v2-smoke-jwt-guard-20260627, nav-v2-smoke-jwt-exp-guard-20260627, nav-v2-smoke-jwt-issuer-guard-20260627, nav-v2-smoke-jwt-audience-guard-20260627, nav-v2-smoke-jwt-anonymous-guard-20260627, nav-v2-smoke-preflight-test-20260627, nav-v2-smoke-preflight-only-20260627]
     paths:
       - 'supabase/config.toml'
       - 'supabase/functions/nav-v2-deal-api/**'
@@ -100,6 +100,8 @@ jobs:
           grep -Fq 'NAV_V2_DEAL_ID' "$smoke"
           grep -Fq 'NAV_V2_API_KEY' "$smoke"
           grep -Fq 'NAV_V2_COMPARE_DIRECT_RPC' "$smoke"
+          grep -Fq 'NAV_V2_PREFLIGHT_ONLY' "$smoke"
+          grep -Fq 'preflight_only' "$smoke"
           grep -Fq 'decodeJwtPayloadMaybe' "$smoke"
           grep -Fq 'expectedJwtIssuer' "$smoke"
           grep -Fq "replace(/\\/+$/, '')" "$smoke"
@@ -123,9 +125,11 @@ jobs:
           grep -Fq "jwtPayload?.role === 'service_role'" "$smoke"
           grep -Fq 'NAV_V2_API_KEY must be a publishable/anon key, not a secret key' "$smoke"
           grep -Fq 'NAV_V2_API_KEY must not be a service_role JWT' "$smoke"
+          grep -Fq 'expectPreflightSuccess' "$preflight"
           grep -Fq 'expectPreflightFailure' "$preflight"
+          grep -Fq 'NAV_V2_PREFLIGHT_ONLY' "$preflight"
           grep -Fq 'synthetic-signature' "$preflight"
-          grep -Fq 'cases: 9' "$preflight"
+          grep -Fq 'cases: 10' "$preflight"
           grep -Fq '/functions/v1/nav-v2-deal-api' "$smoke"
           grep -Fq '/rest/v1/rpc/nav_v2_get_deal_card' "$smoke"
           grep -Fq 'assertDealCardPayload' "$smoke"
