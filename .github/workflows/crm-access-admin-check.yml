@@ -9,6 +9,7 @@ on:
       - 'crm/v4/assets/v4/crm-v4-expanded-menu-v1.js'
       - 'crm/v4/assets/v4/crm-v4-tabs-lite.js'
       - 'crm/v4/assets/v4/user-admin-v1.js'
+      - 'crm/v4/assets/v4/crm-ui-selfcheck-v1.js'
       - 'docs/CRM_ACCESS_TAB_CHECK_2026-06-27.md'
       - '.github/workflows/crm-access-admin-check.yml'
   pull_request:
@@ -19,6 +20,7 @@ on:
       - 'crm/v4/assets/v4/crm-v4-expanded-menu-v1.js'
       - 'crm/v4/assets/v4/crm-v4-tabs-lite.js'
       - 'crm/v4/assets/v4/user-admin-v1.js'
+      - 'crm/v4/assets/v4/crm-ui-selfcheck-v1.js'
       - 'docs/CRM_ACCESS_TAB_CHECK_2026-06-27.md'
       - '.github/workflows/crm-access-admin-check.yml'
 
@@ -37,6 +39,7 @@ jobs:
           tabs='crm/v4/assets/v4/crm-v4-tabs-lite.js'
           auth='crm/v4/assets/v4/auth.js'
           admin='crm/v4/assets/v4/user-admin-v1.js'
+          selfcheck='crm/v4/assets/v4/crm-ui-selfcheck-v1.js'
           runbook='docs/CRM_ACCESS_TAB_CHECK_2026-06-27.md'
 
           test -f "$page"
@@ -44,6 +47,7 @@ jobs:
           test -f "$tabs"
           test -f "$auth"
           test -f "$admin"
+          test -f "$selfcheck"
           test -f "$runbook"
 
           grep -Fq "{ tab: 'user_admin', label: 'Доступ' }" "$menu"
@@ -68,6 +72,11 @@ jobs:
           grep -Fq "function resyncCurrentTab()" "$admin"
           grep -Fq "window.v4SetTab('user_admin')" "$admin"
           grep -Fq "user_admin" "$admin"
+          grep -Fq "user_admin" "$selfcheck"
+          grep -Fq "Маршрут Доступ" "$selfcheck"
+          grep -Fq "Прямой маршрут Доступ" "$selfcheck"
+          grep -Fq "CRM_ACCESS_ROUTE_VERSION" "$selfcheck"
+          grep -Fq "siteCacheNoteV1" "$selfcheck"
           grep -Fq "https://deputat36.github.io/lider-bsk/crm/v4/?tab=user_admin" "$runbook"
           grep -Fq "20260627-access-route-1" "$runbook"
           grep -Fq "active `owner`" "$runbook"
@@ -81,3 +90,4 @@ jobs:
           node --check crm/v4/assets/v4/crm-v4-expanded-menu-v1.js
           node --check crm/v4/assets/v4/crm-v4-tabs-lite.js
           node --check crm/v4/assets/v4/user-admin-v1.js
+          node --check crm/v4/assets/v4/crm-ui-selfcheck-v1.js
