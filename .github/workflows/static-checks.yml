@@ -267,4 +267,6 @@ jobs:
           grep -q 'grant insert on public.leader_leads to anon' supabase/migrations/20260623_tighten_leader_leads_grants.sql
           grep -q 'grant select, insert, update, delete on public.leader_leads to authenticated' supabase/migrations/20260623_tighten_leader_leads_grants.sql
           grep -q 'grant insert on public.leader_public_lead_audit to anon' supabase/migrations/20260623_tighten_leader_public_lead_audit_grants.sql
-          grep -q 'grant select on public.leader_public_lead_audit to authenticated' supabase/migrations/20260623_tighten_leader_request_trace_view_grants.sql
+          grep -q 'grant select on public.leader_public_lead_audit to authenticated' supabase/migrations/20260623_tighten_leader_public_lead_audit_grants.sql
+          grep -q 'with (security_invoker = true)' supabase/migrations/20260625_create_leader_request_trace_view.sql
+          grep -q 'grant select on public.leader_request_trace to authenticated' supabase/migrations/20260625_tighten_leader_request_trace_view_grants.sql
