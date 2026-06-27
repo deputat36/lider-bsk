@@ -13,7 +13,7 @@ Edge Function deployed to Supabase production:
 - current observed deployed SHA: `3f438c82f2dbffdf03fbfb745369367507b9f61ddaa62b6b3d2d229d937ec455`;
 - deployed source path: `supabase/functions/nav-v2-deal-api/index.ts`.
 
-Original version `1` was deployed from the implementation merged in PR `#36` with SHA `c311af455cf701497ba94627b87b251a2ded78ad68270869fc5092335`.
+Original version `1` was deployed from the implementation merged in PR `#36` with SHA `c311af455cf701497ba94627b87b251a2ded78ad682a18268370869fc5092335`.
 
 After PR `#62`, the GitHub source file `supabase/functions/nav-v2-deal-api/index.ts` is synchronized with the already deployed Supabase version `2`. This was a repository source sync only: no Supabase deploy was performed by PR `#62`.
 
