@@ -19,9 +19,11 @@ jobs:
           playbook='docs/CODEX_OWNER_PLAYBOOK.md'
           rules='docs/AUTOPILOT_RULES.md'
           status='docs/STATUS.md'
+          operating_status='docs/CODEX_OPERATING_STATUS_2026-06-27.md'
           test -f "$playbook"
           test -f "$rules"
           test -f "$status"
+          test -f "$operating_status"
           grep -Fq 'Supabase только read-only' "$playbook"
           grep -Fq 'Supabase production changes require explicit owner approval' "$playbook"
           grep -Fq 'Do not assert CI green' "$playbook"
@@ -39,3 +41,12 @@ jobs:
           grep -Fq 'owner/admin создаёт invite' "$rules"
           grep -Fq 'пользователь без invite остаётся pending/inactive' "$rules"
           grep -Fq 'docs/AUTOPILOT_RULES.md' "$status"
+          grep -Fq 'PR #13 is closed without merge' "$operating_status"
+          grep -Fq 'crm-hardening-main-20260626' "$operating_status"
+          grep -Fq 'current source of truth for CRM access docs and guards is `main`' "$operating_status"
+          grep -Fq 'Supabase только read-only' "$operating_status"
+          grep -Fq 'leader-public-lead v9' "$operating_status"
+          grep -Fq 'leader-crm-leads v12' "$operating_status"
+          grep -Fq 'leader-crm-orders v2' "$operating_status"
+          grep -Fq 'owner/admin creates invite' "$operating_status"
+          grep -Fq 'user without invite remains pending/inactive' "$operating_status"
