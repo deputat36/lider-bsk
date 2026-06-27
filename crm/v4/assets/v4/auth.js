@@ -1,4 +1,4 @@
-import './user-admin-v1.js?v=20260627-access-2';
+import './user-admin-v1.js?v=20260627-access-3';
 import { V4_CONFIG } from './config.js';
 import { supabaseClient } from './supabase-client.js';
 import { timeout, friendlyError, isNetworkError } from './api.js';
