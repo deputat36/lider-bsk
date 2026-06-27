@@ -36,8 +36,13 @@ function assertUserAccessJwt(value) {
   if (!payload.sub) {
     throw new Error('NAV_V2_JWT must include a user subject claim');
   }
-  if (!Number.isFinite(Number(payload.exp))) {
+  const expiresAt = Number(payload.exp);
+  if (!Number.isFinite(expiresAt)) {
     throw new Error('NAV_V2_JWT must include an exp claim');
+  }
+  const now = Math.floor(Date.now() / 1000);
+  if (expiresAt <= now) {
+    throw new Error('NAV_V2_JWT must not be expired');
   }
   return token;
 }
