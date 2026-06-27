@@ -4,8 +4,15 @@ const SUPABASE_URL = process.env.NAV_V2_SUPABASE_URL || 'https://ofewxuqfjhamger
 const API_KEY = process.env.NAV_V2_API_KEY || 'sb_publishable_ZiX8_Mnf0dY6S__tKO2A4A_uD94G2cs';
 const JWT = process.env.NAV_V2_JWT;
 const DEAL_ID = process.env.NAV_V2_DEAL_ID;
+const ACTION = process.env.NAV_V2_ACTION || 'get_deal_card';
 const COMPARE_DIRECT_RPC = process.env.NAV_V2_COMPARE_DIRECT_RPC === '1';
 const PREFLIGHT_ONLY = process.env.NAV_V2_PREFLIGHT_ONLY === '1';
+
+const READ_ACTIONS = new Set(['get_deal_card', 'get_deal_card_lite']);
+const DIRECT_RPC_BY_ACTION = {
+  get_deal_card: 'nav_v2_get_deal_card',
+  get_deal_card_lite: 'nav_v2_get_deal_card_lite',
+};
 
 function requireEnv(name, value) {
   if (!value) {
@@ -28,6 +35,14 @@ function decodeJwtPayloadMaybe(value) {
   } catch (_) {
     return null;
   }
+}
+
+function assertReadAction(value) {
+  const action = String(value || '').trim();
+  if (!READ_ACTIONS.has(action)) {
+    throw new Error('NAV_V2_ACTION must be one of: get_deal_card, get_deal_card_lite');
+  }
+  return action;
 }
 
 function assertUserAccessJwt(value) {
@@ -99,8 +114,12 @@ async function postJson(url, body) {
   return json;
 }
 
+function assertObjectPayload(payload) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) throw new Error('Payload must be an object');
+}
+
 function assertDealCardPayload(payload) {
-  if (!payload || typeof payload !== 'object') throw new Error('Payload must be an object');
+  assertObjectPayload(payload);
   if (!payload.deal || typeof payload.deal !== 'object') throw new Error('Payload must include deal object');
   if (!payload.profile || typeof payload.profile !== 'object') throw new Error('Payload must include profile object');
   for (const key of ['participants', 'risks', 'documents', 'expenses', 'tasks', 'comments', 'events']) {
@@ -108,36 +127,50 @@ function assertDealCardPayload(payload) {
   }
 }
 
+function assertActionPayload(action, payload) {
+  if (action === 'get_deal_card') {
+    assertDealCardPayload(payload);
+    return;
+  }
+  assertObjectPayload(payload);
+  if (Object.keys(payload).length === 0) throw new Error('Lite payload must not be empty');
+}
+
 function comparableShape(payload) {
-  return {
-    dealKeys: Object.keys(payload.deal || {}).sort(),
-    profileKeys: Object.keys(payload.profile || {}).sort(),
-    arrayLengths: Object.fromEntries(
-      ['participants', 'risks', 'documents', 'expenses', 'tasks', 'comments', 'events'].map((key) => [key, payload[key]?.length ?? null]),
-    ),
-  };
+  assertObjectPayload(payload);
+  return Object.fromEntries(
+    Object.entries(payload)
+      .map(([key, value]) => {
+        if (Array.isArray(value)) return [key, { type: 'array', length: value.length }];
+        if (value && typeof value === 'object') return [key, { type: 'object', keys: Object.keys(value).sort() }];
+        return [key, { type: typeof value }];
+      })
+      .sort(([left], [right]) => left.localeCompare(right)),
+  );
 }
 
 async function main() {
+  const action = assertReadAction(ACTION);
   assertUserAccessJwt(JWT);
   requireEnv('NAV_V2_DEAL_ID', DEAL_ID);
   assertApiKeyIsPublic(API_KEY);
 
   if (PREFLIGHT_ONLY) {
-    console.log(JSON.stringify({ ok: true, preflight_only: true, deal_id: DEAL_ID }, null, 2));
+    console.log(JSON.stringify({ ok: true, preflight_only: true, action, deal_id: DEAL_ID }, null, 2));
     return;
   }
 
   const edgeUrl = `${SUPABASE_URL}/functions/v1/nav-v2-deal-api`;
-  const edge = await postJson(edgeUrl, { action: 'get_deal_card', deal_id: DEAL_ID });
+  const edge = await postJson(edgeUrl, { action, deal_id: DEAL_ID });
   if (edge?.ok !== true) throw new Error(`Edge response ok=true expected: ${JSON.stringify(edge)}`);
-  if (edge?.action !== 'get_deal_card') throw new Error(`Edge action mismatch: ${edge?.action}`);
-  assertDealCardPayload(edge.data);
+  if (edge?.action !== action) throw new Error(`Edge action mismatch: ${edge?.action}`);
+  assertActionPayload(action, edge.data);
 
   if (COMPARE_DIRECT_RPC) {
-    const rpcUrl = `${SUPABASE_URL}/rest/v1/rpc/nav_v2_get_deal_card`;
+    const rpcName = DIRECT_RPC_BY_ACTION[action];
+    const rpcUrl = `${SUPABASE_URL}/rest/v1/rpc/${rpcName}`;
     const direct = await postJson(rpcUrl, { p_deal_id: DEAL_ID });
-    assertDealCardPayload(direct);
+    assertActionPayload(action, direct);
     const edgeShape = comparableShape(edge.data);
     const directShape = comparableShape(direct);
     if (JSON.stringify(edgeShape) !== JSON.stringify(directShape)) {
@@ -145,7 +178,7 @@ async function main() {
     }
   }
 
-  console.log(JSON.stringify({ ok: true, action: 'get_deal_card', deal_id: DEAL_ID, compared_direct_rpc: COMPARE_DIRECT_RPC }, null, 2));
+  console.log(JSON.stringify({ ok: true, action, deal_id: DEAL_ID, compared_direct_rpc: COMPARE_DIRECT_RPC }, null, 2));
 }
 
 main().catch((error) => {

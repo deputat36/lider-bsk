@@ -7,13 +7,21 @@ on:
         description: 'Deal UUID to smoke-test with the authenticated user JWT'
         required: true
         type: string
+      read_action:
+        description: 'Read action to smoke-test'
+        required: false
+        default: 'get_deal_card'
+        type: choice
+        options:
+          - get_deal_card
+          - get_deal_card_lite
       compare_direct_rpc:
-        description: 'Also compare payload shape with direct nav_v2_get_deal_card RPC'
+        description: 'Also compare payload shape with matching direct nav_v2 read RPC'
         required: false
         default: false
         type: boolean
       preflight_only:
-        description: 'Only validate JWT, deal id, and API key locally; do not call Edge Function/direct RPC'
+        description: 'Only validate JWT, deal id, read action, and API key locally; do not call Edge Function/direct RPC'
         required: false
         default: false
         type: boolean
@@ -50,6 +58,18 @@ jobs:
             exit 1
           fi
           echo 'Deal id input has UUID format.'
+
+      - name: Validate read action input
+        shell: bash
+        env:
+          NAV_V2_ACTION: ${{ inputs.read_action }}
+        run: |
+          set -euo pipefail
+          if [ "${NAV_V2_ACTION}" != 'get_deal_card' ] && [ "${NAV_V2_ACTION}" != 'get_deal_card_lite' ]; then
+            echo 'workflow_dispatch input read_action must be get_deal_card or get_deal_card_lite.' >&2
+            exit 1
+          fi
+          echo 'Read action input is supported.'
 
       - name: Validate Supabase URL input
         shell: bash
@@ -102,6 +122,7 @@ jobs:
         env:
           NAV_V2_JWT: ${{ secrets.NAV_V2_JWT }}
           NAV_V2_DEAL_ID: ${{ inputs.deal_id }}
+          NAV_V2_ACTION: ${{ inputs.read_action }}
           NAV_V2_SUPABASE_URL: ${{ inputs.supabase_url }}
           INPUT_COMPARE_DIRECT_RPC: ${{ inputs.compare_direct_rpc }}
           INPUT_PREFLIGHT_ONLY: ${{ inputs.preflight_only }}
@@ -121,9 +142,9 @@ jobs:
           fi
           result="$(NAV_V2_COMPARE_DIRECT_RPC="$compare" NAV_V2_PREFLIGHT_ONLY="$preflight" node tools/nav_v2_deal_api_smoke_test.mjs)"
           echo "$result"
-          summary='Authenticated get_deal_card smoke test completed.'
+          summary="Authenticated ${NAV_V2_ACTION} smoke test completed."
           if [ "$preflight" = '1' ]; then
-            summary='Authenticated smoke preflight-only validation completed without Edge Function or direct RPC calls.'
+            summary="Authenticated ${NAV_V2_ACTION} preflight-only validation completed without Edge Function or direct RPC calls."
           fi
           {
             echo '### Navigator v2 deal API authenticated smoke'
