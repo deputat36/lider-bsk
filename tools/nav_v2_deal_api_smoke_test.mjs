@@ -13,6 +13,30 @@ function requireEnv(name, value) {
   return value;
 }
 
+function decodeJwtPayloadMaybe(value) {
+  const parts = String(value || '').split('.');
+  if (parts.length !== 3) return null;
+  try {
+    const payload = Buffer.from(parts[1], 'base64url').toString('utf8');
+    return JSON.parse(payload);
+  } catch (_) {
+    return null;
+  }
+}
+
+function assertApiKeyIsPublic(value) {
+  const key = requireEnv('NAV_V2_API_KEY', value).trim();
+  if (key.startsWith('sb_secret_')) {
+    throw new Error('NAV_V2_API_KEY must be a publishable/anon key, not an sb_secret_ key');
+  }
+
+  const jwtPayload = decodeJwtPayloadMaybe(key);
+  if (jwtPayload?.role === 'service_role') {
+    throw new Error('NAV_V2_API_KEY must not be a service_role JWT');
+  }
+  return key;
+}
+
 async function postJson(url, body) {
   const response = await fetch(url, {
     method: 'POST',
@@ -58,6 +82,7 @@ function comparableShape(payload) {
 async function main() {
   requireEnv('NAV_V2_JWT', JWT);
   requireEnv('NAV_V2_DEAL_ID', DEAL_ID);
+  assertApiKeyIsPublic(API_KEY);
 
   const edgeUrl = `${SUPABASE_URL}/functions/v1/nav-v2-deal-api`;
   const edge = await postJson(edgeUrl, { action: 'get_deal_card', deal_id: DEAL_ID });
