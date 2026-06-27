@@ -1,8 +1,8 @@
 # CRM SQL sync progress — 2026-06-26
 
-Активный replacement PR: #31 `crm-hardening-main-20260626-latest`.
+Статус: replacement PR #31 merged в `main`. Текущий production Supabase project: `ofewxuqfjhamgerwzull`.
 
-Цель: синхронизировать GitHub с тем, что уже применено в Supabase project `ofewxuqfjhamgerwzull`, без отката hardening из текущего `main`.
+Цель документа: зафиксировать, какие CRM SQL/Edge изменения перенесены в GitHub и какое live-состояние подтверждено в Supabase.
 
 ## Перенесено в GitHub SQL-файлами
 
@@ -54,15 +54,22 @@
    - добавляет `leader_user_invites_invited_by_idx`;
    - добавляет `leader_user_invites_accepted_user_id_idx`.
 
-## Удалено из PR
+10. `20260627_01_leader_user_invites_restrict_authenticated_grants.sql`
+    - повторно ограничивает grants `leader_user_invites` для `authenticated` до `select, insert, update`.
 
-`20260626_09_leader_ensure_profile_authenticated_execute_restore.sql` удалена, потому что текущий live/main hardening намеренно закрывает `leader_ensure_profile(text)` от `authenticated` после деплоя Edge Function version 11.
+11. `20260627_02_leader_profiles_insert_pending_policy.sql`
+    - фиксирует safe self-insert policy: новый пользователь может создать только собственный pending-профиль `manager`, `is_active=false`, `permissions={}`.
+
+## Удалено из PR перед merge
+
+`20260626_09_leader_ensure_profile_authenticated_execute_restore.sql` удалена, потому что текущий live/main hardening намеренно закрывает `leader_ensure_profile(text)` от `authenticated` после деплоя Edge Function.
 
 ## Edge Function
 
-- Live Supabase `leader-crm-leads`: version 11, `ACTIVE`, `verify_jwt=true`.
-- Version 11 делает `ensure_profile` через service role REST после проверки JWT пользователя.
-- PR #31 не должен возвращать старый путь `/rest/v1/rpc/leader_ensure_profile` с пользовательским JWT.
+- Live Supabase `leader-crm-leads`: version 12, `ACTIVE`, `verify_jwt=true`.
+- Version 12 делает `ensure_profile` через service role REST после проверки JWT пользователя.
+- `create_order_from_offer` делегирует атомарную конвертацию в `/rest/v1/rpc/leader_create_order_from_offer_rpc` с `p_payload`.
+- GitHub `supabase/functions/leader-crm-leads/index.ts` синхронизирован с deployed version 12.
 
 ## Проверка Supabase
 
@@ -75,19 +82,32 @@
 - execute на `leader_create_order_from_offer_rpc(jsonb)` есть только у `postgres` и `service_role`;
 - execute на `leader_apply_profile_invite()` есть только у `postgres` и `service_role`;
 - execute на `leader_ensure_profile(text)` есть только у `postgres` и `service_role`;
+- среди `public.leader_%` SECURITY DEFINER функций нет функций, доступных `anon`, `authenticated` или `public`;
 - `leader_user_invites` существует и имеет включённый RLS;
+- `leader_user_profiles` и `leader_user_invites` имеют grants для `authenticated` только `SELECT`, `INSERT`, `UPDATE`;
 - invite policies и оба trigger установлены;
 - FK indexes `leader_user_invites_invited_by_idx` и `leader_user_invites_accepted_user_id_idx` созданы;
 - Supabase performance advisor больше не показывает `unindexed_foreign_keys` для `leader_user_invites`.
 
 ## `.sql.todo`
 
-В ветке больше нет `.sql.todo`-заглушек.
+В `main` больше нет `.sql.todo`-заглушек.
 
-## CI
+## CI / connector note
 
-CI должен проверяться на текущем head PR #31 после удаления restore-миграции и синхронизации Edge Function с live/main v11.
+После merge GitHub connector возвращал пустые status/workflow lists для direct-push commits на `main`, поэтому Actions-состояние direct-push commit через connector не подтверждено.
+
+## Migration naming note
+
+Часть SQL-файлов CRM sync сохранена как manual snapshot-файлы с префиксами вида `20260626_01...`, а production migration history Supabase использует 14-значные версии (`20260626113344...`, `20260626175044...` и т.д.). Это не runtime-блокер: live DB уже проверена и соответствует ожидаемому состоянию.
+
+Если проект начнёт использовать `supabase db push`/preview branches как основной deploy-путь, нужно отдельно нормализовать локальную migration history под production history, чтобы не получить drift между GitHub и `supabase_migrations.schema_migrations`.
 
 ## Текущее безопасное правило
 
-PR #31 не переводить из draft и не мержить, пока не пройдёт CI на текущей ветке и не будут вручную проверены CRM-сценарии входа, pending-доступа, вкладки `Доступ`, приглашений и конвертации КП в заказ без дублей.
+Не делать новых изменений в CRM access/RPC без повторной проверки:
+
+1. GitHub source на `main`;
+2. live Edge Function `leader-crm-leads`;
+3. grants/RLS/policies/triggers в Supabase;
+4. ручных CRM-сценариев входа, pending-доступа, вкладки `Доступ`, приглашений и конвертации КП в заказ без дублей.
