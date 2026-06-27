@@ -49,11 +49,11 @@ This deployment did not change:
 - browser code;
 - direct Navigator v2 RPC grants.
 
-Current SECURITY DEFINER baseline remains:
+Current SECURITY DEFINER baseline observed on 2026-06-27:
 
 - SECURITY DEFINER functions in `public`: `64`;
-- executable by `authenticated`: `15`;
-- not executable by `authenticated`: `49`.
+- executable by `authenticated`: `40`;
+- not executable by `authenticated`: `24`.
 
 ## Verification performed
 
@@ -120,6 +120,12 @@ After PR `#49`, `tools/nav_v2_deal_api_smoke_test.mjs` rejects unsafe `NAV_V2_AP
 - secret keys with the `sb_` + `secret_` prefix;
 - JWT API keys whose decoded payload has `role = service_role`.
 
+After PR `#50`, `tools/nav_v2_deal_api_smoke_test.mjs` also rejects unsafe `NAV_V2_JWT` values before network calls. The token must decode as a user access JWT with:
+
+- `role = authenticated`;
+- a non-empty `sub` claim;
+- an `exp` claim.
+
 The smoke tests intentionally read user JWT and deal id values from environment variables. Do not commit JWTs, real user sessions, service-role keys, secret API keys, or private test data.
 
 CI validates the smoke-test source with `node --check` and secret/JWT marker scans, but CI does not execute a successful authenticated runtime call because that would require a live user JWT.
@@ -153,7 +159,7 @@ After PR `#44`, both runtime steps write compact JSON output to the GitHub Actio
 - `Navigator v2 deal API auth guard`;
 - `Navigator v2 deal API authenticated smoke`.
 
-Use a short-lived test-user access token for `NAV_V2_JWT`. Rotate or remove the secret after the smoke-test window. Do not use a service-role key, production admin personal token, or long-lived real user session for this workflow.
+Use a short-lived test-user access token for `NAV_V2_JWT`. Rotate or remove the secret after the smoke-test window. Do not use a service-role key, anon key, production admin personal token, or long-lived real user session for this workflow.
 
 When `compare_direct_rpc=true`, the workflow also calls direct `nav_v2_get_deal_card` with the same user JWT and compares the response shape with the Edge Function response.
 

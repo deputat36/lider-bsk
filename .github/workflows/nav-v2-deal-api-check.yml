@@ -2,7 +2,7 @@ name: Navigator v2 deal API check
 
 on:
   push:
-    branches: [main, nav-v2-deal-api-get-card-bridge-20260626, nav-v2-deal-api-smoke-test-20260626, nav-v2-deal-api-smoke-workflow-20260627, nav-v2-deal-api-auth-guard-20260627, nav-v2-deal-api-auth-guard-workflow-20260627, nav-v2-deal-api-step-summary-20260627, nav-v2-deal-api-invalid-token-guard-20260627, nav-v2-deal-api-smoke-input-guard-20260627, nav-v2-deal-api-smoke-url-guard-20260627, nav-v2-smoke-api-key-guard-20260627]
+    branches: [main, nav-v2-deal-api-get-card-bridge-20260626, nav-v2-deal-api-smoke-test-20260626, nav-v2-deal-api-smoke-workflow-20260627, nav-v2-deal-api-auth-guard-20260627, nav-v2-deal-api-auth-guard-workflow-20260627, nav-v2-deal-api-step-summary-20260627, nav-v2-deal-api-invalid-token-guard-20260627, nav-v2-deal-api-smoke-input-guard-20260627, nav-v2-deal-api-smoke-url-guard-20260627, nav-v2-smoke-api-key-guard-20260627, nav-v2-smoke-jwt-guard-20260627]
     paths:
       - 'supabase/config.toml'
       - 'supabase/functions/nav-v2-deal-api/**'
@@ -97,6 +97,11 @@ jobs:
           grep -Fq 'NAV_V2_API_KEY' "$smoke"
           grep -Fq 'NAV_V2_COMPARE_DIRECT_RPC' "$smoke"
           grep -Fq 'decodeJwtPayloadMaybe' "$smoke"
+          grep -Fq 'assertUserAccessJwt' "$smoke"
+          grep -Fq "payload.role !== 'authenticated'" "$smoke"
+          grep -Fq 'NAV_V2_JWT must be a user access token with role=authenticated' "$smoke"
+          grep -Fq 'NAV_V2_JWT must include a user subject claim' "$smoke"
+          grep -Fq 'NAV_V2_JWT must include an exp claim' "$smoke"
           grep -Fq 'assertApiKeyIsPublic' "$smoke"
           grep -Fq "const secretPrefix = 'sb_' + 'secret_'" "$smoke"
           grep -Fq "jwtPayload?.role === 'service_role'" "$smoke"
