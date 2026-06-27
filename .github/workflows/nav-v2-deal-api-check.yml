@@ -181,6 +181,9 @@ jobs:
           grep -Fq 'READ_ACTIONS' "$auth_guard"
           grep -Fq 'assertReadAction' "$auth_guard"
           grep -Fq 'get_deal_card_lite' "$auth_guard"
+          grep -Fq 'NAV_V2_AUTH_GUARD_PREFLIGHT_ONLY' "$auth_guard"
+          grep -Fq 'PREFLIGHT_ONLY' "$auth_guard"
+          grep -Fq 'preflight_only' "$auth_guard"
           grep -Fq 'NAV_V2_ACTION must be one of: get_deal_card, get_deal_card_lite' "$auth_guard"
           grep -Fq 'return { check: testCase.name, action, status: response.status }' "$auth_guard"
           grep -Fq '401' "$auth_guard"
@@ -192,6 +195,15 @@ jobs:
           node --check "$preflight"
           node --check "$auth_guard"
           node "$preflight"
+          auth_guard_default_preflight="$(mktemp)"
+          auth_guard_lite_preflight="$(mktemp)"
+          NAV_V2_SUPABASE_URL='http://127.0.0.1:9' NAV_V2_AUTH_GUARD_PREFLIGHT_ONLY=1 NAV_V2_ACTION='get_deal_card' node "$auth_guard" >"$auth_guard_default_preflight"
+          NAV_V2_SUPABASE_URL='http://127.0.0.1:9' NAV_V2_AUTH_GUARD_PREFLIGHT_ONLY=1 NAV_V2_ACTION='get_deal_card_lite' node "$auth_guard" >"$auth_guard_lite_preflight"
+          grep -Fq '"preflight_only": true' "$auth_guard_default_preflight"
+          grep -Fq '"action": "get_deal_card"' "$auth_guard_default_preflight"
+          grep -Fq '"preflight_only": true' "$auth_guard_lite_preflight"
+          grep -Fq '"action": "get_deal_card_lite"' "$auth_guard_lite_preflight"
+          echo 'Auth guard accepts supported read actions in local preflight-only mode.'
           auth_guard_error="$(mktemp)"
           if NAV_V2_SUPABASE_URL='http://127.0.0.1:9' NAV_V2_ACTION='update_deal_status' node "$auth_guard" 2>"$auth_guard_error"; then
             echo 'Auth guard must reject unsupported read actions before runtime calls.' >&2
