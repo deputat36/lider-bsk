@@ -50,7 +50,7 @@ jobs:
           grep -Fq 'Browser URL tested with ?edge_api=1' "$template"
           grep -Fq '?deal_id=<deal-uuid> tested' "$template"
           grep -Fq 'Can consider default browser migration' "$template"
-          grep -Fq 'Do not' "$template"
+          grep -Fq 'Не вставлять' "$template"
           grep -Fq 'JWT, refresh token, service-role key, secret API key' "$template"
           if grep -nE 'eyJ[a-zA-Z0-9_-]{20,}|sb_secret_|SUPABASE_SERVICE_ROLE|SERVICE_ROLE_KEY' "$template"; then
             echo 'Navigator v2 smoke issue template must not contain literal JWTs or secret key markers.' >&2
