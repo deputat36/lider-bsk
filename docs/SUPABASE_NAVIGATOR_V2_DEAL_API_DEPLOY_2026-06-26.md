@@ -157,6 +157,8 @@ After PR `#58`, the same manual workflow also skips the no-secret auth guard ste
 
 After PR `#59`, the manual workflow rejects `preflight_only=true` together with `compare_direct_rpc=true`. Direct RPC comparison requires a runtime network call, so it is incompatible with local-only preflight mode.
 
+After PR `#60`, a GitHub issue template is available at `.github/ISSUE_TEMPLATE/nav-v2-deal-api-smoke.md` for recording manual runtime smoke results without secrets or full deal payloads.
+
 The smoke tests intentionally read user JWT and deal id values from environment variables. Do not commit JWTs, real user sessions, service-role keys, secret API keys, or private test data.
 
 CI validates the smoke-test source with `node --check`, secret/JWT marker scans, and no-secret preflight cases. CI does not execute a successful authenticated runtime call because that would require a live user JWT.
@@ -183,6 +185,8 @@ After PR `#57`, the workflow can run the authenticated smoke step in local prefl
 After PR `#58`, `preflight_only=true` also skips the no-secret auth guard step, so the whole manual run avoids network calls to `nav-v2-deal-api` and `nav_v2_get_deal_card`.
 
 After PR `#59`, the workflow fails fast when `preflight_only=true` and `compare_direct_rpc=true` are both selected. Choose exactly one mode: local preflight validation or runtime direct RPC comparison.
+
+After PR `#60`, record runtime smoke results with the `Navigator v2 deal API runtime smoke` issue template. Include the workflow run URL and pass/fail statuses. Do not paste JWTs, refresh tokens, service-role keys, secret API keys, personal client data, or full deal payloads.
 
 Workflow order:
 
@@ -240,5 +244,6 @@ Before making the Edge Function the default path in `deal-card-v2.js`:
 5. Compare payload shape against direct `nav_v2_get_deal_card` output.
 6. Test the browser opt-in path with `?edge_api=1` on a real deal card URL.
 7. Test both browser URL forms: `?id=<deal-uuid>` and `?deal_id=<deal-uuid>`.
+8. Capture the result in `.github/ISSUE_TEMPLATE/nav-v2-deal-api-smoke.md` without secrets, personal client data, or full payloads.
 
 This deployment is a runtime preflight step, not the final hardening step. It still relies on the existing `authenticated` EXECUTE grant for `nav_v2_get_deal_card`.
