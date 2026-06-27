@@ -51,8 +51,8 @@ This deployment did not change:
 
 Current SECURITY DEFINER baseline observed on 2026-06-27:
 
-- SECURITY DEFINER functions in `public`: `64`;
-- executable by `authenticated`: `40`;
+- SECURITY DEFINER functions in `public`: `65`;
+- executable by `authenticated`: `41`;
 - not executable by `authenticated`: `24`.
 
 ## Verification performed
@@ -125,6 +125,8 @@ After PR `#50`, `tools/nav_v2_deal_api_smoke_test.mjs` also rejects unsafe `NAV_
 - `role = authenticated`;
 - a non-empty `sub` claim;
 - an `exp` claim.
+
+After PR `#51`, the same smoke script also rejects expired `NAV_V2_JWT` values before network calls. The decoded `exp` value must be later than the current runner time.
 
 The smoke tests intentionally read user JWT and deal id values from environment variables. Do not commit JWTs, real user sessions, service-role keys, secret API keys, or private test data.
 
