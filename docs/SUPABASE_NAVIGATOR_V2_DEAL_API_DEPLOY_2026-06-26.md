@@ -51,9 +51,11 @@ This deployment did not change:
 
 Current SECURITY DEFINER baseline observed on 2026-06-27:
 
-- SECURITY DEFINER functions in `public`: `65`;
-- executable by `authenticated`: `41`;
+- SECURITY DEFINER functions in `public`: `66`;
+- executable by `authenticated`: `42`;
 - not executable by `authenticated`: `24`.
+
+This is a read-only observation of the current Supabase project state, not a change introduced by this Navigator v2 workflow hardening chain.
 
 ## Verification performed
 
@@ -149,6 +151,8 @@ After PR `#55`, `tools/nav_v2_deal_api_smoke_preflight_test.mjs` runs no-secret 
 
 After PR `#56`, the preflight test suite also verifies a positive synthetic user-token case through `NAV_V2_PREFLIGHT_ONLY=1`, confirming the local checks can pass without making a network request.
 
+After PR `#57`, the manual `Navigator v2 deal API smoke` workflow exposes the same local-only behavior through its `preflight_only` input. Set `preflight_only=true` to validate `secrets.NAV_V2_JWT`, `deal_id`, `supabase_url`, and API-key guardrails without calling the Edge Function or direct RPC. This mode does not prove runtime access to a deal.
+
 The smoke tests intentionally read user JWT and deal id values from environment variables. Do not commit JWTs, real user sessions, service-role keys, secret API keys, or private test data.
 
 CI validates the smoke-test source with `node --check`, secret/JWT marker scans, and no-secret preflight cases. CI does not execute a successful authenticated runtime call because that would require a live user JWT.
@@ -163,11 +167,14 @@ A manual workflow is available after PR `#39` and includes an auth guard preflig
 - required repository secret for authenticated smoke: `NAV_V2_JWT`;
 - required workflow input: `deal_id`;
 - optional workflow input: `compare_direct_rpc`;
+- optional workflow input: `preflight_only`;
 - `supabase_url` must match `https://ofewxuqfjhamgerwzull.supabase.co` in this workflow.
 
 After PR `#47`, the workflow validates `deal_id` as UUID before any runtime Edge Function calls. Invalid input fails fast before both the no-secret auth guard and the authenticated smoke step.
 
 After PR `#48`, the workflow validates `supabase_url` against the production Supabase project URL before any runtime Edge Function calls. This prevents a manual smoke run from sending `secrets.NAV_V2_JWT` to a mistyped or untrusted Supabase-compatible URL.
+
+After PR `#57`, the workflow can run the authenticated smoke step in local preflight-only mode by setting `preflight_only=true`. In this mode the workflow still requires `secrets.NAV_V2_JWT`, validates it locally, and exits before any Edge Function or direct RPC request.
 
 Workflow order:
 
@@ -175,7 +182,7 @@ Workflow order:
 2. Validate workflow input `deal_id` as UUID.
 3. Validate workflow input `supabase_url` against the production project URL.
 4. Run `nav_v2_deal_api_auth_guard_test.mjs` and require each no-secret auth guard case to return `401` or `403`.
-5. Run `nav_v2_deal_api_smoke_test.mjs` with `secrets.NAV_V2_JWT`.
+5. Run `nav_v2_deal_api_smoke_test.mjs` with `secrets.NAV_V2_JWT`, or run its local-only preflight path when `preflight_only=true`.
 
 After PR `#44`, both runtime steps write compact JSON output to the GitHub Actions Step Summary:
 
@@ -184,7 +191,7 @@ After PR `#44`, both runtime steps write compact JSON output to the GitHub Actio
 
 Use a short-lived test-user access token for `NAV_V2_JWT`. Rotate or remove the secret after the smoke-test window. Do not use a service-role key, anon key, production admin personal token, anonymous-user token, or long-lived real user session for this workflow.
 
-When `compare_direct_rpc=true`, the workflow also calls direct `nav_v2_get_deal_card` with the same user JWT and compares the response shape with the Edge Function response.
+When `compare_direct_rpc=true`, the workflow also calls direct `nav_v2_get_deal_card` with the same user JWT and compares the response shape with the Edge Function response. When `preflight_only=true`, the workflow exits before both the Edge Function call and the direct RPC comparison.
 
 ## Browser opt-in preflight
 
