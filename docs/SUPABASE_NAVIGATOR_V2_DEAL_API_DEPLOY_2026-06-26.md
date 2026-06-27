@@ -157,6 +157,15 @@ An opt-in browser path is available after PR `#40`:
 - enable locally with `localStorage.setItem('leader_nav_v2_use_deal_api_edge', '1')`;
 - disable locally with `localStorage.removeItem('leader_nav_v2_use_deal_api_edge')`.
 
+After PR `#46`, `.github/workflows/navigator-v2-check.yml` statically protects those browser opt-in boundaries:
+
+- the Edge route must stay behind `shouldUseDealApiEdge()`;
+- `edge_api=1` is the explicit URL opt-in;
+- `edge_api=0` is the explicit URL opt-out;
+- localStorage enables the route only when `leader_nav_v2_use_deal_api_edge` equals `1`;
+- direct `supabase.rpc(name, params)` fallback must remain present;
+- browser code must not route write actions through `nav-v2-deal-api` in this phase.
+
 After PR `#41`, `deal-card-v2.html` accepts both deal id query names:
 
 - primary: `?id=<deal-uuid>`;
