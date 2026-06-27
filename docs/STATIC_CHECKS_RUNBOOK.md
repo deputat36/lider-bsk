@@ -96,8 +96,8 @@ Workflow:
 - предупреждение не использовать `user_metadata` как источник прав;
 - инструкцию снятия доступа через `is_active = false`;
 - наличие в чек-листе Ctrl + F5, `Проверить CRM`, `Аудит заявок`, `request_id`, `Скопировать request_id`, `Проверить request_id`, `Цепочка полная`;
-- актуальность `docs/NEXT_SAFE_STEPS.md`: дата 2026-06-25, версии `leader-public-lead v8`, `leader-crm-leads v8`, `leader-crm-orders v2`, ключи сессий, `refreshPromise` и правило не менять live Supabase без плана, миграции и проверки;
-- актуальность `docs/PUBLIC_LEAD_AUDIT.md`: `v8`, `duplicate`, `Скопировать request_id`, диагностические маркеры аудита;
+- актуальность `docs/NEXT_SAFE_STEPS.md`: дата 2026-06-25, версии `leader-public-lead v9`, `leader-crm-leads v12`, `leader-crm-orders v2`, ключи сессий, `refreshPromise` и правило не менять live Supabase без плана, миграции и проверки;
+- актуальность `docs/PUBLIC_LEAD_AUDIT.md`: текущая функция `v9`, `v8 audit contract`, `duplicate`, `Скопировать request_id`, диагностические маркеры аудита;
 - актуальность `docs/DECISIONS.md`: ADR-008 про явный audit дублей и ADR-009 про трассировку через `leader_request_trace`;
 - защиту документов от возврата к устаревшему `audit v7`.
 

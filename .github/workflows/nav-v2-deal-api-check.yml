@@ -2,7 +2,7 @@ name: Navigator v2 deal API check
 
 on:
   push:
-    branches: [main, nav-v2-deal-api-get-card-bridge-20260626, nav-v2-deal-api-smoke-test-20260626, nav-v2-deal-api-smoke-workflow-20260627, nav-v2-deal-api-auth-guard-20260627, nav-v2-deal-api-auth-guard-workflow-20260627, nav-v2-deal-api-step-summary-20260627, nav-v2-deal-api-invalid-token-guard-20260627, nav-v2-deal-api-smoke-input-guard-20260627, nav-v2-deal-api-smoke-url-guard-20260627, nav-v2-smoke-api-key-guard-20260627, nav-v2-smoke-jwt-guard-20260627, nav-v2-smoke-jwt-exp-guard-20260627, nav-v2-smoke-jwt-issuer-guard-20260627, nav-v2-smoke-jwt-audience-guard-20260627, nav-v2-smoke-jwt-anonymous-guard-20260627, nav-v2-smoke-preflight-test-20260627, nav-v2-smoke-preflight-only-20260627]
+    branches: [main, nav-v2-deal-api-get-card-bridge-20260626, nav-v2-deal-api-smoke-test-20260626, nav-v2-deal-api-smoke-workflow-20260627, nav-v2-deal-api-auth-guard-20260627, nav-v2-deal-api-auth-guard-workflow-20260627, nav-v2-deal-api-step-summary-20260627, nav-v2-deal-api-invalid-token-guard-20260627, nav-v2-deal-api-smoke-input-guard-20260627, nav-v2-deal-api-smoke-url-guard-20260627, nav-v2-smoke-api-key-guard-20260627, nav-v2-smoke-jwt-guard-20260627, nav-v2-smoke-jwt-exp-guard-20260627, nav-v2-smoke-jwt-issuer-guard-20260627, nav-v2-smoke-jwt-audience-guard-20260627, nav-v2-smoke-jwt-anonymous-guard-20260627, nav-v2-smoke-preflight-test-20260627, nav-v2-smoke-preflight-only-20260627, nav-v2-smoke-workflow-preflight-only-20260627]
     paths:
       - 'supabase/config.toml'
       - 'supabase/functions/nav-v2-deal-api/**'
@@ -165,10 +165,15 @@ jobs:
           grep -Fq 'workflow_dispatch' "$workflow"
           grep -Fq 'deal_id' "$workflow"
           grep -Fq 'compare_direct_rpc' "$workflow"
+          grep -Fq 'preflight_only' "$workflow"
           grep -Fq 'supabase_url' "$workflow"
           grep -Fq 'secrets.NAV_V2_JWT' "$workflow"
           grep -Fq 'NAV_V2_DEAL_ID' "$workflow"
           grep -Fq 'NAV_V2_COMPARE_DIRECT_RPC' "$workflow"
+          grep -Fq 'NAV_V2_PREFLIGHT_ONLY' "$workflow"
+          grep -Fq 'INPUT_PREFLIGHT_ONLY' "$workflow"
+          grep -Fq 'Only validate JWT, deal id, and API key locally; do not call Edge Function/direct RPC' "$workflow"
+          grep -Fq 'Authenticated smoke preflight-only validation completed without Edge Function or direct RPC calls.' "$workflow"
           grep -Fq 'nav_v2_deal_api_auth_guard_test.mjs' "$workflow"
           grep -Fq 'Validate deal id input' "$workflow"
           grep -Fq 'workflow_dispatch input deal_id must be a UUID.' "$workflow"

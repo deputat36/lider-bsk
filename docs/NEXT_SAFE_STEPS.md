@@ -16,7 +16,7 @@
 ## Что уже сделано
 
 1. Публичные заявки:
-   - `leader-public-lead v8` активна;
+   - `leader-public-lead v9` активна;
    - новая заявка пишет audit-событие `accepted`;
    - повторный `request_id` пишет audit-событие `duplicate` и возвращает клиенту `200 OK`;
    - аудит журналирует `leader_public_lead_audit_insert_failed` и `leader_public_lead_audit_request_failed` без блокировки заявки;
@@ -24,7 +24,7 @@
    - страница `request.html` после успешной отправки показывает номер обращения, равный `request_id`.
 
 2. Supabase CRM:
-   - `leader-crm-leads v8` и `leader-crm-orders v2` активны с JWT;
+   - `leader-crm-leads v12` и `leader-crm-orders v2` активны с JWT;
    - прямой клиентский доступ к служебным RPC закрыт;
    - у `leader_*` нет отсутствующих индексов внешних ключей;
    - RLS чтения аудита оптимизирован через `(select auth.uid())` без изменения доступа;
