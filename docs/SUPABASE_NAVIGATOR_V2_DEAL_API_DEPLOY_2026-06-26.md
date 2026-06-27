@@ -164,6 +164,8 @@ After PR `#60`, a GitHub issue template is available at `.github/ISSUE_TEMPLATE/
 
 After PR `#62`, CI validates the version-2 function source shape, including the explicit action allowlist and explicit RPC bridges for read and write actions. Browser routing is still separately protected by `navigator-v2-check.yml` and remains opt-in for `get_deal_card` only.
 
+After PR `#63`, the runtime smoke issue template covers version-2 actions explicitly: `get_deal_card`, `get_deal_card_lite`, `add_comment`, `update_deal_status`, `update_document_status`, `update_document_workflow`, and `update_task_status`. Write-action smoke must use safe test data, note expected side effects, and record cleanup status without private payloads.
+
 The smoke tests intentionally read user JWT and deal id values from environment variables. Do not commit JWTs, real user sessions, service-role keys, secret API keys, or private test data.
 
 CI validates the smoke-test source with `node --check`, secret/JWT marker scans, and no-secret preflight cases. CI does not execute a successful authenticated runtime call because that would require a live user JWT.
@@ -192,6 +194,8 @@ After PR `#58`, `preflight_only=true` also skips the no-secret auth guard step, 
 After PR `#59`, the workflow fails fast when `preflight_only=true` and `compare_direct_rpc=true` are both selected. Choose exactly one mode: local preflight validation or runtime direct RPC comparison.
 
 After PR `#60`, record runtime smoke results with the `Navigator v2 deal API runtime smoke` issue template. Include the workflow run URL and pass/fail statuses. Do not paste JWTs, refresh tokens, service-role keys, secret API keys, personal client data, or full deal payloads.
+
+After PR `#63`, use the same issue template to record v2 read-lite and write-action smoke results. For write actions, use only reversible test data and include whether cleanup completed.
 
 Workflow order:
 
@@ -238,17 +242,19 @@ After PR `#41`, `deal-card-v2.html` accepts both deal id query names:
 
 The browser opt-in path still affects only the read action `get_deal_card`. Even though the deployed Edge Function version `2` can proxy write RPCs, browser write actions must stay on their existing direct RPC paths until a separate reviewed browser migration explicitly changes that behavior.
 
-## Still required before default browser migration
+## Still required before default browser read migration
 
-Before making the Edge Function the default path in `deal-card-v2.js`:
+Before making the Edge Function the default read path in `deal-card-v2.js`:
 
 1. Manually invoke `nav-v2-deal-api` with a real authenticated user JWT.
-2. Verify `get_deal_card` for allowed roles: owner/admin/manager/spn/lawyer/broker.
+2. Verify `get_deal_card` and `get_deal_card_lite` for allowed roles: owner/admin/manager/spn/lawyer/broker.
 3. Verify an unrelated authenticated user is denied.
 4. Verify a disabled profile is denied.
-5. Compare payload shape against direct `nav_v2_get_deal_card` output.
+5. Compare payload shape against direct `nav_v2_get_deal_card` and `nav_v2_get_deal_card_lite` output.
 6. Test the browser opt-in path with `?edge_api=1` on a real deal card URL.
 7. Test both browser URL forms: `?id=<deal-uuid>` and `?deal_id=<deal-uuid>`.
 8. Capture the result in `.github/ISSUE_TEMPLATE/nav-v2-deal-api-smoke.md` without secrets, personal client data, or full payloads.
+
+Before routing browser write actions through the Edge Function, separately verify `add_comment`, `update_deal_status`, `update_document_status`, `update_document_workflow`, and `update_task_status` with reversible test data and record cleanup status in the same issue template.
 
 This deployment is a runtime preflight step, not the final browser migration step. It still relies on the existing authenticated RPC grants for the underlying `nav_v2_*` functions.

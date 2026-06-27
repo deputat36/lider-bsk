@@ -14,7 +14,10 @@ assignees: ""
 GitHub Actions workflow run URL:
 Supabase project: ofewxuqfjhamgerwzull
 Edge Function: nav-v2-deal-api
+Observed Edge Function version: 2
+Observed deployed SHA: 3f438c82f2dbffdf03fbfb745369367507b9f61ddaa62b6b3d2d229d937ec455
 Deal UUID использован: да/нет
+Test-only data использованы: да/нет
 User JWT был короткоживущим: да/нет
 JWT удалён/ротирован после проверки: да/нет
 ```
@@ -52,16 +55,36 @@ No Authorization rejected with 401/403: pass / fail / skipped
 Invalid Bearer rejected with 401/403: pass / fail / skipped
 ```
 
-## Authenticated get_deal_card
+## Authenticated read actions
 
 ```text
-Edge Function call completed: pass / fail / skipped
-HTTP status:
-Action: get_deal_card
-Payload shape valid: pass / fail / skipped
-Returned data field present: pass / fail / skipped
-Error code if failed:
-Short error summary:
+get_deal_card Edge Function call completed: pass / fail / skipped
+get_deal_card HTTP status:
+get_deal_card payload shape valid: pass / fail / skipped
+get_deal_card returned data field present: pass / fail / skipped
+
+get_deal_card_lite Edge Function call completed: pass / fail / skipped
+get_deal_card_lite HTTP status:
+get_deal_card_lite payload shape valid: pass / fail / skipped
+get_deal_card_lite returned data field present: pass / fail / skipped
+
+Read action error code if failed:
+Read action short error summary:
+```
+
+## V2 write action smoke
+
+Use only safe test deals and test users. Note any side effects and cleanup without private data.
+
+```text
+add_comment with test-only body: pass / fail / skipped
+update_deal_status with reversible test status: pass / fail / skipped
+update_document_status with test document: pass / fail / skipped
+update_document_workflow with test document: pass / fail / skipped
+update_task_status with test task: pass / fail / skipped
+Write side effects expected: yes / no
+Write cleanup completed: pass / fail / skipped
+Write action error summary without private data:
 ```
 
 ## Role and access matrix
@@ -83,7 +106,9 @@ Disabled profile denied: pass / fail / not checked
 
 ```text
 compare_direct_rpc enabled: true / false
-Direct RPC call completed: pass / fail / skipped
+nav_v2_get_deal_card direct RPC call completed: pass / fail / skipped
+nav_v2_get_deal_card_lite direct RPC call completed: pass / fail / skipped
+Write direct RPC comparison used: true / false
 Edge and direct RPC payload shape match: pass / fail / skipped
 Difference summary without private data:
 ```
@@ -95,6 +120,7 @@ Browser URL tested with ?edge_api=1: pass / fail / not checked
 Browser URL tested with ?edge_api=0 fallback: pass / fail / not checked
 ?id=<deal-uuid> tested: pass / fail / not checked
 ?deal_id=<deal-uuid> tested: pass / fail / not checked
+Browser write actions remained on direct RPC paths: pass / fail / not checked
 Browser console errors:
 ```
 
@@ -102,7 +128,8 @@ Browser console errors:
 
 ```text
 Result: pass / pass with notes / fail
-Can consider default browser migration: yes / no
+Can consider default browser read migration: yes / no
+Can consider browser write migration: yes / no
 Blockers:
 Notes:
 ```
