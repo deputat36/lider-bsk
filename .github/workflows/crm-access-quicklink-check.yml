@@ -17,9 +17,15 @@ jobs:
         run: |
           set -euo pipefail
           index='crm/v4/index.html'
+          runbook='docs/CRM_ACCESS_TAB_CHECK_2026-06-27.md'
           test -f "$index"
+          test -f "$runbook"
           grep -Fq 'href="?tab=user_admin"' "$index"
           grep -Fq 'Открыть доступ CRM' "$index"
           grep -Fq 'data-v4-tab-button="user_admin"' "$index"
           grep -Fq 'crm-v4-tabs-lite.js?v=20260627-access-route-1' "$index"
           grep -Fq 'auth.js?v=20260627-access-3' "$index"
+          grep -Fq 'Открыть доступ CRM' "$runbook"
+          grep -Fq 'href="?tab=user_admin"' "$runbook"
+          grep -Fq 'active access admins' "$runbook"
+          grep -Fq 'inactive profiles: 0' "$runbook"
