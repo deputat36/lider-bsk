@@ -1,0 +1,58 @@
+name: Navigator v2 smoke template check
+
+on:
+  push:
+    branches: [main, nav-v2-runtime-smoke-issue-template-20260627]
+    paths:
+      - '.github/ISSUE_TEMPLATE/nav-v2-deal-api-smoke.md'
+      - '.github/workflows/nav-v2-smoke-template-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/ISSUE_TEMPLATE/nav-v2-deal-api-smoke.md'
+      - '.github/workflows/nav-v2-smoke-template-check.yml'
+
+jobs:
+  validate-nav-v2-smoke-template:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate Navigator v2 smoke issue template
+        shell: bash
+        run: |
+          set -euo pipefail
+          template='.github/ISSUE_TEMPLATE/nav-v2-deal-api-smoke.md'
+          test -f "$template"
+          grep -Fq 'Navigator v2 deal API runtime smoke' "$template"
+          grep -Fq 'nav-v2-deal-api' "$template"
+          grep -Fq 'ofewxuqfjhamgerwzull' "$template"
+          grep -Fq 'GitHub Actions workflow run URL' "$template"
+          grep -Fq 'preflight_only' "$template"
+          grep -Fq 'compare_direct_rpc' "$template"
+          grep -Fq 'preflight_only=false' "$template"
+          grep -Fq 'JWT role=authenticated validation' "$template"
+          grep -Fq 'JWT issuer validation' "$template"
+          grep -Fq 'JWT audience validation' "$template"
+          grep -Fq 'API key guardrail' "$template"
+          grep -Fq 'No Authorization rejected with 401/403' "$template"
+          grep -Fq 'Invalid Bearer rejected with 401/403' "$template"
+          grep -Fq 'Edge Function call completed' "$template"
+          grep -Fq 'Allowed owner' "$template"
+          grep -Fq 'Allowed admin' "$template"
+          grep -Fq 'Allowed manager' "$template"
+          grep -Fq 'Allowed spn' "$template"
+          grep -Fq 'Allowed lawyer' "$template"
+          grep -Fq 'Allowed broker' "$template"
+          grep -Fq 'Unrelated authenticated user denied' "$template"
+          grep -Fq 'Disabled profile denied' "$template"
+          grep -Fq 'Direct RPC call completed' "$template"
+          grep -Fq 'Browser URL tested with ?edge_api=1' "$template"
+          grep -Fq '?deal_id=<deal-uuid> tested' "$template"
+          grep -Fq 'Can consider default browser migration' "$template"
+          grep -Fq 'Do not' "$template"
+          grep -Fq 'JWT, refresh token, service-role key, secret API key' "$template"
+          if grep -nE 'eyJ[a-zA-Z0-9_-]{20,}|sb_secret_|SUPABASE_SERVICE_ROLE|SERVICE_ROLE_KEY' "$template"; then
+            echo 'Navigator v2 smoke issue template must not contain literal JWTs or secret key markers.' >&2
+            exit 1
+          fi
