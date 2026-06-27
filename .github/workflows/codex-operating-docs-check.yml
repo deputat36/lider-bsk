@@ -1,0 +1,41 @@
+name: Codex operating docs check
+
+on:
+  push:
+    branches: [main, improve-site-crm]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-codex-operating-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate Codex owner playbook and autopilot rules
+        shell: bash
+        run: |
+          set -euo pipefail
+          playbook='docs/CODEX_OWNER_PLAYBOOK.md'
+          rules='docs/AUTOPILOT_RULES.md'
+          status='docs/STATUS.md'
+          test -f "$playbook"
+          test -f "$rules"
+          test -f "$status"
+          grep -Fq 'Supabase только read-only' "$playbook"
+          grep -Fq 'Supabase production changes require explicit owner approval' "$playbook"
+          grep -Fq 'Do not assert CI green' "$playbook"
+          grep -Fq 'GitHub repo: `deputat36/lider-bsk`' "$playbook"
+          grep -Fq 'Supabase project: `ofewxuqfjhamgerwzull`' "$playbook"
+          grep -Fq 'Status issue: #15' "$playbook"
+          grep -Fq 'Access tab runbook: `docs/CRM_ACCESS_TAB_CHECK_2026-06-27.md`' "$playbook"
+          grep -Fq 'docs/CODEX_OWNER_PLAYBOOK.md' "$rules"
+          grep -Fq 'Supabase только read-only' "$rules"
+          grep -Fq 'production DDL/DML в Supabase запрещён без явного разрешения' "$rules"
+          grep -Fq 'CI green не утверждать' "$rules"
+          grep -Fq 'issue #15' "$rules"
+          grep -Fq 'leader_*' "$rules"
+          grep -Fq 'nav_*' "$rules"
+          grep -Fq 'owner/admin создаёт invite' "$rules"
+          grep -Fq 'пользователь без invite остаётся pending/inactive' "$rules"
+          grep -Fq 'docs/AUTOPILOT_RULES.md' "$status"
