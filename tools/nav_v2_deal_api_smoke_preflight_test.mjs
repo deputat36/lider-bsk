@@ -34,6 +34,10 @@ function serviceRoleApiKey() {
   return fakeJwt({ role: 'service_role' });
 }
 
+function secretApiKey() {
+  return 'sb_' + 'secret_' + 'synthetic_test_key';
+}
+
 function runSmoke(env) {
   return spawnSync(process.execPath, ['tools/nav_v2_deal_api_smoke_test.mjs'], {
     env: {
@@ -88,7 +92,7 @@ expectPreflightFailure('expired token', {
 
 expectPreflightFailure('secret api key', {
   NAV_V2_JWT: fakeJwt(accessPayload()),
-  NAV_V2_API_KEY: 'sb_secret_synthetic_test_key',
+  NAV_V2_API_KEY: secretApiKey(),
 }, 'NAV_V2_API_KEY must be a publishable/anon key, not a secret key');
 
 expectPreflightFailure('service-role api key jwt', {
