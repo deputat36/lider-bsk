@@ -102,6 +102,7 @@ jobs:
         shell: bash
         env:
           NAV_V2_DEAL_ID: ${{ inputs.deal_id }}
+          NAV_V2_ACTION: ${{ inputs.read_action }}
           NAV_V2_SUPABASE_URL: ${{ inputs.supabase_url }}
         run: |
           set -euo pipefail
@@ -110,7 +111,7 @@ jobs:
           {
             echo '### Navigator v2 deal API auth guard'
             echo ''
-            echo 'Unauthenticated request was rejected as expected.'
+            echo "Unauthenticated ${NAV_V2_ACTION} request was rejected as expected."
             echo ''
             echo '```json'
             echo "$result"
