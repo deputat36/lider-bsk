@@ -51,7 +51,7 @@ This repository sync did not change:
 - browser default routing;
 - Edge Function deployment state.
 
-Current SECURITY DEFINER baseline observed on 2026-06-27 after PR `#66` read-only connector check:
+Current SECURITY DEFINER baseline observed on 2026-06-27 after PR `#67` read-only connector check:
 
 - SECURITY DEFINER functions in `public`: `70`;
 - executable by `authenticated`: `46`;
@@ -84,6 +84,14 @@ After PR `#65`, the same auth guard supports `NAV_V2_ACTION` for read actions. S
 
 ```bash
 NAV_V2_DEAL_ID='deal-uuid' \
+NAV_V2_ACTION='get_deal_card_lite' \
+node tools/nav_v2_deal_api_auth_guard_test.mjs
+```
+
+After PR `#67`, the auth guard also supports local-only preflight validation. It validates the selected read action and exits before any Edge Function request:
+
+```bash
+NAV_V2_AUTH_GUARD_PREFLIGHT_ONLY=1 \
 NAV_V2_ACTION='get_deal_card_lite' \
 node tools/nav_v2_deal_api_auth_guard_test.mjs
 ```
@@ -191,9 +199,11 @@ After PR `#65`, the no-secret auth guard script and workflows can send either re
 
 After PR `#66`, CI also executes the auth guard script with an unsupported `NAV_V2_ACTION` and an intentionally unreachable Supabase URL. The expected local error must be `NAV_V2_ACTION must be one of: get_deal_card, get_deal_card_lite`, proving the action whitelist fails before any runtime Edge Function call is required.
 
+After PR `#67`, CI executes the auth guard in `NAV_V2_AUTH_GUARD_PREFLIGHT_ONLY=1` mode for both supported read actions. It uses an intentionally unreachable Supabase URL and requires local JSON output with `preflight_only: true`, proving both allowed selectors validate before runtime.
+
 The smoke tests intentionally read user JWT and deal id values from environment variables. Do not commit JWTs, real user sessions, service-role keys, secret API keys, or private test data.
 
-CI validates the smoke-test source with `node --check`, secret/JWT marker scans, no-secret preflight cases, and the auth guard unsupported-action fail-fast case. CI does not execute a successful authenticated runtime call because that would require a live user JWT.
+CI validates the smoke-test source with `node --check`, secret/JWT marker scans, no-secret preflight cases, the auth guard unsupported-action fail-fast case, and auth guard allowed-action local preflight cases. CI does not execute a successful authenticated runtime call because that would require a live user JWT.
 
 ## Manual GitHub Actions smoke workflow
 
