@@ -129,16 +129,19 @@ A manual workflow is available after PR `#39` and includes an auth guard preflig
 - required repository secret for authenticated smoke: `NAV_V2_JWT`;
 - required workflow input: `deal_id`;
 - optional workflow input: `compare_direct_rpc`;
-- optional workflow input: `supabase_url`, defaulting to `https://ofewxuqfjhamgerwzull.supabase.co`.
+- `supabase_url` must match `https://ofewxuqfjhamgerwzull.supabase.co` in this workflow.
 
 After PR `#47`, the workflow validates `deal_id` as UUID before any runtime Edge Function calls. Invalid input fails fast before both the no-secret auth guard and the authenticated smoke step.
+
+After PR `#48`, the workflow validates `supabase_url` against the production Supabase project URL before any runtime Edge Function calls. This prevents a manual smoke run from sending `secrets.NAV_V2_JWT` to a mistyped or untrusted Supabase-compatible URL.
 
 Workflow order:
 
 1. Validate smoke scripts with `node --check`.
 2. Validate workflow input `deal_id` as UUID.
-3. Run `nav_v2_deal_api_auth_guard_test.mjs` and require each no-secret auth guard case to return `401` or `403`.
-4. Run `nav_v2_deal_api_smoke_test.mjs` with `secrets.NAV_V2_JWT`.
+3. Validate workflow input `supabase_url` against the production project URL.
+4. Run `nav_v2_deal_api_auth_guard_test.mjs` and require each no-secret auth guard case to return `401` or `403`.
+5. Run `nav_v2_deal_api_smoke_test.mjs` with `secrets.NAV_V2_JWT`.
 
 After PR `#44`, both runtime steps write compact JSON output to the GitHub Actions Step Summary:
 
