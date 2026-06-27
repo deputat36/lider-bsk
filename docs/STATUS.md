@@ -1,6 +1,6 @@
 # Статус проекта РА «Лидер»
 
-Дата обновления: 2026-06-26.
+Дата обновления: 2026-06-27.
 
 ## Основной контур
 
@@ -17,18 +17,30 @@
 
 ## Supabase
 
-Активные функции:
+Активные функции контура РА «Лидер»:
 
-- `leader-public-lead v8`, `verify_jwt=false`;
-- `leader-crm-leads v8`, `verify_jwt=true`;
+- `leader-public-lead v9`, `verify_jwt=false`;
+- `leader-crm-leads v12`, `verify_jwt=true`;
 - `leader-crm-orders v2`, `verify_jwt=true`.
 
-CRM использует Edge Functions с JWT. Прямой доступ браузера к служебным RPC закрыт. Права таблиц заявок, аудита и событий приведены к минимальной модели.
+CRM использует Edge Functions с JWT. Прямой доступ браузера к служебным RPC закрыт. Права таблиц заявок, аудита, событий и CRM-доступа приведены к минимальной модели.
+
+Проверка 2026-06-27:
+
+- live `leader-public-lead v9` активна и работает в публичном режиме `verify_jwt=false`;
+- `leader-public-lead v9` сохраняет контракт `request_id`, `website` honeypot, UTM, audit events и duplicate handling;
+- live `leader-crm-leads v12` активна, `verify_jwt=true`;
+- `leader-crm-leads v12` создаёт новый CRM-профиль как pending через service role REST после проверки JWT пользователя;
+- `create_order_from_offer` в `leader-crm-leads v12` делегирует атомарную конвертацию в `leader_create_order_from_offer_rpc(jsonb)`;
+- среди `public.leader_%` SECURITY DEFINER функций нет функций, доступных `anon`, `authenticated` или `public`;
+- `leader_user_profiles` и `leader_user_invites` имеют RLS и grants для `authenticated` только `SELECT`, `INSERT`, `UPDATE`;
+- invite/profile policies, triggers и FK indexes проверены в live Supabase;
+- migration-history caveat зафиксирован в `docs/SUPABASE_MIGRATION_HISTORY_NORMALIZATION_2026-06-27.md`: текущие CRM SQL-файлы являются final-state snapshots, перед `supabase db push` / preview branches нужна нормализация истории.
 
 Проверка 2026-06-26:
 
 - проект `ofewxuqfjhamgerwzull` активен;
-- `leader-public-lead` находится в версии v8 и работает в публичном режиме `verify_jwt=false`;
+- `leader-public-lead` работает в публичном режиме `verify_jwt=false`;
 - функция принимает `request_id`, `website` honeypot, UTM и данные страницы;
 - `leader_leads.request_id` защищён уникальным ограничением `leader_leads_request_id_key`;
 - `leader_public_lead_audit` используется для событий `accepted`, `duplicate`, `suspicious`, `rejected`, `error`;
@@ -122,7 +134,7 @@ CRM использует Edge Functions с JWT. Прямой доступ бра
 
 Найденные приоритеты:
 
-- критично: выполнить реальную ручную проверку заявки после v8 и проверить цепочку по показанному `request_id`;
+- критично: выполнить реальную ручную проверку заявки после v9 и проверить цепочку по показанному `request_id`;
 - важно: массово добавить полноценный Open Graph на главную и коммерческие посадочные страницы;
 - важно: унифицировать посадочные страницы услуг в фирменном чёрно-оранжевом стиле;
 - важно: унифицировать микроразметку `LocalBusiness`, `Service`, `FAQPage`, `BreadcrumbList`;
@@ -130,18 +142,18 @@ CRM использует Edge Functions с JWT. Прямой доступ бра
 
 ## Публичные заявки
 
-`leader-public-lead v8` записывает заявку и неблокирующий аудит. Ошибки аудита журналируются маркерами:
+`leader-public-lead v9` записывает заявку и неблокирующий аудит. Ошибки аудита журналируются маркерами:
 
 - `leader_public_lead_audit_insert_failed`;
 - `leader_public_lead_audit_request_failed`.
 
-Отличие v8: повторная отправка с тем же `request_id` больше не маскируется под `accepted`. При конфликте уникального номера обращения функция пишет audit-событие `duplicate` и возвращает клиенту `200 OK` с тем же `request_id`.
+Текущий контракт: повторная отправка с тем же `request_id` не маскируется под `accepted`. При конфликте уникального номера обращения функция пишет audit-событие `duplicate` и возвращает клиенту `200 OK` с тем же `request_id`.
 
 Общий обработчик сайта передаёт фактическое значение honeypot в Edge Function. Заполненный honeypot фиксируется как `suspicious` и не создаёт заявку.
 
 На `request.html` подключён `public-lead-reference-v1.js`: после успешной отправки он показывает номер обращения из события `lead_sent`. Этот номер равен `request_id` и предназначен для точного сопоставления сайта, заявки и аудита. Порядок подключения и обязательные маркеры защищены отдельной GitHub Actions-проверкой `Request reference check`.
 
-RLS и GRANT аудита проверены. Нужна одна реальная отправка формы после v8, чтобы сопоставить заявку и аудит по показанному номеру обращения.
+RLS и GRANT аудита проверены. Нужна одна реальная отправка формы после v9, чтобы сопоставить заявку и аудит по показанному номеру обращения.
 
 ## CRM v4
 
@@ -155,6 +167,7 @@ RLS и GRANT аудита проверены. Нужна одна реальна
 - производство и монтаж;
 - контроль контактов;
 - аудит заявок;
+- вкладка `Доступ` для owner/admin управления CRM-профилями и приглашениями;
 - самодиагностика и адаптивный интерфейс.
 
 Карточка заказа обновлена для фактических финансов:
@@ -166,7 +179,7 @@ RLS и GRANT аудита проверены. Нужна одна реальна
 - подключение обновлено до `order-card-v1.js?v=20260626-finance-1`;
 - отдельная проверка `Order card finance check` защищает эти маркеры от случайного удаления.
 
-Раздел `Аудит заявок` обновлён для v8:
+Раздел `Аудит заявок` обновлён для текущего duplicate/request_id контракта:
 
 - добавлен счётчик `Дубли`;
 - добавлен фильтр `Дубли`;
@@ -176,6 +189,15 @@ RLS и GRANT аудита проверены. Нужна одна реальна
 - добавлен виджет `Проверить request_id`, который читает `leader_request_trace` и показывает статус цепочки;
 - подключение helper обновлено до `public-lead-audit-helper-v1.js?v=20260625-trace-widget-1`;
 - отдельные проверки `Public lead audit copy check`, `Public lead audit helper check` и `Request trace view check` защищают эти маркеры от случайного удаления.
+
+Вкладка `Доступ`:
+
+- есть в базовом HTML меню CRM v4;
+- есть в expanded menu;
+- модуль `user-admin-v1.js` подключается через `auth.js?v=20260627-access-3`;
+- новые пользователи без invite остаются pending/inactive;
+- активировать и приглашать пользователей должны owner/admin;
+- прямой execute CRM SECURITY DEFINER RPC закрыт для `anon`, `authenticated`, `public`.
 
 ## Следующая проверка
 
@@ -190,10 +212,13 @@ RLS и GRANT аудита проверены. Нужна одна реальна
 9. Открыть карточку заказа и проверить блок `Факт по финансам`.
 10. Повторно отправить ту же заявку с тем же `request_id` техническим тестом и убедиться, что audit показывает `duplicate`, а не `accepted`.
 11. Пройти сценарий заявка → расчёт → КП → заказ → производство/монтаж.
-12. После слияния этапа PNG-обложки открыть GitHub Actions и проверить `Open Graph check`, `Public site audit check`, `Static checks`.
-13. Открыть `request.html`, проверить наличие номерa обращения после отправки заявки.
-14. Проверить предпросмотр ссылки `request.html` в Telegram/ВК: он должен использовать `assets/og-lider-default.png`.
-15. Следующим SEO-этапом добавить OG-набор на главную и основные коммерческие посадочные страницы.
+12. Проверить вкладку `Доступ` под owner/admin.
+13. Создать invite, войти новым пользователем и убедиться, что invite активирует профиль.
+14. Войти новым пользователем без invite и убедиться, что профиль остаётся pending.
+15. После слияния этапа PNG-обложки открыть GitHub Actions и проверить `Open Graph check`, `Public site audit check`, `Static checks`.
+16. Открыть `request.html`, проверить наличие номерa обращения после отправки заявки.
+17. Проверить предпросмотр ссылки `request.html` в Telegram/ВК: он должен использовать `assets/og-lider-default.png`.
+18. Следующим SEO-этапом добавить OG-набор на главную и основные коммерческие посадочные страницы.
 
 ## Ограничения
 
@@ -204,4 +229,5 @@ RLS и GRANT аудита проверены. Нужна одна реальна
 - POST-проверки из текущего окружения блокируются внешним фильтром;
 - push-запуски GitHub Actions не отображаются в combined status API;
 - публичный аудит 2026-06-26 не менял боевую функцию `leader-public-lead` и не выполнял DDL в Supabase;
-- этапы Open Graph и PNG-обложки не меняют Supabase и CRM, только публичные SEO-файлы GitHub.
+- этапы Open Graph и PNG-обложки не меняют Supabase и CRM, только публичные SEO-файлы GitHub;
+- CRM SQL sync-файлы в GitHub сейчас являются final-state snapshots: перед использованием `supabase db push` или preview branches нужно выполнить migration-history normalization из `docs/SUPABASE_MIGRATION_HISTORY_NORMALIZATION_2026-06-27.md`.
