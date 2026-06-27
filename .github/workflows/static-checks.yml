@@ -110,7 +110,7 @@ jobs:
           grep -q "if (action === 'list')" "$orders"
           grep -q "if (action === 'update')" "$orders"
 
-      - name: Validate Navigator v2 deal API skeleton
+      - name: Validate Navigator v2 deal API source
         shell: bash
         run: |
           set -euo pipefail
@@ -125,22 +125,34 @@ jobs:
           grep -Fq '/auth/v1/user' "$fn"
           grep -Fq 'SUPABASE_URL' "$fn"
           grep -Fq 'SUPABASE_ANON_KEY' "$fn"
+          grep -Fq 'callUserRpc' "$fn"
+          grep -Fq '/rest/v1/rpc/' "$fn"
+          grep -Fq 'parseUuid' "$fn"
+          grep -Fq 'parseEnum' "$fn"
           grep -Fq 'get_deal_card' "$fn"
+          grep -Fq 'get_deal_card_lite' "$fn"
           grep -Fq 'add_comment' "$fn"
           grep -Fq 'update_deal_status' "$fn"
           grep -Fq 'update_document_status' "$fn"
+          grep -Fq 'update_document_workflow' "$fn"
           grep -Fq 'update_task_status' "$fn"
-          grep -Fq '501' "$fn"
+          grep -Fq 'nav_v2_get_deal_card' "$fn"
+          grep -Fq 'nav_v2_get_deal_card_lite' "$fn"
+          grep -Fq 'nav_v2_add_comment' "$fn"
+          grep -Fq 'nav_v2_update_deal_status' "$fn"
+          grep -Fq 'nav_v2_update_document_status' "$fn"
+          grep -Fq 'nav_v2_update_document_workflow' "$fn"
+          grep -Fq 'nav_v2_update_task_status' "$fn"
           if grep -R -nE 'sb_secret_|eyJ[a-zA-Z0-9_-]{20,}' supabase/functions/nav-v2-deal-api; then
             echo 'Function source must not contain literal Supabase secret keys or JWTs.' >&2
             exit 1
           fi
-          if grep -Fq 'SUPABASE_SERVICE_ROLE_KEY' "$fn"; then
-            echo 'Skeleton must not use service-role before explicit authorization implementation.' >&2
+          if grep -Fq 'SUPABASE_SERVICE_ROLE_KEY' "$fn" || grep -Fq 'SERVICE_ROLE_KEY' "$fn"; then
+            echo 'Navigator v2 deal API must not use service-role keys.' >&2
             exit 1
           fi
           if grep -Fq 'supabase.rpc(' "$fn"; then
-            echo 'Skeleton must not proxy arbitrary RPC calls.' >&2
+            echo 'Navigator v2 deal API must not proxy arbitrary RPC calls.' >&2
             exit 1
           fi
 

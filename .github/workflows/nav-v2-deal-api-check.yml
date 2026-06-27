@@ -2,7 +2,7 @@ name: Navigator v2 deal API check
 
 on:
   push:
-    branches: [main, nav-v2-deal-api-get-card-bridge-20260626, nav-v2-deal-api-smoke-test-20260626, nav-v2-deal-api-smoke-workflow-20260627, nav-v2-deal-api-auth-guard-20260627, nav-v2-deal-api-auth-guard-workflow-20260627, nav-v2-deal-api-step-summary-20260627, nav-v2-deal-api-invalid-token-guard-20260627, nav-v2-deal-api-smoke-input-guard-20260627, nav-v2-deal-api-smoke-url-guard-20260627, nav-v2-smoke-api-key-guard-20260627, nav-v2-smoke-jwt-guard-20260627, nav-v2-smoke-jwt-exp-guard-20260627, nav-v2-smoke-jwt-issuer-guard-20260627, nav-v2-smoke-jwt-audience-guard-20260627, nav-v2-smoke-jwt-anonymous-guard-20260627, nav-v2-smoke-preflight-test-20260627, nav-v2-smoke-preflight-only-20260627, nav-v2-smoke-workflow-preflight-only-20260627, nav-v2-smoke-full-preflight-only-20260627, nav-v2-smoke-input-combination-guard-20260627]
+    branches: [main]
     paths:
       - 'supabase/config.toml'
       - 'supabase/functions/nav-v2-deal-api/**'
@@ -23,6 +23,7 @@ on:
       - '.github/workflows/nav-v2-deal-api-check.yml'
       - '.github/workflows/nav-v2-deal-api-smoke.yml'
       - '.github/workflows/nav-v2-deal-api-auth-guard.yml'
+  workflow_dispatch:
 
 jobs:
   validate-nav-v2-deal-api:
@@ -47,15 +48,26 @@ jobs:
           grep -Fq 'SUPABASE_ANON_KEY' "$fn"
           grep -Fq 'callUserRpc' "$fn"
           grep -Fq '/rest/v1/rpc/' "$fn"
-          grep -Fq 'nav_v2_get_deal_card' "$fn"
-          grep -Fq 'parseDealId' "$fn"
+          grep -Fq 'parseUuid' "$fn"
+          grep -Fq 'parseEnum' "$fn"
+          grep -Fq 'parseOptionalUuid' "$fn"
+          grep -Fq 'parseOptionalRole' "$fn"
+          grep -Fq 'parseOptionalDate' "$fn"
           grep -Fq 'uuidRe' "$fn"
-          grep -Fq 'get_deal_card' "$fn"
-          grep -Fq 'add_comment' "$fn"
-          grep -Fq 'update_deal_status' "$fn"
-          grep -Fq 'update_document_status' "$fn"
-          grep -Fq 'update_task_status' "$fn"
-          grep -Fq '501' "$fn"
+          grep -Fq 'dealStatuses' "$fn"
+          grep -Fq 'documentStatuses' "$fn"
+          grep -Fq 'taskStatuses' "$fn"
+          grep -Fq 'commentVisibilities' "$fn"
+          grep -Fq 'roles' "$fn"
+          grep -Fq 'get_deal_card_lite' "$fn"
+          grep -Fq 'update_document_workflow' "$fn"
+          grep -Fq 'nav_v2_get_deal_card' "$fn"
+          grep -Fq 'nav_v2_get_deal_card_lite' "$fn"
+          grep -Fq 'nav_v2_add_comment' "$fn"
+          grep -Fq 'nav_v2_update_deal_status' "$fn"
+          grep -Fq 'nav_v2_update_document_status' "$fn"
+          grep -Fq 'nav_v2_update_document_workflow' "$fn"
+          grep -Fq 'nav_v2_update_task_status' "$fn"
           if grep -R -nE 'sb_secret_|eyJ[a-zA-Z0-9_-]{20,}' supabase/functions/nav-v2-deal-api; then
             echo 'Function source must not contain literal Supabase secret keys or JWTs.' >&2
             exit 1
@@ -68,22 +80,36 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           text = Path('supabase/functions/nav-v2-deal-api/index.ts').read_text(encoding='utf-8')
-          required = {
+          required_actions = {
               'get_deal_card',
+              'get_deal_card_lite',
               'add_comment',
               'update_deal_status',
               'update_document_status',
+              'update_document_workflow',
               'update_task_status',
           }
-          missing = [item for item in sorted(required) if text.count(f'"{item}"') < 2]
-          assert not missing, f'missing actions in type or whitelist: {missing}'
-          assert 'SUPABASE_SERVICE_ROLE_KEY' not in text, 'bridge must not use service-role before explicit authorization implementation'
+          missing_actions = [item for item in sorted(required_actions) if text.count(f'"{item}"') < 2]
+          assert not missing_actions, f'missing actions in type or whitelist: {missing_actions}'
+
+          required_rpcs = {
+              'nav_v2_get_deal_card',
+              'nav_v2_get_deal_card_lite',
+              'nav_v2_add_comment',
+              'nav_v2_update_deal_status',
+              'nav_v2_update_document_status',
+              'nav_v2_update_document_workflow',
+              'nav_v2_update_task_status',
+          }
+          missing_rpcs = [item for item in sorted(required_rpcs) if item not in text]
+          assert not missing_rpcs, f'missing explicit RPC bridge: {missing_rpcs}'
+
+          assert 'SUPABASE_SERVICE_ROLE_KEY' not in text, 'bridge must not use service-role keys'
+          assert 'SERVICE_ROLE_KEY' not in text, 'bridge must not use service-role keys'
           assert 'supabase.rpc(' not in text, 'bridge must not proxy arbitrary supabase-js RPC calls'
-          assert text.count('nav_v2_get_deal_card') == 1, 'only get_deal_card may bridge to an existing RPC in this phase'
-          assert 'nav_v2_add_comment' not in text
-          assert 'nav_v2_update_deal_status' not in text
-          assert 'nav_v2_update_document_status' not in text
-          assert 'nav_v2_update_task_status' not in text
+          assert 'callUserRpc(req, rpcName' not in text, 'RPC names must stay explicit at call sites'
+          assert 'allowedActions = new Set<NavV2Action>' in text, 'action allowlist must stay explicit'
+          assert 'const wantsLite = action === "get_deal_card_lite" || body.lite === true;' in text
           PY
 
       - name: Validate smoke test tooling
