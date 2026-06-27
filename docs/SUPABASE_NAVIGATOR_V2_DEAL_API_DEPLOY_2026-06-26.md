@@ -155,6 +155,8 @@ After PR `#57`, the manual `Navigator v2 deal API smoke` workflow exposes the sa
 
 After PR `#58`, the same manual workflow also skips the no-secret auth guard step when `preflight_only=true`. In this mode the entire workflow performs only checkout, script syntax validation, local input validation, and local JWT/API-key preflight checks; it does not call the Edge Function or direct RPC.
 
+After PR `#59`, the manual workflow rejects `preflight_only=true` together with `compare_direct_rpc=true`. Direct RPC comparison requires a runtime network call, so it is incompatible with local-only preflight mode.
+
 The smoke tests intentionally read user JWT and deal id values from environment variables. Do not commit JWTs, real user sessions, service-role keys, secret API keys, or private test data.
 
 CI validates the smoke-test source with `node --check`, secret/JWT marker scans, and no-secret preflight cases. CI does not execute a successful authenticated runtime call because that would require a live user JWT.
@@ -180,13 +182,16 @@ After PR `#57`, the workflow can run the authenticated smoke step in local prefl
 
 After PR `#58`, `preflight_only=true` also skips the no-secret auth guard step, so the whole manual run avoids network calls to `nav-v2-deal-api` and `nav_v2_get_deal_card`.
 
+After PR `#59`, the workflow fails fast when `preflight_only=true` and `compare_direct_rpc=true` are both selected. Choose exactly one mode: local preflight validation or runtime direct RPC comparison.
+
 Workflow order:
 
 1. Validate smoke scripts with `node --check`.
 2. Validate workflow input `deal_id` as UUID.
 3. Validate workflow input `supabase_url` against the production project URL.
-4. Run `nav_v2_deal_api_auth_guard_test.mjs` and require each no-secret auth guard case to return `401` or `403`, unless `preflight_only=true`.
-5. Run `nav_v2_deal_api_smoke_test.mjs` with `secrets.NAV_V2_JWT`, or run its local-only preflight path when `preflight_only=true`.
+4. Validate smoke mode inputs and reject `preflight_only=true` with `compare_direct_rpc=true`.
+5. Run `nav_v2_deal_api_auth_guard_test.mjs` and require each no-secret auth guard case to return `401` or `403`, unless `preflight_only=true`.
+6. Run `nav_v2_deal_api_smoke_test.mjs` with `secrets.NAV_V2_JWT`, or run its local-only preflight path when `preflight_only=true`.
 
 After PR `#44`, both runtime steps write compact JSON output to the GitHub Actions Step Summary:
 

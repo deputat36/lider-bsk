@@ -64,6 +64,19 @@ jobs:
           fi
           echo 'Supabase URL input matches the production project.'
 
+      - name: Validate smoke mode inputs
+        shell: bash
+        env:
+          INPUT_COMPARE_DIRECT_RPC: ${{ inputs.compare_direct_rpc }}
+          INPUT_PREFLIGHT_ONLY: ${{ inputs.preflight_only }}
+        run: |
+          set -euo pipefail
+          if [ "${INPUT_PREFLIGHT_ONLY}" = 'true' ] && [ "${INPUT_COMPARE_DIRECT_RPC}" = 'true' ]; then
+            echo 'workflow_dispatch inputs preflight_only and compare_direct_rpc cannot both be true because preflight-only mode does not call direct RPC.' >&2
+            exit 1
+          fi
+          echo 'Smoke mode inputs are compatible.'
+
       - name: Verify unauthenticated requests are rejected
         if: ${{ !inputs.preflight_only }}
         shell: bash
