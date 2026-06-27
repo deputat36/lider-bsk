@@ -101,6 +101,8 @@
 
 Часть SQL-файлов CRM sync сохранена как manual snapshot-файлы с префиксами вида `20260626_01...`, а production migration history Supabase использует 14-значные версии (`20260626113344...`, `20260626175044...` и т.д.). Это не runtime-блокер: live DB уже проверена и соответствует ожидаемому состоянию.
 
+Подробная карта и безопасный порядок нормализации зафиксированы в `docs/SUPABASE_MIGRATION_HISTORY_NORMALIZATION_2026-06-27.md`.
+
 Если проект начнёт использовать `supabase db push`/preview branches как основной deploy-путь, нужно отдельно нормализовать локальную migration history под production history, чтобы не получить drift между GitHub и `supabase_migrations.schema_migrations`.
 
 ## Текущее безопасное правило
