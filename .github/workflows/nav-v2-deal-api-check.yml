@@ -99,7 +99,7 @@ jobs:
           grep -Fq 'decodeJwtPayloadMaybe' "$smoke"
           grep -Fq 'expectedJwtIssuer' "$smoke"
           grep -Fq "replace(/\\/+$/, '')" "$smoke"
-          grep -Fq "return `${baseUrl}/auth/v1`;" "$smoke"
+          grep -Fq 'return `${baseUrl}/auth/v1`;' "$smoke"
           grep -Fq 'NAV_V2_JWT issuer must match NAV_V2_SUPABASE_URL' "$smoke"
           grep -Fq 'assertUserAccessJwt' "$smoke"
           grep -Fq "payload.role !== 'authenticated'" "$smoke"
