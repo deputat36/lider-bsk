@@ -151,7 +151,9 @@ After PR `#55`, `tools/nav_v2_deal_api_smoke_preflight_test.mjs` runs no-secret 
 
 After PR `#56`, the preflight test suite also verifies a positive synthetic user-token case through `NAV_V2_PREFLIGHT_ONLY=1`, confirming the local checks can pass without making a network request.
 
-After PR `#57`, the manual `Navigator v2 deal API smoke` workflow exposes the same local-only behavior through its `preflight_only` input. Set `preflight_only=true` to validate `secrets.NAV_V2_JWT`, `deal_id`, `supabase_url`, and API-key guardrails without calling the Edge Function or direct RPC. This mode does not prove runtime access to a deal.
+After PR `#57`, the manual `Navigator v2 deal API smoke` workflow exposes the same local-only behavior through its `preflight_only` input. Set `preflight_only=true` to validate `secrets.NAV_V2_JWT`, `deal_id`, `supabase_url`, and API-key guardrails without calling the Edge Function or direct RPC from the authenticated smoke step. This mode does not prove runtime access to a deal.
+
+After PR `#58`, the same manual workflow also skips the no-secret auth guard step when `preflight_only=true`. In this mode the entire workflow performs only checkout, script syntax validation, local input validation, and local JWT/API-key preflight checks; it does not call the Edge Function or direct RPC.
 
 The smoke tests intentionally read user JWT and deal id values from environment variables. Do not commit JWTs, real user sessions, service-role keys, secret API keys, or private test data.
 
@@ -174,14 +176,16 @@ After PR `#47`, the workflow validates `deal_id` as UUID before any runtime Edge
 
 After PR `#48`, the workflow validates `supabase_url` against the production Supabase project URL before any runtime Edge Function calls. This prevents a manual smoke run from sending `secrets.NAV_V2_JWT` to a mistyped or untrusted Supabase-compatible URL.
 
-After PR `#57`, the workflow can run the authenticated smoke step in local preflight-only mode by setting `preflight_only=true`. In this mode the workflow still requires `secrets.NAV_V2_JWT`, validates it locally, and exits before any Edge Function or direct RPC request.
+After PR `#57`, the workflow can run the authenticated smoke step in local preflight-only mode by setting `preflight_only=true`. In this mode the workflow still requires `secrets.NAV_V2_JWT`, validates it locally, and exits before any authenticated Edge Function or direct RPC request.
+
+After PR `#58`, `preflight_only=true` also skips the no-secret auth guard step, so the whole manual run avoids network calls to `nav-v2-deal-api` and `nav_v2_get_deal_card`.
 
 Workflow order:
 
 1. Validate smoke scripts with `node --check`.
 2. Validate workflow input `deal_id` as UUID.
 3. Validate workflow input `supabase_url` against the production project URL.
-4. Run `nav_v2_deal_api_auth_guard_test.mjs` and require each no-secret auth guard case to return `401` or `403`.
+4. Run `nav_v2_deal_api_auth_guard_test.mjs` and require each no-secret auth guard case to return `401` or `403`, unless `preflight_only=true`.
 5. Run `nav_v2_deal_api_smoke_test.mjs` with `secrets.NAV_V2_JWT`, or run its local-only preflight path when `preflight_only=true`.
 
 After PR `#44`, both runtime steps write compact JSON output to the GitHub Actions Step Summary:
@@ -191,7 +195,7 @@ After PR `#44`, both runtime steps write compact JSON output to the GitHub Actio
 
 Use a short-lived test-user access token for `NAV_V2_JWT`. Rotate or remove the secret after the smoke-test window. Do not use a service-role key, anon key, production admin personal token, anonymous-user token, or long-lived real user session for this workflow.
 
-When `compare_direct_rpc=true`, the workflow also calls direct `nav_v2_get_deal_card` with the same user JWT and compares the response shape with the Edge Function response. When `preflight_only=true`, the workflow exits before both the Edge Function call and the direct RPC comparison.
+When `compare_direct_rpc=true`, the workflow also calls direct `nav_v2_get_deal_card` with the same user JWT and compares the response shape with the Edge Function response. When `preflight_only=true`, the workflow exits before the auth guard, the authenticated Edge Function call, and the direct RPC comparison.
 
 ## Browser opt-in preflight
 

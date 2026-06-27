@@ -65,6 +65,7 @@ jobs:
           echo 'Supabase URL input matches the production project.'
 
       - name: Verify unauthenticated requests are rejected
+        if: ${{ !inputs.preflight_only }}
         shell: bash
         env:
           NAV_V2_DEAL_ID: ${{ inputs.deal_id }}
