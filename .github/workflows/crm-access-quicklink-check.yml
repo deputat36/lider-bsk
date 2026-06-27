@@ -22,12 +22,16 @@ jobs:
           issue_template='.github/ISSUE_TEMPLATE/crm-v4-browser-test.md'
           checklist='docs/CRM_V4_TESTER_CHECKLIST.md'
           report='docs/CRM_V4_BROWSER_TEST_REPORT.md'
+          access_doc='docs/CRM_V4_TEST_ACCESS.md'
+          onboarding='docs/CRM_ADMIN_TESTER_ONBOARDING.md'
           test -f "$index"
           test -f "$runbook"
           test -f "$status"
           test -f "$issue_template"
           test -f "$checklist"
           test -f "$report"
+          test -f "$access_doc"
+          test -f "$onboarding"
           grep -Fq 'href="?tab=user_admin"' "$index"
           grep -Fq 'Открыть доступ CRM' "$index"
           grep -Fq 'data-v4-tab-button="user_admin"' "$index"
@@ -54,3 +58,12 @@ jobs:
           grep -Fq 'Открыть доступ CRM' "$report"
           grep -Fq 'CRM build: 20260627-access-route-1' "$report"
           grep -Fq 'Доступ: ok / ошибка / не проверялось' "$report"
+          grep -Fq 'Текущая модель доступа' "$access_doc"
+          grep -Fq 'Обычный путь для тестировщиков и сотрудников — только invite через вкладку `Доступ`' "$access_doc"
+          grep -Fq 'Открыть доступ CRM' "$access_doc"
+          grep -Fq 'Emergency manual path' "$access_doc"
+          grep -Fq 'новый пользователь без invite активируется автоматически' "$access_doc"
+          grep -Fq 'Прямая ссылка на раздел Доступ' "$onboarding"
+          grep -Fq 'Открыть доступ CRM' "$onboarding"
+          grep -Fq 'CRM build: 20260627-access-route-1' "$onboarding"
+          grep -Fq 'видны пользователи CRM и приглашения' "$onboarding"
