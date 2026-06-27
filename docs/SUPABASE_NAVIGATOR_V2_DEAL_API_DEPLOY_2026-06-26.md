@@ -134,9 +134,11 @@ After PR `#53`, the same smoke script also rejects `NAV_V2_JWT` values whose dec
 
 After PR `#54`, the same smoke script also rejects anonymous-user JWTs when the decoded `is_anonymous` claim is `true` before network calls.
 
+After PR `#55`, `tools/nav_v2_deal_api_smoke_preflight_test.mjs` runs no-secret preflight cases with synthetic unsigned JWTs. It verifies that malformed, wrong-issuer, wrong-audience, wrong-role, anonymous, missing-subject, expired, secret-key, and service-role API-key cases fail before any Edge Function or direct RPC call can be made.
+
 The smoke tests intentionally read user JWT and deal id values from environment variables. Do not commit JWTs, real user sessions, service-role keys, secret API keys, or private test data.
 
-CI validates the smoke-test source with `node --check` and secret/JWT marker scans, but CI does not execute a successful authenticated runtime call because that would require a live user JWT.
+CI validates the smoke-test source with `node --check`, secret/JWT marker scans, and no-secret preflight cases. CI does not execute a successful authenticated runtime call because that would require a live user JWT.
 
 ## Manual GitHub Actions smoke workflow
 
