@@ -51,10 +51,10 @@ This repository sync did not change:
 - browser default routing;
 - Edge Function deployment state.
 
-Current SECURITY DEFINER baseline observed on 2026-06-27 after PR `#64` read-only connector check:
+Current SECURITY DEFINER baseline observed on 2026-06-27 after PR `#65` read-only connector check:
 
-- SECURITY DEFINER functions in `public`: `69`;
-- executable by `authenticated`: `43`;
+- SECURITY DEFINER functions in `public`: `70`;
+- executable by `authenticated`: `44`;
 - not executable by `authenticated`: `26`.
 
 This is a read-only observation of the current Supabase project state, not a change introduced by this repository documentation/source sync.
@@ -80,7 +80,15 @@ NAV_V2_DEAL_ID='deal-uuid' \
 node tools/nav_v2_deal_api_auth_guard_test.mjs
 ```
 
-It sends `get_deal_card` in two unauthenticated/invalid-auth cases and expects a `401` or `403` rejection without a successful data payload:
+After PR `#65`, the same auth guard supports `NAV_V2_ACTION` for read actions. Supported values are `get_deal_card` and `get_deal_card_lite`; the default remains `get_deal_card`:
+
+```bash
+NAV_V2_DEAL_ID='deal-uuid' \
+NAV_V2_ACTION='get_deal_card_lite' \
+node tools/nav_v2_deal_api_auth_guard_test.mjs
+```
+
+It sends the selected read action in two unauthenticated/invalid-auth cases and expects a `401` or `403` rejection without a successful data payload:
 
 - without an `Authorization` header;
 - with `Authorization: Bearer invalid-nav-v2-token`.
@@ -90,10 +98,10 @@ A standalone no-secret GitHub Actions workflow is available after PR `#43`:
 - workflow name: `Navigator v2 deal API auth guard`;
 - workflow file: `.github/workflows/nav-v2-deal-api-auth-guard.yml`;
 - trigger: `workflow_dispatch` only;
-- inputs: optional `deal_id`, optional `supabase_url`;
+- inputs: optional `deal_id`, optional `read_action` (`get_deal_card` or `get_deal_card_lite`), optional `supabase_url`;
 - secrets: none.
 
-After PR `#44`, the standalone auth guard workflow writes the JSON result to the GitHub Actions Step Summary under `Navigator v2 deal API auth guard`. After PR `#45`, the summary includes each auth guard case returned by the script.
+After PR `#44`, the standalone auth guard workflow writes the JSON result to the GitHub Actions Step Summary under `Navigator v2 deal API auth guard`. After PR `#45`, the summary includes each auth guard case returned by the script. After PR `#65`, the summary also records the selected read action.
 
 Use it when you want to verify only the public auth boundary without configuring `NAV_V2_JWT`.
 
@@ -171,13 +179,15 @@ After PR `#57`, the manual `Navigator v2 deal API smoke` workflow exposes the sa
 
 After PR `#58`, the same manual workflow also skips the no-secret auth guard step when `preflight_only=true`. In this mode the entire workflow performs only checkout, script syntax validation, local input validation, and local JWT/API-key preflight checks; it does not call the Edge Function or direct RPC.
 
-After PR `#59`, the manual workflow rejects `preflight_only=true` together with `compare_direct_rpc=true`. Direct RPC comparison requires a runtime network call, so it is incompatible with local-only preflight mode.
+After PR `#59`, the workflow fails fast when `preflight_only=true` and `compare_direct_rpc=true` are both selected. Choose exactly one mode: local preflight validation or runtime direct RPC comparison.
 
 After PR `#60`, a GitHub issue template is available at `.github/ISSUE_TEMPLATE/nav-v2-deal-api-smoke.md` for recording manual runtime smoke results without secrets or full deal payloads.
 
 After PR `#62`, CI validates the version-2 function source shape, including the explicit action allowlist and explicit RPC bridges for read and write actions. Browser routing is still separately protected by `navigator-v2-check.yml` and remains opt-in for `get_deal_card` only.
 
 After PR `#63`, the runtime smoke issue template covers version-2 actions explicitly: `get_deal_card`, `get_deal_card_lite`, `add_comment`, `update_deal_status`, `update_document_status`, `update_document_workflow`, and `update_task_status`. Write-action smoke must use safe test data, note expected side effects, and record cleanup status without private payloads.
+
+After PR `#65`, the no-secret auth guard script and workflows can send either read action. The manual smoke workflow passes its selected `read_action` into both the unauthenticated auth guard step and the authenticated smoke step when `preflight_only=false`.
 
 The smoke tests intentionally read user JWT and deal id values from environment variables. Do not commit JWTs, real user sessions, service-role keys, secret API keys, or private test data.
 
@@ -213,6 +223,8 @@ After PR `#63`, use the same issue template to record v2 read-lite and write-act
 
 After PR `#64`, the manual workflow can run either `get_deal_card` or `get_deal_card_lite` via the `read_action` input. The workflow still does not run write actions.
 
+After PR `#65`, that same `read_action` input is also passed to the no-secret auth guard step, so the unauthenticated rejection check and authenticated smoke step cover the same read action.
+
 Workflow order:
 
 1. Validate smoke scripts with `node --check`.
@@ -220,7 +232,7 @@ Workflow order:
 3. Validate workflow input `read_action` as `get_deal_card` or `get_deal_card_lite`.
 4. Validate workflow input `supabase_url` against the production project URL.
 5. Validate smoke mode inputs and reject `preflight_only=true` with `compare_direct_rpc=true`.
-6. Run `nav_v2_deal_api_auth_guard_test.mjs` and require each no-secret auth guard case to return `401` or `403`, unless `preflight_only=true`.
+6. Run `nav_v2_deal_api_auth_guard_test.mjs` for the selected read action and require each no-secret auth guard case to return `401` or `403`, unless `preflight_only=true`.
 7. Run `nav_v2_deal_api_smoke_test.mjs` with `secrets.NAV_V2_JWT`, or run its local-only preflight path when `preflight_only=true`.
 
 After PR `#44`, both runtime steps write compact JSON output to the GitHub Actions Step Summary:
