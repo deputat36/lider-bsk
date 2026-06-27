@@ -2,7 +2,7 @@ name: Navigator v2 deal API check
 
 on:
   push:
-    branches: [main, nav-v2-deal-api-get-card-bridge-20260626, nav-v2-deal-api-smoke-test-20260626, nav-v2-deal-api-smoke-workflow-20260627, nav-v2-deal-api-auth-guard-20260627, nav-v2-deal-api-auth-guard-workflow-20260627, nav-v2-deal-api-step-summary-20260627]
+    branches: [main, nav-v2-deal-api-get-card-bridge-20260626, nav-v2-deal-api-smoke-test-20260626, nav-v2-deal-api-smoke-workflow-20260627, nav-v2-deal-api-auth-guard-20260627, nav-v2-deal-api-auth-guard-workflow-20260627, nav-v2-deal-api-step-summary-20260627, nav-v2-deal-api-invalid-token-guard-20260627]
     paths:
       - 'supabase/config.toml'
       - 'supabase/functions/nav-v2-deal-api/**'
@@ -100,16 +100,15 @@ jobs:
           grep -Fq '/rest/v1/rpc/nav_v2_get_deal_card' "$smoke"
           grep -Fq 'assertDealCardPayload' "$smoke"
           grep -Fq 'compared_direct_rpc' "$smoke"
-          grep -Fq 'unauthenticated_rejected' "$auth_guard"
+          grep -Fq 'missing_authorization' "$auth_guard"
+          grep -Fq 'invalid_bearer_token' "$auth_guard"
+          grep -Fq 'invalid-nav-v2-token' "$auth_guard"
           grep -Fq 'ALLOWED_REJECTION_STATUSES' "$auth_guard"
           grep -Fq '401' "$auth_guard"
           grep -Fq '403' "$auth_guard"
           grep -Fq '/functions/v1/nav-v2-deal-api' "$auth_guard"
           grep -Fq 'Authorization' "$smoke"
-          if grep -Fq 'Authorization' "$auth_guard"; then
-            echo 'Auth guard test must not send Authorization header.' >&2
-            exit 1
-          fi
+          grep -Fq 'Authorization' "$auth_guard"
           node --check "$smoke"
           node --check "$auth_guard"
           if grep -nE 'sb_secret_|SUPABASE_SERVICE_ROLE|SERVICE_ROLE_KEY' "$smoke" "$auth_guard"; then
@@ -168,8 +167,8 @@ jobs:
           grep -Fq 'node tools/nav_v2_deal_api_auth_guard_test.mjs' "$workflow"
           grep -Fq 'NAV_V2_DEAL_ID' "$workflow"
           grep -Fq 'NAV_V2_SUPABASE_URL' "$workflow"
-          if grep -nE 'NAV_V2_JWT|secrets\.|Authorization|sb_secret_|SUPABASE_SERVICE_ROLE|SERVICE_ROLE_KEY' "$workflow"; then
-            echo 'Standalone auth guard workflow must not use secrets, JWT, Authorization, or service-role markers.' >&2
+          if grep -nE 'NAV_V2_JWT|secrets\.|sb_secret_|SUPABASE_SERVICE_ROLE|SERVICE_ROLE_KEY' "$workflow"; then
+            echo 'Standalone auth guard workflow must not use secrets, JWT, or service-role markers.' >&2
             exit 1
           fi
           if grep -nE 'eyJ[a-zA-Z0-9_-]{20,}' "$workflow"; then
