@@ -34,6 +34,18 @@ jobs:
           node --check tools/nav_v2_deal_api_auth_guard_test.mjs
           node --check tools/nav_v2_deal_api_smoke_test.mjs
 
+      - name: Validate deal id input
+        shell: bash
+        env:
+          NAV_V2_DEAL_ID: ${{ inputs.deal_id }}
+        run: |
+          set -euo pipefail
+          if [[ ! "${NAV_V2_DEAL_ID}" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$ ]]; then
+            echo 'workflow_dispatch input deal_id must be a UUID.' >&2
+            exit 1
+          fi
+          echo 'Deal id input has UUID format.'
+
       - name: Verify unauthenticated requests are rejected
         shell: bash
         env:
