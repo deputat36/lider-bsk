@@ -1,4 +1,5 @@
 const MANAGED_TABS = new Set(['management_dashboard', 'orders', 'order_control', 'finance_control', 'production', 'public_lead_audit', 'contact_control', 'user_admin']);
+const SETTABLE_TABS = new Set([...MANAGED_TABS, 'leads', 'card']);
 const ROUTABLE_TABS = new Set([...MANAGED_TABS, 'leads']);
 
 function showElement(id) {
@@ -23,17 +24,17 @@ function hideNextCard() {
   if (next) next.style.display = 'none';
 }
 
-function normalizeTab(tab) {
+function normalizeTab(tab, allowedTabs = SETTABLE_TABS) {
   const value = String(tab || '').trim();
-  return ROUTABLE_TABS.has(value) ? value : '';
+  return allowedTabs.has(value) ? value : '';
 }
 
 function readInitialTab() {
   const params = new URLSearchParams(window.location.search || '');
-  const queryTab = normalizeTab(params.get('tab'));
+  const queryTab = normalizeTab(params.get('tab'), ROUTABLE_TABS);
   if (queryTab) return queryTab;
 
-  const hashTab = normalizeTab((window.location.hash || '').replace(/^#/, ''));
+  const hashTab = normalizeTab((window.location.hash || '').replace(/^#/, ''), ROUTABLE_TABS);
   if (hashTab) return hashTab;
 
   return '';
