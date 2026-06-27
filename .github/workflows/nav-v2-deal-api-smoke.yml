@@ -41,7 +41,17 @@ jobs:
           NAV_V2_SUPABASE_URL: ${{ inputs.supabase_url }}
         run: |
           set -euo pipefail
-          node tools/nav_v2_deal_api_auth_guard_test.mjs
+          result="$(node tools/nav_v2_deal_api_auth_guard_test.mjs)"
+          echo "$result"
+          {
+            echo '### Navigator v2 deal API auth guard'
+            echo ''
+            echo 'Unauthenticated request was rejected as expected.'
+            echo ''
+            echo '```json'
+            echo "$result"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run authenticated smoke test
         shell: bash
@@ -60,4 +70,14 @@ jobs:
           if [ "${INPUT_COMPARE_DIRECT_RPC}" = 'true' ]; then
             compare='1'
           fi
-          NAV_V2_COMPARE_DIRECT_RPC="$compare" node tools/nav_v2_deal_api_smoke_test.mjs
+          result="$(NAV_V2_COMPARE_DIRECT_RPC="$compare" node tools/nav_v2_deal_api_smoke_test.mjs)"
+          echo "$result"
+          {
+            echo '### Navigator v2 deal API authenticated smoke'
+            echo ''
+            echo 'Authenticated get_deal_card smoke test completed.'
+            echo ''
+            echo '```json'
+            echo "$result"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

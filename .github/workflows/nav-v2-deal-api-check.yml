@@ -2,7 +2,7 @@ name: Navigator v2 deal API check
 
 on:
   push:
-    branches: [main, nav-v2-deal-api-get-card-bridge-20260626, nav-v2-deal-api-smoke-test-20260626, nav-v2-deal-api-smoke-workflow-20260627, nav-v2-deal-api-auth-guard-20260627, nav-v2-deal-api-auth-guard-workflow-20260627]
+    branches: [main, nav-v2-deal-api-get-card-bridge-20260626, nav-v2-deal-api-smoke-test-20260626, nav-v2-deal-api-smoke-workflow-20260627, nav-v2-deal-api-auth-guard-20260627, nav-v2-deal-api-auth-guard-workflow-20260627, nav-v2-deal-api-step-summary-20260627]
     paths:
       - 'supabase/config.toml'
       - 'supabase/functions/nav-v2-deal-api/**'
@@ -136,6 +136,10 @@ jobs:
           grep -Fq 'NAV_V2_COMPARE_DIRECT_RPC' "$workflow"
           grep -Fq 'nav_v2_deal_api_auth_guard_test.mjs' "$workflow"
           grep -Fq 'Verify unauthenticated requests are rejected' "$workflow"
+          grep -Fq 'Run authenticated smoke test' "$workflow"
+          grep -Fq 'GITHUB_STEP_SUMMARY' "$workflow"
+          grep -Fq 'Navigator v2 deal API auth guard' "$workflow"
+          grep -Fq 'Navigator v2 deal API authenticated smoke' "$workflow"
           grep -Fq 'node --check tools/nav_v2_deal_api_auth_guard_test.mjs' "$workflow"
           grep -Fq 'node --check tools/nav_v2_deal_api_smoke_test.mjs' "$workflow"
           grep -Fq 'node tools/nav_v2_deal_api_auth_guard_test.mjs' "$workflow"
@@ -158,6 +162,8 @@ jobs:
           grep -Fq 'workflow_dispatch' "$workflow"
           grep -Fq 'Navigator v2 deal API auth guard' "$workflow"
           grep -Fq 'Verify unauthenticated requests are rejected' "$workflow"
+          grep -Fq 'GITHUB_STEP_SUMMARY' "$workflow"
+          grep -Fq 'Unauthenticated request was rejected as expected.' "$workflow"
           grep -Fq 'node --check tools/nav_v2_deal_api_auth_guard_test.mjs' "$workflow"
           grep -Fq 'node tools/nav_v2_deal_api_auth_guard_test.mjs' "$workflow"
           grep -Fq 'NAV_V2_DEAL_ID' "$workflow"
