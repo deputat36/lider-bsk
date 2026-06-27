@@ -68,14 +68,17 @@ Verified through Supabase connector:
 
 ## Smoke test tooling
 
-A no-secret auth guard test is available after PR `#42`:
+A no-secret auth guard test is available after PR `#42` and checks an additional invalid bearer case after PR `#45`:
 
 ```bash
 NAV_V2_DEAL_ID='deal-uuid' \
 node tools/nav_v2_deal_api_auth_guard_test.mjs
 ```
 
-It sends `get_deal_card` without an `Authorization` header and expects a `401` or `403` rejection without a successful data payload.
+It sends `get_deal_card` in two unauthenticated/invalid-auth cases and expects a `401` or `403` rejection without a successful data payload:
+
+- without an `Authorization` header;
+- with `Authorization: Bearer invalid-nav-v2-token`.
 
 A standalone no-secret GitHub Actions workflow is available after PR `#43`:
 
@@ -85,7 +88,7 @@ A standalone no-secret GitHub Actions workflow is available after PR `#43`:
 - inputs: optional `deal_id`, optional `supabase_url`;
 - secrets: none.
 
-After PR `#44`, the standalone auth guard workflow writes the JSON result to the GitHub Actions Step Summary under `Navigator v2 deal API auth guard`.
+After PR `#44`, the standalone auth guard workflow writes the JSON result to the GitHub Actions Step Summary under `Navigator v2 deal API auth guard`. After PR `#45`, the summary includes each auth guard case returned by the script.
 
 Use it when you want to verify only the public auth boundary without configuring `NAV_V2_JWT`.
 
@@ -131,7 +134,7 @@ A manual workflow is available after PR `#39` and includes an auth guard preflig
 Workflow order:
 
 1. Validate smoke scripts with `node --check`.
-2. Run `nav_v2_deal_api_auth_guard_test.mjs` without `Authorization` and require `401` or `403`.
+2. Run `nav_v2_deal_api_auth_guard_test.mjs` and require each no-secret auth guard case to return `401` or `403`.
 3. Run `nav_v2_deal_api_smoke_test.mjs` with `secrets.NAV_V2_JWT`.
 
 After PR `#44`, both runtime steps write compact JSON output to the GitHub Actions Step Summary:
