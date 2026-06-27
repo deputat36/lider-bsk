@@ -85,6 +85,8 @@ A standalone no-secret GitHub Actions workflow is available after PR `#43`:
 - inputs: optional `deal_id`, optional `supabase_url`;
 - secrets: none.
 
+After PR `#44`, the standalone auth guard workflow writes the JSON result to the GitHub Actions Step Summary under `Navigator v2 deal API auth guard`.
+
 Use it when you want to verify only the public auth boundary without configuring `NAV_V2_JWT`.
 
 A local authenticated smoke test is available:
@@ -131,6 +133,11 @@ Workflow order:
 1. Validate smoke scripts with `node --check`.
 2. Run `nav_v2_deal_api_auth_guard_test.mjs` without `Authorization` and require `401` or `403`.
 3. Run `nav_v2_deal_api_smoke_test.mjs` with `secrets.NAV_V2_JWT`.
+
+After PR `#44`, both runtime steps write compact JSON output to the GitHub Actions Step Summary:
+
+- `Navigator v2 deal API auth guard`;
+- `Navigator v2 deal API authenticated smoke`.
 
 Use a short-lived test-user access token for `NAV_V2_JWT`. Rotate or remove the secret after the smoke-test window. Do not use a service-role key, production admin personal token, or long-lived real user session for this workflow.
 

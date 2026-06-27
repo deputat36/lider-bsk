@@ -36,4 +36,14 @@ jobs:
           NAV_V2_SUPABASE_URL: ${{ inputs.supabase_url }}
         run: |
           set -euo pipefail
-          node tools/nav_v2_deal_api_auth_guard_test.mjs
+          result="$(node tools/nav_v2_deal_api_auth_guard_test.mjs)"
+          echo "$result"
+          {
+            echo '### Navigator v2 deal API auth guard'
+            echo ''
+            echo 'Unauthenticated request was rejected as expected.'
+            echo ''
+            echo '```json'
+            echo "$result"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
