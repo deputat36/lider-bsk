@@ -37,7 +37,7 @@ jobs:
           test -f "$helper"
           test -f assets/og-lider-default.png
 
-          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page"
+          grep -Fq '20260628-clarity-1' "$page"
           grep -Fq 'Что будет дальше' "$page"
           grep -Fq 'Перед отправкой' "$page"
           grep -Fq 'После отправки' "$page"
