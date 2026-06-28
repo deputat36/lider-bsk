@@ -20,6 +20,7 @@ jobs:
           onboarding='docs/CRM_ADMIN_TESTER_ONBOARDING.md'
           next_steps='docs/NEXT_SAFE_STEPS.md'
           status_doc='docs/STATUS.md'
+          manual_checklist='docs/MANUAL_TEST_CHECKLIST.md'
           decisions_doc='docs/DECISIONS.md'
           static_runbook='docs/STATIC_CHECKS_RUNBOOK.md'
           browser_report='docs/CRM_V4_BROWSER_TEST_REPORT.md'
@@ -27,7 +28,7 @@ jobs:
           audit_v8_check='docs/CRM_V4_AUDIT_V8_CHECK.md'
           issue_template='.github/ISSUE_TEMPLATE/crm-v4-browser-test.md'
 
-          for file in "$access_doc" "$checklist" "$onboarding" "$next_steps" "$status_doc" "$decisions_doc" "$static_runbook" "$browser_report" "$audit_doc" "$audit_v8_check" "$issue_template"; do
+          for file in "$access_doc" "$checklist" "$onboarding" "$next_steps" "$status_doc" "$manual_checklist" "$decisions_doc" "$static_runbook" "$browser_report" "$audit_doc" "$audit_v8_check" "$issue_template"; do
             test -f "$file"
           done
 
@@ -103,6 +104,19 @@ jobs:
           grep -Fq 'Цепочка полная' "$status_doc"
           grep -Fq '20260628-clarity-2' "$status_doc"
           grep -Fq 'Выберите похожую задачу' "$status_doc"
+          grep -Fq '20260628-access-label-1' "$status_doc"
+          grep -Fq 'Доступ и роли' "$status_doc"
+
+          grep -Fq 'Дата: 2026-06-28.' "$manual_checklist"
+          grep -Fq 'Доступ и роли' "$manual_checklist"
+          grep -Fq 'auth.js?v=20260628-access-label-1' "$manual_checklist"
+          grep -Fq 'user-admin-v1.js?v=20260628-access-label-1' "$manual_checklist"
+          grep -Fq 'crm-v4-expanded-menu-v1.js?v=20260628-access-label-1' "$manual_checklist"
+          grep -Fq 'marker `20260628-access-label-1`' "$manual_checklist"
+          if grep -Fq 'auth.js?v=20260627-access-3' "$manual_checklist"; then
+            echo 'MANUAL_TEST_CHECKLIST.md must use current access label marker.' >&2
+            exit 1
+          fi
 
           grep -Fq '`v9`' "$audit_doc"
           grep -Fq 'v8 audit contract' "$audit_doc"
