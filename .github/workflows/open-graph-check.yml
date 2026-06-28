@@ -10,6 +10,8 @@ on:
       - 'sitemap.xml'
       - 'assets/og-lider-default.svg'
       - 'assets/og-lider-default.png'
+      - 'tools/apply_open_graph.py'
+      - 'tools/open_graph_pages.json'
       - 'docs/OPEN_GRAPH.md'
       - '.github/workflows/open-graph-check.yml'
   pull_request:
@@ -21,6 +23,8 @@ on:
       - 'sitemap.xml'
       - 'assets/og-lider-default.svg'
       - 'assets/og-lider-default.png'
+      - 'tools/apply_open_graph.py'
+      - 'tools/open_graph_pages.json'
       - 'docs/OPEN_GRAPH.md'
       - '.github/workflows/open-graph-check.yml'
 
@@ -84,6 +88,12 @@ jobs:
           grep -Fq '<lastmod>2026-06-26</lastmod>' sitemap.xml
           grep -Fq 'https://www.lider-bsk.ru/' sitemap.xml
           grep -Fq 'https://www.lider-bsk.ru/privacy.html' sitemap.xml
+
+      - name: Validate configured Open Graph pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/apply_open_graph.py --check
 
       - name: Validate sitemap XML
         shell: bash

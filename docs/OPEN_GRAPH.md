@@ -23,7 +23,7 @@
 
 `assets/og-lider-default.svg`
 
-## Что уже добавлено вручную
+## Что уже добавлено и защищено CI
 
 1. Добавлен общий фирменный PNG OG-образ:
 
@@ -86,7 +86,8 @@
    - наличие OG/Twitter-тегов на `index.html`;
    - наличие OG/Twitter-тегов на `request.html`;
    - наличие `description` и `canonical` на `privacy.html`;
-   - наличие `lastmod` в sitemap.
+   - наличие `lastmod` в sitemap;
+   - все страницы из `tools/open_graph_pages.json` через `python3 tools/apply_open_graph.py --check`.
 
 ## Автоматизация для основных коммерческих страниц
 
@@ -124,8 +125,13 @@ python3 tools/apply_open_graph.py --apply
 - `reklama-v-soobshchestvah-borisoglebska.html` — реклама в сообществах;
 - `yandex-karty-2gis.html` — Яндекс Карты и 2ГИС.
 
-## Следующий шаг
+## Рабочее правило
 
-Запустить `python3 tools/apply_open_graph.py --apply` в рабочей копии репозитория или через Codex/локальное окружение, проверить diff и открыть отдельный PR с уже изменёнными HTML-страницами.
+Если добавляется новая публичная коммерческая страница, её нужно добавить в `tools/open_graph_pages.json`, затем выполнить:
 
-Сначала стоит пройти по коммерческим страницам из `tools/open_graph_pages.json`, потому что главная, заявка и политика уже закрыты отдельными CI-проверками.
+```bash
+python3 tools/apply_open_graph.py --apply
+python3 tools/apply_open_graph.py --check
+```
+
+После этого GitHub Actions должен пройти `Open Graph check` на PR.
