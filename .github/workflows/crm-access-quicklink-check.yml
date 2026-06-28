@@ -57,6 +57,8 @@ jobs:
           grep -Fq 'inactive profiles: 0' "$runbook"
           grep -Fq 'Открыть доступ CRM' "$status"
           grep -Fq '?tab=user_admin' "$status"
+          grep -Fq 'Доступ и роли' "$status"
+          grep -Fq '20260628-access-label-1' "$status"
           grep -Fq 'active access admins' "$status"
           grep -Fq 'inactive profiles: 0' "$status"
           grep -Fq 'Проверка доступа CRM' "$issue_template"
