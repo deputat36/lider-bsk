@@ -16,6 +16,11 @@ on:
         options:
           - get_deal_card
           - get_deal_card_lite
+      preflight_only:
+        description: 'Only validate read action locally; do not call Edge Function'
+        required: false
+        default: false
+        type: boolean
       supabase_url:
         description: 'Supabase project URL'
         required: false
@@ -55,14 +60,23 @@ jobs:
           NAV_V2_DEAL_ID: ${{ inputs.deal_id }}
           NAV_V2_ACTION: ${{ inputs.read_action }}
           NAV_V2_SUPABASE_URL: ${{ inputs.supabase_url }}
+          INPUT_PREFLIGHT_ONLY: ${{ inputs.preflight_only }}
         run: |
           set -euo pipefail
-          result="$(node tools/nav_v2_deal_api_auth_guard_test.mjs)"
+          preflight='0'
+          if [ "${INPUT_PREFLIGHT_ONLY}" = 'true' ]; then
+            preflight='1'
+          fi
+          result="$(NAV_V2_AUTH_GUARD_PREFLIGHT_ONLY="$preflight" node tools/nav_v2_deal_api_auth_guard_test.mjs)"
           echo "$result"
+          summary="Unauthenticated ${NAV_V2_ACTION} request was rejected as expected."
+          if [ "$preflight" = '1' ]; then
+            summary="Unauthenticated ${NAV_V2_ACTION} preflight-only validation completed without Edge Function calls."
+          fi
           {
             echo '### Navigator v2 deal API auth guard'
             echo ''
-            echo "Unauthenticated ${NAV_V2_ACTION} request was rejected as expected."
+            echo "$summary"
             echo ''
             echo '```json'
             echo "$result"
