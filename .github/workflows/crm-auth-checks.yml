@@ -2,7 +2,7 @@ name: CRM auth checks
 
 on:
   push:
-    branches: [main, improve-site-crm]
+    branches: [main]
     paths:
       - 'crm/v4/index.html'
       - 'crm/v4/assets/v4/auth.js'
