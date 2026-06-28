@@ -51,7 +51,7 @@ This repository sync did not change:
 - browser default routing;
 - Edge Function deployment state.
 
-Current SECURITY DEFINER baseline observed on 2026-06-27 after PR `#67` read-only connector check:
+Current SECURITY DEFINER baseline observed on 2026-06-28 after PR `#68` read-only connector check:
 
 - SECURITY DEFINER functions in `public`: `70`;
 - executable by `authenticated`: `46`;
@@ -106,10 +106,10 @@ A standalone no-secret GitHub Actions workflow is available after PR `#43`:
 - workflow name: `Navigator v2 deal API auth guard`;
 - workflow file: `.github/workflows/nav-v2-deal-api-auth-guard.yml`;
 - trigger: `workflow_dispatch` only;
-- inputs: optional `deal_id`, optional `read_action` (`get_deal_card` or `get_deal_card_lite`), optional `supabase_url`;
+- inputs: optional `deal_id`, optional `read_action` (`get_deal_card` or `get_deal_card_lite`), optional `preflight_only`, optional `supabase_url`;
 - secrets: none.
 
-After PR `#44`, the standalone auth guard workflow writes the JSON result to the GitHub Actions Step Summary under `Navigator v2 deal API auth guard`. After PR `#45`, the summary includes each auth guard case returned by the script. After PR `#65`, the summary also records the selected read action.
+After PR `#44`, the standalone auth guard workflow writes the JSON result to the GitHub Actions Step Summary under `Navigator v2 deal API auth guard`. After PR `#45`, the summary includes each auth guard case returned by the script. After PR `#65`, the summary also records the selected read action. After PR `#68`, `preflight_only=true` makes the standalone workflow validate the selected read action locally and exit before any Edge Function call.
 
 Use it when you want to verify only the public auth boundary without configuring `NAV_V2_JWT`.
 
@@ -201,9 +201,11 @@ After PR `#66`, CI also executes the auth guard script with an unsupported `NAV_
 
 After PR `#67`, CI executes the auth guard in `NAV_V2_AUTH_GUARD_PREFLIGHT_ONLY=1` mode for both supported read actions. It uses an intentionally unreachable Supabase URL and requires local JSON output with `preflight_only: true`, proving both allowed selectors validate before runtime.
 
+After PR `#68`, CI protects the standalone no-secret auth guard workflow `preflight_only` input and summary text. The standalone workflow remains secret-free and can run either local-only action validation or runtime unauthenticated rejection checks.
+
 The smoke tests intentionally read user JWT and deal id values from environment variables. Do not commit JWTs, real user sessions, service-role keys, secret API keys, or private test data.
 
-CI validates the smoke-test source with `node --check`, secret/JWT marker scans, no-secret preflight cases, the auth guard unsupported-action fail-fast case, and auth guard allowed-action local preflight cases. CI does not execute a successful authenticated runtime call because that would require a live user JWT.
+CI validates the smoke-test source with `node --check`, secret/JWT marker scans, no-secret preflight cases, the auth guard unsupported-action fail-fast case, auth guard allowed-action local preflight cases, and standalone auth guard workflow preflight wiring. CI does not execute a successful authenticated runtime call because that would require a live user JWT.
 
 ## Manual GitHub Actions smoke workflow
 
