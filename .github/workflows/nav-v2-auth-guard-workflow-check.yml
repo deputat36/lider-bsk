@@ -6,11 +6,13 @@ on:
     paths:
       - '.github/workflows/nav-v2-deal-api-auth-guard.yml'
       - '.github/workflows/nav-v2-auth-guard-workflow-check.yml'
+      - 'docs/NAV_V2_AUTH_GUARD_URL_ALLOWLIST_2026-06-28.md'
   pull_request:
     branches: [main]
     paths:
       - '.github/workflows/nav-v2-deal-api-auth-guard.yml'
       - '.github/workflows/nav-v2-auth-guard-workflow-check.yml'
+      - 'docs/NAV_V2_AUTH_GUARD_URL_ALLOWLIST_2026-06-28.md'
   workflow_dispatch:
 
 jobs:
@@ -43,3 +45,24 @@ jobs:
             echo 'Standalone auth guard workflow must not contain literal JWTs.' >&2
             exit 1
           fi
+
+      - name: Validate auth guard allowlist documentation
+        shell: bash
+        run: |
+          set -euo pipefail
+          doc='docs/NAV_V2_AUTH_GUARD_URL_ALLOWLIST_2026-06-28.md'
+          test -f "$doc"
+          grep -Fq 'ofewxuqfjhamgerwzull' "$doc"
+          grep -Fq 'https://ofewxuqfjhamgerwzull.supabase.co' "$doc"
+          grep -Fq '.github/workflows/nav-v2-deal-api-auth-guard.yml' "$doc"
+          grep -Fq 'tools/nav_v2_deal_api_auth_guard_test.mjs' "$doc"
+          grep -Fq 'workflow_dispatch' "$doc"
+          grep -Fq 'supabase_url' "$doc"
+          grep -Fq 'public Supabase API key' "$doc"
+          grep -Fq 'ACTIVE_HEALTHY' "$doc"
+          grep -Fq 'verify_jwt' "$doc"
+          grep -Fq '3f438c82f2dbffdf03fbfb745369367507b9f61ddaa62b6b3d2d229d937ec455' "$doc"
+          grep -Fq 'SECURITY DEFINER functions in `public`: `70`' "$doc"
+          grep -Fq 'executable by `authenticated`: `46`' "$doc"
+          grep -Fq 'not executable by `authenticated`: `24`' "$doc"
+          grep -Fq 'No Supabase schema, RLS, grants, data, or Edge Function deployment was changed.' "$doc"
