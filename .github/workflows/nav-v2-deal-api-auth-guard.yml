@@ -54,6 +54,19 @@ jobs:
           fi
           echo 'Read action input is supported.'
 
+      - name: Validate Supabase URL input
+        shell: bash
+        env:
+          NAV_V2_SUPABASE_URL: ${{ inputs.supabase_url }}
+          NAV_V2_ALLOWED_SUPABASE_URL: 'https://ofewxuqfjhamgerwzull.supabase.co'
+        run: |
+          set -euo pipefail
+          if [ "${NAV_V2_SUPABASE_URL}" != "${NAV_V2_ALLOWED_SUPABASE_URL}" ]; then
+            echo 'workflow_dispatch input supabase_url must match the production Supabase project URL.' >&2
+            exit 1
+          fi
+          echo 'Supabase URL input matches the production project.'
+
       - name: Verify unauthenticated requests are rejected
         shell: bash
         env:
