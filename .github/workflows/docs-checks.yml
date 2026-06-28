@@ -104,6 +104,9 @@ jobs:
           grep -Fq 'Цепочка полная' "$status_doc"
           grep -Fq '20260628-clarity-2' "$status_doc"
           grep -Fq 'Выберите похожую задачу' "$status_doc"
+          grep -Fq 'Этап расширения Open Graph 2026-06-28' "$status_doc"
+          grep -Fq 'srochnaya-reklama-borisoglebsk.html' "$status_doc"
+          grep -Fq 'reklama-dlya-servisa-masterskoy-borisoglebsk.html' "$status_doc"
           grep -Fq '20260628-access-label-1' "$status_doc"
           grep -Fq 'Доступ и роли' "$status_doc"
 
