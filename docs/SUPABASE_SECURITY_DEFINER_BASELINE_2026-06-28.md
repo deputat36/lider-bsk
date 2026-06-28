@@ -15,19 +15,34 @@ select count(*) filter (where p.prosecdef and n.nspname = 'public') as security_
 from pg_proc p join pg_namespace n on n.oid = p.pronamespace;
 ```
 
-Observed result on 2026-06-28:
+Current observed result on 2026-06-28:
 
 | Metric | Count |
 | --- | ---: |
-| `security_definer_public` | 70 |
-| `executable_by_authenticated` | 46 |
+| `security_definer_public` | 71 |
+| `executable_by_authenticated` | 47 |
 | `not_executable_by_authenticated` | 24 |
+
+Earlier on 2026-06-28 this snapshot was recorded as `70 / 46 / 24`. A later read-only connector check observed drift to `71 / 47 / 24`. This repository update records the drift; it did not create it.
+
+## Scope split
+
+Current scope split for `public` SECURITY DEFINER functions:
+
+| Scope | SECURITY DEFINER | Executable by `authenticated` | Not executable by `authenticated` |
+| --- | ---: | ---: | ---: |
+| `leader` | 8 | 0 | 8 |
+| `nav` | 11 | 5 | 6 |
+| `nav_v2` | 51 | 42 | 9 |
+| `other` | 1 | 0 | 1 |
 
 ## Interpretation
 
 This is a project-wide baseline for `public` SECURITY DEFINER functions, not a RA Lider CRM-only result.
 
 The baseline overlaps with known Navigator `nav_*` / `nav_v2_*` advisor scope documented elsewhere. It is not a fixed finding and must not be interpreted as remediation.
+
+The `leader` scope remains at `8 / 0 / 8`: no `public.leader_%` SECURITY DEFINER functions are executable by `authenticated` in this read-only check.
 
 RA Lider CRM hardening remains scoped to `leader_*` objects unless a separate reviewed task explicitly changes Navigator objects.
 
@@ -48,7 +63,7 @@ Observed through the Supabase connector on 2026-06-28:
 
 ## Explicit non-changes
 
-No Supabase production objects were changed while recording this baseline:
+No Supabase production objects were changed while recording this baseline drift:
 
 - no DDL;
 - no migration;
