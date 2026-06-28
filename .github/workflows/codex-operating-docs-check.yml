@@ -23,6 +23,7 @@ jobs:
           current_checkpoint='docs/CODEX_OPERATING_STATUS_2026-06-28.md'
           supabase_baseline='docs/SUPABASE_RA_LIDER_BASELINE_2026-06-28.md'
           owner_decisions='docs/OWNER_DECISIONS_2026-06-28.md'
+          crm_access_runbook='docs/CRM_ACCESS_TAB_CHECK_2026-06-27.md'
           test -f "$playbook"
           test -f "$rules"
           test -f "$status"
@@ -30,6 +31,7 @@ jobs:
           test -f "$current_checkpoint"
           test -f "$supabase_baseline"
           test -f "$owner_decisions"
+          test -f "$crm_access_runbook"
           grep -Fq 'Date: 2026-06-28.' "$playbook"
           grep -Fq 'Supabase только read-only' "$playbook"
           grep -Fq 'Supabase production changes require explicit owner approval' "$playbook"
@@ -74,6 +76,12 @@ jobs:
           grep -Fq 'active source of truth is `main`' "$current_checkpoint"
           grep -Fq 'Supabase только read-only' "$current_checkpoint"
           grep -Fq 'Supabase baseline: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-28.md`' "$current_checkpoint"
+          grep -Fq 'PR #86 was merged into `main` by squash as `80abda38461ac99e9cf83a7064276b086a23a8af`' "$current_checkpoint"
+          grep -Fq 'PR #86 bumped CRM access admin cache markers to `20260628-access-label-1`' "$current_checkpoint"
+          grep -Fq 'Current CRM access cache markers' "$current_checkpoint"
+          grep -Fq 'assets/v4/auth.js?v=20260628-access-label-1' "$current_checkpoint"
+          grep -Fq './user-admin-v1.js?v=20260628-access-label-1' "$current_checkpoint"
+          grep -Fq 'Доступ и роли' "$current_checkpoint"
           grep -Fq 'RA Lider Supabase production baseline is documented in `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-28.md`' "$current_checkpoint"
           grep -Fq 'leader-public-lead` must remain ACTIVE v9' "$current_checkpoint"
           grep -Fq 'leader-crm-leads` must remain ACTIVE v12' "$current_checkpoint"
@@ -85,3 +93,5 @@ jobs:
           grep -Fq '`leader-crm-orders`: `ACTIVE`, version `2`, `verify_jwt=true`' "$supabase_baseline"
           grep -Fq 'Owner decisions — 2026-06-28' "$owner_decisions"
           grep -Fq 'Without this wording, Codex should treat Supabase as read-only' "$owner_decisions"
+          grep -Fq '20260628-access-label-1' "$crm_access_runbook"
+          grep -Fq 'Доступ и роли' "$crm_access_runbook"

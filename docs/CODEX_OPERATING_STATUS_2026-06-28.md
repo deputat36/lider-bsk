@@ -7,6 +7,7 @@ Supabase baseline: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-28.md`.
 Supabase advisor interpretation: `docs/SUPABASE_RA_LIDER_ADVISORS_2026-06-28.md`.
 Owner decision rules: `docs/OWNER_DECISIONS_2026-06-28.md`.
 Request page post-merge snapshot: `docs/REQUEST_PAGE_POSTMERGE_STATUS_2026-06-28.md`.
+CRM access runbook: `docs/CRM_ACCESS_TAB_CHECK_2026-06-27.md`.
 
 ## Current autonomous mode
 
@@ -26,12 +27,27 @@ Request page post-merge snapshot: `docs/REQUEST_PAGE_POSTMERGE_STATUS_2026-06-28
 - PR #77 was merged into `main` by squash as `f94d4c79d40c116daf7958027507340983ee9e01`.
 - PR #79 was merged into `main` by squash as `712f9860641ef5c64b2d1ef6d4d1b6eb32878d58`.
 - PR #80 was merged into `main` by squash as `0c1f2ec6809ed904c2352563b9d90d403a106a14`.
+- PR #85 was merged into `main` by squash as `80c182d696d2eaeb28e720f41794d54436008e05`.
+- PR #86 was merged into `main` by squash as `80abda38461ac99e9cf83a7064276b086a23a8af`.
 - PR #75 fixed public header navigation overlap around `1025–1180px`.
 - PR #77 removed the temporary public header feature branch from permanent workflow triggers.
 - PR #79 and PR #80 normalized GitHub Actions push branch filters to permanent `main` targets.
+- PR #85 updated operating guardrails and owner-decision CI markers.
+- PR #86 bumped CRM access admin cache markers to `20260628-access-label-1`.
 - PR #13 remains closed without merge and is archival context only.
 - CRM access docs and guardrails are expected on `main`, not on old feature/date branches.
 - RA Lider Supabase production baseline is documented in `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-28.md`.
+
+## Current CRM access cache markers
+
+The current CRM access label/cache marker is `20260628-access-label-1`.
+
+Expected repository markers:
+
+- `crm/v4/index.html` loads `assets/v4/auth.js?v=20260628-access-label-1`.
+- `crm/v4/assets/v4/auth.js` imports `./user-admin-v1.js?v=20260628-access-label-1`.
+- `crm/v4/index.html` loads `assets/v4/crm-v4-expanded-menu-v1.js?v=20260628-access-label-1`.
+- The access label should be `Доступ и роли`.
 
 ## Supabase production rule
 
@@ -73,7 +89,8 @@ CRM access route:
 
 Expected result after Ctrl+F5 and login as owner/admin:
 
-- the `Доступ` section opens;
+- the `Доступ и роли` section opens;
+- loaded HTML/source contains `20260628-access-label-1`;
 - invite controls are visible;
 - user/profile management uses the owner/admin invite model;
 - a user without invite remains pending/inactive.
