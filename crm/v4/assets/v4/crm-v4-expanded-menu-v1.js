@@ -7,7 +7,7 @@ const CRM_V4_MENU = [
   { tab: 'production', label: 'Производство' },
   { tab: 'contact_control', label: 'Контроль контактов' },
   { tab: 'public_lead_audit', label: 'Аудит заявок' },
-  { tab: 'user_admin', label: 'Доступ' }
+  { tab: 'user_admin', label: 'Доступ и роли' }
 ];
 
 function menuRoot() {

@@ -88,7 +88,7 @@ function ensureSection() {
   node.innerHTML = `
     <div class="v4-section-head">
       <div>
-        <h2>Доступ к CRM</h2>
+        <h2>Доступ и роли CRM</h2>
         <p>Пользователи, роли, pending-доступ и приглашения сотрудников. ${ACCESS_MARKER}</p>
       </div>
       <button id="userAdminReloadBtn" type="button" class="v4-primary">Обновить доступ</button>
