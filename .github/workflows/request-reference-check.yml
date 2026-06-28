@@ -41,6 +41,14 @@ jobs:
           grep -Fq 'Номер обращения: ' "$form"
           grep -Fq "goal('lead_sent',{service,page:location.href,request_id:responseRequestId,duplicate})" "$form"
           grep -Fq 'assets/public-lead-reference-v1.js?v=1' "$page"
+          grep -Fq 'data-request-page-version="20260628-clarity-2"' "$page"
+          grep -Fq 'id="scenarios"' "$page"
+          grep -Fq 'data-scenario="shop"' "$page"
+          grep -Fq 'data-scenario="cafe"' "$page"
+          grep -Fq 'data-scenario="service"' "$page"
+          grep -Fq 'data-scenario="beauty"' "$page"
+          grep -Fq 'data-scenario="construction"' "$page"
+          grep -Fq 'data-scenario="office"' "$page"
 
           python3 - <<'PY'
           from pathlib import Path
