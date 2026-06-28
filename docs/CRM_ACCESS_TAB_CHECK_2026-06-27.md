@@ -17,6 +17,16 @@ The cache note script is also loaded with the same marker:
 
 `assets/v4/site-cache-note-v1.js?v=20260627-access-route-1`
 
+## Access admin module cache markers
+
+The visible access label is protected by these cache markers:
+
+- `assets/v4/crm-v4-expanded-menu-v1.js?v=20260628-access-label-1`;
+- `assets/v4/auth.js?v=20260628-access-label-1`;
+- `import './user-admin-v1.js?v=20260628-access-label-1';` in `auth.js`.
+
+These markers make sure the browser loads the newer menu label and the newer access section heading after deploy.
+
 ## In-app quick link
 
 After login, the `CRM готова` card contains a direct button-link:
@@ -49,7 +59,7 @@ Check in this order:
    - main: `https://deputat36.github.io/lider-bsk/crm/v4/?tab=user_admin`
    - temporary: `https://deputat36.github.io/lidercalculator/app-v4.html`
 2. Hard refresh the page with `Ctrl + F5`.
-3. Confirm that the loaded HTML contains `20260627-access-route-1`.
+3. Confirm that the loaded HTML contains `20260627-access-route-1` and `20260628-access-label-1`.
 4. Confirm that the bottom-left cache note shows `CRM build: 20260627-access-route-1` after a fresh load.
 5. After login, use `Открыть доступ CRM` in the `CRM готова` card if the sticky menu tab `Доступ и роли` is still not visible.
 6. Confirm the signed-in user has an active CRM profile.
@@ -63,7 +73,7 @@ The access tab depends on these markers:
 - `href="?tab=user_admin"` and `Открыть доступ CRM` in `crm/v4/index.html`;
 - `{ tab: 'user_admin', label: 'Доступ и роли' }` in `crm-v4-expanded-menu-v1.js`;
 - `ROUTABLE_TABS` and `URLSearchParams` in `crm-v4-tabs-lite.js`;
-- `import './user-admin-v1.js?v=20260627-access-3';` in `auth.js`;
+- `import './user-admin-v1.js?v=20260628-access-label-1';` in `auth.js`;
 - `CRM access admin v1` in `user-admin-v1.js`;
 - `CRM build: 20260627-access-route-1` in `site-cache-note-v1.js`.
 
