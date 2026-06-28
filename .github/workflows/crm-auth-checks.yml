@@ -43,7 +43,7 @@ jobs:
           grep -Fq "const CRM_SESSION_KEY = 'leader_crm_v4_main_session'" "$reset"
           grep -Fq "const LEGACY_SHARED_SESSION_KEY = 'leader_crm_v4_session'" "$reset"
           grep -Fq 'removeSessionKey(LEGACY_SHARED_SESSION_KEY)' "$reset"
-          grep -Fq 'assets/v4/auth.js?v=20260627-access-3' "$page"
+          grep -Fq 'assets/v4/auth.js?v=20260628-access-label-1' "$page"
           grep -Fq 'assets/v4/auth-session-reset-v1.js?v=20260624-contour-1' "$page"
           if grep -Fq "authStorageKey: 'leader_crm_v4_session'" "$config"; then
             echo 'Main and test CRM must not share an auth storage key.' >&2
