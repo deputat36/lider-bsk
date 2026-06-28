@@ -5,11 +5,13 @@ on:
     branches: [main]
     paths:
       - 'docs/OWNER_DECISIONS_2026-06-28.md'
+      - 'docs/CODEX_OPERATING_STATUS_2026-06-28.md'
       - '.github/workflows/owner-decisions-check.yml'
   pull_request:
     branches: [main]
     paths:
       - 'docs/OWNER_DECISIONS_2026-06-28.md'
+      - 'docs/CODEX_OPERATING_STATUS_2026-06-28.md'
       - '.github/workflows/owner-decisions-check.yml'
 
 jobs:
@@ -23,7 +25,9 @@ jobs:
         run: |
           set -euo pipefail
           doc='docs/OWNER_DECISIONS_2026-06-28.md'
+          status='docs/CODEX_OPERATING_STATUS_2026-06-28.md'
           test -f "$doc"
+          test -f "$status"
 
           grep -Fq 'Owner decisions — 2026-06-28' "$doc"
           grep -Fq 'docs/SUPABASE_RA_LIDER_ADVISORS_2026-06-28.md' "$doc"
@@ -46,3 +50,8 @@ jobs:
           grep -Fq 'Разрешаю точечное изменение Supabase production' "$doc"
           grep -Fq 'Without this wording, Codex should treat Supabase as read-only' "$doc"
           grep -Fq 'https://deputat36.github.io/lider-bsk/crm/v4/?tab=user_admin' "$doc"
+
+          grep -Fq 'Supabase только read-only unless the owner explicitly approves production changes' "$status"
+          grep -Fq 'Supabase production changes require explicit approval before DDL, DML, Edge Function deploys, broad RLS changes, grants/policies changes or data changes' "$status"
+          grep -Fq 'Use the exact approval wording from `docs/OWNER_DECISIONS_2026-06-28.md` before any production Supabase mutation' "$status"
+          grep -Fq 'note that Supabase production was not changed unless explicit approval was given' "$status"
