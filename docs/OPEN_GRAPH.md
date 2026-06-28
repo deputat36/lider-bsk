@@ -1,6 +1,6 @@
 # Open Graph для публичного сайта РА «Лидер»
 
-Дата: 2026-06-26.
+Дата: 2026-06-28.
 
 ## Цель
 
@@ -33,7 +33,7 @@
 
    `assets/og-lider-default.svg`
 
-3. На страницу заявки `request.html` добавлены и обновлены:
+3. На главную страницу `index.html` добавлены и защищены CI:
 
    - `canonical`;
    - `og:type`;
@@ -51,20 +51,39 @@
    - `twitter:description`;
    - `twitter:image` на PNG.
 
-4. На страницу политики `privacy.html` добавлены и обновлены:
+4. На страницу заявки `request.html` добавлены и защищены CI:
+
+   - `canonical`;
+   - `og:type`;
+   - `og:locale`;
+   - `og:site_name`;
+   - `og:url`;
+   - `og:title`;
+   - `og:description`;
+   - `og:image` на PNG;
+   - `og:image:type` = `image/png`;
+   - `og:image:width`;
+   - `og:image:height`;
+   - `twitter:card`;
+   - `twitter:title`;
+   - `twitter:description`;
+   - `twitter:image` на PNG.
+
+5. На страницу политики `privacy.html` добавлены и защищены CI:
 
    - `description`;
    - `canonical`;
    - базовый Open Graph / Twitter Card набор;
    - `og:image` и `twitter:image` на PNG.
 
-5. В `sitemap.xml` добавлен `lastmod` для всех публичных URL.
+6. В `sitemap.xml` добавлен `lastmod` для всех публичных URL.
 
-6. Проверка `.github/workflows/open-graph-check.yml` защищает:
+7. Проверка `.github/workflows/open-graph-check.yml` защищает:
 
    - наличие `assets/og-lider-default.svg`;
    - наличие `assets/og-lider-default.png`;
    - PNG-сигнатуру файла;
+   - наличие OG/Twitter-тегов на `index.html`;
    - наличие OG/Twitter-тегов на `request.html`;
    - наличие `description` и `canonical` на `privacy.html`;
    - наличие `lastmod` в sitemap.
@@ -108,3 +127,5 @@ python3 tools/apply_open_graph.py --apply
 ## Следующий шаг
 
 Запустить `python3 tools/apply_open_graph.py --apply` в рабочей копии репозитория или через Codex/локальное окружение, проверить diff и открыть отдельный PR с уже изменёнными HTML-страницами.
+
+Сначала стоит пройти по коммерческим страницам из `tools/open_graph_pages.json`, потому что главная, заявка и политика уже закрыты отдельными CI-проверками.
