@@ -37,7 +37,64 @@ jobs:
           test -f "$helper"
           test -f assets/og-lider-default.png
 
-          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page"
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && {
+            echo 'Unexpected escaped marker matched; check workflow quoting.' >&2
+            exit 1
+          } || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          grep -Fq 'data-request-page-version="20260628-clarity-1"' "$page" && exit 1 || true
+          python3 - <<'PY'
+          from pathlib import Path
+          page = Path('request.html').read_text(encoding='utf-8')
+          assert 'data-request-page-version="20260628-clarity-1"' in page
+          PY
           grep -Fq 'Что будет дальше' "$page"
           grep -Fq 'Перед отправкой' "$page"
           grep -Fq 'После отправки' "$page"
