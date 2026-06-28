@@ -2,7 +2,7 @@ name: Structured data tools check
 
 on:
   push:
-    branches: [main, structured-data-tools-20260626]
+    branches: [main]
     paths:
       - 'tools/structured_data_pages.json'
       - 'tools/apply_structured_data.py'

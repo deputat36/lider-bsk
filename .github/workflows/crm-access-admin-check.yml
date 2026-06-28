@@ -2,7 +2,7 @@ name: CRM access admin check
 
 on:
   push:
-    branches: [main, crm-hardening-main-20260626]
+    branches: [main]
     paths:
       - 'crm/v4/index.html'
       - 'crm/v4/assets/v4/auth.js'

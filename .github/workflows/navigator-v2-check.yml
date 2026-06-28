@@ -2,7 +2,7 @@ name: Navigator v2 check
 
 on:
   push:
-    branches: [main, nav-v2-fix-deals-entry-20260626, nav-v2-deal-api-client-flag-20260627, nav-v2-deal-id-alias-20260627, nav-v2-edge-opt-in-guard-20260627]
+    branches: [main]
     paths:
       - 'deal-card-v2.html'
       - 'deals-v2.html'
