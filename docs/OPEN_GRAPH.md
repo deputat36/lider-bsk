@@ -89,6 +89,14 @@
    - наличие `lastmod` в sitemap;
    - все страницы из `tools/open_graph_pages.json` через `python3 tools/apply_open_graph.py --check`.
 
+8. Дополнительно 2026-06-28 Open Graph / Twitter Card добавлены на страницы:
+
+   - `srochnaya-reklama-borisoglebsk.html`;
+   - `reklama-v-socsetyah-borisoglebsk.html`;
+   - `reklama-dlya-meropriyatiy-borisoglebsk.html`;
+   - `reklama-dlya-salona-krasoty-borisoglebsk.html`;
+   - `reklama-dlya-servisa-masterskoy-borisoglebsk.html`.
+
 ## Автоматизация для основных коммерческих страниц
 
 Чтобы не править вручную длинные HTML-файлы с большими inline-стилями, добавлены:
@@ -123,7 +131,12 @@ python3 tools/apply_open_graph.py --apply
 - `reklama-dlya-magazina-borisoglebsk.html` — реклама для магазина;
 - `reklama-dlya-kafe-borisoglebsk.html` — реклама для кафе;
 - `reklama-v-soobshchestvah-borisoglebska.html` — реклама в сообществах;
-- `yandex-karty-2gis.html` — Яндекс Карты и 2ГИС.
+- `yandex-karty-2gis.html` — Яндекс Карты и 2ГИС;
+- `srochnaya-reklama-borisoglebsk.html` — срочная реклама;
+- `reklama-v-socsetyah-borisoglebsk.html` — реклама в соцсетях;
+- `reklama-dlya-meropriyatiy-borisoglebsk.html` — реклама мероприятий;
+- `reklama-dlya-salona-krasoty-borisoglebsk.html` — реклама для салона красоты;
+- `reklama-dlya-servisa-masterskoy-borisoglebsk.html` — реклама для сервиса и мастерской.
 
 ## Рабочее правило
 
