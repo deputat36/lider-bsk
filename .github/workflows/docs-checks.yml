@@ -107,6 +107,10 @@ jobs:
           grep -Fq 'Этап расширения Open Graph 2026-06-28' "$status_doc"
           grep -Fq 'srochnaya-reklama-borisoglebsk.html' "$status_doc"
           grep -Fq 'reklama-dlya-servisa-masterskoy-borisoglebsk.html' "$status_doc"
+          grep -Fq 'tablichki-borisoglebsk.html' "$status_doc"
+          grep -Fq 'oformlenie-vitrin-borisoglebsk.html' "$status_doc"
+          grep -Fq 'pechat-na-plenke-borisoglebsk.html' "$status_doc"
+          grep -Fq 'первые два пакета из 8 страниц услуг уже закрыты' "$status_doc"
           grep -Fq '20260628-access-label-1' "$status_doc"
           grep -Fq 'Доступ и роли' "$status_doc"
 

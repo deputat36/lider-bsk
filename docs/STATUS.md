@@ -158,12 +158,15 @@ CRM использует Edge Functions с JWT. Прямой доступ бра
 
 Этап расширения Open Graph 2026-06-28:
 
-- Open Graph / Twitter Card добавлены на 5 дополнительных страниц услуг:
+- Open Graph / Twitter Card добавлены на 8 дополнительных страниц услуг:
   - `srochnaya-reklama-borisoglebsk.html`;
   - `reklama-v-socsetyah-borisoglebsk.html`;
   - `reklama-dlya-meropriyatiy-borisoglebsk.html`;
   - `reklama-dlya-salona-krasoty-borisoglebsk.html`;
   - `reklama-dlya-servisa-masterskoy-borisoglebsk.html`;
+  - `tablichki-borisoglebsk.html`;
+  - `oformlenie-vitrin-borisoglebsk.html`;
+  - `pechat-na-plenke-borisoglebsk.html`;
 - `tools/open_graph_pages.json` расширен этими страницами;
 - `Open Graph check` запускается при изменении этих страниц и проверяет конфиг через `python3 tools/apply_open_graph.py --check`;
 - Supabase, CRM, Edge Functions, таблицы, политики и данные не менялись.
@@ -171,7 +174,7 @@ CRM использует Edge Functions с JWT. Прямой доступ бра
 Найденные приоритеты:
 
 - критично: выполнить реальную ручную проверку заявки после v9 и проверить цепочку по показанному `request_id`;
-- важно: продолжить расширение Open Graph на оставшиеся коммерческие посадочные страницы; первый пакет из 5 страниц услуг уже закрыт;
+- важно: продолжить расширение Open Graph на оставшиеся коммерческие посадочные страницы; первые два пакета из 8 страниц услуг уже закрыты;
 - важно: унифицировать посадочные страницы услуг в фирменном чёрно-оранжевом стиле;
 - важно: унифицировать микроразметку `LocalBusiness`, `Service`, `FAQPage`, `BreadcrumbList`;
 - желательно: вынести общий публичный CSS в кэшируемый файл и вести единый журнал cache-buster версий.
