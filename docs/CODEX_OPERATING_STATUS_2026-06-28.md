@@ -4,6 +4,7 @@ Repository: `deputat36/lider-bsk`.
 Supabase project: `ofewxuqfjhamgerwzull`.
 Status issue: #15.
 Supabase baseline: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-28.md`.
+Request page post-merge snapshot: `docs/REQUEST_PAGE_POSTMERGE_STATUS_2026-06-28.md`.
 
 ## Current autonomous mode
 
@@ -18,12 +19,24 @@ Supabase baseline: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-28.md`.
 ## Repository checkpoint
 
 - Open PRs: none at this checkpoint.
+- PR #74 was merged into `main` by squash as `ddcd5db60cb7c1e716021008c201883275132853`.
+- `request.html` clarity update is now on `main` and guarded by `public-site-audit-check.yml`.
 - PR #13 remains closed without merge and is archival context only.
 - The active source of truth is `main`.
 - CRM access docs and guardrails are expected on `main`, not on the old `crm-hardening-main-20260626` branch.
 - RA Lider Supabase production baseline is documented in `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-28.md`.
 
 ## Manual owner check
+
+Public request page:
+
+`https://www.lider-bsk.ru/request.html`
+
+Expected result:
+
+- first screen shows the form and `Что будет дальше`;
+- the page has `Перед отправкой` and `После отправки` sections;
+- after a test submission, the form shows `Номер обращения`.
 
 Use the direct CRM access route:
 
