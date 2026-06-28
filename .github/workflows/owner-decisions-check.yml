@@ -1,0 +1,48 @@
+name: Owner decisions check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/OWNER_DECISIONS_2026-06-28.md'
+      - '.github/workflows/owner-decisions-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/OWNER_DECISIONS_2026-06-28.md'
+      - '.github/workflows/owner-decisions-check.yml'
+
+jobs:
+  validate-owner-decisions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate owner decision markers
+        shell: bash
+        run: |
+          set -euo pipefail
+          doc='docs/OWNER_DECISIONS_2026-06-28.md'
+          test -f "$doc"
+
+          grep -Fq 'Owner decisions — 2026-06-28' "$doc"
+          grep -Fq 'docs/SUPABASE_RA_LIDER_ADVISORS_2026-06-28.md' "$doc"
+          grep -Fq 'No owner action required right now' "$doc"
+          grep -Fq '`leader-public-lead` remains `ACTIVE` v9 with `verify_jwt=false`' "$doc"
+          grep -Fq '`leader-crm-leads` remains `ACTIVE` v12 with `verify_jwt=true`' "$doc"
+          grep -Fq '`leader-crm-orders` remains `ACTIVE` v2 with `verify_jwt=true`' "$doc"
+          grep -Fq 'SECURITY DEFINER execute count for `anon`, `authenticated`, `public` remains `0`' "$doc"
+
+          grep -Fq 'Enable leaked password protection' "$doc"
+          grep -Fq 'Codex should not change this autonomously' "$doc"
+          grep -Fq 'Touch `nav_*` / `nav_v2_*` SECURITY DEFINER warnings' "$doc"
+          grep -Fq 'Codex should not change `nav_*` while working on RA Lider' "$doc"
+          grep -Fq 'Drop or rewrite `leader_*` indexes' "$doc"
+          grep -Fq 'Codex should not drop indexes autonomously' "$doc"
+          grep -Fq 'Rewrite RLS policies for performance' "$doc"
+          grep -Fq 'Codex should not rewrite RLS policies autonomously' "$doc"
+          grep -Fq 'Deploy or change Edge Functions' "$doc"
+          grep -Fq 'rollback plan' "$doc"
+          grep -Fq 'Разрешаю точечное изменение Supabase production' "$doc"
+          grep -Fq 'Without this wording, Codex should treat Supabase as read-only' "$doc"
+          grep -Fq 'https://deputat36.github.io/lider-bsk/crm/v4/?tab=user_admin' "$doc"
