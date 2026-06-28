@@ -156,10 +156,22 @@ CRM использует Edge Functions с JWT. Прямой доступ бра
 - endpoint, payload-контракт, Supabase Edge Function, таблицы, политики, RLS и данные не менялись;
 - `Request reference check`, `Public site audit check` и `Docs checks` защищают marker `20260628-clarity-2` и сценарии от случайного удаления.
 
+Этап расширения Open Graph 2026-06-28:
+
+- Open Graph / Twitter Card добавлены на 5 дополнительных страниц услуг:
+  - `srochnaya-reklama-borisoglebsk.html`;
+  - `reklama-v-socsetyah-borisoglebsk.html`;
+  - `reklama-dlya-meropriyatiy-borisoglebsk.html`;
+  - `reklama-dlya-salona-krasoty-borisoglebsk.html`;
+  - `reklama-dlya-servisa-masterskoy-borisoglebsk.html`;
+- `tools/open_graph_pages.json` расширен этими страницами;
+- `Open Graph check` запускается при изменении этих страниц и проверяет конфиг через `python3 tools/apply_open_graph.py --check`;
+- Supabase, CRM, Edge Functions, таблицы, политики и данные не менялись.
+
 Найденные приоритеты:
 
 - критично: выполнить реальную ручную проверку заявки после v9 и проверить цепочку по показанному `request_id`;
-- важно: массово добавить полноценный Open Graph на главную и коммерческие посадочные страницы;
+- важно: продолжить расширение Open Graph на оставшиеся коммерческие посадочные страницы; первый пакет из 5 страниц услуг уже закрыт;
 - важно: унифицировать посадочные страницы услуг в фирменном чёрно-оранжевом стиле;
 - важно: унифицировать микроразметку `LocalBusiness`, `Service`, `FAQPage`, `BreadcrumbList`;
 - желательно: вынести общий публичный CSS в кэшируемый файл и вести единый журнал cache-buster версий.
@@ -253,7 +265,7 @@ RLS и GRANT аудита проверены. Нужна одна реальна
 16. После слияния этапа PNG-обложки открыть GitHub Actions и проверить `Open Graph check`, `Public site audit check`, `Static checks`.
 17. Открыть `request.html`, проверить наличие номерa обращения после отправки заявки.
 18. Проверить предпросмотр ссылки `request.html` в Telegram/ВК: он должен использовать `assets/og-lider-default.png`.
-19. Следующим SEO-этапом добавить OG-набор на главную и основные коммерческие посадочные страницы.
+19. Следующим SEO-этапом продолжить OG-набор на оставшиеся коммерческие посадочные страницы.
 
 ## Ограничения
 
@@ -265,5 +277,5 @@ RLS и GRANT аудита проверены. Нужна одна реальна
 - прямые fetch/curl к GitHub Pages из текущего окружения могут блокироваться сетевой политикой;
 - push-запуски GitHub Actions не отображаются в combined status API;
 - публичный аудит 2026-06-26 не менял боевую функцию `leader-public-lead` и не выполнял DDL в Supabase;
-- этапы Open Graph, PNG-обложки и удобства страницы заявки не меняют Supabase и CRM, только публичные SEO/UX-файлы GitHub;
+- этапы Open Graph, PNG-обложки, расширения Open Graph на страницы услуг и удобства страницы заявки не меняют Supabase и CRM, только публичные SEO/UX-файлы GitHub;
 - CRM SQL sync-файлы в GitHub сейчас являются final-state snapshots: перед использованием `supabase db push` или preview branches нужно выполнить migration-history normalization из `docs/SUPABASE_MIGRATION_HISTORY_NORMALIZATION_2026-06-27.md`.
