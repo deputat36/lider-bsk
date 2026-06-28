@@ -19,11 +19,11 @@ Current observed result on 2026-06-28:
 
 | Metric | Count |
 | --- | ---: |
-| `security_definer_public` | 71 |
-| `executable_by_authenticated` | 47 |
+| `security_definer_public` | 72 |
+| `executable_by_authenticated` | 48 |
 | `not_executable_by_authenticated` | 24 |
 
-Earlier on 2026-06-28 this snapshot was recorded as `70 / 46 / 24`. A later read-only connector check observed drift to `71 / 47 / 24`. This repository update records the drift; it did not create it.
+Earlier on 2026-06-28 this snapshot was recorded as `70 / 46 / 24`, then `71 / 47 / 24`. A later read-only connector check observed drift to `72 / 48 / 24`. This repository update records the drift; it did not create it.
 
 ## Scope split
 
@@ -33,7 +33,7 @@ Current scope split for `public` SECURITY DEFINER functions:
 | --- | ---: | ---: | ---: |
 | `leader` | 8 | 0 | 8 |
 | `nav` | 11 | 5 | 6 |
-| `nav_v2` | 51 | 42 | 9 |
+| `nav_v2` | 52 | 43 | 9 |
 | `other` | 1 | 0 | 1 |
 
 ## Interpretation
