@@ -2,7 +2,7 @@ name: Request reference check
 
 on:
   push:
-    branches: [main, improve-site-crm, public-site-audit-20260626]
+    branches: [main]
     paths:
       - request.html
       - assets/public-lead-reference-v1.js

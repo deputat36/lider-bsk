@@ -2,7 +2,7 @@ name: Docs checks
 
 on:
   push:
-    branches: [main, improve-site-crm]
+    branches: [main]
   pull_request:
     branches: [main]
 

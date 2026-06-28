@@ -2,7 +2,7 @@ name: Public site audit check
 
 on:
   push:
-    branches: [main, public-site-audit-20260626]
+    branches: [main]
     paths:
       - '*.html'
       - 'assets/public-lead-form.js'
