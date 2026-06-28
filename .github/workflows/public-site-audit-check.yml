@@ -71,6 +71,11 @@ jobs:
           grep -Fq 'overflow-x:hidden' "$css"
           grep -Fq 'params.request_id' "$helper"
           grep -Fq 'Номер обращения:' "$helper"
+          grep -Fq '20260628-clarity-1' "$request"
+          grep -Fq 'Что будет дальше' "$request"
+          grep -Fq 'Перед отправкой' "$request"
+          grep -Fq 'После отправки' "$request"
+          grep -Fq 'Номер обращения' "$request"
           if grep -Fq "if(field(form,'website'))return" "$form"; then
             echo 'Client-side honeypot must not bypass server audit.' >&2
             exit 1
