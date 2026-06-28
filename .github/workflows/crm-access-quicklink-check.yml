@@ -17,6 +17,7 @@ jobs:
         run: |
           set -euo pipefail
           index='crm/v4/index.html'
+          menu='crm/v4/assets/v4/crm-v4-expanded-menu-v1.js'
           runbook='docs/CRM_ACCESS_TAB_CHECK_2026-06-27.md'
           status='docs/STATUS.md'
           issue_template='.github/ISSUE_TEMPLATE/crm-v4-browser-test.md'
@@ -27,6 +28,7 @@ jobs:
           selfcheck='docs/CRM_V4_SELFCHECK.md'
           manual='docs/MANUAL_TEST_CHECKLIST.md'
           test -f "$index"
+          test -f "$menu"
           test -f "$runbook"
           test -f "$status"
           test -f "$issue_template"
@@ -38,10 +40,14 @@ jobs:
           test -f "$manual"
           grep -Fq 'href="?tab=user_admin"' "$index"
           grep -Fq 'Открыть доступ CRM' "$index"
+          grep -Fq 'Доступ и роли' "$index"
           grep -Fq 'data-v4-tab-button="user_admin"' "$index"
           grep -Fq 'crm-v4-tabs-lite.js?v=20260627-access-route-1' "$index"
+          grep -Fq 'crm-v4-expanded-menu-v1.js?v=20260628-access-label-1' "$index"
           grep -Fq 'auth.js?v=20260627-access-3' "$index"
+          grep -Fq "{ tab: 'user_admin', label: 'Доступ и роли' }" "$menu"
           grep -Fq 'Открыть доступ CRM' "$runbook"
+          grep -Fq 'Доступ и роли' "$runbook"
           grep -Fq 'href="?tab=user_admin"' "$runbook"
           grep -Fq 'active access admins' "$runbook"
           grep -Fq 'inactive profiles: 0' "$runbook"
