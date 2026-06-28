@@ -101,6 +101,8 @@ jobs:
           grep -Fq 'duplicate' "$status_doc"
           grep -Fq 'Проверить request_id' "$status_doc"
           grep -Fq 'Цепочка полная' "$status_doc"
+          grep -Fq '20260628-clarity-2' "$status_doc"
+          grep -Fq 'Выберите похожую задачу' "$status_doc"
 
           grep -Fq '`v9`' "$audit_doc"
           grep -Fq 'v8 audit contract' "$audit_doc"
