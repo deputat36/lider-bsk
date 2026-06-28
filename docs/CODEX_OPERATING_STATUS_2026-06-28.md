@@ -3,6 +3,7 @@
 Repository: `deputat36/lider-bsk`.
 Supabase project: `ofewxuqfjhamgerwzull`.
 Status issue: #15.
+Supabase baseline: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-28.md`.
 
 ## Current autonomous mode
 
@@ -20,6 +21,7 @@ Status issue: #15.
 - PR #13 remains closed without merge and is archival context only.
 - The active source of truth is `main`.
 - CRM access docs and guardrails are expected on `main`, not on the old `crm-hardening-main-20260626` branch.
+- RA Lider Supabase production baseline is documented in `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-28.md`.
 
 ## Manual owner check
 
