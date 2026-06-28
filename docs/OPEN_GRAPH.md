@@ -89,13 +89,19 @@
    - наличие `lastmod` в sitemap;
    - все страницы из `tools/open_graph_pages.json` через `python3 tools/apply_open_graph.py --check`.
 
-8. Дополнительно 2026-06-28 Open Graph / Twitter Card добавлены на страницы:
+8. Дополнительно 2026-06-28 Open Graph / Twitter Card добавлены на страницы первого пакета:
 
    - `srochnaya-reklama-borisoglebsk.html`;
    - `reklama-v-socsetyah-borisoglebsk.html`;
    - `reklama-dlya-meropriyatiy-borisoglebsk.html`;
    - `reklama-dlya-salona-krasoty-borisoglebsk.html`;
    - `reklama-dlya-servisa-masterskoy-borisoglebsk.html`.
+
+9. Дополнительно 2026-06-28 Open Graph / Twitter Card добавлены на страницы второго пакета:
+
+   - `tablichki-borisoglebsk.html`;
+   - `oformlenie-vitrin-borisoglebsk.html`;
+   - `pechat-na-plenke-borisoglebsk.html`.
 
 ## Автоматизация для основных коммерческих страниц
 
@@ -126,6 +132,9 @@ python3 tools/apply_open_graph.py --apply
 - `bannery-borisoglebsk.html` — баннеры;
 - `vyveski-borisoglebsk.html` — вывески;
 - `nakleyki-plotternaya-rezka-borisoglebsk.html` — наклейки и плоттерная резка;
+- `tablichki-borisoglebsk.html` — таблички;
+- `oformlenie-vitrin-borisoglebsk.html` — оформление витрин;
+- `pechat-na-plenke-borisoglebsk.html` — печать на плёнке;
 - `outdoor-advertising-borisoglebsk.html` — наружная реклама;
 - `reklama-dlya-biznesa.html` — реклама для бизнеса;
 - `reklama-dlya-magazina-borisoglebsk.html` — реклама для магазина;
