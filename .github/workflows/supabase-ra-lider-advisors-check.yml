@@ -1,0 +1,46 @@
+name: Supabase RA Lider advisors check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/SUPABASE_RA_LIDER_ADVISORS_2026-06-28.md'
+      - '.github/workflows/supabase-ra-lider-advisors-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/SUPABASE_RA_LIDER_ADVISORS_2026-06-28.md'
+      - '.github/workflows/supabase-ra-lider-advisors-check.yml'
+
+jobs:
+  validate-ra-lider-supabase-advisors:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate RA Lider Supabase advisor baseline markers
+        shell: bash
+        run: |
+          set -euo pipefail
+          doc='docs/SUPABASE_RA_LIDER_ADVISORS_2026-06-28.md'
+          test -f "$doc"
+
+          grep -Fq 'Supabase RA Lider advisors — 2026-06-28' "$doc"
+          grep -Fq 'Supabase project: `ofewxuqfjhamgerwzull`' "$doc"
+          grep -Fq 'No Supabase DDL, DML, Edge Function deploy, RLS, grants, policies, indexes or data changes were made' "$doc"
+          grep -Fq '`authenticated_security_definer_function_executable` warnings in the visible advisor output are for `nav_*` / `nav_v2_*` functions' "$doc"
+          grep -Fq '`auth_leaked_password_protection` is enabled as an advisor warning' "$doc"
+          grep -Fq 'Public exposed `public.leader_%` SECURITY DEFINER execute count for `anon`, `authenticated`, `public`: `0`' "$doc"
+          grep -Fq '`leader_apply_profile_invite`: execute grantees `{postgres,service_role}`' "$doc"
+          grep -Fq '`leader_create_order_from_offer_rpc`: execute grantees `{postgres,service_role}`' "$doc"
+          grep -Fq '`leader_ensure_profile`: execute grantees `{postgres,service_role}`' "$doc"
+          grep -Fq 'No RA Lider `leader_*` SECURITY DEFINER function is exposed to `anon`, `authenticated` or `public`' "$doc"
+          grep -Fq '`nav_*` / `nav_v2_*` warnings are outside RA Lider scope' "$doc"
+          grep -Fq '`unused_index` notices across several project areas, including RA Lider' "$doc"
+          grep -Fq '`leader_leads_created_at_idx`' "$doc"
+          grep -Fq '`leader_user_invites_invited_by_idx`' "$doc"
+          grep -Fq 'Do not drop these indexes autonomously' "$doc"
+          grep -Fq 'requires explicit owner approval plus rollback plan' "$doc"
+          grep -Fq '`leader-public-lead`: `ACTIVE`, version `9`, `verify_jwt=false`' "$doc"
+          grep -Fq '`leader-crm-leads`: `ACTIVE`, version `12`, `verify_jwt=true`' "$doc"
+          grep -Fq '`leader-crm-orders`: `ACTIVE`, version `2`, `verify_jwt=true`' "$doc"
