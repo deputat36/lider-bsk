@@ -1,6 +1,6 @@
 # Codex owner playbook — RA Lider
 
-Date: 2026-06-27.
+Date: 2026-06-28.
 
 This guide is for the project owner. It describes how to use Codex effectively without writing code.
 
@@ -21,6 +21,7 @@ Recommended default for this project:
 - GitHub writes are allowed for docs, frontend fixes, workflows and safe guards.
 - Supabase is read-only by default.
 - Supabase production changes require explicit owner approval.
+- Owner decisions and approval boundaries are tracked in `docs/OWNER_DECISIONS_2026-06-28.md`.
 - `leader_*` is in scope.
 - `nav_*` is out of scope unless explicitly requested.
 - Do not assert CI green when GitHub connector returns empty `statuses` / `workflow_runs` for push commits.
@@ -75,10 +76,13 @@ Ask the owner first for:
 - deleting data, functions, policies, indexes or tables;
 - changing RLS broadly;
 - deploying Edge Functions, except a narrow confirmed hotfix;
+- changing Supabase Auth settings such as leaked password protection;
 - changing business logic for finance, orders, roles or calculations;
 - touching `nav_*` objects;
 - sending messages, notifications or emails on behalf of the company;
 - creating real test leads that remain in production CRM.
+
+The current decision register is `docs/OWNER_DECISIONS_2026-06-28.md`. Use it before proposing or performing any production Supabase change.
 
 ## Manual checks for the owner
 
@@ -107,8 +111,9 @@ Use this wording only when production changes are allowed:
 
 ```text
 Разрешаю точечное изменение Supabase production.
+Scope: <что именно можно менять>.
 Перед изменением дай план, риск и rollback.
-После изменения проверь SQL-запросом и запиши миграционный follow-up в GitHub.
+После изменения проверь SQL-запросом и запиши результат в GitHub/issue #15.
 ```
 
 If this wording is not present, Codex should treat Supabase as read-only.
@@ -130,4 +135,5 @@ Final answer should include:
 - Status issue: #15.
 - Main status doc: `docs/STATUS.md`.
 - Autopilot rules: `docs/AUTOPILOT_RULES.md`.
+- Owner decisions: `docs/OWNER_DECISIONS_2026-06-28.md`.
 - Access tab runbook: `docs/CRM_ACCESS_TAB_CHECK_2026-06-27.md`.
