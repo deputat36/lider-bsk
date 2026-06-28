@@ -34,4 +34,4 @@ jobs:
           grep -Fq 'row.phone_normalized' "$audit"
           grep -Fq 'row.utm_campaign' "$audit"
           grep -Fq 'По этому номеру обращения' "$audit"
-          grep -Fq "public-lead-audit-v1.js?v=20260624-search-1" "$loader"
+          grep -Fq "public-lead-audit-v1.js?v=20260625-duplicate-copy-1" "$loader"
