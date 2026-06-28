@@ -1,6 +1,6 @@
 # Статус проекта РА «Лидер»
 
-Дата обновления: 2026-06-27.
+Дата обновления: 2026-06-28.
 
 ## Основной контур
 
@@ -15,6 +15,8 @@
 Использовать только объекты `leader_*`. Объекты `nav_*` относятся к другому проектному контуру.
 
 Режим автономной работы закреплён в `docs/AUTOPILOT_RULES.md`.
+Операционный checkpoint Codex: `docs/CODEX_OPERATING_STATUS_2026-06-28.md`.
+Supabase baseline РА «Лидер»: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-28.md`.
 
 ## Supabase
 
@@ -25,6 +27,18 @@
 - `leader-crm-orders v2`, `verify_jwt=true`.
 
 CRM использует Edge Functions с JWT. Прямой доступ браузера к служебным RPC закрыт. Права таблиц заявок, аудита, событий и CRM-доступа приведены к минимальной модели.
+
+Проверка 2026-06-28:
+
+- live `leader-public-lead v9` активна и работает в публичном режиме `verify_jwt=false`;
+- live `leader-crm-leads v12` активна, `verify_jwt=true`;
+- live `leader-crm-orders v2` активна, `verify_jwt=true`;
+- baseline live-состояния сохранён в `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-28.md`;
+- active access admins (`owner` + `admin`): 3; active `manager`: 1; inactive profiles: 0;
+- `leader_user_profiles` и `leader_user_invites` имеют RLS и grants для `authenticated` только `SELECT`, `INSERT`, `UPDATE`;
+- `leader_apply_profile_invite`, `leader_create_order_from_offer_rpc`, `leader_ensure_profile` доступны на execute только `{postgres,service_role}`;
+- среди `public.leader_%` SECURITY DEFINER функций нет функций, доступных `anon`, `authenticated` или `public`;
+- Supabase production не менялся: DDL, DML, Edge Function deploy, RLS, grants, policies и данные не трогались.
 
 Проверка 2026-06-27:
 
