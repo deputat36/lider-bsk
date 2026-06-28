@@ -2,7 +2,7 @@ name: Public lead audit search check
 
 on:
   push:
-    branches: [main, improve-site-crm]
+    branches: [main]
     paths:
       - crm/v4/assets/v4/public-lead-audit-v1.js
       - crm/v4/assets/v4/site-cache-note-v1.js
