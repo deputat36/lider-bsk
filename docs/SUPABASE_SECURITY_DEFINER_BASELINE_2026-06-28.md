@@ -27,7 +27,7 @@ Observed result on 2026-06-28:
 
 This is a project-wide baseline for `public` SECURITY DEFINER functions, not a RA Lider CRM-only result.
 
-The baseline overlaps with known Navigator `nav_*` / `nav_v2_*` advisor scope documented elsewhere. It must not be interpreted as a fixed finding.
+The baseline overlaps with known Navigator `nav_*` / `nav_v2_*` advisor scope documented elsewhere. It is not a fixed finding and must not be interpreted as remediation.
 
 RA Lider CRM hardening remains scoped to `leader_*` objects unless a separate reviewed task explicitly changes Navigator objects.
 
