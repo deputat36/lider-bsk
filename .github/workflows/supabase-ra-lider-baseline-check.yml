@@ -1,0 +1,58 @@
+name: Supabase RA Lider baseline check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/SUPABASE_RA_LIDER_BASELINE_2026-06-28.md'
+      - '.github/workflows/supabase-ra-lider-baseline-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/SUPABASE_RA_LIDER_BASELINE_2026-06-28.md'
+      - '.github/workflows/supabase-ra-lider-baseline-check.yml'
+
+jobs:
+  validate-ra-lider-supabase-baseline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate RA Lider Supabase baseline markers
+        shell: bash
+        run: |
+          set -euo pipefail
+          doc='docs/SUPABASE_RA_LIDER_BASELINE_2026-06-28.md'
+          test -f "$doc"
+
+          grep -Fq 'Supabase RA Lider baseline — 2026-06-28' "$doc"
+          grep -Fq 'Supabase project: `ofewxuqfjhamgerwzull`' "$doc"
+          grep -Fq 'Scope: RA Lider objects only' "$doc"
+          grep -Fq 'No Supabase DDL, DML, Edge Function deploy, RLS, grants, policies or data changes were made' "$doc"
+
+          grep -Fq '`leader-public-lead`: `ACTIVE`, version `9`, `verify_jwt=false`' "$doc"
+          grep -Fq '`leader-crm-leads`: `ACTIVE`, version `12`, `verify_jwt=true`' "$doc"
+          grep -Fq '`leader-crm-orders`: `ACTIVE`, version `2`, `verify_jwt=true`' "$doc"
+          grep -Fq 'Non-RA-Lider functions such as `nav_*` and `parket-*` are out of scope' "$doc"
+
+          grep -Fq 'active `owner`: `2`' "$doc"
+          grep -Fq 'active `admin`: `1`' "$doc"
+          grep -Fq 'active `manager`: `1`' "$doc"
+
+          grep -Fq '`leader_user_profiles`: RLS enabled' "$doc"
+          grep -Fq '`leader_user_invites`: RLS enabled' "$doc"
+          grep -Fq 'limited to `SELECT`, `INSERT`, `UPDATE`' "$doc"
+          grep -Fq 'No `anon` or `public` grants appeared' "$doc"
+
+          grep -Fq '`leader_user_invites_normalize_trg`' "$doc"
+          grep -Fq '`leader_apply_profile_invite_trg`' "$doc"
+          grep -Fq '`trg_leader_guard_user_profile_security`' "$doc"
+
+          grep -Fq 'SECURITY DEFINER execute count for `anon`, `authenticated`, `public`: `0`' "$doc"
+          grep -Fq '`leader_apply_profile_invite`: `{postgres,service_role}`' "$doc"
+          grep -Fq '`leader_create_order_from_offer_rpc`: `{postgres,service_role}`' "$doc"
+          grep -Fq '`leader_ensure_profile`: `{postgres,service_role}`' "$doc"
+
+          grep -Fq 'Owner/admin creates invite in CRM tab `Доступ`' "$doc"
+          grep -Fq 'A user without invite remains pending/inactive' "$doc"
+          grep -Fq 'https://deputat36.github.io/lider-bsk/crm/v4/?tab=user_admin' "$doc"
