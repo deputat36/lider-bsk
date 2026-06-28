@@ -21,11 +21,13 @@ jobs:
           status='docs/STATUS.md'
           operating_status='docs/CODEX_OPERATING_STATUS_2026-06-27.md'
           current_checkpoint='docs/CODEX_OPERATING_STATUS_2026-06-28.md'
+          supabase_baseline='docs/SUPABASE_RA_LIDER_BASELINE_2026-06-28.md'
           test -f "$playbook"
           test -f "$rules"
           test -f "$status"
           test -f "$operating_status"
           test -f "$current_checkpoint"
+          test -f "$supabase_baseline"
           grep -Fq 'Supabase только read-only' "$playbook"
           grep -Fq 'Supabase production changes require explicit owner approval' "$playbook"
           grep -Fq 'Do not assert CI green' "$playbook"
@@ -56,7 +58,13 @@ jobs:
           grep -Fq 'Open PRs: none' "$current_checkpoint"
           grep -Fq 'active source of truth is `main`' "$current_checkpoint"
           grep -Fq 'Supabase только read-only' "$current_checkpoint"
+          grep -Fq 'Supabase baseline: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-28.md`' "$current_checkpoint"
+          grep -Fq 'RA Lider Supabase production baseline is documented in `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-28.md`' "$current_checkpoint"
           grep -Fq 'leader-public-lead` must remain ACTIVE v9' "$current_checkpoint"
           grep -Fq 'leader-crm-leads` must remain ACTIVE v12' "$current_checkpoint"
           grep -Fq 'leader-crm-orders` must remain ACTIVE v2' "$current_checkpoint"
           grep -Fq 'SECURITY DEFINER execute count should remain `0`' "$current_checkpoint"
+          grep -Fq 'Supabase RA Lider baseline — 2026-06-28' "$supabase_baseline"
+          grep -Fq '`leader-public-lead`: `ACTIVE`, version `9`, `verify_jwt=false`' "$supabase_baseline"
+          grep -Fq '`leader-crm-leads`: `ACTIVE`, version `12`, `verify_jwt=true`' "$supabase_baseline"
+          grep -Fq '`leader-crm-orders`: `ACTIVE`, version `2`, `verify_jwt=true`' "$supabase_baseline"
