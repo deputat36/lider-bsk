@@ -2,7 +2,7 @@ name: Open Graph check
 
 on:
   push:
-    branches: [main, public-og-png-20260626]
+    branches: [main]
     paths:
       - 'index.html'
       - 'request.html'
