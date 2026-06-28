@@ -306,7 +306,7 @@ jobs:
           grep -Fq 'supabase db push' "$history"
           grep -Fq 'leader_create_order_from_offer_rpc' "$history"
           grep -Fq 'user-admin-v1.js' "$status"
-          grep -Fq '20260627-access-3' "$status"
+          grep -Fq '20260628-access-label-1' "$status"
 
       - name: Validate grants migrations
         shell: bash
