@@ -29,6 +29,8 @@ This mirrors the production URL validation already present in the authenticated 
 - the fail-fast error and success messages remain present;
 - the workflow stays free of `NAV_V2_JWT`, `secrets.*`, service-role, and secret-key markers.
 
+The same CI check also protects this documentation snapshot by requiring the production project ref, production URL, auth-guard script path, `verify_jwt` status, deployed SHA, SECURITY DEFINER baseline, and explicit no-Supabase-change statement to remain present.
+
 ## Supabase read-only snapshot
 
 Observed through the Supabase connector on 2026-06-28:
