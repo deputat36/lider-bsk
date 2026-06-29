@@ -28,5 +28,5 @@ jobs:
           grep -Fq 'renderDesign(order)' "$card"
           grep -Fq 'data-orders-fast-design' "$fast"
           grep -Fq 'renderDesignBadge(order)' "$fast"
-          grep -Fq 'Проверьте макет до запуска в производство' "$fast"
+          grep -Fq 'проверьте до производства' "$fast"
           grep -Fq 'Дизайн / макет' "$fast"
