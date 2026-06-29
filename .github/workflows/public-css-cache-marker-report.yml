@@ -1,0 +1,47 @@
+name: Public CSS cache marker report
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '*.html'
+      - '.github/workflows/public-css-cache-marker-report.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '*.html'
+      - '.github/workflows/public-css-cache-marker-report.yml'
+
+jobs:
+  report-public-css-cache-markers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Report public CSS cache markers
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '### Public CSS cache marker report' >> "$GITHUB_STEP_SUMMARY"
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+
+          stale_files=$(grep -R -l 'assets/public-lead-form.css?v=3' -- *.html || true)
+          fresh_files=$(grep -R -l 'assets/public-lead-form.css?v=4' -- *.html || true)
+
+          if [ -n "$stale_files" ]; then
+            echo '::notice title=Public CSS cache marker::Some public RA Lider pages still reference assets/public-lead-form.css?v=3. Update them to ?v=4 when applying the public header responsiveness fix.'
+            echo 'Stale ?v=3 references:' >> "$GITHUB_STEP_SUMMARY"
+            echo "$stale_files" | sed 's/^/- /' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'No stale ?v=3 references found.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Current ?v=4 references:' >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$fresh_files" ]; then
+            echo "$fresh_files" | sed 's/^/- /' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '- none' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          grep -Fq 'assets/public-lead-form.css' index.html
