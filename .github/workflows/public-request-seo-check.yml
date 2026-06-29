@@ -1,0 +1,49 @@
+name: Public request SEO check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'request.html'
+      - '.github/workflows/public-request-seo-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'request.html'
+      - '.github/workflows/public-request-seo-check.yml'
+
+jobs:
+  validate-request-page-seo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate request page SEO and public lead metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          page='request.html'
+          test -f "$page"
+          grep -Fq '<title>Оставить заявку — РА Лидер</title>' "$page"
+          grep -Fq '<meta name="description" content="Оставьте заявку' "$page"
+          grep -Fq '<meta name="robots" content="index, follow">' "$page"
+          grep -Fq '<meta name="theme-color" content="#1A1A1A">' "$page"
+          grep -Fq '<link rel="canonical" href="https://www.lider-bsk.ru/request.html">' "$page"
+          grep -Fq '<meta property="og:type" content="website">' "$page"
+          grep -Fq '<meta property="og:url" content="https://www.lider-bsk.ru/request.html">' "$page"
+          grep -Fq '<meta property="og:title" content="Оставить заявку — РА Лидер">' "$page"
+          grep -Fq '<meta property="og:image" content="https://www.lider-bsk.ru/assets/og-lider-default.png">' "$page"
+          grep -Fq '<meta property="og:image:width" content="1200">' "$page"
+          grep -Fq '<meta property="og:image:height" content="630">' "$page"
+          grep -Fq '<meta name="twitter:card" content="summary_large_image">' "$page"
+          grep -Fq '<meta name="twitter:image" content="https://www.lider-bsk.ru/assets/og-lider-default.png">' "$page"
+          grep -Fq '<link rel="stylesheet" href="assets/public-lead-form.css?v=4">' "$page"
+          grep -Fq 'assets/public-lead-reference-v1.js?v=1' "$page"
+          grep -Fq 'assets/public-lead-form.js?v=4' "$page"
+          grep -Fq 'data-request-page-version="20260628-clarity-2"' "$page"
+          grep -Fq 'Заявка сразу попадёт в CRM' "$page"
+          grep -Fq 'После отправки на странице появится номер обращения' "$page"
+          if grep -Fq 'assets/public-lead-form.css?v=3' "$page"; then
+            echo 'request.html must use the current public CSS cache marker v4.' >&2
+            exit 1
+          fi
