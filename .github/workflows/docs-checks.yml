@@ -56,6 +56,10 @@ jobs:
           grep -Fq 'Тест CRM v4 audit v8' "$audit_v8_check"
           grep -Fq 'Скопировать request_id' "$audit_v8_check"
           grep -Fq 'Проверить request_id' "$audit_v8_check"
+          grep -Fq 'Проверить цепочку' "$audit_v8_check"
+          grep -Fq 'С request_id' "$audit_v8_check"
+          grep -Fq 'Без request_id' "$audit_v8_check"
+          grep -Fq 'Открыть заявку' "$audit_v8_check"
           grep -Fq 'Цепочка полная' "$audit_v8_check"
           grep -Fq 'Дубль' "$audit_v8_check"
 
