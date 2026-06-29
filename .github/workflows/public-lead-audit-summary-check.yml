@@ -1,0 +1,28 @@
+name: Public lead audit summary check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-public-lead-audit-summary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate audit request summary addon
+        shell: bash
+        run: |
+          set -euo pipefail
+          loader='crm/v4/assets/v4/site-cache-note-v1.js'
+          addon='crm/v4/assets/v4/public-lead-audit-summary-v1.js'
+          test -f "$loader"
+          test -f "$addon"
+          node --check "$addon"
+          grep -Fq 'public-lead-audit-summary-v1.js?v=20260629-request-summary-1' "$loader"
+          grep -Fq 'publicLeadAuditRequestSummaryV1' "$addon"
+          grep -Fq 'data-public-lead-audit-request-summary' "$addon"
+          grep -Fq 'С request_id' "$addon"
+          grep -Fq 'Без request_id' "$addon"
+          grep -Fq 'MutationObserver' "$addon"
