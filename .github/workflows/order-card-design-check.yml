@@ -1,0 +1,26 @@
+name: Order card design check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-order-card-design:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate order design section markers
+        shell: bash
+        run: |
+          set -euo pipefail
+          card='crm/v4/assets/v4/order-card-v1.js'
+          test -f "$card"
+          grep -Fq 'Дизайн в заказе' "$card"
+          grep -Fq 'Дизайн / макет' "$card"
+          grep -Fq 'data-order-design-section' "$card"
+          grep -Fq 'layout_status' "$card"
+          grep -Fq 'Перед запуском в производство проверьте, утверждён ли макет' "$card"
+          grep -Fq 'designValue' "$card"
+          grep -Fq 'renderDesign(order)' "$card"
