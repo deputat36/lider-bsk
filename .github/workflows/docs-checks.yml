@@ -73,13 +73,18 @@ jobs:
             exit 1
           fi
 
-          grep -Fq 'Дата: 2026-06-25.' "$static_runbook"
+          grep -Fq 'Дата: 2026-06-29.' "$static_runbook"
           grep -Fq 'leader-public-lead v9' "$static_runbook"
           grep -Fq 'leader-crm-leads v12' "$static_runbook"
           grep -Fq 'leader_request_trace' "$static_runbook"
-          grep -Fq 'public-lead-audit-helper-v1.js?v=20260625-trace-widget-1' "$static_runbook"
-          grep -Fq 'public-lead-audit-v1.js?v=20260625-duplicate-copy-1' "$static_runbook"
+          grep -Fq 'public-lead-audit-v1.js?v=20260629-trace-button-1' "$static_runbook"
+          grep -Fq 'public-lead-audit-helper-v1.js?v=20260629-trace-open-lead-1' "$static_runbook"
+          grep -Fq 'public-lead-audit-summary-v1.js?v=20260629-request-summary-1' "$static_runbook"
           grep -Fq 'Проверить request_id' "$static_runbook"
+          grep -Fq 'Проверить цепочку' "$static_runbook"
+          grep -Fq 'С request_id' "$static_runbook"
+          grep -Fq 'Без request_id' "$static_runbook"
+          grep -Fq 'Открыть заявку' "$static_runbook"
           grep -Fq 'Цепочка полная' "$static_runbook"
 
           grep -Fq 'kvmbsk@yandex.ru' "$onboarding"
