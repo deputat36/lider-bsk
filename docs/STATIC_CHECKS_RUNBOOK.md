@@ -1,6 +1,6 @@
 # Проверки после релиза сайта и CRM РА «Лидер»
 
-Дата: 2026-06-25.
+Дата: 2026-06-29.
 
 ## Что проверять после каждого изменения сайта
 
@@ -34,7 +34,10 @@
 14. Роли пользователей не меняются самовольно.
 15. В консоли браузера нет 404 по файлам `assets/v4/`.
 16. Раздел `Аудит заявок` содержит кнопку `Скопировать request_id`.
-17. Раздел `Аудит заявок` содержит виджет `Проверить request_id`.
+17. Раздел `Аудит заявок` содержит кнопку `Проверить цепочку`.
+18. Раздел `Аудит заявок` содержит сводку `С request_id` / `Без request_id`.
+19. Раздел `Аудит заявок` содержит виджет `Проверить request_id`.
+20. При найденной заявке виджет трассировки содержит кнопку `Открыть заявку`.
 
 ## Что проверять в GitHub Actions
 
@@ -59,10 +62,11 @@ Workflow:
 - что расширенное меню `crm-v4-expanded-menu-v1.js` и самопроверка `crm-ui-selfcheck-v1.js` содержат одинаковый обязательный набор вкладок CRM v4;
 - что самопроверка `crm-ui-selfcheck-v1.js` содержит прямую ссылку на GitHub issue template `crm-v4-browser-test.md`;
 - что `crm/v4/index.html` подключает ключевые модульные файлы разделов CRM v4;
-- что `site-cache-note-v1.js` lazy-import подключает `crm-ui-selfcheck-v1.js`, `public-lead-audit-v1.js` и `public-lead-audit-helper-v1.js`;
-- что `public-lead-audit-v1.js` читает `leader_public_lead_audit`, берёт последние 80 событий, сортирует по дате, содержит diagnostic fields, referer, payload, фильтры по статусам и кнопку `Скопировать request_id`;
-- что `public-lead-audit-helper-v1.js` читает `leader_request_trace` и содержит форму `Проверить request_id`;
-- актуальные cache-buster версии `crm-ui-selfcheck-v1.js?v=20260624-contour-1`, `public-lead-audit-v1.js?v=20260625-duplicate-copy-1`, `public-lead-audit-helper-v1.js?v=20260625-trace-widget-1`;
+- что `site-cache-note-v1.js` lazy-import подключает `crm-ui-selfcheck-v1.js`, `public-lead-audit-v1.js`, `public-lead-audit-helper-v1.js` и `public-lead-audit-summary-v1.js`;
+- что `public-lead-audit-v1.js` читает `leader_public_lead_audit`, берёт последние 80 событий, сортирует по дате, содержит diagnostic fields, referer, payload, фильтры по статусам, кнопку `Скопировать request_id` и кнопку `Проверить цепочку`;
+- что `public-lead-audit-helper-v1.js` читает `leader_request_trace`, содержит форму `Проверить request_id`, показывает `trace_status` и умеет открыть найденную заявку;
+- что `public-lead-audit-summary-v1.js` показывает `С request_id` и `Без request_id`;
+- актуальные cache-buster версии `crm-ui-selfcheck-v1.js?v=20260627-access-route-1`, `public-lead-audit-v1.js?v=20260629-trace-button-1`, `public-lead-audit-helper-v1.js?v=20260629-trace-open-lead-1`, `public-lead-audit-summary-v1.js?v=20260629-request-summary-1`;
 - наличие защищённого клиента Edge Functions `crm/v4/assets/v4/functions-client.js`;
 - что `functions-client.js` берёт текущую Supabase-сессию и передаёт `Authorization: Bearer <access_token>`;
 - что браузерные assets CRM v4 не содержат `SUPABASE_SERVICE_ROLE`, `SERVICE_ROLE_KEY` или `sb_secret_*`;
@@ -95,7 +99,7 @@ Workflow:
 - использование `leader_user_profiles` как источника прав CRM;
 - предупреждение не использовать `user_metadata` как источник прав;
 - инструкцию снятия доступа через `is_active = false`;
-- наличие в чек-листе Ctrl + F5, `Проверить CRM`, `Аудит заявок`, `request_id`, `Скопировать request_id`, `Проверить request_id`, `Цепочка полная`;
+- наличие в чек-листе Ctrl + F5, `Проверить CRM`, `Аудит заявок`, `request_id`, `Скопировать request_id`, `Проверить цепочку`, `С request_id`, `Без request_id`, `Проверить request_id`, `Цепочка полная`;
 - актуальность `docs/NEXT_SAFE_STEPS.md`: дата 2026-06-25, версии `leader-public-lead v9`, `leader-crm-leads v12`, `leader-crm-orders v2`, ключи сессий, `refreshPromise` и правило не менять live Supabase без плана, миграции и проверки;
 - актуальность `docs/PUBLIC_LEAD_AUDIT.md`: текущая функция `v9`, `v8 audit contract`, `duplicate`, `Скопировать request_id`, диагностические маркеры аудита;
 - актуальность `docs/DECISIONS.md`: ADR-008 про явный audit дублей и ADR-009 про трассировку через `leader_request_trace`;
@@ -126,13 +130,14 @@ Workflow:
 
 Проверяет:
 
-- актуальное подключение `public-lead-audit-helper-v1.js?v=20260625-trace-widget-1`;
+- актуальное подключение `public-lead-audit-helper-v1.js?v=20260629-trace-open-lead-1`;
 - ссылку на `request.html`;
 - пометку `Тест CRM v4 audit v8`;
 - форму `publicLeadTraceFormV1`;
 - кнопку `Проверить request_id`;
 - чтение `leader_request_trace`;
-- статусы `trace_status`, `lead_without_audit`, `audit_without_lead`.
+- статусы `trace_status`, `lead_without_audit`, `audit_without_lead`;
+- кнопку `Открыть заявку` для найденной заявки.
 
 ### Public lead audit copy check
 
@@ -142,11 +147,26 @@ Workflow:
 
 Проверяет:
 
-- актуальное подключение `public-lead-audit-v1.js?v=20260625-duplicate-copy-1`;
+- актуальное подключение `public-lead-audit-v1.js?v=20260629-trace-button-1`;
 - кнопку `Скопировать request_id`;
+- кнопку `Проверить цепочку`;
 - фильтр `duplicate`;
 - счётчик `Дубли`;
 - уведомление `request_id скопирован`.
+
+### Public lead audit summary check
+
+Workflow:
+
+`Public lead audit summary check`
+
+Проверяет:
+
+- актуальное подключение `public-lead-audit-summary-v1.js?v=20260629-request-summary-1`;
+- addon `public-lead-audit-summary-v1.js`;
+- сводку `С request_id`;
+- сводку `Без request_id`;
+- пересчёт через `MutationObserver`.
 
 ## Обязательные вкладки CRM v4
 
@@ -175,14 +195,16 @@ Workflow:
 - `installation-job-card-v2.js`;
 - `site-cache-note-v1.js`;
 - `public-lead-audit-v1.js`;
-- `public-lead-audit-helper-v1.js`.
+- `public-lead-audit-helper-v1.js`;
+- `public-lead-audit-summary-v1.js`.
 
 ## Актуальная цепочка кэша для аудита заявок и самопроверки
 
 - `crm/v4/index.html` подключает `site-cache-note-v1.js`;
-- `site-cache-note-v1.js` lazy-import подключает `crm-ui-selfcheck-v1.js?v=20260624-contour-1`;
-- `site-cache-note-v1.js` lazy-import подключает `public-lead-audit-v1.js?v=20260625-duplicate-copy-1`;
-- `site-cache-note-v1.js` lazy-import подключает `public-lead-audit-helper-v1.js?v=20260625-trace-widget-1`.
+- `site-cache-note-v1.js` lazy-import подключает `crm-ui-selfcheck-v1.js?v=20260627-access-route-1`;
+- `site-cache-note-v1.js` lazy-import подключает `public-lead-audit-v1.js?v=20260629-trace-button-1`;
+- `site-cache-note-v1.js` lazy-import подключает `public-lead-audit-helper-v1.js?v=20260629-trace-open-lead-1`;
+- `site-cache-note-v1.js` lazy-import подключает `public-lead-audit-summary-v1.js?v=20260629-request-summary-1`.
 
 ## Что остаётся ручной проверкой
 
@@ -190,7 +212,8 @@ Workflow:
 2. Отправить реальную тестовую заявку через `request.html`.
 3. Скопировать номер обращения.
 4. Найти событие в `Аудит заявок`.
-5. Нажать `Скопировать request_id`.
-6. Вставить номер в `Проверить request_id`.
+5. Проверить сводку `С request_id` / `Без request_id`.
+6. Нажать `Проверить цепочку` в карточке аудита.
 7. Убедиться, что виджет показывает `Цепочка полная`.
-8. Проверить, что заявка появилась в CRM только один раз.
+8. Нажать `Открыть заявку`, если кнопка появилась.
+9. Проверить, что заявка появилась в CRM только один раз.
