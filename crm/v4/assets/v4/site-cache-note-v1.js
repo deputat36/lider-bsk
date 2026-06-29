@@ -16,5 +16,6 @@ function bootSiteCacheNote() {
   import('./crm-ui-selfcheck-v1.js?v=20260627-access-route-1').catch(() => {});
   import('./public-lead-audit-v1.js?v=20260629-trace-button-1').catch(() => {});
   import('./public-lead-audit-helper-v1.js?v=20260629-trace-open-lead-1').catch(() => {});
+  import('./public-lead-audit-summary-v1.js?v=20260629-request-summary-1').catch(() => {});
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootSiteCacheNote); else bootSiteCacheNote();
