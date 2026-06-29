@@ -1,0 +1,37 @@
+name: Public privacy SEO check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'privacy.html'
+      - '.github/workflows/public-privacy-seo-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'privacy.html'
+      - '.github/workflows/public-privacy-seo-check.yml'
+
+jobs:
+  validate-privacy-page-seo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate privacy page SEO metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          page='privacy.html'
+          test -f "$page"
+          grep -Fq '<title>Политика конфиденциальности — РА Лидер</title>' "$page"
+          grep -Fq '<meta name="description"' "$page"
+          grep -Fq '<meta name="robots" content="index, follow">' "$page"
+          grep -Fq '<link rel="canonical" href="https://www.lider-bsk.ru/privacy.html">' "$page"
+          grep -Fq '<meta property="og:type" content="website">' "$page"
+          grep -Fq '<meta property="og:url" content="https://www.lider-bsk.ru/privacy.html">' "$page"
+          grep -Fq '<meta property="og:image" content="https://www.lider-bsk.ru/assets/og-lider-default.png">' "$page"
+          grep -Fq '<meta name="twitter:card" content="summary_large_image">' "$page"
+          grep -Fq '<meta name="twitter:image" content="https://www.lider-bsk.ru/assets/og-lider-default.png">' "$page"
+          grep -Fq 'Политика обработки персональных данных' "$page"
+          grep -Fq 'zakaz@lider-bsk.ru' "$page"
