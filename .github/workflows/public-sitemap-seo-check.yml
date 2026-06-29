@@ -27,7 +27,7 @@ jobs:
           grep -Fq '<?xml version="1.0" encoding="UTF-8"?>' "$sitemap"
           grep -Fq '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' "$sitemap"
           grep -Fq '<loc>https://www.lider-bsk.ru/</loc>' "$sitemap"
-          grep -Fq '<loc>https://www.lider-bsk.ru/request.html</loc>' "$sitemap" || true
+          grep -Fq '<loc>https://www.lider-bsk.ru/request.html</loc>' "$sitemap"
           grep -Fq '<loc>https://www.lider-bsk.ru/privacy.html</loc>' "$sitemap"
           grep -Fq '<lastmod>' "$sitemap"
           grep -Fq '<changefreq>' "$sitemap"
