@@ -1,0 +1,56 @@
+name: Public sitemap SEO check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'sitemap.xml'
+      - '.github/workflows/public-sitemap-seo-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'sitemap.xml'
+      - '.github/workflows/public-sitemap-seo-check.yml'
+
+jobs:
+  validate-public-sitemap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate public sitemap SEO contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          sitemap='sitemap.xml'
+          test -f "$sitemap"
+          grep -Fq '<?xml version="1.0" encoding="UTF-8"?>' "$sitemap"
+          grep -Fq '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' "$sitemap"
+          grep -Fq '<loc>https://www.lider-bsk.ru/</loc>' "$sitemap"
+          grep -Fq '<loc>https://www.lider-bsk.ru/request.html</loc>' "$sitemap" || true
+          grep -Fq '<loc>https://www.lider-bsk.ru/privacy.html</loc>' "$sitemap"
+          grep -Fq '<lastmod>' "$sitemap"
+          grep -Fq '<changefreq>' "$sitemap"
+          grep -Fq '<priority>' "$sitemap"
+
+          if grep -Fq '/crm/' "$sitemap" || grep -Fq 'nav_' "$sitemap" || grep -Fq 'nav-v2' "$sitemap"; then
+            echo 'sitemap.xml must stay public-site-only and must not include CRM/nav contours.' >&2
+            exit 1
+          fi
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          text = Path('sitemap.xml').read_text(encoding='utf-8')
+          urls = re.findall(r'<url>(.*?)</url>', text, flags=re.S)
+          if not urls:
+              raise SystemExit('sitemap.xml must contain at least one <url> entry')
+          for block in urls:
+              if '<loc>https://www.lider-bsk.ru/' not in block:
+                  raise SystemExit('Every sitemap URL must use the public www.lider-bsk.ru host')
+              for tag in ('lastmod', 'changefreq', 'priority'):
+                  if f'<{tag}>' not in block or f'</{tag}>' not in block:
+                      raise SystemExit(f'Every sitemap URL must include <{tag}>')
+          if len(urls) < 20:
+              raise SystemExit('sitemap.xml unexpectedly has too few public URLs')
+          PY
