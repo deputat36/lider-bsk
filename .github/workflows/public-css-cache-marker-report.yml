@@ -27,13 +27,21 @@ jobs:
 
           stale_files=$(grep -R -l 'assets/public-lead-form.css?v=3' -- *.html || true)
           fresh_files=$(grep -R -l 'assets/public-lead-form.css?v=4' -- *.html || true)
+          unexpected_stale=$(printf '%s\n' "$stale_files" | grep -v '^$' | grep -v '^index\.html$' || true)
 
           if [ -n "$stale_files" ]; then
-            echo '::notice title=Public CSS cache marker::Some public RA Lider pages still reference assets/public-lead-form.css?v=3. Update them to ?v=4 when applying the public header responsiveness fix.'
+            echo '::notice title=Public CSS cache marker::Some public RA Lider pages still reference assets/public-lead-form.css?v=3. The only temporarily allowed stale page is index.html while issue #97 is open.'
             echo 'Stale ?v=3 references:' >> "$GITHUB_STEP_SUMMARY"
             echo "$stale_files" | sed 's/^/- /' >> "$GITHUB_STEP_SUMMARY"
           else
             echo 'No stale ?v=3 references found.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          if [ -n "$unexpected_stale" ]; then
+            echo '::error title=Unexpected public CSS cache marker::Only index.html may temporarily keep assets/public-lead-form.css?v=3 while issue #97 is open.'
+            echo 'Unexpected stale ?v=3 references:' >> "$GITHUB_STEP_SUMMARY"
+            echo "$unexpected_stale" | sed 's/^/- /' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
           fi
 
           echo '' >> "$GITHUB_STEP_SUMMARY"
