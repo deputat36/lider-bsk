@@ -16,7 +16,9 @@ jobs:
         run: |
           set -euo pipefail
           card='crm/v4/assets/v4/order-card-v1.js'
+          fast='crm/v4/assets/v4/orders-fast-loader-v1.js'
           test -f "$card"
+          test -f "$fast"
           grep -Fq 'Дизайн в заказе' "$card"
           grep -Fq 'Дизайн / макет' "$card"
           grep -Fq 'data-order-design-section' "$card"
@@ -24,3 +26,7 @@ jobs:
           grep -Fq 'Перед запуском в производство проверьте, утверждён ли макет' "$card"
           grep -Fq 'designValue' "$card"
           grep -Fq 'renderDesign(order)' "$card"
+          grep -Fq 'data-orders-fast-design' "$fast"
+          grep -Fq 'renderDesignBadge(order)' "$fast"
+          grep -Fq 'проверьте до производства' "$fast"
+          grep -Fq 'Дизайн / макет' "$fast"
