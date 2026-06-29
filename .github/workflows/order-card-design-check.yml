@@ -19,10 +19,12 @@ jobs:
           fast='crm/v4/assets/v4/orders-fast-loader-v1.js'
           production='crm/v4/assets/v4/production-board-v3.js'
           control='crm/v4/assets/v4/order-control-v2.js'
+          job_card='crm/v4/assets/v4/production-job-card-v2.js'
           test -f "$card"
           test -f "$fast"
           test -f "$production"
           test -f "$control"
+          test -f "$job_card"
           grep -Fq 'Дизайн в заказе' "$card"
           grep -Fq 'Дизайн / макет' "$card"
           grep -Fq 'data-order-design-section' "$card"
@@ -45,3 +47,7 @@ jobs:
           grep -Fq 'Дизайн проверить' "$control"
           grep -Fq 'Дизайн / макеты и производство' "$control"
           grep -Fq 'designNeedsCheck' "$control"
+          grep -Fq 'data-production-job-layout-alert' "$job_card"
+          grep -Fq 'Дизайн / макет не согласован' "$job_card"
+          grep -Fq 'layoutNeedsCheck' "$job_card"
+          grep -Fq 'Статус макета' "$job_card"
