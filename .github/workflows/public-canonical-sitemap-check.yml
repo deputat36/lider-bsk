@@ -1,0 +1,62 @@
+name: Public canonical sitemap check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '*.html'
+      - 'sitemap.xml'
+      - '.github/workflows/public-canonical-sitemap-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '*.html'
+      - 'sitemap.xml'
+      - '.github/workflows/public-canonical-sitemap-check.yml'
+
+jobs:
+  validate-public-canonical-sitemap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate sitemap URLs and canonical tags
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          from urllib.parse import urlparse
+
+          host = 'https://www.lider-bsk.ru'
+          sitemap = Path('sitemap.xml')
+          text = sitemap.read_text(encoding='utf-8')
+          locs = re.findall(r'<loc>(.*?)</loc>', text)
+          if not locs:
+              raise SystemExit('sitemap.xml must contain <loc> entries')
+
+          for loc in locs:
+              if not loc.startswith(host + '/'):
+                  raise SystemExit(f'Sitemap URL must use public host: {loc}')
+              parsed = urlparse(loc)
+              if parsed.query or parsed.fragment:
+                  raise SystemExit(f'Sitemap URL must not include query or fragment: {loc}')
+              if parsed.path == '/':
+                  file_path = Path('index.html')
+                  expected_canonical = host + '/'
+              else:
+                  rel = parsed.path.lstrip('/')
+                  file_path = Path(rel)
+                  expected_canonical = loc
+              if not file_path.is_file():
+                  raise SystemExit(f'Sitemap URL points to missing file: {loc} -> {file_path}')
+              if file_path.suffix.lower() != '.html':
+                  continue
+              page = file_path.read_text(encoding='utf-8')
+              canonical = f'<link rel="canonical" href="{expected_canonical}">'
+              if canonical not in page:
+                  raise SystemExit(f'Missing or mismatched canonical in {file_path}: expected {canonical}')
+
+          print(f'Validated {len(locs)} public sitemap URLs and canonical tags.')
+          PY
