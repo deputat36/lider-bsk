@@ -1,0 +1,43 @@
+name: Design docs check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/DESIGN_ROADMAP_2026-06-28.md'
+      - 'docs/DESIGN_STATUS_2026-06-28.md'
+      - '.github/workflows/design-docs-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/DESIGN_ROADMAP_2026-06-28.md'
+      - 'docs/DESIGN_STATUS_2026-06-28.md'
+      - '.github/workflows/design-docs-check.yml'
+
+jobs:
+  validate-design-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate RA Lider design docs
+        shell: bash
+        run: |
+          set -euo pipefail
+          roadmap='docs/DESIGN_ROADMAP_2026-06-28.md'
+          status='docs/DESIGN_STATUS_2026-06-28.md'
+
+          test -f "$roadmap"
+          test -f "$status"
+
+          grep -Fq 'Дизайн-направление РА «Лидер»' "$roadmap"
+          grep -Fq 'чёрно-оранжевая фирменная палитра' "$roadmap"
+          grep -Fq 'docs/DESIGN_SYSTEM_2026-06-28.md' "$roadmap"
+          grep -Fq 'Supabase production не менять' "$roadmap"
+          grep -Fq 'Что требует согласования владельца' "$roadmap"
+
+          grep -Fq 'Статус дизайн-направления РА «Лидер»' "$status"
+          grep -Fq 'Дизайн теперь выделен в отдельное направление проекта' "$status"
+          grep -Fq '20260627-access-route-1' "$status"
+          grep -Fq 'Дизайн-задачи по умолчанию GitHub-only' "$status"
+          grep -Fq 'нужен единый фирменный чёрно-оранжевый стиль' "$status"
