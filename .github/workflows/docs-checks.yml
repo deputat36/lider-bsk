@@ -25,10 +25,11 @@ jobs:
           static_runbook='docs/STATIC_CHECKS_RUNBOOK.md'
           browser_report='docs/CRM_V4_BROWSER_TEST_REPORT.md'
           audit_doc='docs/PUBLIC_LEAD_AUDIT.md'
+          public_site_audit='docs/PUBLIC_SITE_AUDIT.md'
           audit_v8_check='docs/CRM_V4_AUDIT_V8_CHECK.md'
           issue_template='.github/ISSUE_TEMPLATE/crm-v4-browser-test.md'
 
-          for file in "$access_doc" "$checklist" "$onboarding" "$next_steps" "$status_doc" "$manual_checklist" "$decisions_doc" "$static_runbook" "$browser_report" "$audit_doc" "$audit_v8_check" "$issue_template"; do
+          for file in "$access_doc" "$checklist" "$onboarding" "$next_steps" "$status_doc" "$manual_checklist" "$decisions_doc" "$static_runbook" "$browser_report" "$audit_doc" "$public_site_audit" "$audit_v8_check" "$issue_template"; do
             test -f "$file"
           done
 
@@ -133,6 +134,18 @@ jobs:
           grep -Fq 'rollback-smoke-test' "$audit_doc"
           if grep -Fq '`v7`' "$audit_doc"; then
             echo 'PUBLIC_LEAD_AUDIT.md must describe the current v9 function and v8 audit contract, not v7.' >&2
+            exit 1
+          fi
+
+          grep -Fq 'Обновление статуса: 2026-06-29.' "$public_site_audit"
+          grep -Fq 'leader-public-lead v9' "$public_site_audit"
+          grep -Fq 'v8 audit contract' "$public_site_audit"
+          grep -Fq 'После PR #102' "$public_site_audit"
+          grep -Fq 'После PR #103' "$public_site_audit"
+          grep -Fq 'leader-public-header-guard-v1' "$public_site_audit"
+          grep -Fq 'index.html' "$public_site_audit"
+          if grep -Fq 'после v8' "$public_site_audit"; then
+            echo 'PUBLIC_SITE_AUDIT.md must use the current v9 public lead baseline.' >&2
             exit 1
           fi
 
