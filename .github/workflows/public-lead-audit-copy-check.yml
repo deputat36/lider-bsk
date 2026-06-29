@@ -17,9 +17,12 @@ jobs:
           set -euo pipefail
           loader='crm/v4/assets/v4/site-cache-note-v1.js'
           audit='crm/v4/assets/v4/public-lead-audit-v1.js'
-          grep -Fq 'public-lead-audit-v1.js?v=20260625-duplicate-copy-1' "$loader"
+          grep -Fq 'public-lead-audit-v1.js?v=20260629-trace-button-1' "$loader"
           grep -Fq 'data-public-lead-audit-copy' "$audit"
           grep -Fq 'Скопировать request_id' "$audit"
           grep -Fq 'request_id скопирован' "$audit"
+          grep -Fq 'data-public-lead-audit-trace' "$audit"
+          grep -Fq 'Проверить цепочку' "$audit"
+          grep -Fq 'traceRequestId' "$audit"
           grep -Fq "data-public-lead-audit-filter=\"duplicate\"" "$audit"
           grep -Fq "counts.duplicate" "$audit"
