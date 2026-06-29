@@ -1,4 +1,5 @@
 import { supabaseClient } from './supabase-client.js';
+import { openLeadRoute } from './router.js';
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
@@ -19,6 +20,23 @@ function traceStatusRu(value) {
   return map[value] || value || '—';
 }
 
+function traceHint(value) {
+  const map = {
+    complete: 'Заявка и audit-событие найдены. Это нормальный сценарий.',
+    lead_without_audit: 'Заявка есть, но audit-событие не найдено. Проверьте запись аудита и RLS.',
+    audit_without_lead: 'Audit-событие есть, но заявка не найдена. Для suspicious это может быть ожидаемо.',
+    missing: 'По этому request_id нет ни заявки, ни audit-события. Проверьте номер обращения и страницу отправки.'
+  };
+  return map[value] || 'Проверьте цепочку сайт → CRM вручную.';
+}
+
+function traceClass(value) {
+  if (value === 'complete') return 'is-good';
+  if (value === 'lead_without_audit' || value === 'audit_without_lead') return 'is-warn';
+  if (value === 'missing') return 'is-danger';
+  return 'is-warn';
+}
+
 function auditResultRu(value) {
   const map = { accepted: 'Принято', duplicate: 'Дубль', suspicious: 'Подозрительно', rejected: 'Отклонено', error: 'Ошибка' };
   return map[value] || value || '—';
@@ -35,14 +53,18 @@ function renderTraceResult(row, error) {
     box.innerHTML = '<span style="color:#92400e;font-weight:900">По этому request_id цепочка не найдена.</span>';
     return;
   }
+  const cls = traceClass(row.trace_status);
+  const openLead = row.lead_id ? `<button type="button" data-public-trace-open-lead="${esc(row.lead_id)}" style="border:1px solid #1d4ed8;background:#1d4ed8;color:#fff;border-radius:999px;padding:7px 11px;font-weight:900;width:max-content">Открыть заявку</button>` : '';
   box.innerHTML = `
-    <div style="display:grid;gap:6px">
-      <b>${esc(traceStatusRu(row.trace_status))}</b>
+    <div data-public-lead-trace-status="${esc(row.trace_status || 'unknown')}" style="display:grid;gap:8px">
+      <b class="v4-public-trace-badge ${esc(cls)}">${esc(traceStatusRu(row.trace_status))}</b>
+      <span style="font-weight:800;color:#1e3a8a">${esc(traceHint(row.trace_status))}</span>
       <span>request_id: <code>${esc(row.request_id || '—')}</code></span>
       <span>Заявка: ${row.lead_id ? 'найдена' : 'не найдена'} · ${esc(row.lead_status || '—')} · ${esc(dateRu(row.lead_created_at))}</span>
       <span>Клиент: ${esc(row.lead_name || '—')} · ${esc(row.lead_phone || row.lead_phone_normalized || '—')}</span>
       <span>Audit: ${row.audit_id ? auditResultRu(row.audit_result) : 'не найден'} · ${esc(row.audit_reason || '—')} · ${esc(dateRu(row.audit_created_at))}</span>
       <span>Страница: ${esc(row.audit_source_page_path || row.lead_source_page_path || row.audit_page_url || row.lead_page_url || '—')}</span>
+      ${openLead}
     </div>`;
 }
 
@@ -74,6 +96,7 @@ function ensureAuditHelper() {
   note.id = 'publicLeadAuditHelperV1';
   note.style.cssText = 'margin:0 0 12px;padding:12px 14px;border:1px solid #bfdbfe;background:#eff6ff;color:#1e3a8a;border-radius:14px;font:13px/1.45 Arial,sans-serif';
   note.innerHTML = `
+    <style>.v4-public-trace-badge{display:inline-flex;width:max-content;border-radius:999px;padding:5px 9px;background:#e0f2fe;color:#075985;font-weight:900}.v4-public-trace-badge.is-good{background:#dcfce7;color:#166534}.v4-public-trace-badge.is-warn{background:#fef3c7;color:#92400e}.v4-public-trace-badge.is-danger{background:#fee2e2;color:#991b1b}</style>
     <b style="display:block;margin-bottom:4px">Проверка v8</b>
     Для теста откройте <a href="https://www.lider-bsk.ru/request.html" target="_blank" rel="noopener">страницу заявки</a>, отправьте обращение с пометкой <code>Тест CRM v4 audit v8</code>, затем найдите номер обращения по <code>request_id</code>. Подробный чек-лист: <code>docs/CRM_V4_AUDIT_V8_CHECK.md</code>.
     <form id="publicLeadTraceFormV1" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
@@ -90,6 +113,11 @@ function bootAuditHelper() {
   document.addEventListener('click', (event) => {
     if (event.target.closest?.('[data-v4-tab-button="public_lead_audit"]')) {
       setTimeout(ensureAuditHelper, 300);
+    }
+    const openLead = event.target.closest?.('[data-public-trace-open-lead]');
+    if (openLead) {
+      event.preventDefault();
+      openLeadRoute(openLead.dataset.publicTraceOpenLead);
     }
   }, true);
   document.addEventListener('submit', (event) => {

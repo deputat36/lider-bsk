@@ -17,8 +17,9 @@ jobs:
           set -euo pipefail
           loader='crm/v4/assets/v4/site-cache-note-v1.js'
           helper='crm/v4/assets/v4/public-lead-audit-helper-v1.js'
+          test -f "$loader"
           test -f "$helper"
-          grep -Fq 'public-lead-audit-helper-v1.js?v=20260625-trace-widget-1' "$loader"
+          grep -Fq 'public-lead-audit-helper-v1.js?v=20260629-trace-open-lead-1' "$loader"
           grep -Fq 'https://www.lider-bsk.ru/request.html' "$helper"
           grep -Fq 'Тест CRM v4 audit v8' "$helper"
           grep -Fq 'docs/CRM_V4_AUDIT_V8_CHECK.md' "$helper"
@@ -29,3 +30,7 @@ jobs:
           grep -Fq 'trace_status' "$helper"
           grep -Fq 'lead_without_audit' "$helper"
           grep -Fq 'audit_without_lead' "$helper"
+          grep -Fq 'traceHint' "$helper"
+          grep -Fq 'data-public-lead-trace-status' "$helper"
+          grep -Fq 'data-public-trace-open-lead' "$helper"
+          grep -Fq 'openLeadRoute' "$helper"
