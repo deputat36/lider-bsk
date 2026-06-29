@@ -19,7 +19,7 @@ jobs:
           card='crm/v4/assets/v4/order-card-v1.js'
           test -f "$index"
           test -f "$card"
-          grep -Fq 'order-card-v1.js?v=20260626-finance-1' "$index"
+          grep -Fq 'order-card-v1.js?v=20260629-design-1' "$index"
           grep -Fq "from('leader_payments')" "$card"
           grep -Fq "from('leader_expenses')" "$card"
           grep -Fq 'Факт по финансам' "$card"
