@@ -45,6 +45,13 @@ function designClass(order) {
   return 'is-warn';
 }
 
+function designNeedsCheck(order) {
+  const text = String(layoutStatus(order)).toLowerCase();
+  if (CLOSED.has(order.status || '')) return false;
+  if (text.includes('не треб')) return false;
+  return designClass(order) !== 'is-good';
+}
+
 function designHint(order) {
   const cls = designClass(order);
   if (cls === 'is-good') return 'макет можно передавать дальше';
@@ -66,7 +73,7 @@ function ensureStyles() {
   style.id = 'ordersFastLoaderV1Styles';
   style.textContent = `
     .v4-orders-fast-warning{border:1px solid #fde68a;background:#fffdf3;color:#92400e;border-radius:14px;padding:10px;margin:12px 0;font-weight:800}
-    .v4-orders-fast-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:0 0 12px}.v4-orders-fast-summary div{border:1px solid #dbeafe;background:#eff6ff;border-radius:16px;padding:12px}.v4-orders-fast-summary span{display:block;color:#1d4ed8;font-size:12px;font-weight:900;text-transform:uppercase}.v4-orders-fast-summary b{display:block;margin-top:5px;font-size:22px;color:#0f172a}
+    .v4-orders-fast-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:0 0 12px}.v4-orders-fast-summary div{border:1px solid #dbeafe;background:#eff6ff;border-radius:16px;padding:12px}.v4-orders-fast-summary div.is-warn{border-color:#fde68a;background:#fff7ed}.v4-orders-fast-summary span{display:block;color:#1d4ed8;font-size:12px;font-weight:900;text-transform:uppercase}.v4-orders-fast-summary div.is-warn span{color:#9a3412}.v4-orders-fast-summary b{display:block;margin-top:5px;font-size:22px;color:#0f172a}
     .v4-orders-fast-list{display:grid;gap:10px}.v4-orders-fast-card{border:1px solid #e2e8f0;background:#fff;border-radius:16px;padding:12px;display:grid;gap:8px;box-shadow:0 8px 22px rgba(15,23,42,.05)}.v4-orders-fast-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.v4-orders-fast-head h3{margin:0;font-size:16px}.v4-orders-fast-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px;color:#64748b}.v4-orders-fast-actions{display:flex;gap:8px;flex-wrap:wrap}.v4-orders-fast-actions button{border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;border-radius:12px;padding:8px 10px;font-weight:900}.v4-orders-fast-actions .v4-primary{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
     .v4-orders-fast-design{border:1px solid #fed7aa!important;background:#fff7ed!important;color:#9a3412!important;border-radius:14px!important;padding:8px 10px!important;display:grid!important;gap:3px!important}.v4-orders-fast-design small{display:block;color:#9a3412;font-size:11px;font-weight:800}.v4-orders-fast-design.is-good{border-color:#bbf7d0!important;background:#f0fdf4!important;color:#166534!important}.v4-orders-fast-design.is-good small{color:#166534}.v4-orders-fast-design.is-muted{border-color:#e2e8f0!important;background:#f8fafc!important;color:#475569!important}.v4-orders-fast-design.is-muted small{color:#64748b}
   `;
@@ -133,8 +140,9 @@ function render() {
     const text = String(row.payment_status || '').toLowerCase();
     return !text || text.includes('не') || text.includes('част') || text.includes('долг') || text.includes('ожид');
   }).length;
+  const designCheck = rows.filter(designNeedsCheck).length;
   const warningHtml = warning ? `<div class="v4-orders-fast-warning">${esc(warning)}. Можно повторить загрузку или открыть карточку заявки.</div>` : '';
-  box.innerHTML = `${warningHtml}<div class="v4-orders-fast-summary"><div><span>Заказов</span><b>${rows.length}</b></div><div><span>Активные</span><b>${active}</b></div><div><span>Сумма</span><b>${money(total)}</b></div><div><span>Оплата под контролем</span><b>${unpaid}</b></div></div><div class="v4-orders-fast-list">${rows.length ? rows.map((order) => `<article class="v4-orders-fast-card"><div class="v4-orders-fast-head"><h3>№${esc(order.order_number || String(order.id || '').slice(0, 8))} — ${esc(order.project_name || 'Заказ')}</h3><span class="v4-crm-badge ${statusClass(order.status)}">${esc(order.status || 'Новый')}</span></div><div class="v4-orders-fast-meta"><span><b>Клиент:</b> ${esc(order.client_name || '—')}</span><span><b>Телефон:</b> ${esc(order.client_phone || '—')}</span><span><b>Срок:</b> ${dateRu(order.deadline)}</span><span><b>Оплата:</b> ${esc(order.payment_status || 'Не указана')}</span><span><b>Сумма:</b> ${money(order.client_total)}</span>${renderDesignBadge(order)}</div><div class="v4-orders-fast-actions"><button type="button" class="v4-primary" data-open-order="${esc(order.id)}">Карточка заказа</button>${order.lead_id ? `<button type="button" data-order-open-lead="${esc(order.lead_id)}">Открыть заявку</button>` : ''}</div></article>`).join('') : '<div class="v4-empty">Заказов пока нет или они не загрузились.</div>'}</div>`;
+  box.innerHTML = `${warningHtml}<div class="v4-orders-fast-summary"><div><span>Заказов</span><b>${rows.length}</b></div><div><span>Активные</span><b>${active}</b></div><div><span>Сумма</span><b>${money(total)}</b></div><div><span>Оплата под контролем</span><b>${unpaid}</b></div><div class="${designCheck ? 'is-warn' : ''}" data-orders-fast-design-summary><span>Дизайн проверить</span><b>${designCheck}</b></div></div><div class="v4-orders-fast-list">${rows.length ? rows.map((order) => `<article class="v4-orders-fast-card"><div class="v4-orders-fast-head"><h3>№${esc(order.order_number || String(order.id || '').slice(0, 8))} — ${esc(order.project_name || 'Заказ')}</h3><span class="v4-crm-badge ${statusClass(order.status)}">${esc(order.status || 'Новый')}</span></div><div class="v4-orders-fast-meta"><span><b>Клиент:</b> ${esc(order.client_name || '—')}</span><span><b>Телефон:</b> ${esc(order.client_phone || '—')}</span><span><b>Срок:</b> ${dateRu(order.deadline)}</span><span><b>Оплата:</b> ${esc(order.payment_status || 'Не указана')}</span><span><b>Сумма:</b> ${money(order.client_total)}</span>${renderDesignBadge(order)}</div><div class="v4-orders-fast-actions"><button type="button" class="v4-primary" data-open-order="${esc(order.id)}">Карточка заказа</button>${order.lead_id ? `<button type="button" data-order-open-lead="${esc(order.lead_id)}">Открыть заявку</button>` : ''}</div></article>`).join('') : '<div class="v4-empty">Заказов пока нет или они не загрузились.</div>'}</div>`;
 }
 
 async function loadOrdersFast(force = false) {
