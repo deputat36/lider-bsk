@@ -1,4 +1,8 @@
 User-agent: *
+Disallow: /crm/
+Disallow: /nav/
+Disallow: /nav-v2/
+Disallow: /nav_v2/
 Allow: /
 
 Host: https://www.lider-bsk.ru
