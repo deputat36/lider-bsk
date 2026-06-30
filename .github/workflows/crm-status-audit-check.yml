@@ -1,0 +1,43 @@
+name: CRM audit status check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-crm-audit-status:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate CRM audit status addendum
+        shell: bash
+        run: |
+          set -euo pipefail
+          doc='docs/STATUS_CRM_AUDIT_2026-06-29.md'
+          test -f "$doc"
+          grep -Fq 'Дата: 2026-06-29.' "$doc"
+          grep -Fq 'leader-public-lead v9' "$doc"
+          grep -Fq 'leader-crm-leads v12' "$doc"
+          grep -Fq 'leader-crm-orders v2' "$doc"
+          grep -Fq 'Проверить цепочку' "$doc"
+          grep -Fq 'С request_id' "$doc"
+          grep -Fq 'Без request_id' "$doc"
+          grep -Fq 'Открыть заявку' "$doc"
+          grep -Fq 'Цепочка полная' "$doc"
+          grep -Fq 'public-lead-audit-v1.js?v=20260629-trace-button-1' "$doc"
+          grep -Fq 'public-lead-audit-helper-v1.js?v=20260629-trace-open-lead-1' "$doc"
+          grep -Fq 'public-lead-audit-summary-v1.js?v=20260629-request-summary-1' "$doc"
+          grep -Fq 'Дизайн в заказе' "$doc"
+          grep -Fq 'Дизайн проверить' "$doc"
+          grep -Fq 'Макет не согласован' "$doc"
+          grep -Fq 'Дизайн / макет не согласован' "$doc"
+          if grep -Fq '20260625-trace-widget-1' "$doc"; then
+            echo 'CRM audit status addendum must not mention old trace widget marker.' >&2
+            exit 1
+          fi
+          if grep -Fq '20260625-duplicate-copy-1' "$doc"; then
+            echo 'CRM audit status addendum must not mention old duplicate copy marker.' >&2
+            exit 1
+          fi
