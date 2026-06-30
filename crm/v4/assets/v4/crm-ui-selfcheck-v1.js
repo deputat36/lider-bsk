@@ -92,6 +92,27 @@ function checkAuditTools() {
   ];
 }
 
+function checkDesignTools() {
+  const ordersTab = document.querySelector('[data-v4-tab-button="orders"]');
+  const controlTab = document.querySelector('[data-v4-tab-button="order_control"]');
+  const productionTab = document.querySelector('[data-v4-tab-button="production"]');
+  const orderCardDesign = document.querySelector('[data-order-design-section]');
+  const fastDesign = document.querySelector('[data-orders-fast-design-summary]') || document.querySelector('[data-orders-fast-design]');
+  const controlDesign = document.querySelector('[data-order-control-design]');
+  const productionWarning = document.querySelector('[data-production-layout-warning]');
+  const jobWarning = document.querySelector('[data-production-job-layout-alert]');
+  return [
+    row('Вкладка Заказы', ordersTab ? 'OK' : 'нет кнопки', Boolean(ordersTab)),
+    row('Контроль заказов', controlTab ? 'OK' : 'нет кнопки', Boolean(controlTab)),
+    row('Производство', productionTab ? 'OK' : 'нет кнопки', Boolean(productionTab)),
+    row('Дизайн в заказе', orderCardDesign ? 'виден в карточке' : 'появится после открытия карточки заказа', true),
+    row('Дизайн проверить', fastDesign ? 'виден в списке заказов' : 'появится после загрузки заказов', true),
+    row('Дизайн / макеты и производство', controlDesign ? 'виден в контроле заказов' : 'появится после открытия контроля заказов', true),
+    row('Макет не согласован', productionWarning ? 'виден на производственной доске' : 'появится для несогласованного макета', true),
+    row('Дизайн / макет не согласован', jobWarning ? 'виден в задании' : 'появится в карточке производственного задания', true)
+  ];
+}
+
 function checkAccess() {
   const authStatus = text('#authStatus') || '—';
   const email = text('#userEmail') || text('#profileEmail') || '—';
@@ -136,6 +157,7 @@ function refresh() {
     renderRows('Маршрут Доступ', checkAccessRoute()),
     renderRows('Разделы', checkTabs()),
     renderRows('Аудит request_id', checkAuditTools()),
+    renderRows('Дизайн в заказах', checkDesignTools()),
     renderIssueLink()
   ].join('');
 }
