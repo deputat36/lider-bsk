@@ -1,0 +1,32 @@
+name: CRM selfcheck design check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-crm-selfcheck-design:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate CRM selfcheck design section
+        shell: bash
+        run: |
+          set -euo pipefail
+          file='crm/v4/assets/v4/crm-ui-selfcheck-v1.js'
+          test -f "$file"
+          node --check "$file"
+          grep -Fq 'checkDesignTools' "$file"
+          grep -Fq 'Дизайн в заказах' "$file"
+          grep -Fq 'Дизайн в заказе' "$file"
+          grep -Fq 'Дизайн проверить' "$file"
+          grep -Fq 'Дизайн / макеты и производство' "$file"
+          grep -Fq 'Макет не согласован' "$file"
+          grep -Fq 'Дизайн / макет не согласован' "$file"
+          grep -Fq 'data-order-design-section' "$file"
+          grep -Fq 'data-orders-fast-design-summary' "$file"
+          grep -Fq 'data-order-control-design' "$file"
+          grep -Fq 'data-production-layout-warning' "$file"
+          grep -Fq 'data-production-job-layout-alert' "$file"
