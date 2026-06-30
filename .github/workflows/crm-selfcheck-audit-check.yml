@@ -1,0 +1,27 @@
+name: CRM selfcheck audit check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-crm-selfcheck-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate CRM selfcheck audit tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          file='crm/v4/assets/v4/crm-ui-selfcheck-v1.js'
+          test -f "$file"
+          node --check "$file"
+          grep -Fq 'checkAuditTools' "$file"
+          grep -Fq 'Аудит request_id' "$file"
+          grep -Fq 'publicLeadAuditHelperV1' "$file"
+          grep -Fq 'publicLeadTraceFormV1' "$file"
+          grep -Fq 'publicLeadAuditSummaryV1Styles' "$file"
+          grep -Fq 'data-public-lead-audit-trace' "$file"
+          grep -Fq 'Кнопка Проверить цепочку' "$file"

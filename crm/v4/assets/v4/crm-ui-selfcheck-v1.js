@@ -74,6 +74,24 @@ function checkAccessRoute() {
   ];
 }
 
+function checkAuditTools() {
+  const auditButton = document.querySelector('[data-v4-tab-button="public_lead_audit"]');
+  const auditSection = document.getElementById('publicLeadAuditSection');
+  const helper = document.getElementById('publicLeadAuditHelperV1');
+  const traceForm = document.getElementById('publicLeadTraceFormV1');
+  const traceInput = document.getElementById('publicLeadTraceInputV1');
+  const summaryAddon = document.getElementById('publicLeadAuditSummaryV1Styles') || document.getElementById('publicLeadAuditRequestSummaryV1');
+  const traceButton = document.querySelector('[data-public-lead-audit-trace]');
+  return [
+    row('Вкладка аудита', auditButton ? 'OK' : 'нет кнопки', Boolean(auditButton)),
+    row('Секция аудита', auditSection ? 'создана' : 'пока не создана', Boolean(auditSection)),
+    row('Trace helper', helper ? 'загружен' : 'проверьте Ctrl + F5', Boolean(helper)),
+    row('Форма request_id', traceForm && traceInput ? 'OK' : 'нет формы', Boolean(traceForm && traceInput)),
+    row('Summary addon', summaryAddon ? 'загружен' : 'пока нет сводки', Boolean(summaryAddon)),
+    row('Кнопка Проверить цепочку', traceButton ? 'видна в карточках' : 'появится после загрузки audit-событий', true)
+  ];
+}
+
 function checkAccess() {
   const authStatus = text('#authStatus') || '—';
   const email = text('#userEmail') || text('#profileEmail') || '—';
@@ -117,6 +135,7 @@ function refresh() {
     renderRows('Доступ', checkAccess()),
     renderRows('Маршрут Доступ', checkAccessRoute()),
     renderRows('Разделы', checkTabs()),
+    renderRows('Аудит request_id', checkAuditTools()),
     renderIssueLink()
   ].join('');
 }
