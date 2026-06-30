@@ -49,6 +49,42 @@ async function checkUser(req: Request, url: string, anon: string, serviceRole: s
 
 const orderFields = 'id,order_number,created_at,project_name,client_name,client_phone,status,payment_status,deadline,client_total,profit,balance,source,layout_status,layout_comment,production_status,lead_id,client_id'
 
+const ROLE_MATRIX_VERSION = '20260630-edge-role-matrix-1'
+
+const ORDER_ACTIONS_BY_ROLE: Record<string, Set<string>> = {
+  owner: new Set(['*']),
+  admin: new Set(['*']),
+  manager: new Set(['list', 'update:any']),
+  designer: new Set(['list', 'update:layout_status', 'update:layout_comment']),
+  production: new Set(['list', 'update:production_status', 'update:layout_comment']),
+  installer: new Set(['list']),
+}
+
+function role(profile: Record<string, unknown> | null | undefined) {
+  return clean(profile?.role, 80).toLowerCase()
+}
+
+function canOrderAction(profile: Record<string, unknown> | null | undefined, permission: string) {
+  const permissions = ORDER_ACTIONS_BY_ROLE[role(profile)]
+  return Boolean(permissions?.has('*') || permissions?.has(permission) || permissions?.has('update:any'))
+}
+
+function unauthorized(action: string, profile: Record<string, unknown> | null | undefined) {
+  return json(403, { error: 'forbidden', action, role: role(profile), matrix: ROLE_MATRIX_VERSION })
+}
+
+function requestedUpdateFields(body: Record<string, unknown>) {
+  return ['status', 'payment_status', 'layout_status', 'production_status', 'layout_comment', 'deadline']
+    .filter((field) => field in body)
+}
+
+function canUpdateOrder(profile: Record<string, unknown> | null | undefined, body: Record<string, unknown>) {
+  const fields = requestedUpdateFields(body)
+  if (!fields.length) return true
+  if (canOrderAction(profile, 'update:any')) return true
+  return fields.every((field) => canOrderAction(profile, `update:${field}`))
+}
+
 async function listOrders(url: string, serviceRole: string) {
   const res = await rest(
     url,
@@ -98,8 +134,15 @@ Deno.serve(async (req: Request) => {
   }
   const action = clean(body.action || 'list', 40)
 
-  if (action === 'list') return await listOrders(url, serviceRole)
-  if (action === 'update') return await updateOrder(url, serviceRole, body)
+  if (action === 'list') {
+    if (!canOrderAction(checked.profile, 'list')) return unauthorized(action, checked.profile)
+    return await listOrders(url, serviceRole)
+  }
+
+  if (action === 'update') {
+    if (!canUpdateOrder(checked.profile, body)) return unauthorized(action, checked.profile)
+    return await updateOrder(url, serviceRole, body)
+  }
 
   return json(400, { error: 'unknown_action' })
 })
