@@ -1,0 +1,31 @@
+name: CRM static runbook selfcheck check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-crm-static-runbook-selfcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate selfcheck cache runbook addendum
+        shell: bash
+        run: |
+          set -euo pipefail
+          doc='docs/STATIC_CHECKS_SELFHECK_CACHE_2026-06-30.md'
+          loader='crm/v4/assets/v4/site-cache-note-v1.js'
+          selfcheck='crm/v4/assets/v4/crm-ui-selfcheck-v1.js'
+          test -f "$doc"
+          test -f "$loader"
+          test -f "$selfcheck"
+          grep -Fq 'crm-ui-selfcheck-v1.js?v=20260630-selfcheck-1' "$doc"
+          grep -Fq 'Аудит request_id' "$doc"
+          grep -Fq 'Trace helper' "$doc"
+          grep -Fq 'Summary addon' "$doc"
+          grep -Fq "import('./crm-ui-selfcheck-v1.js?v=20260630-selfcheck-1')" "$loader"
+          grep -Fq 'Аудит request_id' "$selfcheck"
+          grep -Fq 'checkAuditTools' "$selfcheck"
+          grep -Fq 'Summary addon' "$selfcheck"
