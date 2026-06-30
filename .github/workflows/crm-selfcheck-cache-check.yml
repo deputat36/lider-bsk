@@ -1,0 +1,26 @@
+name: CRM selfcheck cache check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-crm-selfcheck-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate CRM selfcheck cache marker
+        shell: bash
+        run: |
+          set -euo pipefail
+          loader='crm/v4/assets/v4/site-cache-note-v1.js'
+          selfcheck='crm/v4/assets/v4/crm-ui-selfcheck-v1.js'
+          test -f "$loader"
+          test -f "$selfcheck"
+          node --check "$loader"
+          grep -Fq "import('./crm-ui-selfcheck-v1.js?v=20260630-selfcheck-1')" "$loader"
+          grep -Fq 'Аудит request_id' "$selfcheck"
+          grep -Fq 'checkAuditTools' "$selfcheck"
+          grep -Fq 'Summary addon' "$selfcheck"
