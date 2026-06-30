@@ -1,0 +1,29 @@
+name: Public design card check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'request.html'
+      - '.github/workflows/public-design-card-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'request.html'
+      - '.github/workflows/public-design-card-check.yml'
+
+jobs:
+  validate-public-design-card:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate design option on request page
+        shell: bash
+        run: |
+          set -euo pipefail
+          page='request.html'
+          test -f "$page"
+          grep -Fq 'Дизайн и макет' "$page"
+          grep -Fq 'data-service="Дизайн макета"' "$page"
+          grep -Fq 'Макет баннера, листовки, вывески, карточки, логотип или фирменный стиль.' "$page"
