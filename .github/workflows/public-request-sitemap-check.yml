@@ -1,0 +1,30 @@
+name: Public request sitemap check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'sitemap.xml'
+      - '.github/workflows/public-request-sitemap-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'sitemap.xml'
+      - '.github/workflows/public-request-sitemap-check.yml'
+
+jobs:
+  validate-request-sitemap-marker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate request page sitemap marker
+        shell: bash
+        run: |
+          set -euo pipefail
+          sitemap='sitemap.xml'
+          test -f "$sitemap"
+          grep -Fq '<loc>https://www.lider-bsk.ru/request.html</loc>' "$sitemap"
+          grep -Fq '<lastmod>2026-06-29</lastmod>' "$sitemap"
+          grep -Fq '<changefreq>monthly</changefreq>' "$sitemap"
+          grep -Fq '<priority>0.98</priority>' "$sitemap"
