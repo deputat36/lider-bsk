@@ -35,6 +35,10 @@ jobs:
           test -f robots.txt
           test -f sitemap.xml
           grep -Fq 'User-agent: *' robots.txt
+          grep -Fq 'Disallow: /crm/' robots.txt
+          grep -Fq 'Disallow: /nav/' robots.txt
+          grep -Fq 'Disallow: /nav-v2/' robots.txt
+          grep -Fq 'Disallow: /nav_v2/' robots.txt
           grep -Fq 'Allow: /' robots.txt
           grep -Fq 'Host: https://www.lider-bsk.ru' robots.txt
           grep -Fq 'Sitemap: https://www.lider-bsk.ru/sitemap.xml' robots.txt
