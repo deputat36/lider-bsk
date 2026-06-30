@@ -242,17 +242,20 @@ jobs:
           loader='crm/v4/assets/v4/site-cache-note-v1.js'
           audit='crm/v4/assets/v4/public-lead-audit-v1.js'
           helper='crm/v4/assets/v4/public-lead-audit-helper-v1.js'
+          summary='crm/v4/assets/v4/public-lead-audit-summary-v1.js'
           selfcheck='crm/v4/assets/v4/crm-ui-selfcheck-v1.js'
           test -f "$loader"
           test -f "$audit"
           test -f "$helper"
+          test -f "$summary"
           test -f "$selfcheck"
           grep -q 'CRM_ACCESS_ROUTE_VERSION' "$loader"
           grep -q 'CRM build:' "$loader"
           grep -q '20260627-access-route-1' "$loader"
-          grep -q 'crm-ui-selfcheck-v1.js?v=20260627-access-route-1' "$loader"
+          grep -q 'crm-ui-selfcheck-v1.js?v=20260630-selfcheck-1' "$loader"
           grep -q 'public-lead-audit-v1.js?v=20260629-trace-button-1' "$loader"
           grep -q 'public-lead-audit-helper-v1.js?v=20260629-trace-open-lead-1' "$loader"
+          grep -q 'public-lead-audit-summary-v1.js?v=20260629-request-summary-1' "$loader"
           grep -q 'leader_public_lead_audit' "$audit"
           grep -q 'created_at' "$audit"
           grep -q 'referer' "$audit"
@@ -264,6 +267,8 @@ jobs:
           grep -q 'publicLeadTraceFormV1' "$helper"
           grep -q 'Проверить request_id' "$helper"
           grep -q 'data-public-trace-open-lead' "$helper"
+          grep -q 'С request_id' "$summary"
+          grep -q 'Без request_id' "$summary"
 
       - name: Validate CRM selfcheck tabs
         shell: bash
