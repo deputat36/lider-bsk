@@ -23,3 +23,5 @@ jobs:
         run: python3 tools/check_catalog_pricing_helper.py
       - name: Validate catalog mapping
         run: python3 tools/check_catalog_mapping.py
+      - name: Check calculations catalog id preservation
+        run: python3 tools/check_calculations_catalog_id.py
