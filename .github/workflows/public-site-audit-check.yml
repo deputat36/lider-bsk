@@ -74,6 +74,8 @@ jobs:
           grep -Fq 'leader-lead-hp' "$css"
           grep -Fq 'overflow-x:hidden' "$css"
           grep -Fq '@media(max-width:1180px) and (min-width:1025px)' "$css"
+          grep -Fq 'leader-public-header-wrap-v5' "$css"
+          grep -Fq '@media(max-width:1240px) and (min-width:1025px)' "$css"
           grep -Fq 'flex-wrap:wrap!important' "$css"
           grep -Fq 'order:3!important' "$css"
           grep -Fq 'width:100%!important' "$css"
