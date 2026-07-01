@@ -1,0 +1,14 @@
+name: Verify catalog id patch
+
+on:
+  workflow_dispatch:
+
+jobs:
+  verify-catalog-id-patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check patch applies
+        run: git apply --check patches/crm-catalog-id-calcitem.patch
+      - name: Validate patch file
+        run: python3 tools/check_catalog_id_patch_file.py
