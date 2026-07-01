@@ -11,12 +11,13 @@ Implemented in GitHub:
 - target architecture document;
 - local checker `tools/check_calc_v2.py`;
 - first visible frontend shell `crm/v4/assets/v4/calculation-contractor-quote-v1.js`;
+- offer visibility helper `crm/v4/assets/v4/offer-visibility-v1.js`;
 - connection in `crm/v4/index.html`.
 
 Pending:
 
 - persistence for contractor quote mode;
-- commercial offer visibility handling for `single_line` and `detailed` modes;
+- integration of `offer-visibility-v1.js` into `offers.js`;
 - catalog-backed mode;
 - cleanup of duplicated calculation modules.
 
