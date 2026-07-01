@@ -8,11 +8,17 @@ markers = [
     'catalog-pricing-v1-20260701',
     'catalogClientUnitPrice',
     'catalogPricingSnapshot',
+    'catalogDraftItem',
+    'catalog_id',
     'contractor_price',
     'markup_percent',
     'min_client_price',
     'default_client_price',
     'calculation_mode',
+    'builder_version',
+    'calc-builder-v2',
+    'single_line',
+    'catalog_snapshot',
 ]
 if not path.exists():
     print('Missing catalog pricing helper')
