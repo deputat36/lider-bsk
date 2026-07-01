@@ -30,3 +30,25 @@ export function catalogPricingSnapshot(row) {
     settings: row?.settings || {}
   };
 }
+
+export function catalogDraftItem(row, qty = 1, extraData = {}) {
+  const quantity = Math.max(0, numberValue(qty) || 1);
+  return {
+    catalog_id: row?.id || null,
+    category: row?.category || 'Каталог',
+    item_type: row?.item_type || 'Изготовление',
+    name: row?.name || 'Позиция каталога',
+    unit: row?.unit || 'шт',
+    qty: quantity,
+    contractor_price: numberValue(row?.contractor_price),
+    client_price: catalogClientUnitPrice(row),
+    comment: row?.description || '',
+    data: {
+      ...extraData,
+      builder_version: 'calc-builder-v2',
+      mode: 'catalog',
+      visibility: extraData.visibility || 'single_line',
+      catalog_snapshot: catalogPricingSnapshot(row)
+    }
+  };
+}
