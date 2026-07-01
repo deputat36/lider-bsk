@@ -9,7 +9,14 @@
       var form=document.querySelector('[data-leader-lead-widget]');
       if(!form)return;
       var service=form.querySelector('[name="service"]');
-      if(service&&service.options.length>10)service.selectedIndex=10;
+      if(!service)return;
+      var target='Комплексная реклама';
+      var found=false;
+      for(var i=0;i<service.options.length;i++){
+        if(service.options[i].value===target){found=true;break;}
+      }
+      if(found)service.value=target;
+      else if(service.options.length>10)service.selectedIndex=10;
     },80);
   }
   function add(){
