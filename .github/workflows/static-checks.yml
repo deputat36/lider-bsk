@@ -287,3 +287,9 @@ jobs:
           grep -q 'siteCacheNoteV1' "$selfcheck"
           grep -q 'Дизайн в заказах' "$selfcheck"
           grep -q 'checkDesignTools' "$selfcheck"
+
+      - name: Validate CRM calculation builder docs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/check_crm_calculation_builder_v2.py
