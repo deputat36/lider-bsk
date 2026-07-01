@@ -113,17 +113,15 @@ jobs:
           assert page.index(helper) < page.index(form)
           PY
 
+      - name: Check public business cards lead service
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/check_public_vizitki_service.py
+          python3 tools/check_vizitki_page_local_service.py
+
       - name: Check public scripts syntax
         shell: bash
         run: |
           set -euo pipefail
           node --check assets/public-lead-form.js
-          node --check assets/public-lead-reference-v1.js
-
-      - name: Report Open Graph gaps as notices
-        shell: bash
-        run: |
-          set -euo pipefail
-          if ! grep -R -n 'og:image' -- *.html >/tmp/og-image-pages.txt; then
-            echo '::notice title=Open Graph image::No og:image markers found yet. Add a 1200x630 image in the next SEO stage.'
-          fi
