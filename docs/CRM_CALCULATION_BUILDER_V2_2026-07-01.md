@@ -4,6 +4,24 @@ Repository: `deputat36/lider-bsk`.
 Scope: CRM РА «Лидер», only `leader_*` tables.
 Tracking issue: #143.
 
+## Current implementation status
+
+Implemented in GitHub:
+
+- target architecture document;
+- local checker `tools/check_calc_v2.py`;
+- first visible frontend shell `crm/v4/assets/v4/calculation-contractor-quote-v1.js`;
+- connection in `crm/v4/index.html`.
+
+Pending:
+
+- persistence for contractor quote mode;
+- commercial offer visibility handling for `single_line` and `detailed` modes;
+- catalog-backed mode;
+- cleanup of duplicated calculation modules.
+
+Supabase production schema has not been changed.
+
 ## Goal
 
 Replace scattered calculation modules with one clear calculation builder for daily agency work.
