@@ -1,7 +1,7 @@
 # CRM catalog to calculation item mapping — 2026-07-01
 
 Scope: CRM РА «Лидер», calculation builder v2.
-Related issues: #143, #148, #149, #152.
+Related issues: #143, #148, #149, #152, #154, #156.
 
 ## Purpose
 
@@ -34,6 +34,14 @@ The item `data` field should store:
 - mode: `catalog`;
 - visibility: `single_line`;
 - catalog snapshot: old catalog values at the moment of saving.
+
+## Payload requirement
+
+`calculations.js` must preserve `catalog_id` when converting a raw draft item into the final payload.
+
+If `raw.catalog_id` exists, `calcItem(raw, index)` should return it.
+
+Legacy and manual items may keep `catalog_id = null`.
 
 ## Backward compatibility
 
