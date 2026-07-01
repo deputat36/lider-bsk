@@ -48,8 +48,9 @@
 (function(){
 function val(n){var e=document.querySelector('[data-calc="'+n+'"]');return e?e.value:''}
 function text(){return ['Заказ: визитки','Вид: '+val('kind'),'Формат: '+val('format'),'Стороны печати: '+val('sides'),'Тираж: '+val('qty'),'Бумага: '+val('paper'),'Ламинация: '+val('lamination'),'Скругление углов: '+val('corners'),'Сверление: '+val('holes'),'Макет / дизайн: '+val('design'),'Комментарий: '+(val('comment')||'нет')].join('\n')}
+function ensureOption(select,value){if(!select)return;for(var i=0;i<select.options.length;i++){if(select.options[i].value===value)return;}select.add(new Option(value,value));}
 function render(){var s=document.getElementById('card-summary');if(s)s.textContent=text()}
-function apply(){var form=document.querySelector('[data-leader-lead-widget]');if(!form)return;var service=form.querySelector('[name="service"]');var msg=form.querySelector('[name="message"]');var qty=form.querySelector('[name="quantity"]');var mock=form.querySelector('[name="mockup"]');if(service)service.value='Другое';if(msg)msg.value=text();if(qty)qty.value=val('qty');if(mock)mock.value=val('design')==='Макет готов'?'Макет готов':'Макета нет, нужен дизайн';document.getElementById('request').scrollIntoView({behavior:'smooth'});}
+function apply(){var form=document.querySelector('[data-leader-lead-widget]');if(!form)return;var service=form.querySelector('[name="service"]');var msg=form.querySelector('[name="message"]');var qty=form.querySelector('[name="quantity"]');var mock=form.querySelector('[name="mockup"]');if(service){ensureOption(service,'Визитки');service.value='Визитки';}if(msg)msg.value=text();if(qty)qty.value=val('qty');if(mock)mock.value=val('design')==='Макет готов'?'Макет готов':'Макета нет, нужен дизайн';document.getElementById('request').scrollIntoView({behavior:'smooth'});}
 document.addEventListener('input',render);document.addEventListener('change',render);document.addEventListener('DOMContentLoaded',function(){render();var b=document.getElementById('apply-card-order');if(b)b.addEventListener('click',apply)});
 })();
 </script>
