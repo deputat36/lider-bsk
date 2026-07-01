@@ -12,7 +12,18 @@ Implemented in GitHub:
 - local checker `tools/check_calc_v2.py`;
 - first visible frontend shell `crm/v4/assets/v4/calculation-contractor-quote-v1.js`;
 - offer visibility helper `crm/v4/assets/v4/offer-visibility-v1.js`;
+- offer rules marker `crm/v4/assets/v4/offer-rules-v2.js`;
+- offer visibility integration plan `docs/CRM_OFFER_VISIBILITY_INTEGRATION_2026-07-01.md`;
+- contractor quote persistence plan `docs/CRM_CONTRACTOR_QUOTE_PERSISTENCE_2026-07-01.md`;
+- compact manual test notes `docs/CRM_CALC_V2_TEST_NOTES_2026-07-01.md`;
 - connection in `crm/v4/index.html`.
+
+Open implementation issues:
+
+- #144 — save contractor quote into existing calculation tables;
+- #145 — integrate offer visibility helper into commercial offers;
+- #146 — connect contractor quote persistence checker to CI;
+- #147 — add checker for calc v2 test notes.
 
 Pending:
 
