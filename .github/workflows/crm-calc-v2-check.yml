@@ -1,0 +1,15 @@
+name: CRM calc v2 check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-crm-calc-v2:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate CRM calc v2 docs
+        run: python3 tools/check_calc_v2.py
