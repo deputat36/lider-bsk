@@ -26,5 +26,6 @@
 </main>
 <script src="assets/public-lead-form.js?v=4"></script>
 <script src="assets/public-related-services.js?v=1"></script>
+<script>document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){var form=document.querySelector('[data-leader-lead-widget]');if(!form)return;var service=form.querySelector('[name="service"]');var msg=form.querySelector('[name="message"]');if(service){for(var i=0;i<service.options.length;i++){if(service.options[i].value==='Полиграфия'){service.value='Полиграфия';break;}}if(service.value!=='Полиграфия'){service.add(new Option('Полиграфия','Полиграфия'));service.value='Полиграфия';}}if(msg&&!msg.value)msg.value='Страница: раздаточные материалы. Нужно рассчитать листовки, флаеры, мини-прайсы, вкладыши или карточки услуг. Нужно уточнить формат, тираж, стороны печати, бумагу, срок, содержание и нужен ли дизайн.';},120);});</script>
 </body>
 </html>
