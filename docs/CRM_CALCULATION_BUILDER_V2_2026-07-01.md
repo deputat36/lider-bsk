@@ -23,13 +23,14 @@ Open implementation issues:
 - #144 — save contractor quote into existing calculation tables;
 - #145 — integrate offer visibility helper into commercial offers;
 - #146 — connect contractor quote persistence checker to CI;
-- #147 — add checker for calc v2 test notes.
+- #147 — add checker for calc v2 test notes;
+- #148 — implement catalog-backed calculation mode.
 
 Pending:
 
 - persistence for contractor quote mode;
 - integration of `offer-visibility-v1.js` into `offers.js`;
-- catalog-backed mode;
+- catalog-backed mode from `leader_catalog`;
 - cleanup of duplicated calculation modules.
 
 Supabase production schema has not been changed.
