@@ -3,7 +3,17 @@
   'use strict';
   function pageKey(){return (location.pathname.split('/').pop()||'index.html').toLowerCase()}
   function skip(){var k=pageKey();return k==='index.html'||k==='privacy.html'||location.pathname==='/'||document.getElementById('leader-related-services')}
+  function selectDefaultService(){
+    if(pageKey()!=='uslugi.html')return;
+    window.setTimeout(function(){
+      var form=document.querySelector('[data-leader-lead-widget]');
+      if(!form)return;
+      var service=form.querySelector('[name="service"]');
+      if(service&&service.options.length>10)service.selectedIndex=10;
+    },80);
+  }
   function add(){
+    selectDefaultService();
     if(skip())return;
     var anchor=document.getElementById('request')||document.querySelector('[data-leader-lead-form]');
     if(!anchor||!anchor.parentNode)return;
