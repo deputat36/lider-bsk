@@ -39,6 +39,7 @@
     'rezhim-raboty-tablichki-borisoglebsk.html':{service:'Табличка',text:'Страница: режим работы и таблички. Нужно уточнить текст, размер, материал, место размещения, количество и нужен ли монтаж.'},
     'dizayn-maketov.html':{service:'Дизайн макета',text:'Страница услуги: дизайн макета. Нужно уточнить формат, размер, текст, логотип, примеры и где будет использоваться макет.'},
     'logotip-firmennyy-stil.html':{service:'Логотип / фирменный стиль',text:'Страница услуги: логотип и фирменный стиль. Нужно уточнить направление бизнеса, пожелания по стилю и где будет использоваться логотип.'},
+    'vizitki-borisoglebsk.html':{service:'Визитки',text:'Страница услуги: визитки. Нужно уточнить тираж, формат, стороны печати, бумагу, ламинацию, макет и сроки.'},
     'socseti-kontent.html':{service:'Соцсети и контент',text:'Страница услуги: соцсети и контент. Нужно уточнить ссылку на группу, что оформить, сколько постов и какие услуги продвигать.'},
     'yandex-karty-2gis.html':{service:'Яндекс Карты и 2ГИС',text:'Страница услуги: Яндекс Карты и 2ГИС. Нужно уточнить название организации, город, ссылку на карточку и что нужно заполнить или исправить.'},
     'audit-kart-yandex-2gis-borisoglebsk.html':{service:'Яндекс Карты и 2ГИС',text:'Страница: аудит Яндекс Карт и 2ГИС. Нужно уточнить название организации, город, ссылку на карточку, что проверить и какие данные нужно исправить.'},
@@ -96,7 +97,7 @@
       <div class="leader-lead-grid">
         <div class="leader-lead-span-6"><label for="${id}-name">Имя / организация</label><input id="${id}-name" name="name" maxlength="200" placeholder="Например, Алексей"></div>
         <div class="leader-lead-span-6"><label for="${id}-phone">Телефон</label><input id="${id}-phone" name="phone" maxlength="80" placeholder="+7..." required></div>
-        <div class="leader-lead-span-12"><label for="${id}-service">Что нужно?</label><select id="${id}-service" name="service"><option>Баннер</option><option>Наклейки</option><option>Табличка</option><option>Печать на плёнке</option><option>Плоттерная резка</option><option>Вывеска / наружная реклама</option><option>Дизайн макета</option><option>Соцсети и контент</option><option>Яндекс Карты и 2ГИС</option><option>Логотип / фирменный стиль</option><option>Комплексная реклама</option><option>Другое</option></select></div>
+        <div class="leader-lead-span-12"><label for="${id}-service">Что нужно?</label><select id="${id}-service" name="service"><option>Баннер</option><option>Визитки</option><option>Наклейки</option><option>Табличка</option><option>Печать на плёнке</option><option>Плоттерная резка</option><option>Вывеска / наружная реклама</option><option>Дизайн макета</option><option>Соцсети и контент</option><option>Яндекс Карты и 2ГИС</option><option>Логотип / фирменный стиль</option><option>Комплексная реклама</option><option>Другое</option></select></div>
         <div class="leader-lead-span-12"><label for="${id}-message">Коротко опишите задачу</label><textarea id="${id}-message" name="message" maxlength="2000" rows="3" placeholder="Например: нужен рекламный пост, баннер или наклейки"></textarea></div>
       </div>
       <button class="leader-lead-more" type="button" data-leader-more>Добавить подробности для точного расчёта ↓</button>
