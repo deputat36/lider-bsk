@@ -1,5 +1,5 @@
 import { v4State } from './state.js';
-import { byId } from './ui.js';
+import { byId, toast } from './ui.js';
 
 const VERSION = 'contractor-quote-v1-20260701';
 
@@ -64,13 +64,17 @@ function renderShell() {
         <label class="wide">Комментарий<input id="contractorQuoteComment" placeholder="Что входит в готовую стоимость"></label>
       </div>
       <div id="contractorQuotePreview" class="v4-calc-live is-warn"></div>
-      <p class="v4-muted">Сохранение этого режима будет следующим шагом: данные будут писаться в существующие `leader_lead_calculations` и `leader_lead_calculation_items.data` без изменения схемы.</p>
+      <div class="v4-form-actions"><button id="contractorQuotePrepareBtn" type="button" class="v4-primary">Подготовить сохранение</button></div>
+      <p class="v4-muted">Следующий шаг — сохранить этот расчёт в существующие таблицы без изменения схемы.</p>
     </section>`);
   renderPreview();
 }
 
 document.addEventListener('input', (event) => {
   if (event.target?.id?.startsWith('contractorQuote')) renderPreview();
+});
+document.addEventListener('click', (event) => {
+  if (event.target?.id === 'contractorQuotePrepareBtn') toast('Сохранение подрядного расчёта будет включено следующим безопасным патчем');
 });
 ['leader-v4:lead-card-rendered', 'leader-v4:needs-loaded', 'leader-v4:crm-ready', 'leader-v4:route-change'].forEach((name) => {
   document.addEventListener(name, () => setTimeout(renderShell, 0));
