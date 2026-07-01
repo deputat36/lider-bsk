@@ -1,0 +1,10 @@
+diff --git a/crm/v4/assets/v4/calculations.js b/crm/v4/assets/v4/calculations.js
+--- a/crm/v4/assets/v4/calculations.js
++++ b/crm/v4/assets/v4/calculations.js
+@@ -137,6 +137,7 @@ function calcItem(raw, index) {
+   const marginPercent = clientSum > 0 ? (profit / clientSum) * 100 : 0;
+   return {
++    catalog_id: raw.catalog_id || null,
+     category: raw.category || 'Расчёт по позиции',
+     item_type: raw.item_type || 'Услуга',
+     name: raw.name || `Позиция ${index + 1}`,
