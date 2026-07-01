@@ -10,6 +10,7 @@ on:
       - 'assets/public-lead-reference-v1.js'
       - 'tools/check_public_vizitki_service.py'
       - 'tools/check_vizitki_page_local_service.py'
+      - 'tools/check_public_poligrafiya_service.py'
       - 'robots.txt'
       - 'sitemap.xml'
       - '.github/workflows/public-site-audit-check.yml'
@@ -22,6 +23,7 @@ on:
       - 'assets/public-lead-reference-v1.js'
       - 'tools/check_public_vizitki_service.py'
       - 'tools/check_vizitki_page_local_service.py'
+      - 'tools/check_public_poligrafiya_service.py'
       - 'robots.txt'
       - 'sitemap.xml'
       - '.github/workflows/public-site-audit-check.yml'
@@ -117,12 +119,13 @@ jobs:
           assert page.index(helper) < page.index(form)
           PY
 
-      - name: Check public business cards lead service
+      - name: Check public service lead classification
         shell: bash
         run: |
           set -euo pipefail
           python3 tools/check_public_vizitki_service.py
           python3 tools/check_vizitki_page_local_service.py
+          python3 tools/check_public_poligrafiya_service.py
 
       - name: Check public scripts syntax
         shell: bash
