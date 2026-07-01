@@ -15,3 +15,5 @@ jobs:
         run: python3 tools/check_calc_v2.py
       - name: Validate offer rules v2
         run: python3 tools/check_offer_rules_v2.py
+      - name: Validate offer visibility integration doc
+        run: python3 tools/check_offer_visibility_integration_doc.py
