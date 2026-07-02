@@ -13,6 +13,30 @@
       "description": "Баннеры, вывески, таблички, наклейки, дизайн, соцсети и оформление карточек в Яндекс Картах и 2ГИС. Оставьте заявку онлайн."
     },
     {
+      "path": "uslugi.html",
+      "url": "https://www.lider-bsk.ru/uslugi.html",
+      "title": "Услуги РА Лидер в Борисоглебске",
+      "description": "Баннеры, вывески, полиграфия, визитки, раздаточные материалы, наклейки, таблички, соцсети, карты и комплекты рекламы."
+    },
+    {
+      "path": "vizitki-borisoglebsk.html",
+      "url": "https://www.lider-bsk.ru/vizitki-borisoglebsk.html",
+      "title": "Визитки в Борисоглебске — РА Лидер",
+      "description": "Визитки для бизнеса: выберите формат, тираж, бумагу, стороны печати, ламинацию, скругление и передайте параметры в заявку."
+    },
+    {
+      "path": "poligrafiya-borisoglebsk.html",
+      "url": "https://www.lider-bsk.ru/poligrafiya-borisoglebsk.html",
+      "title": "Полиграфия в Борисоглебске — РА Лидер",
+      "description": "Визитки, листовки, наклейки, буклеты, грамоты, открытки, папки и другие печатные материалы для бизнеса."
+    },
+    {
+      "path": "razdatochnye-materialy-borisoglebsk.html",
+      "url": "https://www.lider-bsk.ru/razdatochnye-materialy-borisoglebsk.html",
+      "title": "Раздаточные материалы в Борисоглебске — РА Лидер",
+      "description": "Материалы для раздачи, акции, открытия, меню, прайса или презентации услуги."
+    },
+    {
       "path": "prices.html",
       "url": "https://www.lider-bsk.ru/prices.html",
       "title": "Цены на рекламу в Борисоглебске — РА Лидер",
