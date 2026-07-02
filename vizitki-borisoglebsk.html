@@ -14,6 +14,9 @@
   <meta property="og:title" content="Визитки в Борисоглебске — РА Лидер">
   <meta property="og:description" content="Конструктор заказа визиток без цен: формат, тираж, стороны, бумага, ламинация и дизайн.">
   <meta property="og:image" content="https://www.lider-bsk.ru/assets/og-lider-default.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Визитки в Борисоглебске — РА Лидер">
   <meta name="twitter:description" content="Выберите параметры визиток, а заявка уйдет с готовым описанием заказа.">
@@ -38,21 +41,11 @@
 <div class="field"><label>Скругление углов</label><select data-calc="corners"><option>Не нужно</option><option>Нужно</option></select></div>
 <div class="field"><label>Сверление</label><select data-calc="holes"><option>Не нужно</option><option>Нужно</option></select></div>
 <div class="field full"><label>Макет / дизайн</label><select data-calc="design"><option>Макет готов</option><option>Нужен дизайн с нуля</option><option>Есть пример, нужно доработать</option><option>Нужна проверка макета</option></select></div>
-<div class="field full"><label>Комментарий</label><input data-calc="comment" placeholder="Например: визитка для салона, нужен QR-код, логотип есть"></div>
-</div></div><div class="card"><h3>Что попадёт в заявку</h3><div class="summary" id="card-summary"></div><button class="btn" id="apply-card-order" type="button">Перенести в заявку</button></div></div></div></section>
-<section id="request" class="section"><div class="wrap"><div class="cta"><div><h2>Отправить заявку на визитки</h2><p>После нажатия «Перенести в заявку» параметры появятся в форме. Укажите телефон и отправьте запрос.</p><p><a href="tel:+79802457471">8 980 245-74-71</a></p></div><div id="leader-lead-form" data-leader-lead-form></div></div></div></section>
+</div></div><div class="card"><h3>Итоговое описание</h3><div class="summary" id="card-summary"></div><p><button class="btn" id="send-card-summary" type="button">Перенести в заявку</button></p></div></div></div></section>
+<section id="request" class="section"><div class="wrap"><div class="cta"><div><h2>Рассчитать визитки</h2><p>Заполните параметры выше или просто оставьте телефон. Мы уточним детали и рассчитаем заказ.</p><p><a href="tel:+79802457471" style="color:#fff">8 980 245-74-71</a></p></div><div id="leader-lead-form" data-leader-lead-form></div></div></div></section>
 </main>
 <script src="assets/public-lead-form.js?v=5"></script>
-<script src="assets/public-related-services.js?v=2"></script>
-<script>
-(function(){
-function val(n){var e=document.querySelector('[data-calc="'+n+'"]');return e?e.value:''}
-function text(){return ['Заказ: визитки','Вид: '+val('kind'),'Формат: '+val('format'),'Стороны печати: '+val('sides'),'Тираж: '+val('qty'),'Бумага: '+val('paper'),'Ламинация: '+val('lamination'),'Скругление углов: '+val('corners'),'Сверление: '+val('holes'),'Макет / дизайн: '+val('design'),'Комментарий: '+(val('comment')||'нет')].join('\n')}
-function ensureOption(select,value){if(!select)return;for(var i=0;i<select.options.length;i++){if(select.options[i].value===value)return;}select.add(new Option(value,value));}
-function render(){var s=document.getElementById('card-summary');if(s)s.textContent=text()}
-function apply(){var form=document.querySelector('[data-leader-lead-widget]');if(!form)return;var service=form.querySelector('[name="service"]');var msg=form.querySelector('[name="message"]');var qty=form.querySelector('[name="quantity"]');var mock=form.querySelector('[name="mockup"]');if(service){ensureOption(service,'Визитки');service.value='Визитки';}if(msg)msg.value=text();if(qty)qty.value=val('qty');if(mock)mock.value=val('design')==='Макет готов'?'Макет готов':'Макета нет, нужен дизайн';document.getElementById('request').scrollIntoView({behavior:'smooth'});}
-document.addEventListener('input',render);document.addEventListener('change',render);document.addEventListener('DOMContentLoaded',function(){render();var b=document.getElementById('apply-card-order');if(b)b.addEventListener('click',apply)});
-})();
-</script>
+<script src="assets/public-related-services.js?v=1"></script>
+<script>document.addEventListener('DOMContentLoaded',function(){var box=document.getElementById('card-calc');var summary=document.getElementById('card-summary');function val(name){var el=box&&box.querySelector('[data-calc="'+name+'"]');return el?el.value:''}function text(){return 'Заявка на визитки\nВид: '+val('kind')+'\nФормат: '+val('format')+'\nСтороны печати: '+val('sides')+'\nТираж: '+val('qty')+'\nБумага: '+val('paper')+'\nЛаминация: '+val('lamination')+'\nСкругление углов: '+val('corners')+'\nСверление: '+val('holes')+'\nМакет / дизайн: '+val('design')}function update(){if(summary)summary.textContent=text()}if(box){box.addEventListener('change',update);update()}var btn=document.getElementById('send-card-summary');if(btn)btn.addEventListener('click',function(){var msg=document.querySelector('[name="message"]');var service=document.querySelector('[name="service"]');if(service)service.value='Другое';if(msg)msg.value=text();document.getElementById('request').scrollIntoView({behavior:'smooth'});});});</script>
 </body>
 </html>
