@@ -3,20 +3,40 @@
   'use strict';
   function pageKey(){return (location.pathname.split('/').pop()||'index.html').toLowerCase()}
   function skip(){var k=pageKey();return k==='index.html'||k==='privacy.html'||location.pathname==='/'||document.getElementById('leader-related-services')}
+  function setService(form,target){
+    var service=form.querySelector('[name="service"]');
+    if(!service)return;
+    var found=false;
+    for(var i=0;i<service.options.length;i++){
+      if(service.options[i].value===target){found=true;break;}
+    }
+    if(found)service.value=target;
+    else{service.add(new Option(target,target));service.value=target;}
+  }
+  function setMessage(form,text){
+    var msg=form.querySelector('[name="message"]');
+    if(msg&&!msg.value)msg.value=text;
+  }
   function selectDefaultService(){
-    if(pageKey()!=='uslugi.html')return;
+    var key=pageKey();
     window.setTimeout(function(){
       var form=document.querySelector('[data-leader-lead-widget]');
       if(!form)return;
-      var service=form.querySelector('[name="service"]');
-      if(!service)return;
-      var target='Комплексная реклама';
-      var found=false;
-      for(var i=0;i<service.options.length;i++){
-        if(service.options[i].value===target){found=true;break;}
+      if(key==='uslugi.html'){
+        var service=form.querySelector('[name="service"]');
+        if(!service)return;
+        var target='Комплексная реклама';
+        var found=false;
+        for(var i=0;i<service.options.length;i++){
+          if(service.options[i].value===target){found=true;break;}
+        }
+        if(found)service.value=target;
+        else if(service.options.length>10)service.selectedIndex=10;
       }
-      if(found)service.value=target;
-      else if(service.options.length>10)service.selectedIndex=10;
+      if(key==='razdatochnye-materialy-borisoglebsk.html'){
+        setService(form,'Полиграфия');
+        setMessage(form,'Страница: раздаточные материалы. Нужно рассчитать листовки, флаеры, купоны, мини-прайсы, вкладыши или карточки услуг. Нужно уточнить формат, тираж, стороны печати, бумагу, срок и нужен ли дизайн.');
+      }
     },80);
   }
   function add(){
