@@ -13,6 +13,16 @@ Why this is needed:
 
 Large public landing pages contain long inline CSS. Some of them are truncated when read through the connector, so full-file edits are risky.
 
+Current migration backlog:
+
+- `request.html`;
+- `index.html`;
+- `pechat-bannerov-borisoglebsk.html`;
+- `banner-dlya-magazina-borisoglebsk.html`;
+- `oformlenie-vhoda-borisoglebsk.html`;
+- `nakleyki-na-vitrinu-borisoglebsk.html`;
+- `rezhim-raboty-tablichki-borisoglebsk.html`.
+
 Safe migration order:
 
 1. Move repeated landing-page styles into `assets/public-landing.css`.
