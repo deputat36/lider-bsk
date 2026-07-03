@@ -19,6 +19,13 @@ Required changes:
 4. Keep the local service prefill logic and the service value `Баннер`.
 5. After the HTML is shortened and readable, update the public lead form script from `v=4` to `v=5`.
 
+Concrete safe replacements:
+
+- In the head, keep `assets/public-lead-form.css?v=4` and add `assets/public-landing.css` before it.
+- Remove the large `<style>...</style>` block only after confirming the shared CSS covers the landing classes used on the page.
+- In the footer scripts, replace `assets/public-lead-form.js?v=4` with `assets/public-lead-form.js?v=5`.
+- Do not remove the inline prefill script that sets `service.value='Баннер'`.
+
 Do not change:
 
 - CRM files;
