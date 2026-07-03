@@ -9,6 +9,7 @@ if not doc.exists():
     sys.exit(1)
 text = doc.read_text(encoding='utf-8')
 required = [
+    '#195',
     'pechat-bannerov-borisoglebsk.html',
     'assets/public-landing.css',
     'assets/public-lead-form.js?v=4',
