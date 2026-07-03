@@ -2,7 +2,7 @@
 
 Scope: public site only.
 
-Related issues: #185, #191.
+Related issues: #185, #191, #195.
 
 Recommended first candidate: `pechat-bannerov-borisoglebsk.html`.
 
