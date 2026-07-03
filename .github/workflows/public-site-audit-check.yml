@@ -16,6 +16,7 @@ on:
       - 'tools/check_public_poligrafiya_service.py'
       - 'tools/check_public_lead_form_cache_v5_partial.py'
       - 'tools/check_public_landing_css.py'
+      - 'tools/check_public_landing_first_page_migration.py'
       - 'robots.txt'
       - 'sitemap.xml'
       - '.github/workflows/public-site-audit-check.yml'
@@ -34,6 +35,7 @@ on:
       - 'tools/check_public_poligrafiya_service.py'
       - 'tools/check_public_lead_form_cache_v5_partial.py'
       - 'tools/check_public_landing_css.py'
+      - 'tools/check_public_landing_first_page_migration.py'
       - 'robots.txt'
       - 'sitemap.xml'
       - '.github/workflows/public-site-audit-check.yml'
@@ -138,6 +140,7 @@ jobs:
           python3 tools/check_public_poligrafiya_service.py
           python3 tools/check_public_lead_form_cache_v5_partial.py
           python3 tools/check_public_landing_css.py
+          python3 tools/check_public_landing_first_page_migration.py
 
       - name: Check public scripts syntax
         shell: bash
