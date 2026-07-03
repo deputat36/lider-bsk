@@ -7,6 +7,7 @@ Current state:
 - `assets/public-landing.css` is prepared as a shared style foundation for public landing pages.
 - `tools/check_public_landing_css.py` validates the base markers of that stylesheet.
 - `.github/workflows/public-site-audit-check.yml` runs the stylesheet checker.
+- Public HTML pages are not expected to be fully migrated yet; the stylesheet is a foundation for the next safe conversion pass.
 
 Why this is needed:
 
