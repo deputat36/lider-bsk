@@ -16,6 +16,16 @@ RA Lider Edge Functions observed in production:
 
 Non-RA-Lider functions such as `nav_*` and `parket-*` are out of scope for this baseline.
 
+## 2026-07-05 read-only confirmation
+
+Read-only Edge Function listing still shows the same RA Lider production functions:
+
+- `leader-public-lead`: `ACTIVE`, version `9`, `verify_jwt=false`.
+- `leader-crm-leads`: `ACTIVE`, version `12`, `verify_jwt=true`.
+- `leader-crm-orders`: `ACTIVE`, version `2`, `verify_jwt=true`.
+
+No Supabase deploy, schema change, RLS/policy change, grant change or data write was performed while adding this confirmation. Edge Function log filtering was not used because the filtered log call is not supported by the available tool schema, and the unfiltered log call was blocked.
+
 ## CRM access profile counts
 
 Grouped production result from `public.leader_user_profiles`:
