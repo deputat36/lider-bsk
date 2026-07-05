@@ -8,6 +8,7 @@ Current state:
 - `tools/check_public_landing_css.py` validates the base markers of that stylesheet.
 - `.github/workflows/public-site-audit-check.yml` runs the stylesheet checker.
 - Public HTML pages are not expected to be fully migrated yet; the stylesheet is a foundation for the next safe conversion pass.
+- The public lead form helper already contains the Polygraphy page preset and the Polygraphy select option; this is covered by `tools/check_public_poligrafiya_service.py`.
 
 Why this is needed:
 
