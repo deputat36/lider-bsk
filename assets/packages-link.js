@@ -49,6 +49,14 @@
   function isHome(){return location.pathname==='/' || location.pathname.endsWith('/index.html');}
   function makeCard(id,icon,title,text,href){return '<article class="card" id="'+id+'"><div class="icon">'+icon+'</div><h3>'+title+'</h3><p>'+text+'</p><a href="'+href+'">Подробнее →</a></article>';}
 
+  function addHeaderLayoutFix(){
+    if(document.getElementById('leader-header-layout-fix-v7'))return;
+    const style=document.createElement('style');
+    style.id='leader-header-layout-fix-v7';
+    style.textContent='@media(min-width:1025px){.header .header__in{display:grid!important;grid-template-columns:minmax(220px,auto) minmax(0,1fr) auto!important;align-items:center!important;gap:8px 14px!important;min-height:auto!important;padding:10px 0!important}.header .brand{min-width:0!important;max-width:330px!important;flex:0 1 auto!important}.header .nav{display:flex!important;min-width:0!important;max-width:100%!important;flex-wrap:wrap!important;justify-content:center!important;align-items:center!important;gap:7px 14px!important;font-size:clamp(12px,.86vw,15px)!important;line-height:1.15!important;overflow:hidden!important}.header .nav a{white-space:nowrap!important;flex:0 0 auto!important}.header .header__cta{min-width:0!important;display:flex!important;justify-content:flex-end!important;gap:8px!important;margin-left:0!important}.header .phone{font-size:clamp(12px,.86vw,16px)!important;white-space:nowrap!important}.header .btn{min-height:42px!important;padding:10px 16px!important;white-space:nowrap!important;font-size:clamp(13px,.9vw,15px)!important}}@media(min-width:1025px) and (max-width:1900px){.header .header__in{grid-template-columns:minmax(190px,auto) auto!important}.header .nav{grid-column:1/-1!important;order:3!important;width:100%!important;padding-top:2px!important}.header .header__cta{justify-self:end!important}}';
+    document.head.appendChild(style);
+  }
+
   function ensureServicePagesBlock(){
     if(!isHome())return;
     if(document.getElementById('service-pages'))return;
@@ -128,17 +136,11 @@
 
   function addTopNavUsefulLinks(){
     const nav=document.querySelector('.nav');
-    if(!nav||document.getElementById('nav-prices-link'))return;
+    if(!nav||document.getElementById('nav-cases-link'))return;
     const navItems=[
-      ['nav-communities-link','reklama-v-soobshchestvah-borisoglebska.html','Группы ВК'],
       ['nav-cases-link','primery-rabot-kejsy.html','Кейсы'],
       ['nav-urgent-link','srochnaya-reklama-borisoglebsk.html','Срочно'],
-      ['nav-cafe-link','reklama-dlya-kafe-borisoglebsk.html','Кафе'],
-      ['nav-beauty-link','reklama-dlya-salona-krasoty-borisoglebsk.html','Салоны'],
-      ['nav-service-link','reklama-dlya-servisa-masterskoy-borisoglebsk.html','Сервисы'],
-      ['nav-social-link','reklama-v-socsetyah-borisoglebsk.html','Соцсети'],
-      ['nav-prices-link','prices.html','Цены'],
-      ['nav-packages-link','komplekty-reklamy.html','Комплекты']
+      ['nav-prices-link','prices.html','Цены']
     ];
     const before=nav.querySelector('a[href="#request"]')||null;
     navItems.forEach(function(i){if(document.getElementById(i[0]))return;const a=document.createElement('a');a.id=i[0];a.href=i[1];a.textContent=i[2];nav.insertBefore(a,before);});
@@ -163,6 +165,6 @@
     items.forEach(function(i){const a=document.createElement('a');a.id=i[0];a.className='btn btn--white';a.href=i[1];a.style.marginLeft='8px';a.textContent=i[2];after.insertAdjacentElement('afterend',a);after=a;});
   }
 
-  function run(){addUtilityCards();addHeroChecklistLink();addFaqChecklistLink();addFooterNavigation();addTopNavUsefulLinks();addChecklistToContacts();}
-  document.addEventListener('DOMContentLoaded',function(){setTimeout(run,300);setTimeout(run,1000);setTimeout(run,1800);});
+  function run(){addHeaderLayoutFix();addUtilityCards();addHeroChecklistLink();addFaqChecklistLink();addFooterNavigation();addTopNavUsefulLinks();addChecklistToContacts();}
+  document.addEventListener('DOMContentLoaded',function(){setTimeout(run,120);setTimeout(run,600);setTimeout(run,1200);});
 })();
