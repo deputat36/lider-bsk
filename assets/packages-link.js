@@ -132,7 +132,9 @@
 
   function addTopNavUsefulLinks(){
     const nav=document.querySelector('.nav');
-    if(!nav||document.getElementById('nav-cases-link'))return;
+    if(!nav)return;
+    ['nav-communities-link','nav-cafe-link','nav-beauty-link','nav-service-link','nav-social-link','nav-packages-link'].forEach(function(id){const el=document.getElementById(id);if(el)el.remove();});
+    if(document.getElementById('nav-cases-link'))return;
     const navItems=[
       ['nav-cases-link','primery-rabot-kejsy.html','Кейсы'],
       ['nav-urgent-link','srochnaya-reklama-borisoglebsk.html','Срочно'],
@@ -144,21 +146,18 @@
 
   function addChecklistToContacts(){
     const contactCard=document.querySelector('#contacts .contacts .card:last-child');
-    if(!contactCard||document.getElementById('contacts-checklist-link'))return;
+    if(!contactCard)return;
+    ['contacts-communities-link','contacts-cases-link','contacts-urgent-link','contacts-checklist-link','contacts-social-link','contacts-cafe-link','contacts-beauty-link','contacts-service-link'].forEach(function(id){const el=document.getElementById(id);if(el)el.remove();});
     const items=[
-      ['contacts-communities-link','reklama-v-soobshchestvah-borisoglebska.html','Реклама в группах ВК'],
       ['contacts-cases-link','primery-rabot-kejsy.html','Примеры работ'],
       ['contacts-urgent-link','srochnaya-reklama-borisoglebsk.html','Срочная реклама'],
       ['contacts-checklist-link','chto-nuzhno-dlya-rascheta.html','Что нужно для расчёта'],
-      ['contacts-social-link','reklama-v-socsetyah-borisoglebsk.html','Реклама в соцсетях'],
-      ['contacts-cafe-link','reklama-dlya-kafe-borisoglebsk.html','Реклама для кафе'],
-      ['contacts-beauty-link','reklama-dlya-salona-krasoty-borisoglebsk.html','Реклама для салона'],
-      ['contacts-service-link','reklama-dlya-servisa-masterskoy-borisoglebsk.html','Реклама для сервиса']
+      ['contacts-cafe-link','reklama-dlya-kafe-borisoglebsk.html','Реклама для кафе']
     ];
     const mainBtn=contactCard.querySelector('a.btn');
     if(!mainBtn)return;
     let after=mainBtn;
-    items.forEach(function(i){const a=document.createElement('a');a.id=i[0];a.className='btn btn--white';a.href=i[1];a.style.marginLeft='8px';a.textContent=i[2];after.insertAdjacentElement('afterend',a);after=a;});
+    items.forEach(function(i){const a=document.createElement('a');a.id=i[0];a.className='btn btn--white';a.href=i[1];a.style.marginLeft='8px';a.style.marginTop='8px';a.textContent=i[2];after.insertAdjacentElement('afterend',a);after=a;});
   }
 
   function run(){addHeaderLayoutFix();addUtilityCards();addHeroChecklistLink();addFaqChecklistLink();addFooterNavigation();addTopNavUsefulLinks();addChecklistToContacts();}
