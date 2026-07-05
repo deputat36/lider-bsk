@@ -5,6 +5,10 @@ import sys
 root = Path(__file__).resolve().parents[1]
 page = (root / 'poligrafiya-borisoglebsk.html').read_text(encoding='utf-8')
 handouts = (root / 'razdatochnye-materialy-borisoglebsk.html').read_text(encoding='utf-8')
+pechat_bannerov = (root / 'pechat-bannerov-borisoglebsk.html').read_text(encoding='utf-8')
+banner_shop = (root / 'banner-dlya-magazina-borisoglebsk.html').read_text(encoding='utf-8')
+stickers = (root / 'nakleyki-na-vitrinu-borisoglebsk.html').read_text(encoding='utf-8')
+working_hours = (root / 'rezhim-raboty-tablichki-borisoglebsk.html').read_text(encoding='utf-8')
 form = (root / 'assets' / 'public-lead-form.js').read_text(encoding='utf-8')
 checks = [
     ('page searches local Polygraphy option', "service.options[i].value==='Полиграфия'" in page),
@@ -14,6 +18,11 @@ checks = [
     ('handouts page uses lead form v5', 'assets/public-lead-form.js?v=5' in handouts),
     ('handouts page sets service to Polygraphy', "service.value='Полиграфия'" in handouts),
     ('handouts page message mentions handout materials', 'Страница: раздаточные материалы' in handouts),
+    ('pechat bannerov page sets service to Banner', "service.value='Баннер'" in pechat_bannerov),
+    ('shop banner page sets service to Banner', "service.value='Баннер'" in banner_shop),
+    ('stickers page sets service to Stickers', "service.value='Наклейки'" in stickers),
+    ('working hours page sets service to Sign', "service.value='Табличка'" in working_hours),
+    ('specialized pages do not set service to Other', "service.value='Другое'" not in page + handouts + pechat_bannerov + banner_shop + stickers + working_hours),
     ('form has polygraphy page preset', 'poligrafiya-borisoglebsk.html' in form and "service:'Полиграфия'" in form),
     ('form has Polygraphy option', '<option>Полиграфия</option>' in form),
 ]
@@ -21,4 +30,4 @@ failed = [name for name, ok in checks if not ok]
 if failed:
     print('Missing checks: ' + '; '.join(failed))
     sys.exit(1)
-print('Polygraphy public pages and public form send service as POLIGRAFIYA.')
+print('Specialized public pages send correct service values.')
