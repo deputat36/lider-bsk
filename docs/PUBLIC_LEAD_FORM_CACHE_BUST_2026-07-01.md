@@ -34,6 +34,10 @@ Why blocked:
 
 These pages contain long inline CSS or are truncated through the connector. Full-file replacement through the connector is not safe. Continue through #191 and #195 by shortening one page at a time with a normal working copy or safe patch.
 
+Guardrail:
+
+Blocked pages should remain on `assets/public-lead-form.js?v=4` until their repeated CSS is migrated and the page is safely readable. Moving them to `v=5` before that would hide the real blocker and could make workflow expectations inconsistent.
+
 Required next patch:
 
 1. Convert one blocked page at a time to shared `assets/public-landing.css`.
