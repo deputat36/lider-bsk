@@ -94,16 +94,12 @@
   function addHeroChecklistLink(){
     const quick=document.querySelector('.hero-card .quick');
     if(!quick)return;
+    const oldIds=['hero-communities-link','hero-cases-link','hero-urgent-ads-link','hero-social-ads-link','hero-cafe-ads-link','hero-beauty-ads-link','hero-service-ads-link','hero-events-ads-link','hero-packages-link','hero-checklist-link'];
+    oldIds.forEach(function(id){const el=document.getElementById(id);if(el)el.remove();});
     const items=[
-      ['hero-communities-link','reklama-v-soobshchestvah-borisoglebska.html','Реклама в группах ВК и ОК'],
-      ['hero-cases-link','primery-rabot-kejsy.html','Примеры работ и кейсы'],
       ['hero-urgent-ads-link','srochnaya-reklama-borisoglebsk.html','Срочно нужна реклама'],
-      ['hero-social-ads-link','reklama-v-socsetyah-borisoglebsk.html','Реклама в соцсетях Борисоглебска'],
-      ['hero-cafe-ads-link','reklama-dlya-kafe-borisoglebsk.html','Реклама для кафе и доставки'],
-      ['hero-beauty-ads-link','reklama-dlya-salona-krasoty-borisoglebsk.html','Реклама для салона и мастера'],
-      ['hero-service-ads-link','reklama-dlya-servisa-masterskoy-borisoglebsk.html','Реклама для сервиса и мастерской'],
-      ['hero-events-ads-link','reklama-dlya-meropriyatiy-borisoglebsk.html','Реклама мероприятий и ярмарок'],
       ['hero-packages-link','komplekty-reklamy.html','Комплекты рекламы'],
+      ['hero-cases-link','primery-rabot-kejsy.html','Примеры работ'],
       ['hero-checklist-link','chto-nuzhno-dlya-rascheta.html','Что подготовить для расчёта']
     ];
     items.forEach(function(i){if(document.getElementById(i[0]))return;const a=document.createElement('a');a.id=i[0];a.href=i[1];a.innerHTML=i[2]+' <span>→</span>';quick.appendChild(a);});
