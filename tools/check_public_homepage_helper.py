@@ -8,7 +8,7 @@ required = [
     'function mobile()',
     "h.classList.toggle('open')",
     "if(e.target&&e.target.tagName==='A')close()",
-    'function cleanHero',
+    'function hero()',
     'hero-checklist-link',
     'function popular()',
     'leader-extra-links',
