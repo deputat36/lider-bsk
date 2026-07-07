@@ -15,6 +15,16 @@ Read-only aggregates show that the CRM lead funnel works, but analytics fields a
 - sources are stored as raw free-form values;
 - historical rows should remain auditable.
 
+## Current public lead contract
+
+`supabase/functions/leader-public-lead/index.ts` currently stores the submitted raw values in `leader_leads`:
+
+- `service` comes from the public form body;
+- `source` comes from the public form body or falls back to `Сайт`;
+- `request_id`, `source_page_path`, `submitted_at`, `page_url`, UTM fields and audit payload are preserved separately.
+
+This is the right boundary for the public write path. The public Edge Function should keep saving the original user/form values. Analytics normalization should be derived later in CRM/reporting code or in a separately approved database view.
+
 ## Principle
 
 Keep raw values as the audit trail and add normalized categories as a derived analytics layer.
