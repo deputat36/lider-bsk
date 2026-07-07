@@ -137,7 +137,7 @@ jobs:
           assert page.index(helper) < page.index(form)
           PY
 
-      - name: Check public service lead classification
+      - name: Check public service and homepage helper contracts
         shell: bash
         run: |
           set -euo pipefail
