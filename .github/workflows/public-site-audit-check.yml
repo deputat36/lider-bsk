@@ -6,6 +6,7 @@ on:
     paths:
       - '*.html'
       - 'assets/public-lead-form.js'
+      - 'assets/packages-link.js'
       - 'assets/public-lead-form.css'
       - 'assets/public-landing.css'
       - 'assets/public-lead-reference-v1.js'
@@ -26,6 +27,7 @@ on:
     paths:
       - '*.html'
       - 'assets/public-lead-form.js'
+      - 'assets/packages-link.js'
       - 'assets/public-lead-form.css'
       - 'assets/public-landing.css'
       - 'assets/public-lead-reference-v1.js'
@@ -149,3 +151,4 @@ jobs:
         run: |
           set -euo pipefail
           node --check assets/public-lead-form.js
+          node --check assets/packages-link.js
