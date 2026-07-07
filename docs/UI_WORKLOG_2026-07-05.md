@@ -6,8 +6,9 @@ Done:
 - header overflow fix;
 - short top navigation;
 - compact hero links;
-- basic mobile menu.
+- basic mobile menu;
+- close mobile menu by link click;
+- homepage helper CI contract.
 
 Todo:
-- cache version in index;
-- close mobile menu by link click.
+- cache version in index.
