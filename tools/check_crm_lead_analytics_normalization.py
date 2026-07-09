@@ -7,6 +7,7 @@ helper = root / 'crm/v4/assets/v4/lead-analytics-normalization.js'
 badges = root / 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
 index = root / 'crm/v4/index.html'
 plan = root / 'docs/CRM_LEAD_ANALYTICS_NORMALIZATION_PLAN_2026-07-07.md'
+manual_test = root / 'docs/CRM_LEAD_ANALYTICS_BADGES_MANUAL_TEST_2026-07-09.md'
 
 errors = []
 
@@ -64,13 +65,30 @@ else:
         'No automatic backfill',
         'No Supabase DDL/DML',
         'Current public lead contract',
+        'Manual browser verification remains required',
     ]
     for marker in required:
         if marker not in text:
             errors.append(f'Missing plan marker: {marker}')
 
+if not manual_test.exists():
+    errors.append('Missing lead analytics badges manual test document')
+else:
+    text = manual_test.read_text(encoding='utf-8')
+    required = [
+        'https://deputat36.github.io/lider-bsk/crm/v4/?tab=leads',
+        'Услуга:',
+        'Источник:',
+        'badges are not duplicated',
+        'raw source/service values remain visible',
+        'no data changes are made in Supabase',
+    ]
+    for marker in required:
+        if marker not in text:
+            errors.append(f'Missing manual-test marker: {marker}')
+
 if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('CRM lead analytics normalization helper, badges module and plan are valid.')
+print('CRM lead analytics normalization helper, badges module, plan and manual test are valid.')
