@@ -38,8 +38,8 @@ Implemented in GitHub source:
 
 Still in progress:
 
-- manual browser verification before closing #198;
-- optional search/filter integration by derived service/source category in `crm/v4/assets/v4/leads.js`. Direct full-file update of `leads.js` was blocked earlier, so this should be done only through a safe small patch or normal working copy.
+- Manual browser verification remains required before closing #198.
+- Optional search/filter integration by derived service/source category in `crm/v4/assets/v4/leads.js`. Direct full-file update of `leads.js` was blocked earlier, so this should be done only through a safe small patch or normal working copy.
 
 ## Principle
 
