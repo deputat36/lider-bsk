@@ -1,3 +1,16 @@
+# Applied patch: CRM derived lead search
+
+Status: applied to `crm/v4/assets/v4/leads.js` in GitHub source.
+
+Purpose:
+
+- extend browser-side CRM lead search with derived service/source categories;
+- keep raw `leader_leads.service` and `leader_leads.source` unchanged;
+- avoid Supabase production changes.
+
+Manual verification remains required in #199.
+
+```diff
 diff --git a/crm/v4/assets/v4/leads.js b/crm/v4/assets/v4/leads.js
 --- a/crm/v4/assets/v4/leads.js
 +++ b/crm/v4/assets/v4/leads.js
@@ -17,3 +30,4 @@ diff --git a/crm/v4/assets/v4/leads.js b/crm/v4/assets/v4/leads.js
  }
  
  function uniqueSources(leads) {
+```
