@@ -6,6 +6,7 @@ root = Path(__file__).resolve().parents[1]
 helper = root / 'crm/v4/assets/v4/lead-analytics-normalization.js'
 badges = root / 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
 summary = root / 'crm/v4/assets/v4/lead-analytics-summary-v1.js'
+leads = root / 'crm/v4/assets/v4/leads.js'
 index = root / 'crm/v4/index.html'
 plan = root / 'docs/CRM_LEAD_ANALYTICS_NORMALIZATION_PLAN_2026-07-07.md'
 manual_test = root / 'docs/CRM_LEAD_ANALYTICS_BADGES_MANUAL_TEST_2026-07-09.md'
@@ -31,6 +32,19 @@ else:
     for marker in required:
         if marker not in text:
             errors.append(f'Missing helper marker: {marker}')
+
+if not leads.exists():
+    errors.append('Missing CRM leads module')
+else:
+    text = leads.read_text(encoding='utf-8')
+    required = [
+        "import { leadAnalyticsSearchText } from './lead-analytics-normalization.js';",
+        'function leadHaystack(lead)',
+        'leadAnalyticsSearchText(lead)',
+    ]
+    for marker in required:
+        if marker not in text:
+            errors.append(f'Missing leads search marker: {marker}')
 
 if not badges.exists():
     errors.append('Missing lead analytics badges module')
@@ -85,6 +99,7 @@ else:
         'No Supabase DDL/DML',
         'Current public lead contract',
         'Manual browser verification remains required',
+        'leadAnalyticsSearchText(lead)',
     ]
     for marker in required:
         if marker not in text:
@@ -98,6 +113,7 @@ else:
         'https://deputat36.github.io/lider-bsk/crm/v4/?tab=leads',
         'Услуга:',
         'Источник:',
+        'search works by derived categories',
         'badges are not duplicated',
         'raw source/service values remain visible',
         'no data changes are made in Supabase',
@@ -110,4 +126,4 @@ if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('CRM lead analytics normalization helper, badges module, summary module, plan and manual test are valid.')
+print('CRM lead analytics normalization, derived search, badges, summary, plan and manual test are valid.')
