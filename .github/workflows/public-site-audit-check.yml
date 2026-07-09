@@ -85,6 +85,7 @@ jobs:
           test -f "$css"
           test -f "$helper"
           test -f "$request"
+          grep -Fq 'ofewxuqfjhamgerwzull.supabase.co/functions/v1/leader-public-lead' "$form"
           grep -Fq 'leader-public-lead' "$form"
           grep -Fq 'METRIKA_ID=109387236' "$form"
           grep -Fq 'request_id' "$form"
