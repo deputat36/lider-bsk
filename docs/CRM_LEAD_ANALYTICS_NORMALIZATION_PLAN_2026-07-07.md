@@ -2,7 +2,7 @@
 
 Scope: RA Lider CRM analytics.
 
-Related issues: #196, #197, #198.
+Related issues: #196, #197, #198, #199.
 Source audit: `docs/PUBLIC_LEAD_FUNNEL_AGGREGATES_READONLY_2026-07-05.md`.
 
 This is a planning and implementation-status document. Do not rewrite existing `leader_leads.service` or `leader_leads.source` values without explicit data-change approval.
@@ -39,7 +39,9 @@ Implemented in GitHub source:
 Still in progress:
 
 - Manual browser verification remains required before closing #198.
-- Optional search/filter integration by derived service/source category in `crm/v4/assets/v4/leads.js`. Direct full-file update of `leads.js` was blocked earlier, so this should be done only through a safe small patch or normal working copy.
+- Search integration by derived service/source category is tracked separately in #199.
+- `patches/crm-lead-derived-search.patch` contains a minimal safe patch for `crm/v4/assets/v4/leads.js`.
+- Direct full-file update of `leads.js` was blocked earlier, so #199 should be done only through a safe small patch or normal working copy.
 
 ## Principle
 
