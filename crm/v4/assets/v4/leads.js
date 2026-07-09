@@ -3,6 +3,7 @@ import { timeout, friendlyError } from './api.js';
 import { v4State, setState, setLeadFilters } from './state.js';
 import { byId, setStatus, toast } from './ui.js';
 import { openLeadRoute } from './router.js';
+import { leadAnalyticsSearchText } from './lead-analytics-normalization.js';
 
 const LEAD_LIST_FIELDS = 'id,created_at,name,phone,source,service,message,status,next_contact_at,page_url,budget,estimated_amount,city,converted_order_id,converted_client_id';
 const CLOSED_STATUSES = ['Спам', 'Создан заказ', 'Отказ', 'Не отвечает', 'Дорого', 'Передумал'];
@@ -49,7 +50,7 @@ function isActiveLead(lead) {
 }
 
 function leadHaystack(lead) {
-  return [lead.name, lead.phone, lead.source, lead.service, lead.message, lead.city, lead.status].join(' ').toLowerCase();
+  return [lead.name, lead.phone, lead.source, lead.service, lead.message, lead.city, lead.status, leadAnalyticsSearchText(lead)].join(' ').toLowerCase();
 }
 
 function uniqueSources(leads) {
