@@ -1,0 +1,37 @@
+name: CRM lead analytics check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/lead-analytics-normalization.js'
+      - 'crm/v4/assets/v4/leads.js'
+      - 'docs/CRM_LEAD_ANALYTICS_NORMALIZATION_PLAN_2026-07-07.md'
+      - 'tools/check_crm_lead_analytics_normalization.py'
+      - '.github/workflows/crm-lead-analytics-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/lead-analytics-normalization.js'
+      - 'crm/v4/assets/v4/leads.js'
+      - 'docs/CRM_LEAD_ANALYTICS_NORMALIZATION_PLAN_2026-07-07.md'
+      - 'tools/check_crm_lead_analytics_normalization.py'
+      - '.github/workflows/crm-lead-analytics-check.yml'
+
+jobs:
+  crm-lead-analytics:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate lead analytics normalization plan
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/check_crm_lead_analytics_normalization.py
+
+      - name: Check helper JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check crm/v4/assets/v4/lead-analytics-normalization.js
