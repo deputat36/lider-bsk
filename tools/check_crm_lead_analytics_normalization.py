@@ -5,6 +5,7 @@ import sys
 root = Path(__file__).resolve().parents[1]
 helper = root / 'crm/v4/assets/v4/lead-analytics-normalization.js'
 badges = root / 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
+summary = root / 'crm/v4/assets/v4/lead-analytics-summary-v1.js'
 index = root / 'crm/v4/index.html'
 plan = root / 'docs/CRM_LEAD_ANALYTICS_NORMALIZATION_PLAN_2026-07-07.md'
 manual_test = root / 'docs/CRM_LEAD_ANALYTICS_BADGES_MANUAL_TEST_2026-07-09.md'
@@ -36,6 +37,7 @@ if not badges.exists():
 else:
     text = badges.read_text(encoding='utf-8')
     required = [
+        "import './lead-analytics-summary-v1.js'",
         "import { v4State } from './state.js'",
         "import { deriveLeadAnalytics } from './lead-analytics-normalization.js'",
         'MutationObserver',
@@ -46,6 +48,23 @@ else:
     for marker in required:
         if marker not in text:
             errors.append(f'Missing badges marker: {marker}')
+
+if not summary.exists():
+    errors.append('Missing lead analytics summary module')
+else:
+    text = summary.read_text(encoding='utf-8')
+    required = [
+        "import { v4State, subscribeState } from './state.js'",
+        "import { deriveLeadAnalytics } from './lead-analytics-normalization.js'",
+        'Сводка по заявкам',
+        'Услуги',
+        'Источники',
+        'Raw service/source в базе не меняются',
+        'lead-analytics-summary',
+    ]
+    for marker in required:
+        if marker not in text:
+            errors.append(f'Missing summary marker: {marker}')
 
 if not index.exists():
     errors.append('Missing CRM v4 index')
@@ -91,4 +110,4 @@ if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('CRM lead analytics normalization helper, badges module, plan and manual test are valid.')
+print('CRM lead analytics normalization helper, badges module, summary module, plan and manual test are valid.')
