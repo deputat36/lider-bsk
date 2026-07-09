@@ -4,7 +4,9 @@ on:
   push:
     branches: [main]
     paths:
+      - 'crm/v4/index.html'
       - 'crm/v4/assets/v4/lead-analytics-normalization.js'
+      - 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
       - 'crm/v4/assets/v4/leads.js'
       - 'docs/CRM_LEAD_ANALYTICS_NORMALIZATION_PLAN_2026-07-07.md'
       - 'tools/check_crm_lead_analytics_normalization.py'
@@ -12,7 +14,9 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - 'crm/v4/index.html'
       - 'crm/v4/assets/v4/lead-analytics-normalization.js'
+      - 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
       - 'crm/v4/assets/v4/leads.js'
       - 'docs/CRM_LEAD_ANALYTICS_NORMALIZATION_PLAN_2026-07-07.md'
       - 'tools/check_crm_lead_analytics_normalization.py'
@@ -35,3 +39,5 @@ jobs:
         run: |
           set -euo pipefail
           node --check crm/v4/assets/v4/lead-analytics-normalization.js
+          node --check crm/v4/assets/v4/lead-analytics-badges-v1.js
+          grep -q 'lead-analytics-badges-v1.js?v=20260709-1' crm/v4/index.html
