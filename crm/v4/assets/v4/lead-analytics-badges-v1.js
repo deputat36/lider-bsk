@@ -1,3 +1,4 @@
+import './lead-analytics-summary-v1.js';
 import { v4State } from './state.js';
 import { deriveLeadAnalytics } from './lead-analytics-normalization.js';
 
