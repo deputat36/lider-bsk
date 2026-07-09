@@ -47,6 +47,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          node --check crm/v4/assets/v4/leads.js
           node --check crm/v4/assets/v4/lead-analytics-normalization.js
           node --check crm/v4/assets/v4/lead-analytics-badges-v1.js
           node --check crm/v4/assets/v4/lead-analytics-summary-v1.js
