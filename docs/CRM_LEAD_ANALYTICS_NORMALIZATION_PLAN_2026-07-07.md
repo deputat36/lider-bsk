@@ -32,16 +32,15 @@ Implemented in GitHub source:
 - `crm/v4/assets/v4/lead-analytics-normalization.js` derives service and source categories from raw lead values.
 - `crm/v4/assets/v4/lead-analytics-badges-v1.js` decorates already-rendered CRM lead cards with derived badges.
 - `crm/v4/assets/v4/lead-analytics-summary-v1.js` adds a small aggregate summary block for derived services and sources.
+- `crm/v4/assets/v4/leads.js` includes `leadAnalyticsSearchText(lead)` in `leadHaystack(lead)`, so browser-side search can find derived categories.
 - `crm/v4/index.html` loads the badges module after `leads.js` using `assets/v4/lead-analytics-badges-v1.js?v=20260709-1`; the badges module loads the summary module.
 - `tools/check_crm_lead_analytics_normalization.py` validates the helper, badges module, summary module, index hook and guardrails.
 - `.github/workflows/crm-lead-analytics-check.yml` runs the checker and JavaScript syntax checks.
 
 Still in progress:
 
-- Manual browser verification remains required before closing #198.
-- Search integration by derived service/source category is tracked separately in #199.
-- `patches/crm-lead-derived-search.patch` contains a minimal safe patch for `crm/v4/assets/v4/leads.js`.
-- Direct full-file update of `leads.js` was blocked earlier, so #199 should be done only through a safe small patch or normal working copy.
+- Manual browser verification remains required before closing #198 and #199.
+- `patches/crm-lead-derived-search.patch` remains as documentation of the minimal safe patch for `crm/v4/assets/v4/leads.js`.
 
 ## Principle
 
