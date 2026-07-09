@@ -87,6 +87,10 @@ jobs:
           test -f "$request"
           grep -Fq 'ofewxuqfjhamgerwzull.supabase.co/functions/v1/leader-public-lead' "$form"
           grep -Fq 'leader-public-lead' "$form"
+          if grep -Fq 'parket-public-lead' "$form" || grep -Fq 'broker-public-lead' "$form" || grep -Fq 'nav-v2-deal-api' "$form"; then
+            echo 'Public RA Lider form must not point to another contour function.' >&2
+            exit 1
+          fi
           grep -Fq 'METRIKA_ID=109387236' "$form"
           grep -Fq 'request_id' "$form"
           grep -Fq 'responseRequestId' "$form"
