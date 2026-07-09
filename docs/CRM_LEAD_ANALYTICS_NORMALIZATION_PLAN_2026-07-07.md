@@ -2,10 +2,10 @@
 
 Scope: RA Lider CRM analytics.
 
-Related issues: #196, #197.
+Related issues: #196, #197, #198.
 Source audit: `docs/PUBLIC_LEAD_FUNNEL_AGGREGATES_READONLY_2026-07-05.md`.
 
-This is a planning document only. Do not rewrite existing `leader_leads.service` or `leader_leads.source` values without explicit data-change approval.
+This is a planning and implementation-status document. Do not rewrite existing `leader_leads.service` or `leader_leads.source` values without explicit data-change approval.
 
 ## Problem
 
@@ -24,6 +24,18 @@ Read-only aggregates show that the CRM lead funnel works, but analytics fields a
 - `request_id`, `source_page_path`, `submitted_at`, `page_url`, UTM fields and audit payload are preserved separately.
 
 This is the right boundary for the public write path. The public Edge Function should keep saving the original user/form values. Analytics normalization should be derived later in CRM/reporting code or in a separately approved database view.
+
+## 2026-07-09 UI implementation status
+
+Implemented in GitHub source:
+
+- `crm/v4/assets/v4/lead-analytics-normalization.js` derives service and source categories from raw lead values.
+- `crm/v4/assets/v4/lead-analytics-badges-v1.js` decorates already-rendered CRM lead cards with derived badges.
+- `crm/v4/index.html` loads the badges module after `leads.js` using `assets/v4/lead-analytics-badges-v1.js?v=20260709-1`.
+- `tools/check_crm_lead_analytics_normalization.py` validates the helper, badges module, index hook and guardrails.
+- `.github/workflows/crm-lead-analytics-check.yml` runs the checker and JavaScript syntax checks.
+
+Manual browser verification remains required before closing #198.
 
 ## Principle
 
