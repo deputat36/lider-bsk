@@ -124,6 +124,7 @@ UI и аудит 2026-07-08:
 - мобильное меню закрывается по кнопке и по клику на пункт навигации;
 - добавлена проверка `tools/check_public_homepage_helper.py`;
 - `.github/workflows/public-site-audit-check.yml` запускает `node --check assets/packages-link.js` и `python3 tools/check_public_homepage_helper.py`;
+- добавлен отдельный workflow `.github/workflows/public-no-secret-markers-check.yml` для проверки публичных HTML/assets на служебные Supabase-маркеры;
 - открытый хвост: cache version для `assets/packages-link.js` в `index.html` пока не обновлён из-за риска безопасной правки большого inline-файла.
 
 Аудит 2026-06-26:
