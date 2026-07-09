@@ -1,6 +1,6 @@
 # Статус проекта РА «Лидер»
 
-Дата обновления: 2026-07-08.
+Дата обновления: 2026-07-09.
 
 ## Основной контур
 
@@ -27,6 +27,14 @@ Supabase baseline РА «Лидер»: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-
 - `leader-crm-orders v2`, `verify_jwt=true`.
 
 CRM использует Edge Functions с JWT. Прямой доступ браузера к служебным RPC закрыт. Права таблиц заявок, аудита, событий и CRM-доступа приведены к минимальной модели.
+
+Проверка 2026-07-09:
+
+- проект `ofewxuqfjhamgerwzull` активен;
+- Security Advisor и Performance Advisor проверены read-only;
+- запись сохранена в `docs/SUPABASE_ADVISOR_2026-07-09.md`;
+- performance warnings включают смешанные контуры, включая `leader_*`, но изменения индексов/RLS не применялись без отдельного анализа нагрузки;
+- Supabase production не менялся: DDL, DML, Edge Function deploy, RLS, grants, policies и данные не трогались.
 
 Проверка 2026-07-08:
 
