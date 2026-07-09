@@ -11,7 +11,9 @@ on:
       - 'crm/v4/assets/v4/leads.js'
       - 'docs/CRM_LEAD_ANALYTICS_NORMALIZATION_PLAN_2026-07-07.md'
       - 'docs/CRM_LEAD_ANALYTICS_BADGES_MANUAL_TEST_2026-07-09.md'
+      - 'patches/crm-lead-derived-search.patch'
       - 'tools/check_crm_lead_analytics_normalization.py'
+      - 'tools/check_crm_lead_derived_search_patch.py'
       - '.github/workflows/crm-lead-analytics-check.yml'
   pull_request:
     branches: [main]
@@ -23,7 +25,9 @@ on:
       - 'crm/v4/assets/v4/leads.js'
       - 'docs/CRM_LEAD_ANALYTICS_NORMALIZATION_PLAN_2026-07-07.md'
       - 'docs/CRM_LEAD_ANALYTICS_BADGES_MANUAL_TEST_2026-07-09.md'
+      - 'patches/crm-lead-derived-search.patch'
       - 'tools/check_crm_lead_analytics_normalization.py'
+      - 'tools/check_crm_lead_derived_search_patch.py'
       - '.github/workflows/crm-lead-analytics-check.yml'
 
 jobs:
@@ -37,6 +41,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 tools/check_crm_lead_analytics_normalization.py
+          python3 tools/check_crm_lead_derived_search_patch.py
 
       - name: Check helper JavaScript syntax
         shell: bash
