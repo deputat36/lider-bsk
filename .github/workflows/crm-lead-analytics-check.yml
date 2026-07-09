@@ -7,6 +7,7 @@ on:
       - 'crm/v4/index.html'
       - 'crm/v4/assets/v4/lead-analytics-normalization.js'
       - 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
+      - 'crm/v4/assets/v4/lead-analytics-summary-v1.js'
       - 'crm/v4/assets/v4/leads.js'
       - 'docs/CRM_LEAD_ANALYTICS_NORMALIZATION_PLAN_2026-07-07.md'
       - 'docs/CRM_LEAD_ANALYTICS_BADGES_MANUAL_TEST_2026-07-09.md'
@@ -18,6 +19,7 @@ on:
       - 'crm/v4/index.html'
       - 'crm/v4/assets/v4/lead-analytics-normalization.js'
       - 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
+      - 'crm/v4/assets/v4/lead-analytics-summary-v1.js'
       - 'crm/v4/assets/v4/leads.js'
       - 'docs/CRM_LEAD_ANALYTICS_NORMALIZATION_PLAN_2026-07-07.md'
       - 'docs/CRM_LEAD_ANALYTICS_BADGES_MANUAL_TEST_2026-07-09.md'
@@ -42,4 +44,5 @@ jobs:
           set -euo pipefail
           node --check crm/v4/assets/v4/lead-analytics-normalization.js
           node --check crm/v4/assets/v4/lead-analytics-badges-v1.js
+          node --check crm/v4/assets/v4/lead-analytics-summary-v1.js
           grep -q 'lead-analytics-badges-v1.js?v=20260709-1' crm/v4/index.html
