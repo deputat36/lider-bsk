@@ -9,6 +9,7 @@ on:
       - 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
       - 'crm/v4/assets/v4/leads.js'
       - 'docs/CRM_LEAD_ANALYTICS_NORMALIZATION_PLAN_2026-07-07.md'
+      - 'docs/CRM_LEAD_ANALYTICS_BADGES_MANUAL_TEST_2026-07-09.md'
       - 'tools/check_crm_lead_analytics_normalization.py'
       - '.github/workflows/crm-lead-analytics-check.yml'
   pull_request:
@@ -19,6 +20,7 @@ on:
       - 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
       - 'crm/v4/assets/v4/leads.js'
       - 'docs/CRM_LEAD_ANALYTICS_NORMALIZATION_PLAN_2026-07-07.md'
+      - 'docs/CRM_LEAD_ANALYTICS_BADGES_MANUAL_TEST_2026-07-09.md'
       - 'tools/check_crm_lead_analytics_normalization.py'
       - '.github/workflows/crm-lead-analytics-check.yml'
 
