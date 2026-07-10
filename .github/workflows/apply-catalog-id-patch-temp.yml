@@ -18,14 +18,16 @@ jobs:
         with:
           ref: fix/calculations-catalog-id-2026-07-10
 
-      - name: Apply and validate catalog id patch
+      - name: Apply and validate catalog id patch v2
         shell: bash
         run: |
           set -euo pipefail
           git apply --check patches/crm-catalog-id-calcitem.patch
           git apply patches/crm-catalog-id-calcitem.patch
+          grep -Fq 'catalog_id: raw.catalog_id || null' crm/v4/assets/v4/calculations.js
           node --check crm/v4/assets/v4/calculations.js
           python3 tools/check_calculations_catalog_id.py
+          git diff --check
 
       - name: Commit patched calculation source
         shell: bash
