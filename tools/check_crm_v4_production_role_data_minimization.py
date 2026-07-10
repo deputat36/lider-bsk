@@ -3,6 +3,7 @@ from pathlib import Path
 import sys
 
 root = Path(__file__).resolve().parents[1]
+actions = root / 'crm/v4/assets/v4/action-permissions-v1.js'
 helper = root / 'crm/v4/assets/v4/role-tab-permissions-v1.js'
 board = root / 'crm/v4/assets/v4/production-board-v3.js'
 production_card = root / 'crm/v4/assets/v4/production-job-card-v2.js'
@@ -13,15 +14,26 @@ manual = root / 'docs/CRM_V4_PRODUCTION_ROLE_DATA_MINIMIZATION_MANUAL_TEST_2026-
 errors = []
 
 checks = {
+    actions: [
+        "PRODUCTION_READ: 'production.read'",
+        "PRODUCTION_WRITE: 'production.write'",
+        "INSTALLATION_READ: 'installation.read'",
+        "INSTALLATION_WRITE: 'installation.write'",
+        "COSTS_READ: 'costs.read'",
+        'designer: Object.freeze([',
+        'installer: Object.freeze([',
+        'contractor: Object.freeze([',
+        'export function canPerformV4Action',
+    ],
     helper: [
-        'const COST_VISIBLE_ROLES',
+        "import { CRM_V4_ACTIONS, canPerformV4Action } from './action-permissions-v1.js';",
         'const INTERNAL_NOTE_VISIBLE_ROLES',
-        'const PRODUCTION_KIND_ROLES',
-        "production: new Set(['owner', 'admin', 'manager', 'designer', 'contractor'])",
-        "installation: new Set(['owner', 'admin', 'manager', 'installer'])",
         'export function canOpenV4ProductionKind',
+        'CRM_V4_ACTIONS.PRODUCTION_READ',
+        'CRM_V4_ACTIONS.INSTALLATION_READ',
         'export function firstAllowedV4ProductionKind',
         'export function canViewV4Costs',
+        'CRM_V4_ACTIONS.COSTS_READ',
         'export function canViewV4InternalNotes',
     ],
     board: [
@@ -100,4 +112,4 @@ if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('CRM v4 production and installation UI data minimization guards are valid; server enforcement remains separate.')
+print('CRM v4 production and installation UI data minimization uses the canonical action registry; server enforcement remains separate.')
