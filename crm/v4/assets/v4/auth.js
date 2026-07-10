@@ -35,82 +35,111 @@ async function clearLocalSession() {
   }
 }
 
-function applyLoadedProfile(profile) {
-  if (!profile || typeof profile !== 'object') return false;
-
-  setState({ profile, profileLoaded: true });
-  renderProfile(profile);
-
-  if (profile.is_active === false) {
-    byId('crmWorkspace')?.classList.add('hidden');
-    setStatus('Доступ ожидает активации', 'warn');
-    setProfileNotice('Профиль создан, но доступ к CRM ещё не активирован владельцем или администратором.');
-    return true;
-  }
-
-  byId('crmWorkspace')?.classList.remove('hidden');
-  setProfileNotice('');
-  return true;
+function hideWorkspace() {
+  byId('crmWorkspace')?.classList.add('hidden');
 }
 
-async function loadProfileInBackground(user) {
-  if (!user?.id) return;
-  const hadProfile = Boolean(v4State.profileLoaded && v4State.profile);
-  if (!hadProfile) setProfileNotice('Профиль доступа загружается в фоне. CRM уже открыта.');
-  try {
-    const response = await supabaseClient
-      .from('leader_user_profiles')
-      .select('user_id,email,role,is_active,full_name')
-      .eq('user_id', user.id)
-      .maybeSingle();
-    if (response.error) throw response.error;
-    if (response.data && applyLoadedProfile(response.data)) return;
-
-    const ensured = await invokeLeaderFunction('leader-crm-leads', { action: 'ensure_profile' }, {
-      timeoutMs: Math.max(V4_CONFIG.timeouts.profileMs + 7000, 12000),
-      timeoutMessage: 'Профиль доступа не подготовился вовремя'
-    });
-    const profile = ensured.profile || ensured.data || ensured;
-    if (applyLoadedProfile(profile)) return;
-
-    if (!hadProfile) {
-      setState({ profile: null, profileLoaded: false });
-      renderProfile(null);
-      setProfileNotice('Профиль доступа пока не найден. CRM открыта, данные можно загружать вручную.');
-    }
-  } catch (error) {
-    console.warn('CRM v4 profile warning:', error);
-    if (!hadProfile) {
-      setState({ profile: null, profileLoaded: false });
-      renderProfile(null);
-      const message = `${error?.message || ''}`.toLowerCase();
-      if (message.includes('access_denied')) {
-        byId('crmWorkspace')?.classList.add('hidden');
-        setStatus('Доступ не активирован', 'warn');
-        setProfileNotice('Вход выполнен, но профиль CRM не активирован. Обратитесь к владельцу или администратору.');
-      } else {
-        setProfileNotice('');
-      }
-    }
-  }
+function showWorkspace() {
+  byId('crmWorkspace')?.classList.remove('hidden');
 }
 
 function emitCrmReady() {
   document.dispatchEvent(new CustomEvent('leader-v4:crm-ready', { detail: { state: v4State } }));
 }
 
-function openCrm(session, statusText = 'CRM готова') {
+function beginProfileCheck(session) {
   if (!session?.user) return;
   setState({
     session,
     user: session.user,
+    profile: null,
+    profileLoaded: false,
+    crmReady: false,
+    status: 'Проверяю доступ к CRM'
+  });
+  showLoggedIn(session.user);
+  hideWorkspace();
+  renderProfile(null);
+  setStatus('Проверяю доступ к CRM', 'warn');
+  setProfileNotice('Проверяю активный профиль и роль. Рабочие данные пока не загружаются.');
+}
+
+async function resolveProfile(user) {
+  if (!user?.id) throw new Error('bad_user');
+
+  const response = await timeout(
+    supabaseClient
+      .from('leader_user_profiles')
+      .select('user_id,email,role,is_active,full_name')
+      .eq('user_id', user.id)
+      .maybeSingle(),
+    V4_CONFIG.timeouts.profileMs,
+    'Профиль доступа не загрузился вовремя'
+  );
+  if (response.error) throw response.error;
+  if (response.data) return response.data;
+
+  const ensured = await invokeLeaderFunction('leader-crm-leads', { action: 'ensure_profile' }, {
+    timeoutMs: Math.max(V4_CONFIG.timeouts.profileMs + 7000, 12000),
+    timeoutMessage: 'Профиль доступа не подготовился вовремя'
+  });
+  return ensured.profile || ensured.data || ensured || null;
+}
+
+function activateCrm(session, profile, statusText) {
+  setState({
+    session,
+    user: session.user,
+    profile,
+    profileLoaded: true,
     crmReady: true,
     status: statusText
   });
-  showLoggedIn(session.user);
+  renderProfile(profile);
+  showWorkspace();
+  setProfileNotice('');
   setStatus(statusText, 'good');
   emitCrmReady();
-  window.setTimeout(() => loadProfileInBackground(session.user), 400);
+}
+
+function denyInactiveProfile(profile) {
+  setState({ profile, profileLoaded: true, crmReady: false, status: 'Доступ ожидает активации' });
+  renderProfile(profile);
+  hideWorkspace();
+  setStatus('Доступ ожидает активации', 'warn');
+  setProfileNotice('Профиль создан, но доступ к CRM ещё не активирован владельцем или администратором.');
+}
+
+async function prepareCrm(session, statusText = 'CRM готова') {
+  if (!session?.user) return false;
+  beginProfileCheck(session);
+  try {
+    const profile = await resolveProfile(session.user);
+    if (!profile || typeof profile !== 'object') throw new Error('profile_not_found');
+    if (profile.is_active !== true) {
+      denyInactiveProfile(profile);
+      return false;
+    }
+    activateCrm(session, profile, statusText);
+    return true;
+  } catch (error) {
+    console.warn('CRM v4 profile check warning:', error);
+    setState({ profile: null, profileLoaded: false, crmReady: false });
+    renderProfile(null);
+    hideWorkspace();
+    const message = `${error?.message || ''}`.toLowerCase();
+    if (message.includes('access_denied')) {
+      setStatus('Доступ не активирован', 'warn');
+      setProfileNotice('Вход выполнен, но профиль CRM не активирован. Обратитесь к владельцу или администратору.');
+    } else if (isNetworkError(error)) {
+      setStatus('Профиль не проверен: ошибка сети', 'error');
+      setProfileNotice('Не удалось подтвердить доступ к CRM. Проверьте интернет и повторите вход или обновите страницу.');
+    } else {
+      setStatus('Профиль CRM не подтверждён', 'error');
+      setProfileNotice('Рабочие данные не загружаются, пока профиль и роль не будут подтверждены.');
+    }
+    return false;
+  }
 }
 
 export async function checkAuth() {
@@ -125,16 +154,17 @@ export async function checkAuth() {
     if (!data.session?.user) {
       resetAuthState();
       showLoggedOut();
+      hideWorkspace();
       setStatus('Нужен вход', 'warn');
       return false;
     }
-    openCrm(data.session, 'CRM готова');
-    return true;
+    return await prepareCrm(data.session, 'CRM готова');
   } catch (error) {
     const staleSession = isInvalidStoredSession(error);
     if (staleSession) await clearLocalSession();
     resetAuthState();
     showLoggedOut();
+    hideWorkspace();
     const message = staleSession
       ? 'Сессия устарела. Войдите снова'
       : (isNetworkError(error) ? 'Ошибка сети' : 'Нужен вход');
@@ -163,11 +193,12 @@ export async function login() {
     );
     if (error) throw error;
     if (!data.session?.user) throw new Error('Сессия не получена');
-    openCrm(data.session, 'Вход выполнен. CRM открыта');
-    toast('Вход выполнен');
+    const active = await prepareCrm(data.session, 'Вход выполнен. CRM открыта');
+    toast(active ? 'Вход выполнен' : 'Вход выполнен, но доступ к CRM пока не подтверждён');
   } catch (error) {
     resetAuthState();
     showLoggedOut();
+    hideWorkspace();
     const message = isNetworkError(error) ? 'Ошибка сети или долгий ответ Supabase. Повторите вход.' : friendlyError(error);
     setStatus(message, isNetworkError(error) ? 'error' : 'warn');
     toast(message);
@@ -194,6 +225,7 @@ export async function logout() {
     removeStoredSession();
     resetAuthState();
     showLoggedOut();
+    hideWorkspace();
     renderProfile(null);
     setProfileNotice('');
     setStatus('Нужен вход', 'warn');
@@ -206,6 +238,7 @@ export async function logout() {
 export function bootAuth() {
   bindAuthUi({ onLogin: login, onLogout: logout });
   showLoggedOut();
+  hideWorkspace();
   checkAuth();
 }
 
