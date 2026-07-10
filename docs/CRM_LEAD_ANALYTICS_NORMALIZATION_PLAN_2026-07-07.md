@@ -4,6 +4,7 @@ Scope: RA Lider CRM analytics.
 
 Related issues: #196, #197, #198, #199.
 Source audit: `docs/PUBLIC_LEAD_FUNNEL_AGGREGATES_READONLY_2026-07-05.md`.
+Normalized dry run: `docs/CRM_LEAD_ANALYTICS_NORMALIZED_DRY_RUN_READONLY_2026-07-10.md`.
 
 This is a planning and implementation-status document. Do not rewrite existing `leader_leads.service` or `leader_leads.source` values without explicit data-change approval.
 
@@ -41,6 +42,18 @@ Still in progress:
 
 - Manual browser verification remains required before closing #198 and #199.
 - `patches/crm-lead-derived-search.patch` remains as documentation of the minimal safe patch for `crm/v4/assets/v4/leads.js`.
+
+## 2026-07-10 read-only normalized dry run
+
+A read-only SQL dry run has been captured in `docs/CRM_LEAD_ANALYTICS_NORMALIZED_DRY_RUN_READONLY_2026-07-10.md`.
+
+It gives database-side control totals for normalized categories without changing raw values.
+
+Important comparison boundary:
+
+- the CRM browser summary works from the loaded lead list;
+- the dry run works from the full `public.leader_leads` table;
+- if the database grows beyond the current CRM list limit, UI counts and full database dry-run counts may differ by design.
 
 ## Principle
 
