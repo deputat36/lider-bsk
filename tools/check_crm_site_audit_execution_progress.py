@@ -33,12 +33,17 @@ else:
         'поле `task_status`',
         'Backend write inventory',
         'docs/CRM_V4_BACKEND_WRITE_CONTRACT_INVENTORY_2026-07-10.md',
+        '### Catalog-backed calculation items',
+        'catalog_id: raw.catalog_id || null',
+        'tools/test_calculations_catalog_id.mjs',
+        'docs/CRM_CALCULATION_CATALOG_ID_MANUAL_TEST_2026-07-10.md',
+        'baseline 28/0',
+        'browser/database proof catalog_id persistence (#169)',
         'docs/PUBLIC_INTAKE_SERVICE_ROLE_CUTOVER_PLAN_2026-07-10.md',
         'P0 public intake hardening',
         'P0 server-side RBAC',
         'UI restrictions нельзя считать полной изоляцией',
         'browser proof site-wide retry idempotency',
-        '`catalog_id` preservation in `calculations.js` (#169)',
         'transaction-backed commands from backend inventory (#204)',
         'browser proof operational quality panel',
         'no Supabase DDL was executed',
@@ -52,6 +57,8 @@ else:
         'Site-wide retry coverage пока не подтверждается',
         '- site-wide shared-form retry idempotency (#210);',
         '1. Apply #210 through a normal working-copy/PR line patch.',
+        '- `catalog_id` preservation in `calculations.js` (#169);',
+        '1. Prepare safe `catalog_id` patch/checker for #169 without risky full-file replacement.',
     ):
         if stale in text:
             errors.append(f'Stale execution progress marker remains: {stale}')
