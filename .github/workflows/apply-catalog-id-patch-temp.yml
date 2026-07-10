@@ -1,0 +1,38 @@
+name: Apply catalog id patch
+
+on:
+  push:
+    branches:
+      - fix/calculations-catalog-id-2026-07-10
+    paths:
+      - '.github/workflows/apply-catalog-id-patch-temp.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/calculations-catalog-id-2026-07-10
+
+      - name: Apply and validate catalog id patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git apply --check patches/crm-catalog-id-calcitem.patch
+          git apply patches/crm-catalog-id-calcitem.patch
+          node --check crm/v4/assets/v4/calculations.js
+          python3 tools/check_calculations_catalog_id.py
+
+      - name: Commit patched calculation source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add crm/v4/assets/v4/calculations.js
+          git commit -m 'Preserve catalog id in calculation items'
+          git push origin HEAD:fix/calculations-catalog-id-2026-07-10
