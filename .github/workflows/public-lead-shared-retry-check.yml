@@ -1,0 +1,53 @@
+name: Public lead shared retry check
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '*.html'
+      - 'assets/public-lead-form.js'
+      - 'assets/public-lead-reference-v1.js'
+      - 'tools/test_public_lead_shared_retry.mjs'
+      - 'docs/PUBLIC_LEAD_SHARED_RETRY_MANUAL_TEST_2026-07-10.md'
+      - '.github/workflows/public-lead-shared-retry-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '*.html'
+      - 'assets/public-lead-form.js'
+      - 'assets/public-lead-reference-v1.js'
+      - 'tools/test_public_lead_shared_retry.mjs'
+      - 'docs/PUBLIC_LEAD_SHARED_RETRY_MANUAL_TEST_2026-07-10.md'
+      - '.github/workflows/public-lead-shared-retry-check.yml'
+
+jobs:
+  validate-shared-retry:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate shared retry behavior
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check assets/public-lead-form.js
+          node --check assets/public-lead-reference-v1.js
+          node tools/test_public_lead_shared_retry.mjs
+
+      - name: Validate representative page coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          pages=(
+            request.html
+            index.html
+            bannery-borisoglebsk.html
+            vizitki-borisoglebsk.html
+            reklama-dlya-kafe-borisoglebsk.html
+          )
+          for page in "${pages[@]}"; do
+            test -f "$page"
+            grep -Fq 'assets/public-lead-form.js' "$page"
+          done
+          grep -Fq 'assets/public-lead-reference-v1.js' request.html
