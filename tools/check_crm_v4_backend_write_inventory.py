@@ -4,6 +4,7 @@ import sys
 
 root = Path(__file__).resolve().parents[1]
 doc = root / 'docs/CRM_V4_BACKEND_WRITE_CONTRACT_INVENTORY_2026-07-10.md'
+addendum = root / 'docs/CRM_V4_BACKEND_WRITE_INVENTORY_ADDENDUM_2026-07-10.md'
 actions = root / 'crm/v4/assets/v4/action-permissions-v1.js'
 crm_dir = root / 'crm/v4/assets/v4'
 
@@ -17,6 +18,8 @@ known_direct_write_files = {
     'followups.js',
     'installation-job-card-v2.js',
     'lead-card.js',
+    'lead-create.js',
+    'lead-timeline.js',
     'leads.js',
     'needs.js',
     'offers.js',
@@ -53,6 +56,23 @@ else:
     for marker in required:
         if marker not in text:
             errors.append(f'Missing backend inventory marker: {marker}')
+
+if not addendum.exists():
+    errors.append('Missing CRM v4 backend write inventory addendum')
+else:
+    text = addendum.read_text(encoding='utf-8')
+    required = [
+        '`crm/v4/assets/v4/lead-create.js`',
+        '`crm/v4/assets/v4/lead-timeline.js`',
+        'canonical action: `leads.create`',
+        'future dedicated `lead_events.write` key',
+        'Confirmed direct-write file set',
+        'Any new CRM v4 JavaScript file containing a direct insert/update/delete must be added to the inventory',
+        'no production Supabase change was made',
+    ]
+    for marker in required:
+        if marker not in text:
+            errors.append(f'Missing backend inventory addendum marker: {marker}')
 
 if not actions.exists():
     errors.append('Missing canonical CRM v4 action registry')
@@ -97,4 +117,4 @@ if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('CRM v4 direct-write files are classified and the canonical action registry is present.')
+print('All CRM v4 direct-write files are classified and the canonical action registry is present.')
