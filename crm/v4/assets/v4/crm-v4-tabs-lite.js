@@ -1,3 +1,5 @@
+import { applyV4TabButtonVisibility, canOpenV4Tab, firstAllowedV4Tab } from './role-tab-permissions-v1.js';
+
 const MANAGED_TABS = new Set(['management_dashboard', 'orders', 'order_control', 'finance_control', 'production', 'public_lead_audit', 'contact_control', 'user_admin']);
 const SETTABLE_TABS = new Set([...MANAGED_TABS, 'leads', 'card']);
 const ROUTABLE_TABS = new Set([...MANAGED_TABS, 'leads']);
@@ -40,8 +42,29 @@ function readInitialTab() {
   return '';
 }
 
+function hideAllWorkSections() {
+  hideElement('leadsSection');
+  hideElement('leadCardSection');
+  hideNextCard();
+  document.querySelectorAll('[data-v4-managed-section]').forEach((section) => { section.hidden = true; });
+}
+
+function permittedTab(requested) {
+  const normalized = normalizeTab(requested);
+  if (normalized && canOpenV4Tab(normalized)) return normalized;
+  return firstAllowedV4Tab();
+}
+
 function setActiveTab(tab) {
-  const activeTab = normalizeTab(tab) || 'leads';
+  applyV4TabButtonVisibility(document);
+  const activeTab = permittedTab(tab);
+  if (!activeTab) {
+    document.body.dataset.v4Tab = '';
+    hideAllWorkSections();
+    document.dispatchEvent(new CustomEvent('leader-v4:tab-denied', { detail: { requested: normalizeTab(tab), reason: 'role_has_no_tabs' } }));
+    return false;
+  }
+
   document.body.dataset.v4Tab = activeTab;
   document.querySelectorAll('[data-v4-tab-button]').forEach((button) => {
     button.classList.toggle('is-active', button.dataset.v4TabButton === activeTab);
@@ -73,6 +96,7 @@ function setActiveTab(tab) {
   }
 
   document.dispatchEvent(new CustomEvent('leader-v4:tab-opened', { detail: { tab: activeTab } }));
+  return true;
 }
 
 function bootTabsLite() {
@@ -83,7 +107,17 @@ function bootTabsLite() {
     const tab = normalizeTab(button.dataset.v4TabButton);
     if (!tab) return;
     event.preventDefault();
+    if (!canOpenV4Tab(tab)) {
+      document.dispatchEvent(new CustomEvent('leader-v4:tab-denied', { detail: { requested: tab, reason: 'role_not_allowed' } }));
+      return;
+    }
     setActiveTab(tab);
+  });
+
+  document.addEventListener('leader-v4:crm-ready', () => {
+    applyV4TabButtonVisibility(document);
+    const current = normalizeTab(document.body?.dataset?.v4Tab);
+    setActiveTab(current || readInitialTab() || firstAllowedV4Tab());
   });
 
   const initialTab = readInitialTab();
