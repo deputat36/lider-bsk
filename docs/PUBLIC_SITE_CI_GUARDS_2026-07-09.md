@@ -10,7 +10,7 @@ Scope:
 
 Main guards:
 - `.github/workflows/public-site-audit-check.yml` checks robots, sitemap, public lead form contract, request page script order, homepage helper contract and public JS syntax;
-- `.github/workflows/public-no-secret-markers-check.yml` checks public root HTML and top-level `assets/*.js` / `assets/*.css` for service markers.
+- `.github/workflows/public-no-secret-markers-check.yml` checks public root HTML and recursive `assets/**/*.js` / `assets/**/*.css` for service markers.
 
 Protected contracts:
 - public form endpoint must stay on `leader-public-lead`;
