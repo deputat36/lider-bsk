@@ -18,25 +18,34 @@ jobs:
         with:
           ref: fix/public-lead-shared-retry-2026-07-10
 
-      - name: Apply and validate patch v2
+      - name: Apply and validate patch v3
         shell: bash
         run: |
           set -euo pipefail
           python3 tools/apply_public_lead_shared_retry.py
+          python3 tools/update_public_lead_progress.py
           node --check assets/public-lead-form.js
           node --check assets/public-lead-reference-v1.js
+          node tools/test_public_lead_shared_retry.mjs
+          python3 tools/check_crm_site_audit_execution_progress.py
           test "$(python3 tools/apply_public_lead_shared_retry.py)" = "already-applied"
+          test "$(python3 tools/update_public_lead_progress.py)" = "already-applied"
 
-      - name: Commit patched assets
+      - name: Commit patched source and progress
         shell: bash
         run: |
           set -euo pipefail
-          if git diff --quiet -- assets/public-lead-form.js assets/public-lead-reference-v1.js; then
-            echo 'No asset changes to commit.'
+          files=(
+            assets/public-lead-form.js
+            assets/public-lead-reference-v1.js
+            docs/CRM_SITE_AUDIT_EXECUTION_PROGRESS_2026-07-10.md
+          )
+          if git diff --quiet -- "${files[@]}"; then
+            echo 'No generated changes to commit.'
             exit 0
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add assets/public-lead-form.js assets/public-lead-reference-v1.js
-          git commit -m 'Normalize shared retry phone fingerprint'
+          git add "${files[@]}"
+          git commit -m 'Complete site-wide public lead retry coverage'
           git push origin HEAD:fix/public-lead-shared-retry-2026-07-10
