@@ -1,5 +1,6 @@
 import { supabaseClient } from './supabase-client.js';
 import { friendlyError } from './api.js';
+import { canOpenV4Tab, canViewV4InternalNotes } from './role-tab-permissions-v1.js';
 
 let busy = false;
 let loaded = false;
@@ -11,27 +12,19 @@ function esc(value) {
 
 function dateRu(value) {
   if (!value) return '—';
-  try {
-    return new Date(value).toLocaleDateString('ru-RU');
-  } catch (_) {
-    return String(value);
-  }
+  try { return new Date(value).toLocaleDateString('ru-RU'); }
+  catch (_) { return String(value); }
 }
 
-function shortId(value) {
-  return String(value || '').slice(0, 8);
-}
-
+function shortId(value) { return String(value || '').slice(0, 8); }
 function doneProduction(status) {
   const text = String(status || '').toLowerCase();
   return text.includes('готов') || text.includes('выдан') || text.includes('закры') || text.includes('отмен');
 }
-
 function doneInstall(status) {
   const text = String(status || '').toLowerCase();
   return text.includes('выполн') || text.includes('закры') || text.includes('отмен');
 }
-
 function isOverdue(value, done) {
   if (done || !value) return false;
   const date = new Date(value);
@@ -48,10 +41,7 @@ function ensureStyles() {
   document.head.appendChild(style);
 }
 
-function workspace() {
-  return document.getElementById('crmWorkspace') || document.querySelector('main') || document.body;
-}
-
+function workspace() { return document.getElementById('crmWorkspace') || document.querySelector('main') || document.body; }
 function ensureSection() {
   let section = document.getElementById('productionBoardSection');
   if (!section) {
@@ -66,12 +56,7 @@ function ensureSection() {
   section.dataset.v4ManagedSection = 'production';
   return section;
 }
-
-function content() {
-  ensureSection();
-  return document.getElementById('productionBoardSectionContent');
-}
-
+function content() { ensureSection(); return document.getElementById('productionBoardSectionContent'); }
 function hideBaseSections() {
   const leads = document.getElementById('leadsSection');
   if (leads) leads.style.display = 'none';
@@ -80,8 +65,8 @@ function hideBaseSections() {
   const next = document.querySelector('.v4-next-card');
   if (next) next.style.display = 'none';
 }
-
 function showProductionTab() {
+  if (!canOpenV4Tab('production')) return false;
   ensureSection();
   document.body.dataset.v4Tab = 'production';
   document.querySelectorAll('[data-v4-tab-button]').forEach((button) => {
@@ -91,6 +76,7 @@ function showProductionTab() {
   document.querySelectorAll('[data-v4-managed-section]').forEach((section) => {
     section.hidden = section.dataset.v4ManagedSection !== 'production';
   });
+  return true;
 }
 
 async function safeQuery(label, query) {
@@ -107,13 +93,16 @@ async function safeQuery(label, query) {
 async function fetchData() {
   state.warning = '';
   const [production, installation] = await Promise.all([
-    safeQuery('Производство', supabaseClient.from('leader_production_jobs').select('id,order_id,title,production_status,deadline,layout_status,file_url,contractor_cost').order('deadline', { ascending: true }).limit(60)),
+    safeQuery('Производство', supabaseClient.from('leader_production_jobs').select('id,order_id,title,production_status,deadline,layout_status,file_url').order('deadline', { ascending: true }).limit(60)),
     safeQuery('Монтаж', supabaseClient.from('leader_installation_jobs').select('id,order_id,title,install_status,scheduled_at,address,installer_name').order('scheduled_at', { ascending: true }).limit(60))
   ]);
   const ids = [...new Set([...production, ...installation].map((job) => job.order_id).filter(Boolean))];
   let orders = [];
   if (ids.length) {
-    orders = await safeQuery('Заказы', supabaseClient.from('leader_orders').select('id,order_number,project_name,status,deadline,layout_status,client_total,contractor_cost,data').in('id', ids).limit(80));
+    const orderFields = canViewV4InternalNotes()
+      ? 'id,order_number,project_name,status,deadline,layout_status,installation_address,data'
+      : 'id,order_number,project_name,status,deadline,layout_status,installation_address';
+    orders = await safeQuery('Заказы', supabaseClient.from('leader_orders').select(orderFields).in('id', ids).limit(80));
   }
   state = { ...state, production, installation, orders: new Map(orders.map((order) => [order.id, order])) };
 }
@@ -124,48 +113,40 @@ function badgeClass(text) {
   if (value.includes('работ') || value.includes('передан') || value.includes('заплан') || value.includes('назнач')) return 'is-warn';
   return '';
 }
-
-function layoutStatus(job, order) {
-  return job?.layout_status || order?.layout_status || '—';
-}
-
+function layoutStatus(job, order) { return job?.layout_status || order?.layout_status || '—'; }
 function layoutApproved(status) {
   const text = String(status || '').toLowerCase();
   return text.includes('соглас') || text.includes('утверж') || text.includes('готов');
 }
-
 function layoutMissing(status) {
   const text = String(status || '').toLowerCase();
   return !text || text === '—' || text.includes('нет') || text.includes('нужен') || text.includes('работ') || text.includes('правк') || text.includes('согласовани');
 }
-
 function hasLayoutWarning(job, order) {
   if (doneProduction(job?.production_status)) return false;
   const status = layoutStatus(job, order);
   return !layoutApproved(status) && layoutMissing(status);
 }
-
 function renderLayoutWarning(job, order) {
   if (!hasLayoutWarning(job, order)) return '';
-  return `<div class="v4-prod-light-design-alert" data-production-layout-warning>Макет не согласован<small>Перед запуском или продолжением производства проверьте дизайн / макет.</small></div>`;
+  return '<div class="v4-prod-light-design-alert" data-production-layout-warning>Макет не согласован<small>Перед запуском или продолжением производства проверьте дизайн / макет.</small></div>';
 }
-
 function jobActions(job, kind) {
   const jobId = esc(job.id);
-  const orderButton = job.order_id ? `<button type="button" data-open-order="${esc(job.order_id)}">Открыть заказ</button>` : '';
+  const orderButton = job.order_id && canOpenV4Tab('orders') ? `<button type="button" data-open-order="${esc(job.order_id)}">Открыть заказ</button>` : '';
   if (kind === 'production') {
     return `<div class="v4-prod-light-card-actions"><button type="button" class="is-primary" data-open-production-job-card="${jobId}">Карточка</button><button type="button" data-print-production-job="${jobId}">Печать</button>${orderButton}</div>`;
   }
   return `<div class="v4-prod-light-card-actions"><button type="button" class="is-primary" data-open-installation-job-card="${jobId}">Карточка</button><button type="button" data-print-installation-job="${jobId}">Печать</button>${orderButton}</div>`;
 }
-
 function card(job, kind) {
   const order = state.orders.get(job.order_id);
   const status = kind === 'production' ? job.production_status : job.install_status;
   const date = kind === 'production' ? job.deadline : job.scheduled_at;
   const overdue = kind === 'production' ? isOverdue(date, doneProduction(status)) : isOverdue(date, doneInstall(status));
   const layoutWarning = kind === 'production' && hasLayoutWarning(job, order);
-  return `<article class="v4-prod-light-card ${overdue ? 'is-overdue' : ''} ${layoutWarning ? 'has-layout-warning' : ''}"><span class="v4-prod-light-badge ${badgeClass(status)}">${esc(status || 'Без статуса')}</span><h3>${esc(job.title || order?.project_name || 'Задание')}</h3><small>Заказ: №${esc(order?.order_number || shortId(job.order_id))} — ${esc(order?.project_name || '—')}</small><small>${kind === 'production' ? 'Срок производства' : 'Дата монтажа'}: ${dateRu(date)}</small>${kind === 'production' ? `<small>Дизайн / макет: ${esc(layoutStatus(job, order))}</small>${renderLayoutWarning(job, order)}` : `<small>Адрес: ${esc(job.address || order?.data?.install_place || '—')}</small><small>Монтажник: ${esc(job.installer_name || '—')}</small>`}${overdue ? '<small style="color:#991b1b;font-weight:900">Просрочено</small>' : ''}${jobActions(job, kind)}</article>`;
+  const installAddress = job.address || order?.installation_address || (canViewV4InternalNotes() ? order?.data?.install_place : '') || '—';
+  return `<article class="v4-prod-light-card ${overdue ? 'is-overdue' : ''} ${layoutWarning ? 'has-layout-warning' : ''}"><span class="v4-prod-light-badge ${badgeClass(status)}">${esc(status || 'Без статуса')}</span><h3>${esc(job.title || order?.project_name || 'Задание')}</h3><small>Заказ: №${esc(order?.order_number || shortId(job.order_id))} — ${esc(order?.project_name || '—')}</small><small>${kind === 'production' ? 'Срок производства' : 'Дата монтажа'}: ${dateRu(date)}</small>${kind === 'production' ? `<small>Дизайн / макет: ${esc(layoutStatus(job, order))}</small>${renderLayoutWarning(job, order)}` : `<small>Адрес: ${esc(installAddress)}</small><small>Монтажник: ${esc(job.installer_name || '—')}</small>`}${overdue ? '<small style="color:#991b1b;font-weight:900">Просрочено</small>' : ''}${jobActions(job, kind)}</article>`;
 }
 
 function render(kind = document.body.dataset.productionBoardKind || 'production') {
@@ -182,13 +163,11 @@ function render(kind = document.body.dataset.productionBoardKind || 'production'
 }
 
 async function loadProductionBoard(force = false) {
+  if (!canOpenV4Tab('production')) return;
   ensureSection();
   ensureStyles();
   if (busy) return;
-  if (loaded && !force) {
-    render();
-    return;
-  }
+  if (loaded && !force) { render(); return; }
   busy = true;
   const box = content();
   if (box) box.innerHTML = '<div class="v4-empty">Загружаю производственную доску...</div>';
@@ -196,13 +175,14 @@ async function loadProductionBoard(force = false) {
     await fetchData();
     loaded = true;
     render();
-  } finally {
-    busy = false;
-  }
+  } finally { busy = false; }
 }
 
 function openProduction() {
-  showProductionTab();
+  if (!showProductionTab()) {
+    document.dispatchEvent(new CustomEvent('leader-v4:tab-denied', { detail: { requested: 'production', reason: 'role_not_allowed' } }));
+    return;
+  }
   loadProductionBoard(false);
   document.dispatchEvent(new CustomEvent('leader-v4:tab-opened', { detail: { tab: 'production' } }));
 }
@@ -236,7 +216,6 @@ function boot() {
   window.addEventListener('leader-v4:force-tab', (event) => {
     if (event.detail?.tab === 'production') openProduction();
   });
-  if (document.body.dataset.v4Tab === 'production') setTimeout(() => loadProductionBoard(false), 250);
 }
 
 if (!window.LeaderV4ProductionBoardV3Booted) {
