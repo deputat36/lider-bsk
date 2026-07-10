@@ -1,24 +1,26 @@
 name: Apply catalog id patch
 
 on:
-  push:
-    branches:
-      - fix/calculations-catalog-id-2026-07-10
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
     paths:
       - '.github/workflows/apply-catalog-id-patch-temp.yml'
+      - 'tools/check_calculations_catalog_id.py'
 
 permissions:
   contents: write
 
 jobs:
   apply-patch:
+    if: github.head_ref == 'fix/calculations-catalog-id-2026-07-10'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: fix/calculations-catalog-id-2026-07-10
 
-      - name: Apply and validate catalog id patch v2
+      - name: Apply and validate catalog id patch
         shell: bash
         run: |
           set -euo pipefail
