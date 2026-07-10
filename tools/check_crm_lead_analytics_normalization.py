@@ -78,8 +78,14 @@ else:
         'Источники',
         'Raw service/source в базе не меняются',
         'data-lead-analytics-search',
+        'data-lead-analytics-clear',
+        'aria-pressed=',
         'function applySummarySearch(value)',
-        'setLeadFilters({ search: query })',
+        'function clearSummarySearch()',
+        "current.toLowerCase() === requested.toLowerCase() ? '' : requested",
+        "setLeadFilters({ search: '' })",
+        'Сбросить поиск',
+        'lead-analytics-summary-pill.is-active',
         'renderLeads()',
         'lead-analytics-summary',
     ]
@@ -119,10 +125,15 @@ else:
     text = dry_run.read_text(encoding='utf-8')
     required = [
         'Mode: read-only SQL dry run',
+        'Snapshot metadata',
+        'Total leads: 12',
+        '2026-06-07 09:44:56.778722+00',
+        '2026-07-01 14:20:01.704428+00',
         'Service category dry run',
         'Source category dry run',
         '| Баннеры | 3 | 1 |',
         '| Ручной ввод | 4 | 2 |',
+        'Сбросить поиск',
         'No DDL was executed',
         'No DML was executed',
         'No Edge Function deploy was executed',
@@ -141,6 +152,10 @@ else:
         'Источник:',
         'search works by derived categories',
         'summary category clicks fill the search field and filter the list',
+        'active summary category is visually highlighted',
+        'clicking the active category again clears the search',
+        'Сбросить поиск',
+        'aria-pressed="true"',
         'badges are not duplicated',
         'raw source/service values remain visible',
         'no data changes are made in Supabase',
@@ -153,4 +168,4 @@ if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('CRM lead analytics normalization, derived search, clickable summary, dry run, badges, plan and manual test are valid.')
+print('CRM lead analytics normalization, derived search toggle, clickable summary, dry-run snapshot, badges, plan and manual test are valid.')
