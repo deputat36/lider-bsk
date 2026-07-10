@@ -53,10 +53,10 @@ Manual browser proof всё ещё требуется.
 
 Добавлен `crm/v4/assets/v4/action-permissions-v1.js`:
 
-- единые keys для leads, clients, needs, calculations, costs, offers, orders, production, installation, design, finance, catalog, audit, users и settings;
+- единые keys для leads, clients, needs, calculations, costs, offers, orders, production, installation, design, finance, documents, catalog, audit, users и settings;
 - source role/action baseline;
 - UI-only `canPerformV4Action` / `requireV4Action`;
-- production kinds и cost visibility используют те же action keys.
+- production kinds, cost visibility и генерация документов используют те же action keys.
 
 Server-side enforcement всё ещё требуется.
 
@@ -134,6 +134,43 @@ Read-only production baseline: столбец `leader_lead_calculation_items.cat
 
 Browser/database proof catalog-backed позиции всё ещё требуется по #169.
 
+### Черновик акта выполненных работ
+
+Добавлен `crm/v4/assets/v4/order-act-preview-v1.js` и задача #214.
+
+Source-only этап включает:
+
+- кнопку `Создать акт` в карточке заказа;
+- доступ по UI permission `documents.generate`;
+- минимальные read-only SELECT заказа, клиента и клиентских позиций;
+- редактируемые номер-черновик, дата, основание, стороны, налоговый текст, подписант, позиции и формулировки;
+- предупреждения о незавершённом заказе, производстве, монтаже, отсутствующих данных и расхождении итогов;
+- A4 HTML preview;
+- печать / сохранение в PDF средствами браузера;
+- явную маркировку `Предварительный несохранённый черновик`;
+- отсутствие автоматического изменения заказа, оплаты, производства или монтажа.
+
+Добавлены permissions:
+
+- `documents.read`;
+- `documents.create`;
+- `documents.update`;
+- `documents.generate`;
+- `documents.send`;
+- `documents.sign`;
+- `documents.void`.
+
+Добавлены:
+
+- `docs/CRM_ORDER_COMPLETION_ACT_ARCHITECTURE_2026-07-10.md`;
+- `docs/CRM_ORDER_COMPLETION_ACT_MANUAL_TEST_2026-07-10.md`;
+- `tools/check_crm_order_completion_act.py`;
+- `.github/workflows/crm-order-completion-act-check.yml`.
+
+Текущий этап не сохраняет документ и не выделяет уникальный юридический номер.
+
+Manual browser/Network/print proof всё ещё требуется.
+
 ### Защищённый public intake cutover
 
 Подготовлен, но не применён:
@@ -157,15 +194,17 @@ Production deploy/RLS/grant changes требуют явного approval.
 
 - master audit;
 - execution progress snapshot;
-- focused issues #201–#205, #210 и #169;
+- focused issues #201–#205, #210, #169 и #214;
 - profile-first checker;
 - role matrix checker;
 - production data-minimization checker;
 - operational quality checker;
 - backend write inventory checker;
+- completion act checker;
 - public intake cutover checker;
 - public lead shared retry behavior test;
 - calculation catalog_id behavior test;
+- dedicated completion act workflow;
 - consolidated full-audit workflow.
 
 ## Выполнено read-only в Supabase
@@ -178,7 +217,10 @@ Production deploy/RLS/grant changes требуют явного approval.
 - API/Edge logs просмотрены;
 - security/performance advisors проверены;
 - production Edge Functions сверены по version/SHA;
-- подтверждено наличие `leader_lead_calculation_items.catalog_id` и baseline 28/0 без DML.
+- подтверждено наличие `leader_lead_calculation_items.catalog_id` и baseline 28/0 без DML;
+- подтверждено отсутствие `leader_order_documents` и `leader_order_document_items`;
+- в `leader_settings` не найдены настройки юридических реквизитов/налогообложения/нумерации документов;
+- подтверждены client-facing поля заказа, клиента и позиций для source-only preview.
 
 ## Не выполнено — approval gate
 
@@ -204,6 +246,19 @@ Canonical action permission keys уже подготовлены в source.
 
 UI restrictions нельзя считать полной изоляцией до этого этапа.
 
+### Persistent completion acts
+
+Stage 2 по #214 требует отдельного approval:
+
+- `leader_order_documents` и immutable versioned snapshot;
+- серверная нумерация `АВР-YYYY-NNNN`;
+- transactional `document.create_act` / `leader_create_order_act_rpc`;
+- server-side `documents.*` permissions;
+- audit event;
+- private PDF Storage;
+- статусы Черновик / Сформирован / Отправлен / Подписан / Аннулирован;
+- development-branch concurrency, role and rollback tests.
+
 ## Не выполнено — source/manual backlog
 
 - browser proof site-wide retry idempotency;
@@ -212,6 +267,7 @@ UI restrictions нельзя считать полной изоляцией до
 - browser/Network proof role and production data minimization;
 - browser proof operational quality panel;
 - browser/database proof catalog_id persistence (#169);
+- browser/Network/print proof completion act preview (#214);
 - transaction-backed commands from backend inventory (#204);
 - mandatory assignee/SLA;
 - needs completeness gate;
@@ -232,12 +288,14 @@ During autonomous execution:
 - no Auth setting was changed;
 - no RLS policy or grant was changed;
 - no index was changed;
+- no Storage bucket or object was changed;
 - no `nav_*` object was modified;
 - no historical lead was rewritten.
 
 ## Next autonomous source-only sequence
 
 1. Add status/action transition registry for transaction-backed commands.
-2. Expand manual browser evidence checklists, including site-wide retry and catalog_id proof.
-3. Prepare development-branch test specifications for #201/#202/#204.
-4. Keep #200 updated with completed and approval-gated work.
+2. Expand manual browser evidence checklists, including completion act print proof.
+3. Prepare development-branch test specifications for #201/#202/#204/#214.
+4. Add organization legal-settings source contract without production persistence.
+5. Keep #200 updated with completed and approval-gated work.
