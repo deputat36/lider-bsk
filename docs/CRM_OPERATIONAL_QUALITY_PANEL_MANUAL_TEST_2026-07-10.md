@@ -55,7 +55,9 @@ The panel may request only these fields:
 - `leader_lead_needs`: `id,completeness_score,status`;
 - `leader_orders`: `id,status`;
 - `leader_expenses`: `id,status`;
-- `leader_design_tasks`: `id,status`.
+- `leader_design_tasks`: `id,task_status`.
+
+The `leader_design_tasks` table uses `task_status`, not a generic `status` column.
 
 It must not request:
 
