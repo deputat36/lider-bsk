@@ -10,12 +10,18 @@ Mode: autonomous GitHub source improvements and read-only Supabase verification.
 
 ## Выполнено в GitHub source
 
-### Публичная форма
+### Публичная форма — основная страница заявки
+
+На `request.html`, где загружен `assets/public-lead-reference-v1.js`:
 
 - pending `request_id` сохраняется в `sessionStorage`;
 - повтор same-payload после сетевого сбоя использует тот же `request_id`;
 - duplicate response показывает корректный текст;
 - request-reference workflow проверяет retry/duplicate contract.
+
+Site-wide retry coverage пока не подтверждается. Общий `assets/public-lead-form.js` используется на многих посадочных страницах и должен получить тот же lifecycle внутри shared module. Корректировка охвата зафиксирована в:
+
+`docs/PUBLIC_LEAD_RETRY_COVERAGE_CORRECTION_2026-07-10.md` и #210.
 
 Manual browser proof всё ещё требуется.
 
@@ -87,7 +93,7 @@ Manual browser + Network proof всё ещё требуется.
 - количество записей расходов;
 - количество дизайн-задач.
 
-Используются только read-only SELECT, role guard и 60-second cache.
+Используются только read-only SELECT, role guard и 60-second cache. Схема `leader_design_tasks` учтена корректно через поле `task_status`.
 
 Manual browser proof всё ещё требуется.
 
@@ -135,7 +141,7 @@ Production deploy/RLS/grant changes требуют явного approval.
 
 - master audit;
 - execution progress snapshot;
-- focused issues #201–#205;
+- focused issues #201–#205 и #210;
 - profile-first checker;
 - role matrix checker;
 - production data-minimization checker;
@@ -181,7 +187,8 @@ UI restrictions нельзя считать полной изоляцией до
 
 ## Не выполнено — source/manual backlog
 
-- browser proof retry idempotency;
+- site-wide shared-form retry idempotency (#210);
+- browser proof request-page retry idempotency;
 - browser proof profile-first scenarios;
 - browser/Network proof role and production data minimization;
 - browser proof operational quality panel;
@@ -211,8 +218,9 @@ During autonomous execution:
 
 ## Next autonomous source-only sequence
 
-1. Prepare safe `catalog_id` patch/checker for #169 without risky full-file replacement.
-2. Add status/action transition registry for transaction-backed commands.
-3. Expand manual browser evidence checklists.
-4. Prepare development-branch test specifications for #201/#202/#204.
-5. Keep #200 updated with completed and approval-gated work.
+1. Apply #210 through a normal working-copy/PR line patch.
+2. Prepare safe `catalog_id` patch/checker for #169 without risky full-file replacement.
+3. Add status/action transition registry for transaction-backed commands.
+4. Expand manual browser evidence checklists.
+5. Prepare development-branch test specifications for #201/#202/#204.
+6. Keep #200 updated with completed and approval-gated work.
