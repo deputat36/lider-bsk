@@ -8,14 +8,12 @@
   const nativeFetch=window.fetch.bind(window);
 
   function clean(value){return String(value||'').trim()}
-  function normalizePhone(value){return clean(value).replace(/\D+/g,'')}
+  function normalizePhone(value){const digits=clean(value).replace(/\D+/g,'');return digits.length>=11?digits.slice(-10):digits}
   function fingerprint(payload){
-    return [
-      normalizePhone(payload.phone),
-      clean(payload.service).toLowerCase(),
-      clean(payload.page_path).toLowerCase(),
-      clean(payload.message)
-    ].join('|');
+    const source=[normalizePhone(payload.phone),clean(payload.service).toLowerCase(),clean(payload.page_path).toLowerCase(),clean(payload.message)].join('|');
+    let hash=2166136261;
+    for(let i=0;i<source.length;i+=1){hash^=source.charCodeAt(i);hash=Math.imul(hash,16777619)}
+    return 'fnv1a-'+(hash>>>0).toString(16).padStart(8,'0');
   }
   function readPending(){
     try{

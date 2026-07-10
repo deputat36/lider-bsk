@@ -4,6 +4,8 @@
 
   const ENDPOINT='https://ofewxuqfjhamgerwzull.supabase.co/functions/v1/leader-public-lead';
   const METRIKA_ID=109387236;
+  const PENDING_STORAGE_KEY='leader_public_lead_pending_v1';
+  const MAX_PENDING_AGE_MS=30*60*1000;
 
   const scenarios={
     shop:{service:'Комплексная реклама',text:'Сценарий: открываем / оформляем магазин. Нужны рекомендации по вывеске, баннеру, режиму работы, наклейкам, картам и соцсетям.'},
@@ -61,6 +63,31 @@
   function clean(value){return String(value||'').trim()}
   function field(form,name){const el=form.querySelector('[name="'+name+'"]');return el?clean(el.value):''}
   function requestId(){return 'web-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10)}
+  function normalizePhone(value){const digits=clean(value).replace(/\D+/g,'');return digits.length>=11?digits.slice(-10):digits}
+  function fingerprint(payload){
+    const source=[normalizePhone(payload.phone),clean(payload.service).toLowerCase(),clean(payload.page_path).toLowerCase(),clean(payload.message)].join('|');
+    let hash=2166136261;
+    for(let i=0;i<source.length;i+=1){hash^=source.charCodeAt(i);hash=Math.imul(hash,16777619)}
+    return 'fnv1a-'+(hash>>>0).toString(16).padStart(8,'0');
+  }
+  function readPending(){
+    try{
+      const value=JSON.parse(window.sessionStorage.getItem(PENDING_STORAGE_KEY)||'null');
+      if(!value||!value.request_id||!value.fingerprint)return null;
+      if(Date.now()-Number(value.created_at||0)>MAX_PENDING_AGE_MS){window.sessionStorage.removeItem(PENDING_STORAGE_KEY);return null}
+      return value;
+    }catch(_){return null}
+  }
+  function writePending(value){try{window.sessionStorage.setItem(PENDING_STORAGE_KEY,JSON.stringify(value))}catch(_){}}
+  function clearPending(){try{window.sessionStorage.removeItem(PENDING_STORAGE_KEY)}catch(_){}}
+  function stableRequestId(payload){
+    const currentFingerprint=fingerprint(payload);
+    const pending=readPending();
+    if(pending&&pending.fingerprint===currentFingerprint)return pending.request_id;
+    const id=requestId();
+    writePending({request_id:id,fingerprint:currentFingerprint,created_at:Date.now()});
+    return id;
+  }
   function setStatus(form,type,msg){const s=form.querySelector('[data-leader-lead-status]');if(s){s.className='leader-lead-status show '+type;s.textContent=msg}}
   function qs(){const p=new URLSearchParams(location.search);return{utm_source:p.get('utm_source')||'',utm_medium:p.get('utm_medium')||'',utm_campaign:p.get('utm_campaign')||'',utm_term:p.get('utm_term')||'',utm_content:p.get('utm_content')||'',scenario:p.get('scenario')||'',service:p.get('service')||''}}
   function sourceGuess(){const u=qs();if(u.utm_source)return u.utm_source;if(document.referrer){try{return new URL(document.referrer).hostname}catch(e){}}return 'Сайт'}
@@ -163,7 +190,6 @@
     if(!phone){setStatus(form,'err','Укажите телефон, чтобы мы могли связаться с вами.');return}
 
     const pageTitle=(document.title||'').replace(/\s+/g,' ').trim();
-    const rid=requestId();
     const submittedAt=new Date().toISOString();
     const parts=[];
     parts.push('Источник: сайт РА Лидер');
@@ -182,7 +208,6 @@
 
     const utm=qs();
     const payload={
-      request_id:rid,
       name,
       phone,
       service,
@@ -204,6 +229,8 @@
       ...utm,
       website:field(form,'website')
     };
+    const rid=stableRequestId(payload);
+    payload.request_id=rid;
 
     form.dataset.submitting='1';
     btn.disabled=true;
@@ -214,7 +241,8 @@
       let data={};
       try{data=await res.json()}catch(parseError){data={}}
       const responseRequestId=clean(data.request_id)||rid;
-      if(!res.ok)throw new Error('Ошибка '+res.status);
+      if(!res.ok||data.ok!==true)throw new Error('Ошибка '+res.status);
+      clearPending();
       form.dataset.lastRequestId=responseRequestId;
       const duplicate=data&&data.duplicate===true;
       const successText=(duplicate?'Заявка уже была отправлена ранее. ':'Заявка отправлена. ')+'Номер обращения: '+responseRequestId+'. Мы свяжемся с вами для уточнения деталей.';
