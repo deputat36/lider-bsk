@@ -9,6 +9,7 @@ summary = root / 'crm/v4/assets/v4/lead-analytics-summary-v1.js'
 leads = root / 'crm/v4/assets/v4/leads.js'
 index = root / 'crm/v4/index.html'
 plan = root / 'docs/CRM_LEAD_ANALYTICS_NORMALIZATION_PLAN_2026-07-07.md'
+dry_run = root / 'docs/CRM_LEAD_ANALYTICS_NORMALIZED_DRY_RUN_READONLY_2026-07-10.md'
 manual_test = root / 'docs/CRM_LEAD_ANALYTICS_BADGES_MANUAL_TEST_2026-07-09.md'
 
 errors = []
@@ -106,10 +107,29 @@ else:
         'Current public lead contract',
         'Manual browser verification remains required',
         'leadAnalyticsSearchText(lead)',
+        'CRM_LEAD_ANALYTICS_NORMALIZED_DRY_RUN_READONLY_2026-07-10.md',
     ]
     for marker in required:
         if marker not in text:
             errors.append(f'Missing plan marker: {marker}')
+
+if not dry_run.exists():
+    errors.append('Missing normalized lead analytics dry run document')
+else:
+    text = dry_run.read_text(encoding='utf-8')
+    required = [
+        'Mode: read-only SQL dry run',
+        'Service category dry run',
+        'Source category dry run',
+        '| Баннеры | 3 | 1 |',
+        '| Ручной ввод | 4 | 2 |',
+        'No DDL was executed',
+        'No DML was executed',
+        'No Edge Function deploy was executed',
+    ]
+    for marker in required:
+        if marker not in text:
+            errors.append(f'Missing dry-run marker: {marker}')
 
 if not manual_test.exists():
     errors.append('Missing lead analytics badges manual test document')
@@ -120,6 +140,7 @@ else:
         'Услуга:',
         'Источник:',
         'search works by derived categories',
+        'summary category clicks fill the search field and filter the list',
         'badges are not duplicated',
         'raw source/service values remain visible',
         'no data changes are made in Supabase',
@@ -132,4 +153,4 @@ if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('CRM lead analytics normalization, derived search, clickable summary, badges, plan and manual test are valid.')
+print('CRM lead analytics normalization, derived search, clickable summary, dry run, badges, plan and manual test are valid.')
