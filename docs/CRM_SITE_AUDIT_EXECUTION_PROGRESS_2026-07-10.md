@@ -120,6 +120,20 @@ Manual browser proof всё ещё требуется.
 - `installation_job.update`;
 - manual order transaction.
 
+### Catalog-backed calculation items
+
+`calcItem(raw, index)` теперь сохраняет `catalog_id: raw.catalog_id || null` в payload позиции расчёта.
+
+Добавлены:
+
+- strict checker `tools/check_calculations_catalog_id.py`;
+- behavior test `tools/test_calculations_catalog_id.mjs`;
+- manual proof `docs/CRM_CALCULATION_CATALOG_ID_MANUAL_TEST_2026-07-10.md`.
+
+Read-only production baseline: столбец `leader_lead_calculation_items.catalog_id` существует; всего 28 позиций, исторических позиций с заполненным `catalog_id` — 0. Исторические данные не переписывались.
+
+Browser/database proof catalog-backed позиции всё ещё требуется по #169.
+
 ### Защищённый public intake cutover
 
 Подготовлен, но не применён:
@@ -143,7 +157,7 @@ Production deploy/RLS/grant changes требуют явного approval.
 
 - master audit;
 - execution progress snapshot;
-- focused issues #201–#205 и #210;
+- focused issues #201–#205, #210 и #169;
 - profile-first checker;
 - role matrix checker;
 - production data-minimization checker;
@@ -151,6 +165,7 @@ Production deploy/RLS/grant changes требуют явного approval.
 - backend write inventory checker;
 - public intake cutover checker;
 - public lead shared retry behavior test;
+- calculation catalog_id behavior test;
 - consolidated full-audit workflow.
 
 ## Выполнено read-only в Supabase
@@ -162,7 +177,8 @@ Production deploy/RLS/grant changes требуют явного approval.
 - public intake grants/policies подтверждены;
 - API/Edge logs просмотрены;
 - security/performance advisors проверены;
-- production Edge Functions сверены по version/SHA.
+- production Edge Functions сверены по version/SHA;
+- подтверждено наличие `leader_lead_calculation_items.catalog_id` и baseline 28/0 без DML.
 
 ## Не выполнено — approval gate
 
@@ -195,7 +211,7 @@ UI restrictions нельзя считать полной изоляцией до
 - browser proof profile-first scenarios;
 - browser/Network proof role and production data minimization;
 - browser proof operational quality panel;
-- `catalog_id` preservation in `calculations.js` (#169);
+- browser/database proof catalog_id persistence (#169);
 - transaction-backed commands from backend inventory (#204);
 - mandatory assignee/SLA;
 - needs completeness gate;
@@ -221,8 +237,7 @@ During autonomous execution:
 
 ## Next autonomous source-only sequence
 
-1. Prepare safe `catalog_id` patch/checker for #169 without risky full-file replacement.
-2. Add status/action transition registry for transaction-backed commands.
-3. Expand manual browser evidence checklists, including site-wide retry proof.
-4. Prepare development-branch test specifications for #201/#202/#204.
-5. Keep #200 updated with completed and approval-gated work.
+1. Add status/action transition registry for transaction-backed commands.
+2. Expand manual browser evidence checklists, including site-wide retry and catalog_id proof.
+3. Prepare development-branch test specifications for #201/#202/#204.
+4. Keep #200 updated with completed and approval-gated work.
