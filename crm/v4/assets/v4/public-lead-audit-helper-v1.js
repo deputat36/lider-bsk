@@ -97,8 +97,8 @@ function ensureAuditHelper() {
   note.style.cssText = 'margin:0 0 12px;padding:12px 14px;border:1px solid #bfdbfe;background:#eff6ff;color:#1e3a8a;border-radius:14px;font:13px/1.45 Arial,sans-serif';
   note.innerHTML = `
     <style>.v4-public-trace-badge{display:inline-flex;width:max-content;border-radius:999px;padding:5px 9px;background:#e0f2fe;color:#075985;font-weight:900}.v4-public-trace-badge.is-good{background:#dcfce7;color:#166534}.v4-public-trace-badge.is-warn{background:#fef3c7;color:#92400e}.v4-public-trace-badge.is-danger{background:#fee2e2;color:#991b1b}</style>
-    <b style="display:block;margin-bottom:4px">Проверка v8</b>
-    Для теста откройте <a href="https://www.lider-bsk.ru/request.html" target="_blank" rel="noopener">страницу заявки</a>, отправьте обращение с пометкой <code>Тест CRM v4 audit v8</code>, затем найдите номер обращения по <code>request_id</code>. Подробный чек-лист: <code>docs/CRM_V4_AUDIT_V8_CHECK.md</code>.
+    <b style="display:block;margin-bottom:4px">Проверка v9</b>
+    Для теста откройте <a href="https://www.lider-bsk.ru/request.html" target="_blank" rel="noopener">страницу заявки</a>, отправьте обращение с пометкой <code>Тест CRM v4 audit v9</code>, затем найдите номер обращения по <code>request_id</code>. Подробный чек-лист: <code>docs/CRM_V4_AUDIT_V9_CHECK.md</code>.
     <form id="publicLeadTraceFormV1" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
       <input id="publicLeadTraceInputV1" type="search" placeholder="Вставьте request_id" style="flex:1 1 240px;min-height:36px;border:1px solid #93c5fd;border-radius:10px;padding:8px 10px;font:inherit">
       <button type="submit" style="border:1px solid #1d4ed8;background:#1d4ed8;color:#fff;border-radius:999px;padding:8px 12px;font-weight:900">Проверить request_id</button>

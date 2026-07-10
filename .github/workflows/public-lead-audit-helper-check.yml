@@ -1,10 +1,21 @@
 name: Public lead audit helper check
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/site-cache-note-v1.js'
+      - 'crm/v4/assets/v4/public-lead-audit-helper-v1.js'
+      - 'docs/CRM_V4_AUDIT_V9_CHECK.md'
+      - '.github/workflows/public-lead-audit-helper-check.yml'
   pull_request:
     branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/site-cache-note-v1.js'
+      - 'crm/v4/assets/v4/public-lead-audit-helper-v1.js'
+      - 'docs/CRM_V4_AUDIT_V9_CHECK.md'
+      - '.github/workflows/public-lead-audit-helper-check.yml'
 
 jobs:
   validate-public-lead-audit-helper:
@@ -17,12 +28,15 @@ jobs:
           set -euo pipefail
           loader='crm/v4/assets/v4/site-cache-note-v1.js'
           helper='crm/v4/assets/v4/public-lead-audit-helper-v1.js'
+          checklist='docs/CRM_V4_AUDIT_V9_CHECK.md'
           test -f "$loader"
           test -f "$helper"
-          grep -Fq 'public-lead-audit-helper-v1.js?v=20260629-trace-open-lead-1' "$loader"
+          test -f "$checklist"
+          grep -Fq 'public-lead-audit-helper-v1.js?v=20260710-audit-v9-1' "$loader"
           grep -Fq 'https://www.lider-bsk.ru/request.html' "$helper"
-          grep -Fq 'Тест CRM v4 audit v8' "$helper"
-          grep -Fq 'docs/CRM_V4_AUDIT_V8_CHECK.md' "$helper"
+          grep -Fq 'Проверка v9' "$helper"
+          grep -Fq 'Тест CRM v4 audit v9' "$helper"
+          grep -Fq 'docs/CRM_V4_AUDIT_V9_CHECK.md' "$helper"
           grep -Fq 'publicLeadAuditHelperV1' "$helper"
           grep -Fq 'publicLeadTraceFormV1' "$helper"
           grep -Fq 'Проверить request_id' "$helper"
@@ -34,3 +48,6 @@ jobs:
           grep -Fq 'data-public-lead-trace-status' "$helper"
           grep -Fq 'data-public-trace-open-lead' "$helper"
           grep -Fq 'openLeadRoute' "$helper"
+          grep -Fq 'leader-public-lead v9' "$checklist"
+          grep -Fq 'request_id_conflict' "$checklist"
+          grep -Fq 'honeypot_filled' "$checklist"

@@ -1,6 +1,6 @@
 # Статус проекта РА «Лидер»
 
-Дата обновления: 2026-07-09.
+Дата обновления: 2026-07-10.
 
 ## Основной контур
 
@@ -26,7 +26,22 @@ Supabase baseline РА «Лидер»: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-
 - `leader-crm-leads v12`, `verify_jwt=true`;
 - `leader-crm-orders v2`, `verify_jwt=true`.
 
-CRM использует Edge Functions с JWT. Прямой доступ браузера к служебным RPC закрыт. Права таблиц заявок, аудита, событий и CRM-доступа приведены к минимальной модели.
+CRM использует JWT и RLS. Полный аудит 2026-07-10 выявил два приоритетных архитектурных хвоста: прямой `anon INSERT` в публичные таблицы позволяет обойти Edge Function, а серверная CRM-проверка подтверждает активный профиль без action-level ограничения по роли. Production-права в рамках аудита не менялись.
+
+Проверка 2026-07-10:
+
+- проект `ofewxuqfjhamgerwzull` активен и имеет статус `ACTIVE_HEALTHY`;
+- live `leader-public-lead v9`, `leader-crm-leads v12`, `leader-crm-orders v2` активны;
+- `leader_leads.request_id` защищён уникальным ограничением;
+- `leader_request_trace` использует `security_invoker=true`, `anon/public` не имеют чтения;
+- read-only SQL показал 12 заявок, одну заявку с `request_id`, одно audit-событие и одну полную трассировку;
+- `duplicate`, `suspicious`, `rejected`, `error` пока не доказаны production end-to-end тестом;
+- `anon` всё ещё имеет прямой `INSERT` в `leader_leads` и `leader_public_lead_audit`; целевой hardening описан, но не применён;
+- активные роли: owner — 2, admin — 1, manager — 1;
+- UI-матрица содержит будущие роли, но серверная action-level авторизация ещё не реализована;
+- полный отчёт: `docs/FULL_SITE_CRM_AUDIT_2026-07-10.md`;
+- план: `docs/SITE_CRM_IMPROVEMENT_PLAN_2026-07-10.md`;
+- Supabase production не менялся: DDL, DML, deploy, RLS, grants, policies, Auth и данные не трогались.
 
 Проверка 2026-07-09:
 
@@ -124,7 +139,19 @@ CRM использует Edge Functions с JWT. Прямой доступ бра
 
 В журнале Supabase Auth за 2026-06-24 есть успешные входы и успешное обновление токена. Новых `refresh_token_not_found` после последней правки в доступном журнале не видно.
 
-## Публичный сайт
+## Публичный сайт и связка с CRM
+
+Полный аудит 2026-07-10:
+
+- работа ведётся в ветке `audit/site-crm-full-2026-07-10`;
+- создан актуальный checklist `docs/CRM_V4_AUDIT_V9_CHECK.md`;
+- CRM audit helper обновлён с пользовательской маркировки v8 до v9;
+- добавлен `tools/check_site_crm_chain_contract.py`;
+- добавлен workflow `.github/workflows/site-crm-chain-check.yml`;
+- CRM получила модуль `crm/v4/assets/v4/public-lead-request-id-v1.js`, который показывает и копирует `request_id` в обычном списке и карточке заявки;
+- архитектурные решения по public ingestion и role/action authorization записаны в `docs/DECISIONS.md`;
+- live browser/Lighthouse аудит ограничен сетевым DNS-доступом среды и остаётся ручным этапом;
+- production Supabase не менялся.
 
 UI и аудит 2026-07-08:
 
@@ -141,4 +168,18 @@ UI и аудит 2026-07-08:
 - выводы и план сохранены в `docs/PUBLIC_SITE_AUDIT.md`;
 - добавлена защитная проверка `.github/workflows/public-site-audit-check.yml`;
 - проверка контролирует `robots.txt`, `sitemap.xml`, sitemap-домен, отсутствие CRM/nav в sitemap, контракт публичной формы, порядок подключения `request_id` helper на `request.html`, отсутствие service-role маркеров в публичных HTML/assets;
-- GitHub/Supabase доступ подтверждён, работа ведётся в `deputat36/lider-bsk`;
+- GitHub/Supabase доступ подтверждён, работа ведётся в `deputat36/lider-bsk`.
+
+## Исторические CI guard markers
+
+Этот блок сохраняет точные исторические формулировки, которые используются действующими workflow документации. Он не отменяет актуальный статус 2026-07-10.
+
+- Исторический checkpoint: Дата обновления: 2026-06-28.
+- Быстрый путь: Открыть доступ CRM через `?tab=user_admin`; раздел называется `Доступ и роли`.
+- Историческая сводка: active access admins (`owner` + `admin`): 3; inactive profiles: 0.
+- Проверка публичной цепочки: `Проверить request_id` и получить статус `Цепочка полная`.
+- Request UI marker: `20260628-clarity-2`; пользователь видит блок `Выберите похожую задачу`.
+- Этап расширения Open Graph 2026-06-28.
+- Контрольные страницы: `srochnaya-reklama-borisoglebsk.html`, `reklama-dlya-servisa-masterskoy-borisoglebsk.html`, `tablichki-borisoglebsk.html`, `oformlenie-vitrin-borisoglebsk.html`, `pechat-na-plenke-borisoglebsk.html`.
+- Исторический статус пакета: первые два пакета из 8 страниц услуг уже закрыты.
+- CRM access cache marker: `20260628-access-label-1`.
