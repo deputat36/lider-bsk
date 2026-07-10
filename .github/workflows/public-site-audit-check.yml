@@ -21,9 +21,11 @@ on:
       - 'tools/check_public_landing_css.py'
       - 'tools/check_public_landing_first_page_migration.py'
       - 'tools/check_public_homepage_helper.py'
+      - 'tools/check_public_ci_workflows.py'
       - 'robots.txt'
       - 'sitemap.xml'
       - '.github/workflows/public-site-audit-check.yml'
+      - '.github/workflows/public-no-secret-markers-check.yml'
   pull_request:
     branches: [main]
     paths:
@@ -43,9 +45,11 @@ on:
       - 'tools/check_public_landing_css.py'
       - 'tools/check_public_landing_first_page_migration.py'
       - 'tools/check_public_homepage_helper.py'
+      - 'tools/check_public_ci_workflows.py'
       - 'robots.txt'
       - 'sitemap.xml'
       - '.github/workflows/public-site-audit-check.yml'
+      - '.github/workflows/public-no-secret-markers-check.yml'
 
 jobs:
   public-site-contract:
@@ -143,7 +147,7 @@ jobs:
           assert page.index(helper) < page.index(form)
           PY
 
-      - name: Check public service and homepage helper contracts
+      - name: Check public service, UI and CI contracts
         shell: bash
         run: |
           set -euo pipefail
@@ -154,6 +158,7 @@ jobs:
           python3 tools/check_public_landing_css.py
           python3 tools/check_public_landing_first_page_migration.py
           python3 tools/check_public_homepage_helper.py
+          python3 tools/check_public_ci_workflows.py
 
       - name: Check public scripts syntax
         shell: bash
