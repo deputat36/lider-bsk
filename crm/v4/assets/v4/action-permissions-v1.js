@@ -28,6 +28,13 @@ export const CRM_V4_ACTIONS = Object.freeze({
   DESIGN_WRITE: 'design.write',
   FINANCE_READ: 'finance.read',
   FINANCE_WRITE: 'finance.write',
+  DOCUMENTS_READ: 'documents.read',
+  DOCUMENTS_CREATE: 'documents.create',
+  DOCUMENTS_UPDATE: 'documents.update',
+  DOCUMENTS_GENERATE: 'documents.generate',
+  DOCUMENTS_SEND: 'documents.send',
+  DOCUMENTS_SIGN: 'documents.sign',
+  DOCUMENTS_VOID: 'documents.void',
   CATALOG_READ: 'catalog.read',
   CATALOG_MANAGE: 'catalog.manage',
   AUDIT_READ: 'audit.read',
@@ -65,13 +72,22 @@ export const CRM_V4_ROLE_ACTIONS = Object.freeze({
     CRM_V4_ACTIONS.INSTALLATION_WRITE,
     CRM_V4_ACTIONS.DESIGN_READ,
     CRM_V4_ACTIONS.DESIGN_WRITE,
+    CRM_V4_ACTIONS.DOCUMENTS_READ,
+    CRM_V4_ACTIONS.DOCUMENTS_CREATE,
+    CRM_V4_ACTIONS.DOCUMENTS_UPDATE,
+    CRM_V4_ACTIONS.DOCUMENTS_GENERATE,
+    CRM_V4_ACTIONS.DOCUMENTS_SEND,
     CRM_V4_ACTIONS.AUDIT_READ
   ]),
   accountant: Object.freeze([
     CRM_V4_ACTIONS.ORDERS_READ,
     CRM_V4_ACTIONS.FINANCE_READ,
     CRM_V4_ACTIONS.FINANCE_WRITE,
-    CRM_V4_ACTIONS.COSTS_READ
+    CRM_V4_ACTIONS.COSTS_READ,
+    CRM_V4_ACTIONS.DOCUMENTS_READ,
+    CRM_V4_ACTIONS.DOCUMENTS_GENERATE,
+    CRM_V4_ACTIONS.DOCUMENTS_SEND,
+    CRM_V4_ACTIONS.DOCUMENTS_SIGN
   ]),
   designer: Object.freeze([
     CRM_V4_ACTIONS.DESIGN_READ,
