@@ -6,6 +6,7 @@ on:
     paths:
       - 'crm/v4/assets/v4/action-permissions-v1.js'
       - 'crm/v4/assets/v4/status-transitions-v1.js'
+      - 'crm/v4/assets/v4/lead-operational-quality-v1.js'
       - 'docs/CRM_STATUS_TRANSITION_REGISTRY_2026-07-10.md'
       - 'docs/CRM_STATUS_TRANSITION_EXECUTION_ADDENDUM_2026-07-10.md'
       - 'tools/check_crm_status_transition_registry.py'
@@ -16,6 +17,7 @@ on:
     paths:
       - 'crm/v4/assets/v4/action-permissions-v1.js'
       - 'crm/v4/assets/v4/status-transitions-v1.js'
+      - 'crm/v4/assets/v4/lead-operational-quality-v1.js'
       - 'docs/CRM_STATUS_TRANSITION_REGISTRY_2026-07-10.md'
       - 'docs/CRM_STATUS_TRANSITION_EXECUTION_ADDENDUM_2026-07-10.md'
       - 'tools/check_crm_status_transition_registry.py'
@@ -39,5 +41,6 @@ jobs:
         run: |
           set -euo pipefail
           node --check crm/v4/assets/v4/status-transitions-v1.js
+          node --check crm/v4/assets/v4/lead-operational-quality-v1.js
           node --check tools/test_crm_status_transitions.mjs
           node tools/test_crm_status_transitions.mjs
