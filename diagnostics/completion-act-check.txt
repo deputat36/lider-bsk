@@ -1,0 +1,2 @@
+exit_code=1
+Completion-act preview contains forbidden write/sensitive/broken marker: margin
