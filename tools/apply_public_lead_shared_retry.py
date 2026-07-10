@@ -26,38 +26,45 @@ def patch_form(text: str) -> str:
             "  const MAX_PENDING_AGE_MS=30*60*1000;\n",
             'form constants',
         )
+    if 'function stableRequestId(payload)' not in text:
+        text = replace_once(
+            text,
+            "  function requestId(){return 'web-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10)}\n"
+            "  function setStatus(form,type,msg){const s=form.querySelector('[data-leader-lead-status]');if(s){s.className='leader-lead-status show '+type;s.textContent=msg}}\n",
+            "  function requestId(){return 'web-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10)}\n"
+            "  function normalizePhone(value){return clean(value).replace(/\\D+/g,'')}\n"
+            "  function fingerprint(payload){\n"
+            "    const source=[normalizePhone(payload.phone),clean(payload.service).toLowerCase(),clean(payload.page_path).toLowerCase(),clean(payload.message)].join('|');\n"
+            "    let hash=2166136261;\n"
+            "    for(let i=0;i<source.length;i+=1){hash^=source.charCodeAt(i);hash=Math.imul(hash,16777619)}\n"
+            "    return 'fnv1a-'+(hash>>>0).toString(16).padStart(8,'0');\n"
+            "  }\n"
+            "  function readPending(){\n"
+            "    try{\n"
+            "      const value=JSON.parse(window.sessionStorage.getItem(PENDING_STORAGE_KEY)||'null');\n"
+            "      if(!value||!value.request_id||!value.fingerprint)return null;\n"
+            "      if(Date.now()-Number(value.created_at||0)>MAX_PENDING_AGE_MS){window.sessionStorage.removeItem(PENDING_STORAGE_KEY);return null}\n"
+            "      return value;\n"
+            "    }catch(_){return null}\n"
+            "  }\n"
+            "  function writePending(value){try{window.sessionStorage.setItem(PENDING_STORAGE_KEY,JSON.stringify(value))}catch(_){}}\n"
+            "  function clearPending(){try{window.sessionStorage.removeItem(PENDING_STORAGE_KEY)}catch(_){}}\n"
+            "  function stableRequestId(payload){\n"
+            "    const currentFingerprint=fingerprint(payload);\n"
+            "    const pending=readPending();\n"
+            "    if(pending&&pending.fingerprint===currentFingerprint)return pending.request_id;\n"
+            "    const id=requestId();\n"
+            "    writePending({request_id:id,fingerprint:currentFingerprint,created_at:Date.now()});\n"
+            "    return id;\n"
+            "  }\n"
+            "  function setStatus(form,type,msg){const s=form.querySelector('[data-leader-lead-status]');if(s){s.className='leader-lead-status show '+type;s.textContent=msg}}\n",
+            'form retry helpers',
+        )
     text = replace_once(
         text,
-        "  function requestId(){return 'web-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10)}\n"
-        "  function setStatus(form,type,msg){const s=form.querySelector('[data-leader-lead-status]');if(s){s.className='leader-lead-status show '+type;s.textContent=msg}}\n",
-        "  function requestId(){return 'web-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10)}\n"
-        "  function normalizePhone(value){return clean(value).replace(/\\D+/g,'')}\n"
-        "  function fingerprint(payload){\n"
-        "    const source=[normalizePhone(payload.phone),clean(payload.service).toLowerCase(),clean(payload.page_path).toLowerCase(),clean(payload.message)].join('|');\n"
-        "    let hash=2166136261;\n"
-        "    for(let i=0;i<source.length;i+=1){hash^=source.charCodeAt(i);hash=Math.imul(hash,16777619)}\n"
-        "    return 'fnv1a-'+(hash>>>0).toString(16).padStart(8,'0');\n"
-        "  }\n"
-        "  function readPending(){\n"
-        "    try{\n"
-        "      const value=JSON.parse(window.sessionStorage.getItem(PENDING_STORAGE_KEY)||'null');\n"
-        "      if(!value||!value.request_id||!value.fingerprint)return null;\n"
-        "      if(Date.now()-Number(value.created_at||0)>MAX_PENDING_AGE_MS){window.sessionStorage.removeItem(PENDING_STORAGE_KEY);return null}\n"
-        "      return value;\n"
-        "    }catch(_){return null}\n"
-        "  }\n"
-        "  function writePending(value){try{window.sessionStorage.setItem(PENDING_STORAGE_KEY,JSON.stringify(value))}catch(_){}}\n"
-        "  function clearPending(){try{window.sessionStorage.removeItem(PENDING_STORAGE_KEY)}catch(_){}}\n"
-        "  function stableRequestId(payload){\n"
-        "    const currentFingerprint=fingerprint(payload);\n"
-        "    const pending=readPending();\n"
-        "    if(pending&&pending.fingerprint===currentFingerprint)return pending.request_id;\n"
-        "    const id=requestId();\n"
-        "    writePending({request_id:id,fingerprint:currentFingerprint,created_at:Date.now()});\n"
-        "    return id;\n"
-        "  }\n"
-        "  function setStatus(form,type,msg){const s=form.querySelector('[data-leader-lead-status]');if(s){s.className='leader-lead-status show '+type;s.textContent=msg}}\n",
-        'form retry helpers',
+        "  function normalizePhone(value){return clean(value).replace(/\\D+/g,'')}\n",
+        "  function normalizePhone(value){const digits=clean(value).replace(/\\D+/g,'');return digits.length>=11?digits.slice(-10):digits}\n",
+        'form phone normalization',
     )
     text = replace_once(
         text,
@@ -100,24 +107,32 @@ def patch_form(text: str) -> str:
 
 
 def patch_helper(text: str) -> str:
-    return replace_once(
+    if "return 'fnv1a-'" not in text:
+        text = replace_once(
+            text,
+            "  function fingerprint(payload){\n"
+            "    return [\n"
+            "      normalizePhone(payload.phone),\n"
+            "      clean(payload.service).toLowerCase(),\n"
+            "      clean(payload.page_path).toLowerCase(),\n"
+            "      clean(payload.message)\n"
+            "    ].join('|');\n"
+            "  }\n",
+            "  function fingerprint(payload){\n"
+            "    const source=[normalizePhone(payload.phone),clean(payload.service).toLowerCase(),clean(payload.page_path).toLowerCase(),clean(payload.message)].join('|');\n"
+            "    let hash=2166136261;\n"
+            "    for(let i=0;i<source.length;i+=1){hash^=source.charCodeAt(i);hash=Math.imul(hash,16777619)}\n"
+            "    return 'fnv1a-'+(hash>>>0).toString(16).padStart(8,'0');\n"
+            "  }\n",
+            'helper fingerprint',
+        )
+    text = replace_once(
         text,
-        "  function fingerprint(payload){\n"
-        "    return [\n"
-        "      normalizePhone(payload.phone),\n"
-        "      clean(payload.service).toLowerCase(),\n"
-        "      clean(payload.page_path).toLowerCase(),\n"
-        "      clean(payload.message)\n"
-        "    ].join('|');\n"
-        "  }\n",
-        "  function fingerprint(payload){\n"
-        "    const source=[normalizePhone(payload.phone),clean(payload.service).toLowerCase(),clean(payload.page_path).toLowerCase(),clean(payload.message)].join('|');\n"
-        "    let hash=2166136261;\n"
-        "    for(let i=0;i<source.length;i+=1){hash^=source.charCodeAt(i);hash=Math.imul(hash,16777619)}\n"
-        "    return 'fnv1a-'+(hash>>>0).toString(16).padStart(8,'0');\n"
-        "  }\n",
-        'helper fingerprint',
+        "  function normalizePhone(value){return clean(value).replace(/\\D+/g,'')}\n",
+        "  function normalizePhone(value){const digits=clean(value).replace(/\\D+/g,'');return digits.length>=11?digits.slice(-10):digits}\n",
+        'helper phone normalization',
     )
+    return text
 
 
 def main() -> int:
