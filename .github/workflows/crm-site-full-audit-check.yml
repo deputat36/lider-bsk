@@ -14,6 +14,7 @@ on:
       - 'docs/CRM_V4_BACKEND_WRITE_INVENTORY_ADDENDUM_2026-07-10.md'
       - 'docs/CRM_ORDER_COMPLETION_ACT_ARCHITECTURE_2026-07-10.md'
       - 'docs/CRM_ORDER_COMPLETION_ACT_MANUAL_TEST_2026-07-10.md'
+      - 'docs/CRM_COMPANY_LEGAL_SETTINGS_CONTRACT_2026-07-10.md'
       - 'docs/PUBLIC_INTAKE_SERVICE_ROLE_CUTOVER_PLAN_2026-07-10.md'
       - 'docs/CRM_SERVER_ACTION_RBAC_SPEC_2026-07-10.md'
       - 'tools/check_crm_site_full_audit_roadmap.py'
@@ -24,6 +25,7 @@ on:
       - 'tools/check_crm_operational_quality_panel.py'
       - 'tools/check_crm_v4_backend_write_inventory.py'
       - 'tools/check_crm_order_completion_act.py'
+      - 'tools/check_crm_company_legal_settings.py'
       - 'tools/check_public_intake_cutover_plan.py'
       - 'tools/check_crm_server_action_rbac_spec.py'
       - 'assets/public-lead-reference-v1.js'
@@ -37,6 +39,8 @@ on:
       - 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
       - 'crm/v4/assets/v4/lead-operational-quality-v1.js'
       - 'crm/v4/assets/v4/order-act-preview-v1.js'
+      - 'crm/v4/assets/v4/company-legal-settings-v1.js'
+      - 'crm/v4/assets/v4/order-act-company-settings-v1.js'
       - 'crm/v4/assets/v4/production-board-v3.js'
       - 'crm/v4/assets/v4/production-job-card-v2.js'
       - 'crm/v4/assets/v4/installation-job-card-v2.js'
@@ -59,6 +63,7 @@ on:
       - 'docs/CRM_V4_BACKEND_WRITE_INVENTORY_ADDENDUM_2026-07-10.md'
       - 'docs/CRM_ORDER_COMPLETION_ACT_ARCHITECTURE_2026-07-10.md'
       - 'docs/CRM_ORDER_COMPLETION_ACT_MANUAL_TEST_2026-07-10.md'
+      - 'docs/CRM_COMPANY_LEGAL_SETTINGS_CONTRACT_2026-07-10.md'
       - 'docs/PUBLIC_INTAKE_SERVICE_ROLE_CUTOVER_PLAN_2026-07-10.md'
       - 'docs/CRM_SERVER_ACTION_RBAC_SPEC_2026-07-10.md'
       - 'tools/check_crm_site_full_audit_roadmap.py'
@@ -69,6 +74,7 @@ on:
       - 'tools/check_crm_operational_quality_panel.py'
       - 'tools/check_crm_v4_backend_write_inventory.py'
       - 'tools/check_crm_order_completion_act.py'
+      - 'tools/check_crm_company_legal_settings.py'
       - 'tools/check_public_intake_cutover_plan.py'
       - 'tools/check_crm_server_action_rbac_spec.py'
       - 'assets/public-lead-reference-v1.js'
@@ -82,6 +88,8 @@ on:
       - 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
       - 'crm/v4/assets/v4/lead-operational-quality-v1.js'
       - 'crm/v4/assets/v4/order-act-preview-v1.js'
+      - 'crm/v4/assets/v4/company-legal-settings-v1.js'
+      - 'crm/v4/assets/v4/order-act-company-settings-v1.js'
       - 'crm/v4/assets/v4/production-board-v3.js'
       - 'crm/v4/assets/v4/production-job-card-v2.js'
       - 'crm/v4/assets/v4/installation-job-card-v2.js'
@@ -110,6 +118,7 @@ jobs:
           python3 tools/check_crm_operational_quality_panel.py
           python3 tools/check_crm_v4_backend_write_inventory.py
           python3 tools/check_crm_order_completion_act.py
+          python3 tools/check_crm_company_legal_settings.py
           python3 tools/check_public_intake_cutover_plan.py
           python3 tools/check_crm_server_action_rbac_spec.py
           node --check assets/public-lead-reference-v1.js
@@ -122,6 +131,8 @@ jobs:
           node --check crm/v4/assets/v4/lead-analytics-badges-v1.js
           node --check crm/v4/assets/v4/lead-operational-quality-v1.js
           node --check crm/v4/assets/v4/order-act-preview-v1.js
+          node --check crm/v4/assets/v4/company-legal-settings-v1.js
+          node --check crm/v4/assets/v4/order-act-company-settings-v1.js
           node --check crm/v4/assets/v4/production-board-v3.js
           node --check crm/v4/assets/v4/production-job-card-v2.js
           node --check crm/v4/assets/v4/installation-job-card-v2.js
