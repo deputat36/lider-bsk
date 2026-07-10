@@ -1,0 +1,27 @@
+name: Supabase CRM development branch acceptance check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/SUPABASE_DEV_BRANCH_CRM_HARDENING_ACCEPTANCE_PLAN_2026-07-10.md'
+      - 'tools/check_supabase_dev_branch_crm_acceptance_plan.py'
+      - '.github/workflows/supabase-dev-branch-crm-acceptance-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/SUPABASE_DEV_BRANCH_CRM_HARDENING_ACCEPTANCE_PLAN_2026-07-10.md'
+      - 'tools/check_supabase_dev_branch_crm_acceptance_plan.py'
+      - '.github/workflows/supabase-dev-branch-crm-acceptance-check.yml'
+
+jobs:
+  branch-acceptance-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate approval-gated acceptance plan
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/check_supabase_dev_branch_crm_acceptance_plan.py
