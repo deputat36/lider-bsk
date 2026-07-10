@@ -41,6 +41,17 @@ Manual browser proof всё ещё требуется.
 
 Это defense-in-depth, а не server-side authorization.
 
+### Canonical action registry
+
+Добавлен `crm/v4/assets/v4/action-permissions-v1.js`:
+
+- единые keys для leads, clients, needs, calculations, costs, offers, orders, production, installation, design, finance, catalog, audit, users и settings;
+- source role/action baseline;
+- UI-only `canPerformV4Action` / `requireV4Action`;
+- production kinds и cost visibility используют те же action keys.
+
+Server-side enforcement всё ещё требуется.
+
 ### Минимизация данных производства и монтажа
 
 Для restricted roles browser SELECT lists больше не запрашивают:
@@ -62,6 +73,44 @@ Internal installation comments скрываются от ролей без inter
 Production/installation cards проверяют разрешённый job kind до fetch/save/print.
 
 Manual browser + Network proof всё ещё требуется.
+
+### Read-only operational quality panel
+
+Добавлен `crm/v4/assets/v4/lead-operational-quality-v1.js`.
+
+Панель показывает без персональных данных и сумм:
+
+- активные лиды без ответственного;
+- активные лиды без следующего контакта;
+- потребности ниже 80%;
+- количество заказов;
+- количество записей расходов;
+- количество дизайн-задач.
+
+Используются только read-only SELECT, role guard и 60-second cache.
+
+Manual browser proof всё ещё требуется.
+
+### Backend write inventory
+
+Добавлены:
+
+- `docs/CRM_V4_BACKEND_WRITE_CONTRACT_INVENTORY_2026-07-10.md`;
+- `docs/CRM_V4_BACKEND_WRITE_INVENTORY_ADDENDUM_2026-07-10.md`;
+- `tools/check_crm_v4_backend_write_inventory.py`.
+
+Все найденные CRM v4 JS files с direct insert/update/delete классифицированы.
+
+Новый direct-write module без inventory entry должен остановить workflow.
+
+Определены transaction-backed targets:
+
+- `calculation.save`;
+- `offer.create_from_calculation`;
+- `offer.transition`;
+- `production_job.update`;
+- `installation_job.update`;
+- manual order transaction.
 
 ### Защищённый public intake cutover
 
@@ -85,10 +134,13 @@ Production deploy/RLS/grant changes требуют явного approval.
 Добавлены:
 
 - master audit;
+- execution progress snapshot;
 - focused issues #201–#205;
 - profile-first checker;
 - role matrix checker;
 - production data-minimization checker;
+- operational quality checker;
+- backend write inventory checker;
 - public intake cutover checker;
 - consolidated full-audit workflow.
 
@@ -116,7 +168,10 @@ Production deploy/RLS/grant changes требуют явного approval.
 
 ### P0 server-side RBAC
 
-- canonical action permission keys;
+Canonical action permission keys уже подготовлены в source.
+
+Остаются:
+
 - Edge/RPC action checks;
 - RLS tightening by business role;
 - negative integration tests;
@@ -129,9 +184,9 @@ UI restrictions нельзя считать полной изоляцией до
 - browser proof retry idempotency;
 - browser proof profile-first scenarios;
 - browser/Network proof role and production data minimization;
+- browser proof operational quality panel;
 - `catalog_id` preservation in `calculations.js` (#169);
-- backend contract inventory and decision record (#204);
-- operational quality panel and queues (#205);
+- transaction-backed commands from backend inventory (#204);
 - mandatory assignee/SLA;
 - needs completeness gate;
 - planned vs actual profit;
@@ -156,8 +211,8 @@ During autonomous execution:
 
 ## Next autonomous source-only sequence
 
-1. Add read-only operational quality panel for #205.
-2. Inventory direct CRM writes vs Edge/RPC actions for #204.
-3. Prepare safe `catalog_id` patch/checker for #169 without risky full-file replacement.
-4. Expand manual browser evidence checklists.
+1. Prepare safe `catalog_id` patch/checker for #169 without risky full-file replacement.
+2. Add status/action transition registry for transaction-backed commands.
+3. Expand manual browser evidence checklists.
+4. Prepare development-branch test specifications for #201/#202/#204.
 5. Keep #200 updated with completed and approval-gated work.
