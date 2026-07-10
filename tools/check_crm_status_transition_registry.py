@@ -6,6 +6,7 @@ root = Path(__file__).resolve().parents[1]
 registry = root / 'crm/v4/assets/v4/status-transitions-v1.js'
 test = root / 'tools/test_crm_status_transitions.mjs'
 doc = root / 'docs/CRM_STATUS_TRANSITION_REGISTRY_2026-07-10.md'
+addendum = root / 'docs/CRM_STATUS_TRANSITION_EXECUTION_ADDENDUM_2026-07-10.md'
 
 errors = []
 
@@ -115,8 +116,25 @@ else:
         if marker not in text:
             errors.append(f'Missing status registry document marker: {marker}')
 
+if not addendum.exists():
+    errors.append('Missing CRM status transition execution addendum')
+else:
+    text = addendum.read_text(encoding='utf-8')
+    required = [
+        'The backlog line `centralized status registry` in the earlier execution snapshot is now resolved in GitHub source.',
+        'status registry validation in `.github/workflows/crm-site-full-audit-check.yml`',
+        'Distinct production values were read without DML',
+        'Replace duplicated UI status arrays one module at a time.',
+        'Use registry validation in future Edge/RPC transition commands.',
+        'No production status rows were changed.',
+        'Server-side transition enforcement remains tracked in #202 and #204.',
+    ]
+    for marker in required:
+        if marker not in text:
+            errors.append(f'Missing status registry addendum marker: {marker}')
+
 if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('CRM status transition registry, documentation and behavior test are valid.')
+print('CRM status transition registry, documentation, addendum and behavior test are valid.')
