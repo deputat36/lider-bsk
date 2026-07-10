@@ -1,4 +1,5 @@
 import { v4State } from './state.js';
+import { CRM_V4_ACTIONS, canPerformV4Action } from './action-permissions-v1.js';
 
 export const CRM_V4_TABS = Object.freeze([
   'management_dashboard',
@@ -14,12 +15,7 @@ export const CRM_V4_TABS = Object.freeze([
 ]);
 
 const FULL_ACCESS = CRM_V4_TABS;
-const COST_VISIBLE_ROLES = new Set(['owner', 'admin', 'accountant']);
 const INTERNAL_NOTE_VISIBLE_ROLES = new Set(['owner', 'admin', 'manager']);
-const PRODUCTION_KIND_ROLES = Object.freeze({
-  production: new Set(['owner', 'admin', 'manager', 'designer', 'contractor']),
-  installation: new Set(['owner', 'admin', 'manager', 'installer'])
-});
 
 export const CRM_V4_ROLE_TABS = Object.freeze({
   owner: FULL_ACCESS,
@@ -54,14 +50,16 @@ export function allowedV4Tabs(profile = v4State.profile) {
 
 export function canOpenV4Tab(tab, profile = v4State.profile) {
   const value = String(tab || '').trim();
-  if (!profile || v4State.profileLoaded !== true) return false;
+  if (!profile || v4State.profileLoaded !== true || profile.is_active !== true) return false;
   return allowedV4Tabs(profile).has(value);
 }
 
 export function canOpenV4ProductionKind(kind, profile = v4State.profile) {
   const value = String(kind || '').trim();
   if (!canOpenV4Tab('production', profile)) return false;
-  return Boolean(PRODUCTION_KIND_ROLES[value]?.has(normalizedRole(profile)));
+  if (value === 'production') return canPerformV4Action(CRM_V4_ACTIONS.PRODUCTION_READ, profile);
+  if (value === 'installation') return canPerformV4Action(CRM_V4_ACTIONS.INSTALLATION_READ, profile);
+  return false;
 }
 
 export function firstAllowedV4ProductionKind(profile = v4State.profile) {
@@ -69,12 +67,11 @@ export function firstAllowedV4ProductionKind(profile = v4State.profile) {
 }
 
 export function canViewV4Costs(profile = v4State.profile) {
-  if (!profile || v4State.profileLoaded !== true) return false;
-  return COST_VISIBLE_ROLES.has(normalizedRole(profile));
+  return canPerformV4Action(CRM_V4_ACTIONS.COSTS_READ, profile);
 }
 
 export function canViewV4InternalNotes(profile = v4State.profile) {
-  if (!profile || v4State.profileLoaded !== true) return false;
+  if (!profile || v4State.profileLoaded !== true || profile.is_active !== true) return false;
   return INTERNAL_NOTE_VISIBLE_ROLES.has(normalizedRole(profile));
 }
 
@@ -86,7 +83,7 @@ export function firstAllowedV4Tab(profile = v4State.profile) {
 export function applyV4TabButtonVisibility(root = document, profile = v4State.profile) {
   const allowed = allowedV4Tabs(profile);
   root.querySelectorAll?.('[data-v4-tab-button]').forEach((button) => {
-    const permitted = allowed.has(button.dataset.v4TabButton || '');
+    const permitted = profile?.is_active === true && allowed.has(button.dataset.v4TabButton || '');
     button.hidden = !permitted;
     button.disabled = !permitted;
     button.setAttribute('aria-hidden', permitted ? 'false' : 'true');
