@@ -135,6 +135,7 @@ function calcItem(raw, index) {
   const markupPercent = contractorSum > 0 ? ((clientSum - contractorSum) / contractorSum) * 100 : 0;
   const marginPercent = clientSum > 0 ? (profit / clientSum) * 100 : 0;
   return {
+    catalog_id: raw.catalog_id || null,
     category: raw.category || 'Расчёт по позиции',
     item_type: raw.item_type || 'Услуга',
     name: raw.name || `Позиция ${index + 1}`,

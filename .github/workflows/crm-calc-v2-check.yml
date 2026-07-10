@@ -24,4 +24,7 @@ jobs:
       - name: Validate catalog mapping
         run: python3 tools/check_catalog_mapping.py
       - name: Check calculations catalog id preservation
-        run: python3 tools/check_calculations_catalog_id.py
+        run: |
+          node --check crm/v4/assets/v4/calculations.js
+          python3 tools/check_calculations_catalog_id.py
+          node tools/test_calculations_catalog_id.mjs
