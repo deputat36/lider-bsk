@@ -4,6 +4,7 @@ import sys
 
 root = Path(__file__).resolve().parents[1]
 doc = root / 'docs/CRM_SITE_FULL_AUDIT_AND_ROADMAP_2026-07-10.md'
+profile_manual = root / 'docs/CRM_PROFILE_FIRST_BOOT_MANUAL_TEST_2026-07-10.md'
 helper = root / 'assets/public-lead-reference-v1.js'
 form = root / 'assets/public-lead-form.js'
 auth = root / 'crm/v4/assets/v4/auth.js'
@@ -52,9 +53,13 @@ source_checks = [
         "goal('lead_sent',{service,page:location.href,request_id:responseRequestId,duplicate})",
     ]),
     (auth, [
-        'crmReady: true',
-        'emitCrmReady();',
-        'window.setTimeout(() => loadProfileInBackground(session.user), 400);',
+        'function beginProfileCheck(session)',
+        'async function resolveProfile(user)',
+        'async function prepareCrm(session, statusText',
+        'if (profile.is_active !== true)',
+        'activateCrm(session, profile, statusText)',
+        'crmReady: false',
+        'Рабочие данные пока не загружаются',
     ]),
     (menu, [
         "{ tab: 'finance_control', label: 'Финансы' }",
@@ -68,6 +73,10 @@ source_checks = [
         "const anonKey = Deno.env.get('SUPABASE_ANON_KEY')",
         "'Authorization': 'Bearer ' + anonKey",
         "supabaseUrl + '/rest/v1/leader_leads'",
+    ]),
+    (profile_manual, [
+        'no inactive or unverified profile reaches `crmReady=true`',
+        'does not alter Supabase Auth, RLS, grants, policies, database data or Edge Functions',
     ]),
 ]
 
