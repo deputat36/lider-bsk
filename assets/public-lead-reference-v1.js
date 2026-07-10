@@ -8,7 +8,7 @@
   const nativeFetch=window.fetch.bind(window);
 
   function clean(value){return String(value||'').trim()}
-  function normalizePhone(value){return clean(value).replace(/\D+/g,'')}
+  function normalizePhone(value){const digits=clean(value).replace(/\D+/g,'');return digits.length>=11?digits.slice(-10):digits}
   function fingerprint(payload){
     const source=[normalizePhone(payload.phone),clean(payload.service).toLowerCase(),clean(payload.page_path).toLowerCase(),clean(payload.message)].join('|');
     let hash=2166136261;
