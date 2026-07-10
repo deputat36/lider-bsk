@@ -19,7 +19,7 @@ checks = {
         "readRows('leader_lead_needs', 'id,completeness_score,status')",
         "readRows('leader_orders', 'id,status')",
         "readRows('leader_expenses', 'id,status')",
-        "readRows('leader_design_tasks', 'id,status')",
+        "readRows('leader_design_tasks', 'id,task_status')",
         'activeUnassigned',
         'activeWithoutNextContact',
         'needsBelow80',
@@ -28,7 +28,7 @@ checks = {
         'Панель не меняет данные',
         "document.addEventListener('leader-v4:crm-ready'",
         "document.addEventListener('leader-v4:leads-loaded'",
-        "data-quality-refresh",
+        'data-quality-refresh',
     ],
     badges: [
         "import './lead-operational-quality-v1.js';",
@@ -39,6 +39,8 @@ checks = {
         'needs below 80% completeness: 9',
         'expenses: 0',
         'design tasks: 0',
+        '`leader_design_tasks`: `id,task_status`',
+        'uses `task_status`, not a generic `status` column',
         'must not request',
         'no INSERT, UPDATE or DELETE request is emitted',
         'no personal data or financial amount is displayed',
@@ -62,6 +64,7 @@ if panel.exists():
         '.update(',
         '.delete(',
         "readRows('leader_leads', 'id,name",
+        "readRows('leader_design_tasks', 'id,status')",
         'client_total',
         'contractor_cost',
         'profit',
@@ -76,4 +79,4 @@ if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('CRM operational quality panel is read-only, aggregate-only and role-guarded.')
+print('CRM operational quality panel is read-only, aggregate-only, schema-correct and role-guarded.')
