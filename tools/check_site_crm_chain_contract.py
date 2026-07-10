@@ -6,6 +6,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PUBLIC_FORM = ROOT / 'assets' / 'public-lead-form.js'
 PUBLIC_EDGE = ROOT / 'supabase' / 'functions' / 'leader-public-lead' / 'index.ts'
 CRM_HELPER = ROOT / 'crm' / 'v4' / 'assets' / 'v4' / 'public-lead-audit-helper-v1.js'
+CRM_REQUEST_ID = ROOT / 'crm' / 'v4' / 'assets' / 'v4' / 'public-lead-request-id-v1.js'
 CRM_LOADER = ROOT / 'crm' / 'v4' / 'assets' / 'v4' / 'site-cache-note-v1.js'
 CHECKLIST = ROOT / 'docs' / 'CRM_V4_AUDIT_V9_CHECK.md'
 
@@ -30,6 +31,7 @@ def main() -> None:
     public_form = read(PUBLIC_FORM)
     public_edge = read(PUBLIC_EDGE)
     crm_helper = read(CRM_HELPER)
+    crm_request_id = read(CRM_REQUEST_ID)
     crm_loader = read(CRM_LOADER)
     checklist = read(CHECKLIST)
 
@@ -77,7 +79,20 @@ def main() -> None:
     ):
         require(crm_helper, marker, CRM_HELPER)
 
+    for marker in (
+        "from('leader_leads')",
+        "select('id,request_id,source_page_path,phone_normalized,submitted_at')",
+        'data-copy-public-request-id',
+        'Номер обращения',
+        'Страница источника',
+        'Телефон нормализован',
+        'leader-v4:leads-loaded',
+        'leader-v4:lead-card-rendered',
+    ):
+        require(crm_request_id, marker, CRM_REQUEST_ID)
+
     require(crm_loader, 'public-lead-audit-helper-v1.js?v=20260710-audit-v9-1', CRM_LOADER)
+    require(crm_loader, 'public-lead-request-id-v1.js?v=20260710-request-id-1', CRM_LOADER)
 
     for marker in (
         'leader-public-lead v9',
