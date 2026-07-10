@@ -55,13 +55,17 @@ function permittedTab(requested) {
   return firstAllowedV4Tab();
 }
 
+function dispatchDenied(requested, reason) {
+  document.dispatchEvent(new CustomEvent('leader-v4:tab-denied', { detail: { requested, reason } }));
+}
+
 function setActiveTab(tab) {
   applyV4TabButtonVisibility(document);
   const activeTab = permittedTab(tab);
   if (!activeTab) {
     document.body.dataset.v4Tab = '';
     hideAllWorkSections();
-    document.dispatchEvent(new CustomEvent('leader-v4:tab-denied', { detail: { requested: normalizeTab(tab), reason: 'role_has_no_tabs' } }));
+    dispatchDenied(normalizeTab(tab), 'role_has_no_tabs');
     return false;
   }
 
@@ -101,6 +105,16 @@ function setActiveTab(tab) {
 
 function bootTabsLite() {
   window.v4SetTab = setActiveTab;
+
+  document.addEventListener('click', (event) => {
+    const restrictedOrderAction = event.target.closest?.('[data-open-order]');
+    if (restrictedOrderAction && !canOpenV4Tab('orders')) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      dispatchDenied('orders', 'restricted_action');
+    }
+  }, true);
+
   document.addEventListener('click', (event) => {
     const button = event.target.closest?.('[data-v4-tab-button]');
     if (!button) return;
@@ -108,7 +122,7 @@ function bootTabsLite() {
     if (!tab) return;
     event.preventDefault();
     if (!canOpenV4Tab(tab)) {
-      document.dispatchEvent(new CustomEvent('leader-v4:tab-denied', { detail: { requested: tab, reason: 'role_not_allowed' } }));
+      dispatchDenied(tab, 'role_not_allowed');
       return;
     }
     setActiveTab(tab);
