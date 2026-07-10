@@ -4,55 +4,41 @@ on:
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/diagnose-crm-full-audit-temp.yml'
+      - 'tools/check_crm_order_completion_act.py'
+      - 'crm/v4/assets/v4/order-act-preview-v1.js'
+      - 'crm/v4/assets/v4/action-permissions-v1.js'
+      - 'crm/v4/index.html'
+      - 'docs/CRM_ORDER_COMPLETION_ACT_ARCHITECTURE_2026-07-10.md'
+      - 'docs/CRM_ORDER_COMPLETION_ACT_MANUAL_TEST_2026-07-10.md'
+
+permissions:
+  contents: write
 
 jobs:
-  diagnose-full-audit:
+  capture-completion-act-check:
+    if: github.head_ref == 'feat/crm-v4-command-transition-registry-2026-07-10'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: feat/crm-v4-command-transition-registry-2026-07-10
 
-      - name: Roadmap and progress
+      - name: Capture checker output
+        shell: bash
         run: |
-          python3 tools/check_crm_site_full_audit_roadmap.py
-          python3 tools/check_crm_site_audit_execution_progress.py
-
-      - name: Profile roles and minimization
-        run: |
-          python3 tools/check_crm_profile_first_boot.py
-          python3 tools/check_crm_v4_role_tab_matrix.py
-          python3 tools/check_crm_v4_production_role_data_minimization.py
-          python3 tools/check_crm_operational_quality_panel.py
-
-      - name: Backend command contracts
-        run: |
-          python3 tools/check_crm_v4_backend_write_inventory.py
-          python3 tools/check_crm_v4_command_transition_registry.py
-          python3 tools/check_crm_server_action_rbac_spec.py
-
-      - name: Completion act
-        run: python3 tools/check_crm_order_completion_act.py
-
-      - name: Company legal settings
-        run: python3 tools/check_crm_company_legal_settings.py
-
-      - name: Public intake plan
-        run: python3 tools/check_public_intake_cutover_plan.py
-
-      - name: JavaScript syntax
-        run: |
-          node --check assets/public-lead-reference-v1.js
-          node --check assets/public-lead-form.js
-          node --check crm/v4/assets/v4/auth.js
-          node --check crm/v4/assets/v4/action-permissions-v1.js
-          node --check crm/v4/assets/v4/role-tab-permissions-v1.js
-          node --check crm/v4/assets/v4/crm-v4-tabs-lite.js
-          node --check crm/v4/assets/v4/crm-v4-expanded-menu-v1.js
-          node --check crm/v4/assets/v4/lead-analytics-badges-v1.js
-          node --check crm/v4/assets/v4/lead-operational-quality-v1.js
-          node --check crm/v4/assets/v4/order-act-preview-v1.js
-          node --check crm/v4/assets/v4/company-legal-settings-v1.js
-          node --check crm/v4/assets/v4/order-act-company-settings-v1.js
-          node --check crm/v4/assets/v4/production-board-v3.js
-          node --check crm/v4/assets/v4/production-job-card-v2.js
-          node --check crm/v4/assets/v4/installation-job-card-v2.js
-          node --check crm/v4/assets/v4/calculations.js
+          set +e
+          python3 tools/check_crm_order_completion_act.py > /tmp/completion-act-check.txt 2>&1
+          status=$?
+          set -e
+          mkdir -p diagnostics
+          {
+            echo "exit_code=$status"
+            cat /tmp/completion-act-check.txt
+          } > diagnostics/completion-act-check.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add diagnostics/completion-act-check.txt
+          git commit -m 'Capture completion act checker diagnostic'
+          git push origin HEAD:feat/crm-v4-command-transition-registry-2026-07-10
