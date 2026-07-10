@@ -5,7 +5,9 @@ on:
     branches: [main]
     paths:
       - 'docs/CRM_SITE_FULL_AUDIT_AND_ROADMAP_2026-07-10.md'
+      - 'docs/CRM_PROFILE_FIRST_BOOT_MANUAL_TEST_2026-07-10.md'
       - 'tools/check_crm_site_full_audit_roadmap.py'
+      - 'tools/check_crm_profile_first_boot.py'
       - 'assets/public-lead-reference-v1.js'
       - 'assets/public-lead-form.js'
       - 'crm/v4/assets/v4/auth.js'
@@ -17,7 +19,9 @@ on:
     branches: [main]
     paths:
       - 'docs/CRM_SITE_FULL_AUDIT_AND_ROADMAP_2026-07-10.md'
+      - 'docs/CRM_PROFILE_FIRST_BOOT_MANUAL_TEST_2026-07-10.md'
       - 'tools/check_crm_site_full_audit_roadmap.py'
+      - 'tools/check_crm_profile_first_boot.py'
       - 'assets/public-lead-reference-v1.js'
       - 'assets/public-lead-form.js'
       - 'crm/v4/assets/v4/auth.js'
@@ -37,6 +41,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 tools/check_crm_site_full_audit_roadmap.py
+          python3 tools/check_crm_profile_first_boot.py
           node --check assets/public-lead-reference-v1.js
           node --check assets/public-lead-form.js
           node --check crm/v4/assets/v4/auth.js
