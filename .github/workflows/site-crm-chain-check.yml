@@ -1,0 +1,39 @@
+name: Site CRM chain check
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'assets/public-lead-form.js'
+      - 'supabase/functions/leader-public-lead/index.ts'
+      - 'crm/v4/assets/v4/public-lead-audit-helper-v1.js'
+      - 'crm/v4/assets/v4/site-cache-note-v1.js'
+      - 'docs/CRM_V4_AUDIT_V9_CHECK.md'
+      - 'tools/check_site_crm_chain_contract.py'
+      - '.github/workflows/site-crm-chain-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'assets/public-lead-form.js'
+      - 'supabase/functions/leader-public-lead/index.ts'
+      - 'crm/v4/assets/v4/public-lead-audit-helper-v1.js'
+      - 'crm/v4/assets/v4/site-cache-note-v1.js'
+      - 'docs/CRM_V4_AUDIT_V9_CHECK.md'
+      - 'tools/check_site_crm_chain_contract.py'
+      - '.github/workflows/site-crm-chain-check.yml'
+
+jobs:
+  validate-site-crm-chain:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate public request chain contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/check_site_crm_chain_contract.py
+          node --check assets/public-lead-form.js
+          node --check crm/v4/assets/v4/public-lead-audit-helper-v1.js
+          node --check crm/v4/assets/v4/site-cache-note-v1.js
