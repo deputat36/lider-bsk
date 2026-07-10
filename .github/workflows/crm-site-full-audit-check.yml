@@ -13,6 +13,7 @@ on:
       - 'docs/CRM_V4_BACKEND_WRITE_CONTRACT_INVENTORY_2026-07-10.md'
       - 'docs/CRM_V4_BACKEND_WRITE_INVENTORY_ADDENDUM_2026-07-10.md'
       - 'docs/PUBLIC_INTAKE_SERVICE_ROLE_CUTOVER_PLAN_2026-07-10.md'
+      - 'docs/CRM_SERVER_ACTION_RBAC_SPEC_2026-07-10.md'
       - 'tools/check_crm_site_full_audit_roadmap.py'
       - 'tools/check_crm_site_audit_execution_progress.py'
       - 'tools/check_crm_profile_first_boot.py'
@@ -21,6 +22,7 @@ on:
       - 'tools/check_crm_operational_quality_panel.py'
       - 'tools/check_crm_v4_backend_write_inventory.py'
       - 'tools/check_public_intake_cutover_plan.py'
+      - 'tools/check_crm_server_action_rbac_spec.py'
       - 'assets/public-lead-reference-v1.js'
       - 'assets/public-lead-form.js'
       - 'crm/v4/assets/v4/auth.js'
@@ -51,6 +53,7 @@ on:
       - 'docs/CRM_V4_BACKEND_WRITE_CONTRACT_INVENTORY_2026-07-10.md'
       - 'docs/CRM_V4_BACKEND_WRITE_INVENTORY_ADDENDUM_2026-07-10.md'
       - 'docs/PUBLIC_INTAKE_SERVICE_ROLE_CUTOVER_PLAN_2026-07-10.md'
+      - 'docs/CRM_SERVER_ACTION_RBAC_SPEC_2026-07-10.md'
       - 'tools/check_crm_site_full_audit_roadmap.py'
       - 'tools/check_crm_site_audit_execution_progress.py'
       - 'tools/check_crm_profile_first_boot.py'
@@ -59,6 +62,7 @@ on:
       - 'tools/check_crm_operational_quality_panel.py'
       - 'tools/check_crm_v4_backend_write_inventory.py'
       - 'tools/check_public_intake_cutover_plan.py'
+      - 'tools/check_crm_server_action_rbac_spec.py'
       - 'assets/public-lead-reference-v1.js'
       - 'assets/public-lead-form.js'
       - 'crm/v4/assets/v4/auth.js'
@@ -96,6 +100,7 @@ jobs:
           python3 tools/check_crm_operational_quality_panel.py
           python3 tools/check_crm_v4_backend_write_inventory.py
           python3 tools/check_public_intake_cutover_plan.py
+          python3 tools/check_crm_server_action_rbac_spec.py
           node --check assets/public-lead-reference-v1.js
           node --check assets/public-lead-form.js
           node --check crm/v4/assets/v4/auth.js
