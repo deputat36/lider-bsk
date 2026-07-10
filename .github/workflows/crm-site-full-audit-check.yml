@@ -1,0 +1,44 @@
+name: CRM and site full audit check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/CRM_SITE_FULL_AUDIT_AND_ROADMAP_2026-07-10.md'
+      - 'tools/check_crm_site_full_audit_roadmap.py'
+      - 'assets/public-lead-reference-v1.js'
+      - 'assets/public-lead-form.js'
+      - 'crm/v4/assets/v4/auth.js'
+      - 'crm/v4/assets/v4/crm-v4-expanded-menu-v1.js'
+      - 'crm/v4/assets/v4/calculations.js'
+      - 'supabase/functions/leader-public-lead/index.ts'
+      - '.github/workflows/crm-site-full-audit-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/CRM_SITE_FULL_AUDIT_AND_ROADMAP_2026-07-10.md'
+      - 'tools/check_crm_site_full_audit_roadmap.py'
+      - 'assets/public-lead-reference-v1.js'
+      - 'assets/public-lead-form.js'
+      - 'crm/v4/assets/v4/auth.js'
+      - 'crm/v4/assets/v4/crm-v4-expanded-menu-v1.js'
+      - 'crm/v4/assets/v4/calculations.js'
+      - 'supabase/functions/leader-public-lead/index.ts'
+      - '.github/workflows/crm-site-full-audit-check.yml'
+
+jobs:
+  full-audit-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate CRM/site audit roadmap
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/check_crm_site_full_audit_roadmap.py
+          node --check assets/public-lead-reference-v1.js
+          node --check assets/public-lead-form.js
+          node --check crm/v4/assets/v4/auth.js
+          node --check crm/v4/assets/v4/crm-v4-expanded-menu-v1.js
+          node --check crm/v4/assets/v4/calculations.js
