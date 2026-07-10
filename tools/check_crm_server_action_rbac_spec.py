@@ -101,7 +101,7 @@ def main() -> None:
         'unknown role получает `403 forbidden`',
         'generic `leader-crm-orders:update` запрещён',
         'live `leader-crm-orders v2` не содержит candidate role matrix',
-        'роль `production` не является live canonical role',
+        'Роль `production` не является live canonical role',
         'GitHub source нельзя автоматически считать deployed production state',
         'positive/negative tests',
         'Production Supabase не изменялся',
