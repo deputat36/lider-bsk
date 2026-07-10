@@ -17,6 +17,7 @@ on:
       - 'tools/check_public_vizitki_service.py'
       - 'tools/check_vizitki_page_local_service.py'
       - 'tools/check_public_poligrafiya_service.py'
+      - 'tools/check_public_poligrafiya_catalog.py'
       - 'tools/check_public_lead_form_cache_v5_partial.py'
       - 'tools/check_public_landing_css.py'
       - 'tools/check_public_landing_first_page_migration.py'
@@ -41,6 +42,7 @@ on:
       - 'tools/check_public_vizitki_service.py'
       - 'tools/check_vizitki_page_local_service.py'
       - 'tools/check_public_poligrafiya_service.py'
+      - 'tools/check_public_poligrafiya_catalog.py'
       - 'tools/check_public_lead_form_cache_v5_partial.py'
       - 'tools/check_public_landing_css.py'
       - 'tools/check_public_landing_first_page_migration.py'
@@ -154,6 +156,7 @@ jobs:
           python3 tools/check_public_vizitki_service.py
           python3 tools/check_vizitki_page_local_service.py
           python3 tools/check_public_poligrafiya_service.py
+          python3 tools/check_public_poligrafiya_catalog.py
           python3 tools/check_public_lead_form_cache_v5_partial.py
           python3 tools/check_public_landing_css.py
           python3 tools/check_public_landing_first_page_migration.py
