@@ -15,6 +15,7 @@ export const CRM_V4_TABS = Object.freeze([
 
 const FULL_ACCESS = CRM_V4_TABS;
 const COST_VISIBLE_ROLES = new Set(['owner', 'admin', 'accountant']);
+const INTERNAL_NOTE_VISIBLE_ROLES = new Set(['owner', 'admin', 'manager']);
 
 export const CRM_V4_ROLE_TABS = Object.freeze({
   owner: FULL_ACCESS,
@@ -58,6 +59,11 @@ export function canViewV4Costs(profile = v4State.profile) {
   return COST_VISIBLE_ROLES.has(normalizedRole(profile));
 }
 
+export function canViewV4InternalNotes(profile = v4State.profile) {
+  if (!profile || v4State.profileLoaded !== true) return false;
+  return INTERNAL_NOTE_VISIBLE_ROLES.has(normalizedRole(profile));
+}
+
 export function firstAllowedV4Tab(profile = v4State.profile) {
   const allowed = allowedV4Tabs(profile);
   return CRM_V4_TABS.find((tab) => tab !== 'card' && allowed.has(tab)) || '';
@@ -78,6 +84,7 @@ export function roleAccessSummary(profile = v4State.profile) {
     role: normalizedRole(profile),
     tabs: [...allowedV4Tabs(profile)],
     canViewCosts: canViewV4Costs(profile),
+    canViewInternalNotes: canViewV4InternalNotes(profile),
     serverEnforcement: false,
     note: 'UI visibility only. Server-side RLS/RPC/Edge permission enforcement is tracked in #202.'
   };
