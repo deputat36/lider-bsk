@@ -1,0 +1,27 @@
+name: Supabase Leader advisory snapshot check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/SUPABASE_ADVISORS_LEADER_SCOPE_READONLY_2026-07-10.md'
+      - 'tools/check_supabase_leader_advisory_snapshot.py'
+      - '.github/workflows/supabase-leader-advisory-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/SUPABASE_ADVISORS_LEADER_SCOPE_READONLY_2026-07-10.md'
+      - 'tools/check_supabase_leader_advisory_snapshot.py'
+      - '.github/workflows/supabase-leader-advisory-check.yml'
+
+jobs:
+  advisory-snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate scoped Supabase advisor snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/check_supabase_leader_advisory_snapshot.py
