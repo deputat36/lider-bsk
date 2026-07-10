@@ -120,6 +120,31 @@ Manual browser proof всё ещё требуется.
 - `installation_job.update`;
 - manual order transaction.
 
+### Command and transition registry
+
+Добавлены:
+
+- machine-readable contract `contracts/crm-v4-command-transition-registry-v1.json`;
+- specification `docs/CRM_V4_COMMAND_TRANSITION_REGISTRY_2026-07-10.md`;
+- checker `tools/check_crm_v4_command_transition_registry.py`;
+- dedicated workflow `.github/workflows/crm-v4-command-transition-registry-check.yml`.
+
+Registry version: `leader-command-transitions-v1`; текущий режим: `source_only_not_enforced`.
+
+Source contract фиксирует:
+
+- `calculation.save`;
+- `offer.create_from_calculation` и `offer.transition`;
+- `order.create_from_offer`, `order.create_manual` и `order.transition`;
+- `lead.transition`;
+- `production_job.update`;
+- `installation_job.update`;
+- canonical permission, transaction, optimistic concurrency, payload/result и audit contract для каждой команды;
+- transition graph для lead, calculation, offer, order, production job и installation job;
+- compatibility states из live данных без автоматической перезаписи production-строк.
+
+Server-side enforcement, development-branch implementation and integration proof (#204) всё ещё требуются.
+
 ### Catalog-backed calculation items
 
 `calcItem(raw, index)` теперь сохраняет `catalog_id: raw.catalog_id || null` в payload позиции расчёта.
@@ -200,11 +225,13 @@ Production deploy/RLS/grant changes требуют явного approval.
 - production data-minimization checker;
 - operational quality checker;
 - backend write inventory checker;
+- command transition registry checker;
 - completion act checker;
 - public intake cutover checker;
 - public lead shared retry behavior test;
 - calculation catalog_id behavior test;
 - dedicated completion act workflow;
+- dedicated command transition registry workflow;
 - consolidated full-audit workflow.
 
 ## Выполнено read-only в Supabase
@@ -220,7 +247,8 @@ Production deploy/RLS/grant changes требуют явного approval.
 - подтверждено наличие `leader_lead_calculation_items.catalog_id` и baseline 28/0 без DML;
 - подтверждено отсутствие `leader_order_documents` и `leader_order_document_items`;
 - в `leader_settings` не найдены настройки юридических реквизитов/налогообложения/нумерации документов;
-- подтверждены client-facing поля заказа, клиента и позиций для source-only preview.
+- подтверждены client-facing поля заказа, клиента и позиций для source-only preview;
+- read-only inventory подтвердил live statuses и наличие `leader_lead_events`, `leader_commercial_offer_events`, `leader_production_events`, `leader_installation_events`, `leader_activity_log` для command/audit contract.
 
 ## Не выполнено — approval gate
 
@@ -268,13 +296,12 @@ Stage 2 по #214 требует отдельного approval:
 - browser proof operational quality panel;
 - browser/database proof catalog_id persistence (#169);
 - browser/Network/print proof completion act preview (#214);
-- transaction-backed commands from backend inventory (#204);
+- development-branch implementation and integration proof (#204);
 - mandatory assignee/SLA;
 - needs completeness gate;
 - planned vs actual profit;
 - expense workflow;
 - design task activation;
-- centralized status registry;
 - consent policy/version marker;
 - unified observability dashboard.
 
@@ -294,8 +321,8 @@ During autonomous execution:
 
 ## Next autonomous source-only sequence
 
-1. Add status/action transition registry for transaction-backed commands.
+1. Prepare development-branch test specifications for #201/#202/#204/#214.
 2. Expand manual browser evidence checklists, including completion act print proof.
-3. Prepare development-branch test specifications for #201/#202/#204/#214.
-4. Add organization legal-settings source contract without production persistence.
+3. Add organization legal-settings source contract without production persistence.
+4. Prepare generated server-registry compatibility test without deploying Edge Functions.
 5. Keep #200 updated with completed and approval-gated work.

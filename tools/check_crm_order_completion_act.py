@@ -88,7 +88,7 @@ if module.exists():
         'contractor_price',
         'contractor_sum',
         'profit',
-        'margin',
+        'margin_percent',
         'internal_comment',
         "const popup = window.open('', '_blank', 'noopener,noreferrer')",
     ]

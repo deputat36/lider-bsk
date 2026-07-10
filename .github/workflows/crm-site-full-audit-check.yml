@@ -12,11 +12,13 @@ on:
       - 'docs/CRM_OPERATIONAL_QUALITY_PANEL_MANUAL_TEST_2026-07-10.md'
       - 'docs/CRM_V4_BACKEND_WRITE_CONTRACT_INVENTORY_2026-07-10.md'
       - 'docs/CRM_V4_BACKEND_WRITE_INVENTORY_ADDENDUM_2026-07-10.md'
+      - 'docs/CRM_V4_COMMAND_TRANSITION_REGISTRY_2026-07-10.md'
       - 'docs/CRM_ORDER_COMPLETION_ACT_ARCHITECTURE_2026-07-10.md'
       - 'docs/CRM_ORDER_COMPLETION_ACT_MANUAL_TEST_2026-07-10.md'
       - 'docs/CRM_COMPANY_LEGAL_SETTINGS_CONTRACT_2026-07-10.md'
       - 'docs/PUBLIC_INTAKE_SERVICE_ROLE_CUTOVER_PLAN_2026-07-10.md'
       - 'docs/CRM_SERVER_ACTION_RBAC_SPEC_2026-07-10.md'
+      - 'contracts/crm-v4-command-transition-registry-v1.json'
       - 'tools/check_crm_site_full_audit_roadmap.py'
       - 'tools/check_crm_site_audit_execution_progress.py'
       - 'tools/check_crm_profile_first_boot.py'
@@ -24,6 +26,7 @@ on:
       - 'tools/check_crm_v4_production_role_data_minimization.py'
       - 'tools/check_crm_operational_quality_panel.py'
       - 'tools/check_crm_v4_backend_write_inventory.py'
+      - 'tools/check_crm_v4_command_transition_registry.py'
       - 'tools/check_crm_order_completion_act.py'
       - 'tools/check_crm_company_legal_settings.py'
       - 'tools/check_public_intake_cutover_plan.py'
@@ -61,11 +64,13 @@ on:
       - 'docs/CRM_OPERATIONAL_QUALITY_PANEL_MANUAL_TEST_2026-07-10.md'
       - 'docs/CRM_V4_BACKEND_WRITE_CONTRACT_INVENTORY_2026-07-10.md'
       - 'docs/CRM_V4_BACKEND_WRITE_INVENTORY_ADDENDUM_2026-07-10.md'
+      - 'docs/CRM_V4_COMMAND_TRANSITION_REGISTRY_2026-07-10.md'
       - 'docs/CRM_ORDER_COMPLETION_ACT_ARCHITECTURE_2026-07-10.md'
       - 'docs/CRM_ORDER_COMPLETION_ACT_MANUAL_TEST_2026-07-10.md'
       - 'docs/CRM_COMPANY_LEGAL_SETTINGS_CONTRACT_2026-07-10.md'
       - 'docs/PUBLIC_INTAKE_SERVICE_ROLE_CUTOVER_PLAN_2026-07-10.md'
       - 'docs/CRM_SERVER_ACTION_RBAC_SPEC_2026-07-10.md'
+      - 'contracts/crm-v4-command-transition-registry-v1.json'
       - 'tools/check_crm_site_full_audit_roadmap.py'
       - 'tools/check_crm_site_audit_execution_progress.py'
       - 'tools/check_crm_profile_first_boot.py'
@@ -73,6 +78,7 @@ on:
       - 'tools/check_crm_v4_production_role_data_minimization.py'
       - 'tools/check_crm_operational_quality_panel.py'
       - 'tools/check_crm_v4_backend_write_inventory.py'
+      - 'tools/check_crm_v4_command_transition_registry.py'
       - 'tools/check_crm_order_completion_act.py'
       - 'tools/check_crm_company_legal_settings.py'
       - 'tools/check_public_intake_cutover_plan.py'
@@ -117,6 +123,7 @@ jobs:
           python3 tools/check_crm_v4_production_role_data_minimization.py
           python3 tools/check_crm_operational_quality_panel.py
           python3 tools/check_crm_v4_backend_write_inventory.py
+          python3 tools/check_crm_v4_command_transition_registry.py
           python3 tools/check_crm_order_completion_act.py
           python3 tools/check_crm_company_legal_settings.py
           python3 tools/check_public_intake_cutover_plan.py
