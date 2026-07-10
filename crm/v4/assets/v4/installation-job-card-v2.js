@@ -1,17 +1,35 @@
 import { supabaseClient } from './supabase-client.js';
 import { friendlyError } from './api.js';
 import { v4State } from './state.js';
+import { canOpenV4ProductionKind, canOpenV4Tab, canViewV4Costs, canViewV4InternalNotes } from './role-tab-permissions-v1.js';
 import { setStatus, toast } from './ui.js';
 
-const JOB_FIELDS = 'id,order_id,production_job_id,title,install_status,priority,installer_name,installer_phone,address,scheduled_at,started_at,completed_at,installer_cost,technical_task,tools_required,installer_comment,internal_comment,before_photo_url,after_photo_url,created_at,updated_at';
-const ORDER_FIELDS = 'id,order_number,project_name,status,layout_link,installation_address,data';
+const JOB_FIELDS_SAFE = ['id','order_id','production_job_id','title','install_status','priority','installer_name','installer_phone','address','scheduled_at','started_at','completed_at','technical_task','tools_required','installer_comment','before_photo_url','after_photo_url','created_at','updated_at'];
+const ORDER_FIELDS_SAFE = ['id','order_number','project_name','status','layout_link','installation_address'];
 const PRODUCTION_FIELDS = 'id,title,production_status,file_url';
-const ITEM_FIELDS = 'id,job_id,name,unit,qty,width,height,installer_price,comment,created_at';
+const ITEM_FIELDS_SAFE = ['id','job_id','name','unit','qty','width','height','comment','created_at'];
 const EVENT_FIELDS = 'id,event_type,old_status,new_status,body,created_at';
 const COMMENT_FIELDS = 'id,comment_type,body,created_at';
 
 let busy = false;
 let currentBundle = null;
+
+function jobFields() {
+  const fields = [...JOB_FIELDS_SAFE];
+  if (canViewV4Costs()) fields.push('installer_cost');
+  if (canViewV4InternalNotes()) fields.push('internal_comment');
+  return fields.join(',');
+}
+function orderFields() {
+  const fields = [...ORDER_FIELDS_SAFE];
+  if (canViewV4InternalNotes()) fields.push('data');
+  return fields.join(',');
+}
+function itemFields() {
+  const fields = [...ITEM_FIELDS_SAFE];
+  if (canViewV4Costs()) fields.push('installer_price');
+  return fields.join(',');
+}
 
 function esc(value) { return String(value ?? '').replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m])); }
 function nowIso() { return new Date().toISOString(); }
@@ -42,15 +60,18 @@ function loading() { host().innerHTML = '<div class="v4-install-modal"><div clas
 function errorBox(text) { host().innerHTML = `<div class="v4-install-modal"><div class="v4-install-card"><div class="v4-install-head"><div><h2>Монтажное задание</h2><p>Ошибка</p></div><button type="button" data-installation-job-close>Закрыть</button></div><div class="v4-install-empty">${esc(text)}</div></div></div>`; }
 
 async function fetchBundle(jobId) {
-  const jobResponse = await supabaseClient.from('leader_installation_jobs').select(JOB_FIELDS).eq('id', jobId).single();
+  if (!canOpenV4ProductionKind('installation')) throw new Error('Доступ к монтажным заданиям не разрешён');
+  const jobResponse = await supabaseClient.from('leader_installation_jobs').select(jobFields()).eq('id', jobId).single();
   if (jobResponse.error || !jobResponse.data) throw jobResponse.error || new Error('Монтажное задание не найдено');
   const job = jobResponse.data;
+  let commentsQuery = supabaseClient.from('leader_installation_comments').select(COMMENT_FIELDS).eq('job_id', jobId);
+  if (!canViewV4InternalNotes()) commentsQuery = commentsQuery.neq('comment_type', 'internal');
   const [orderResponse, productionResponse, itemsResponse, eventsResponse, commentsResponse] = await Promise.all([
-    job.order_id ? supabaseClient.from('leader_orders').select(ORDER_FIELDS).eq('id', job.order_id).single() : Promise.resolve({ data: null, error: null }),
+    job.order_id ? supabaseClient.from('leader_orders').select(orderFields()).eq('id', job.order_id).single() : Promise.resolve({ data: null, error: null }),
     job.production_job_id ? supabaseClient.from('leader_production_jobs').select(PRODUCTION_FIELDS).eq('id', job.production_job_id).single() : Promise.resolve({ data: null, error: null }),
-    supabaseClient.from('leader_installation_job_items').select(ITEM_FIELDS).eq('job_id', jobId).order('created_at', { ascending: true }).limit(120),
+    supabaseClient.from('leader_installation_job_items').select(itemFields()).eq('job_id', jobId).order('created_at', { ascending: true }).limit(120),
     supabaseClient.from('leader_installation_events').select(EVENT_FIELDS).eq('job_id', jobId).order('created_at', { ascending: false }).limit(30),
-    supabaseClient.from('leader_installation_comments').select(COMMENT_FIELDS).eq('job_id', jobId).order('created_at', { ascending: false }).limit(20)
+    commentsQuery.order('created_at', { ascending: false }).limit(20)
   ]);
   if (itemsResponse.error) throw itemsResponse.error;
   return { job, order: orderResponse.error ? null : orderResponse.data, production: productionResponse.error ? null : productionResponse.data, items: itemsResponse.data || [], events: eventsResponse.error ? [] : eventsResponse.data || [], comments: commentsResponse.error ? [] : commentsResponse.data || [] };
@@ -58,7 +79,8 @@ async function fetchBundle(jobId) {
 
 function renderItems(items) {
   if (!items.length) return '<div class="v4-install-empty">Позиции монтажа не добавлены.</div>';
-  return items.map((item) => `<div class="v4-install-row"><b>${esc(item.name || 'Позиция')}</b><p>${Number(item.qty || 0).toLocaleString('ru-RU')} ${esc(item.unit || 'шт')} · ${item.width || item.height ? `${esc(item.width || '—')}×${esc(item.height || '—')}` : 'размер не указан'} · ${money(Number(item.installer_price || 0) * Number(item.qty || 0))}</p>${item.comment ? `<small>${esc(item.comment)}</small>` : ''}</div>`).join('');
+  const showCosts = canViewV4Costs();
+  return items.map((item) => `<div class="v4-install-row"><b>${esc(item.name || 'Позиция')}</b><p>${Number(item.qty || 0).toLocaleString('ru-RU')} ${esc(item.unit || 'шт')} · ${item.width || item.height ? `${esc(item.width || '—')}×${esc(item.height || '—')}` : 'размер не указан'}${showCosts ? ` · ${money(Number(item.installer_price || 0) * Number(item.qty || 0))}` : ''}</p>${item.comment ? `<small>${esc(item.comment)}</small>` : ''}</div>`).join('');
 }
 function renderHistory(rows, empty) {
   if (!rows.length) return `<div class="v4-install-empty">${empty}</div>`;
@@ -68,12 +90,17 @@ function renderHistory(rows, empty) {
 function renderCard(bundle) {
   currentBundle = bundle;
   const { job, order, production, items, events, comments } = bundle;
-  const data = dataObject(order?.data);
-  host().innerHTML = `<div class="v4-install-modal"><div class="v4-install-card"><div class="v4-install-head"><div><p class="v4-kicker">Монтажное задание</p><h2>${esc(job.title || order?.project_name || 'Монтаж')}</h2><p>Заказ №${esc(order?.order_number || String(job.order_id || '').slice(0, 8))}. Клиентские контакты не показываются.</p></div><button type="button" data-installation-job-close>Закрыть</button></div><div class="v4-install-grid"><div><span>Статус</span><b>${esc(job.install_status || 'Нужно назначить')}</b></div><div><span>Дата</span><b>${dateRu(job.scheduled_at)}</b></div><div><span>Монтажник</span><b>${esc(job.installer_name || 'Не назначен')}</b></div><div><span>Адрес</span><b>${esc(job.address || order?.installation_address || data.install_place || '—')}</b></div><div><span>Позиции</span><b>${items.length}</b></div><div><span>Оплата</span><b>${money(job.installer_cost)}</b></div></div><div class="v4-install-actions"><button type="button" class="v4-primary" data-save-installation-job="${esc(job.id)}">Сохранить</button><button type="button" data-print-installation-job="${esc(job.id)}">Печать листа</button>${order ? `<button type="button" data-open-order="${esc(order.id)}">Открыть заказ</button>` : ''}<button type="button" data-installation-job-close>Закрыть</button></div><div class="v4-install-columns"><section class="v4-install-section"><h3>Редактирование</h3><div class="v4-install-form v4-form-grid"><label>Название<input id="installJobTitle" value="${esc(job.title || '')}"></label><label>Статус<select id="installJobStatus"><option ${job.install_status === 'Нужно назначить' ? 'selected' : ''}>Нужно назначить</option><option ${job.install_status === 'Запланирован' ? 'selected' : ''}>Запланирован</option><option ${job.install_status === 'В работе' ? 'selected' : ''}>В работе</option><option ${job.install_status === 'Выполнен' ? 'selected' : ''}>Выполнен</option><option ${job.install_status === 'Проблема' ? 'selected' : ''}>Проблема</option></select></label><label>Дата<input id="installJobScheduled" type="datetime-local" value="${localDateTime(job.scheduled_at)}"></label><label>Монтажник<input id="installJobInstaller" value="${esc(job.installer_name || '')}"></label><label>Телефон монтажника<input id="installJobInstallerPhone" value="${esc(job.installer_phone || '')}"></label><label class="wide">Адрес<input id="installJobAddress" value="${esc(job.address || order?.installation_address || data.install_place || '')}"></label><label>Фото места<input id="installJobBefore" value="${esc(job.before_photo_url || data.place_photo_link || '')}"></label><label>Фото результата<input id="installJobAfter" value="${esc(job.after_photo_url || '')}"></label><label class="wide">ТЗ<textarea id="installJobTask">${esc(job.technical_task || '')}</textarea></label><label class="wide">Инструмент<textarea id="installJobTools">${esc(job.tools_required || '')}</textarea></label><label class="wide">Комментарий монтажнику<textarea id="installJobComment">${esc(job.installer_comment || '')}</textarea></label></div></section><section class="v4-install-section"><h3>Данные для монтажа</h3><div class="v4-install-row"><b>Производство</b><p>${production ? `${esc(production.title || 'Производство')} · ${esc(production.production_status || '—')}` : 'Не связано'}</p></div><div class="v4-install-row"><b>Макет</b><p>${esc(production?.file_url || order?.layout_link || 'Ссылка не указана')}</p></div><div class="v4-install-row"><b>Фото места</b><p>${esc(job.before_photo_url || data.place_photo_link || 'Ссылка не указана')}</p></div></section></div><section class="v4-install-section"><h3>Состав монтажа</h3>${renderItems(items)}</section><div class="v4-install-columns"><section class="v4-install-section"><h3>Комментарии</h3>${renderHistory(comments, 'Комментариев пока нет.')}<div class="v4-install-form"><textarea id="installJobNewComment" placeholder="Добавить комментарий"></textarea><button type="button" data-add-installation-comment="${esc(job.id)}">Добавить комментарий</button></div></section><section class="v4-install-section"><h3>История</h3>${renderHistory(events, 'Истории пока нет.')}</section></div></div></div>`;
+  const data = canViewV4InternalNotes() ? dataObject(order?.data) : {};
+  const costStat = canViewV4Costs() ? `<div data-v4-cost-sensitive><span>Оплата</span><b>${money(job.installer_cost)}</b></div>` : '';
+  const orderButton = order && canOpenV4Tab('orders') ? `<button type="button" data-open-order="${esc(order.id)}">Открыть заказ</button>` : '';
+  const commentsSection = canViewV4InternalNotes()
+    ? `<section class="v4-install-section"><h3>Внутренние комментарии</h3>${renderHistory(comments, 'Комментариев пока нет.')}<div class="v4-install-form"><textarea id="installJobNewComment" placeholder="Добавить внутренний комментарий"></textarea><button type="button" data-add-installation-comment="${esc(job.id)}">Добавить комментарий</button></div></section>`
+    : '<section class="v4-install-section"><h3>Комментарии</h3><div class="v4-install-empty">Внутренние комментарии скрыты для этой роли.</div></section>';
+  host().innerHTML = `<div class="v4-install-modal"><div class="v4-install-card"><div class="v4-install-head"><div><p class="v4-kicker">Монтажное задание</p><h2>${esc(job.title || order?.project_name || 'Монтаж')}</h2><p>Заказ №${esc(order?.order_number || String(job.order_id || '').slice(0, 8))}. Клиентские контакты не показываются.</p></div><button type="button" data-installation-job-close>Закрыть</button></div><div class="v4-install-grid"><div><span>Статус</span><b>${esc(job.install_status || 'Нужно назначить')}</b></div><div><span>Дата</span><b>${dateRu(job.scheduled_at)}</b></div><div><span>Монтажник</span><b>${esc(job.installer_name || 'Не назначен')}</b></div><div><span>Адрес</span><b>${esc(job.address || order?.installation_address || data.install_place || '—')}</b></div><div><span>Позиции</span><b>${items.length}</b></div>${costStat}</div><div class="v4-install-actions"><button type="button" class="v4-primary" data-save-installation-job="${esc(job.id)}">Сохранить</button><button type="button" data-print-installation-job="${esc(job.id)}">Печать листа</button>${orderButton}<button type="button" data-installation-job-close>Закрыть</button></div><div class="v4-install-columns"><section class="v4-install-section"><h3>Редактирование</h3><div class="v4-install-form v4-form-grid"><label>Название<input id="installJobTitle" value="${esc(job.title || '')}"></label><label>Статус<select id="installJobStatus"><option ${job.install_status === 'Нужно назначить' ? 'selected' : ''}>Нужно назначить</option><option ${job.install_status === 'Запланирован' ? 'selected' : ''}>Запланирован</option><option ${job.install_status === 'В работе' ? 'selected' : ''}>В работе</option><option ${job.install_status === 'Выполнен' ? 'selected' : ''}>Выполнен</option><option ${job.install_status === 'Проблема' ? 'selected' : ''}>Проблема</option></select></label><label>Дата<input id="installJobScheduled" type="datetime-local" value="${localDateTime(job.scheduled_at)}"></label><label>Монтажник<input id="installJobInstaller" value="${esc(job.installer_name || '')}"></label><label>Телефон монтажника<input id="installJobInstallerPhone" value="${esc(job.installer_phone || '')}"></label><label class="wide">Адрес<input id="installJobAddress" value="${esc(job.address || order?.installation_address || data.install_place || '')}"></label><label>Фото места<input id="installJobBefore" value="${esc(job.before_photo_url || data.place_photo_link || '')}"></label><label>Фото результата<input id="installJobAfter" value="${esc(job.after_photo_url || '')}"></label><label class="wide">ТЗ<textarea id="installJobTask">${esc(job.technical_task || '')}</textarea></label><label class="wide">Инструмент<textarea id="installJobTools">${esc(job.tools_required || '')}</textarea></label><label class="wide">Комментарий монтажнику<textarea id="installJobComment">${esc(job.installer_comment || '')}</textarea></label></div></section><section class="v4-install-section"><h3>Данные для монтажа</h3><div class="v4-install-row"><b>Производство</b><p>${production ? `${esc(production.title || 'Производство')} · ${esc(production.production_status || '—')}` : 'Не связано'}</p></div><div class="v4-install-row"><b>Макет</b><p>${esc(production?.file_url || order?.layout_link || 'Ссылка не указана')}</p></div><div class="v4-install-row"><b>Фото места</b><p>${esc(job.before_photo_url || data.place_photo_link || 'Ссылка не указана')}</p></div></section></div><section class="v4-install-section"><h3>Состав монтажа</h3>${renderItems(items)}</section><div class="v4-install-columns">${commentsSection}<section class="v4-install-section"><h3>История</h3>${renderHistory(events, 'Истории пока нет.')}</section></div></div></div>`;
 }
 
 async function openCard(jobId) {
-  if (!jobId || busy) return;
+  if (!jobId || busy || !canOpenV4ProductionKind('installation')) return;
   busy = true;
   ensureStyles();
   loading();
@@ -84,7 +111,7 @@ async function openCard(jobId) {
 
 function field(id) { return document.getElementById(id)?.value?.trim() || ''; }
 async function saveJob(jobId) {
-  if (busy) return;
+  if (busy || !canOpenV4ProductionKind('installation')) return;
   busy = true;
   try {
     const old = currentBundle?.job || (await fetchBundle(jobId)).job;
@@ -125,6 +152,7 @@ async function saveJob(jobId) {
 }
 
 async function addComment(jobId) {
+  if (!canViewV4InternalNotes()) return;
   const body = field('installJobNewComment');
   if (!body || busy) return;
   busy = true;
@@ -139,6 +167,7 @@ async function addComment(jobId) {
 
 async function printJob(jobId) {
   try {
+    if (!canOpenV4ProductionKind('installation')) return;
     const bundle = currentBundle?.job?.id === jobId ? currentBundle : await fetchBundle(jobId);
     const { job, order, production, items } = bundle;
     const rows = items.length ? items.map((item, index) => `<tr><td>${index + 1}</td><td>${esc(item.name || '')}</td><td>${Number(item.qty || 0).toLocaleString('ru-RU')} ${esc(item.unit || '')}</td><td>${item.width || item.height ? `${esc(item.width || '—')}×${esc(item.height || '—')}` : '—'}</td><td>${esc(item.comment || '')}</td></tr>`).join('') : '<tr><td colspan="5">Позиции монтажа не добавлены</td></tr>';
