@@ -25,7 +25,14 @@ jobs:
   validate-server-action-rbac:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout source quietly
+        shell: bash
+        run: |
+          set -euo pipefail
+          git init -q .
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git -c protocol.version=2 fetch -q --depth=1 origin "${GITHUB_SHA}"
+          git checkout -q --detach FETCH_HEAD
 
       - name: Validate Edge action coverage and role contract
         shell: bash
