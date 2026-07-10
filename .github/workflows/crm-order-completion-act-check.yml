@@ -12,8 +12,10 @@ on:
       - 'docs/CRM_ORDER_COMPLETION_ACT_ARCHITECTURE_2026-07-10.md'
       - 'docs/CRM_ORDER_COMPLETION_ACT_MANUAL_TEST_2026-07-10.md'
       - 'docs/CRM_COMPANY_LEGAL_SETTINGS_CONTRACT_2026-07-10.md'
+      - 'docs/CRM_ORDER_DOCUMENTS_DATABASE_CANDIDATE_SPEC_2026-07-10.md'
       - 'tools/check_crm_order_completion_act.py'
       - 'tools/check_crm_company_legal_settings.py'
+      - 'tools/check_crm_order_documents_database_candidate.py'
       - '.github/workflows/crm-order-completion-act-check.yml'
   pull_request:
     branches: [main]
@@ -26,8 +28,10 @@ on:
       - 'docs/CRM_ORDER_COMPLETION_ACT_ARCHITECTURE_2026-07-10.md'
       - 'docs/CRM_ORDER_COMPLETION_ACT_MANUAL_TEST_2026-07-10.md'
       - 'docs/CRM_COMPANY_LEGAL_SETTINGS_CONTRACT_2026-07-10.md'
+      - 'docs/CRM_ORDER_DOCUMENTS_DATABASE_CANDIDATE_SPEC_2026-07-10.md'
       - 'tools/check_crm_order_completion_act.py'
       - 'tools/check_crm_company_legal_settings.py'
+      - 'tools/check_crm_order_documents_database_candidate.py'
       - '.github/workflows/crm-order-completion-act-check.yml'
 
 jobs:
@@ -42,6 +46,7 @@ jobs:
           set -euo pipefail
           python3 tools/check_crm_order_completion_act.py
           python3 tools/check_crm_company_legal_settings.py
+          python3 tools/check_crm_order_documents_database_candidate.py
 
       - name: Check JavaScript syntax
         shell: bash
