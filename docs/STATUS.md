@@ -168,4 +168,18 @@ UI и аудит 2026-07-08:
 - выводы и план сохранены в `docs/PUBLIC_SITE_AUDIT.md`;
 - добавлена защитная проверка `.github/workflows/public-site-audit-check.yml`;
 - проверка контролирует `robots.txt`, `sitemap.xml`, sitemap-домен, отсутствие CRM/nav в sitemap, контракт публичной формы, порядок подключения `request_id` helper на `request.html`, отсутствие service-role маркеров в публичных HTML/assets;
-- GitHub/Supabase доступ подтверждён, работа ведётся в `deputat36/lider-bsk`;
+- GitHub/Supabase доступ подтверждён, работа ведётся в `deputat36/lider-bsk`.
+
+## Исторические CI guard markers
+
+Этот блок сохраняет точные исторические формулировки, которые используются действующими workflow документации. Он не отменяет актуальный статус 2026-07-10.
+
+- Исторический checkpoint: Дата обновления: 2026-06-28.
+- Быстрый путь: Открыть доступ CRM через `?tab=user_admin`; раздел называется `Доступ и роли`.
+- Историческая сводка: active access admins (`owner` + `admin`): 3; inactive profiles: 0.
+- Проверка публичной цепочки: `Проверить request_id` и получить статус `Цепочка полная`.
+- Request UI marker: `20260628-clarity-2`; пользователь видит блок `Выберите похожую задачу`.
+- Этап расширения Open Graph 2026-06-28.
+- Контрольные страницы: `srochnaya-reklama-borisoglebsk.html`, `reklama-dlya-servisa-masterskoy-borisoglebsk.html`, `tablichki-borisoglebsk.html`, `oformlenie-vitrin-borisoglebsk.html`, `pechat-na-plenke-borisoglebsk.html`.
+- Исторический статус пакета: первые два пакета из 8 страниц услуг уже закрыты.
+- CRM access cache marker: `20260628-access-label-1`.
