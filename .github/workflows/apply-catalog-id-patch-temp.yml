@@ -20,12 +20,21 @@ jobs:
         with:
           ref: fix/calculations-catalog-id-2026-07-10
 
-      - name: Apply and validate catalog id patch
+      - name: Apply guarded catalog id line edit
         shell: bash
         run: |
           set -euo pipefail
-          git apply --check patches/crm-catalog-id-calcitem.patch
-          git apply patches/crm-catalog-id-calcitem.patch
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('crm/v4/assets/v4/calculations.js')
+          text = path.read_text(encoding='utf-8')
+          old = "  return {\n    category: raw.category || 'Расчёт по позиции',"
+          new = "  return {\n    catalog_id: raw.catalog_id || null,\n    category: raw.category || 'Расчёт по позиции',"
+          if text.count(old) != 1:
+              raise SystemExit(f'expected one calcItem marker, found {text.count(old)}')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
           grep -Fq 'catalog_id: raw.catalog_id || null' crm/v4/assets/v4/calculations.js
           node --check crm/v4/assets/v4/calculations.js
           python3 tools/check_calculations_catalog_id.py
