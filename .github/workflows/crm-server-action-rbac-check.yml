@@ -1,0 +1,34 @@
+name: CRM server action RBAC check
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/CRM_SERVER_ACTION_RBAC_SPEC_2026-07-10.md'
+      - 'tools/check_crm_server_action_rbac_spec.py'
+      - 'crm/v4/assets/v4/action-permissions-v1.js'
+      - 'supabase/functions/leader-crm-leads/index.ts'
+      - 'supabase/functions/leader-crm-orders/index.ts'
+      - '.github/workflows/crm-server-action-rbac-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/CRM_SERVER_ACTION_RBAC_SPEC_2026-07-10.md'
+      - 'tools/check_crm_server_action_rbac_spec.py'
+      - 'crm/v4/assets/v4/action-permissions-v1.js'
+      - 'supabase/functions/leader-crm-leads/index.ts'
+      - 'supabase/functions/leader-crm-orders/index.ts'
+      - '.github/workflows/crm-server-action-rbac-check.yml'
+
+jobs:
+  validate-server-action-rbac:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate Edge action coverage and role contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/check_crm_server_action_rbac_spec.py
