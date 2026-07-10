@@ -65,7 +65,7 @@ else:
         'Site-wide retry idempotency is implemented in `assets/public-lead-form.js`',
         'fingerprint that begins with `fnv1a-`',
         'confirmed `data.ok === true`',
-        '`tools/test_public_lead_shared_retry.mjs`',
+        '`node tools/test_public_lead_shared_retry.mjs`',
         'manual browser proof remains required',
         'do not change Supabase production for this browser-source fix',
     ]
