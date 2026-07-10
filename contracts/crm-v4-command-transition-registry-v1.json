@@ -1,0 +1,608 @@
+{
+  "registry_version": "leader-command-transitions-v1",
+  "status": "source_only_not_enforced",
+  "scope": "leader_crm_v4",
+  "canonical_roles": [
+    "owner",
+    "admin",
+    "manager",
+    "accountant",
+    "designer",
+    "installer",
+    "contractor"
+  ],
+  "command_envelope": {
+    "required": [
+      "action",
+      "request_id",
+      "payload"
+    ],
+    "conditional": [
+      "entity_id",
+      "expected_updated_at"
+    ]
+  },
+  "success_envelope": {
+    "required": [
+      "ok",
+      "request_id",
+      "entity",
+      "events"
+    ]
+  },
+  "stable_error_codes": [
+    "access_denied",
+    "unknown_action",
+    "validation_error",
+    "forbidden",
+    "not_found",
+    "conflict",
+    "invalid_transition",
+    "duplicate_request",
+    "persistence_failed"
+  ],
+  "commands": {
+    "calculation.save": {
+      "permission": "calculations.write",
+      "entity": "calculation",
+      "transaction_required": true,
+      "optimistic_concurrency": "required_for_update",
+      "transition_domain": "calculation",
+      "audit_target": "leader_activity_log",
+      "audit_event": "calculation.saved",
+      "required_payload_fields": [
+        "lead_id",
+        "title",
+        "items"
+      ],
+      "result_fields": [
+        "entity",
+        "items",
+        "events"
+      ],
+      "side_effects": [
+        "upsert calculation header",
+        "replace calculation items atomically",
+        "recompute totals on server",
+        "synchronize lead status",
+        "write one audit event"
+      ]
+    },
+    "offer.create_from_calculation": {
+      "permission": "offers.write",
+      "entity": "offer",
+      "transaction_required": true,
+      "optimistic_concurrency": "required",
+      "transition_domain": "offer",
+      "audit_target": "leader_commercial_offer_events",
+      "audit_event": "offer.created_from_calculation",
+      "required_payload_fields": [
+        "calculation_id",
+        "title",
+        "valid_until"
+      ],
+      "result_fields": [
+        "entity",
+        "calculation",
+        "lead",
+        "events"
+      ],
+      "side_effects": [
+        "insert offer",
+        "link calculation",
+        "synchronize calculation status",
+        "synchronize lead status",
+        "write offer event"
+      ]
+    },
+    "offer.transition": {
+      "permission": "offers.transition",
+      "entity": "offer",
+      "transaction_required": true,
+      "optimistic_concurrency": "required",
+      "transition_domain": "offer",
+      "audit_target": "leader_commercial_offer_events",
+      "audit_event": "offer.status_changed",
+      "required_payload_fields": [
+        "target_status"
+      ],
+      "result_fields": [
+        "entity",
+        "calculation",
+        "lead",
+        "events"
+      ],
+      "side_effects": [
+        "validate current and target status",
+        "update offer timestamps",
+        "synchronize calculation status",
+        "synchronize lead status",
+        "write offer event"
+      ]
+    },
+    "order.create_from_offer": {
+      "permission": "orders.create",
+      "entity": "order",
+      "transaction_required": true,
+      "optimistic_concurrency": "required",
+      "transition_domain": "order",
+      "audit_target": "leader_activity_log",
+      "audit_event": "order.created_from_offer",
+      "required_payload_fields": [
+        "offer_id",
+        "project_name"
+      ],
+      "result_fields": [
+        "entity",
+        "offer",
+        "calculation",
+        "lead",
+        "events"
+      ],
+      "side_effects": [
+        "create order and items",
+        "link offer and calculation",
+        "convert lead",
+        "prevent duplicate order creation",
+        "write one audit event"
+      ]
+    },
+    "order.create_manual": {
+      "permission": "orders.create",
+      "entity": "order",
+      "transaction_required": true,
+      "optimistic_concurrency": "not_applicable",
+      "transition_domain": "order",
+      "audit_target": "leader_activity_log",
+      "audit_event": "order.created_manual",
+      "required_payload_fields": [
+        "project_name",
+        "client",
+        "items"
+      ],
+      "result_fields": [
+        "entity",
+        "client",
+        "items",
+        "events"
+      ],
+      "side_effects": [
+        "ensure client",
+        "create order and items atomically",
+        "link lead when supplied",
+        "write one audit event"
+      ]
+    },
+    "order.transition": {
+      "permission": "orders.transition",
+      "entity": "order",
+      "transaction_required": true,
+      "optimistic_concurrency": "required",
+      "transition_domain": "order",
+      "audit_target": "leader_activity_log",
+      "audit_event": "order.status_changed",
+      "required_payload_fields": [
+        "target_status"
+      ],
+      "result_fields": [
+        "entity",
+        "events"
+      ],
+      "side_effects": [
+        "validate current and target status",
+        "update stage timestamps",
+        "write one audit event"
+      ]
+    },
+    "lead.transition": {
+      "permission": "leads.transition",
+      "entity": "lead",
+      "transaction_required": true,
+      "optimistic_concurrency": "required",
+      "transition_domain": "lead",
+      "audit_target": "leader_lead_events",
+      "audit_event": "lead.status_changed",
+      "required_payload_fields": [
+        "target_status"
+      ],
+      "result_fields": [
+        "entity",
+        "events"
+      ],
+      "side_effects": [
+        "validate current and target status",
+        "require reason for loss statuses",
+        "write lead event"
+      ]
+    },
+    "production_job.update": {
+      "permission": "production.write",
+      "entity": "production_job",
+      "transaction_required": true,
+      "optimistic_concurrency": "required",
+      "transition_domain": "production_job",
+      "audit_target": "leader_production_events",
+      "audit_event": "production_job.updated",
+      "required_payload_fields": [
+        "patch"
+      ],
+      "result_fields": [
+        "entity",
+        "order",
+        "events"
+      ],
+      "side_effects": [
+        "validate production status transition",
+        "update production job",
+        "synchronize order production stage",
+        "write production event"
+      ]
+    },
+    "installation_job.update": {
+      "permission": "installation.write",
+      "entity": "installation_job",
+      "transaction_required": true,
+      "optimistic_concurrency": "required",
+      "transition_domain": "installation_job",
+      "audit_target": "leader_installation_events",
+      "audit_event": "installation_job.updated",
+      "required_payload_fields": [
+        "patch"
+      ],
+      "result_fields": [
+        "entity",
+        "order",
+        "events"
+      ],
+      "side_effects": [
+        "validate installation status transition",
+        "update installation job",
+        "synchronize order installation stage",
+        "write installation event"
+      ]
+    }
+  },
+  "transition_domains": {
+    "lead": {
+      "field": "status",
+      "initial_state": "Новая",
+      "allow_same_status": true,
+      "canonical_states": [
+        "Новая",
+        "В работе",
+        "Уточнение деталей",
+        "Расчёт подготовлен",
+        "КП отправлено",
+        "Ждём ответ",
+        "Нужно пересчитать",
+        "Согласовано",
+        "Создан заказ",
+        "Отказ",
+        "Не отвечает",
+        "Дорого",
+        "Передумал",
+        "Спам"
+      ],
+      "compatibility_states": [],
+      "terminal_states": [
+        "Создан заказ"
+      ],
+      "requires_reason_targets": [
+        "Отказ",
+        "Не отвечает",
+        "Дорого",
+        "Передумал",
+        "Спам"
+      ],
+      "transitions": {
+        "Новая": [
+          "В работе",
+          "Отказ",
+          "Спам"
+        ],
+        "В работе": [
+          "Уточнение деталей",
+          "Расчёт подготовлен",
+          "Ждём ответ",
+          "Отказ",
+          "Не отвечает",
+          "Дорого",
+          "Передумал",
+          "Спам"
+        ],
+        "Уточнение деталей": [
+          "В работе",
+          "Расчёт подготовлен",
+          "Отказ",
+          "Не отвечает",
+          "Дорого",
+          "Передумал"
+        ],
+        "Расчёт подготовлен": [
+          "КП отправлено",
+          "Нужно пересчитать",
+          "Отказ",
+          "Дорого",
+          "Передумал"
+        ],
+        "КП отправлено": [
+          "Ждём ответ",
+          "Согласовано",
+          "Нужно пересчитать",
+          "Отказ",
+          "Не отвечает",
+          "Дорого",
+          "Передумал"
+        ],
+        "Ждём ответ": [
+          "КП отправлено",
+          "Согласовано",
+          "Нужно пересчитать",
+          "Отказ",
+          "Не отвечает",
+          "Дорого",
+          "Передумал"
+        ],
+        "Нужно пересчитать": [
+          "В работе",
+          "Уточнение деталей",
+          "Расчёт подготовлен",
+          "Отказ"
+        ],
+        "Согласовано": [
+          "Создан заказ",
+          "Нужно пересчитать",
+          "Передумал"
+        ],
+        "Создан заказ": [],
+        "Отказ": [
+          "В работе"
+        ],
+        "Не отвечает": [
+          "В работе"
+        ],
+        "Дорого": [
+          "В работе"
+        ],
+        "Передумал": [
+          "В работе"
+        ],
+        "Спам": [
+          "Новая"
+        ]
+      }
+    },
+    "calculation": {
+      "field": "status",
+      "initial_state": "Черновик",
+      "allow_same_status": true,
+      "canonical_states": [
+        "Черновик",
+        "КП сформировано",
+        "КП отправлено",
+        "Согласован",
+        "Отклонён",
+        "Создан заказ"
+      ],
+      "compatibility_states": [
+        "Расчёт подготовлен"
+      ],
+      "terminal_states": [
+        "Создан заказ"
+      ],
+      "requires_reason_targets": [
+        "Отклонён"
+      ],
+      "transitions": {
+        "Черновик": [
+          "Расчёт подготовлен",
+          "КП сформировано"
+        ],
+        "Расчёт подготовлен": [
+          "КП сформировано",
+          "КП отправлено",
+          "Отклонён"
+        ],
+        "КП сформировано": [
+          "КП отправлено",
+          "Согласован",
+          "Отклонён"
+        ],
+        "КП отправлено": [
+          "Согласован",
+          "Отклонён"
+        ],
+        "Согласован": [
+          "Создан заказ",
+          "Отклонён"
+        ],
+        "Отклонён": [
+          "Черновик",
+          "КП сформировано"
+        ],
+        "Создан заказ": []
+      }
+    },
+    "offer": {
+      "field": "status",
+      "initial_state": "Черновик",
+      "allow_same_status": true,
+      "canonical_states": [
+        "Черновик",
+        "КП отправлено",
+        "Согласовано",
+        "Отклонено"
+      ],
+      "compatibility_states": [
+        "Отправлено"
+      ],
+      "terminal_states": [
+        "Согласовано"
+      ],
+      "requires_reason_targets": [
+        "Отклонено"
+      ],
+      "transitions": {
+        "Черновик": [
+          "КП отправлено",
+          "Согласовано",
+          "Отклонено"
+        ],
+        "КП отправлено": [
+          "Согласовано",
+          "Отклонено"
+        ],
+        "Отправлено": [
+          "КП отправлено",
+          "Согласовано",
+          "Отклонено"
+        ],
+        "Отклонено": [
+          "КП отправлено",
+          "Согласовано"
+        ],
+        "Согласовано": []
+      }
+    },
+    "order": {
+      "field": "status",
+      "initial_state": "Новый",
+      "allow_same_status": true,
+      "canonical_states": [
+        "Новый",
+        "В производстве",
+        "Готово",
+        "Выдано",
+        "Закрыт",
+        "Отменён"
+      ],
+      "compatibility_states": [
+        "Макет на согласовании",
+        "Отмена"
+      ],
+      "terminal_states": [
+        "Закрыт",
+        "Отменён",
+        "Отмена"
+      ],
+      "requires_reason_targets": [
+        "Отменён",
+        "Отмена"
+      ],
+      "transitions": {
+        "Новый": [
+          "Макет на согласовании",
+          "В производстве",
+          "Отменён"
+        ],
+        "Макет на согласовании": [
+          "Новый",
+          "В производстве",
+          "Отменён"
+        ],
+        "В производстве": [
+          "Готово",
+          "Отменён"
+        ],
+        "Готово": [
+          "Выдано",
+          "Закрыт"
+        ],
+        "Выдано": [
+          "Закрыт"
+        ],
+        "Закрыт": [],
+        "Отменён": [],
+        "Отмена": []
+      }
+    },
+    "production_job": {
+      "field": "production_status",
+      "initial_state": "Не передано",
+      "allow_same_status": true,
+      "canonical_states": [
+        "Не передано",
+        "Передано в производство",
+        "В работе",
+        "Готово",
+        "Проблема"
+      ],
+      "compatibility_states": [
+        "В производстве"
+      ],
+      "terminal_states": [
+        "Готово"
+      ],
+      "requires_reason_targets": [
+        "Проблема"
+      ],
+      "transitions": {
+        "Не передано": [
+          "Передано в производство",
+          "В производстве",
+          "Проблема"
+        ],
+        "Передано в производство": [
+          "В работе",
+          "Готово",
+          "Проблема"
+        ],
+        "В производстве": [
+          "В работе",
+          "Готово",
+          "Проблема"
+        ],
+        "В работе": [
+          "Готово",
+          "Проблема"
+        ],
+        "Проблема": [
+          "Не передано",
+          "Передано в производство",
+          "В производстве",
+          "В работе"
+        ],
+        "Готово": []
+      }
+    },
+    "installation_job": {
+      "field": "install_status",
+      "initial_state": "Нужно назначить",
+      "allow_same_status": true,
+      "canonical_states": [
+        "Нужно назначить",
+        "Запланирован",
+        "В работе",
+        "Выполнен",
+        "Проблема"
+      ],
+      "compatibility_states": [],
+      "terminal_states": [
+        "Выполнен"
+      ],
+      "requires_reason_targets": [
+        "Проблема"
+      ],
+      "transitions": {
+        "Нужно назначить": [
+          "Запланирован",
+          "Проблема"
+        ],
+        "Запланирован": [
+          "В работе",
+          "Проблема"
+        ],
+        "В работе": [
+          "Выполнен",
+          "Проблема"
+        ],
+        "Проблема": [
+          "Нужно назначить",
+          "Запланирован",
+          "В работе"
+        ],
+        "Выполнен": []
+      }
+    }
+  }
+}
