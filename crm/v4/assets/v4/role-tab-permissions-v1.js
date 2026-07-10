@@ -16,6 +16,10 @@ export const CRM_V4_TABS = Object.freeze([
 const FULL_ACCESS = CRM_V4_TABS;
 const COST_VISIBLE_ROLES = new Set(['owner', 'admin', 'accountant']);
 const INTERNAL_NOTE_VISIBLE_ROLES = new Set(['owner', 'admin', 'manager']);
+const PRODUCTION_KIND_ROLES = Object.freeze({
+  production: new Set(['owner', 'admin', 'manager', 'designer', 'contractor']),
+  installation: new Set(['owner', 'admin', 'manager', 'installer'])
+});
 
 export const CRM_V4_ROLE_TABS = Object.freeze({
   owner: FULL_ACCESS,
@@ -54,6 +58,16 @@ export function canOpenV4Tab(tab, profile = v4State.profile) {
   return allowedV4Tabs(profile).has(value);
 }
 
+export function canOpenV4ProductionKind(kind, profile = v4State.profile) {
+  const value = String(kind || '').trim();
+  if (!canOpenV4Tab('production', profile)) return false;
+  return Boolean(PRODUCTION_KIND_ROLES[value]?.has(normalizedRole(profile)));
+}
+
+export function firstAllowedV4ProductionKind(profile = v4State.profile) {
+  return ['production', 'installation'].find((kind) => canOpenV4ProductionKind(kind, profile)) || '';
+}
+
 export function canViewV4Costs(profile = v4State.profile) {
   if (!profile || v4State.profileLoaded !== true) return false;
   return COST_VISIBLE_ROLES.has(normalizedRole(profile));
@@ -83,6 +97,7 @@ export function roleAccessSummary(profile = v4State.profile) {
   return {
     role: normalizedRole(profile),
     tabs: [...allowedV4Tabs(profile)],
+    productionKinds: ['production', 'installation'].filter((kind) => canOpenV4ProductionKind(kind, profile)),
     canViewCosts: canViewV4Costs(profile),
     canViewInternalNotes: canViewV4InternalNotes(profile),
     serverEnforcement: false,
