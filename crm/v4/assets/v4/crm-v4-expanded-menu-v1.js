@@ -1,3 +1,5 @@
+import { applyV4TabButtonVisibility } from './role-tab-permissions-v1.js';
+
 const CRM_V4_MENU = [
   { tab: 'management_dashboard', label: 'Дашборд' },
   { tab: 'leads', label: 'Заявки' },
@@ -45,9 +47,10 @@ function syncExpandedMenu() {
     previous = button;
   });
 
-  const activeTab = document.body?.dataset?.v4Tab || 'leads';
+  applyV4TabButtonVisibility(nav);
+  const activeTab = document.body?.dataset?.v4Tab || '';
   nav.querySelectorAll('[data-v4-tab-button]').forEach((button) => {
-    button.classList.toggle('is-active', button.dataset.v4TabButton === activeTab);
+    button.classList.toggle('is-active', !button.hidden && button.dataset.v4TabButton === activeTab);
   });
 }
 
@@ -55,6 +58,7 @@ function bootExpandedMenu() {
   syncExpandedMenu();
   document.addEventListener('leader-v4:crm-ready', () => window.setTimeout(syncExpandedMenu, 100));
   document.addEventListener('leader-v4:tab-opened', () => window.setTimeout(syncExpandedMenu, 50));
+  document.addEventListener('leader-v4:tab-denied', () => window.setTimeout(syncExpandedMenu, 50));
   window.setTimeout(syncExpandedMenu, 350);
   window.setTimeout(syncExpandedMenu, 1200);
 }
