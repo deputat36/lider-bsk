@@ -8,6 +8,13 @@ Source table: `public.leader_leads`.
 
 Mode: read-only SQL dry run. No Supabase production changes were made.
 
+## Snapshot metadata
+
+- Total leads: 12.
+- First lead created at: `2026-06-07 09:44:56.778722+00`.
+- Last lead created at: `2026-07-01 14:20:01.704428+00`.
+- Snapshot checked on: `2026-07-10`.
+
 ## Purpose
 
 This document captures a read-only database-side dry run of the same normalization logic that is now used in the CRM browser UI.
@@ -47,7 +54,8 @@ After login and lead load:
 2. Compare visible category counts with this read-only dry run.
 3. Click a category pill, for example `Баннеры` or `Сайт`.
 4. Confirm the search field is filled and the list is filtered.
-5. Clear search and confirm the full list returns.
+5. Click the active category again or use `Сбросить поиск`.
+6. Confirm the full list returns.
 
 ## Boundaries
 
