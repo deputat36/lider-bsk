@@ -1,7 +1,7 @@
 import { supabaseClient } from './supabase-client.js';
 import { friendlyError } from './api.js';
 import { v4State } from './state.js';
-import { canOpenV4Tab, canViewV4Costs, canViewV4InternalNotes } from './role-tab-permissions-v1.js';
+import { canOpenV4ProductionKind, canOpenV4Tab, canViewV4Costs, canViewV4InternalNotes } from './role-tab-permissions-v1.js';
 import { setStatus, toast } from './ui.js';
 
 const JOB_FIELDS_SAFE = ['id','order_id','title','production_status','layout_status','priority','deadline','sent_to_contractor_at','ready_at','file_url','technical_task','contractor_comment','created_at','updated_at'];
@@ -80,6 +80,7 @@ function loading() { host().innerHTML = '<div class="v4-job-modal"><div class="v
 function errorBox(text) { host().innerHTML = `<div class="v4-job-modal"><div class="v4-job-card"><div class="v4-job-head"><div><h2>Производственное задание</h2><p>Ошибка</p></div><button type="button" data-production-job-close>Закрыть</button></div><div class="v4-job-empty">${esc(text)}</div></div></div>`; }
 
 async function fetchBundle(jobId) {
+  if (!canOpenV4ProductionKind('production')) throw new Error('Доступ к производственным заданиям не разрешён');
   const jobResponse = await supabaseClient.from('leader_production_jobs').select(jobFields()).eq('id', jobId).single();
   if (jobResponse.error || !jobResponse.data) throw jobResponse.error || new Error('Производственное задание не найдено');
   const job = jobResponse.data;
@@ -114,7 +115,7 @@ function renderCard(bundle) {
 }
 
 async function openJobCard(jobId) {
-  if (!jobId || busy) return;
+  if (!jobId || busy || !canOpenV4ProductionKind('production')) return;
   busy = true;
   ensureStyles();
   loading();
@@ -125,7 +126,7 @@ async function openJobCard(jobId) {
 
 function field(id) { return document.getElementById(id)?.value?.trim() || ''; }
 async function saveJob(jobId) {
-  if (busy) return;
+  if (busy || !canOpenV4ProductionKind('production')) return;
   busy = true;
   try {
     const old = currentBundle?.job || (await fetchBundle(jobId)).job;
@@ -164,6 +165,7 @@ async function saveJob(jobId) {
 
 async function printJob(jobId) {
   try {
+    if (!canOpenV4ProductionKind('production')) return;
     const bundle = currentBundle?.job?.id === jobId ? currentBundle : await fetchBundle(jobId);
     const { job, order, items } = bundle;
     const rows = items.length ? items.map((item, index) => `<tr><td>${index + 1}</td><td>${esc(item.name || '')}</td><td>${Number(item.qty || 0).toLocaleString('ru-RU')} ${esc(item.unit || '')}</td><td>${item.width || item.height ? `${esc(item.width || '—')}×${esc(item.height || '—')}` : '—'}</td><td>${esc(item.comment || '')}</td></tr>`).join('') : '<tr><td colspan="5">Позиции не добавлены</td></tr>';
