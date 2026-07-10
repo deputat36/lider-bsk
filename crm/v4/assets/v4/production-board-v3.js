@@ -1,6 +1,6 @@
 import { supabaseClient } from './supabase-client.js';
 import { friendlyError } from './api.js';
-import { canOpenV4Tab, canViewV4InternalNotes } from './role-tab-permissions-v1.js';
+import { canOpenV4ProductionKind, canOpenV4Tab, canViewV4InternalNotes, firstAllowedV4ProductionKind } from './role-tab-permissions-v1.js';
 
 let busy = false;
 let loaded = false;
@@ -79,6 +79,11 @@ function showProductionTab() {
   return true;
 }
 
+function permittedKind(requested) {
+  const value = String(requested || '').trim();
+  return canOpenV4ProductionKind(value) ? value : firstAllowedV4ProductionKind();
+}
+
 async function safeQuery(label, query) {
   try {
     const response = await query;
@@ -92,10 +97,13 @@ async function safeQuery(label, query) {
 
 async function fetchData() {
   state.warning = '';
-  const [production, installation] = await Promise.all([
-    safeQuery('Производство', supabaseClient.from('leader_production_jobs').select('id,order_id,title,production_status,deadline,layout_status,file_url').order('deadline', { ascending: true }).limit(60)),
-    safeQuery('Монтаж', supabaseClient.from('leader_installation_jobs').select('id,order_id,title,install_status,scheduled_at,address,installer_name').order('scheduled_at', { ascending: true }).limit(60))
-  ]);
+  const productionPromise = canOpenV4ProductionKind('production')
+    ? safeQuery('Производство', supabaseClient.from('leader_production_jobs').select('id,order_id,title,production_status,deadline,layout_status,file_url').order('deadline', { ascending: true }).limit(60))
+    : Promise.resolve([]);
+  const installationPromise = canOpenV4ProductionKind('installation')
+    ? safeQuery('Монтаж', supabaseClient.from('leader_installation_jobs').select('id,order_id,title,install_status,scheduled_at,address,installer_name').order('scheduled_at', { ascending: true }).limit(60))
+    : Promise.resolve([]);
+  const [production, installation] = await Promise.all([productionPromise, installationPromise]);
   const ids = [...new Set([...production, ...installation].map((job) => job.order_id).filter(Boolean))];
   let orders = [];
   if (ids.length) {
@@ -149,21 +157,47 @@ function card(job, kind) {
   return `<article class="v4-prod-light-card ${overdue ? 'is-overdue' : ''} ${layoutWarning ? 'has-layout-warning' : ''}"><span class="v4-prod-light-badge ${badgeClass(status)}">${esc(status || 'Без статуса')}</span><h3>${esc(job.title || order?.project_name || 'Задание')}</h3><small>Заказ: №${esc(order?.order_number || shortId(job.order_id))} — ${esc(order?.project_name || '—')}</small><small>${kind === 'production' ? 'Срок производства' : 'Дата монтажа'}: ${dateRu(date)}</small>${kind === 'production' ? `<small>Дизайн / макет: ${esc(layoutStatus(job, order))}</small>${renderLayoutWarning(job, order)}` : `<small>Адрес: ${esc(installAddress)}</small><small>Монтажник: ${esc(job.installer_name || '—')}</small>`}${overdue ? '<small style="color:#991b1b;font-weight:900">Просрочено</small>' : ''}${jobActions(job, kind)}</article>`;
 }
 
-function render(kind = document.body.dataset.productionBoardKind || 'production') {
+function summaryCards() {
+  const cards = [];
+  if (canOpenV4ProductionKind('production')) {
+    cards.push(`<div><span>Производственных</span><b>${state.production.length}</b></div>`);
+    cards.push(`<div><span>Производство открыто</span><b>${state.production.filter((job) => !doneProduction(job.production_status)).length}</b></div>`);
+    cards.push(`<div><span>Макет проверить</span><b>${state.production.filter((job) => hasLayoutWarning(job, state.orders.get(job.order_id))).length}</b></div>`);
+  }
+  if (canOpenV4ProductionKind('installation')) {
+    cards.push(`<div><span>Монтажей</span><b>${state.installation.length}</b></div>`);
+    cards.push(`<div><span>Монтаж открыт</span><b>${state.installation.filter((job) => !doneInstall(job.install_status)).length}</b></div>`);
+  }
+  const overdueCount = state.production.filter((job) => isOverdue(job.deadline, doneProduction(job.production_status))).length
+    + state.installation.filter((job) => isOverdue(job.scheduled_at, doneInstall(job.install_status))).length;
+  cards.push(`<div><span>Просрочено</span><b>${overdueCount}</b></div>`);
+  return cards.join('');
+}
+
+function kindTabs(activeKind) {
+  const buttons = [];
+  if (canOpenV4ProductionKind('production')) buttons.push(`<button type="button" class="${activeKind === 'production' ? 'is-active' : ''}" data-production-light-kind="production">Производство</button>`);
+  if (canOpenV4ProductionKind('installation')) buttons.push(`<button type="button" class="${activeKind === 'installation' ? 'is-active' : ''}" data-production-light-kind="installation">Монтаж</button>`);
+  return buttons.join('');
+}
+
+function render(requestedKind = document.body.dataset.productionBoardKind || firstAllowedV4ProductionKind()) {
   ensureStyles();
   const box = content();
   if (!box) return;
-  const productionOpen = state.production.filter((job) => !doneProduction(job.production_status)).length;
-  const installationOpen = state.installation.filter((job) => !doneInstall(job.install_status)).length;
-  const overdueCount = state.production.filter((job) => isOverdue(job.deadline, doneProduction(job.production_status))).length + state.installation.filter((job) => isOverdue(job.scheduled_at, doneInstall(job.install_status))).length;
-  const layoutWarningCount = state.production.filter((job) => hasLayoutWarning(job, state.orders.get(job.order_id))).length;
+  const kind = permittedKind(requestedKind);
+  if (!kind) {
+    box.innerHTML = '<div class="v4-empty">Для текущей роли нет доступных производственных разделов.</div>';
+    return;
+  }
+  document.body.dataset.productionBoardKind = kind;
   const items = kind === 'installation' ? state.installation : state.production;
-  box.innerHTML = `<div class="v4-prod-light"><div class="v4-prod-light-head"><div><p class="v4-kicker">Быстрая производственная доска</p><h2>Производство и монтаж</h2><p>Карточки заданий открываются из каждой строки. Печатные листы не содержат клиентские контакты.</p></div><div class="v4-prod-light-actions"><button type="button" data-production-light-refresh>Обновить</button></div></div>${state.warning ? `<div class="v4-prod-light-warning">Часть данных не загрузилась: ${esc(state.warning)}</div>` : ''}<div class="v4-prod-light-summary"><div><span>Производственных</span><b>${state.production.length}</b></div><div><span>Производство открыто</span><b>${productionOpen}</b></div><div><span>Монтажей</span><b>${state.installation.length}</b></div><div><span>Монтаж открыт</span><b>${installationOpen}</b></div><div><span>Просрочено</span><b>${overdueCount}</b></div><div><span>Макет проверить</span><b>${layoutWarningCount}</b></div></div><div class="v4-prod-light-tabs"><button type="button" class="${kind === 'production' ? 'is-active' : ''}" data-production-light-kind="production">Производство</button><button type="button" class="${kind === 'installation' ? 'is-active' : ''}" data-production-light-kind="installation">Монтаж</button></div><div class="v4-prod-light-grid">${items.length ? items.map((job) => card(job, kind)).join('') : '<div class="v4-empty">Заданий в этой группе нет.</div>'}</div></div>`;
+  box.innerHTML = `<div class="v4-prod-light"><div class="v4-prod-light-head"><div><p class="v4-kicker">Быстрая производственная доска</p><h2>Производство и монтаж</h2><p>Показываются только разрешённые для текущей роли типы заданий. Печатные листы не содержат клиентские контакты.</p></div><div class="v4-prod-light-actions"><button type="button" data-production-light-refresh>Обновить</button></div></div>${state.warning ? `<div class="v4-prod-light-warning">Часть данных не загрузилась: ${esc(state.warning)}</div>` : ''}<div class="v4-prod-light-summary">${summaryCards()}</div><div class="v4-prod-light-tabs">${kindTabs(kind)}</div><div class="v4-prod-light-grid">${items.length ? items.map((job) => card(job, kind)).join('') : '<div class="v4-empty">Заданий в этой группе нет.</div>'}</div></div>`;
   document.dispatchEvent(new CustomEvent('leader-v4:production-board-rendered', { detail: { kind } }));
 }
 
 async function loadProductionBoard(force = false) {
-  if (!canOpenV4Tab('production')) return;
+  if (!canOpenV4Tab('production') || !firstAllowedV4ProductionKind()) return;
   ensureSection();
   ensureStyles();
   if (busy) return;
@@ -179,7 +213,7 @@ async function loadProductionBoard(force = false) {
 }
 
 function openProduction() {
-  if (!showProductionTab()) {
+  if (!showProductionTab() || !firstAllowedV4ProductionKind()) {
     document.dispatchEvent(new CustomEvent('leader-v4:tab-denied', { detail: { requested: 'production', reason: 'role_not_allowed' } }));
     return;
   }
@@ -203,11 +237,16 @@ function boot() {
       loadProductionBoard(true);
       return;
     }
-    const kind = event.target.closest?.('[data-production-light-kind]');
-    if (kind) {
+    const kindButton = event.target.closest?.('[data-production-light-kind]');
+    if (kindButton) {
       event.preventDefault();
-      document.body.dataset.productionBoardKind = kind.dataset.productionLightKind;
-      render(kind.dataset.productionLightKind);
+      const kind = kindButton.dataset.productionLightKind;
+      if (!canOpenV4ProductionKind(kind)) {
+        document.dispatchEvent(new CustomEvent('leader-v4:tab-denied', { detail: { requested: `production:${kind}`, reason: 'role_not_allowed' } }));
+        return;
+      }
+      document.body.dataset.productionBoardKind = kind;
+      render(kind);
     }
   }, true);
   document.addEventListener('leader-v4:tab-opened', (event) => {
