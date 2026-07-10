@@ -115,7 +115,7 @@ async function loadQuality(force = false) {
       readRows('leader_lead_needs', 'id,completeness_score,status'),
       readRows('leader_orders', 'id,status'),
       readRows('leader_expenses', 'id,status'),
-      readRows('leader_design_tasks', 'id,status')
+      readRows('leader_design_tasks', 'id,task_status')
     ]);
     const active = leads.filter(activeLead);
     snapshot = {
