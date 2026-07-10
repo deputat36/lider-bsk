@@ -1,6 +1,6 @@
 # CRM status transition execution addendum — 2026-07-10
 
-Related: #200, #202, #204, #214, #217.
+Related: #200, #202, #204, #205, #214, #217.
 
 This addendum supplements `docs/CRM_SITE_AUDIT_EXECUTION_PROGRESS_2026-07-10.md`.
 
@@ -59,11 +59,32 @@ Distinct production values were read without DML for:
 
 The registry includes all values currently observed in non-empty production domains, including NULL installation state normalization.
 
+## First module adoption
+
+`crm/v4/assets/v4/lead-operational-quality-v1.js` now uses:
+
+`statusDefinition('lead', lead.status)`
+
+for terminal lead detection.
+
+The previous duplicate hardcoded terminal-status Set was removed.
+
+This first adoption is read-only and affects only operational queue membership. It does not update lead statuses.
+
+The operational panel now provides read-only queues for:
+
+- active leads without assignee;
+- active leads without next contact;
+- overdue next contacts;
+- needs below 80% completeness.
+
+Queue rows intentionally exclude name, phone, message, email, addresses, internal comments and financial values.
+
 ## Still open
 
 The following work remains open and must not be confused with registry creation:
 
-1. Replace duplicated UI status arrays one module at a time.
+1. Replace duplicated UI status arrays in leads/offers/orders/production one module at a time.
 2. Show/log unknown raw values without rewriting them.
 3. Use registry validation in future Edge/RPC transition commands.
 4. Check canonical action permission server-side.
