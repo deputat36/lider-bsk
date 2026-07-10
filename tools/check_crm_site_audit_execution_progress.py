@@ -5,6 +5,8 @@ import sys
 root = Path(__file__).resolve().parents[1]
 doc = root / 'docs/CRM_SITE_AUDIT_EXECUTION_PROGRESS_2026-07-10.md'
 retry_correction = root / 'docs/PUBLIC_LEAD_RETRY_COVERAGE_CORRECTION_2026-07-10.md'
+command_registry = root / 'docs/CRM_V4_COMMAND_TRANSITION_REGISTRY_2026-07-10.md'
+command_registry_json = root / 'contracts/crm-v4-command-transition-registry-v1.json'
 
 errors = []
 
@@ -33,6 +35,19 @@ else:
         'поле `task_status`',
         'Backend write inventory',
         'docs/CRM_V4_BACKEND_WRITE_CONTRACT_INVENTORY_2026-07-10.md',
+        '### Command and transition registry',
+        'contracts/crm-v4-command-transition-registry-v1.json',
+        'tools/check_crm_v4_command_transition_registry.py',
+        'leader-command-transitions-v1',
+        'source_only_not_enforced',
+        'calculation.save',
+        'offer.transition',
+        'order.transition',
+        'lead.transition',
+        'production_job.update',
+        'installation_job.update',
+        'compatibility states',
+        'development-branch implementation and integration proof (#204)',
         '### Catalog-backed calculation items',
         'catalog_id: raw.catalog_id || null',
         'tools/test_calculations_catalog_id.mjs',
@@ -44,7 +59,6 @@ else:
         'P0 server-side RBAC',
         'UI restrictions нельзя считать полной изоляцией',
         'browser proof site-wide retry idempotency',
-        'transaction-backed commands from backend inventory (#204)',
         'browser proof operational quality panel',
         'no Supabase DDL was executed',
         'no Supabase DML was executed',
@@ -59,6 +73,9 @@ else:
         '1. Apply #210 through a normal working-copy/PR line patch.',
         '- `catalog_id` preservation in `calculations.js` (#169);',
         '1. Prepare safe `catalog_id` patch/checker for #169 without risky full-file replacement.',
+        '- transaction-backed commands from backend inventory (#204);',
+        '- centralized status registry;',
+        '1. Add status/action transition registry for transaction-backed commands.',
     ):
         if stale in text:
             errors.append(f'Stale execution progress marker remains: {stale}')
@@ -85,6 +102,13 @@ else:
     ):
         if stale in text:
             errors.append(f'Stale retry coverage marker remains: {stale}')
+
+for path, label in (
+    (command_registry, 'command transition registry document'),
+    (command_registry_json, 'command transition registry JSON'),
+):
+    if not path.exists():
+        errors.append(f'Missing {label}')
 
 if errors:
     print('\n'.join(errors))
