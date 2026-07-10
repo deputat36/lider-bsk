@@ -7,6 +7,7 @@ registry = root / 'crm/v4/assets/v4/status-transitions-v1.js'
 test = root / 'tools/test_crm_status_transitions.mjs'
 doc = root / 'docs/CRM_STATUS_TRANSITION_REGISTRY_2026-07-10.md'
 addendum = root / 'docs/CRM_STATUS_TRANSITION_EXECUTION_ADDENDUM_2026-07-10.md'
+quality_panel = root / 'crm/v4/assets/v4/lead-operational-quality-v1.js'
 
 errors = []
 
@@ -124,7 +125,10 @@ else:
         'The backlog line `centralized status registry` in the earlier execution snapshot is now resolved in GitHub source.',
         'status registry validation in `.github/workflows/crm-site-full-audit-check.yml`',
         'Distinct production values were read without DML',
-        'Replace duplicated UI status arrays one module at a time.',
+        'First module adoption',
+        "statusDefinition('lead', lead.status)",
+        'The previous duplicate hardcoded terminal-status Set was removed.',
+        'Replace duplicated UI status arrays in leads/offers/orders/production one module at a time.',
         'Use registry validation in future Edge/RPC transition commands.',
         'No production status rows were changed.',
         'Server-side transition enforcement remains tracked in #202 and #204.',
@@ -133,8 +137,23 @@ else:
         if marker not in text:
             errors.append(f'Missing status registry addendum marker: {marker}')
 
+if not quality_panel.exists():
+    errors.append('Missing first status registry adopter: lead operational quality panel')
+else:
+    text = quality_panel.read_text(encoding='utf-8')
+    required = [
+        "import { statusDefinition } from './status-transitions-v1.js';",
+        "statusDefinition('lead', lead?.status || 'Новая')",
+        'definition.terminal !== true',
+    ]
+    for marker in required:
+        if marker not in text:
+            errors.append(f'Missing status registry adoption marker: {marker}')
+    if 'TERMINAL_LEAD_STATUSES' in text:
+        errors.append('Duplicate TERMINAL_LEAD_STATUSES set must not remain after registry adoption')
+
 if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('CRM status transition registry, documentation, addendum and behavior test are valid.')
+print('CRM status transition registry, first adoption, documentation, addendum and behavior test are valid.')
