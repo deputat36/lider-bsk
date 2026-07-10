@@ -7,6 +7,7 @@ helper = root / 'crm/v4/assets/v4/role-tab-permissions-v1.js'
 tabs = root / 'crm/v4/assets/v4/crm-v4-tabs-lite.js'
 menu = root / 'crm/v4/assets/v4/crm-v4-expanded-menu-v1.js'
 manual = root / 'docs/CRM_V4_ROLE_TAB_MATRIX_MANUAL_TEST_2026-07-10.md'
+production_manual = root / 'docs/CRM_V4_PRODUCTION_ROLE_DATA_MINIMIZATION_MANUAL_TEST_2026-07-10.md'
 
 errors = []
 
@@ -21,7 +22,14 @@ checks = {
         "designer: Object.freeze(['production'])",
         "installer: Object.freeze(['production'])",
         "contractor: Object.freeze(['production'])",
+        'const COST_VISIBLE_ROLES',
+        'const INTERNAL_NOTE_VISIBLE_ROLES',
+        'const PRODUCTION_KIND_ROLES',
         'export function canOpenV4Tab',
+        'export function canOpenV4ProductionKind',
+        'export function firstAllowedV4ProductionKind',
+        'export function canViewV4Costs',
+        'export function canViewV4InternalNotes',
         'export function firstAllowedV4Tab',
         'export function applyV4TabButtonVisibility',
         'serverEnforcement: false',
@@ -35,6 +43,8 @@ checks = {
         "new CustomEvent('leader-v4:tab-denied'",
         'applyV4TabButtonVisibility(document)',
         "document.addEventListener('leader-v4:crm-ready'",
+        "event.target.closest?.('[data-open-order]')",
+        "dispatchDenied('orders', 'restricted_action')",
     ],
     menu: [
         "import { applyV4TabButtonVisibility } from './role-tab-permissions-v1.js';",
@@ -45,11 +55,21 @@ checks = {
         'owner / admin',
         'manager',
         'accountant',
-        'designer / installer / contractor',
+        '### designer',
+        '### contractor',
+        '### installer',
         'Manager must not see',
-        'direct unauthorized tab navigation is denied',
+        'only the `Производство` sub-section',
+        'only the `Монтаж` sub-section',
+        'restricted SELECT lists omit cost/internal fields',
         'defense-in-depth, not the server-side authorization source of truth',
         'does not alter RLS, grants, policies, Auth, database data or Edge Functions',
+    ],
+    production_manual: [
+        'designer / contractor',
+        'installer',
+        'Use browser Network tools',
+        'each role requests only its allowed job type',
     ],
 }
 
@@ -75,4 +95,4 @@ if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('CRM v4 conservative UI role-tab matrix is valid; server enforcement remains separate.')
+print('CRM v4 conservative UI role-tab and production sub-role matrix is valid; server enforcement remains separate.')
