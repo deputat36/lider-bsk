@@ -9,7 +9,10 @@ on:
       - 'assets/public-lead-form.js'
       - 'assets/public-lead-reference-v1.js'
       - 'tools/test_public_lead_shared_retry.mjs'
+      - 'tools/check_crm_site_audit_execution_progress.py'
       - 'docs/PUBLIC_LEAD_SHARED_RETRY_MANUAL_TEST_2026-07-10.md'
+      - 'docs/PUBLIC_LEAD_RETRY_COVERAGE_CORRECTION_2026-07-10.md'
+      - 'docs/CRM_SITE_AUDIT_EXECUTION_PROGRESS_2026-07-10.md'
       - '.github/workflows/public-lead-shared-retry-check.yml'
   pull_request:
     branches: [main]
@@ -18,7 +21,10 @@ on:
       - 'assets/public-lead-form.js'
       - 'assets/public-lead-reference-v1.js'
       - 'tools/test_public_lead_shared_retry.mjs'
+      - 'tools/check_crm_site_audit_execution_progress.py'
       - 'docs/PUBLIC_LEAD_SHARED_RETRY_MANUAL_TEST_2026-07-10.md'
+      - 'docs/PUBLIC_LEAD_RETRY_COVERAGE_CORRECTION_2026-07-10.md'
+      - 'docs/CRM_SITE_AUDIT_EXECUTION_PROGRESS_2026-07-10.md'
       - '.github/workflows/public-lead-shared-retry-check.yml'
 
 jobs:
@@ -27,13 +33,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate shared retry behavior
+      - name: Validate shared retry behavior and roadmap status
         shell: bash
         run: |
           set -euo pipefail
           node --check assets/public-lead-form.js
           node --check assets/public-lead-reference-v1.js
           node tools/test_public_lead_shared_retry.mjs
+          python3 tools/check_crm_site_audit_execution_progress.py
 
       - name: Validate representative page coverage
         shell: bash
