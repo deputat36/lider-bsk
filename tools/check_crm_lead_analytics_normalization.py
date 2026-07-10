@@ -69,11 +69,17 @@ else:
     text = summary.read_text(encoding='utf-8')
     required = [
         "import { v4State, subscribeState } from './state.js'",
+        "import { setLeadFilters } from './state.js'",
+        "import { renderLeads } from './leads.js'",
         "import { deriveLeadAnalytics } from './lead-analytics-normalization.js'",
         'Сводка по заявкам',
         'Услуги',
         'Источники',
         'Raw service/source в базе не меняются',
+        'data-lead-analytics-search',
+        'function applySummarySearch(value)',
+        'setLeadFilters({ search: query })',
+        'renderLeads()',
         'lead-analytics-summary',
     ]
     for marker in required:
@@ -126,4 +132,4 @@ if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('CRM lead analytics normalization, derived search, badges, summary, plan and manual test are valid.')
+print('CRM lead analytics normalization, derived search, clickable summary, badges, plan and manual test are valid.')
