@@ -1,0 +1,280 @@
+{
+  "contract_version": "leader-backend-command-contract-v1",
+  "status": "source_only_not_enforced",
+  "scope": "leader_crm_v4",
+  "canonical_roles": [
+    "owner",
+    "admin",
+    "manager",
+    "accountant",
+    "designer",
+    "installer",
+    "contractor"
+  ],
+  "status_registry": {
+    "path": "crm/v4/assets/v4/status-transitions-v1.js",
+    "version_export": "CRM_STATUS_REGISTRY_VERSION",
+    "expected_version": 1,
+    "domains_export": "CRM_STATUS_DOMAINS",
+    "authoritative": true
+  },
+  "command_envelope": {
+    "required": [
+      "action",
+      "request_id",
+      "payload"
+    ],
+    "conditional": [
+      "entity_id",
+      "expected_updated_at"
+    ]
+  },
+  "success_envelope": {
+    "required": [
+      "ok",
+      "request_id",
+      "entity",
+      "events"
+    ]
+  },
+  "stable_error_codes": [
+    "access_denied",
+    "unknown_action",
+    "validation_error",
+    "forbidden",
+    "not_found",
+    "conflict",
+    "invalid_transition",
+    "duplicate_request",
+    "persistence_failed"
+  ],
+  "commands": {
+    "calculation.save": {
+      "permission": "calculations.write",
+      "entity": "calculation",
+      "status_domain": null,
+      "status_handling": "legacy_calculation_status_until_server_contract",
+      "transaction_required": true,
+      "optimistic_concurrency": "required_for_update",
+      "audit_target": "leader_activity_log",
+      "audit_event": "calculation.saved",
+      "required_payload_fields": [
+        "lead_id",
+        "title",
+        "items"
+      ],
+      "result_fields": [
+        "entity",
+        "items",
+        "events"
+      ],
+      "side_effects": [
+        "upsert calculation header",
+        "replace calculation items atomically",
+        "recompute totals on server",
+        "synchronize lead status through canonical status registry",
+        "write one audit event"
+      ]
+    },
+    "offer.create_from_calculation": {
+      "permission": "offers.write",
+      "entity": "offer",
+      "status_domain": "offer",
+      "status_handling": "validate_with_canonical_status_registry",
+      "transaction_required": true,
+      "optimistic_concurrency": "required",
+      "audit_target": "leader_commercial_offer_events",
+      "audit_event": "offer.created_from_calculation",
+      "required_payload_fields": [
+        "calculation_id",
+        "title",
+        "valid_until"
+      ],
+      "result_fields": [
+        "entity",
+        "calculation",
+        "lead",
+        "events"
+      ],
+      "side_effects": [
+        "insert offer",
+        "link calculation",
+        "synchronize calculation and lead state",
+        "write offer event"
+      ]
+    },
+    "offer.transition": {
+      "permission": "offers.transition",
+      "entity": "offer",
+      "status_domain": "offer",
+      "status_handling": "validate_with_canonical_status_registry",
+      "transaction_required": true,
+      "optimistic_concurrency": "required",
+      "audit_target": "leader_commercial_offer_events",
+      "audit_event": "offer.status.changed",
+      "required_payload_fields": [
+        "target_status"
+      ],
+      "result_fields": [
+        "entity",
+        "calculation",
+        "lead",
+        "events"
+      ],
+      "side_effects": [
+        "validate current and target status",
+        "apply canonical timestamp field",
+        "synchronize calculation and lead state",
+        "write offer event"
+      ]
+    },
+    "order.create_from_offer": {
+      "permission": "orders.create",
+      "entity": "order",
+      "status_domain": "order",
+      "status_handling": "validate_with_canonical_status_registry",
+      "transaction_required": true,
+      "optimistic_concurrency": "required",
+      "audit_target": "leader_activity_log",
+      "audit_event": "order.created_from_offer",
+      "required_payload_fields": [
+        "offer_id",
+        "project_name"
+      ],
+      "result_fields": [
+        "entity",
+        "offer",
+        "calculation",
+        "lead",
+        "events"
+      ],
+      "side_effects": [
+        "create order and items",
+        "link offer and calculation",
+        "convert lead",
+        "prevent duplicate order creation",
+        "write one audit event"
+      ]
+    },
+    "order.create_manual": {
+      "permission": "orders.create",
+      "entity": "order",
+      "status_domain": "order",
+      "status_handling": "validate_with_canonical_status_registry",
+      "transaction_required": true,
+      "optimistic_concurrency": "not_applicable",
+      "audit_target": "leader_activity_log",
+      "audit_event": "order.created_manual",
+      "required_payload_fields": [
+        "project_name",
+        "client",
+        "items"
+      ],
+      "result_fields": [
+        "entity",
+        "client",
+        "items",
+        "events"
+      ],
+      "side_effects": [
+        "ensure client",
+        "create order and items atomically",
+        "link lead when supplied",
+        "write one audit event"
+      ]
+    },
+    "order.transition": {
+      "permission": "orders.transition",
+      "entity": "order",
+      "status_domain": "order",
+      "status_handling": "validate_with_canonical_status_registry",
+      "transaction_required": true,
+      "optimistic_concurrency": "required",
+      "audit_target": "leader_activity_log",
+      "audit_event": "order.status.changed",
+      "required_payload_fields": [
+        "target_status"
+      ],
+      "result_fields": [
+        "entity",
+        "events"
+      ],
+      "side_effects": [
+        "validate current and target status",
+        "apply canonical timestamp field",
+        "write one audit event"
+      ]
+    },
+    "lead.transition": {
+      "permission": "leads.transition",
+      "entity": "lead",
+      "status_domain": "lead",
+      "status_handling": "validate_with_canonical_status_registry",
+      "transaction_required": true,
+      "optimistic_concurrency": "required",
+      "audit_target": "leader_lead_events",
+      "audit_event": "lead.status.changed",
+      "required_payload_fields": [
+        "target_status"
+      ],
+      "result_fields": [
+        "entity",
+        "events"
+      ],
+      "side_effects": [
+        "validate current and target status",
+        "require reason for configured loss targets",
+        "apply canonical timestamp field",
+        "write lead event"
+      ]
+    },
+    "production_job.update": {
+      "permission": "production.write",
+      "entity": "production_job",
+      "status_domain": "production",
+      "status_handling": "validate_with_canonical_status_registry",
+      "transaction_required": true,
+      "optimistic_concurrency": "required",
+      "audit_target": "leader_production_events",
+      "audit_event": "production_job.updated",
+      "required_payload_fields": [
+        "patch"
+      ],
+      "result_fields": [
+        "entity",
+        "order",
+        "events"
+      ],
+      "side_effects": [
+        "validate production status transition when status changes",
+        "update production job",
+        "synchronize order production stage",
+        "write production event"
+      ]
+    },
+    "installation_job.update": {
+      "permission": "installation.write",
+      "entity": "installation_job",
+      "status_domain": "installation",
+      "status_handling": "validate_with_canonical_status_registry",
+      "transaction_required": true,
+      "optimistic_concurrency": "required",
+      "audit_target": "leader_installation_events",
+      "audit_event": "installation_job.updated",
+      "required_payload_fields": [
+        "patch"
+      ],
+      "result_fields": [
+        "entity",
+        "order",
+        "events"
+      ],
+      "side_effects": [
+        "validate installation status transition when status changes",
+        "update installation job",
+        "synchronize order installation stage",
+        "write installation event"
+      ]
+    }
+  }
+}
