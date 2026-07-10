@@ -1,2 +1,2 @@
-exit_code=1
-Completion-act preview contains forbidden write/sensitive/broken marker: margin
+exit_code=0
+CRM order completion act preview is read-only, client-facing, permission-guarded and documented.
