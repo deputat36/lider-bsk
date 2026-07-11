@@ -1,0 +1,39 @@
+name: Public legacy URL compatibility check
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'banner/index.html'
+      - 'signs/index.html'
+      - 'auto-stickers/index.html'
+      - 'bannery-borisoglebsk.html'
+      - 'tablichki-borisoglebsk.html'
+      - 'nakleyki-plotternaya-rezka-borisoglebsk.html'
+      - 'sitemap.xml'
+      - 'tools/check_public_legacy_redirects.py'
+      - '.github/workflows/public-legacy-url-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'banner/index.html'
+      - 'signs/index.html'
+      - 'auto-stickers/index.html'
+      - 'bannery-borisoglebsk.html'
+      - 'tablichki-borisoglebsk.html'
+      - 'nakleyki-plotternaya-rezka-borisoglebsk.html'
+      - 'sitemap.xml'
+      - 'tools/check_public_legacy_redirects.py'
+      - '.github/workflows/public-legacy-url-check.yml'
+
+jobs:
+  validate-legacy-public-urls:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          show-progress: false
+
+      - name: Validate legacy public URL compatibility
+        run: python3 tools/check_public_legacy_redirects.py
