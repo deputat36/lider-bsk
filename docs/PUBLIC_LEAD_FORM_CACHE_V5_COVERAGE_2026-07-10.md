@@ -4,7 +4,7 @@ Related: #142, #185, #191, #195.
 
 ## Completed coverage
 
-`tools/check_public_lead_form_cache_v5_partial.py` now protects 17 public pages that already load:
+`tools/check_public_lead_form_cache_v5_partial.py` now protects 18 public pages that already load:
 
 `assets/public-lead-form.js?v=5`
 
@@ -17,7 +17,8 @@ The checker requires for every covered page:
 
 Covered groups:
 
-- main services and banner pages;
+- main services and contacts pages;
+- main banner pages;
 - outdoor advertising and shop-opening pages;
 - the polygraphy hub;
 - all ten polygraphy service pages;
