@@ -8,6 +8,8 @@ test = root / 'tools/test_crm_status_transitions.mjs'
 doc = root / 'docs/CRM_STATUS_TRANSITION_REGISTRY_2026-07-10.md'
 addendum = root / 'docs/CRM_STATUS_TRANSITION_EXECUTION_ADDENDUM_2026-07-10.md'
 quality_panel = root / 'crm/v4/assets/v4/lead-operational-quality-v1.js'
+lead_ui_model = root / 'crm/v4/assets/v4/lead-status-ui-model-v1.js'
+lead_ui_adapter = root / 'crm/v4/assets/v4/lead-status-ui-registry-v1.js'
 
 errors = []
 
@@ -128,7 +130,13 @@ else:
         'First module adoption',
         "statusDefinition('lead', lead.status)",
         'The previous duplicate hardcoded terminal-status Set was removed.',
-        'Replace duplicated UI status arrays in leads/offers/orders/production one module at a time.',
+        'Second module adoption — lead status UI',
+        'lead-status-ui-model-v1.js',
+        'lead-status-ui-registry-v1.js',
+        'preserves unknown raw statuses as exact filter values',
+        'blocks disallowed status clicks in capture phase',
+        'blocks the hidden legacy `Новая → Ждём ответ` transition',
+        'Replace duplicated status arrays in offers/orders/production/installation one module at a time.',
         'Use registry validation in future Edge/RPC transition commands.',
         'No production status rows were changed.',
         'Server-side transition enforcement remains tracked in #202 and #204.',
@@ -152,8 +160,31 @@ else:
     if 'TERMINAL_LEAD_STATUSES' in text:
         errors.append('Duplicate TERMINAL_LEAD_STATUSES set must not remain after registry adoption')
 
+for path, markers in {
+    lead_ui_model: [
+        "from './status-transitions-v1.js'",
+        'leadStatusFilterOptions',
+        'leadStatusUiModel',
+        'unknownLeadStatuses',
+    ],
+    lead_ui_adapter: [
+        "from './lead-status-ui-model-v1.js'",
+        'syncStatusFilter',
+        'syncLeadCardStatusActions',
+        'guardStatusClicks',
+        "document.addEventListener('click', guardStatusClicks, true)",
+    ],
+}.items():
+    if not path.exists():
+        errors.append(f'Missing second status registry adopter: {path.relative_to(root)}')
+        continue
+    text = path.read_text(encoding='utf-8')
+    for marker in markers:
+        if marker not in text:
+            errors.append(f'Missing second adoption marker in {path.relative_to(root)}: {marker}')
+
 if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('CRM status transition registry, first adoption, documentation, addendum and behavior test are valid.')
+print('CRM status transition registry, two UI adoptions, documentation, addendum and behavior tests are valid.')
