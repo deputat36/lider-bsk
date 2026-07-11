@@ -2,6 +2,15 @@ import { supabaseClient } from './supabase-client.js';
 import { timeout, friendlyError } from './api.js';
 import { v4State, setState, subscribeState } from './state.js';
 import { byId, setStatus, toast } from './ui.js';
+import { CRM_V4_ACTIONS, requireV4Action } from './action-permissions-v1.js';
+import {
+  calculationStatusForOfferStatus,
+  leadStatusForOfferStatus,
+  offerStatusTargetForAction,
+  offerStatusUiModel,
+  rawOfferStatus,
+  validateOfferStatusTransition
+} from './offer-status-ui-model-v1.js';
 
 const OFFER_FIELDS = 'id,lead_id,calculation_id,client_id,order_id,offer_number,offer_type,title,short_text,full_text,total_sum,valid_until,status,sent_at,approved_at,rejected_at,created_by,updated_by,created_at,updated_at';
 const CALC_FIELDS = 'id,lead_id,need_id,client_id,title,status,version_number,client_total,contractor_cost,profit,margin_percent,warning_level,warnings,public_comment,internal_comment,commercial_offer_id,order_id,created_by,updated_by,created_at,updated_at';
@@ -107,18 +116,10 @@ function buildOfferTexts({ calculation, items, lead, need, validUntil, extraComm
   return { shortText: shortLines.join('\n'), fullText: fullLines.join('\n') };
 }
 
-function statusClass(status) {
-  if (status === 'Согласовано') return 'is-good';
-  if (status === 'КП отправлено') return 'is-warn';
-  if (status === 'Отклонено') return 'is-error';
-  return '';
-}
-
-function leadStatusForOfferStatus(status) {
-  if (status === 'КП отправлено') return 'КП отправлено';
-  if (status === 'Согласовано') return 'Согласовано';
-  if (status === 'Отклонено') return 'Нужно пересчитать';
-  return 'Расчёт подготовлен';
+function offerStatusActionButtons(status) {
+  const model = offerStatusUiModel(status);
+  if (!model.known) return `<div class="v4-status-registry-warning" data-unknown-offer-status="${esc(model.raw)}">${esc(model.warning)}</div>`;
+  return model.actions.map((item) => `<button type="button" data-action="${esc(item.action)}"${item.danger ? ' class="is-danger"' : ''}>${esc(item.label)}</button>`).join('');
 }
 
 function mergeLeadState(lead) {
@@ -149,7 +150,9 @@ async function updateLeadStatusFromOffer(leadId, status) {
 
 function renderOfferCard(offer) {
   const isActive = offer.id === activeOfferId;
-  return `<article class="v4-offer-card" data-id="${esc(offer.id)}"><div><div class="v4-offer-title-row"><h4>${esc(offer.title || 'Коммерческое предложение')}</h4><span class="${statusClass(offer.status)}">${esc(offer.status || 'Черновик')}</span></div><div class="v4-offer-meta"><span><b>Сумма:</b> ${money(offer.total_sum)}</span><span><b>Действует до:</b> ${formatDate(offer.valid_until)}</span><span><b>Создано:</b> ${formatDate(offer.created_at)}</span></div></div><div class="v4-offer-actions"><button type="button" data-action="preview-offer">${isActive ? 'Скрыть' : 'Показать'}</button><button type="button" data-action="copy-short-offer">Копировать короткое</button><button type="button" data-action="copy-full-offer">Копировать полное</button>${offer.status !== 'КП отправлено' && offer.status !== 'Согласовано' ? '<button type="button" data-action="mark-offer-sent">КП отправлено</button>' : ''}${offer.status !== 'Согласовано' ? '<button type="button" data-action="approve-offer" class="v4-primary">Согласовано</button>' : ''}${offer.status !== 'Отклонено' && offer.status !== 'Согласовано' ? '<button type="button" data-action="reject-offer">Отклонено</button>' : ''}</div>${isActive ? `<div class="v4-offer-preview"><div><h5>Подробное КП</h5><pre>${esc(offer.full_text || '')}</pre></div><div><h5>Короткое сообщение</h5><pre>${esc(offer.short_text || '')}</pre></div></div>` : ''}</article>`;
+  const statusModel = offerStatusUiModel(offer.status);
+  const statusTitle = statusModel.known ? `Registry: ${statusModel.key}` : statusModel.warning;
+  return `<article class="v4-offer-card" data-id="${esc(offer.id)}"><div><div class="v4-offer-title-row"><h4>${esc(offer.title || 'Коммерческое предложение')}</h4><span class="${esc(statusModel.cssClass)}" title="${esc(statusTitle)}">${esc(statusModel.label)}</span></div><div class="v4-offer-meta"><span><b>Сумма:</b> ${money(offer.total_sum)}</span><span><b>Действует до:</b> ${formatDate(offer.valid_until)}</span><span><b>Создано:</b> ${formatDate(offer.created_at)}</span></div></div><div class="v4-offer-actions"><button type="button" data-action="preview-offer">${isActive ? 'Скрыть' : 'Показать'}</button><button type="button" data-action="copy-short-offer">Копировать короткое</button><button type="button" data-action="copy-full-offer">Копировать полное</button>${offerStatusActionButtons(offer.status)}</div>${isActive ? `<div class="v4-offer-preview"><div><h5>Подробное КП</h5><pre>${esc(offer.full_text || '')}</pre></div><div><h5>Короткое сообщение</h5><pre>${esc(offer.short_text || '')}</pre></div></div>` : ''}</article>`;
 }
 
 function renderCreateForm() {
@@ -336,12 +339,15 @@ async function createOffer() {
 }
 
 async function updateOfferStatus(offerId, status) {
+  if (!requireV4Action(CRM_V4_ACTIONS.OFFERS_TRANSITION)) throw new Error('Недостаточно прав для изменения статуса КП');
   const current = (v4State.offers || []).find((offer) => offer.id === offerId);
   if (!current) return;
-  const patch = { status, updated_at: new Date().toISOString() };
-  if (status === 'КП отправлено') patch.sent_at = new Date().toISOString();
-  if (status === 'Согласовано') patch.approved_at = new Date().toISOString();
-  if (status === 'Отклонено') patch.rejected_at = new Date().toISOString();
+  const transition = validateOfferStatusTransition(current.status, status);
+  if (!transition.ok) throw new Error(`Переход КП «${rawOfferStatus(current.status)} → ${rawOfferStatus(status)}» не разрешён registry (${transition.reason}).`);
+
+  const targetStatus = transition.label;
+  const patch = { status: targetStatus, updated_at: new Date().toISOString() };
+  if (transition.timestampField) patch[transition.timestampField] = new Date().toISOString();
 
   const response = await timeout(
     supabaseClient.from('leader_commercial_offers').update(patch).eq('id', offerId).select(OFFER_FIELDS).single(),
@@ -351,7 +357,7 @@ async function updateOfferStatus(offerId, status) {
   if (response.error) throw response.error;
   const updated = response.data;
 
-  const calculationStatus = status === 'КП отправлено' ? 'КП отправлено' : status === 'Согласовано' ? 'Согласован' : status === 'Отклонено' ? 'Отклонён' : 'КП сформировано';
+  const calculationStatus = calculationStatusForOfferStatus(targetStatus);
   let updatedCalculation = null;
   if (updated.calculation_id) {
     const calcResponse = await supabaseClient
@@ -364,15 +370,15 @@ async function updateOfferStatus(offerId, status) {
     updatedCalculation = calcResponse.data;
   }
 
-  const updatedLead = await updateLeadStatusFromOffer(updated.lead_id, status);
+  const updatedLead = await updateLeadStatusFromOffer(updated.lead_id, targetStatus);
 
   await writeOfferEvent({
     offerId,
     leadId: updated.lead_id,
     calculationId: updated.calculation_id,
     eventType: 'Изменение статуса КП',
-    newStatus: status,
-    comment: `Статус изменён на ${status}. Статус заявки: ${leadStatusForOfferStatus(status)}`
+    newStatus: targetStatus,
+    comment: `Статус изменён на ${targetStatus}. Статус заявки: ${leadStatusForOfferStatus(targetStatus)}`
   });
 
   setState({
@@ -382,8 +388,9 @@ async function updateOfferStatus(offerId, status) {
     leads: updatedLead ? (v4State.leads || []).map((lead) => lead.id === updatedLead.id ? { ...lead, ...updatedLead } : lead) : v4State.leads
   });
   renderOffers();
-  setStatus(`КП: ${status}. Заявка: ${leadStatusForOfferStatus(status)}`, status === 'Отклонено' ? 'warn' : 'good');
-  toast(`Статус КП: ${status}`);
+  const statusModel = offerStatusUiModel(targetStatus);
+  setStatus(`КП: ${targetStatus}. Заявка: ${leadStatusForOfferStatus(targetStatus)}`, statusModel.key === 'rejected' ? 'warn' : 'good');
+  toast(`Статус КП: ${targetStatus}`);
 }
 
 async function copyText(text) {
@@ -413,9 +420,8 @@ function bindOfferEvents() {
       if (action === 'preview-offer') { activeOfferId = activeOfferId === offerId ? null : offerId; renderOffers(); }
       if (action === 'copy-short-offer') { await copyText(offer.short_text || ''); toast('Короткое КП скопировано'); }
       if (action === 'copy-full-offer') { await copyText(offer.full_text || ''); toast('Подробное КП скопировано'); }
-      if (action === 'mark-offer-sent') await updateOfferStatus(offerId, 'КП отправлено');
-      if (action === 'approve-offer') await updateOfferStatus(offerId, 'Согласовано');
-      if (action === 'reject-offer') await updateOfferStatus(offerId, 'Отклонено');
+      const targetStatus = offerStatusTargetForAction(action);
+      if (targetStatus) await updateOfferStatus(offerId, targetStatus);
     } catch (error) {
       toast(friendlyError(error));
       setStatus(`Ошибка работы с КП: ${friendlyError(error)}`, 'error');

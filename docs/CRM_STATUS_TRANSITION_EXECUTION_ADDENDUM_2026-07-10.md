@@ -113,11 +113,34 @@ It now:
 
 Unknown raw values remain visible and cannot transition until an explicit mapping is added to the canonical registry.
 
+## Third module adoption — commercial-offer status UI
+
+Added:
+
+- `crm/v4/assets/v4/offer-status-ui-model-v1.js`;
+- `tools/test_crm_offer_status_ui.mjs`;
+- `tools/check_crm_offer_status_ui_registry.py`;
+- `docs/CRM_OFFER_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md`.
+
+The existing `offers.js` module now:
+
+- renders offer actions from registry-allowed transitions;
+- blocks the legacy direct `Черновик → Согласовано` and `Черновик → Отклонено` paths;
+- validates every status update before the existing Supabase write;
+- uses canonical new sent status `Отправлено`;
+- keeps legacy `КП отправлено` readable through an alias without rewriting the row on render;
+- preserves and visibly marks unknown raw offer statuses while exposing no transition action;
+- derives `sent_at`, `approved_at` and `rejected_at` from registry metadata;
+- retains existing linked lead/calculation synchronization for valid transitions;
+- adds an UI permission guard for `offers.transition`.
+
+The pure offer status model adds no Supabase read or write path. Existing offer writes remain direct and are not server-side transactional enforcement.
+
 ## Still open
 
-The following work remains open and must not be confused with registry creation or lead UI adoption:
+The following work remains open and must not be confused with registry creation or lead/offer UI adoption:
 
-1. Replace duplicated status arrays in offers/orders/production/installation one module at a time.
+1. Replace duplicated status arrays in orders/production/installation one module at a time.
 2. Add controlled logging/evidence for unknown raw values without rewriting them.
 3. Use registry validation in future Edge/RPC transition commands.
 4. Check canonical action permission server-side.

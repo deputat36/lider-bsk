@@ -50,9 +50,9 @@ export const CRM_STATUS_DOMAINS = Object.freeze({
     action: CRM_V4_ACTIONS.OFFERS_TRANSITION,
     statuses: {
       draft: status({ key: 'draft', label: 'Черновик', allowedTo: ['sent', 'void'], action: CRM_V4_ACTIONS.OFFERS_TRANSITION, auditEvent: 'offer.status.changed' }),
-      sent: status({ key: 'sent', label: 'Отправлено', allowedTo: ['agreed', 'rejected', 'expired', 'draft'], action: CRM_V4_ACTIONS.OFFERS_TRANSITION, timestampField: 'sent_at', auditEvent: 'offer.sent' }),
-      agreed: status({ key: 'agreed', label: 'Согласовано', terminal: true, allowedTo: [], action: CRM_V4_ACTIONS.OFFERS_TRANSITION, timestampField: 'accepted_at', auditEvent: 'offer.accepted' }),
-      rejected: status({ key: 'rejected', label: 'Отклонено', terminal: true, allowedTo: [], action: CRM_V4_ACTIONS.OFFERS_TRANSITION, auditEvent: 'offer.rejected' }),
+      sent: status({ key: 'sent', label: 'Отправлено', aliases: ['КП отправлено'], allowedTo: ['agreed', 'rejected', 'expired', 'draft'], action: CRM_V4_ACTIONS.OFFERS_TRANSITION, timestampField: 'sent_at', auditEvent: 'offer.sent' }),
+      agreed: status({ key: 'agreed', label: 'Согласовано', terminal: true, allowedTo: [], action: CRM_V4_ACTIONS.OFFERS_TRANSITION, timestampField: 'approved_at', auditEvent: 'offer.accepted' }),
+      rejected: status({ key: 'rejected', label: 'Отклонено', terminal: true, allowedTo: [], action: CRM_V4_ACTIONS.OFFERS_TRANSITION, timestampField: 'rejected_at', auditEvent: 'offer.rejected' }),
       expired: status({ key: 'expired', label: 'Истёк срок', aliases: ['Истек срок'], terminal: true, allowedTo: [], action: CRM_V4_ACTIONS.OFFERS_TRANSITION, auditEvent: 'offer.expired' }),
       void: status({ key: 'void', label: 'Аннулировано', terminal: true, allowedTo: [], action: CRM_V4_ACTIONS.OFFERS_TRANSITION, auditEvent: 'offer.voided' })
     }
