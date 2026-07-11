@@ -19,22 +19,27 @@ on:
       - 'crm/v4/assets/v4/order-card-v1.js'
       - 'crm/v4/assets/v4/production-status-ui-model-v1.js'
       - 'crm/v4/assets/v4/production-job-card-v2.js'
+      - 'crm/v4/assets/v4/installation-status-ui-model-v1.js'
+      - 'crm/v4/assets/v4/installation-job-card-v2.js'
       - 'docs/CRM_STATUS_TRANSITION_REGISTRY_2026-07-10.md'
       - 'docs/CRM_STATUS_TRANSITION_EXECUTION_ADDENDUM_2026-07-10.md'
       - 'docs/CRM_LEAD_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md'
       - 'docs/CRM_OFFER_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md'
       - 'docs/CRM_ORDER_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md'
       - 'docs/CRM_PRODUCTION_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md'
+      - 'docs/CRM_INSTALLATION_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md'
       - 'tools/check_crm_status_transition_registry.py'
       - 'tools/check_crm_lead_status_ui_registry.py'
       - 'tools/check_crm_offer_status_ui_registry.py'
       - 'tools/check_crm_order_status_ui_registry.py'
       - 'tools/check_crm_production_status_ui_registry.py'
+      - 'tools/check_crm_installation_status_ui_registry.py'
       - 'tools/test_crm_status_transitions.mjs'
       - 'tools/test_crm_lead_status_ui.mjs'
       - 'tools/test_crm_offer_status_ui.mjs'
       - 'tools/test_crm_order_status_ui.mjs'
       - 'tools/test_crm_production_status_ui.mjs'
+      - 'tools/test_crm_installation_status_ui.mjs'
       - '.github/workflows/crm-status-transition-registry-check.yml'
   pull_request:
     branches: [main]
@@ -54,22 +59,27 @@ on:
       - 'crm/v4/assets/v4/order-card-v1.js'
       - 'crm/v4/assets/v4/production-status-ui-model-v1.js'
       - 'crm/v4/assets/v4/production-job-card-v2.js'
+      - 'crm/v4/assets/v4/installation-status-ui-model-v1.js'
+      - 'crm/v4/assets/v4/installation-job-card-v2.js'
       - 'docs/CRM_STATUS_TRANSITION_REGISTRY_2026-07-10.md'
       - 'docs/CRM_STATUS_TRANSITION_EXECUTION_ADDENDUM_2026-07-10.md'
       - 'docs/CRM_LEAD_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md'
       - 'docs/CRM_OFFER_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md'
       - 'docs/CRM_ORDER_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md'
       - 'docs/CRM_PRODUCTION_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md'
+      - 'docs/CRM_INSTALLATION_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md'
       - 'tools/check_crm_status_transition_registry.py'
       - 'tools/check_crm_lead_status_ui_registry.py'
       - 'tools/check_crm_offer_status_ui_registry.py'
       - 'tools/check_crm_order_status_ui_registry.py'
       - 'tools/check_crm_production_status_ui_registry.py'
+      - 'tools/check_crm_installation_status_ui_registry.py'
       - 'tools/test_crm_status_transitions.mjs'
       - 'tools/test_crm_lead_status_ui.mjs'
       - 'tools/test_crm_offer_status_ui.mjs'
       - 'tools/test_crm_order_status_ui.mjs'
       - 'tools/test_crm_production_status_ui.mjs'
+      - 'tools/test_crm_installation_status_ui.mjs'
       - '.github/workflows/crm-status-transition-registry-check.yml'
 
 jobs:
@@ -87,6 +97,7 @@ jobs:
           python3 tools/check_crm_offer_status_ui_registry.py
           python3 tools/check_crm_order_status_ui_registry.py
           python3 tools/check_crm_production_status_ui_registry.py
+          python3 tools/check_crm_installation_status_ui_registry.py
 
       - name: Check JavaScript and behavior
         shell: bash
@@ -105,13 +116,17 @@ jobs:
           node --check crm/v4/assets/v4/order-card-v1.js
           node --check crm/v4/assets/v4/production-status-ui-model-v1.js
           node --check crm/v4/assets/v4/production-job-card-v2.js
+          node --check crm/v4/assets/v4/installation-status-ui-model-v1.js
+          node --check crm/v4/assets/v4/installation-job-card-v2.js
           node --check tools/test_crm_status_transitions.mjs
           node --check tools/test_crm_lead_status_ui.mjs
           node --check tools/test_crm_offer_status_ui.mjs
           node --check tools/test_crm_order_status_ui.mjs
           node --check tools/test_crm_production_status_ui.mjs
+          node --check tools/test_crm_installation_status_ui.mjs
           node tools/test_crm_status_transitions.mjs
           node tools/test_crm_lead_status_ui.mjs
           node tools/test_crm_offer_status_ui.mjs
           node tools/test_crm_order_status_ui.mjs
           node tools/test_crm_production_status_ui.mjs
+          node tools/test_crm_installation_status_ui.mjs
