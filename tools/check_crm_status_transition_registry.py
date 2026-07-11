@@ -10,6 +10,8 @@ addendum = root / 'docs/CRM_STATUS_TRANSITION_EXECUTION_ADDENDUM_2026-07-10.md'
 quality_panel = root / 'crm/v4/assets/v4/lead-operational-quality-v1.js'
 lead_ui_model = root / 'crm/v4/assets/v4/lead-status-ui-model-v1.js'
 lead_ui_adapter = root / 'crm/v4/assets/v4/lead-status-ui-registry-v1.js'
+production_ui_model = root / 'crm/v4/assets/v4/production-status-ui-model-v1.js'
+production_card = root / 'crm/v4/assets/v4/production-job-card-v2.js'
 
 errors = []
 
@@ -136,7 +138,6 @@ else:
         'preserves unknown raw statuses as exact filter values',
         'blocks disallowed status clicks in capture phase',
         'blocks the hidden legacy `Новая → Ждём ответ` transition',
-        'Replace duplicated status arrays in production/installation one module at a time.',
         'Fourth module adoption — order status views',
         'order-status-ui-model-v1.js',
         'keeps unknown orders visible and active instead of silently hiding them',
@@ -145,6 +146,12 @@ else:
         'offer-status-ui-model-v1.js',
         'uses canonical new sent status `Отправлено`',
         'keeps legacy `КП отправлено` readable through an alias',
+        'Fifth module adoption — production job status editor',
+        'production-status-ui-model-v1.js',
+        'validates the selected transition before the existing job/order/event write path',
+        'preserves an unchanged legacy or unknown raw status',
+        'does not write the registry-only `started_at` field',
+        'Replace duplicated installation status arrays',
         'Use registry validation in future Edge/RPC transition commands.',
         'No production status rows were changed.',
         'Server-side transition enforcement remains tracked in #202 and #204.',
@@ -182,17 +189,31 @@ for path, markers in {
         'guardStatusClicks',
         "document.addEventListener('click', guardStatusClicks, true)",
     ],
+    production_ui_model: [
+        "from './status-transitions-v1.js'",
+        'productionStatusSelectOptions',
+        'productionStatusUiModel',
+        'validateProductionStatusTransition',
+        'productionStatusTimestampPatch',
+    ],
+    production_card: [
+        "from './production-status-ui-model-v1.js'",
+        'renderProductionStatusOptions',
+        'renderProductionStatusNotice',
+        'validateProductionStatusTransition(old.production_status, selectedStatus)',
+        'productionStatusTimestampPatch(transition, old, nowIso())',
+    ],
 }.items():
     if not path.exists():
-        errors.append(f'Missing second status registry adopter: {path.relative_to(root)}')
+        errors.append(f'Missing status registry adopter: {path.relative_to(root)}')
         continue
     text = path.read_text(encoding='utf-8')
     for marker in markers:
         if marker not in text:
-            errors.append(f'Missing second adoption marker in {path.relative_to(root)}: {marker}')
+            errors.append(f'Missing adoption marker in {path.relative_to(root)}: {marker}')
 
 if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('CRM status transition registry, four UI adoptions, documentation, addendum and behavior tests are valid.')
+print('CRM status transition registry, five UI adoptions, documentation, addendum and behavior tests are valid.')
