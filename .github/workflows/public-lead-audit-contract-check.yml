@@ -1,0 +1,34 @@
+name: Public lead audit contract check
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/20260621_leader_public_lead_audit.sql'
+      - 'supabase/functions/leader-public-lead/index.ts'
+      - 'docs/PUBLIC_LEAD_AUDIT_READONLY_2026-07-11.md'
+      - 'tools/check_public_lead_audit_contract.py'
+      - '.github/workflows/public-lead-audit-contract-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/20260621_leader_public_lead_audit.sql'
+      - 'supabase/functions/leader-public-lead/index.ts'
+      - 'docs/PUBLIC_LEAD_AUDIT_READONLY_2026-07-11.md'
+      - 'tools/check_public_lead_audit_contract.py'
+      - '.github/workflows/public-lead-audit-contract-check.yml'
+
+jobs:
+  validate-public-lead-audit-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          show-progress: false
+
+      - name: Validate public lead audit schema and outcomes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/check_public_lead_audit_contract.py
