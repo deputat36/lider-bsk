@@ -50,6 +50,7 @@ checks = {
         "from './order-status-ui-model-v1.js'",
         'orderStatusUiModel(order.status)',
         'data-unknown-order-status',
+        'host().innerHTML =',
     ],
     test: [
         "orderStatusUiModel('Новый')",
