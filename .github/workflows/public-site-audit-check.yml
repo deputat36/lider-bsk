@@ -6,6 +6,9 @@ on:
     branches: [main]
     paths:
       - '*.html'
+      - 'banner/index.html'
+      - 'signs/index.html'
+      - 'auto-stickers/index.html'
       - 'assets/public-lead-form.js'
       - 'assets/packages-link.js'
       - 'assets/public-lead-form.css'
@@ -20,6 +23,7 @@ on:
       - 'tools/check_public_poligrafiya_catalog.py'
       - 'tools/check_public_lead_form_cache_v5_partial.py'
       - 'tools/check_public_v5_landing_seo_contract.py'
+      - 'tools/check_public_legacy_redirects.py'
       - 'tools/check_public_landing_css.py'
       - 'tools/check_public_landing_first_page_migration.py'
       - 'tools/check_public_homepage_helper.py'
@@ -27,11 +31,15 @@ on:
       - 'robots.txt'
       - 'sitemap.xml'
       - '.github/workflows/public-site-audit-check.yml'
+      - '.github/workflows/public-legacy-url-check.yml'
       - '.github/workflows/public-no-secret-markers-check.yml'
   pull_request:
     branches: [main]
     paths:
       - '*.html'
+      - 'banner/index.html'
+      - 'signs/index.html'
+      - 'auto-stickers/index.html'
       - 'assets/public-lead-form.js'
       - 'assets/packages-link.js'
       - 'assets/public-lead-form.css'
@@ -46,6 +54,7 @@ on:
       - 'tools/check_public_poligrafiya_catalog.py'
       - 'tools/check_public_lead_form_cache_v5_partial.py'
       - 'tools/check_public_v5_landing_seo_contract.py'
+      - 'tools/check_public_legacy_redirects.py'
       - 'tools/check_public_landing_css.py'
       - 'tools/check_public_landing_first_page_migration.py'
       - 'tools/check_public_homepage_helper.py'
@@ -53,6 +62,7 @@ on:
       - 'robots.txt'
       - 'sitemap.xml'
       - '.github/workflows/public-site-audit-check.yml'
+      - '.github/workflows/public-legacy-url-check.yml'
       - '.github/workflows/public-no-secret-markers-check.yml'
 
 jobs:
@@ -161,6 +171,7 @@ jobs:
           python3 tools/check_public_poligrafiya_catalog.py
           python3 tools/check_public_lead_form_cache_v5_partial.py
           python3 tools/check_public_v5_landing_seo_contract.py
+          python3 tools/check_public_legacy_redirects.py
           python3 tools/check_public_landing_css.py
           python3 tools/check_public_landing_first_page_migration.py
           python3 tools/check_public_homepage_helper.py
