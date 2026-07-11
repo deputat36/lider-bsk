@@ -137,6 +137,15 @@ function guardStatusClicks(event) {
     return;
   }
 
+  const nextContactButton = event.target.closest?.('#leadCardSection [data-next-contact]');
+  if (nextContactButton) {
+    const model = leadStatusUiModel(v4State.currentLead?.status);
+    if (model.key === 'new' && !canLeadStatusTransition(model.raw, 'Ждём ответ')) {
+      blockTransition(event, 'Сначала переведите новую заявку в работу, затем назначьте следующий контакт.');
+    }
+    return;
+  }
+
   const workButton = event.target.closest?.('#leadsList button[data-action="work"]');
   if (!workButton) return;
   const card = workButton.closest('.v4-lead-card[data-id]');
