@@ -1,5 +1,6 @@
 import './lead-analytics-summary-v1.js';
 import './lead-operational-quality-v1.js';
+import './lead-status-ui-registry-v1.js';
 import { v4State } from './state.js';
 import { deriveLeadAnalytics } from './lead-analytics-normalization.js';
 
