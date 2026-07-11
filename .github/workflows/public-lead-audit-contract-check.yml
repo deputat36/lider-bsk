@@ -7,16 +7,20 @@ on:
     paths:
       - 'supabase/migrations/20260621_leader_public_lead_audit.sql'
       - 'supabase/functions/leader-public-lead/index.ts'
+      - 'crm/v4/assets/v4/public-lead-audit-v1.js'
       - 'docs/PUBLIC_LEAD_AUDIT_READONLY_2026-07-11.md'
       - 'tools/check_public_lead_audit_contract.py'
+      - 'tools/check_public_lead_audit_reason_labels.py'
       - '.github/workflows/public-lead-audit-contract-check.yml'
   pull_request:
     branches: [main]
     paths:
       - 'supabase/migrations/20260621_leader_public_lead_audit.sql'
       - 'supabase/functions/leader-public-lead/index.ts'
+      - 'crm/v4/assets/v4/public-lead-audit-v1.js'
       - 'docs/PUBLIC_LEAD_AUDIT_READONLY_2026-07-11.md'
       - 'tools/check_public_lead_audit_contract.py'
+      - 'tools/check_public_lead_audit_reason_labels.py'
       - '.github/workflows/public-lead-audit-contract-check.yml'
 
 jobs:
@@ -27,8 +31,10 @@ jobs:
         with:
           show-progress: false
 
-      - name: Validate public lead audit schema and outcomes
+      - name: Validate public lead audit schema, outcomes and CRM labels
         shell: bash
         run: |
           set -euo pipefail
+          node --check crm/v4/assets/v4/public-lead-audit-v1.js
           python3 tools/check_public_lead_audit_contract.py
+          python3 tools/check_public_lead_audit_reason_labels.py
