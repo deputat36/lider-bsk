@@ -67,6 +67,13 @@ The 2026-07-11 read-only `leader_leads.status` snapshot contains only known valu
 - `КП отправлено` — 1;
 - `Создан заказ` — 5.
 
+The 2026-07-11 read-only production snapshot contains:
+
+- `leader_production_jobs.production_status`: `Не передано` — 1, `В производстве` — 1;
+- `leader_orders.production_status`: `Не передано` — 3, `В производстве` — 1, `Выдано` — 1.
+
+No production row was changed during the snapshot.
+
 ## First module adoption
 
 `crm/v4/assets/v4/lead-operational-quality-v1.js` now uses:
@@ -163,18 +170,42 @@ The adoption:
 
 General order transitions remain read-only in the current UI. Production, layout, installation and payment fields continue to be separate domains.
 
+## Fifth module adoption — production job status editor
+
+Added:
+
+- `crm/v4/assets/v4/production-status-ui-model-v1.js`;
+- `tools/test_crm_production_status_ui.mjs`;
+- `tools/check_crm_production_status_ui_registry.py`;
+- `docs/CRM_PRODUCTION_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md`.
+
+The existing `production-job-card-v2.js` now:
+
+- builds its status select from registry-allowed targets;
+- validates the selected transition before the existing job/order/event write path;
+- writes canonical status labels only for real transitions;
+- preserves an unchanged legacy or unknown raw status while other fields are edited;
+- blocks transitions from unknown and terminal statuses before any Supabase write;
+- recognizes legacy UI values `Передано в производство`, `В работе` and `Проблема` without rewriting them on render;
+- maps transition timestamps only to existing columns `sent_to_contractor_at`, `ready_at` and `issued_at`;
+- does not write the registry-only `started_at` field because it is absent from `leader_production_jobs`;
+- keeps the existing direct multi-table write path visible as technical debt tracked by #202/#204.
+
+The production model itself is side-effect free and creates no Supabase client, REST, RPC or Edge path.
+
 ## Still open
 
-The following work remains open and must not be confused with registry creation or lead/offer/order UI adoption:
+The following work remains open and must not be confused with registry creation or completed UI adoptions:
 
-1. Replace duplicated status arrays in production/installation one module at a time.
-2. Add controlled logging/evidence for unknown raw values without rewriting them.
-3. Use registry validation in future Edge/RPC transition commands.
-4. Check canonical action permission server-side.
-5. Apply status, timestamp and audit event transactionally.
-6. Add development-branch negative tests for forbidden, stale and concurrent transitions.
-7. Decide separately whether any database constraints are appropriate.
-8. Complete browser/Network verification from `CRM_LEAD_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md`.
+1. Replace duplicated installation status arrays in its card/board without rewriting raw rows.
+2. Replace heuristic production/installation completion classifiers in the shared board with registry-backed read-only classification.
+3. Add controlled logging/evidence for unknown raw values without rewriting them.
+4. Use registry validation in future Edge/RPC transition commands.
+5. Check canonical action permission server-side.
+6. Apply status, timestamp and audit event transactionally.
+7. Add development-branch negative tests for forbidden, stale and concurrent transitions.
+8. Decide separately whether any database constraints are appropriate.
+9. Complete browser/Network verification from the manual-test documents.
 
 ## Approval boundary
 
