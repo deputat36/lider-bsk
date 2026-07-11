@@ -191,4 +191,4 @@ if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('CRM status transition registry, two UI adoptions, documentation, addendum and behavior tests are valid.')
+print('CRM status transition registry, three UI adoptions, documentation, addendum and behavior tests are valid.')
