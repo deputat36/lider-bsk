@@ -2,6 +2,12 @@ import { supabaseClient } from './supabase-client.js';
 import { friendlyError } from './api.js';
 import { v4State } from './state.js';
 import { canOpenV4ProductionKind, canOpenV4Tab, canViewV4Costs, canViewV4InternalNotes } from './role-tab-permissions-v1.js';
+import {
+  installationStatusSelectOptions,
+  installationStatusTimestampPatch,
+  installationStatusUiModel,
+  validateInstallationStatusTransition
+} from './installation-status-ui-model-v1.js';
 import { setStatus, toast } from './ui.js';
 
 const JOB_FIELDS_SAFE = ['id','order_id','production_job_id','title','install_status','priority','installer_name','installer_phone','address','scheduled_at','started_at','completed_at','technical_task','tools_required','installer_comment','before_photo_url','after_photo_url','created_at','updated_at'];
@@ -37,12 +43,32 @@ function money(value) { const n = Number(value || 0); return n ? `${Math.round(n
 function dateRu(value) { if (!value) return '—'; try { return new Date(value).toLocaleString('ru-RU'); } catch (_) { return String(value); } }
 function localDateTime(value) { if (!value) return ''; const d = new Date(value); if (!Number.isFinite(d.getTime())) return ''; return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16); }
 function dataObject(value) { if (!value) return {}; if (typeof value === 'object') return value; try { return JSON.parse(value); } catch (_) { return {}; } }
+function renderInstallationStatusOptions(value) {
+  return installationStatusSelectOptions(value)
+    .map((item) => `<option value="${esc(item.value)}"${item.current ? ' selected' : ''}${item.unknown ? ' data-unknown-status="true"' : ''}>${esc(item.label)}</option>`)
+    .join('');
+}
+function renderInstallationStatusNotice(value) {
+  const model = installationStatusUiModel(value);
+  if (!model.known) return `<div class="v4-install-status-alert is-warn" data-installation-status-warning>${esc(model.warning)}</div>`;
+  if (model.original === null) return '<div class="v4-install-status-alert" data-installation-status-null>Исходный статус в базе — NULL. Он сохранится без изменения, пока вы не выберете новый статус.</div>';
+  if (model.legacy) return `<div class="v4-install-status-alert" data-installation-status-legacy>Legacy-статус «${esc(model.raw)}» сохранится без изменения, пока вы не выберете canonical статус «${esc(model.label)}».</div>`;
+  if (model.terminal) return '<div class="v4-install-status-alert" data-installation-status-terminal>Статус завершён. Переходы из него не предусмотрены текущим registry.</div>';
+  return '';
+}
+function transitionErrorMessage(transition, fromValue, toValue) {
+  const fromLabel = fromValue === null || fromValue === undefined || String(fromValue).trim() === '' ? 'NULL / Не назначен' : String(fromValue);
+  if (transition?.reason === 'terminal_status') return `Статус «${fromLabel}» завершён. Переход в «${toValue}» запрещён registry.`;
+  if (transition?.reason === 'unknown_from_status') return `Неизвестный статус монтажа «${fromLabel}» нельзя изменить до сопоставления с registry.`;
+  if (transition?.reason === 'unknown_to_status') return `Статус «${toValue}» отсутствует в registry монтажа.`;
+  return `Переход «${fromLabel} → ${toValue}» не разрешён registry.`;
+}
 
 function ensureStyles() {
   if (document.getElementById('installationJobCardV2Styles')) return;
   const style = document.createElement('style');
   style.id = 'installationJobCardV2Styles';
-  style.textContent = `.v4-install-modal{position:fixed;inset:0;z-index:750;background:rgba(15,23,42,.62);display:grid;place-items:center;padding:16px}.v4-install-card{width:min(1040px,100%);max-height:92vh;overflow:auto;background:#fff;border:1px solid #bfdbfe;border-radius:20px;box-shadow:0 28px 90px rgba(15,23,42,.36);padding:18px}.v4-install-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;border-bottom:1px solid #e2e8f0;padding-bottom:12px;margin-bottom:14px}.v4-install-head h2{margin:0}.v4-install-head p{margin:6px 0 0;color:#64748b}.v4-install-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:12px 0}.v4-install-grid div{border:1px solid #bfdbfe;background:#eff6ff;border-radius:14px;padding:12px}.v4-install-grid span{display:block;font-size:12px;text-transform:uppercase;font-weight:900;color:#1d4ed8}.v4-install-grid b{display:block;margin-top:5px}.v4-install-columns{display:grid;grid-template-columns:1fr 1fr;gap:12px}.v4-install-section{border:1px solid #e2e8f0;border-radius:16px;padding:14px;margin-top:12px}.v4-install-row{border:1px solid #e2e8f0;background:#f8fafc;border-radius:12px;padding:10px;margin:8px 0}.v4-install-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.v4-install-actions button{border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;border-radius:12px;padding:9px 12px;font-weight:900}.v4-install-actions .v4-primary{background:#2563eb;border-color:#2563eb;color:#fff}.v4-install-empty{border:1px dashed #93c5fd;background:#eff6ff;color:#1d4ed8;border-radius:14px;padding:12px;font-weight:800}.v4-install-form textarea{min-height:84px;resize:vertical}.v4-install-form .wide{grid-column:1/-1}@media(max-width:820px){.v4-install-card{padding:12px;border-radius:16px}.v4-install-head,.v4-install-columns{display:grid;grid-template-columns:1fr}.v4-install-actions button{width:100%}}`;
+  style.textContent = `.v4-install-modal{position:fixed;inset:0;z-index:750;background:rgba(15,23,42,.62);display:grid;place-items:center;padding:16px}.v4-install-card{width:min(1040px,100%);max-height:92vh;overflow:auto;background:#fff;border:1px solid #bfdbfe;border-radius:20px;box-shadow:0 28px 90px rgba(15,23,42,.36);padding:18px}.v4-install-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;border-bottom:1px solid #e2e8f0;padding-bottom:12px;margin-bottom:14px}.v4-install-head h2{margin:0}.v4-install-head p{margin:6px 0 0;color:#64748b}.v4-install-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:12px 0}.v4-install-grid div{border:1px solid #bfdbfe;background:#eff6ff;border-radius:14px;padding:12px}.v4-install-grid span{display:block;font-size:12px;text-transform:uppercase;font-weight:900;color:#1d4ed8}.v4-install-grid b{display:block;margin-top:5px}.v4-install-status-alert{border:1px dashed #93c5fd;background:#eff6ff;color:#1d4ed8;border-radius:12px;padding:9px 10px;margin-top:8px;font-size:12px;font-weight:800}.v4-install-status-alert.is-warn{border-color:#fcd34d;background:#fffbeb;color:#92400e}.v4-install-columns{display:grid;grid-template-columns:1fr 1fr;gap:12px}.v4-install-section{border:1px solid #e2e8f0;border-radius:16px;padding:14px;margin-top:12px}.v4-install-row{border:1px solid #e2e8f0;background:#f8fafc;border-radius:12px;padding:10px;margin:8px 0}.v4-install-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.v4-install-actions button{border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;border-radius:12px;padding:9px 12px;font-weight:900}.v4-install-actions .v4-primary{background:#2563eb;border-color:#2563eb;color:#fff}.v4-install-empty{border:1px dashed #93c5fd;background:#eff6ff;color:#1d4ed8;border-radius:14px;padding:12px;font-weight:800}.v4-install-form textarea{min-height:84px;resize:vertical}.v4-install-form .wide{grid-column:1/-1}@media(max-width:820px){.v4-install-card{padding:12px;border-radius:16px}.v4-install-head,.v4-install-columns{display:grid;grid-template-columns:1fr}.v4-install-actions button{width:100%}}`;
   document.head.appendChild(style);
 }
 
@@ -96,7 +122,9 @@ function renderCard(bundle) {
   const commentsSection = canViewV4InternalNotes()
     ? `<section class="v4-install-section"><h3>Внутренние комментарии</h3>${renderHistory(comments, 'Комментариев пока нет.')}<div class="v4-install-form"><textarea id="installJobNewComment" placeholder="Добавить внутренний комментарий"></textarea><button type="button" data-add-installation-comment="${esc(job.id)}">Добавить комментарий</button></div></section>`
     : '<section class="v4-install-section"><h3>Комментарии</h3><div class="v4-install-empty">Внутренние комментарии скрыты для этой роли.</div></section>';
-  host().innerHTML = `<div class="v4-install-modal"><div class="v4-install-card"><div class="v4-install-head"><div><p class="v4-kicker">Монтажное задание</p><h2>${esc(job.title || order?.project_name || 'Монтаж')}</h2><p>Заказ №${esc(order?.order_number || String(job.order_id || '').slice(0, 8))}. Клиентские контакты не показываются.</p></div><button type="button" data-installation-job-close>Закрыть</button></div><div class="v4-install-grid"><div><span>Статус</span><b>${esc(job.install_status || 'Нужно назначить')}</b></div><div><span>Дата</span><b>${dateRu(job.scheduled_at)}</b></div><div><span>Монтажник</span><b>${esc(job.installer_name || 'Не назначен')}</b></div><div><span>Адрес</span><b>${esc(job.address || order?.installation_address || data.install_place || '—')}</b></div><div><span>Позиции</span><b>${items.length}</b></div>${costStat}</div><div class="v4-install-actions"><button type="button" class="v4-primary" data-save-installation-job="${esc(job.id)}">Сохранить</button><button type="button" data-print-installation-job="${esc(job.id)}">Печать листа</button>${orderButton}<button type="button" data-installation-job-close>Закрыть</button></div><div class="v4-install-columns"><section class="v4-install-section"><h3>Редактирование</h3><div class="v4-install-form v4-form-grid"><label>Название<input id="installJobTitle" value="${esc(job.title || '')}"></label><label>Статус<select id="installJobStatus"><option ${job.install_status === 'Нужно назначить' ? 'selected' : ''}>Нужно назначить</option><option ${job.install_status === 'Запланирован' ? 'selected' : ''}>Запланирован</option><option ${job.install_status === 'В работе' ? 'selected' : ''}>В работе</option><option ${job.install_status === 'Выполнен' ? 'selected' : ''}>Выполнен</option><option ${job.install_status === 'Проблема' ? 'selected' : ''}>Проблема</option></select></label><label>Дата<input id="installJobScheduled" type="datetime-local" value="${localDateTime(job.scheduled_at)}"></label><label>Монтажник<input id="installJobInstaller" value="${esc(job.installer_name || '')}"></label><label>Телефон монтажника<input id="installJobInstallerPhone" value="${esc(job.installer_phone || '')}"></label><label class="wide">Адрес<input id="installJobAddress" value="${esc(job.address || order?.installation_address || data.install_place || '')}"></label><label>Фото места<input id="installJobBefore" value="${esc(job.before_photo_url || data.place_photo_link || '')}"></label><label>Фото результата<input id="installJobAfter" value="${esc(job.after_photo_url || '')}"></label><label class="wide">ТЗ<textarea id="installJobTask">${esc(job.technical_task || '')}</textarea></label><label class="wide">Инструмент<textarea id="installJobTools">${esc(job.tools_required || '')}</textarea></label><label class="wide">Комментарий монтажнику<textarea id="installJobComment">${esc(job.installer_comment || '')}</textarea></label></div></section><section class="v4-install-section"><h3>Данные для монтажа</h3><div class="v4-install-row"><b>Производство</b><p>${production ? `${esc(production.title || 'Производство')} · ${esc(production.production_status || '—')}` : 'Не связано'}</p></div><div class="v4-install-row"><b>Макет</b><p>${esc(production?.file_url || order?.layout_link || 'Ссылка не указана')}</p></div><div class="v4-install-row"><b>Фото места</b><p>${esc(job.before_photo_url || data.place_photo_link || 'Ссылка не указана')}</p></div></section></div><section class="v4-install-section"><h3>Состав монтажа</h3>${renderItems(items)}</section><div class="v4-install-columns">${commentsSection}<section class="v4-install-section"><h3>История</h3>${renderHistory(events, 'Истории пока нет.')}</section></div></div></div>`;
+  const statusModel = installationStatusUiModel(job.install_status);
+  const statusDisplay = statusModel.original === null ? 'Не назначен (raw: NULL)' : (statusModel.known && statusModel.legacy ? `${statusModel.raw} (legacy: ${statusModel.label})` : statusModel.raw);
+  host().innerHTML = `<div class="v4-install-modal"><div class="v4-install-card"><div class="v4-install-head"><div><p class="v4-kicker">Монтажное задание</p><h2>${esc(job.title || order?.project_name || 'Монтаж')}</h2><p>Заказ №${esc(order?.order_number || String(job.order_id || '').slice(0, 8))}. Клиентские контакты не показываются.</p></div><button type="button" data-installation-job-close>Закрыть</button></div><div class="v4-install-grid"><div><span>Статус</span><b>${esc(statusDisplay)}</b></div><div><span>Дата</span><b>${dateRu(job.scheduled_at)}</b></div><div><span>Монтажник</span><b>${esc(job.installer_name || 'Не назначен')}</b></div><div><span>Адрес</span><b>${esc(job.address || order?.installation_address || data.install_place || '—')}</b></div><div><span>Позиции</span><b>${items.length}</b></div>${costStat}</div><div class="v4-install-actions"><button type="button" class="v4-primary" data-save-installation-job="${esc(job.id)}">Сохранить</button><button type="button" data-print-installation-job="${esc(job.id)}">Печать листа</button>${orderButton}<button type="button" data-installation-job-close>Закрыть</button></div><div class="v4-install-columns"><section class="v4-install-section"><h3>Редактирование</h3><div class="v4-install-form v4-form-grid"><label>Название<input id="installJobTitle" value="${esc(job.title || '')}"></label><label>Статус<select id="installJobStatus">${renderInstallationStatusOptions(job.install_status)}</select>${renderInstallationStatusNotice(job.install_status)}</label><label>Дата<input id="installJobScheduled" type="datetime-local" value="${localDateTime(job.scheduled_at)}"></label><label>Монтажник<input id="installJobInstaller" value="${esc(job.installer_name || '')}"></label><label>Телефон монтажника<input id="installJobInstallerPhone" value="${esc(job.installer_phone || '')}"></label><label class="wide">Адрес<input id="installJobAddress" value="${esc(job.address || order?.installation_address || data.install_place || '')}"></label><label>Фото места<input id="installJobBefore" value="${esc(job.before_photo_url || data.place_photo_link || '')}"></label><label>Фото результата<input id="installJobAfter" value="${esc(job.after_photo_url || '')}"></label><label class="wide">ТЗ<textarea id="installJobTask">${esc(job.technical_task || '')}</textarea></label><label class="wide">Инструмент<textarea id="installJobTools">${esc(job.tools_required || '')}</textarea></label><label class="wide">Комментарий монтажнику<textarea id="installJobComment">${esc(job.installer_comment || '')}</textarea></label></div></section><section class="v4-install-section"><h3>Данные для монтажа</h3><div class="v4-install-row"><b>Производство</b><p>${production ? `${esc(production.title || 'Производство')} · ${esc(production.production_status || '—')}` : 'Не связано'}</p></div><div class="v4-install-row"><b>Макет</b><p>${esc(production?.file_url || order?.layout_link || 'Ссылка не указана')}</p></div><div class="v4-install-row"><b>Фото места</b><p>${esc(job.before_photo_url || data.place_photo_link || 'Ссылка не указана')}</p></div></section></div><section class="v4-install-section"><h3>Состав монтажа</h3>${renderItems(items)}</section><div class="v4-install-columns">${commentsSection}<section class="v4-install-section"><h3>История</h3>${renderHistory(events, 'Истории пока нет.')}</section></div></div></div>`;
 }
 
 async function openCard(jobId) {
@@ -115,7 +143,10 @@ async function saveJob(jobId) {
   busy = true;
   try {
     const old = currentBundle?.job || (await fetchBundle(jobId)).job;
-    const status = field('installJobStatus') || old.install_status || 'Нужно назначить';
+    const selectedStatus = field('installJobStatus') || rawInstallationFallback(old.install_status);
+    const transition = validateInstallationStatusTransition(old.install_status, selectedStatus);
+    if (!transition.ok) throw new Error(transitionErrorMessage(transition, old.install_status, selectedStatus));
+    const status = transition.storedValue;
     const scheduledRaw = field('installJobScheduled');
     const patch = {
       title: field('installJobTitle') || old.title,
@@ -130,14 +161,13 @@ async function saveJob(jobId) {
       tools_required: field('installJobTools') || null,
       installer_comment: field('installJobComment') || null,
       updated_by: v4State.user?.id || null,
-      updated_at: nowIso()
+      updated_at: nowIso(),
+      ...installationStatusTimestampPatch(transition, old, nowIso())
     };
-    if (status === 'В работе') patch.started_at = old.started_at || nowIso();
-    if (status === 'Выполнен') patch.completed_at = old.completed_at || nowIso();
     const response = await supabaseClient.from('leader_installation_jobs').update(patch).eq('id', jobId);
     if (response.error) throw response.error;
     if (old.order_id) {
-      const orderResponse = await supabaseClient.from('leader_orders').update({ installation_status: status, installation_address: patch.address, installation_scheduled_at: patch.scheduled_at, installer_name: patch.installer_name, installer_phone: patch.installer_phone, current_stage: `Монтаж: ${status}`, updated_at: nowIso(), stage_updated_at: nowIso() }).eq('id', old.order_id);
+      const orderResponse = await supabaseClient.from('leader_orders').update({ installation_status: status, installation_address: patch.address, installation_scheduled_at: patch.scheduled_at, installer_name: patch.installer_name, installer_phone: patch.installer_phone, current_stage: `Монтаж: ${status ?? 'Не назначен'}`, updated_at: nowIso(), stage_updated_at: nowIso() }).eq('id', old.order_id);
       if (orderResponse.error) throw orderResponse.error;
     }
     await supabaseClient.from('leader_installation_events').insert({ job_id: jobId, order_id: old.order_id, event_type: 'Обновление монтажа', old_status: old.install_status, new_status: status, body: 'Монтажное задание обновлено из CRM v4', created_by: v4State.user?.id || null });
@@ -149,6 +179,10 @@ async function saveJob(jobId) {
     toast(friendlyError(error));
     setStatus(`Ошибка монтажа: ${friendlyError(error)}`, 'error');
   } finally { busy = false; }
+}
+
+function rawInstallationFallback(value) {
+  return value === null || value === undefined || String(value).trim() === '' ? 'Не назначен' : String(value).trim();
 }
 
 async function addComment(jobId) {
