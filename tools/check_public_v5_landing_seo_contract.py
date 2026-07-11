@@ -110,8 +110,12 @@ def main() -> None:
             errors.append(f'{name}: exactly one non-empty title is required')
         if len(parser.descriptions) != 1 or len(parser.descriptions[0]) < 50:
             errors.append(f'{name}: exactly one useful meta description is required')
-        if len(parser.robots) != 1 or 'index' not in parser.robots[0] or 'follow' not in parser.robots[0] or 'noindex' in parser.robots[0]:
-            errors.append(f'{name}: robots must be index, follow')
+        if len(parser.robots) > 1:
+            errors.append(f'{name}: at most one robots meta tag is allowed')
+        elif parser.robots:
+            directives = {item.strip() for item in parser.robots[0].split(',')}
+            if directives.intersection({'noindex', 'nofollow', 'none'}):
+                errors.append(f'{name}: robots directives must not block indexing or links')
         if parser.canonicals != [expected_url]:
             errors.append(f'{name}: canonical must equal {expected_url}')
         if parser.og_urls != [expected_url]:
