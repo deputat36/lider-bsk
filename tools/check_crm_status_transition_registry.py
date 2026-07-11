@@ -12,6 +12,8 @@ lead_ui_model = root / 'crm/v4/assets/v4/lead-status-ui-model-v1.js'
 lead_ui_adapter = root / 'crm/v4/assets/v4/lead-status-ui-registry-v1.js'
 production_ui_model = root / 'crm/v4/assets/v4/production-status-ui-model-v1.js'
 production_card = root / 'crm/v4/assets/v4/production-job-card-v2.js'
+installation_ui_model = root / 'crm/v4/assets/v4/installation-status-ui-model-v1.js'
+installation_card = root / 'crm/v4/assets/v4/installation-job-card-v2.js'
 
 errors = []
 
@@ -138,20 +140,24 @@ else:
         'preserves unknown raw statuses as exact filter values',
         'blocks disallowed status clicks in capture phase',
         'blocks the hidden legacy `Новая → Ждём ответ` transition',
-        'Fourth module adoption — order status views',
-        'order-status-ui-model-v1.js',
-        'keeps unknown orders visible and active instead of silently hiding them',
-        'adds no order status update control and no new Supabase write path',
         'Third module adoption — commercial-offer status UI',
         'offer-status-ui-model-v1.js',
         'uses canonical new sent status `Отправлено`',
         'keeps legacy `КП отправлено` readable through an alias',
+        'Fourth module adoption — order status views',
+        'order-status-ui-model-v1.js',
+        'keeps unknown orders visible and active instead of silently hiding them',
+        'adds no order status update control and no new Supabase write path',
         'Fifth module adoption — production job status editor',
         'production-status-ui-model-v1.js',
         'validates the selected transition before the existing job/order/event write path',
         'preserves an unchanged legacy or unknown raw status',
         'does not write the registry-only `started_at` field',
-        'Replace duplicated installation status arrays',
+        'Sixth module adoption — installation job status editor',
+        'installation-status-ui-model-v1.js',
+        'preserves a NULL `install_status`',
+        'does not write missing `postponed_at` or `cancelled_at` columns',
+        'Replace heuristic production/installation completion classifiers',
         'Use registry validation in future Edge/RPC transition commands.',
         'No production status rows were changed.',
         'Server-side transition enforcement remains tracked in #202 and #204.',
@@ -203,6 +209,20 @@ for path, markers in {
         'validateProductionStatusTransition(old.production_status, selectedStatus)',
         'productionStatusTimestampPatch(transition, old, nowIso())',
     ],
+    installation_ui_model: [
+        "from './status-transitions-v1.js'",
+        'installationStatusSelectOptions',
+        'installationStatusUiModel',
+        'validateInstallationStatusTransition',
+        'installationStatusTimestampPatch',
+    ],
+    installation_card: [
+        "from './installation-status-ui-model-v1.js'",
+        'renderInstallationStatusOptions',
+        'renderInstallationStatusNotice',
+        'validateInstallationStatusTransition(old.install_status, selectedStatus)',
+        'installationStatusTimestampPatch(transition, old, nowIso())',
+    ],
 }.items():
     if not path.exists():
         errors.append(f'Missing status registry adopter: {path.relative_to(root)}')
@@ -216,4 +236,4 @@ if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('CRM status transition registry, five UI adoptions, documentation, addendum and behavior tests are valid.')
+print('CRM status transition registry, six UI adoptions, documentation, addendum and behavior tests are valid.')
