@@ -136,7 +136,11 @@ else:
         'preserves unknown raw statuses as exact filter values',
         'blocks disallowed status clicks in capture phase',
         'blocks the hidden legacy `Новая → Ждём ответ` transition',
-        'Replace duplicated status arrays in orders/production/installation one module at a time.',
+        'Replace duplicated status arrays in production/installation one module at a time.',
+        'Fourth module adoption — order status views',
+        'order-status-ui-model-v1.js',
+        'keeps unknown orders visible and active instead of silently hiding them',
+        'adds no order status update control and no new Supabase write path',
         'Third module adoption — commercial-offer status UI',
         'offer-status-ui-model-v1.js',
         'uses canonical new sent status `Отправлено`',
@@ -191,4 +195,4 @@ if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('CRM status transition registry, three UI adoptions, documentation, addendum and behavior tests are valid.')
+print('CRM status transition registry, four UI adoptions, documentation, addendum and behavior tests are valid.')

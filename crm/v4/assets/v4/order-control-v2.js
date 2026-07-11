@@ -1,10 +1,9 @@
 import { supabaseClient } from './supabase-client.js';
 import { friendlyError } from './api.js';
 import { setStatus, toast } from './ui.js';
+import { isActiveOrderStatus, orderStatusUiModel } from './order-status-ui-model-v1.js';
 
 const ORDER_FIELDS = 'id,order_number,project_name,status,deadline,client_name,client_phone,client_total,payment_status,created_at,layout_status,data';
-const CLOSED = new Set(['Готово', 'Выдано', 'Закрыт', 'Отменён', 'Отмена']);
-
 let rows = [];
 let warnings = [];
 let busy = false;
@@ -39,7 +38,7 @@ function daysUntil(value) {
 }
 
 function active(order) {
-  return !CLOSED.has(order.status || 'Новый');
+  return isActiveOrderStatus(order.status);
 }
 
 function unpaid(order) {
@@ -61,8 +60,7 @@ function noLayout(order) {
 }
 
 function productionStatus(order) {
-  const text = String(order.status || '').toLowerCase();
-  return text.includes('производ') || text.includes('работ') || text.includes('печать') || text.includes('монтаж');
+  return ['production', 'ready', 'issued'].includes(orderStatusUiModel(order.status).key);
 }
 
 function grouped() {
@@ -131,7 +129,9 @@ function card(order, note = '') {
   const cls = days !== null && days < 0 ? 'is-danger' : days !== null && days <= 3 ? 'is-warn' : '';
   const deadline = days === null ? 'срок не указан' : days < 0 ? `просрочен на ${Math.abs(days)} дн.` : days === 0 ? 'сегодня' : `через ${days} дн.`;
   const designCheck = designNeedsCheck(order);
-  return `<article class="v4-order-item ${cls}"><div class="v4-order-item-head"><h4>${esc(title(order))}</h4><small>${esc(order.status || 'Новый')}</small></div><small>${esc(order.client_name || 'Клиент не указан')} · ${esc(order.client_phone || 'телефон не указан')}</small><small>Срок: ${dateRu(order.deadline)} (${esc(deadline)})</small><small>Оплата: ${esc(order.payment_status || 'Не указана')} · Сумма: ${money(order.client_total)}</small><small class="v4-order-design-inline ${designCheck ? 'is-warn' : ''}" data-order-control-design>Дизайн / макет: ${esc(layoutStatus(order))}</small>${note ? `<small>${esc(note)}</small>` : ''}<button type="button" data-open-order="${esc(order.id)}">Открыть заказ</button></article>`;
+  const statusModel = orderStatusUiModel(order.status);
+  const warning = statusModel.known ? '' : `<div class="v4-order-warnings" data-unknown-order-status="${esc(statusModel.raw)}">${esc(statusModel.warning)}</div>`;
+  return `<article class="v4-order-item ${cls}"><div class="v4-order-item-head"><h4>${esc(title(order))}</h4><small title="${esc(statusModel.known ? `Registry: ${statusModel.key}` : statusModel.warning)}">${esc(statusModel.label)}</small></div>${warning}<small>${esc(order.client_name || 'Клиент не указан')} · ${esc(order.client_phone || 'телефон не указан')}</small><small>Срок: ${dateRu(order.deadline)} (${esc(deadline)})</small><small>Оплата: ${esc(order.payment_status || 'Не указана')} · Сумма: ${money(order.client_total)}</small><small class="v4-order-design-inline ${designCheck ? 'is-warn' : ''}" data-order-control-design>Дизайн / макет: ${esc(layoutStatus(order))}</small>${note ? `<small>${esc(note)}</small>` : ''}<button type="button" data-open-order="${esc(order.id)}">Открыть заказ</button></article>`;
 }
 
 function top(list, mapper) {

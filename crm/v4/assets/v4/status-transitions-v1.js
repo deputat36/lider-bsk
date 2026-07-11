@@ -69,7 +69,7 @@ export const CRM_STATUS_DOMAINS = Object.freeze({
       ready: status({ key: 'ready', label: 'Готово', allowedTo: ['issued', 'closed', 'production'], action: CRM_V4_ACTIONS.ORDERS_TRANSITION, timestampField: 'ready_at', auditEvent: 'order.ready' }),
       issued: status({ key: 'issued', label: 'Выдано', allowedTo: ['closed'], action: CRM_V4_ACTIONS.ORDERS_TRANSITION, timestampField: 'issued_at', auditEvent: 'order.issued' }),
       closed: status({ key: 'closed', label: 'Закрыт', terminal: true, allowedTo: [], action: CRM_V4_ACTIONS.ORDERS_TRANSITION, timestampField: 'completed_at', auditEvent: 'order.closed' }),
-      cancelled: status({ key: 'cancelled', label: 'Отменён', aliases: ['Отменен'], terminal: true, allowedTo: [], action: CRM_V4_ACTIONS.ORDERS_TRANSITION, auditEvent: 'order.cancelled' })
+      cancelled: status({ key: 'cancelled', label: 'Отменён', aliases: ['Отменен', 'Отмена'], terminal: true, allowedTo: [], action: CRM_V4_ACTIONS.ORDERS_TRANSITION, auditEvent: 'order.cancelled' })
     }
   }),
 

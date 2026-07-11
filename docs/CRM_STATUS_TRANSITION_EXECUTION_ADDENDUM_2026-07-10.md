@@ -136,11 +136,38 @@ The existing `offers.js` module now:
 
 The pure offer status model adds no Supabase read or write path. Existing offer writes remain direct and are not server-side transactional enforcement.
 
+## Fourth module adoption — order status views
+
+Added:
+
+- `crm/v4/assets/v4/order-status-ui-model-v1.js`;
+- `tools/test_crm_order_status_ui.mjs`;
+- `tools/check_crm_order_status_ui_registry.py`;
+- `docs/CRM_ORDER_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md`.
+
+Registry-backed read-only classification is now used by:
+
+- the order block inside the lead card;
+- the fast all-orders list;
+- the order-control dashboard;
+- the full order modal.
+
+The adoption:
+
+- removes duplicate terminal-status sets from the fast list and order-control dashboard;
+- uses registry keys for active counters, deadlines and progress stages;
+- recognizes legacy `Отмена` as cancelled without rewriting it;
+- keeps unknown orders visible and active instead of silently hiding them;
+- displays an explicit unknown-status warning;
+- adds no order status update control and no new Supabase write path.
+
+General order transitions remain read-only in the current UI. Production, layout, installation and payment fields continue to be separate domains.
+
 ## Still open
 
-The following work remains open and must not be confused with registry creation or lead/offer UI adoption:
+The following work remains open and must not be confused with registry creation or lead/offer/order UI adoption:
 
-1. Replace duplicated status arrays in orders/production/installation one module at a time.
+1. Replace duplicated status arrays in production/installation one module at a time.
 2. Add controlled logging/evidence for unknown raw values without rewriting them.
 3. Use registry validation in future Edge/RPC transition commands.
 4. Check canonical action permission server-side.

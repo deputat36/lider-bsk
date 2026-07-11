@@ -2,10 +2,9 @@ import { supabaseClient } from './supabase-client.js';
 import { friendlyError } from './api.js';
 import { setStatus } from './ui.js';
 import { openLeadRoute } from './router.js';
+import { isActiveOrderStatus, orderStatusUiModel } from './order-status-ui-model-v1.js';
 
 const ORDER_FIELDS = 'id,order_number,project_name,status,deadline,client_name,client_phone,client_total,payment_status,created_at,layout_status,lead_id';
-const CLOSED = new Set(['Готово', 'Выдано', 'Закрыт', 'Отменён', 'Отмена']);
-
 let busy = false;
 let loaded = false;
 let rows = [];
@@ -25,14 +24,6 @@ function dateRu(value) {
   try { return new Date(value).toLocaleDateString('ru-RU'); } catch (_) { return String(value); }
 }
 
-function statusClass(status = '') {
-  const text = String(status).toLowerCase();
-  if (text.includes('соглас') || text.includes('готов') || text.includes('создан') || text.includes('выдан') || text.includes('закры')) return 'is-good';
-  if (text.includes('отказ') || text.includes('спам') || text.includes('отмен') || text.includes('проблем')) return 'is-danger';
-  if (text.includes('жд') || text.includes('уточ') || text.includes('работ') || text.includes('отправ') || text.includes('производ')) return 'is-warn';
-  return '';
-}
-
 function layoutStatus(order) {
   return order.layout_status || 'Макета нет';
 }
@@ -47,7 +38,7 @@ function designClass(order) {
 
 function designNeedsCheck(order) {
   const text = String(layoutStatus(order)).toLowerCase();
-  if (CLOSED.has(order.status || '')) return false;
+  if (!isActiveOrderStatus(order.status)) return false;
   if (text.includes('не треб')) return false;
   return designClass(order) !== 'is-good';
 }
@@ -129,12 +120,18 @@ function showOrdersTab() {
   document.dispatchEvent(new CustomEvent('leader-v4:tab-opened', { detail: { tab: 'orders' } }));
 }
 
+function renderOrderFastCard(order) {
+  const statusModel = orderStatusUiModel(order.status);
+  const warning = statusModel.known ? '' : `<div class="v4-orders-fast-warning" data-unknown-order-status="${esc(statusModel.raw)}">${esc(statusModel.warning)}</div>`;
+  return `<article class="v4-orders-fast-card"><div class="v4-orders-fast-head"><h3>№${esc(order.order_number || String(order.id || '').slice(0, 8))} — ${esc(order.project_name || 'Заказ')}</h3><span class="v4-crm-badge ${esc(statusModel.cssClass)}" title="${esc(statusModel.known ? `Registry: ${statusModel.key}` : statusModel.warning)}">${esc(statusModel.label)}</span></div>${warning}<div class="v4-orders-fast-meta"><span><b>Клиент:</b> ${esc(order.client_name || '—')}</span><span><b>Телефон:</b> ${esc(order.client_phone || '—')}</span><span><b>Срок:</b> ${dateRu(order.deadline)}</span><span><b>Оплата:</b> ${esc(order.payment_status || 'Не указана')}</span><span><b>Сумма:</b> ${money(order.client_total)}</span>${renderDesignBadge(order)}</div><div class="v4-orders-fast-actions"><button type="button" class="v4-primary" data-open-order="${esc(order.id)}">Карточка заказа</button>${order.lead_id ? `<button type="button" data-order-open-lead="${esc(order.lead_id)}">Открыть заявку</button>` : ''}</div></article>`;
+}
+
 function render() {
   ensureStyles();
   ensureNav();
   const box = host();
   if (!box) return;
-  const active = rows.filter((row) => !CLOSED.has(row.status || '')).length;
+  const active = rows.filter((row) => isActiveOrderStatus(row.status)).length;
   const total = rows.reduce((sum, row) => sum + Number(row.client_total || 0), 0);
   const unpaid = rows.filter((row) => {
     const text = String(row.payment_status || '').toLowerCase();
@@ -142,7 +139,7 @@ function render() {
   }).length;
   const designCheck = rows.filter(designNeedsCheck).length;
   const warningHtml = warning ? `<div class="v4-orders-fast-warning">${esc(warning)}. Можно повторить загрузку или открыть карточку заявки.</div>` : '';
-  box.innerHTML = `${warningHtml}<div class="v4-orders-fast-summary"><div><span>Заказов</span><b>${rows.length}</b></div><div><span>Активные</span><b>${active}</b></div><div><span>Сумма</span><b>${money(total)}</b></div><div><span>Оплата под контролем</span><b>${unpaid}</b></div><div class="${designCheck ? 'is-warn' : ''}" data-orders-fast-design-summary><span>Дизайн проверить</span><b>${designCheck}</b></div></div><div class="v4-orders-fast-list">${rows.length ? rows.map((order) => `<article class="v4-orders-fast-card"><div class="v4-orders-fast-head"><h3>№${esc(order.order_number || String(order.id || '').slice(0, 8))} — ${esc(order.project_name || 'Заказ')}</h3><span class="v4-crm-badge ${statusClass(order.status)}">${esc(order.status || 'Новый')}</span></div><div class="v4-orders-fast-meta"><span><b>Клиент:</b> ${esc(order.client_name || '—')}</span><span><b>Телефон:</b> ${esc(order.client_phone || '—')}</span><span><b>Срок:</b> ${dateRu(order.deadline)}</span><span><b>Оплата:</b> ${esc(order.payment_status || 'Не указана')}</span><span><b>Сумма:</b> ${money(order.client_total)}</span>${renderDesignBadge(order)}</div><div class="v4-orders-fast-actions"><button type="button" class="v4-primary" data-open-order="${esc(order.id)}">Карточка заказа</button>${order.lead_id ? `<button type="button" data-order-open-lead="${esc(order.lead_id)}">Открыть заявку</button>` : ''}</div></article>`).join('') : '<div class="v4-empty">Заказов пока нет или они не загрузились.</div>'}</div>`;
+  box.innerHTML = `${warningHtml}<div class="v4-orders-fast-summary"><div><span>Заказов</span><b>${rows.length}</b></div><div><span>Активные</span><b>${active}</b></div><div><span>Сумма</span><b>${money(total)}</b></div><div><span>Оплата под контролем</span><b>${unpaid}</b></div><div class="${designCheck ? 'is-warn' : ''}" data-orders-fast-design-summary><span>Дизайн проверить</span><b>${designCheck}</b></div></div><div class="v4-orders-fast-list">${rows.length ? rows.map(renderOrderFastCard).join('') : '<div class="v4-empty">Заказов пока нет или они не загрузились.</div>'}</div>`;
 }
 
 async function loadOrdersFast(force = false) {

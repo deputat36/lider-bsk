@@ -3,6 +3,7 @@ import { invokeLeaderFunction } from './functions-client.js';
 import { friendlyError } from './api.js';
 import { v4State, setState, subscribeState } from './state.js';
 import { byId, setStatus, toast } from './ui.js';
+import { isActiveOrderStatus, orderStageFlags, orderStatusUiModel } from './order-status-ui-model-v1.js';
 
 const ORDER_FIELDS = 'id,order_number,project_name,status,deadline,client_name,client_phone,client_total,contractor_cost,profit,payment_status,layout_status,data,created_at,lead_id,client_id';
 const OFFER_FIELDS = 'id,lead_id,calculation_id,client_id,order_id,title,status,total_sum,valid_until,created_at';
@@ -63,29 +64,29 @@ function isDeadlineOverdue(order) {
   const deadline = new Date(order.deadline);
   if (Number.isNaN(deadline.getTime())) return false;
   deadline.setHours(23, 59, 59, 999);
-  return deadline < new Date() && !['Готово', 'Выдано', 'Закрыт', 'Отменён'].includes(order.status || '');
+  return deadline < new Date() && isActiveOrderStatus(order.status);
 }
 function orderChecklistItems(order) {
-  const status = order.status || 'Новый';
+  const statusModel = orderStatusUiModel(order.status);
+  const status = statusModel.label;
   const pay = order.payment_status || 'Не оплачено';
   const layout = layoutStatus(order);
   const hasDeadline = Boolean(order.deadline);
   const overdue = isDeadlineOverdue(order);
   const paid = !['Не оплачено', 'Нет оплаты', 'Ожидается', ''].includes(pay);
   const layoutDone = ['Согласован', 'Макет согласован', 'Готов'].includes(layout);
-  const productionStarted = ['В производстве', 'Готово', 'Выдано', 'Закрыт'].includes(status);
-  const ready = ['Готово', 'Выдано', 'Закрыт'].includes(status);
-  const issued = ['Выдано', 'Закрыт'].includes(status);
+  const stages = orderStageFlags(order.status);
   return [
     { title: 'Заказ создан', text: status, done: true },
     { title: 'Макет', text: layout, done: layoutDone, warn: !layoutDone },
     { title: 'Оплата', text: pay, done: paid, warn: !paid },
     { title: 'Срок', text: hasDeadline ? formatDate(order.deadline) : 'Срок не указан', done: hasDeadline && !overdue, danger: overdue, warn: !hasDeadline },
-    { title: 'Производство', text: productionStarted ? status : 'Ещё не в производстве', done: productionStarted, warn: !productionStarted },
-    { title: 'Готовность', text: ready ? status : 'Не готово', done: ready, warn: !ready },
-    { title: 'Выдача клиенту', text: issued ? status : 'Не выдано', done: issued, warn: !issued }
+    { title: 'Производство', text: stages.productionStarted ? status : 'Ещё не в производстве', done: stages.productionStarted, warn: !stages.productionStarted },
+    { title: 'Готовность', text: stages.ready ? status : 'Не готово', done: stages.ready, warn: !stages.ready },
+    { title: 'Выдача клиенту', text: stages.issued ? status : 'Не выдано', done: stages.issued, warn: !stages.issued }
   ];
 }
+
 function renderOrderChecklist(order) {
   const items = orderChecklistItems(order);
   const done = items.filter((item) => item.done).length;
@@ -94,8 +95,11 @@ function renderOrderChecklist(order) {
 }
 function renderOrderCard(order) {
   const orderType = order.data?.order_type || order.order_type || '—';
-  return `<article class="v4-order-card"><div class="v4-order-title-row"><h4>№${esc(order.order_number || String(order.id || '').slice(0, 8))} — ${esc(order.project_name || 'Заказ')}</h4><span>${esc(order.status || 'Новый')}</span></div><div class="v4-order-meta"><span><b>Клиент:</b> ${esc(order.client_name || '—')}</span><span><b>Телефон:</b> ${esc(order.client_phone || '—')}</span><span><b>Тип:</b> ${esc(orderType)}</span><span><b>Срок:</b> ${formatDate(order.deadline)}</span><span><b>Макет:</b> ${esc(layoutStatus(order))}</span></div><div class="v4-order-kpi"><div><span>Клиенту</span><b>${money(order.client_total)}</b></div><div><span>Себестоимость</span><b>${money(order.contractor_cost)}</b></div><div><span>Прибыль</span><b>${money(order.profit)}</b></div><div><span>Оплата</span><b>${esc(order.payment_status || 'Не оплачено')}</b></div></div>${renderOrderChecklist(order)}</article>`;
+  const statusModel = orderStatusUiModel(order.status);
+  const warning = statusModel.known ? '' : `<div class="v4-status-registry-warning" data-unknown-order-status="${esc(statusModel.raw)}">${esc(statusModel.warning)}</div>`;
+  return `<article class="v4-order-card"><div class="v4-order-title-row"><h4>№${esc(order.order_number || String(order.id || '').slice(0, 8))} — ${esc(order.project_name || 'Заказ')}</h4><span class="v4-crm-badge ${esc(statusModel.cssClass)}" title="${esc(statusModel.known ? `Registry: ${statusModel.key}` : statusModel.warning)}">${esc(statusModel.label)}</span></div>${warning}<div class="v4-order-meta"><span><b>Клиент:</b> ${esc(order.client_name || '—')}</span><span><b>Телефон:</b> ${esc(order.client_phone || '—')}</span><span><b>Тип:</b> ${esc(orderType)}</span><span><b>Срок:</b> ${formatDate(order.deadline)}</span><span><b>Макет:</b> ${esc(layoutStatus(order))}</span></div><div class="v4-order-kpi"><div><span>Клиенту</span><b>${money(order.client_total)}</b></div><div><span>Себестоимость</span><b>${money(order.contractor_cost)}</b></div><div><span>Прибыль</span><b>${money(order.profit)}</b></div><div><span>Оплата</span><b>${esc(order.payment_status || 'Не оплачено')}</b></div></div>${renderOrderChecklist(order)}</article>`;
 }
+
 function renderCreateForm() {
   const offers = eligibleOffers();
   const firstOffer = offers[0] || null;
