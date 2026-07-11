@@ -59,6 +59,14 @@ Distinct production values were read without DML for:
 
 The registry includes all values currently observed in non-empty production domains, including NULL installation state normalization.
 
+The 2026-07-11 read-only `leader_leads.status` snapshot contains only known values:
+
+- `Новая` — 3;
+- `Уточнение деталей` — 1;
+- `Расчёт подготовлен` — 2;
+- `КП отправлено` — 1;
+- `Создан заказ` — 5.
+
 ## First module adoption
 
 `crm/v4/assets/v4/lead-operational-quality-v1.js` now uses:
@@ -80,17 +88,43 @@ The operational panel now provides read-only queues for:
 
 Queue rows intentionally exclude name, phone, message, email, addresses, internal comments and financial values.
 
+## Second module adoption — lead status UI
+
+Added:
+
+- `crm/v4/assets/v4/lead-status-ui-model-v1.js`;
+- `crm/v4/assets/v4/lead-status-ui-registry-v1.js`;
+- `tools/test_crm_lead_status_ui.mjs`;
+- `tools/check_crm_lead_status_ui_registry.py`;
+- `docs/CRM_LEAD_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md`.
+
+The adapter is loaded through `lead-analytics-badges-v1.js` and does not replace the large legacy lead modules.
+
+It now:
+
+- builds known lead-status filter options from `status-transitions-v1.js`;
+- preserves unknown raw statuses as exact filter values;
+- marks unknown status chips without rewriting stored rows;
+- renders only registry-allowed quick transitions in the lead card;
+- hides the list-level `В работу` action when the transition is invalid;
+- blocks disallowed status clicks in capture phase before legacy delegated handlers;
+- blocks the hidden legacy `Новая → Ждём ответ` transition caused by setting the next contact before moving the lead to work;
+- adds no Supabase read or write path of its own.
+
+Unknown raw values remain visible and cannot transition until an explicit mapping is added to the canonical registry.
+
 ## Still open
 
-The following work remains open and must not be confused with registry creation:
+The following work remains open and must not be confused with registry creation or lead UI adoption:
 
-1. Replace duplicated UI status arrays in leads/offers/orders/production one module at a time.
-2. Show/log unknown raw values without rewriting them.
+1. Replace duplicated status arrays in offers/orders/production/installation one module at a time.
+2. Add controlled logging/evidence for unknown raw values without rewriting them.
 3. Use registry validation in future Edge/RPC transition commands.
 4. Check canonical action permission server-side.
 5. Apply status, timestamp and audit event transactionally.
-6. Add negative tests for forbidden and stale transitions.
+6. Add development-branch negative tests for forbidden, stale and concurrent transitions.
 7. Decide separately whether any database constraints are appropriate.
+8. Complete browser/Network verification from `CRM_LEAD_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md`.
 
 ## Approval boundary
 
@@ -98,6 +132,6 @@ No production status rows were changed.
 
 No enum, constraint, trigger, RLS policy, grant, Edge Function or RPC was changed.
 
-No `nav_*` object was touched.
+No `nav_*`, `nav-*`, `parket-*` or `broker-*` object was touched.
 
 Server-side transition enforcement remains tracked in #202 and #204.
