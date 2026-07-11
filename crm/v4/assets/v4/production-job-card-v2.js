@@ -2,9 +2,15 @@ import { supabaseClient } from './supabase-client.js';
 import { friendlyError } from './api.js';
 import { v4State } from './state.js';
 import { canOpenV4ProductionKind, canOpenV4Tab, canViewV4Costs, canViewV4InternalNotes } from './role-tab-permissions-v1.js';
+import {
+  productionStatusSelectOptions,
+  productionStatusTimestampPatch,
+  productionStatusUiModel,
+  validateProductionStatusTransition
+} from './production-status-ui-model-v1.js';
 import { setStatus, toast } from './ui.js';
 
-const JOB_FIELDS_SAFE = ['id','order_id','title','production_status','layout_status','priority','deadline','sent_to_contractor_at','ready_at','file_url','technical_task','contractor_comment','created_at','updated_at'];
+const JOB_FIELDS_SAFE = ['id','order_id','title','production_status','layout_status','priority','deadline','sent_to_contractor_at','ready_at','issued_at','file_url','technical_task','contractor_comment','created_at','updated_at'];
 const ORDER_FIELDS_SAFE = ['id','order_number','project_name','status','layout_status','layout_link','production_status','installation_address'];
 const ITEM_FIELDS_SAFE = ['id','job_id','name','unit','qty','width','height','comment','created_at'];
 const EVENT_FIELDS_SAFE = ['id','event_type','old_status','new_status','body','created_at'];
@@ -57,12 +63,30 @@ function renderLayoutAlert(job, order) {
   if (!layoutNeedsCheck(job, order)) return '';
   return `<div class="v4-job-layout-alert" data-production-job-layout-alert><b>Дизайн / макет не согласован</b><span>Перед печатью листа или передачей в производство проверьте макет, правки и ссылку на файл.</span></div>`;
 }
+function renderProductionStatusOptions(value) {
+  return productionStatusSelectOptions(value)
+    .map((item) => `<option value="${esc(item.value)}"${item.current ? ' selected' : ''}${item.unknown ? ' data-unknown-status="true"' : ''}>${esc(item.label)}</option>`)
+    .join('');
+}
+function renderProductionStatusNotice(value) {
+  const model = productionStatusUiModel(value);
+  if (!model.known) return `<div class="v4-job-status-alert is-warn" data-production-status-warning>${esc(model.warning)}</div>`;
+  if (model.legacy) return `<div class="v4-job-status-alert" data-production-status-legacy>Legacy-статус «${esc(model.raw)}» сохранится без изменения, пока вы не выберете новый canonical статус «${esc(model.label)}».</div>`;
+  if (model.terminal) return '<div class="v4-job-status-alert" data-production-status-terminal>Статус завершён. Переходы из него не предусмотрены текущим registry.</div>';
+  return '';
+}
+function transitionErrorMessage(transition, fromValue, toValue) {
+  if (transition?.reason === 'terminal_status') return `Статус «${fromValue}» завершён. Переход в «${toValue}» запрещён registry.`;
+  if (transition?.reason === 'unknown_from_status') return `Неизвестный статус производства «${fromValue}» нельзя изменить до сопоставления с registry.`;
+  if (transition?.reason === 'unknown_to_status') return `Статус «${toValue}» отсутствует в registry производства.`;
+  return `Переход «${fromValue} → ${toValue}» не разрешён registry.`;
+}
 
 function ensureStyles() {
   if (document.getElementById('productionJobCardV2Styles')) return;
   const style = document.createElement('style');
   style.id = 'productionJobCardV2Styles';
-  style.textContent = `.v4-job-modal{position:fixed;inset:0;z-index:740;background:rgba(15,23,42,.62);display:grid;place-items:center;padding:16px}.v4-job-card{width:min(1040px,100%);max-height:92vh;overflow:auto;background:#fff;border:1px solid #bbf7d0;border-radius:20px;box-shadow:0 28px 90px rgba(15,23,42,.36);padding:18px}.v4-job-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;border-bottom:1px solid #e2e8f0;padding-bottom:12px;margin-bottom:14px}.v4-job-head h2{margin:0}.v4-job-head p{margin:6px 0 0;color:#64748b}.v4-job-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:12px 0}.v4-job-grid div{border:1px solid #d1fae5;background:#f0fdf4;border-radius:14px;padding:12px}.v4-job-grid span{display:block;font-size:12px;text-transform:uppercase;font-weight:900;color:#166534}.v4-job-grid b{display:block;margin-top:5px}.v4-job-layout-alert{border:1px solid #fdba74;background:#fff7ed;color:#9a3412;border-radius:14px;padding:10px 12px;margin:10px 0;font-weight:900}.v4-job-layout-alert b{display:block}.v4-job-layout-alert span{display:block;margin-top:4px;font-size:13px}.v4-job-columns{display:grid;grid-template-columns:1fr 1fr;gap:12px}.v4-job-section{border:1px solid #e2e8f0;border-radius:16px;padding:14px;margin-top:12px}.v4-job-row{border:1px solid #e2e8f0;background:#f8fafc;border-radius:12px;padding:10px;margin:8px 0}.v4-job-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.v4-job-actions button{border:1px solid #bbf7d0;background:#f0fdf4;color:#166534;border-radius:12px;padding:9px 12px;font-weight:900}.v4-job-actions .v4-primary{background:#16a34a;border-color:#16a34a;color:#fff}.v4-job-empty{border:1px dashed #86efac;background:#f0fdf4;color:#166534;border-radius:14px;padding:12px;font-weight:800}.v4-job-form textarea{min-height:84px;resize:vertical}.v4-job-form .wide{grid-column:1/-1}@media(max-width:820px){.v4-job-card{padding:12px;border-radius:16px}.v4-job-head,.v4-job-columns{display:grid;grid-template-columns:1fr}.v4-job-actions button{width:100%}}`;
+  style.textContent = `.v4-job-modal{position:fixed;inset:0;z-index:740;background:rgba(15,23,42,.62);display:grid;place-items:center;padding:16px}.v4-job-card{width:min(1040px,100%);max-height:92vh;overflow:auto;background:#fff;border:1px solid #bbf7d0;border-radius:20px;box-shadow:0 28px 90px rgba(15,23,42,.36);padding:18px}.v4-job-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;border-bottom:1px solid #e2e8f0;padding-bottom:12px;margin-bottom:14px}.v4-job-head h2{margin:0}.v4-job-head p{margin:6px 0 0;color:#64748b}.v4-job-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:12px 0}.v4-job-grid div{border:1px solid #d1fae5;background:#f0fdf4;border-radius:14px;padding:12px}.v4-job-grid span{display:block;font-size:12px;text-transform:uppercase;font-weight:900;color:#166534}.v4-job-grid b{display:block;margin-top:5px}.v4-job-layout-alert{border:1px solid #fdba74;background:#fff7ed;color:#9a3412;border-radius:14px;padding:10px 12px;margin:10px 0;font-weight:900}.v4-job-layout-alert b{display:block}.v4-job-layout-alert span{display:block;margin-top:4px;font-size:13px}.v4-job-status-alert{border:1px dashed #86efac;background:#f0fdf4;color:#166534;border-radius:12px;padding:9px 10px;margin-top:8px;font-size:12px;font-weight:800}.v4-job-status-alert.is-warn{border-color:#fcd34d;background:#fffbeb;color:#92400e}.v4-job-columns{display:grid;grid-template-columns:1fr 1fr;gap:12px}.v4-job-section{border:1px solid #e2e8f0;border-radius:16px;padding:14px;margin-top:12px}.v4-job-row{border:1px solid #e2e8f0;background:#f8fafc;border-radius:12px;padding:10px;margin:8px 0}.v4-job-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.v4-job-actions button{border:1px solid #bbf7d0;background:#f0fdf4;color:#166534;border-radius:12px;padding:9px 12px;font-weight:900}.v4-job-actions .v4-primary{background:#16a34a;border-color:#16a34a;color:#fff}.v4-job-empty{border:1px dashed #86efac;background:#f0fdf4;color:#166534;border-radius:14px;padding:12px;font-weight:800}.v4-job-form textarea{min-height:84px;resize:vertical}.v4-job-form .wide{grid-column:1/-1}@media(max-width:820px){.v4-job-card{padding:12px;border-radius:16px}.v4-job-head,.v4-job-columns{display:grid;grid-template-columns:1fr}.v4-job-actions button{width:100%}}`;
   document.head.appendChild(style);
 }
 
@@ -111,7 +135,9 @@ function renderCard(bundle) {
   const costStat = canViewV4Costs() ? `<div data-v4-cost-sensitive><span>Себестоимость</span><b>${money(job.contractor_cost)}</b></div>` : '';
   const internalField = canViewV4InternalNotes() ? `<label class="wide" data-v4-internal-sensitive>Внутренний комментарий<textarea id="prodJobInternalComment">${esc(job.internal_comment || '')}</textarea></label>` : '';
   const orderButton = order && canOpenV4Tab('orders') ? `<button type="button" data-open-order="${esc(order.id)}">Открыть заказ</button>` : '';
-  host().innerHTML = `<div class="v4-job-modal"><div class="v4-job-card"><div class="v4-job-head"><div><p class="v4-kicker">Производственное задание</p><h2>${esc(job.title || order?.project_name || 'Задание')}</h2><p>Заказ №${esc(order?.order_number || String(job.order_id || '').slice(0, 8))}. Клиентские контакты не показываются.</p></div><button type="button" data-production-job-close>Закрыть</button></div><div class="v4-job-grid"><div><span>Статус</span><b>${esc(job.production_status || 'Не передано')}</b></div><div><span>Дизайн / макет</span><b>${esc(layoutStatus(job, order))}</b></div><div><span>Приоритет</span><b>${esc(job.priority || 'Обычная')}</b></div><div><span>Срок</span><b>${dateRu(job.deadline)}</b></div><div><span>Позиции</span><b>${items.length}</b></div>${costStat}</div>${renderLayoutAlert(job, order)}<div class="v4-job-actions"><button type="button" class="v4-primary" data-save-production-job="${esc(job.id)}">Сохранить</button><button type="button" data-print-production-job="${esc(job.id)}">Печать листа</button>${orderButton}<button type="button" data-production-job-close>Закрыть</button></div><div class="v4-job-columns"><section class="v4-job-section"><h3>Редактирование</h3><div class="v4-job-form v4-form-grid"><label>Название<input id="prodJobTitle" value="${esc(job.title || '')}"></label><label>Статус<select id="prodJobStatus"><option ${job.production_status === 'Не передано' ? 'selected' : ''}>Не передано</option><option ${job.production_status === 'Передано в производство' ? 'selected' : ''}>Передано в производство</option><option ${job.production_status === 'В работе' ? 'selected' : ''}>В работе</option><option ${job.production_status === 'Готово' ? 'selected' : ''}>Готово</option><option ${job.production_status === 'Проблема' ? 'selected' : ''}>Проблема</option></select></label><label>Макет<select id="prodJobLayout"><option ${job.layout_status === 'Макет не проверен' ? 'selected' : ''}>Макет не проверен</option><option ${job.layout_status === 'На согласовании' ? 'selected' : ''}>На согласовании</option><option ${job.layout_status === 'Макет согласован' ? 'selected' : ''}>Макет согласован</option><option ${job.layout_status === 'Нужны правки' ? 'selected' : ''}>Нужны правки</option></select></label><label>Приоритет<select id="prodJobPriority"><option ${job.priority === 'Обычная' ? 'selected' : ''}>Обычная</option><option ${job.priority === 'Высокая' ? 'selected' : ''}>Высокая</option><option ${job.priority === 'Срочно' ? 'selected' : ''}>Срочно</option></select></label><label>Срок<input id="prodJobDeadline" type="datetime-local" value="${localDateTime(job.deadline)}"></label><label>Файл / макет<input id="prodJobFile" value="${esc(job.file_url || order?.layout_link || '')}"></label><label class="wide">Техническое задание<textarea id="prodJobTask">${esc(job.technical_task || '')}</textarea></label><label class="wide">Комментарий производству<textarea id="prodJobContractorComment">${esc(job.contractor_comment || '')}</textarea></label>${internalField}</div></section><section class="v4-job-section"><h3>Данные для производства</h3><div class="v4-job-row"><b>Объект</b><p>${esc(order?.project_name || '—')}</p></div><div class="v4-job-row"><b>Место размещения</b><p>${esc(data.install_place || data.installPlace || order?.installation_address || '—')}</p></div><div class="v4-job-row"><b>Дизайн / макет</b><p>${esc(job.file_url || order?.layout_link || 'Ссылка не указана')}</p></div></section></div><section class="v4-job-section"><h3>Состав задания</h3>${renderItems(items)}</section><section class="v4-job-section"><h3>История</h3>${renderEvents(events)}</section></div></div>`;
+  const statusModel = productionStatusUiModel(job.production_status);
+  const statusDisplay = statusModel.known && statusModel.legacy ? `${statusModel.raw} (legacy: ${statusModel.label})` : statusModel.raw;
+  host().innerHTML = `<div class="v4-job-modal"><div class="v4-job-card"><div class="v4-job-head"><div><p class="v4-kicker">Производственное задание</p><h2>${esc(job.title || order?.project_name || 'Задание')}</h2><p>Заказ №${esc(order?.order_number || String(job.order_id || '').slice(0, 8))}. Клиентские контакты не показываются.</p></div><button type="button" data-production-job-close>Закрыть</button></div><div class="v4-job-grid"><div><span>Статус</span><b>${esc(statusDisplay)}</b></div><div><span>Дизайн / макет</span><b>${esc(layoutStatus(job, order))}</b></div><div><span>Приоритет</span><b>${esc(job.priority || 'Обычная')}</b></div><div><span>Срок</span><b>${dateRu(job.deadline)}</b></div><div><span>Позиции</span><b>${items.length}</b></div>${costStat}</div>${renderLayoutAlert(job, order)}<div class="v4-job-actions"><button type="button" class="v4-primary" data-save-production-job="${esc(job.id)}">Сохранить</button><button type="button" data-print-production-job="${esc(job.id)}">Печать листа</button>${orderButton}<button type="button" data-production-job-close>Закрыть</button></div><div class="v4-job-columns"><section class="v4-job-section"><h3>Редактирование</h3><div class="v4-job-form v4-form-grid"><label>Название<input id="prodJobTitle" value="${esc(job.title || '')}"></label><label>Статус<select id="prodJobStatus">${renderProductionStatusOptions(job.production_status)}</select>${renderProductionStatusNotice(job.production_status)}</label><label>Макет<select id="prodJobLayout"><option ${job.layout_status === 'Макет не проверен' ? 'selected' : ''}>Макет не проверен</option><option ${job.layout_status === 'На согласовании' ? 'selected' : ''}>На согласовании</option><option ${job.layout_status === 'Макет согласован' ? 'selected' : ''}>Макет согласован</option><option ${job.layout_status === 'Нужны правки' ? 'selected' : ''}>Нужны правки</option></select></label><label>Приоритет<select id="prodJobPriority"><option ${job.priority === 'Обычная' ? 'selected' : ''}>Обычная</option><option ${job.priority === 'Высокая' ? 'selected' : ''}>Высокая</option><option ${job.priority === 'Срочно' ? 'selected' : ''}>Срочно</option></select></label><label>Срок<input id="prodJobDeadline" type="datetime-local" value="${localDateTime(job.deadline)}"></label><label>Файл / макет<input id="prodJobFile" value="${esc(job.file_url || order?.layout_link || '')}"></label><label class="wide">Техническое задание<textarea id="prodJobTask">${esc(job.technical_task || '')}</textarea></label><label class="wide">Комментарий производству<textarea id="prodJobContractorComment">${esc(job.contractor_comment || '')}</textarea></label>${internalField}</div></section><section class="v4-job-section"><h3>Данные для производства</h3><div class="v4-job-row"><b>Объект</b><p>${esc(order?.project_name || '—')}</p></div><div class="v4-job-row"><b>Место размещения</b><p>${esc(data.install_place || data.installPlace || order?.installation_address || '—')}</p></div><div class="v4-job-row"><b>Дизайн / макет</b><p>${esc(job.file_url || order?.layout_link || 'Ссылка не указана')}</p></div></section></div><section class="v4-job-section"><h3>Состав задания</h3>${renderItems(items)}</section><section class="v4-job-section"><h3>История</h3>${renderEvents(events)}</section></div></div>`;
 }
 
 async function openJobCard(jobId) {
@@ -130,7 +156,10 @@ async function saveJob(jobId) {
   busy = true;
   try {
     const old = currentBundle?.job || (await fetchBundle(jobId)).job;
-    const status = field('prodJobStatus') || old.production_status || 'Не передано';
+    const selectedStatus = field('prodJobStatus') || old.production_status || 'Не передано';
+    const transition = validateProductionStatusTransition(old.production_status, selectedStatus);
+    if (!transition.ok) throw new Error(transitionErrorMessage(transition, old.production_status || 'Не передано', selectedStatus));
+    const status = transition.storedValue;
     const deadlineRaw = field('prodJobDeadline');
     const patch = {
       title: field('prodJobTitle') || old.title,
@@ -141,11 +170,10 @@ async function saveJob(jobId) {
       file_url: field('prodJobFile') || null,
       technical_task: field('prodJobTask') || null,
       contractor_comment: field('prodJobContractorComment') || null,
-      updated_at: nowIso()
+      updated_at: nowIso(),
+      ...productionStatusTimestampPatch(transition, old, nowIso())
     };
     if (canViewV4InternalNotes()) patch.internal_comment = field('prodJobInternalComment') || null;
-    if (status === 'Передано в производство') patch.sent_to_contractor_at = old.sent_to_contractor_at || nowIso();
-    if (status === 'Готово') patch.ready_at = old.ready_at || nowIso();
     const response = await supabaseClient.from('leader_production_jobs').update(patch).eq('id', jobId);
     if (response.error) throw response.error;
     if (old.order_id) {
