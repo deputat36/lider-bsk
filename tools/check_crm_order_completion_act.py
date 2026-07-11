@@ -58,7 +58,7 @@ checks = {
     ],
     manual: [
         'https://deputat36.github.io/lider-bsk/crm/v4/?tab=orders',
-        'no INSERT, UPDATE or DELETE request',
+        'no POST, PATCH, INSERT, UPDATE or DELETE request',
         '`contractor_cost`',
         '`contractor_price`',
         '`profit`',

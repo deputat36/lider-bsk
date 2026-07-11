@@ -22,6 +22,16 @@ function resultRu(value) {
   const map = { accepted: 'Принято', duplicate: 'Дубль', suspicious: 'Подозрительно', rejected: 'Отклонено', error: 'Ошибка' };
   return map[value] || value || '—';
 }
+function reasonRu(value) {
+  const map = {
+    lead_insert_created: 'Новая заявка создана',
+    request_id_conflict: 'Повторная отправка с тем же номером обращения',
+    honeypot_filled: 'Заполнено скрытое антиспам-поле',
+    phone_or_message_required: 'Не указан телефон и текст заявки',
+    insert_failed: 'Не удалось записать заявку',
+  };
+  return map[value] || value || '—';
+}
 function resultClass(value) {
   if (value === 'accepted') return 'is-good';
   if (value === 'suspicious' || value === 'duplicate') return 'is-warn';
@@ -85,7 +95,7 @@ function ensureNav() {
   if (anchor) anchor.insertAdjacentElement('afterend', button); else nav.appendChild(button);
 }
 function searchText(row) {
-  return [row.request_id, row.phone_normalized, row.source_page_path, row.page_url, row.reason, row.result, resultRu(row.result), row.referer, row.utm_source, row.utm_medium, row.utm_campaign].join(' ').toLowerCase();
+  return [row.request_id, row.phone_normalized, row.source_page_path, row.page_url, row.reason, reasonRu(row.reason), row.result, resultRu(row.result), row.referer, row.utm_source, row.utm_medium, row.utm_campaign].join(' ').toLowerCase();
 }
 function filteredRows() {
   const byStatus = filter === 'all' ? rows : rows.filter((row) => row.result === filter);
@@ -99,9 +109,12 @@ function card(row) {
   const page = row.source_page_path || row.page_url || '—';
   const payload = payloadText(row.payload);
   const requestId = row.request_id || '';
+  const reasonCode = row.reason || '';
+  const reasonLabel = reasonRu(reasonCode);
+  const reasonText = reasonCode ? `${reasonLabel} · код: ${reasonCode}` : reasonLabel;
   const copyButton = requestId ? `<button type="button" class="v4-audit-copy" data-public-lead-audit-copy="${esc(requestId)}">Скопировать request_id</button>` : '';
   const traceButton = requestId ? `<button type="button" class="v4-audit-trace" data-public-lead-audit-trace="${esc(requestId)}">Проверить цепочку</button>` : '';
-  return `<article class="v4-audit-card ${cls}"><span class="v4-audit-badge ${cls}">${esc(resultRu(row.result))}</span><h3>${esc(dateRu(row.created_at))}</h3><small>Причина: ${esc(row.reason || '—')}</small><small>Телефон: ${esc(row.phone_normalized || '—')} · request_id: ${esc(short(requestId, 44) || '—')}</small>${copyButton}${traceButton}<small>Страница: ${esc(short(page, 110))}</small><small>Referer: ${esc(short(row.referer || '—', 120))}</small><small>UTM: ${esc(short(utm, 110))}</small><small>User-Agent: ${esc(short(row.user_agent || '—', 120))}</small><details class="v4-audit-payload"><summary>Технические данные</summary><pre>${esc(short(payload, 1200))}</pre></details></article>`;
+  return `<article class="v4-audit-card ${cls}"><span class="v4-audit-badge ${cls}">${esc(resultRu(row.result))}</span><h3>${esc(dateRu(row.created_at))}</h3><small>Причина: ${esc(reasonText)}</small><small>Телефон: ${esc(row.phone_normalized || '—')} · request_id: ${esc(short(requestId, 44) || '—')}</small>${copyButton}${traceButton}<small>Страница: ${esc(short(page, 110))}</small><small>Referer: ${esc(short(row.referer || '—', 120))}</small><small>UTM: ${esc(short(utm, 110))}</small><small>User-Agent: ${esc(short(row.user_agent || '—', 120))}</small><details class="v4-audit-payload"><summary>Технические данные</summary><pre>${esc(short(payload, 1200))}</pre></details></article>`;
 }
 function render() {
   ensureSection(); ensureNav();
