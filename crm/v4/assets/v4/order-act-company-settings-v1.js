@@ -1,3 +1,4 @@
+import './company-legal-settings-preview-v1.js';
 import {
   companyLegalDetailsText,
   companyLegalName,

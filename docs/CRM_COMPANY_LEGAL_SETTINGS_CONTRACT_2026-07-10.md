@@ -16,9 +16,12 @@ Centralize executor details for:
 
 ## Source contract
 
-File:
+Files:
 
-`crm/v4/assets/v4/company-legal-settings-v1.js`
+- `crm/v4/assets/v4/company-legal-settings-v1.js` — read-only loader and formatter;
+- `crm/v4/assets/v4/company-legal-settings-draft-v1.js` — pure normalization, validation and preview model;
+- `crm/v4/assets/v4/order-act-company-settings-v1.js` — act-field autofill sidecar;
+- `crm/v4/assets/v4/company-legal-settings-preview-v1.js` — read-only owner/admin validation and preview form.
 
 Settings key:
 
@@ -60,47 +63,50 @@ The contract must not contain:
 
 Signature/stamp files, if later required, must be private Storage references with controlled access.
 
-## Current source behavior
+## Current read-only behavior
 
 `loadCompanyLegalSettings()` performs a read-only SELECT from `leader_settings`.
 
 If the row does not exist or cannot be read:
 
 - the helper returns safe defaults;
-- act generation remains available with manual editable fields;
+- the existing act preview remains usable with manual entry;
 - no write or automatic row creation occurs.
 
-`normalizeCompanyLegalSettings()`:
+`normalizeCompanyLegalSettings()` trims and limits source values and exposes `configured` and `schema_version`.
 
-- accepts only an object;
-- trims and limits text values;
-- applies default brand/tax/signatory role;
-- exposes `configured` and `schema_version`.
+`validateCompanyLegalSettingsDraft()` additionally checks:
 
-`companyLegalDetailsText()` builds a human-readable multiline block without secrets.
+- supported `schema_version`;
+- INN length;
+- email format;
+- bank/correspondent account length;
+- BIK length;
+- supported tax mode;
+- forbidden secret-like field names.
 
-## Act sidecar
+Validation warnings identify incomplete address, contacts, signatory and bank details without blocking the unsaved draft.
 
-Prepared file:
+## Act activation
 
-`crm/v4/assets/v4/order-act-company-settings-v1.js`
+The sidecar is activated through `order-act-preview-v1.js` with a small module import. No new script tag was added to `crm/v4/index.html`.
 
-It is designed to fill only blank/default act fields:
+When an act editor opens:
 
-- executor name;
-- executor requisites;
-- tax mode;
-- signatory name;
-- signatory role.
+- configured organization details fill blank/default executor fields;
+- manual user edits are not overwritten by automatic loading;
+- missing or unreadable settings keep editable fallback values;
+- no database write is attempted.
 
-It must not overwrite user edits.
+Owner/admin users with UI permission `settings.manage` also see `Проверить реквизиты` in the act editor. The form:
 
-Current activation status:
+- loads the current read-only setting;
+- validates field formats;
+- shows a formatted executor preview;
+- can apply valid values only to the current unsaved act draft;
+- has no production save action.
 
-- source sidecar is prepared;
-- it is not yet loaded by `crm/v4/index.html`;
-- activation is tracked in #215;
-- the existing act preview remains usable with manual entry.
+Manager/accountant can generate an act but cannot open the organization-settings form. Designer/installer/contractor cannot generate the act.
 
 ## Permission model
 
@@ -112,36 +118,31 @@ Write:
 
 - only owner/admin with `settings.manage`;
 - server-side permission check required;
-- UI hiding is not authorization.
+- UI hiding is not authorization;
+- no write command exists in this source-only stage.
 
-Each settings change should create an audit event with:
+Each future settings change should create an audit event with actor, timestamp, old/new schema version or hash, and changed field names without logging full values unnecessarily.
 
-- actor;
-- timestamp;
-- old schema version/hash;
-- new schema version/hash;
-- changed field names without logging sensitive full values unnecessarily.
+## Verification
 
-## Future admin UI
+Automated source checks:
 
-Owner/admin settings screen should provide:
+- `tools/check_crm_company_legal_settings.py`;
+- `tools/test_crm_company_legal_settings.mjs`;
+- `.github/workflows/crm-order-completion-act-check.yml`.
 
-- field validation;
-- preview of the formatted executor block;
-- tax-mode selection;
-- signatory selection;
-- save confirmation;
-- audit history;
-- no secret fields.
+Manual browser/Network proof remains required by `docs/CRM_ORDER_COMPLETION_ACT_MANUAL_TEST_2026-07-10.md`.
 
 ## Approval gate
 
 Before writing the setting in production:
 
-1. define server-side update command;
-2. require `settings.manage`;
+1. define a server-side update command;
+2. require `settings.manage` server-side;
 3. validate schema version and field lengths;
-4. create audit event;
+4. create an audit event;
 5. test owner/admin allow and all other roles deny;
 6. test act/invoice/contract rendering;
 7. obtain explicit production approval.
+
+No production setting row, policy, grant, Edge Function or data was changed by this activation.
