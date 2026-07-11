@@ -12,6 +12,7 @@ V4_SCRIPT = 'assets/public-lead-form.js?v=4'
 # they can be shortened and updated without a risky full-file replacement.
 V5_PAGES = (
     'uslugi.html',
+    'kontakty.html',
     'bannery-borisoglebsk.html',
     'outdoor-advertising-borisoglebsk.html',
     'reklama-otkrytiya-magazina-borisoglebsk.html',
