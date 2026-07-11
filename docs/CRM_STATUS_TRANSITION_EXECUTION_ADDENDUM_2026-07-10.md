@@ -55,6 +55,7 @@ Distinct production values were read without DML for:
 - `leader_design_tasks.task_status`;
 - `leader_production_jobs.production_status`;
 - `leader_production_jobs.layout_status`;
+- `leader_installation_jobs.install_status`;
 - `leader_payments.payment_status`.
 
 The registry includes all values currently observed in non-empty production domains, including NULL installation state normalization.
@@ -72,7 +73,12 @@ The 2026-07-11 read-only production snapshot contains:
 - `leader_production_jobs.production_status`: `Не передано` — 1, `В производстве` — 1;
 - `leader_orders.production_status`: `Не передано` — 3, `В производстве` — 1, `Выдано` — 1.
 
-No production row was changed during the snapshot.
+The 2026-07-11 read-only installation snapshot contains:
+
+- `leader_installation_jobs.install_status`: `Запланирован` — 1;
+- `leader_orders.installation_status`: NULL — 2, `Запланирован` — 1, `Не назначен` — 1, `Не требуется` — 1.
+
+No production or installation row was changed during the snapshots.
 
 ## First module adoption
 
@@ -193,19 +199,42 @@ The existing `production-job-card-v2.js` now:
 
 The production model itself is side-effect free and creates no Supabase client, REST, RPC or Edge path.
 
+## Sixth module adoption — installation job status editor
+
+Added:
+
+- `crm/v4/assets/v4/installation-status-ui-model-v1.js`;
+- `tools/test_crm_installation_status_ui.mjs`;
+- `tools/check_crm_installation_status_ui_registry.py`;
+- `docs/CRM_INSTALLATION_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md`.
+
+The existing `installation-job-card-v2.js` now:
+
+- builds the status select from registry-allowed installation targets;
+- validates the transition before the existing job/order/event write path;
+- preserves a NULL `install_status` when other fields are saved without a status change;
+- writes a canonical label only after a real transition;
+- preserves unchanged legacy or unknown raw status values;
+- recognizes legacy `Нужно назначить` as `Не назначен` and `Проблема` as `Перенесён`;
+- blocks unknown, terminal and forbidden transitions before any Supabase write;
+- maps timestamps only to live columns `started_at` and `completed_at`;
+- does not write missing `postponed_at` or `cancelled_at` columns;
+- keeps the existing direct multi-table write path visible as technical debt tracked by #202/#204.
+
+The installation model itself is side-effect free and creates no Supabase client, REST, RPC or Edge path.
+
 ## Still open
 
 The following work remains open and must not be confused with registry creation or completed UI adoptions:
 
-1. Replace duplicated installation status arrays in its card/board without rewriting raw rows.
-2. Replace heuristic production/installation completion classifiers in the shared board with registry-backed read-only classification.
-3. Add controlled logging/evidence for unknown raw values without rewriting them.
-4. Use registry validation in future Edge/RPC transition commands.
-5. Check canonical action permission server-side.
-6. Apply status, timestamp and audit event transactionally.
-7. Add development-branch negative tests for forbidden, stale and concurrent transitions.
-8. Decide separately whether any database constraints are appropriate.
-9. Complete browser/Network verification from the manual-test documents.
+1. Replace heuristic production/installation completion classifiers in the shared board with registry-backed read-only classification.
+2. Add controlled logging/evidence for unknown raw values without rewriting them.
+3. Use registry validation in future Edge/RPC transition commands.
+4. Check canonical action permission server-side.
+5. Apply status, timestamp and audit event transactionally.
+6. Add development-branch negative tests for forbidden, stale and concurrent transitions.
+7. Decide separately whether any database constraints are appropriate.
+8. Complete browser/Network verification from the manual-test documents.
 
 ## Approval boundary
 
