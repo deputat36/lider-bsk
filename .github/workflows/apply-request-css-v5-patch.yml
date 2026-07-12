@@ -27,7 +27,7 @@ jobs:
           ref: fix/public-request-css-v5-2026-07-12
           fetch-depth: 0
 
-      - name: Extract request CSS and synchronize v5 contracts
+      - name: Extract request CSS and update source copy
         run: python3 tools/apply_request_css_v5_patch.py
 
       - name: Validate diff
@@ -56,11 +56,7 @@ jobs:
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add request.html assets/public-request.css \
-            .github/workflows/request-reference-check.yml \
-            .github/workflows/public-request-seo-check.yml \
-            .github/workflows/public-site-audit-check.yml \
-            .github/workflows/static-checks.yml
+          git add request.html assets/public-request.css
           git commit -m 'Extract request CSS and move public form to v5'
           git pull --rebase origin "$TARGET_BRANCH"
           git push origin HEAD:"$TARGET_BRANCH"
