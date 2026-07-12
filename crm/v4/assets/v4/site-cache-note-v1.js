@@ -23,5 +23,6 @@ function bootSiteCacheNote() {
   import('./public-lead-audit-summary-v1.js?v=20260629-request-summary-1').catch(() => {});
   import('./public-lead-request-id-v1.js?v=20260710-request-id-1').catch(() => {});
   import('./crm-training-scenario-v1.js?v=20260712-training-3').catch(() => {});
+  import('./management-workload-panel-v1.js?v=20260712-workload-1').catch(() => {});
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootSiteCacheNote); else bootSiteCacheNote();

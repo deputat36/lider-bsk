@@ -38,6 +38,22 @@ Supabase baseline РА «Лидер»: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-
 - все ролевые маршруты продолжают использовать единственный localStorage-ключ `leader_crm_v4_training_scenario_v1` и не создают production-строки;
 - добавлены behavior test, source checker, подробный manual browser/Network checklist и отдельная GitHub Actions проверка.
 
+## Нагрузка и SLA по ответственным
+
+Обновление 2026-07-12:
+
+- управленческий дашборд получил отдельный read-only модуль `management-workload-panel-v1.js`;
+- панель показывает активные заявки, заявки без ответственного, нарушения SLA, покрытие SLA и контакты на сегодня;
+- нагрузка группируется по активным owner/admin/manager, а заявки без `assigned_to` выводятся отдельной очередью;
+- SLA считается выполненным, когда у активной заявки назначен непросроченный следующий контакт;
+- терминальные статусы исключаются через canonical status registry;
+- каждая строка ответственного открывает read-only очередь с переходом в существующую карточку заявки;
+- в очередях не показываются имя клиента, телефон, email, сообщение, внутренние комментарии и финансовые суммы;
+- используются только read-only SELECT к `leader_leads` и `leader_user_profiles` с минимальным набором полей;
+- модуль не выполняет INSERT, UPDATE, DELETE, UPSERT, RPC или Edge Function write-команды;
+- добавлены чистая модель, behavior test, source checker, manual browser/Network checklist и отдельный GitHub Actions workflow;
+- автоматические назначения, SLA gates, backfill и server-side enforcement остаются approval-gated.
+
 ## Supabase
 
 Активные функции контура РА «Лидер»:
