@@ -1,54 +1,60 @@
 import assert from 'node:assert/strict';
 import {
-  CRM_TRAINING_SCENARIO,
-  CRM_TRAINING_SCENARIO_VERSION,
-  CRM_TRAINING_STEP_IDS,
-  completeTrainingStep,
-  currentTrainingStep,
+  TRAINING_PHASES,
+  TRAINING_STEP_IDS,
+  applyTrainingScenarioAction,
+  createTrainingScenarioState,
   normalizeTrainingScenarioState,
-  resetTrainingScenario,
-  setTrainingScenarioCollapsed,
-  startTrainingScenario,
-  trainingScenarioProgress,
-  trainingStepDefinition
-} from '../crm/v4/assets/v4/crm-training-scenario-model-v1.js';
+  trainingScenarioProgress
+} from '../crm/v4/assets/v4/crm-training-scenario-v1.js';
 
-assert.equal(CRM_TRAINING_SCENARIO_VERSION, 1);
-assert.deepEqual(CRM_TRAINING_STEP_IDS, ['lead', 'need', 'offer', 'order', 'finish']);
-assert.equal(CRM_TRAINING_SCENARIO.steps.length, 5);
-assert.match(CRM_TRAINING_SCENARIO.warning, /не создаёт клиента, заявку, КП, заказ или задачу в Supabase/);
-assert.equal(trainingStepDefinition('need')?.facts.includes('Полнота потребности: 85%'), true);
-assert.match(trainingStepDefinition('finish')?.result || '', /Отмена не считается выполнением/);
+assert.deepEqual(TRAINING_STEP_IDS, ['lead', 'need', 'offer', 'order', 'production']);
+assert.deepEqual(TRAINING_PHASES, ['lead', 'need', 'offer', 'order', 'production', 'done']);
 
-const empty = normalizeTrainingScenarioState({ completed: ['need', 'lead', 'offer'] });
-assert.deepEqual(empty.completed, ['lead', 'need', 'offer']);
-assert.equal(empty.started, true);
+let state = createTrainingScenarioState();
+assert.equal(state.phase, 'lead');
+assert.equal(state.productionStatus, 'Не передано');
+assert.deepEqual(trainingScenarioProgress(state), { completed: 0, total: 5, percent: 0 });
 
-const initial = resetTrainingScenario();
-assert.deepEqual(initial.completed, []);
-assert.equal(initial.started, false);
-assert.equal(currentTrainingStep(initial), null);
-assert.deepEqual(trainingScenarioProgress(initial), { completed: 0, total: 5, percent: 0, finished: false });
+const wrongOrder = applyTrainingScenarioAction(state, { type: 'confirm_need' });
+assert.equal(wrongOrder.phase, 'lead');
+assert.match(wrongOrder.lastError, /Сначала завершите этап/);
 
-const started = startTrainingScenario(initial);
-assert.equal(started.started, true);
-assert.equal(currentTrainingStep(started), 'lead');
-assert.deepEqual(completeTrainingStep(started, 'need'), started);
+state = applyTrainingScenarioAction(state, { type: 'schedule_contact' });
+assert.equal(state.phase, 'need');
+state = applyTrainingScenarioAction(state, { type: 'confirm_need' });
+assert.equal(state.phase, 'offer');
+state = applyTrainingScenarioAction(state, { type: 'approve_offer' });
+assert.equal(state.phase, 'order');
+state = applyTrainingScenarioAction(state, { type: 'create_order' });
+assert.equal(state.phase, 'production');
+assert.deepEqual(state.completed, ['lead', 'need', 'offer', 'order']);
 
-const leadDone = completeTrainingStep(started, 'lead');
-assert.deepEqual(leadDone.completed, ['lead']);
-assert.equal(currentTrainingStep(leadDone), 'need');
-assert.deepEqual(trainingScenarioProgress(leadDone), { completed: 1, total: 5, percent: 20, finished: false });
+const forbidden = applyTrainingScenarioAction(state, { type: 'production_transition', status: 'Выдано' });
+assert.equal(forbidden.phase, 'production');
+assert.equal(forbidden.productionStatus, 'Не передано');
+assert.match(forbidden.lastError, /запрещён registry/);
 
-const collapsed = setTrainingScenarioCollapsed(leadDone, true);
-assert.equal(collapsed.collapsed, true);
-assert.deepEqual(collapsed.completed, ['lead']);
+state = applyTrainingScenarioAction(state, { type: 'production_transition', status: 'В производстве' });
+assert.equal(state.productionStatus, 'В производстве');
+state = applyTrainingScenarioAction(state, { type: 'production_transition', status: 'Готово' });
+assert.equal(state.productionStatus, 'Готово');
+state = applyTrainingScenarioAction(state, { type: 'production_transition', status: 'Выдано' });
+assert.equal(state.phase, 'done');
+assert.deepEqual(state.completed, TRAINING_STEP_IDS);
+assert.deepEqual(trainingScenarioProgress(state), { completed: 5, total: 5, percent: 100 });
 
-let completed = started;
-for (const stepId of CRM_TRAINING_STEP_IDS) completed = completeTrainingStep(completed, stepId);
-assert.deepEqual(completed.completed, CRM_TRAINING_STEP_IDS);
-assert.equal(currentTrainingStep(completed), null);
-assert.deepEqual(trainingScenarioProgress(completed), { completed: 5, total: 5, percent: 100, finished: true });
-assert.deepEqual(completeTrainingStep(completed, 'finish'), completed);
+const normalized = normalizeTrainingScenarioState({
+  phase: 'fake',
+  completed: ['lead', 'lead', 'fake'],
+  productionStatus: 'Несуществующий статус'
+});
+assert.equal(normalized.phase, 'lead');
+assert.deepEqual(normalized.completed, ['lead']);
+assert.equal(normalized.productionStatus, 'Не передано');
+
+const reset = applyTrainingScenarioAction(state, { type: 'reset' });
+assert.equal(reset.phase, 'lead');
+assert.deepEqual(reset.completed, []);
 
 console.log('CRM local training scenario behavior is valid.');
