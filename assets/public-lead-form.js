@@ -6,6 +6,7 @@
   const METRIKA_ID=109387236;
   const PENDING_STORAGE_KEY='leader_public_lead_pending_v1';
   const MAX_PENDING_AGE_MS=30*60*1000;
+  const CONSENT_VERSION='privacy-2026-07-12-v1';
 
   const scenarios={
     shop:{service:'Комплексная реклама',text:'Сценарий: открываем / оформляем магазин. Нужны рекомендации по вывеске, баннеру, режиму работы, наклейкам, картам и соцсетям.'},
@@ -90,7 +91,6 @@
   }
   function setStatus(form,type,msg){const s=form.querySelector('[data-leader-lead-status]');if(s){s.className='leader-lead-status show '+type;s.textContent=msg}}
   function qs(){const p=new URLSearchParams(location.search);return{utm_source:p.get('utm_source')||'',utm_medium:p.get('utm_medium')||'',utm_campaign:p.get('utm_campaign')||'',utm_term:p.get('utm_term')||'',utm_content:p.get('utm_content')||'',scenario:p.get('scenario')||'',service:p.get('service')||''}}
-  function sourceGuess(){const u=qs();if(u.utm_source)return u.utm_source;if(document.referrer){try{return new URL(document.referrer).hostname}catch(e){}}return 'Сайт'}
 
   function loadMetrika(){
     if(window.__leaderMetrikaLoaded)return;
@@ -121,18 +121,19 @@
     return `<form class="leader-lead-widget" data-leader-lead-widget>
       <h3>Быстрая заявка</h3>
       <p>Заполните коротко. Мы сами уточним детали, если данных будет недостаточно.</p>
-      <input class="leader-lead-hp" name="website" tabindex="-1" autocomplete="off">
+      <input class="leader-lead-hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
       <div class="leader-lead-grid">
-        <div class="leader-lead-span-6"><label for="${id}-name">Имя / организация</label><input id="${id}-name" name="name" maxlength="200" placeholder="Например, Алексей"></div>
-        <div class="leader-lead-span-6"><label for="${id}-phone">Телефон</label><input id="${id}-phone" name="phone" maxlength="80" placeholder="+7..." required></div>
+        <div class="leader-lead-span-6"><label for="${id}-name">Имя / организация</label><input id="${id}-name" name="name" type="text" autocomplete="name" maxlength="200" placeholder="Например, Алексей"></div>
+        <div class="leader-lead-span-6"><label for="${id}-phone">Телефон</label><input id="${id}-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="80" placeholder="+7..." required></div>
         <div class="leader-lead-span-12"><label for="${id}-service">Что нужно?</label><select id="${id}-service" name="service"><option>Баннер</option><option>Полиграфия</option><option>Визитки</option><option>Наклейки</option><option>Табличка</option><option>Печать на плёнке</option><option>Плоттерная резка</option><option>Вывеска / наружная реклама</option><option>Дизайн макета</option><option>Соцсети и контент</option><option>Яндекс Карты и 2ГИС</option><option>Логотип / фирменный стиль</option><option>Комплексная реклама</option><option>Другое</option></select></div>
         <div class="leader-lead-span-12"><label for="${id}-message">Коротко опишите задачу</label><textarea id="${id}-message" name="message" maxlength="2000" rows="3" placeholder="Например: нужен рекламный пост, баннер или наклейки"></textarea></div>
       </div>
       <button class="leader-lead-more" type="button" data-leader-more>Добавить подробности для точного расчёта ↓</button>
       <div class="leader-lead-details" data-leader-details hidden>
         <div class="leader-lead-grid">
-          <div class="leader-lead-span-6"><label for="${id}-city">Город</label><input id="${id}-city" name="city" maxlength="120" placeholder="Борисоглебск"></div>
-          <div class="leader-lead-span-6"><label for="${id}-contact">Как удобнее связаться?</label><select id="${id}-contact" name="contact_method"><option>Позвонить</option><option>Написать в MAX</option><option>Написать ВКонтакте</option><option>Написать на email</option><option>Любой удобный способ</option></select></div>
+          <div class="leader-lead-span-6"><label for="${id}-city">Город</label><input id="${id}-city" name="city" autocomplete="address-level2" maxlength="120" placeholder="Борисоглебск"></div>
+          <div class="leader-lead-span-6"><label for="${id}-contact">Как удобнее связаться?</label><select id="${id}-contact" name="contact_method"><option>Позвонить по указанному номеру</option><option>Написать в MAX по указанному номеру</option><option>Написать ВКонтакте</option><option>Написать на email</option><option>Любой удобный способ</option></select></div>
+          <div class="leader-lead-span-12"><label for="${id}-contact-detail">Email или ссылка на профиль</label><input id="${id}-contact-detail" name="contact_detail" maxlength="300" placeholder="Заполните, если выбрали email или ВКонтакте"></div>
           <div class="leader-lead-span-6"><label for="${id}-quantity">Количество / формат</label><input id="${id}-quantity" name="quantity" maxlength="120" placeholder="1 пост, пакет, закреп, 100 наклеек"></div>
           <div class="leader-lead-span-6"><label for="${id}-deadline">Когда нужно?</label><select id="${id}-deadline" name="deadline"><option>Не срочно</option><option>Как можно быстрее</option><option>В течение 2–3 дней</option><option>В течение недели</option><option>К определённой дате</option><option>Нужно обсудить</option></select></div>
           <div class="leader-lead-span-6"><label for="${id}-mockup">Макет</label><select id="${id}-mockup" name="mockup"><option>Макета нет, нужен дизайн</option><option>Макет готов</option><option>Есть пример, нужно доработать</option><option>Пока не знаю</option></select></div>
@@ -142,8 +143,8 @@
         </div>
       </div>
       <button type="submit">Отправить заявку</button>
-      <div class="leader-lead-note">Нажимая кнопку, вы соглашаетесь на обработку данных для связи и расчёта заказа.</div>
-      <div class="leader-lead-status" data-leader-lead-status></div>
+      <div class="leader-lead-note">Нажимая кнопку, вы соглашаетесь с <a href="privacy.html">политикой обработки персональных данных</a> для связи и расчёта заказа.</div>
+      <div class="leader-lead-status" data-leader-lead-status role="status" aria-live="polite" aria-atomic="true"></div>
     </form>`;
   }
 
@@ -155,17 +156,25 @@
     const form=target.querySelector('form');
     const more=form.querySelector('[data-leader-more]');
     const details=form.querySelector('[data-leader-details]');
+    const markFormStart=function(){
+      if(form.dataset.started==='1')return;
+      form.dataset.started='1';
+      goal('form_start',{page:location.href,page_path:location.pathname,service:field(form,'service')});
+    };
+    form.addEventListener('input',markFormStart);
+    form.addEventListener('change',markFormStart);
     more.addEventListener('click',()=>{
       if(details.hasAttribute('hidden')){
         details.removeAttribute('hidden');
         more.textContent='Скрыть подробности ↑';
-        goal('form_details_open',{page:location.href});
+        goal('form_details_open',{page:location.href,page_path:location.pathname,service:field(form,'service')});
       }else{
         details.setAttribute('hidden','');
         more.textContent='Добавить подробности для точного расчёта ↓';
       }
     });
     form.addEventListener('submit',submit);
+    setTimeout(()=>goal('form_view',{page:location.href,page_path:location.pathname,service:field(form,'service')}),0);
   }
 
   async function submit(e){
@@ -180,6 +189,7 @@
     const message=field(form,'message');
     const city=field(form,'city');
     const contact_method=field(form,'contact_method');
+    const contact_detail=field(form,'contact_detail');
     const quantity=field(form,'quantity');
     const deadline=field(form,'deadline');
     const mockup=field(form,'mockup');
@@ -200,6 +210,7 @@
     if(city)parts.push('Город: '+city);
     if(business)parts.push('Бизнес/объект: '+business);
     if(contact_method)parts.push('Удобная связь: '+contact_method);
+    if(contact_detail)parts.push('Контакт для выбранного способа: '+contact_detail);
     if(quantity)parts.push('Количество/формат: '+quantity);
     if(deadline)parts.push('Срок: '+deadline);
     if(mockup)parts.push('Макет: '+mockup);
@@ -211,7 +222,7 @@
       name,
       phone,
       service,
-      source:sourceGuess(),
+      source:'Сайт',
       message:parts.join('\n')||'Клиент оставил быструю заявку без подробного описания.',
       page_url:location.href,
       page_path:location.pathname,
@@ -221,11 +232,13 @@
       city,
       quantity,
       contact_method,
+      contact_detail,
       deadline,
       mockup,
       delivery,
       budget,
       business,
+      consent_version:CONSENT_VERSION,
       ...utm,
       website:field(form,'website')
     };
@@ -235,7 +248,7 @@
     form.dataset.submitting='1';
     btn.disabled=true;
     btn.textContent='Отправляем...';
-    goal('form_submit_attempt',{service,page:location.href,request_id:rid});
+    goal('form_submit_attempt',{service,page:location.href,page_path:location.pathname,request_id:rid});
     try{
       const res=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
       let data={};
@@ -248,12 +261,12 @@
       const successText=(duplicate?'Заявка уже была отправлена ранее. ':'Заявка отправлена. ')+'Номер обращения: '+responseRequestId+'. Мы свяжемся с вами для уточнения деталей.';
       setStatus(form,'ok',successText);
       // Legacy CI marker: goal('lead_sent',{service,page:location.href,request_id:rid})
-      goal('lead_sent',{service,page:location.href,request_id:responseRequestId,duplicate});
+      goal('lead_sent',{service,page:location.href,page_path:location.pathname,request_id:responseRequestId,duplicate});
       form.reset();
     }catch(err){
       console.error(err);
-      setStatus(form,'err','Не удалось отправить заявку. Позвоните нам или попробуйте ещё раз.');
-      goal('lead_send_error',{service,page:location.href,request_id:rid});
+      setStatus(form,'err','Не удалось отправить заявку. Позвоните по номеру 8 980 245-74-71 или попробуйте ещё раз.');
+      goal('lead_send_error',{service,page:location.href,page_path:location.pathname,request_id:rid});
     }finally{
       form.dataset.submitting='0';
       btn.disabled=false;
@@ -268,14 +281,14 @@
     const requestHref=request?'#'+(request.id||'request'):'/#request';
     const style=document.createElement('style');
     style.id='leader-mobile-sticky-cta-style';
-    style.textContent='@media(max-width:760px){body{padding-bottom:76px}.leader-mobile-sticky-cta{position:fixed;left:0;right:0;bottom:0;z-index:9999;display:flex;gap:8px;padding:10px 12px;background:rgba(255,255,255,.96);border-top:1px solid #e5e7eb;box-shadow:0 -12px 30px rgba(15,23,42,.14);backdrop-filter:blur(12px)}.leader-mobile-sticky-cta a{flex:1;min-height:48px;border-radius:999px;display:flex;align-items:center;justify-content:center;text-decoration:none;font-family:Arial,Helvetica,sans-serif;font-weight:900}.leader-mobile-sticky-cta__lead{background:#f6c343;color:#111827}.leader-mobile-sticky-cta__phone{background:#111827;color:#fff}}@media(min-width:761px){.leader-mobile-sticky-cta{display:none}}';
+    style.textContent='@media(max-width:760px){body{padding-bottom:76px}.leader-mobile-sticky-cta{position:fixed;left:0;right:0;bottom:0;z-index:9999;display:flex;gap:8px;padding:10px 12px;background:rgba(255,255,255,.96);border-top:1px solid #e5e7eb;box-shadow:0 -12px 30px rgba(15,23,42,.14);backdrop-filter:blur(12px)}.leader-mobile-sticky-cta a{flex:1;min-height:48px;border-radius:999px;display:flex;align-items:center;justify-content:center;text-decoration:none;font-family:Arial,Helvetica,sans-serif;font-weight:900}.leader-mobile-sticky-cta__lead{background:#ff6a00;color:#fff}.leader-mobile-sticky-cta__phone{background:#111827;color:#fff}}@media(min-width:761px){.leader-mobile-sticky-cta{display:none}}';
     document.head.appendChild(style);
     const bar=document.createElement('div');
     bar.id='leader-mobile-sticky-cta';
     bar.className='leader-mobile-sticky-cta';
     bar.innerHTML='<a class="leader-mobile-sticky-cta__lead" href="'+requestHref+'">Оставить заявку</a><a class="leader-mobile-sticky-cta__phone" href="tel:+79802457471">Позвонить</a>';
     document.body.appendChild(bar);
-    bar.addEventListener('click',function(e){const a=e.target.closest('a');if(!a)return;goal(a.href.indexOf('tel:')===0?'mobile_phone_click':'mobile_cta_click',{page:location.href});});
+    bar.addEventListener('click',function(e){const a=e.target.closest('a');if(!a)return;goal(a.href.indexOf('tel:')===0?'mobile_phone_click':'mobile_cta_click',{page:location.href,page_path:location.pathname});});
   }
 
   function injectCommunityPrices(){
@@ -299,10 +312,10 @@
       if(!a)return;
       const href=a.getAttribute('href')||'';
       const text=(a.textContent||'').trim();
-      if(href.indexOf('tel:')===0)goal('phone_click',{href,text,page:location.href});
+      if(href.indexOf('tel:')===0)goal('phone_click',{href,text,page:location.href,page_path:location.pathname});
       if(a.dataset&&a.dataset.service){e.preventDefault();applyServicePreset({service:a.dataset.service,text:'Услуга выбрана кнопкой: '+a.dataset.service},true)}
       if(a.dataset&&a.dataset.scenario){e.preventDefault();applyScenario(a.dataset.scenario,true)}
-      if(/\.html($|#|\?)/.test(href))goal('service_page_click',{href,text,page:location.href});
+      if(/\.html($|#|\?)/.test(href))goal('service_page_click',{href,text,page:location.href,page_path:location.pathname});
     });
   }
 
