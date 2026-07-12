@@ -102,7 +102,7 @@ def main() -> None:
         text = path.read_text(encoding='utf-8')
         parser = PageContractParser()
         parser.feed(text)
-        expected_url = BASE_URL + name
+        expected_url = BASE_URL if name == 'index.html' else BASE_URL + name
 
         if parser.lang != 'ru':
             errors.append(f'{name}: html lang must be ru')
