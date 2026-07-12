@@ -1,0 +1,46 @@
+name: Apply homepage CSS extraction
+
+on:
+  push:
+    branches:
+      - 'fix/public-homepage-css-2026-07-12'
+    paths:
+      - 'tools/apply_homepage_css_extraction.py'
+      - '.github/workflows/apply-homepage-css-extraction.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-guarded-extraction:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/public-homepage-css-2026-07-12
+          fetch-depth: 0
+
+      - name: Extract homepage CSS and update cache markers
+        run: python3 tools/apply_homepage_css_extraction.py
+
+      - name: Validate extracted homepage
+        run: |
+          git diff --check
+          python3 tools/check_public_homepage_css_migration.py
+          python3 tools/check_public_homepage_source_copy.py
+          python3 tools/check_public_lead_form_cache_v5_partial.py
+          python3 tools/check_public_v5_landing_seo_contract.py
+
+      - name: Commit homepage CSS migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- index.html assets/public-homepage.css; then
+            echo 'Homepage CSS is already extracted.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html assets/public-homepage.css
+          git commit -m 'Extract homepage CSS and update public form cache'
+          git push origin HEAD:fix/public-homepage-css-2026-07-12
