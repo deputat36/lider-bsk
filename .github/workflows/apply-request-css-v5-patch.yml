@@ -7,13 +7,21 @@ on:
     paths:
       - 'tools/apply_request_css_v5_patch.py'
       - '.github/workflows/apply-request-css-v5-patch.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/apply_request_css_v5_patch.py'
+      - '.github/workflows/apply-request-css-v5-patch.yml'
 
 permissions:
   contents: write
 
 jobs:
   apply-guarded-request-patch:
+    if: github.event_name == 'push' || github.head_ref == 'fix/public-request-css-v5-2026-07-12'
     runs-on: ubuntu-latest
+    env:
+      TARGET_BRANCH: fix/public-request-css-v5-2026-07-12
     steps:
       - uses: actions/checkout@v4
         with:
@@ -45,4 +53,4 @@ jobs:
             .github/workflows/public-site-audit-check.yml \
             .github/workflows/static-checks.yml
           git commit -m 'Extract request CSS and move public form to v5'
-          git push origin HEAD:fix/public-request-css-v5-2026-07-12
+          git push origin HEAD:"$TARGET_BRANCH"
