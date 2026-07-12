@@ -223,11 +223,34 @@ The existing `installation-job-card-v2.js` now:
 
 The installation model itself is side-effect free and creates no Supabase client, REST, RPC or Edge path.
 
+## Seventh module adoption — production board summary and alerts
+
+Added:
+
+- `crm/v4/assets/v4/production-board-status-model-v1.js`;
+- `tools/test_crm_production_board_status_model.mjs`;
+- `tools/check_crm_production_board_status_registry.py`;
+- `docs/CRM_PRODUCTION_BOARD_STATUS_REGISTRY_MANUAL_TEST_2026-07-12.md`.
+
+The existing `production-alerts-v1.js` now:
+
+- calculates open, overdue and today counts through canonical production/installation status models;
+- treats production keys `ready`, `issued`, `not_required` and `cancelled` as completed for production workload;
+- treats terminal installation states as completed;
+- keeps unknown raw statuses in open control instead of silently treating them as done;
+- corrects the visible `Производство открыто`, `Монтаж открыт` and `Просрочено` summary cards after each board render;
+- corrects visible overdue labels and card classes;
+- visibly marks unknown raw status badges without rewriting rows;
+- uses only minimal fields `id,production_status,deadline` and `id,install_status,scheduled_at`;
+- adds no INSERT, UPDATE, DELETE, UPSERT, RPC or Edge Function path.
+
+`production-board-v3.js` still contains its original substring classifiers during the initial synchronous render. The registry-backed alert module immediately corrects the final visible state after `leader-v4:production-board-rendered`. Removing the now-redundant internal heuristics remains a small source-cleanup task and must be done only from a complete file snapshot.
+
 ## Still open
 
 The following work remains open and must not be confused with registry creation or completed UI adoptions:
 
-1. Replace heuristic production/installation completion classifiers in the shared board with registry-backed read-only classification.
+1. Remove the redundant substring completion classifiers from `production-board-v3.js` using a complete-file patch; the final rendered UI is already corrected by the registry-backed alert module.
 2. Add controlled logging/evidence for unknown raw values without rewriting them.
 3. Use registry validation in future Edge/RPC transition commands.
 4. Check canonical action permission server-side.
