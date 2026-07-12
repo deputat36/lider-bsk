@@ -1,0 +1,33 @@
+name: Public window stickers migration check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'nakleyki-na-vitrinu-borisoglebsk.html'
+      - 'assets/public-landing.css'
+      - 'assets/public-lead-form.js'
+      - 'tools/check_public_window_stickers_migration.py'
+      - 'tools/check_public_lead_form_cache_v5_partial.py'
+      - '.github/workflows/public-window-stickers-migration-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'nakleyki-na-vitrinu-borisoglebsk.html'
+      - 'assets/public-landing.css'
+      - 'assets/public-lead-form.js'
+      - 'tools/check_public_window_stickers_migration.py'
+      - 'tools/check_public_lead_form_cache_v5_partial.py'
+      - '.github/workflows/public-window-stickers-migration-check.yml'
+
+jobs:
+  validate-window-stickers-migration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate shared CSS, form preset and local links
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/check_public_window_stickers_migration.py
+          python3 tools/check_public_lead_form_cache_v5_partial.py

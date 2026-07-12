@@ -42,15 +42,27 @@ Related issues: #185, #191, #195.
 
 Подробности: `docs/PUBLIC_LANDING_ENTRANCE_MIGRATION.md`.
 
+### `nakleyki-na-vitrinu-borisoglebsk.html`
+
+- подключён shared landing foundation;
+- сохранены все секции, цены, FAQ, related links и Service JSON-LD;
+- CTA использует значение `Наклейки`;
+- используется page preset из общего `public-lead-form.js`;
+- дублирующий inline prefill script удалён;
+- `public-lead-form.js?v=5` подключается один раз;
+- внутренняя CRM-фраза заменена клиентской проверкой номера обращения.
+
+Подробности: `docs/PUBLIC_LANDING_WINDOW_STICKERS_MIGRATION.md`.
+
 ## Следующий кандидат
 
-`nakleyki-na-vitrinu-borisoglebsk.html`.
+`rezhim-raboty-tablichki-borisoglebsk.html`.
 
 Причины:
 
-- страница входит в remaining blocked pages issues #185 и #191;
-- использует тот же наружный landing foundation;
-- после неё останется `rezhim-raboty-tablichki-borisoglebsk.html`, а затем отдельно более крупные `index.html` и `request.html`.
+- это последняя небольшая наружная landing page из remaining blocked pages issues #185 и #191;
+- она использует тот же shared landing foundation;
+- после неё отдельно останутся более крупные `index.html` и `request.html`.
 
 ## Безопасный порядок следующего этапа
 
