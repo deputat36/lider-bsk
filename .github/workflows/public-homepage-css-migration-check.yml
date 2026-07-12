@@ -1,0 +1,45 @@
+name: Public homepage CSS migration check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'assets/public-homepage.css'
+      - 'assets/public-lead-form.css'
+      - 'assets/public-lead-form.js'
+      - 'assets/packages-link.js'
+      - 'tools/check_public_homepage_css_migration.py'
+      - 'tools/check_public_homepage_source_copy.py'
+      - 'tools/check_public_lead_form_cache_v5_partial.py'
+      - 'tools/check_public_v5_landing_seo_contract.py'
+      - '.github/workflows/public-homepage-css-migration-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'assets/public-homepage.css'
+      - 'assets/public-lead-form.css'
+      - 'assets/public-lead-form.js'
+      - 'assets/packages-link.js'
+      - 'tools/check_public_homepage_css_migration.py'
+      - 'tools/check_public_homepage_source_copy.py'
+      - 'tools/check_public_lead_form_cache_v5_partial.py'
+      - 'tools/check_public_v5_landing_seo_contract.py'
+      - '.github/workflows/public-homepage-css-migration-check.yml'
+
+jobs:
+  validate-homepage-css-migration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate CSS extraction, source copy and form v5
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/check_public_homepage_css_migration.py
+          python3 tools/check_public_homepage_source_copy.py
+          python3 tools/check_public_lead_form_cache_v5_partial.py
+          python3 tools/check_public_v5_landing_seo_contract.py
+          node --check assets/public-lead-form.js
+          node --check assets/packages-link.js
