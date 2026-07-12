@@ -16,14 +16,16 @@
 
 `tools/check_public_contact_identity.py` проверяет:
 
-- все `tel:`-ссылки в корневых публичных HTML;
+- все `tel:`-ссылки в корневых публичных HTML — здесь требуется строгий формат `tel:+79802457471`;
 - все `mailto:`-ссылки в корневых публичных HTML;
 - поля `telephone` и `email` в JSON-LD;
 - обязательные контактные маркеры в `kontakty.html` и `privacy.html`;
 - телефон аварийного способа связи в `assets/public-lead-form.js`;
 - базовые значения в `tools/structured_data_pages.json`.
 
-Workflow: `.github/workflows/public-contact-identity-check.yml`.
+JSON-LD может содержать визуально форматированный, но эквивалентный номер, например `+7-980-245-74-71`. Для сравнения JSON-LD номер нормализуется до цифр; другой фактический номер остаётся ошибкой.
+
+Workflow: `.github/workflows/public-contact-identity-check.yml`. При ошибке workflow сохраняет полный диагностический отчёт в artifact на 7 дней.
 
 ## Что запрещено
 
