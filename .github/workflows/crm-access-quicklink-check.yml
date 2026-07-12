@@ -92,4 +92,4 @@ jobs:
           grep -Fq '20260628-access-label-1' "$manual"
           grep -Fq 'CRM build: 20260627-access-route-1' "$manual"
           grep -Fq 'пользователь без invite остаётся pending/inactive' "$manual"
-          grep -Fq 'повторный `request_id` фиксируется как `accepted`, а не `duplicate`' "$manual"
+          grep -Fq 'audit должен показать `duplicate`, а не `accepted`' "$manual"
