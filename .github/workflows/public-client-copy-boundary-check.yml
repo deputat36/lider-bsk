@@ -1,0 +1,26 @@
+name: Public client copy boundary check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '*.html'
+      - 'tools/check_public_client_copy_boundary.py'
+      - '.github/workflows/public-client-copy-boundary-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '*.html'
+      - 'tools/check_public_client_copy_boundary.py'
+      - '.github/workflows/public-client-copy-boundary-check.yml'
+
+jobs:
+  validate-public-client-copy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject internal CRM, cost and margin language in root HTML
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/check_public_client_copy_boundary.py
