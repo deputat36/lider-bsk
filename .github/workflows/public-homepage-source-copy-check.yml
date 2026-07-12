@@ -1,0 +1,28 @@
+name: Public homepage source copy check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'assets/packages-link.js'
+      - 'tools/check_public_homepage_source_copy.py'
+      - '.github/workflows/public-homepage-source-copy-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'assets/packages-link.js'
+      - 'tools/check_public_homepage_source_copy.py'
+      - '.github/workflows/public-homepage-source-copy-check.yml'
+
+jobs:
+  validate-homepage-source-copy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate client copy, structure and script order
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/check_public_homepage_source_copy.py
