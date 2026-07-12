@@ -54,25 +54,39 @@ Related issues: #185, #191, #195.
 
 Подробности: `docs/PUBLIC_LANDING_WINDOW_STICKERS_MIGRATION.md`.
 
-## Следующий кандидат
+### `rezhim-raboty-tablichki-borisoglebsk.html`
 
-`rezhim-raboty-tablichki-borisoglebsk.html`.
+- подключён shared landing foundation;
+- сохранены все секции, материалы, цены, FAQ, related links и Service JSON-LD;
+- CTA использует значение `Табличка`;
+- используется page preset из общего `public-lead-form.js`;
+- дублирующий inline prefill script удалён;
+- `public-lead-form.js?v=5` подключается один раз;
+- внутренняя CRM-фраза заменена клиентской проверкой номера обращения.
 
-Причины:
+Подробности: `docs/PUBLIC_LANDING_WORKING_HOURS_MIGRATION.md`.
 
-- это последняя небольшая наружная landing page из remaining blocked pages issues #185 и #191;
-- она использует тот же shared landing foundation;
-- после неё отдельно останутся более крупные `index.html` и `request.html`.
+## Статус малых landing pages
+
+Все небольшие наружные landing pages из remaining blocked pages issues #185 и #191 мигрированы на общий foundation и текущую форму `v=5`.
+
+## Следующий этап
+
+Отдельно остаются более крупные страницы:
+
+1. `index.html`;
+2. `request.html`.
+
+Для них требуется самостоятельный этап, потому что страницы содержат больше уникальных блоков, скриптов и CI-маркеров. Их нельзя механически заменить шаблоном малых landing pages.
 
 ## Безопасный порядок следующего этапа
 
-1. Прочитать страницу целиком по частям и сохранить все контентные блоки.
-2. Подключить `assets/public-landing.css`.
-3. Удалить только foundation CSS, уже покрытый общим файлом.
-4. Сохранить локальные стили, JSON-LD, форму и service prefill.
-5. После сокращения страницы обновить `assets/public-lead-form.js?v=4` до `v=5`.
-6. Добавить отдельный contract checker и workflow.
-7. Проверить локальные ссылки и профильные GitHub Actions.
+1. Сначала описать обязательные секции и script order каждой крупной страницы.
+2. Создать отдельный contract checker до изменения HTML.
+3. Перенести только повторяющийся foundation CSS.
+4. Сохранить уникальную главную навигацию, сценарии заявки, Metrika helpers и structured data.
+5. Обновить `public-lead-form.js?v=4` до `v=5` только после сокращения страницы.
+6. Выполнить desktop/mobile browser smoke и тестовую отправку формы.
 
 ## Ограничения
 
