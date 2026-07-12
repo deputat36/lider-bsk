@@ -35,10 +35,14 @@ assert.match(result.unknownStatuses[0].statusWarning, /оставлен в ак�
 
 const safeKeys = Object.keys(result.withoutExpenses[0]).sort();
 assert.deepEqual(safeKeys, [
-  'createdAt', 'deadline', 'id', 'orderNumber', 'projectName',
+  'deadline', 'id', 'orderNumber',
   'statusKnown', 'statusLabel', 'statusRaw', 'statusWarning'
 ].sort());
-for (const forbidden of ['client_name', 'client_phone', 'client_total', 'amount', 'profit', 'assigned_to', 'lead_id']) {
+for (const forbidden of [
+  'projectName', 'createdAt', 'project_name', 'created_at',
+  'client_name', 'client_phone', 'client_total', 'amount', 'profit',
+  'assigned_to', 'lead_id', 'task_status'
+]) {
   assert.equal(Object.hasOwn(result.withoutExpenses[0], forbidden), false);
 }
 
