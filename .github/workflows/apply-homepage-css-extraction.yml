@@ -21,9 +21,32 @@ jobs:
           fetch-depth: 0
 
       - name: Extract homepage CSS and update cache markers
-        run: python3 tools/apply_homepage_css_extraction.py
+        id: extract
+        shell: bash
+        run: |
+          set +e
+          python3 tools/apply_homepage_css_extraction.py > /tmp/homepage-extraction.log 2>&1
+          status=$?
+          cat /tmp/homepage-extraction.log
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Commit extraction diagnostic
+        if: steps.extract.outputs.status != '0'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p docs/diagnostics
+          cp /tmp/homepage-extraction.log docs/diagnostics/homepage-css-extraction.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/diagnostics/homepage-css-extraction.txt
+          git commit -m 'Record homepage CSS extraction diagnostic'
+          git push origin HEAD:fix/public-homepage-css-2026-07-12
+          exit 1
 
       - name: Validate extracted homepage
+        if: steps.extract.outputs.status == '0'
         run: |
           git diff --check
           python3 tools/check_public_homepage_css_migration.py
@@ -32,6 +55,7 @@ jobs:
           python3 tools/check_public_v5_landing_seo_contract.py
 
       - name: Commit homepage CSS migration
+        if: steps.extract.outputs.status == '0'
         shell: bash
         run: |
           set -euo pipefail
