@@ -37,7 +37,7 @@ def main() -> None:
         'completed 2026-07-12',
         '49 root public pages',
         'tools/check_all_public_form_cache_versions.py',
-        'numeric cache version',
+        'explicit numeric query version',
         'minimum version `v=5`',
         '07d5ba61fc28fb09514b54d89eff8b2c8602e033',
         '#235',
