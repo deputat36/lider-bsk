@@ -20,6 +20,7 @@ let loadedAt = 0;
 let snapshot = null;
 let errorText = '';
 let activeGroupKey = '';
+let contentObserver = null;
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>\"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[char]));
@@ -61,6 +62,17 @@ function ensurePanel() {
   if (grid) grid.insertAdjacentElement('afterend', panel);
   else content.prepend(panel);
   return panel;
+}
+
+function observeDashboardContent() {
+  const root = contentRoot();
+  if (!root || contentObserver) return;
+  contentObserver = new MutationObserver(() => {
+    if (document.body.dataset.v4Tab !== 'management_dashboard') return;
+    if (document.getElementById(PANEL_ID)) return;
+    setTimeout(() => render(), 0);
+  });
+  contentObserver.observe(root, { childList: true });
 }
 
 function modalHost() {
@@ -161,6 +173,7 @@ function openLead(leadId) {
 }
 
 function boot() {
+  observeDashboardContent();
   document.addEventListener('leader-v4:crm-ready', () => {
     if (document.body.dataset.v4Tab === 'management_dashboard') setTimeout(() => load(false), 0);
   });
