@@ -14,6 +14,7 @@ on:
       - 'assets/public-lead-form.css'
       - 'assets/public-landing.css'
       - 'assets/public-homepage.css'
+      - 'assets/public-request.css'
       - 'assets/public-lead-reference-v1.js'
       - 'docs/PUBLIC_LANDING_CSS_MIGRATION.md'
       - 'docs/PUBLIC_LANDING_FIRST_PAGE_MIGRATION.md'
@@ -22,6 +23,7 @@ on:
       - 'docs/PUBLIC_LANDING_WORKING_HOURS_MIGRATION.md'
       - 'docs/PUBLIC_HOMEPAGE_SOURCE_COPY_2026-07-12.md'
       - 'docs/PUBLIC_HOMEPAGE_CSS_MIGRATION_2026-07-12.md'
+      - 'docs/PUBLIC_REQUEST_CSS_V5_MIGRATION_2026-07-12.md'
       - 'tools/check_public_vizitki_service.py'
       - 'tools/check_vizitki_page_local_service.py'
       - 'tools/check_public_poligrafiya_service.py'
@@ -36,12 +38,14 @@ on:
       - 'tools/check_public_homepage_helper.py'
       - 'tools/check_public_homepage_source_copy.py'
       - 'tools/check_public_homepage_css_migration.py'
+      - 'tools/check_public_request_css_v5.py'
       - 'tools/check_public_ci_workflows.py'
       - 'robots.txt'
       - 'sitemap.xml'
       - '.github/workflows/public-site-audit-check.yml'
       - '.github/workflows/public-homepage-source-copy-check.yml'
       - '.github/workflows/public-homepage-css-migration-check.yml'
+      - '.github/workflows/public-request-css-v5-check.yml'
       - '.github/workflows/public-legacy-url-check.yml'
       - '.github/workflows/public-no-secret-markers-check.yml'
       - '.github/workflows/public-window-stickers-migration-check.yml'
@@ -58,6 +62,7 @@ on:
       - 'assets/public-lead-form.css'
       - 'assets/public-landing.css'
       - 'assets/public-homepage.css'
+      - 'assets/public-request.css'
       - 'assets/public-lead-reference-v1.js'
       - 'docs/PUBLIC_LANDING_CSS_MIGRATION.md'
       - 'docs/PUBLIC_LANDING_FIRST_PAGE_MIGRATION.md'
@@ -66,6 +71,7 @@ on:
       - 'docs/PUBLIC_LANDING_WORKING_HOURS_MIGRATION.md'
       - 'docs/PUBLIC_HOMEPAGE_SOURCE_COPY_2026-07-12.md'
       - 'docs/PUBLIC_HOMEPAGE_CSS_MIGRATION_2026-07-12.md'
+      - 'docs/PUBLIC_REQUEST_CSS_V5_MIGRATION_2026-07-12.md'
       - 'tools/check_public_vizitki_service.py'
       - 'tools/check_vizitki_page_local_service.py'
       - 'tools/check_public_poligrafiya_service.py'
@@ -80,12 +86,14 @@ on:
       - 'tools/check_public_homepage_helper.py'
       - 'tools/check_public_homepage_source_copy.py'
       - 'tools/check_public_homepage_css_migration.py'
+      - 'tools/check_public_request_css_v5.py'
       - 'tools/check_public_ci_workflows.py'
       - 'robots.txt'
       - 'sitemap.xml'
       - '.github/workflows/public-site-audit-check.yml'
       - '.github/workflows/public-homepage-source-copy-check.yml'
       - '.github/workflows/public-homepage-css-migration-check.yml'
+      - '.github/workflows/public-request-css-v5-check.yml'
       - '.github/workflows/public-legacy-url-check.yml'
       - '.github/workflows/public-no-secret-markers-check.yml'
       - '.github/workflows/public-window-stickers-migration-check.yml'
@@ -130,6 +138,7 @@ jobs:
           test -f "$css"
           test -f "$helper"
           test -f "$request"
+          test -f assets/public-request.css
           grep -Fq 'ofewxuqfjhamgerwzull.supabase.co/functions/v1/leader-public-lead' "$form"
           grep -Fq 'leader-public-lead' "$form"
           if grep -Fq 'parket-public-lead' "$form" || grep -Fq 'broker-public-lead' "$form" || grep -Fq 'nav-v2-deal-api' "$form"; then
@@ -181,7 +190,7 @@ jobs:
           from pathlib import Path
           page = Path('request.html').read_text(encoding='utf-8')
           helper = 'assets/public-lead-reference-v1.js?v=1'
-          form = 'assets/public-lead-form.js?v=4'
+          form = 'assets/public-lead-form.js?v=5'
           assert page.count(helper) == 1
           assert page.count(form) == 1
           assert page.index(helper) < page.index(form)
@@ -229,6 +238,9 @@ jobs:
       - name: Check homepage CSS migration contract
         run: python3 tools/check_public_homepage_css_migration.py
 
+      - name: Check request CSS and form v5 contract
+        run: python3 tools/check_public_request_css_v5.py
+
       - name: Check public CI workflow contracts
         run: python3 tools/check_public_ci_workflows.py
 
@@ -236,5 +248,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          node --check assets/public-lead-reference-v1.js
           node --check assets/public-lead-form.js
           node --check assets/packages-link.js
