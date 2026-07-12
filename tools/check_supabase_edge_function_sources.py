@@ -42,9 +42,15 @@ REQUIRED_MARKERS = {
         "production_status",
         "SUPABASE_SERVICE_ROLE_KEY",
         "access_denied",
-        "ROLE_MATRIX_VERSION = '20260630-edge-role-matrix-1'",
+        "ROLE_MATRIX_VERSION = '20260712-edge-role-matrix-2'",
+        "CANONICAL_ROLES",
         "ORDER_ACTIONS_BY_ROLE",
-        "canUpdateOrder",
+        "ORDER_FIELDS_BY_ROLE",
+        "accountant: new Set(['list', 'update:payment_status'])",
+        "contractor: new Set()",
+        "validateOrderUpdate",
+        "no_update_fields",
+        "orderFieldsForRole",
         "matrix: ROLE_MATRIX_VERSION",
     ],
 }
@@ -61,6 +67,11 @@ FORBIDDEN_MARKERS = [
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9",
     "password=",
     "postgres://",
+]
+
+ORDER_FORBIDDEN_MARKERS = [
+    "production: new Set",
+    "update:any",
 ]
 
 
@@ -86,6 +97,12 @@ def main() -> int:
             if marker.lower() in lowered:
                 print(f"Forbidden secret-like marker in {name}: {marker}")
                 return 1
+
+        if name == "leader-crm-orders":
+            for marker in ORDER_FORBIDDEN_MARKERS:
+                if marker in text:
+                    print(f"Forbidden stale RBAC marker in {name}: {marker}")
+                    return 1
 
     for name, path in TRACKING_DOCS.items():
         if check_file(path, TRACKING_MARKERS[name], name):
