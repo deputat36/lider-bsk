@@ -1,0 +1,54 @@
+name: Apply public client copy patch
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/apply_public_client_copy_patch.py'
+      - '.github/workflows/apply-public-client-copy-patch.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: public-client-copy-patch-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  patch-public-copy:
+    if: github.head_ref == 'check/public-client-copy-boundary-2026-07-12'
+    runs-on: ubuntu-latest
+    env:
+      TARGET_BRANCH: check/public-client-copy-boundary-2026-07-12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: check/public-client-copy-boundary-2026-07-12
+          fetch-depth: 0
+
+      - name: Apply exact client-facing replacements
+        run: python3 tools/apply_public_client_copy_patch.py
+
+      - name: Validate public client copy boundary
+        run: |
+          git diff --check
+          python3 tools/check_public_client_copy_boundary.py
+
+      - name: Commit public HTML copy updates
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            bannery-borisoglebsk.html \
+            faq.html \
+            kak-prohodit-zakaz.html \
+            outdoor-advertising-borisoglebsk.html \
+            pechat-na-plenke-borisoglebsk.html \
+            privacy.html \
+            reklama-dlya-biznesa.html \
+            utm-links.html
+          git commit -m 'Replace internal CRM language in public HTML'
+          git pull --rebase origin "$TARGET_BRANCH"
+          git push origin HEAD:"$TARGET_BRANCH"
