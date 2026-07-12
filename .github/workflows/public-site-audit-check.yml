@@ -13,6 +13,7 @@ on:
       - 'assets/packages-link.js'
       - 'assets/public-lead-form.css'
       - 'assets/public-landing.css'
+      - 'assets/public-homepage.css'
       - 'assets/public-lead-reference-v1.js'
       - 'docs/PUBLIC_LANDING_CSS_MIGRATION.md'
       - 'docs/PUBLIC_LANDING_FIRST_PAGE_MIGRATION.md'
@@ -20,6 +21,7 @@ on:
       - 'docs/PUBLIC_LANDING_WINDOW_STICKERS_MIGRATION.md'
       - 'docs/PUBLIC_LANDING_WORKING_HOURS_MIGRATION.md'
       - 'docs/PUBLIC_HOMEPAGE_SOURCE_COPY_2026-07-12.md'
+      - 'docs/PUBLIC_HOMEPAGE_CSS_MIGRATION_2026-07-12.md'
       - 'tools/check_public_vizitki_service.py'
       - 'tools/check_vizitki_page_local_service.py'
       - 'tools/check_public_poligrafiya_service.py'
@@ -33,11 +35,13 @@ on:
       - 'tools/check_public_working_hours_migration.py'
       - 'tools/check_public_homepage_helper.py'
       - 'tools/check_public_homepage_source_copy.py'
+      - 'tools/check_public_homepage_css_migration.py'
       - 'tools/check_public_ci_workflows.py'
       - 'robots.txt'
       - 'sitemap.xml'
       - '.github/workflows/public-site-audit-check.yml'
       - '.github/workflows/public-homepage-source-copy-check.yml'
+      - '.github/workflows/public-homepage-css-migration-check.yml'
       - '.github/workflows/public-legacy-url-check.yml'
       - '.github/workflows/public-no-secret-markers-check.yml'
       - '.github/workflows/public-window-stickers-migration-check.yml'
@@ -53,6 +57,7 @@ on:
       - 'assets/packages-link.js'
       - 'assets/public-lead-form.css'
       - 'assets/public-landing.css'
+      - 'assets/public-homepage.css'
       - 'assets/public-lead-reference-v1.js'
       - 'docs/PUBLIC_LANDING_CSS_MIGRATION.md'
       - 'docs/PUBLIC_LANDING_FIRST_PAGE_MIGRATION.md'
@@ -60,6 +65,7 @@ on:
       - 'docs/PUBLIC_LANDING_WINDOW_STICKERS_MIGRATION.md'
       - 'docs/PUBLIC_LANDING_WORKING_HOURS_MIGRATION.md'
       - 'docs/PUBLIC_HOMEPAGE_SOURCE_COPY_2026-07-12.md'
+      - 'docs/PUBLIC_HOMEPAGE_CSS_MIGRATION_2026-07-12.md'
       - 'tools/check_public_vizitki_service.py'
       - 'tools/check_vizitki_page_local_service.py'
       - 'tools/check_public_poligrafiya_service.py'
@@ -73,11 +79,13 @@ on:
       - 'tools/check_public_working_hours_migration.py'
       - 'tools/check_public_homepage_helper.py'
       - 'tools/check_public_homepage_source_copy.py'
+      - 'tools/check_public_homepage_css_migration.py'
       - 'tools/check_public_ci_workflows.py'
       - 'robots.txt'
       - 'sitemap.xml'
       - '.github/workflows/public-site-audit-check.yml'
       - '.github/workflows/public-homepage-source-copy-check.yml'
+      - '.github/workflows/public-homepage-css-migration-check.yml'
       - '.github/workflows/public-legacy-url-check.yml'
       - '.github/workflows/public-no-secret-markers-check.yml'
       - '.github/workflows/public-window-stickers-migration-check.yml'
@@ -217,6 +225,9 @@ jobs:
 
       - name: Check homepage source copy contract
         run: python3 tools/check_public_homepage_source_copy.py
+
+      - name: Check homepage CSS migration contract
+        run: python3 tools/check_public_homepage_css_migration.py
 
       - name: Check public CI workflow contracts
         run: python3 tools/check_public_ci_workflows.py
