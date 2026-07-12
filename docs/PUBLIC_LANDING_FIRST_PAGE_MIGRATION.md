@@ -6,30 +6,39 @@ Scope: public site only.
 
 Related issues: #185, #191, #195.
 
-## Первый кандидат завершён
+## Завершённые страницы
 
-`pechat-bannerov-borisoglebsk.html` мигрирована на общий foundation:
+### `pechat-bannerov-borisoglebsk.html`
 
 - подключён `assets/public-landing.css?v=1`;
 - повторяющийся inline CSS удалён;
 - локальные стили сокращены;
-- форма сохранена;
-- service prefill остаётся `Баннер`;
+- форма и service prefill `Баннер` сохранены;
 - `assets/public-lead-form.js?v=5` подключается один раз;
 - title, description, canonical, Open Graph и JSON-LD сохранены;
 - добавлен отдельный migration contract.
 
 Подробности: `docs/PUBLIC_LANDING_PECHAT_BANNEROV_PATCH_NOTES.md`.
 
+### `banner-dlya-magazina-borisoglebsk.html`
+
+- применён тот же проверенный shared CSS pattern;
+- сохранены все секции, FAQ, related links, footer и Service JSON-LD;
+- сохранена локальная подстановка услуги `Баннер`;
+- `assets/public-lead-form.js` обновлён с `v=4` до `v=5`;
+- добавлен отдельный checker локальных ссылок и размера inline CSS.
+
+Подробности: `docs/PUBLIC_LANDING_BANNER_STORE_MIGRATION.md`.
+
 ## Следующий кандидат
 
-`banner-dlya-magazina-borisoglebsk.html`.
+`oformlenie-vhoda-borisoglebsk.html`.
 
 Причины:
 
 - страница входит в remaining blocked pages issues #185 и #191;
-- использует близкую структуру баннерной посадочной;
-- после успешной миграции тот же шаблон можно применить к оформлению входа, наклейкам на витрину и табличке режима работы.
+- использует тот же наружный landing foundation;
+- после миграции шаблон можно применить к `nakleyki-na-vitrinu-borisoglebsk.html` и `rezhim-raboty-tablichki-borisoglebsk.html`.
 
 ## Безопасный порядок следующего этапа
 
