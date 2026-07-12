@@ -16,6 +16,7 @@ V5_PAGES = (
     'kak-prohodit-zakaz.html',
     'bannery-borisoglebsk.html',
     'pechat-bannerov-borisoglebsk.html',
+    'banner-dlya-magazina-borisoglebsk.html',
     'outdoor-advertising-borisoglebsk.html',
     'reklama-otkrytiya-magazina-borisoglebsk.html',
     'vizitki-borisoglebsk.html',
