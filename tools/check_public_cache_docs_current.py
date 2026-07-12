@@ -22,18 +22,30 @@ def main() -> None:
     coverage = COVERAGE.read_text(encoding='utf-8')
     checker = COMPLETE_CHECKER.read_text(encoding='utf-8')
 
-    for source, text in ((CACHE_BUST, cache_bust), (COVERAGE, coverage)):
-        for marker in (
-            'completed 2026-07-12',
-            '49 public',
-            'tools/check_all_public_form_cache_versions.py',
-            '07d5ba61fc28fb09514b54d89eff8b2c8602e033',
-            '#235',
-            '#236',
-            'leader-public-lead v10',
-        ):
-            require(text, marker, source)
+    for marker in (
+        'completed 2026-07-12',
+        '49 public form pages',
+        'tools/check_all_public_form_cache_versions.py',
+        '07d5ba61fc28fb09514b54d89eff8b2c8602e033',
+        '#235',
+        '#236',
+        'leader-public-lead v10',
+    ):
+        require(cache_bust, marker, CACHE_BUST)
 
+    for marker in (
+        'completed 2026-07-12',
+        '49 root public pages',
+        'tools/check_all_public_form_cache_versions.py',
+        'numeric cache version',
+        'minimum version `v=5`',
+        '07d5ba61fc28fb09514b54d89eff8b2c8602e033',
+        '#235',
+        '#236',
+    ):
+        require(coverage, marker, COVERAGE)
+
+    for source, text in ((CACHE_BUST, cache_bust), (COVERAGE, coverage)):
         for marker in (
             'Remaining blocked pages',
             'remain unchanged until',
@@ -45,8 +57,8 @@ def main() -> None:
 
     for marker in (
         'MIN_VERSION = 5',
-        "Path('.').glob('*.html')",
-        "if len(parser.form_sources) != 1",
+        "ROOT.glob('*.html')",
+        'if len(parser.form_sources) != 1',
         'cache version must be numeric',
         'version < MIN_VERSION',
     ):
