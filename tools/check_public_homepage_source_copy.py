@@ -90,9 +90,10 @@ def main() -> None:
     if parser.menu_button_count != 1:
         raise SystemExit(f'Homepage must contain exactly one mobile menu button, found {parser.menu_button_count}')
 
+    # Preserve the original cascade: form CSS was before the homepage inline CSS.
     expected_stylesheets = [
-        'assets/public-homepage.css?v=1',
         'assets/public-lead-form.css?v=4',
+        'assets/public-homepage.css?v=1',
     ]
     if parser.stylesheets != expected_stylesheets:
         raise SystemExit(f'Unexpected homepage stylesheets: {parser.stylesheets}')
