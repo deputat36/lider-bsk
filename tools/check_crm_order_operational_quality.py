@@ -34,14 +34,14 @@ checks = {
         'Без ответственного',
         'Просроченные заказы',
         'Неизвестные статусы',
-        "select('id,order_number,project_name,status,deadline,lead_id,assigned_to,is_archived,created_at')",
+        "select('id,order_number,status,deadline,lead_id,assigned_to,is_archived')",
         "select('order_id')",
         "select('lead_id,need_design')",
-        "select('order_id,task_status')",
         'data-order-quality-queue',
         'data-open-order',
         'MutationObserver',
         'частичном режиме',
+        'без клиентских контактов, названий проектов и денежных сумм',
     ],
     bootstrap: [
         "import './order-operational-quality-v1.js';",
@@ -52,7 +52,7 @@ checks = {
         "result.withoutExpenses.map((row) => row.id), ['o1', 'o4', 'o5']",
         "result.designWithoutTask.map((row) => row.id), ['o1']",
         "result.unknownStatuses.map((row) => row.id), ['o4']",
-        "for (const forbidden of ['client_name', 'client_phone', 'client_total', 'amount', 'profit', 'assigned_to', 'lead_id'])",
+        "'projectName', 'createdAt', 'project_name', 'created_at'",
         'CRM order operational quality behavior is valid.',
     ],
     manual: [
@@ -61,9 +61,10 @@ checks = {
         'orders without `assigned_to` — 5',
         'overdue active orders — 4',
         '`Операционное качество заказов`',
-        '`id,order_number,project_name,status,deadline,lead_id,assigned_to,is_archived,created_at`',
+        'A row may contain only order number, status and deadline.',
+        '`id,order_number,status,deadline,lead_id,assigned_to,is_archived`',
         '`lead_id,need_design`',
-        '`order_id,task_status`',
+        '`leader_design_tasks`: `order_id`',
         'must not issue INSERT, UPDATE, DELETE, UPSERT, RPC or Edge Function requests',
         'Manual verification remains required before closing #205.',
     ],
@@ -90,17 +91,21 @@ if model.exists():
     text = model.read_text(encoding='utf-8')
     if 'supabaseClient' in text or ".from('leader_" in text:
         errors.append('Order operational quality model must remain side-effect free')
+    for marker in ['projectName:', 'createdAt:', 'clientName:', 'clientPhone:', 'clientTotal:']:
+        if marker in text:
+            errors.append(f'Order operational quality model must not expose optional identifying/financial field: {marker}')
 
 if ui.exists():
     text = ui.read_text(encoding='utf-8')
     forbidden_fields = [
+        'project_name', 'created_at', 'task_status',
         'client_name', 'client_phone', 'client_email', 'message', 'installation_address',
         'internal_comment', 'client_total', 'contractor_cost', 'installer_cost',
         'expense_date,category,amount', 'profit', 'balance', 'prepayment'
     ]
     for marker in forbidden_fields:
         if marker in text:
-            errors.append(f'Order operational quality UI must not request sensitive field: {marker}')
+            errors.append(f'Order operational quality UI must not request sensitive or unnecessary field: {marker}')
 
 if errors:
     print('\n'.join(errors))
