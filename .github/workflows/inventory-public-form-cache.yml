@@ -1,0 +1,54 @@
+name: Inventory public form cache
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/inventory-public-form-cache.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: public-form-cache-inventory-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  inventory:
+    if: github.head_ref == 'fix/public-request-css-v5-2026-07-12'
+    runs-on: ubuntu-latest
+    env:
+      TARGET_BRANCH: fix/public-request-css-v5-2026-07-12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/public-request-css-v5-2026-07-12
+          fetch-depth: 0
+
+      - name: Build exact inventory
+        run: |
+          mkdir -p docs/diagnostics
+          python3 - <<'PY'
+          from pathlib import Path
+          rows = []
+          for path in sorted(Path('.').glob('*.html')):
+              text = path.read_text(encoding='utf-8')
+              refs = text.count('assets/public-lead-form.js')
+              if not refs:
+                  continue
+              rows.append(
+                  f'{path.name}\trefs={refs}\tv5={text.count("assets/public-lead-form.js?v=5")}\t'
+                  f'v4={text.count("assets/public-lead-form.js?v=4")}\tv3={text.count("assets/public-lead-form.js?v=3")}'
+              )
+          Path('docs/diagnostics/public-form-cache-inventory.txt').write_text('\n'.join(rows) + '\n', encoding='utf-8')
+          PY
+          cat docs/diagnostics/public-form-cache-inventory.txt
+
+      - name: Commit inventory
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/diagnostics/public-form-cache-inventory.txt
+          git commit -m 'Record public form cache inventory'
+          git pull --rebase origin "$TARGET_BRANCH"
+          git push origin HEAD:"$TARGET_BRANCH"
