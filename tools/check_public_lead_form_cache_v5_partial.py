@@ -17,6 +17,7 @@ V5_PAGES = (
     'bannery-borisoglebsk.html',
     'pechat-bannerov-borisoglebsk.html',
     'banner-dlya-magazina-borisoglebsk.html',
+    'oformlenie-vhoda-borisoglebsk.html',
     'outdoor-advertising-borisoglebsk.html',
     'reklama-otkrytiya-magazina-borisoglebsk.html',
     'vizitki-borisoglebsk.html',

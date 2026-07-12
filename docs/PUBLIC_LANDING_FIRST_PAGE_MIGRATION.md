@@ -30,15 +30,27 @@ Related issues: #185, #191, #195.
 
 Подробности: `docs/PUBLIC_LANDING_BANNER_STORE_MIGRATION.md`.
 
+### `oformlenie-vhoda-borisoglebsk.html`
+
+- подключён shared landing foundation;
+- сокращён повторяющийся inline CSS;
+- сохранены все разделы, steps, FAQ, цены и Service JSON-LD;
+- CTA использует допустимое значение `Вывеска / наружная реклама`;
+- page preset в `public-lead-form.js` подтверждён checker-ом;
+- `public-lead-form.js?v=5` подключается один раз;
+- внутренняя фраза про поиск заявки в CRM заменена клиентской проверкой номера обращения.
+
+Подробности: `docs/PUBLIC_LANDING_ENTRANCE_MIGRATION.md`.
+
 ## Следующий кандидат
 
-`oformlenie-vhoda-borisoglebsk.html`.
+`nakleyki-na-vitrinu-borisoglebsk.html`.
 
 Причины:
 
 - страница входит в remaining blocked pages issues #185 и #191;
 - использует тот же наружный landing foundation;
-- после миграции шаблон можно применить к `nakleyki-na-vitrinu-borisoglebsk.html` и `rezhim-raboty-tablichki-borisoglebsk.html`.
+- после неё останется `rezhim-raboty-tablichki-borisoglebsk.html`, а затем отдельно более крупные `index.html` и `request.html`.
 
 ## Безопасный порядок следующего этапа
 
