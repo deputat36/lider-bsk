@@ -10,6 +10,7 @@ banner_shop = (root / 'banner-dlya-magazina-borisoglebsk.html').read_text(encodi
 stickers = (root / 'nakleyki-na-vitrinu-borisoglebsk.html').read_text(encoding='utf-8')
 working_hours = (root / 'rezhim-raboty-tablichki-borisoglebsk.html').read_text(encoding='utf-8')
 form = (root / 'assets' / 'public-lead-form.js').read_text(encoding='utf-8')
+
 checks = [
     ('page searches local Polygraphy option', "service.options[i].value==='Полиграфия'" in page),
     ('page adds local Polygraphy option fallback', "new Option('Полиграфия','Полиграфия')" in page),
@@ -20,14 +21,18 @@ checks = [
     ('handouts page message mentions handout materials', 'Страница: раздаточные материалы' in handouts),
     ('pechat bannerov page sets service to Banner', "service.value='Баннер'" in pechat_bannerov),
     ('shop banner page sets service to Banner', "service.value='Баннер'" in banner_shop),
-    ('stickers page sets service to Stickers', "service.value='Наклейки'" in stickers),
+    ('stickers page exposes Stickers CTA', 'data-service="Наклейки"' in stickers),
+    ('stickers page uses shared v5 form', 'assets/public-lead-form.js?v=5' in stickers),
+    ('form has stickers page preset', "'nakleyki-na-vitrinu-borisoglebsk.html':{service:'Наклейки'" in form),
     ('working hours page sets service to Sign', "service.value='Табличка'" in working_hours),
     ('specialized pages do not set service to Other', "service.value='Другое'" not in page + handouts + pechat_bannerov + banner_shop + stickers + working_hours),
     ('form has polygraphy page preset', 'poligrafiya-borisoglebsk.html' in form and "service:'Полиграфия'" in form),
     ('form has Polygraphy option', '<option>Полиграфия</option>' in form),
 ]
+
 failed = [name for name, ok in checks if not ok]
 if failed:
     print('Missing checks: ' + '; '.join(failed))
     sys.exit(1)
+
 print('Specialized public pages send correct service values.')
