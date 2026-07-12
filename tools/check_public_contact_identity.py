@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Validate the current published phone and email across public-site sources.
+"""Validate published contact identity and guard unconfirmed NAP fields.
 
-This check intentionally does not validate address, opening hours, map links or
-messengers because those facts remain pending owner confirmation in issue #236.
+Phone and email are current technical source-of-truth values. Exact address,
+opening hours, geo coordinates, map identity and social profiles remain pending
+owner confirmation in issue #236 and must not enter public JSON-LD yet.
 """
 from pathlib import Path
+import json
 import re
 import sys
 
@@ -19,6 +21,21 @@ TEL_RE = re.compile(r'href=["\'](tel:[^"\']+)["\']', re.IGNORECASE)
 MAILTO_RE = re.compile(r'href=["\']mailto:([^"\'?]+)', re.IGNORECASE)
 JSON_PHONE_RE = re.compile(r'"telephone"\s*:\s*"([^"]+)"', re.IGNORECASE)
 JSON_EMAIL_RE = re.compile(r'"email"\s*:\s*"([^"]+)"', re.IGNORECASE)
+JSON_LD_RE = re.compile(
+    r'<script[^>]*type=["\']application/ld\+json["\'][^>]*>(.*?)</script>',
+    re.IGNORECASE | re.DOTALL,
+)
+UNCONFIRMED_NAP_KEYS = (
+    "streetAddress",
+    "postalCode",
+    "openingHours",
+    "openingHoursSpecification",
+    "geo",
+    "latitude",
+    "longitude",
+    "sameAs",
+    "hasMap",
+)
 
 
 def compact(value: str, limit: int = 180) -> str:
@@ -34,6 +51,14 @@ def normalize_phone(value: str) -> str:
     elif len(digits) == 11 and digits.startswith("8"):
         digits = "7" + digits[1:]
     return digits
+
+
+def find_unconfirmed_json_keys(value: str) -> list[str]:
+    found: list[str] = []
+    for key in UNCONFIRMED_NAP_KEYS:
+        if re.search(rf'"{re.escape(key)}"\s*:', value, re.IGNORECASE):
+            found.append(key)
+    return found
 
 
 def main() -> int:
@@ -70,11 +95,41 @@ def main() -> int:
             if value.casefold() != EMAIL:
                 errors.append(f"{path.name}: LocalBusiness email differs: {value!r}")
 
+        for block in JSON_LD_RE.findall(text):
+            for key in find_unconfirmed_json_keys(block):
+                errors.append(
+                    f"{path.name}: unconfirmed NAP key {key!r} is present in public JSON-LD"
+                )
+
+    structured_path = ROOT / "tools" / "structured_data_pages.json"
+    try:
+        structured_data = json.loads(structured_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        errors.append(f"Cannot read structured data source: {exc}")
+        structured_data = {}
+
+    business = structured_data.get("business", {}) if isinstance(structured_data, dict) else {}
+    if not isinstance(business, dict):
+        errors.append("tools/structured_data_pages.json: business must be an object")
+    else:
+        for key in UNCONFIRMED_NAP_KEYS:
+            if key in business:
+                errors.append(
+                    f"tools/structured_data_pages.json: unconfirmed business key {key!r}"
+                )
+        address = business.get("address", {})
+        if isinstance(address, dict):
+            for key in ("streetAddress", "postalCode"):
+                if key in address:
+                    errors.append(
+                        f"tools/structured_data_pages.json: unconfirmed address key {key!r}"
+                    )
+
     required_markers = {
         ROOT / "kontakty.html": (PHONE_HREF, PHONE_VISIBLE, f"mailto:{EMAIL}", EMAIL),
         ROOT / "privacy.html": (PHONE_HREF, PHONE_VISIBLE, f"mailto:{EMAIL}", EMAIL),
         ROOT / "assets" / "public-lead-form.js": (PHONE_HREF, PHONE_VISIBLE),
-        ROOT / "tools" / "structured_data_pages.json": (PHONE_JSON, EMAIL),
+        structured_path: (PHONE_JSON, EMAIL),
     }
     for path, markers in required_markers.items():
         if not path.is_file():
@@ -97,7 +152,7 @@ def main() -> int:
         return 1
 
     print(
-        "Public contact identity is consistent: "
+        "Public contact identity and pending NAP guard are valid: "
         f"{len(pages)} root HTML checked, tel links on {pages_with_tel} pages, "
         f"email links on {pages_with_email} pages."
     )
