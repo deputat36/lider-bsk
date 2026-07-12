@@ -12,6 +12,7 @@ class HomepageParser(HTMLParser):
         super().__init__()
         self.ids: set[str] = set()
         self.scripts: list[str] = []
+        self.stylesheets: list[str] = []
         self.h1_count = 0
         self.form_mount_count = 0
         self.menu_button_count = 0
@@ -22,6 +23,8 @@ class HomepageParser(HTMLParser):
             self.ids.add(values['id'] or '')
         if tag == 'script' and values.get('src'):
             self.scripts.append(values['src'] or '')
+        if tag == 'link' and values.get('rel') == 'stylesheet' and values.get('href'):
+            self.stylesheets.append(values['href'] or '')
         if tag == 'h1':
             self.h1_count += 1
         if values.get('id') == 'leader-lead-form' or 'data-leader-lead-form' in values:
@@ -87,7 +90,14 @@ def main() -> None:
     if parser.menu_button_count != 1:
         raise SystemExit(f'Homepage must contain exactly one mobile menu button, found {parser.menu_button_count}')
 
-    form_script = 'assets/public-lead-form.js?v=4'
+    expected_stylesheets = [
+        'assets/public-homepage.css?v=1',
+        'assets/public-lead-form.css?v=4',
+    ]
+    if parser.stylesheets != expected_stylesheets:
+        raise SystemExit(f'Unexpected homepage stylesheets: {parser.stylesheets}')
+
+    form_script = 'assets/public-lead-form.js?v=5'
     helper_script = 'assets/packages-link.js?v=1'
     if parser.scripts.count(form_script) != 1 or parser.scripts.count(helper_script) != 1:
         raise SystemExit(f'Unexpected homepage scripts: {parser.scripts}')
