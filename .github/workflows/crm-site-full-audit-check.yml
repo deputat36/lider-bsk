@@ -10,6 +10,7 @@ on:
       - 'docs/CRM_V4_ROLE_TAB_MATRIX_MANUAL_TEST_2026-07-10.md'
       - 'docs/CRM_V4_PRODUCTION_ROLE_DATA_MINIMIZATION_MANUAL_TEST_2026-07-10.md'
       - 'docs/CRM_OPERATIONAL_QUALITY_PANEL_MANUAL_TEST_2026-07-10.md'
+      - 'docs/CRM_ORDER_OPERATIONAL_QUALITY_MANUAL_TEST_2026-07-12.md'
       - 'docs/CRM_V4_BACKEND_WRITE_CONTRACT_INVENTORY_2026-07-10.md'
       - 'docs/CRM_V4_BACKEND_WRITE_INVENTORY_ADDENDUM_2026-07-10.md'
       - 'docs/CRM_V4_BACKEND_COMMAND_CONTRACT_2026-07-10.md'
@@ -27,6 +28,8 @@ on:
       - 'tools/check_crm_v4_role_tab_matrix.py'
       - 'tools/check_crm_v4_production_role_data_minimization.py'
       - 'tools/check_crm_operational_quality_panel.py'
+      - 'tools/check_crm_order_operational_quality.py'
+      - 'tools/test_crm_order_operational_quality.mjs'
       - 'tools/check_crm_v4_backend_write_inventory.py'
       - 'tools/check_crm_v4_backend_command_contract.py'
       - 'tools/check_crm_order_completion_act.py'
@@ -46,6 +49,8 @@ on:
       - 'crm/v4/assets/v4/crm-v4-expanded-menu-v1.js'
       - 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
       - 'crm/v4/assets/v4/lead-operational-quality-v1.js'
+      - 'crm/v4/assets/v4/order-operational-quality-model-v1.js'
+      - 'crm/v4/assets/v4/order-operational-quality-v1.js'
       - 'crm/v4/assets/v4/order-act-preview-v1.js'
       - 'crm/v4/assets/v4/company-legal-settings-v1.js'
       - 'crm/v4/assets/v4/order-act-company-settings-v1.js'
@@ -67,6 +72,7 @@ on:
       - 'docs/CRM_V4_ROLE_TAB_MATRIX_MANUAL_TEST_2026-07-10.md'
       - 'docs/CRM_V4_PRODUCTION_ROLE_DATA_MINIMIZATION_MANUAL_TEST_2026-07-10.md'
       - 'docs/CRM_OPERATIONAL_QUALITY_PANEL_MANUAL_TEST_2026-07-10.md'
+      - 'docs/CRM_ORDER_OPERATIONAL_QUALITY_MANUAL_TEST_2026-07-12.md'
       - 'docs/CRM_V4_BACKEND_WRITE_CONTRACT_INVENTORY_2026-07-10.md'
       - 'docs/CRM_V4_BACKEND_WRITE_INVENTORY_ADDENDUM_2026-07-10.md'
       - 'docs/CRM_V4_BACKEND_COMMAND_CONTRACT_2026-07-10.md'
@@ -84,6 +90,8 @@ on:
       - 'tools/check_crm_v4_role_tab_matrix.py'
       - 'tools/check_crm_v4_production_role_data_minimization.py'
       - 'tools/check_crm_operational_quality_panel.py'
+      - 'tools/check_crm_order_operational_quality.py'
+      - 'tools/test_crm_order_operational_quality.mjs'
       - 'tools/check_crm_v4_backend_write_inventory.py'
       - 'tools/check_crm_v4_backend_command_contract.py'
       - 'tools/check_crm_order_completion_act.py'
@@ -103,6 +111,8 @@ on:
       - 'crm/v4/assets/v4/crm-v4-expanded-menu-v1.js'
       - 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
       - 'crm/v4/assets/v4/lead-operational-quality-v1.js'
+      - 'crm/v4/assets/v4/order-operational-quality-model-v1.js'
+      - 'crm/v4/assets/v4/order-operational-quality-v1.js'
       - 'crm/v4/assets/v4/order-act-preview-v1.js'
       - 'crm/v4/assets/v4/company-legal-settings-v1.js'
       - 'crm/v4/assets/v4/order-act-company-settings-v1.js'
@@ -132,6 +142,7 @@ jobs:
           python3 tools/check_crm_v4_role_tab_matrix.py
           python3 tools/check_crm_v4_production_role_data_minimization.py
           python3 tools/check_crm_operational_quality_panel.py
+          python3 tools/check_crm_order_operational_quality.py
           python3 tools/check_crm_v4_backend_write_inventory.py
           python3 tools/check_crm_v4_backend_command_contract.py
           python3 tools/check_crm_order_completion_act.py
@@ -151,6 +162,10 @@ jobs:
           node --check crm/v4/assets/v4/crm-v4-expanded-menu-v1.js
           node --check crm/v4/assets/v4/lead-analytics-badges-v1.js
           node --check crm/v4/assets/v4/lead-operational-quality-v1.js
+          node --check crm/v4/assets/v4/order-operational-quality-model-v1.js
+          node --check crm/v4/assets/v4/order-operational-quality-v1.js
+          node --check tools/test_crm_order_operational_quality.mjs
+          node tools/test_crm_order_operational_quality.mjs
           node --check crm/v4/assets/v4/order-act-preview-v1.js
           node --check crm/v4/assets/v4/company-legal-settings-v1.js
           node --check crm/v4/assets/v4/order-act-company-settings-v1.js
