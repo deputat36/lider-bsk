@@ -45,13 +45,17 @@ jobs:
           set -euo pipefail
           form='assets/public-lead-form.js'
           test -f assets/public-lead-form.css
+          test -f assets/public-request.css
           test -f "$form"
           grep -q 'overflow-x:hidden' assets/public-lead-form.css
           grep -q 'request_id' "$form"
           grep -q 'page_path' "$form"
           grep -q 'submitted_at' "$form"
           grep -Fq "website:field(form,'website')" "$form"
-          grep -lF 'assets/public-lead-form.js?v=4' -- *.html >/dev/null
+          if grep -lF 'assets/public-lead-form.js?v=4' -- *.html; then
+            echo 'Stale public form JS cache version v4 remains.' >&2
+            exit 1
+          fi
           if grep -lF 'assets/public-lead-form.js?v=3' -- *.html; then
             echo 'Old public form JS cache version remains.' >&2
             exit 1
