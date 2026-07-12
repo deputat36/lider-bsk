@@ -13,6 +13,7 @@ V4_SCRIPT = 'assets/public-lead-form.js?v=4'
 V5_PAGES = (
     'uslugi.html',
     'kontakty.html',
+    'kak-prohodit-zakaz.html',
     'bannery-borisoglebsk.html',
     'outdoor-advertising-borisoglebsk.html',
     'reklama-otkrytiya-magazina-borisoglebsk.html',
