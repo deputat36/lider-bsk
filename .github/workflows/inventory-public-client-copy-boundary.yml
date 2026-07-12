@@ -1,0 +1,47 @@
+name: Inventory public client copy boundary
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/check_public_client_copy_boundary.py'
+      - '.github/workflows/inventory-public-client-copy-boundary.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: public-client-copy-inventory-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  inventory:
+    if: github.head_ref == 'check/public-client-copy-boundary-2026-07-12'
+    runs-on: ubuntu-latest
+    env:
+      TARGET_BRANCH: check/public-client-copy-boundary-2026-07-12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: check/public-client-copy-boundary-2026-07-12
+          fetch-depth: 0
+
+      - name: Build exact violation report
+        shell: bash
+        run: |
+          set +e
+          mkdir -p docs/diagnostics
+          python3 tools/check_public_client_copy_boundary.py > docs/diagnostics/public-client-copy-boundary.txt 2>&1
+          cat docs/diagnostics/public-client-copy-boundary.txt
+          exit 0
+
+      - name: Commit inventory
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/diagnostics/public-client-copy-boundary.txt
+          git commit -m 'Record public client copy boundary inventory'
+          git pull --rebase origin "$TARGET_BRANCH"
+          git push origin HEAD:"$TARGET_BRANCH"
