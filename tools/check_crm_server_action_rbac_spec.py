@@ -44,6 +44,26 @@ REQUIRED_PERMISSIONS = {
     'production.write',
 }
 
+ORDER_SOURCE_MARKERS = (
+    "ROLE_MATRIX_VERSION = '20260712-edge-role-matrix-2'",
+    'CANONICAL_ROLES',
+    'ORDER_ACTIONS_BY_ROLE',
+    'ORDER_FIELDS_BY_ROLE',
+    "accountant: new Set(['list', 'update:payment_status'])",
+    'designer: new Set()',
+    'installer: new Set()',
+    'contractor: new Set()',
+    'validateOrderUpdate',
+    'no_update_fields',
+    'orderFieldsForRole',
+    "if (!isCanonicalRole(checked.profile))",
+)
+
+ORDER_FORBIDDEN_MARKERS = (
+    'production: new Set',
+    'update:any',
+)
+
 
 def read(path: Path) -> str:
     if not path.is_file():
@@ -87,6 +107,7 @@ def main() -> None:
     for role in sorted(CANONICAL_ROLES):
         require(spec, f'`{role}`', SPEC, errors)
         require(registry, f'  {role}:', UI_REGISTRY, errors)
+        require(orders, f"'{role}'", ORDERS_EDGE, errors)
 
     for permission in sorted(REQUIRED_PERMISSIONS):
         require(spec, f'`{permission}`', SPEC, errors)
@@ -110,13 +131,15 @@ def main() -> None:
     ):
         require(spec, marker, SPEC, errors)
 
-    # The current GitHub candidate still contains a non-canonical role. The
-    # specification must keep this drift visible until source enforcement is fixed.
-    if "production: new Set" in orders:
-        require(spec, 'candidate-матрица использует роль `production`', SPEC, errors)
+    for marker in ORDER_SOURCE_MARKERS:
+        require(orders, marker, ORDERS_EDGE, errors)
 
-    # The leads function must still be classified as missing enforcement until a
-    # future implementation PR adds an explicit permission registry/check.
+    for marker in ORDER_FORBIDDEN_MARKERS:
+        if marker in orders:
+            errors.append(f'Forbidden stale order RBAC marker {marker!r} in {ORDERS_EDGE.relative_to(ROOT)}')
+
+    # The leads function remains the next implementation target. Keep this visible
+    # until an explicit server-owned permission registry and requireAction check exist.
     if 'ACTION_PERMISSION' not in leads and 'requireAction(' not in leads:
         require(spec, '`leader-crm-leads` не содержит action-level enforcement', SPEC, errors)
 
