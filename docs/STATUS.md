@@ -18,6 +18,17 @@
 Операционный checkpoint Codex: `docs/CODEX_OPERATING_STATUS_2026-06-28.md`.
 Supabase baseline РА «Лидер»: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-28.md`.
 
+## Быстрый старт CRM
+
+Обновление 2026-07-12:
+
+- технические заглушки «CRM готова» и «Автопилот проверки» заменены встроенным маршрутом обучения из пяти рабочих шагов;
+- маршрут ведёт пользователя по цепочке заявка → потребность → расчёт/КП → заказ → производство/монтаж;
+- кнопки перехода учитывают доступность разделов для текущей роли;
+- прогресс и свёрнутое состояние хранятся только в браузере и не создают записи в Supabase;
+- интерфейс прямо предупреждает не создавать вымышленных клиентов в production;
+- добавлены behavior test, source checker, manual test и отдельная GitHub Actions проверка.
+
 ## Supabase
 
 Активные функции контура РА «Лидер»:
@@ -183,3 +194,4 @@ UI и аудит 2026-07-08:
 - Контрольные страницы: `srochnaya-reklama-borisoglebsk.html`, `reklama-dlya-servisa-masterskoy-borisoglebsk.html`, `tablichki-borisoglebsk.html`, `oformlenie-vitrin-borisoglebsk.html`, `pechat-na-plenke-borisoglebsk.html`.
 - Исторический статус пакета: первые два пакета из 8 страниц услуг уже закрыты.
 - CRM access cache marker: `20260628-access-label-1`.
+

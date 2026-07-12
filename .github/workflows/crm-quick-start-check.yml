@@ -1,0 +1,38 @@
+name: CRM v4 quick-start check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'crm/v4/index.html'
+      - 'crm/v4/assets/v4/crm-quick-start-v1.js'
+      - 'crm/v4/assets/v4/crm-quick-start-v1.css'
+      - 'tools/test_crm_quick_start.mjs'
+      - 'tools/check_crm_quick_start.py'
+      - 'docs/CRM_V4_QUICK_START_2026-07-12.md'
+      - 'docs/STATUS.md'
+      - '.github/workflows/crm-quick-start-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'crm/v4/index.html'
+      - 'crm/v4/assets/v4/crm-quick-start-v1.js'
+      - 'crm/v4/assets/v4/crm-quick-start-v1.css'
+      - 'tools/test_crm_quick_start.mjs'
+      - 'tools/check_crm_quick_start.py'
+      - 'docs/CRM_V4_QUICK_START_2026-07-12.md'
+      - 'docs/STATUS.md'
+      - '.github/workflows/crm-quick-start-check.yml'
+
+jobs:
+  quick-start-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate CRM quick-start
+        run: |
+          set -euo pipefail
+          node --check crm/v4/assets/v4/crm-quick-start-v1.js
+          node --check tools/test_crm_quick_start.mjs
+          node tools/test_crm_quick_start.mjs
+          python3 tools/check_crm_quick_start.py
