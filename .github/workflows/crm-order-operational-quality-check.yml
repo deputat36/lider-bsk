@@ -1,0 +1,44 @@
+name: CRM order operational quality check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/order-operational-quality-model-v1.js'
+      - 'crm/v4/assets/v4/order-operational-quality-v1.js'
+      - 'crm/v4/assets/v4/order-status-ui-model-v1.js'
+      - 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
+      - 'docs/CRM_ORDER_OPERATIONAL_QUALITY_MANUAL_TEST_2026-07-12.md'
+      - 'tools/check_crm_order_operational_quality.py'
+      - 'tools/test_crm_order_operational_quality.mjs'
+      - '.github/workflows/crm-order-operational-quality-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/order-operational-quality-model-v1.js'
+      - 'crm/v4/assets/v4/order-operational-quality-v1.js'
+      - 'crm/v4/assets/v4/order-status-ui-model-v1.js'
+      - 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
+      - 'docs/CRM_ORDER_OPERATIONAL_QUALITY_MANUAL_TEST_2026-07-12.md'
+      - 'tools/check_crm_order_operational_quality.py'
+      - 'tools/test_crm_order_operational_quality.mjs'
+      - '.github/workflows/crm-order-operational-quality-check.yml'
+
+jobs:
+  order-operational-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate source contract
+        run: python3 tools/check_crm_order_operational_quality.py
+
+      - name: Check JavaScript and behavior
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check crm/v4/assets/v4/order-operational-quality-model-v1.js
+          node --check crm/v4/assets/v4/order-operational-quality-v1.js
+          node --check crm/v4/assets/v4/lead-analytics-badges-v1.js
+          node --check tools/test_crm_order_operational_quality.mjs
+          node tools/test_crm_order_operational_quality.mjs
