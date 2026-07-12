@@ -18,6 +18,15 @@ required = [
     'nav-cases-link',
     'nav-urgent-link',
     'nav-prices-link',
+    'function clientCopy()',
+    'Обращение получает номер и не теряется',
+    'Обращение под контролем',
+    'После отправки вы получаете номер обращения',
+    'Понятный расчёт',
+    'До начала работ согласуем вариант, стоимость, сроки и внешний вид.',
+    'Опишите задачу в форме. После отправки появится номер обращения',
+    'чтобы вам не пришлось повторять данные',
+    'номер обращения для быстрой проверки',
 ]
 
 missing = [item for item in required if item not in helper_text]
@@ -26,6 +35,16 @@ if missing:
 
 if 'nav-communities-link' not in helper_text or 'contacts-communities-link' not in helper_text:
     raise SystemExit('Old dynamic link cleanup markers are missing')
+
+for forbidden in (
+    'Заявка в CRM',
+    'контролем себестоимости и маржи',
+    'Заявка попадёт в CRM РА «Лидер»',
+    'обрабатывать заказы в CRM',
+    'передает заявку в рабочую CRM',
+):
+    if forbidden in helper_text:
+        raise SystemExit('Client-facing helper must not contain internal copy: ' + forbidden)
 
 form_script = 'assets/public-lead-form.js'
 helper_script = 'assets/packages-link.js'
@@ -42,4 +61,4 @@ if index_text.index(form_script) > index_text.index(helper_script):
 if 'menu-btn' not in index_text:
     raise SystemExit('Homepage mobile menu button is missing in index.html')
 
-print('Homepage helper UI contract is OK')
+print('Homepage helper UI and client copy contract is OK')
