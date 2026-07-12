@@ -26,13 +26,11 @@ function queueOrder(order) {
   return Object.freeze({
     id: normalizedId(order?.id),
     orderNumber: order?.order_number ?? '',
-    projectName: String(order?.project_name || 'Заказ').trim(),
     statusRaw: status.raw,
     statusLabel: status.label,
     statusKnown: status.known,
     statusWarning: status.warning,
-    deadline: order?.deadline || null,
-    createdAt: order?.created_at || null
+    deadline: order?.deadline || null
   });
 }
 
