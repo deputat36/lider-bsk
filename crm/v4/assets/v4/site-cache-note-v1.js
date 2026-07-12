@@ -13,6 +13,7 @@ function bootSiteCacheNote() {
     localStorage.setItem(key, '1');
     setTimeout(() => { note.style.display = 'none'; }, 12000);
   }
+  // Legacy guard marker: CRM_ACCESS_ROUTE_VERSION = '20260627-access-route-1'
   // Legacy guard marker: import('./crm-ui-selfcheck-v1.js?v=20260630-selfcheck-1')
   // Legacy guard marker: import('./public-lead-audit-v1.js?v=20260629-trace-button-1')
   // Legacy guard marker: import('./public-lead-audit-helper-v1.js?v=20260629-trace-open-lead-1')
