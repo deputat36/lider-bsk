@@ -1,0 +1,34 @@
+name: Public request browser E2E runbook check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/PUBLIC_REQUEST_BROWSER_E2E_RUNBOOK_2026-07-12.md'
+      - 'tools/check_public_request_browser_e2e_runbook.py'
+      - 'request.html'
+      - 'assets/public-lead-form.js'
+      - 'assets/public-lead-reference-v1.js'
+      - 'supabase/functions/leader-public-lead/index.ts'
+      - '.github/workflows/public-request-browser-e2e-runbook-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/PUBLIC_REQUEST_BROWSER_E2E_RUNBOOK_2026-07-12.md'
+      - 'tools/check_public_request_browser_e2e_runbook.py'
+      - 'request.html'
+      - 'assets/public-lead-form.js'
+      - 'assets/public-lead-reference-v1.js'
+      - 'supabase/functions/leader-public-lead/index.ts'
+      - '.github/workflows/public-request-browser-e2e-runbook-check.yml'
+
+jobs:
+  validate-public-request-browser-e2e-runbook:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate controlled browser E2E instructions and source contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/check_public_request_browser_e2e_runbook.py
