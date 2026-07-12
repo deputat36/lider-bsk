@@ -11,6 +11,7 @@ FORBIDDEN = (
     (re.compile(r'\bcrm\b', re.IGNORECASE), 'CRM'),
     (re.compile(r'себестоим', re.IGNORECASE), 'себестоимость'),
     (re.compile(r'марж', re.IGNORECASE), 'маржа'),
+    (re.compile(r'рабоч(?:ий|его|ему|им|ем)\s+контур', re.IGNORECASE), 'рабочий контур'),
 )
 
 
