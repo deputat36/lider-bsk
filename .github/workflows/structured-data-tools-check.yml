@@ -65,7 +65,8 @@ jobs:
 
           assert 'index.html' in seen
           assert 'prices.html' in seen
-          assert 'portfolio.html' in seen
+          assert 'primery-rabot-kejsy.html' in seen
+          assert 'portfolio.html' not in seen
           assert 'yandex-karty-2gis.html' in seen
           assert service_pages >= 9
           PY
