@@ -5,17 +5,17 @@ PAGE = Path('index.html')
 CSS = Path('assets/public-homepage.css')
 text = PAGE.read_text(encoding='utf-8')
 
-start_marker = '  <style>\n'
-end_marker = '  </style>\n'
+start_tag = '<style>'
+end_tag = '</style>'
 
-if text.count(start_marker) != 1 or text.count(end_marker) != 1:
+if text.count(start_tag) != 1 or text.count(end_tag) != 1:
     raise SystemExit('Expected exactly one homepage style block')
 if CSS.exists():
     raise SystemExit('assets/public-homepage.css already exists; guarded extraction stopped')
 
-start = text.index(start_marker)
-end = text.index(end_marker, start)
-css = text[start + len(start_marker):end].strip()
+start = text.index(start_tag)
+end = text.index(end_tag, start)
+css = text[start + len(start_tag):end].strip()
 
 for marker in (
     ':root{--black:#1a1a1a',
@@ -36,8 +36,8 @@ CSS.write_text(
     encoding='utf-8',
 )
 
-replacement = '  <link rel="stylesheet" href="assets/public-homepage.css?v=1">\n'
-text = text[:start] + replacement + text[end + len(end_marker):]
+replacement = '<link rel="stylesheet" href="assets/public-homepage.css?v=1">'
+text = text[:start] + replacement + text[end + len(end_tag):]
 
 replacements = (
     ('assets/public-lead-form.css?v=3', 'assets/public-lead-form.css?v=4'),
@@ -49,7 +49,7 @@ for old, new in replacements:
         raise SystemExit(f'Expected exactly one cache marker, found {count}: {old}')
     text = text.replace(old, new, 1)
 
-if '<style>' in text or '</style>' in text:
+if start_tag in text or end_tag in text:
     raise SystemExit('Homepage inline style block remains after extraction')
 if text.count('assets/public-homepage.css?v=1') != 1:
     raise SystemExit('Homepage stylesheet link must appear exactly once')
