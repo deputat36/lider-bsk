@@ -7,9 +7,15 @@ text = PAGE.read_text(encoding='utf-8')
 
 start_tag = '<style>'
 end_tag = '</style>'
+start_count = text.count(start_tag)
+all_start_count = text.count('<style')
+end_count = text.count(end_tag)
 
-if text.count(start_tag) != 1 or text.count(end_tag) != 1:
-    raise SystemExit('Expected exactly one homepage style block')
+if start_count != 1 or end_count != 1:
+    raise SystemExit(
+        'Expected exactly one homepage style block; '
+        f'exact_start={start_count}, all_start={all_start_count}, end={end_count}'
+    )
 if CSS.exists():
     raise SystemExit('assets/public-homepage.css already exists; guarded extraction stopped')
 
