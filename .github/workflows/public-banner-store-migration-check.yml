@@ -1,0 +1,28 @@
+name: Public banner store migration check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'banner-dlya-magazina-borisoglebsk.html'
+      - 'assets/public-landing.css'
+      - 'tools/check_public_banner_store_migration.py'
+      - '.github/workflows/public-banner-store-migration-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'banner-dlya-magazina-borisoglebsk.html'
+      - 'assets/public-landing.css'
+      - 'tools/check_public_banner_store_migration.py'
+      - '.github/workflows/public-banner-store-migration-check.yml'
+
+jobs:
+  validate-banner-store-migration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate shared CSS, form version and local links
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/check_public_banner_store_migration.py
