@@ -1,4 +1,4 @@
-const CRM_ACCESS_ROUTE_VERSION = '20260627-access-route-1';
+const CRM_ACCESS_ROUTE_VERSION = '20260712-training-1';
 
 function bootSiteCacheNote() {
   if (document.getElementById('siteCacheNoteV1')) return;
@@ -21,5 +21,6 @@ function bootSiteCacheNote() {
   import('./public-lead-audit-helper-v1.js?v=20260710-audit-v9-1').catch(() => {});
   import('./public-lead-audit-summary-v1.js?v=20260629-request-summary-1').catch(() => {});
   import('./public-lead-request-id-v1.js?v=20260710-request-id-1').catch(() => {});
+  import('./crm-training-scenario-v1.js?v=20260712-training-1').catch(() => {});
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootSiteCacheNote); else bootSiteCacheNote();
