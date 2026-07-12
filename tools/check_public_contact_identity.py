@@ -11,6 +11,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 PHONE_HREF = "tel:+79802457471"
 PHONE_JSON = "+79802457471"
+PHONE_DIGITS = "79802457471"
 PHONE_VISIBLE = "8 980 245-74-71"
 EMAIL = "zakaz@lider-bsk.ru"
 
@@ -23,6 +24,16 @@ JSON_EMAIL_RE = re.compile(r'"email"\s*:\s*"([^"]+)"', re.IGNORECASE)
 def compact(value: str, limit: int = 180) -> str:
     value = " ".join(value.split())
     return value if len(value) <= limit else value[: limit - 1] + "…"
+
+
+def normalize_phone(value: str) -> str:
+    """Return one canonical Russian phone digit sequence for comparison."""
+    digits = re.sub(r"\D+", "", value)
+    if len(digits) == 10:
+        digits = "7" + digits
+    elif len(digits) == 11 and digits.startswith("8"):
+        digits = "7" + digits[1:]
+    return digits
 
 
 def main() -> int:
@@ -52,7 +63,7 @@ def main() -> int:
                 errors.append(f"{path.name}: stale or malformed email href: {value!r}")
 
         for value in JSON_PHONE_RE.findall(text):
-            if value != PHONE_JSON:
+            if normalize_phone(value) != PHONE_DIGITS:
                 errors.append(f"{path.name}: LocalBusiness telephone differs: {value!r}")
 
         for value in JSON_EMAIL_RE.findall(text):
