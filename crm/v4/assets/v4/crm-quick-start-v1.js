@@ -54,11 +54,32 @@ function tabAvailable(tab) {
   return Boolean(control && !control.hidden && control.getAttribute('aria-hidden') !== 'true' && control.style.display !== 'none');
 }
 
+function ensureAccessLink(host) {
+  const footer = host.querySelector('.v4-quick-start-footer');
+  if (!footer) return;
+  let link = footer.querySelector('[data-quick-start-access-link]');
+  if (!link) {
+    link = document.createElement('a');
+    link.href = '?tab=user_admin';
+    link.className = 'v4-primary';
+    link.dataset.quickStartAccessLink = '';
+    link.textContent = 'Открыть доступ CRM';
+    const details = footer.querySelector('details');
+    if (details) footer.insertBefore(link, details);
+    else footer.appendChild(link);
+  }
+  const available = tabAvailable('user_admin');
+  link.hidden = !available;
+  link.setAttribute('aria-hidden', available ? 'false' : 'true');
+  link.title = available ? '' : 'Раздел недоступен для вашей роли';
+}
+
 let state = normalizeQuickStartState();
 
 function render() {
   const host = document.getElementById('crmQuickStart');
   if (!host) return;
+  ensureAccessLink(host);
   const progress = quickStartProgress(state);
   const body = document.getElementById('crmQuickStartBody');
   const progressText = document.getElementById('crmQuickStartProgressText');

@@ -1,0 +1,46 @@
+name: Public process page migration check
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'kak-prohodit-zakaz.html'
+      - 'assets/public-landing.css'
+      - 'assets/public-lead-form.css'
+      - 'assets/public-lead-form.js'
+      - 'sitemap.xml'
+      - 'tools/check_public_process_page_migration.py'
+      - 'tools/check_public_lead_form_cache_v5_partial.py'
+      - 'tools/check_public_v5_landing_seo_contract.py'
+      - 'docs/PUBLIC_LANDING_CSS_MIGRATION.md'
+      - '.github/workflows/public-process-page-migration-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'kak-prohodit-zakaz.html'
+      - 'assets/public-landing.css'
+      - 'assets/public-lead-form.css'
+      - 'assets/public-lead-form.js'
+      - 'sitemap.xml'
+      - 'tools/check_public_process_page_migration.py'
+      - 'tools/check_public_lead_form_cache_v5_partial.py'
+      - 'tools/check_public_v5_landing_seo_contract.py'
+      - 'docs/PUBLIC_LANDING_CSS_MIGRATION.md'
+      - '.github/workflows/public-process-page-migration-check.yml'
+
+jobs:
+  validate-process-page:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          show-progress: false
+
+      - name: Validate shared CSS, SEO and lead-form contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/check_public_process_page_migration.py
+          python3 tools/check_public_lead_form_cache_v5_partial.py
+          python3 tools/check_public_v5_landing_seo_contract.py
