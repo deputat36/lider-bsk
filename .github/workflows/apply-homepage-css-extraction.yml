@@ -7,13 +7,21 @@ on:
     paths:
       - 'tools/apply_homepage_css_extraction.py'
       - '.github/workflows/apply-homepage-css-extraction.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/apply_homepage_css_extraction.py'
+      - '.github/workflows/apply-homepage-css-extraction.yml'
 
 permissions:
   contents: write
 
 jobs:
   apply-guarded-extraction:
+    if: github.event_name == 'push' || github.head_ref == 'fix/public-homepage-css-2026-07-12'
     runs-on: ubuntu-latest
+    env:
+      TARGET_BRANCH: fix/public-homepage-css-2026-07-12
     steps:
       - uses: actions/checkout@v4
         with:
@@ -42,7 +50,7 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add docs/diagnostics/homepage-css-extraction.txt
           git commit -m 'Record homepage CSS extraction diagnostic'
-          git push origin HEAD:fix/public-homepage-css-2026-07-12
+          git push origin HEAD:"$TARGET_BRANCH"
           exit 1
 
       - name: Validate extracted homepage
@@ -67,4 +75,4 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html assets/public-homepage.css
           git commit -m 'Extract homepage CSS and update public form cache'
-          git push origin HEAD:fix/public-homepage-css-2026-07-12
+          git push origin HEAD:"$TARGET_BRANCH"
