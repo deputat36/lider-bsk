@@ -5,11 +5,13 @@ on:
     branches: [main]
     paths:
       - 'request.html'
+      - 'assets/public-request.css'
       - '.github/workflows/public-request-seo-check.yml'
   pull_request:
     branches: [main]
     paths:
       - 'request.html'
+      - 'assets/public-request.css'
       - '.github/workflows/public-request-seo-check.yml'
 
 jobs:
@@ -24,6 +26,7 @@ jobs:
           set -euo pipefail
           page='request.html'
           test -f "$page"
+          test -f assets/public-request.css
           grep -Fq '<title>Оставить заявку — РА Лидер</title>' "$page"
           grep -Fq '<meta name="description" content="Оставьте заявку' "$page"
           grep -Fq '<meta name="robots" content="index, follow">' "$page"
@@ -38,12 +41,17 @@ jobs:
           grep -Fq '<meta name="twitter:card" content="summary_large_image">' "$page"
           grep -Fq '<meta name="twitter:image" content="https://www.lider-bsk.ru/assets/og-lider-default.png">' "$page"
           grep -Fq '<link rel="stylesheet" href="assets/public-lead-form.css?v=4">' "$page"
+          grep -Fq '<link rel="stylesheet" href="assets/public-request.css?v=1">' "$page"
           grep -Fq 'assets/public-lead-reference-v1.js?v=1' "$page"
-          grep -Fq 'assets/public-lead-form.js?v=4' "$page"
+          grep -Fq 'assets/public-lead-form.js?v=5' "$page"
           grep -Fq 'data-request-page-version="20260628-clarity-2"' "$page"
-          grep -Fq 'Заявка сразу попадёт в CRM' "$page"
+          grep -Fq 'Номер обращения после отправки' "$page"
           grep -Fq 'После отправки на странице появится номер обращения' "$page"
-          if grep -Fq 'assets/public-lead-form.css?v=3' "$page"; then
-            echo 'request.html must use the current public CSS cache marker v4.' >&2
+          if grep -Fq 'assets/public-lead-form.css?v=3' "$page" || grep -Fq 'assets/public-lead-form.js?v=4' "$page"; then
+            echo 'request.html contains stale public form cache markers.' >&2
+            exit 1
+          fi
+          if grep -Fq 'Заявка попадет в CRM' "$page" || grep -Fq 'Заявка сразу попадёт в CRM' "$page"; then
+            echo 'request.html must use client-facing source copy.' >&2
             exit 1
           fi
