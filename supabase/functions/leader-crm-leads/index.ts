@@ -66,10 +66,112 @@ async function checkUser(req: Request, supabaseUrl: string, anonKey: string, ser
   return { user, profile: profiles[0] }
 }
 
+const ROLE_MATRIX_VERSION = '20260712-leads-role-matrix-1'
+
+const CANONICAL_ROLES = new Set([
+  'owner',
+  'admin',
+  'manager',
+  'accountant',
+  'designer',
+  'installer',
+  'contractor',
+])
+
+const ACTION_PERMISSION: Record<string, string> = {
+  dashboard: 'leads.read',
+  list: 'leads.read',
+  list_orders: 'orders.read',
+  create: 'leads.create',
+  update: 'leads.update',
+  ensure_client: 'clients.write',
+  create_order: 'orders.create',
+  create_order_from_offer: 'orders.create',
+}
+
+const ROLE_ACTIONS: Record<string, Set<string>> = {
+  owner: new Set(['*']),
+  admin: new Set(['*']),
+  manager: new Set([
+    'leads.read',
+    'leads.create',
+    'leads.update',
+    'clients.write',
+    'orders.read',
+    'orders.create',
+  ]),
+  accountant: new Set(['orders.read']),
+  designer: new Set(),
+  installer: new Set(),
+  contractor: new Set(),
+}
+
 const profileFields = 'user_id,email,role,is_active,full_name'
-const leadFields = 'id,created_at,name,phone,source,service,message,status,lead_quality,estimated_amount,next_contact_at,page_url,utm_source,utm_medium,utm_campaign,utm_content,utm_term,budget,city,converted_order_id,converted_client_id'
+const fullLeadFields = 'id,created_at,name,phone,source,service,message,status,lead_quality,estimated_amount,next_contact_at,page_url,utm_source,utm_medium,utm_campaign,utm_content,utm_term,budget,city,converted_order_id,converted_client_id'
 const clientFields = 'id,owner_id,name,phone,source,comment,created_at,updated_at'
-const orderFields = 'id,order_number,created_at,project_name,client_name,client_phone,status,payment_status,deadline,client_total,contractor_cost,profit,balance,source,layout_status,production_status,lead_id,client_id'
+
+const LEAD_FIELDS_BY_ROLE: Record<string, string> = {
+  owner: fullLeadFields,
+  admin: fullLeadFields,
+  manager: fullLeadFields,
+}
+
+const ORDER_FIELDS_BY_ROLE: Record<string, string> = {
+  owner: 'id,order_number,created_at,project_name,client_name,client_phone,status,payment_status,deadline,client_total,contractor_cost,profit,balance,source,layout_status,production_status,lead_id,client_id',
+  admin: 'id,order_number,created_at,project_name,client_name,client_phone,status,payment_status,deadline,client_total,contractor_cost,profit,balance,source,layout_status,production_status,lead_id,client_id',
+  manager: 'id,order_number,created_at,project_name,client_name,client_phone,status,payment_status,deadline,client_total,balance,source,layout_status,production_status,lead_id,client_id',
+  accountant: 'id,order_number,created_at,client_name,client_phone,status,payment_status,deadline,client_total,balance,source,lead_id,client_id',
+}
+
+function profileRole(profile: Record<string, unknown> | null | undefined) {
+  return cleanText(profile?.role, 80).toLowerCase()
+}
+
+function isCanonicalRole(profile: Record<string, unknown> | null | undefined) {
+  return CANONICAL_ROLES.has(profileRole(profile))
+}
+
+function canPerform(profile: Record<string, unknown> | null | undefined, permission: string) {
+  const permissions = ROLE_ACTIONS[profileRole(profile)]
+  return Boolean(permissions?.has('*') || permissions?.has(permission))
+}
+
+function forbidden(action: string, permission: string, profile: Record<string, unknown> | null | undefined) {
+  return json(403, {
+    error: 'forbidden',
+    action,
+    permission,
+    role: profileRole(profile),
+    matrix: ROLE_MATRIX_VERSION,
+  })
+}
+
+function requireAction(
+  profile: Record<string, unknown> | null | undefined,
+  action: string,
+  permission: string,
+) {
+  if (canPerform(profile, permission)) return null
+  return forbidden(action, permission, profile)
+}
+
+function leadFieldsForRole(profile: Record<string, unknown> | null | undefined) {
+  return LEAD_FIELDS_BY_ROLE[profileRole(profile)] || ''
+}
+
+function orderFieldsForRole(profile: Record<string, unknown> | null | undefined) {
+  return ORDER_FIELDS_BY_ROLE[profileRole(profile)] || ''
+}
+
+function projectRow(row: unknown, fieldsCsv: string) {
+  if (!row || typeof row !== 'object' || Array.isArray(row)) return row
+  const source = row as Record<string, unknown>
+  const projected: Record<string, unknown> = {}
+  for (const field of fieldsCsv.split(',').map((value) => value.trim()).filter(Boolean)) {
+    if (field in source) projected[field] = source[field]
+  }
+  return projected
+}
 
 async function ensureProfile(req: Request, supabaseUrl: string, anonKey: string, serviceRole: string) {
   const userCheck = await getUserFromRequest(req, supabaseUrl, anonKey)
@@ -121,44 +223,84 @@ function calcStats(leads: any[]) {
   }
 }
 
-async function dashboard(supabaseUrl: string, serviceRole: string) {
+async function dashboard(supabaseUrl: string, serviceRole: string, profile: Record<string, unknown>) {
+  const leadFields = leadFieldsForRole(profile)
+  if (!leadFields) return forbidden('dashboard', 'leads.read', profile)
+
   const statsRes = await rest(supabaseUrl, serviceRole, '/rest/v1/leader_leads?select=id,status&status=not.eq.Спам&order=created_at.desc&limit=300')
   if (!statsRes.ok) return json(500, { error: 'dashboard_stats_failed', details: await statsRes.text() })
   const all = await statsRes.json()
   const recentRes = await rest(supabaseUrl, serviceRole, '/rest/v1/leader_leads?select=' + encodeURIComponent(leadFields) + '&status=not.eq.Спам&order=created_at.desc&limit=12')
   if (!recentRes.ok) return json(500, { error: 'dashboard_recent_failed', details: await recentRes.text() })
-  return json(200, { ok: true, stats: calcStats(Array.isArray(all) ? all : []), recent: await recentRes.json() })
+  return json(200, { ok: true, stats: calcStats(Array.isArray(all) ? all : []), recent: await recentRes.json(), matrix: ROLE_MATRIX_VERSION })
 }
 
-async function listLeads(supabaseUrl: string, serviceRole: string, body: Record<string, unknown>) {
+async function listLeads(
+  supabaseUrl: string,
+  serviceRole: string,
+  profile: Record<string, unknown>,
+  body: Record<string, unknown>,
+) {
+  const leadFields = leadFieldsForRole(profile)
+  if (!leadFields) return forbidden('list', 'leads.read', profile)
+
   const rawLimit = Number(body.limit || 80)
   const limit = Math.max(20, Math.min(Number.isFinite(rawLimit) ? rawLimit : 80, 120))
   const leadsRes = await rest(supabaseUrl, serviceRole, '/rest/v1/leader_leads?select=' + encodeURIComponent(leadFields) + '&order=created_at.desc&limit=' + limit)
   if (!leadsRes.ok) return json(500, { error: 'leads_read_failed', details: await leadsRes.text() })
-  return json(200, { ok: true, leads: await leadsRes.json() })
+  return json(200, { ok: true, leads: await leadsRes.json(), matrix: ROLE_MATRIX_VERSION })
 }
 
-async function listOrders(supabaseUrl: string, serviceRole: string) {
+async function listOrders(supabaseUrl: string, serviceRole: string, profile: Record<string, unknown>) {
+  const orderFields = orderFieldsForRole(profile)
+  if (!orderFields) return forbidden('list_orders', 'orders.read', profile)
+
   const res = await rest(supabaseUrl, serviceRole, '/rest/v1/leader_orders?select=' + encodeURIComponent(orderFields) + '&order=created_at.desc&limit=80')
   if (!res.ok) return json(500, { error: 'orders_read_failed', details: await res.text() })
-  return json(200, { ok: true, orders: await res.json() })
+  return json(200, { ok: true, orders: await res.json(), matrix: ROLE_MATRIX_VERSION })
 }
 
-async function createLead(supabaseUrl: string, serviceRole: string, body: Record<string, unknown>) {
+async function createLead(
+  supabaseUrl: string,
+  serviceRole: string,
+  profile: Record<string, unknown>,
+  body: Record<string, unknown>,
+) {
+  const leadFields = leadFieldsForRole(profile)
+  if (!leadFields) return forbidden('create', 'leads.create', profile)
+
   const payload = {
-    name: cleanText(body.name, 200), phone: cleanText(body.phone, 80), source: cleanText(body.source, 120) || 'Ручная заявка',
-    service: cleanText(body.service, 200), message: cleanText(body.message, 2000), status: cleanText(body.status, 80) || 'Новая',
-    budget: body.budget === undefined || body.budget === null || body.budget === '' ? null : num(body.budget), city: cleanText(body.city, 120),
-    page_url: cleanText(body.page_url, 500) || 'manual://crm-v2', payload: { created_from: 'crm_v2', manual: true },
+    name: cleanText(body.name, 200),
+    phone: cleanText(body.phone, 80),
+    source: cleanText(body.source, 120) || 'Ручная заявка',
+    service: cleanText(body.service, 200),
+    message: cleanText(body.message, 2000),
+    status: cleanText(body.status, 80) || 'Новая',
+    budget: body.budget === undefined || body.budget === null || body.budget === '' ? null : num(body.budget),
+    city: cleanText(body.city, 120),
+    page_url: cleanText(body.page_url, 500) || 'manual://crm-v2',
+    payload: { created_from: 'crm_v2', manual: true },
   }
   if (!payload.name && !payload.phone && !payload.message) return json(400, { error: 'lead_data_required' })
-  const res = await rest(supabaseUrl, serviceRole, '/rest/v1/leader_leads?select=' + encodeURIComponent(leadFields), { method: 'POST', headers: { 'Content-Type': 'application/json', 'Prefer': 'return=representation' }, body: JSON.stringify(payload) })
+  const res = await rest(supabaseUrl, serviceRole, '/rest/v1/leader_leads?select=' + encodeURIComponent(leadFields), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+    body: JSON.stringify(payload),
+  })
   if (!res.ok) return json(500, { error: 'lead_insert_failed', details: await res.text() })
   const rows = await res.json()
-  return json(200, { ok: true, lead: Array.isArray(rows) ? rows[0] : null })
+  return json(200, { ok: true, lead: Array.isArray(rows) ? rows[0] : null, matrix: ROLE_MATRIX_VERSION })
 }
 
-async function updateLead(supabaseUrl: string, serviceRole: string, body: Record<string, unknown>) {
+async function updateLead(
+  supabaseUrl: string,
+  serviceRole: string,
+  profile: Record<string, unknown>,
+  body: Record<string, unknown>,
+) {
+  const leadFields = leadFieldsForRole(profile)
+  if (!leadFields) return forbidden('update', 'leads.update', profile)
+
   const id = cleanText(body.id, 80)
   if (!id) return json(400, { error: 'id_required' })
   const patch: Record<string, unknown> = {}
@@ -168,10 +310,16 @@ async function updateLead(supabaseUrl: string, serviceRole: string, body: Record
   if ('next_contact_at' in body) patch.next_contact_at = cleanText(body.next_contact_at, 80) || null
   if ('message' in body) patch.message = cleanText(body.message, 2000)
   if ('reject_reason' in body) patch.reject_reason = cleanText(body.reject_reason, 300)
-  const res = await rest(supabaseUrl, serviceRole, '/rest/v1/leader_leads?id=eq.' + encodeURIComponent(id) + '&select=' + encodeURIComponent(leadFields), { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Prefer': 'return=representation' }, body: JSON.stringify(patch) })
+  if (!Object.keys(patch).length) return json(400, { error: 'no_update_fields', matrix: ROLE_MATRIX_VERSION })
+
+  const res = await rest(supabaseUrl, serviceRole, '/rest/v1/leader_leads?id=eq.' + encodeURIComponent(id) + '&select=' + encodeURIComponent(leadFields), {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+    body: JSON.stringify(patch),
+  })
   if (!res.ok) return json(500, { error: 'lead_update_failed', details: await res.text() })
   const rows = await res.json()
-  return json(200, { ok: true, lead: Array.isArray(rows) ? rows[0] : null })
+  return json(200, { ok: true, lead: Array.isArray(rows) ? rows[0] : null, matrix: ROLE_MATRIX_VERSION })
 }
 
 async function ensureClient(supabaseUrl: string, serviceRole: string, ownerId: string, body: Record<string, unknown>) {
@@ -182,9 +330,16 @@ async function ensureClient(supabaseUrl: string, serviceRole: string, ownerId: s
   if (!name && !phone) return { ok: false, error: 'client_data_required' }
   if (phone) {
     const foundRes = await rest(supabaseUrl, serviceRole, '/rest/v1/leader_clients?phone=eq.' + encodeURIComponent(phone) + '&select=' + encodeURIComponent(clientFields) + '&limit=1')
-    if (foundRes.ok) { const found = await foundRes.json(); if (Array.isArray(found) && found[0]) return { ok: true, client: found[0], existed: true } }
+    if (foundRes.ok) {
+      const found = await foundRes.json()
+      if (Array.isArray(found) && found[0]) return { ok: true, client: found[0], existed: true }
+    }
   }
-  const insertRes = await rest(supabaseUrl, serviceRole, '/rest/v1/leader_clients?select=' + encodeURIComponent(clientFields), { method: 'POST', headers: { 'Content-Type': 'application/json', 'Prefer': 'return=representation' }, body: JSON.stringify({ owner_id: ownerId, name, phone, source, comment }) })
+  const insertRes = await rest(supabaseUrl, serviceRole, '/rest/v1/leader_clients?select=' + encodeURIComponent(clientFields), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+    body: JSON.stringify({ owner_id: ownerId, name, phone, source, comment }),
+  })
   if (!insertRes.ok) return { ok: false, error: 'client_insert_failed', details: await insertRes.text() }
   const rows = await insertRes.json()
   return { ok: true, client: Array.isArray(rows) ? rows[0] : null, existed: false }
@@ -193,7 +348,7 @@ async function ensureClient(supabaseUrl: string, serviceRole: string, ownerId: s
 async function ensureClientResponse(supabaseUrl: string, serviceRole: string, ownerId: string, body: Record<string, unknown>) {
   const result = await ensureClient(supabaseUrl, serviceRole, ownerId, body)
   if (!result.ok) return json(500, result)
-  return json(200, result)
+  return json(200, { ...result, matrix: ROLE_MATRIX_VERSION })
 }
 
 function itemPayload(ownerId: string, orderId: string, r: Record<string, unknown>) {
@@ -201,35 +356,120 @@ function itemPayload(ownerId: string, orderId: string, r: Record<string, unknown
   const price = num(r.price || r.contractor_price)
   const contractorSum = num(r.contractor_sum || (qty * price))
   const clientSum = num(r.client_sum || r.total || 0)
-  return { owner_id: ownerId, order_id: orderId, name: cleanText(r.name, 300), unit: cleanText(r.unit, 50), quantity: qty, contractor_price: price, contractor_sum: contractorSum, markup_percent: r.markup === '' || r.markup === null || r.markup === undefined ? null : num(r.markup), client_sum: clientSum, comment: cleanText(r.comment, 1000) }
+  return {
+    owner_id: ownerId,
+    order_id: orderId,
+    name: cleanText(r.name, 300),
+    unit: cleanText(r.unit, 50),
+    quantity: qty,
+    contractor_price: price,
+    contractor_sum: contractorSum,
+    markup_percent: r.markup === '' || r.markup === null || r.markup === undefined ? null : num(r.markup),
+    client_sum: clientSum,
+    comment: cleanText(r.comment, 1000),
+  }
 }
 
-async function createOrder(supabaseUrl: string, serviceRole: string, ownerId: string, body: Record<string, unknown>) {
+async function createOrder(
+  supabaseUrl: string,
+  serviceRole: string,
+  ownerId: string,
+  profile: Record<string, unknown>,
+  body: Record<string, unknown>,
+) {
+  const orderFields = orderFieldsForRole(profile)
+  if (!orderFields) return forbidden('create_order', 'orders.create', profile)
+
   const rows = Array.isArray(body.rows) ? body.rows as Record<string, unknown>[] : []
   if (!rows.length) return json(400, { error: 'order_rows_required' })
-  const clientResult = await ensureClient(supabaseUrl, serviceRole, ownerId, { name: body.client_name, phone: body.client_phone, source: body.source || 'CRM', comment: body.comment || '' })
+  const clientResult = await ensureClient(supabaseUrl, serviceRole, ownerId, {
+    name: body.client_name,
+    phone: body.client_phone,
+    source: body.source || 'CRM',
+    comment: body.comment || '',
+  })
   if (!clientResult.ok) return json(500, clientResult)
+
   const totals = (body.totals || {}) as Record<string, unknown>
-  const orderPayload = { owner_id: ownerId, client_id: clientResult.client?.id || null, lead_id: cleanText(body.lead_id, 80) || null, project_name: cleanText(body.project_name, 300) || 'Заказ из CRM', client_name: cleanText(body.client_name, 200), client_phone: cleanText(body.client_phone, 80), status: cleanText(body.status, 80) || 'Новый', payment_status: cleanText(body.payment_status, 80) || 'Не оплачено', deadline: cleanText(body.deadline, 40) || null, contractor_cost: num(totals.cost), client_total: num(totals.total), profit: num(totals.profit), prepayment: num(body.prepayment || totals.prepayment), balance: num(totals.balance), source: cleanText(body.source, 120), layout_status: cleanText(body.layout_status, 120) || 'Макета нет', layout_link: cleanText(body.layout_link, 500), layout_comment: cleanText(body.comment, 2000), production_status: cleanText(body.production_status, 120) || 'Не передано', data: { order_type: cleanText(body.order_type, 80) || 'Смешанный', source_ui: 'crm_v2', raw_rows: rows } }
-  const orderRes = await rest(supabaseUrl, serviceRole, '/rest/v1/leader_orders?select=' + encodeURIComponent(orderFields), { method: 'POST', headers: { 'Content-Type': 'application/json', 'Prefer': 'return=representation' }, body: JSON.stringify(orderPayload) })
+  const orderPayload = {
+    owner_id: ownerId,
+    client_id: clientResult.client?.id || null,
+    lead_id: cleanText(body.lead_id, 80) || null,
+    project_name: cleanText(body.project_name, 300) || 'Заказ из CRM',
+    client_name: cleanText(body.client_name, 200),
+    client_phone: cleanText(body.client_phone, 80),
+    status: cleanText(body.status, 80) || 'Новый',
+    payment_status: cleanText(body.payment_status, 80) || 'Не оплачено',
+    deadline: cleanText(body.deadline, 40) || null,
+    contractor_cost: num(totals.cost),
+    client_total: num(totals.total),
+    profit: num(totals.profit),
+    prepayment: num(body.prepayment || totals.prepayment),
+    balance: num(totals.balance),
+    source: cleanText(body.source, 120),
+    layout_status: cleanText(body.layout_status, 120) || 'Макета нет',
+    layout_link: cleanText(body.layout_link, 500),
+    layout_comment: cleanText(body.comment, 2000),
+    production_status: cleanText(body.production_status, 120) || 'Не передано',
+    data: { order_type: cleanText(body.order_type, 80) || 'Смешанный', source_ui: 'crm_v2', raw_rows: rows },
+  }
+
+  const orderRes = await rest(supabaseUrl, serviceRole, '/rest/v1/leader_orders?select=' + encodeURIComponent(orderFields), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+    body: JSON.stringify(orderPayload),
+  })
   if (!orderRes.ok) return json(500, { error: 'order_insert_failed', details: await orderRes.text() })
   const orderRows = await orderRes.json()
   const order = Array.isArray(orderRows) ? orderRows[0] : null
+
   if (order?.id) {
     const itemRows = rows.map((r) => itemPayload(ownerId, order.id, r)).filter((r) => r.name)
     if (itemRows.length) {
-      const itemRes = await rest(supabaseUrl, serviceRole, '/rest/v1/leader_order_items', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, body: JSON.stringify(itemRows) })
+      const itemRes = await rest(supabaseUrl, serviceRole, '/rest/v1/leader_order_items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify(itemRows),
+      })
       if (!itemRes.ok) return json(500, { error: 'order_items_insert_failed', details: await itemRes.text(), order })
     }
     const leadId = cleanText(body.lead_id, 80)
-    if (leadId) await rest(supabaseUrl, serviceRole, '/rest/v1/leader_leads?id=eq.' + encodeURIComponent(leadId), { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, body: JSON.stringify({ status: 'Создан заказ', converted_order_id: order.id, converted_client_id: clientResult.client?.id || null, converted_at: new Date().toISOString() }) })
+    if (leadId) {
+      await rest(supabaseUrl, serviceRole, '/rest/v1/leader_leads?id=eq.' + encodeURIComponent(leadId), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({
+          status: 'Создан заказ',
+          converted_order_id: order.id,
+          converted_client_id: clientResult.client?.id || null,
+          converted_at: new Date().toISOString(),
+        }),
+      })
+    }
   }
-  return json(200, { ok: true, order, client: clientResult.client, client_existed: clientResult.existed })
+
+  return json(200, {
+    ok: true,
+    order,
+    client: clientResult.client,
+    client_existed: clientResult.existed,
+    matrix: ROLE_MATRIX_VERSION,
+  })
 }
 
-async function createOrderFromOffer(supabaseUrl: string, serviceRole: string, ownerId: string, actorEmail: string, body: Record<string, unknown>) {
+async function createOrderFromOffer(
+  supabaseUrl: string,
+  serviceRole: string,
+  ownerId: string,
+  actorEmail: string,
+  profile: Record<string, unknown>,
+  body: Record<string, unknown>,
+) {
   const offerId = cleanText(body.offer_id, 80)
   if (!offerId) return json(400, { error: 'offer_id_required' })
+  const orderFields = orderFieldsForRole(profile)
+  if (!orderFields) return forbidden('create_order_from_offer', 'orders.create', profile)
+
   const payload = { ...body, offer_id: offerId, actor_id: ownerId, actor_email: actorEmail }
   const res = await rest(supabaseUrl, serviceRole, '/rest/v1/rpc/leader_create_order_from_offer_rpc', {
     method: 'POST',
@@ -237,30 +477,57 @@ async function createOrderFromOffer(supabaseUrl: string, serviceRole: string, ow
     body: JSON.stringify({ p_payload: payload }),
   })
   if (!res.ok) return json(500, { error: 'order_from_offer_rpc_failed', details: await res.text() })
-  return json(200, await res.json())
+
+  const result = await res.json()
+  if (result && typeof result === 'object' && !Array.isArray(result)) {
+    const projected = { ...(result as Record<string, unknown>) }
+    projected.order = projectRow(projected.order, orderFields)
+    return json(200, { ...projected, matrix: ROLE_MATRIX_VERSION })
+  }
+  return json(200, result)
 }
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY')
   const serviceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
   if (!supabaseUrl || !anonKey || !serviceRole) return json(500, { error: 'server_not_configured' })
+
   let body: Record<string, unknown> = {}
-  if (req.method === 'POST') { try { body = await req.json() } catch (_) { body = {} } }
+  if (req.method === 'POST') {
+    try { body = await req.json() } catch (_) { body = {} }
+  }
   const action = cleanText(body.action || new URL(req.url).searchParams.get('action') || 'dashboard', 60)
-  if (action === 'ensure_profile') return await ensureProfile(req, supabaseUrl, anonKey, serviceRole)
+
+  if (action === 'ensure_profile') {
+    return await ensureProfile(req, supabaseUrl, anonKey, serviceRole)
+  }
+
+  const permission = ACTION_PERMISSION[action]
+  if (!permission) return json(400, { error: 'unknown_action' })
+
   const checked = await checkUser(req, supabaseUrl, anonKey, serviceRole)
   if (checked.error) return checked.error
+  if (!isCanonicalRole(checked.profile)) return forbidden(action, permission, checked.profile)
+
+  const denied = requireAction(checked.profile, action, permission)
+  if (denied) return denied
+
   const ownerId = checked.user.id as string
   const actorEmail = cleanText(checked.user.email || checked.profile?.email, 200)
-  if (action === 'dashboard') return await dashboard(supabaseUrl, serviceRole)
-  if (action === 'list') return await listLeads(supabaseUrl, serviceRole, body)
-  if (action === 'list_orders') return await listOrders(supabaseUrl, serviceRole)
-  if (action === 'create') return await createLead(supabaseUrl, serviceRole, body)
-  if (action === 'update') return await updateLead(supabaseUrl, serviceRole, body)
+
+  if (action === 'dashboard') return await dashboard(supabaseUrl, serviceRole, checked.profile)
+  if (action === 'list') return await listLeads(supabaseUrl, serviceRole, checked.profile, body)
+  if (action === 'list_orders') return await listOrders(supabaseUrl, serviceRole, checked.profile)
+  if (action === 'create') return await createLead(supabaseUrl, serviceRole, checked.profile, body)
+  if (action === 'update') return await updateLead(supabaseUrl, serviceRole, checked.profile, body)
   if (action === 'ensure_client') return await ensureClientResponse(supabaseUrl, serviceRole, ownerId, body)
-  if (action === 'create_order') return await createOrder(supabaseUrl, serviceRole, ownerId, body)
-  if (action === 'create_order_from_offer') return await createOrderFromOffer(supabaseUrl, serviceRole, ownerId, actorEmail, body)
+  if (action === 'create_order') return await createOrder(supabaseUrl, serviceRole, ownerId, checked.profile, body)
+  if (action === 'create_order_from_offer') {
+    return await createOrderFromOffer(supabaseUrl, serviceRole, ownerId, actorEmail, checked.profile, body)
+  }
+
   return json(400, { error: 'unknown_action' })
 })
