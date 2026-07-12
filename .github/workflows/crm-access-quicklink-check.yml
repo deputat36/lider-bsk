@@ -11,35 +11,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          show-progress: false
 
-      - name: Validate CRM access quick link
+      - name: Validate CRM source links
         shell: bash
         run: |
           set -euo pipefail
           index='crm/v4/index.html'
           menu='crm/v4/assets/v4/crm-v4-expanded-menu-v1.js'
           auth='crm/v4/assets/v4/auth.js'
-          runbook='docs/CRM_ACCESS_TAB_CHECK_2026-06-27.md'
-          status='docs/STATUS.md'
-          issue_template='.github/ISSUE_TEMPLATE/crm-v4-browser-test.md'
-          checklist='docs/CRM_V4_TESTER_CHECKLIST.md'
-          report='docs/CRM_V4_BROWSER_TEST_REPORT.md'
-          access_doc='docs/CRM_V4_TEST_ACCESS.md'
-          onboarding='docs/CRM_ADMIN_TESTER_ONBOARDING.md'
-          selfcheck='docs/CRM_V4_SELFCHECK.md'
-          manual='docs/MANUAL_TEST_CHECKLIST.md'
           test -f "$index"
           test -f "$menu"
           test -f "$auth"
-          test -f "$runbook"
-          test -f "$status"
-          test -f "$issue_template"
-          test -f "$checklist"
-          test -f "$report"
-          test -f "$access_doc"
-          test -f "$onboarding"
-          test -f "$selfcheck"
-          test -f "$manual"
           grep -Fq 'href="?tab=user_admin"' "$index"
           grep -Fq 'Открыть доступ CRM' "$index"
           grep -Fq 'Доступ и роли' "$index"
@@ -49,6 +33,15 @@ jobs:
           grep -Fq 'auth.js?v=20260628-access-label-1' "$index"
           grep -Fq "import './user-admin-v1.js?v=20260628-access-label-1';" "$auth"
           grep -Fq "{ tab: 'user_admin', label: 'Доступ и роли' }" "$menu"
+
+      - name: Validate access runbook and status
+        shell: bash
+        run: |
+          set -euo pipefail
+          runbook='docs/CRM_ACCESS_TAB_CHECK_2026-06-27.md'
+          status='docs/STATUS.md'
+          test -f "$runbook"
+          test -f "$status"
           grep -Fq 'Открыть доступ CRM' "$runbook"
           grep -Fq 'Доступ и роли' "$runbook"
           grep -Fq '20260628-access-label-1' "$runbook"
@@ -61,6 +54,17 @@ jobs:
           grep -Fq '20260628-access-label-1' "$status"
           grep -Fq 'active access admins' "$status"
           grep -Fq 'inactive profiles: 0' "$status"
+
+      - name: Validate tester templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          issue_template='.github/ISSUE_TEMPLATE/crm-v4-browser-test.md'
+          checklist='docs/CRM_V4_TESTER_CHECKLIST.md'
+          report='docs/CRM_V4_BROWSER_TEST_REPORT.md'
+          test -f "$issue_template"
+          test -f "$checklist"
+          test -f "$report"
           grep -Fq 'Проверка доступа CRM' "$issue_template"
           grep -Fq 'Открыть доступ CRM' "$issue_template"
           grep -Fq 'CRM build: 20260627-access-route-1' "$issue_template"
@@ -74,6 +78,15 @@ jobs:
           grep -Fq 'Открыть доступ CRM' "$report"
           grep -Fq 'CRM build: 20260627-access-route-1' "$report"
           grep -Fq 'Доступ: ok / ошибка / не проверялось' "$report"
+
+      - name: Validate access documentation
+        shell: bash
+        run: |
+          set -euo pipefail
+          access_doc='docs/CRM_V4_TEST_ACCESS.md'
+          onboarding='docs/CRM_ADMIN_TESTER_ONBOARDING.md'
+          test -f "$access_doc"
+          test -f "$onboarding"
           grep -Fq 'Текущая модель доступа' "$access_doc"
           grep -Fq 'Обычный путь для тестировщиков и сотрудников — только invite через вкладку `Доступ`' "$access_doc"
           grep -Fq 'Открыть доступ CRM' "$access_doc"
@@ -83,6 +96,15 @@ jobs:
           grep -Fq 'Открыть доступ CRM' "$onboarding"
           grep -Fq 'CRM build: 20260627-access-route-1' "$onboarding"
           grep -Fq 'видны пользователи CRM и приглашения' "$onboarding"
+
+      - name: Validate selfcheck and manual checklist
+        shell: bash
+        run: |
+          set -euo pipefail
+          selfcheck='docs/CRM_V4_SELFCHECK.md'
+          manual='docs/MANUAL_TEST_CHECKLIST.md'
+          test -f "$selfcheck"
+          test -f "$manual"
           grep -Fq 'Маршрут Доступ' "$selfcheck"
           grep -Fq 'crm-ui-selfcheck-v1.js?v=20260627-access-route-1' "$selfcheck"
           grep -Fq 'leader-public-lead` v9' "$selfcheck"
