@@ -19,19 +19,26 @@ checks = {
         'crm-training-scenario-v1.css?v=20260712-1',
     ],
     loader: [
-        "CRM_ACCESS_ROUTE_VERSION = '20260712-training-2'",
-        "import('./crm-training-scenario-v1.js?v=20260712-training-2')",
+        "CRM_ACCESS_ROUTE_VERSION = '20260712-training-3'",
+        "import('./crm-training-scenario-v1.js?v=20260712-training-3')",
     ],
     module: [
-        "leader_crm_v4_training_scenario_v1",
+        'leader_crm_v4_training_scenario_v1',
         "from './status-transitions-v1.js'",
-        'validateStatusTransition', 'createTrainingScenarioState',
-        'normalizeTrainingScenarioState', 'trainingScenarioProgress',
-        'applyTrainingScenarioAction', 'schedule_contact', 'confirm_need',
-        'approve_offer', 'create_order', 'production_transition',
+        "from './role-tab-permissions-v1.js'",
+        'roleAccessSummary', 'TRAINING_TRACK_IDS', 'TRAINING_TRACK_STEP_IDS',
+        'availableTrainingTracks', 'trainingTrackForAccess',
+        "['manager', 'production', 'installation']",
+        'createTrainingScenarioState', 'normalizeTrainingScenarioState',
+        'trainingScenarioProgress', 'applyTrainingScenarioAction',
+        'schedule_contact', 'confirm_need', 'approve_offer', 'create_order',
+        'confirm_production_brief', 'confirm_installation_brief',
+        'production_transition', 'installation_transition',
         'Не передано', 'В производстве', 'Готово', 'Выдано',
-        'запрещён registry', 'Безопасный режим',
-        'не отправляет запросы', 'Учебная кофейня «Север»',
+        'Не назначен', 'Запланирован', 'В работе', 'Выполнен',
+        'запрещён registry', 'Безопасный режим', 'не отправляет запросы',
+        'Учебная кофейня «Север»', 'data-training-track',
+        'data-training-open-tab', 'training_role_not_allowed',
         'leader-v4:training-scenario-completed', 'localOnly: true',
         'window.localStorage', 'LeaderV4TrainingScenarioV1Booted',
     ],
@@ -42,24 +49,35 @@ checks = {
     ],
     test: [
         "['lead', 'need', 'offer', 'order', 'production']",
-        "status: 'Выдано'", 'запрещён registry',
-        "{ completed: 5, total: 5, percent: 100 }",
-        'CRM local training scenario behavior is valid.',
+        "['manager', 'production', 'installation']",
+        "role: 'installer'", "role: 'contractor'",
+        "status: 'Выдано'", "status: 'Выполнен'",
+        'запрещён registry',
+        '{ completed: 5, total: 5, percent: 100 }',
+        '{ completed: 3, total: 3, percent: 100 }',
+        'CRM role-aware local training scenario behavior is valid.',
     ],
     manual: [
         'Полностью локальный режим', 'УЧЕБНЫЙ-001',
+        'Маршрут менеджера', 'Маршрут производства', 'Маршрут монтажа',
+        'реально доступные вкладки', 'Network',
         'Не передано → В производстве → Готово → Выдано',
+        'Не назначен → Запланирован → В работе → Выполнен',
         'не появляется в `leader_*`', 'Production boundary',
         'nav_*', 'localStorage',
     ],
     status: [
         'локальный учебный заказ', 'не создаёт строки в Supabase',
+        'ролевые маршруты', 'реально доступные вкладки',
         'запрещённый прямой переход',
     ],
     workflow: [
         'node tools/test_crm_training_scenario.mjs',
         'python3 tools/check_crm_training_scenario.py',
         'crm/v4/assets/v4/status-transitions-v1.js',
+        'crm/v4/assets/v4/role-tab-permissions-v1.js',
+        'crm/v4/assets/v4/action-permissions-v1.js',
+        'node --check crm/v4/assets/v4/role-tab-permissions-v1.js',
         'crm/v4/assets/v4/site-cache-note-v1.js',
     ],
 }
@@ -78,9 +96,11 @@ if module.exists():
     for forbidden in ['supabaseClient', ".from('leader_", '.insert(', '.update(', '.upsert(', '.rpc(', 'fetch(']:
         if forbidden in text:
             errors.append(f'Training scenario must remain browser-local and write-free: {forbidden}')
+    if text.count('leader_crm_v4_training_scenario_v1') != 1:
+        errors.append('Training scenario must keep one canonical localStorage key.')
 
 if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('CRM training scenario is browser-local, registry-backed and protected from production writes.')
+print('CRM training scenario is role-aware, browser-local, registry-backed and protected from production writes.')

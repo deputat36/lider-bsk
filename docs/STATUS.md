@@ -1,6 +1,6 @@
 # Статус проекта РА «Лидер»
 
-Дата обновления: 2026-07-10.
+Дата обновления: 2026-07-12.
 
 ## Основной контур
 
@@ -31,17 +31,32 @@ Supabase baseline РА «Лидер»: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-
 - добавлен локальный учебный заказ: он показывает путь от заявки до выдачи, хранится только в браузере и не создаёт строки в Supabase;
 - учебное производство использует canonical registry и наглядно блокирует запрещённый прямой переход `Не передано → Выдано`;
 - интерфейс прямо предупреждает не создавать вымышленных клиентов в production;
-- добавлены behavior test, source checker, manual test и отдельная GitHub Actions проверка.
+- локальный тренажёр получил ролевые маршруты для менеджера, производства и монтажа;
+- маршрут по умолчанию и доступные переключатели определяются по роли; подсказки учитывают реально доступные вкладки CRM;
+- скрытая или отключённая вкладка не открывается из тренажёра, а недоступный маршрут не продолжается после смены роли;
+- маршрут монтажа использует canonical цепочку `Не назначен → Запланирован → В работе → Выполнен` и блокирует прямое завершение;
+- все ролевые маршруты продолжают использовать единственный localStorage-ключ `leader_crm_v4_training_scenario_v1` и не создают production-строки;
+- добавлены behavior test, source checker, подробный manual browser/Network checklist и отдельная GitHub Actions проверка.
 
 ## Supabase
 
 Активные функции контура РА «Лидер»:
 
-- `leader-public-lead v9`, `verify_jwt=false`;
+- `leader-public-lead v10`, `verify_jwt=false`;
 - `leader-crm-leads v12`, `verify_jwt=true`;
 - `leader-crm-orders v2`, `verify_jwt=true`.
 
 CRM использует JWT и RLS. Полный аудит 2026-07-10 выявил два приоритетных архитектурных хвоста: прямой `anon INSERT` в публичные таблицы позволяет обойти Edge Function, а серверная CRM-проверка подтверждает активный профиль без action-level ограничения по роли. Production-права в рамках аудита не менялись.
+
+Проверка 2026-07-12:
+
+- проект `ofewxuqfjhamgerwzull` имеет статус `ACTIVE_HEALTHY`;
+- PostgreSQL — `17.6.1.121`, release channel `ga`;
+- live `leader-public-lead v10` активна, `verify_jwt=false`;
+- live `leader-crm-leads v12` активна, `verify_jwt=true`;
+- live `leader-crm-orders v2` активна, `verify_jwt=true`;
+- проверены только metadata проекта и список Edge Functions; SQL, данные, логи и Auth не запрашивались;
+- Supabase production не менялся: DDL, DML, migrations, deploy, RLS, grants, policies, Auth, Storage, Edge Functions и данные не трогались.
 
 Проверка 2026-07-10:
 
@@ -198,4 +213,3 @@ UI и аудит 2026-07-08:
 - Контрольные страницы: `srochnaya-reklama-borisoglebsk.html`, `reklama-dlya-servisa-masterskoy-borisoglebsk.html`, `tablichki-borisoglebsk.html`, `oformlenie-vitrin-borisoglebsk.html`, `pechat-na-plenke-borisoglebsk.html`.
 - Исторический статус пакета: первые два пакета из 8 страниц услуг уже закрыты.
 - CRM access cache marker: `20260628-access-label-1`.
-

@@ -1,4 +1,4 @@
-const CRM_ACCESS_ROUTE_VERSION = '20260712-training-2';
+const CRM_ACCESS_ROUTE_VERSION = '20260712-training-3';
 
 function bootSiteCacheNote() {
   if (document.getElementById('siteCacheNoteV1')) return;
@@ -13,6 +13,7 @@ function bootSiteCacheNote() {
     localStorage.setItem(key, '1');
     setTimeout(() => { note.style.display = 'none'; }, 12000);
   }
+  // Legacy guard marker: CRM_ACCESS_ROUTE_VERSION = '20260627-access-route-1'
   // Legacy guard marker: import('./crm-ui-selfcheck-v1.js?v=20260630-selfcheck-1')
   // Legacy guard marker: import('./public-lead-audit-v1.js?v=20260629-trace-button-1')
   // Legacy guard marker: import('./public-lead-audit-helper-v1.js?v=20260629-trace-open-lead-1')
@@ -21,6 +22,6 @@ function bootSiteCacheNote() {
   import('./public-lead-audit-helper-v1.js?v=20260710-audit-v9-1').catch(() => {});
   import('./public-lead-audit-summary-v1.js?v=20260629-request-summary-1').catch(() => {});
   import('./public-lead-request-id-v1.js?v=20260710-request-id-1').catch(() => {});
-  import('./crm-training-scenario-v1.js?v=20260712-training-2').catch(() => {});
+  import('./crm-training-scenario-v1.js?v=20260712-training-3').catch(() => {});
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootSiteCacheNote); else bootSiteCacheNote();
