@@ -35,9 +35,10 @@ def main() -> None:
     parser = Parser()
     parser.feed(page)
 
+    # Preserve the original cascade: form CSS was before the homepage inline CSS.
     expected_stylesheets = [
-        'assets/public-homepage.css?v=1',
         'assets/public-lead-form.css?v=4',
+        'assets/public-homepage.css?v=1',
     ]
     if parser.stylesheets != expected_stylesheets:
         raise SystemExit(f'Unexpected homepage stylesheet order: {parser.stylesheets}')
