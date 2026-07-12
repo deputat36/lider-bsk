@@ -1,0 +1,30 @@
+name: Public contact identity check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '*.html'
+      - 'assets/public-lead-form.js'
+      - 'tools/structured_data_pages.json'
+      - 'tools/check_public_contact_identity.py'
+      - '.github/workflows/public-contact-identity-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '*.html'
+      - 'assets/public-lead-form.js'
+      - 'tools/structured_data_pages.json'
+      - 'tools/check_public_contact_identity.py'
+      - '.github/workflows/public-contact-identity-check.yml'
+
+jobs:
+  validate-public-contact-identity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate public phone and email consistency
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/check_public_contact_identity.py
