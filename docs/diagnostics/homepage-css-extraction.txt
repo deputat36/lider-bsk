@@ -1,0 +1,4 @@
+Extraction:
+Expected exactly one homepage style block
+
+Validation:
