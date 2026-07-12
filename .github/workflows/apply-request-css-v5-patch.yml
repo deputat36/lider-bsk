@@ -1,0 +1,48 @@
+name: Apply request CSS and v5 patch
+
+on:
+  push:
+    branches:
+      - 'fix/public-request-css-v5-2026-07-12'
+    paths:
+      - 'tools/apply_request_css_v5_patch.py'
+      - '.github/workflows/apply-request-css-v5-patch.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-guarded-request-patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/public-request-css-v5-2026-07-12
+          fetch-depth: 0
+
+      - name: Extract request CSS and synchronize v5 contracts
+        run: python3 tools/apply_request_css_v5_patch.py
+
+      - name: Validate request page and public CI
+        run: |
+          git diff --check
+          python3 tools/check_public_request_css_v5.py
+          python3 tools/check_public_lead_form_cache_v5_partial.py
+          python3 tools/check_public_v5_landing_seo_contract.py
+          python3 tools/check_public_ci_workflows.py
+          node --check assets/public-lead-reference-v1.js
+          node --check assets/public-lead-form.js
+
+      - name: Commit request page migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add request.html assets/public-request.css \
+            .github/workflows/request-reference-check.yml \
+            .github/workflows/public-request-seo-check.yml \
+            .github/workflows/public-site-audit-check.yml \
+            .github/workflows/static-checks.yml
+          git commit -m 'Extract request CSS and move public form to v5'
+          git push origin HEAD:fix/public-request-css-v5-2026-07-12
