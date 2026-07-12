@@ -1,0 +1,26 @@
+name: Public services catalog check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'uslugi.html'
+      - 'tools/check_public_services_catalog.py'
+      - '.github/workflows/public-services-catalog-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'uslugi.html'
+      - 'tools/check_public_services_catalog.py'
+      - '.github/workflows/public-services-catalog-check.yml'
+
+jobs:
+  validate-public-services-catalog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate catalog structure and local links
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/check_public_services_catalog.py
