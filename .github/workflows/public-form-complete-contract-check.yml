@@ -9,6 +9,7 @@ on:
       - 'assets/public-lead-form.js'
       - 'assets/public-request.css'
       - 'supabase/functions/leader-public-lead/index.ts'
+      - 'tools/check_all_public_form_cache_versions.py'
       - '.github/workflows/public-form-complete-contract-check.yml'
   pull_request:
     branches: [main]
@@ -18,6 +19,7 @@ on:
       - 'assets/public-lead-form.js'
       - 'assets/public-request.css'
       - 'supabase/functions/leader-public-lead/index.ts'
+      - 'tools/check_all_public_form_cache_versions.py'
       - '.github/workflows/public-form-complete-contract-check.yml'
 
 jobs:
@@ -43,34 +45,12 @@ jobs:
             exit 1
           fi
 
-  all-html-cache-v5:
+  all-html-cache-v5-or-newer:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate every public form page uses v5
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          errors = []
-          pages = []
-          for path in sorted(Path('.').glob('*.html')):
-              text = path.read_text(encoding='utf-8')
-              refs = text.count('assets/public-lead-form.js')
-              if not refs:
-                  continue
-              pages.append(path.name)
-              if refs != 1:
-                  errors.append(f'{path}: expected one public lead form script, found {refs}')
-              if text.count('assets/public-lead-form.js?v=5') != 1:
-                  errors.append(f'{path}: expected public lead form cache marker v5')
-              if 'assets/public-lead-form.js?v=4' in text or 'assets/public-lead-form.js?v=3' in text:
-                  errors.append(f'{path}: stale public lead form cache marker remains')
-          if not pages:
-              errors.append('No public HTML pages reference the shared lead form')
-          if errors:
-              raise SystemExit('\n'.join(errors))
-          print(f'Validated {len(pages)} public form pages: ' + ', '.join(pages))
-          PY
+      - name: Validate every public form page uses numeric v5 or newer
+        run: python3 tools/check_all_public_form_cache_versions.py
 
   edge-function-source:
     runs-on: ubuntu-latest
