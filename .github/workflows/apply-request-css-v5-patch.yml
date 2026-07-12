@@ -6,11 +6,13 @@ on:
       - 'fix/public-request-css-v5-2026-07-12'
     paths:
       - 'tools/apply_request_css_v5_patch.py'
+      - 'tools/check_public_request_css_v5.py'
       - '.github/workflows/apply-request-css-v5-patch.yml'
   pull_request:
     branches: [main]
     paths:
       - 'tools/apply_request_css_v5_patch.py'
+      - 'tools/check_public_request_css_v5.py'
       - '.github/workflows/apply-request-css-v5-patch.yml'
 
 permissions:
@@ -35,23 +37,51 @@ jobs:
         run: git diff --check
 
       - name: Validate request page CSS and source copy
-        run: python3 tools/check_public_request_css_v5.py
+        id: request_check
+        shell: bash
+        run: |
+          set +e
+          python3 tools/check_public_request_css_v5.py > /tmp/request-check.log 2>&1
+          status=$?
+          cat /tmp/request-check.log
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Commit request checker diagnostic
+        if: steps.request_check.outputs.status != '0'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p docs/diagnostics
+          diagnostic="docs/diagnostics/request-css-v5-${GITHUB_RUN_ID}.txt"
+          cp /tmp/request-check.log "$diagnostic"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$diagnostic"
+          git commit -m "Record request CSS checker diagnostic ${GITHUB_RUN_ID}"
+          git push origin HEAD:"$TARGET_BRANCH"
+          exit 1
 
       - name: Validate complete public v5 coverage
+        if: steps.request_check.outputs.status == '0'
         run: python3 tools/check_public_lead_form_cache_v5_partial.py
 
       - name: Validate request and homepage SEO contracts
+        if: steps.request_check.outputs.status == '0'
         run: python3 tools/check_public_v5_landing_seo_contract.py
 
       - name: Validate public CI registry
+        if: steps.request_check.outputs.status == '0'
         run: python3 tools/check_public_ci_workflows.py
 
       - name: Validate JavaScript syntax
+        if: steps.request_check.outputs.status == '0'
         run: |
           node --check assets/public-lead-reference-v1.js
           node --check assets/public-lead-form.js
 
       - name: Commit request page migration
+        if: steps.request_check.outputs.status == '0'
         shell: bash
         run: |
           set -euo pipefail
