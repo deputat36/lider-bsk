@@ -1,0 +1,34 @@
+name: Public examples consolidation check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'portfolio.html'
+      - 'primery-rabot-kejsy.html'
+      - 'sitemap.xml'
+      - 'tools/open_graph_pages.json'
+      - 'tools/structured_data_pages.json'
+      - 'tools/check_public_examples_consolidation.py'
+      - '.github/workflows/public-examples-consolidation-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'portfolio.html'
+      - 'primery-rabot-kejsy.html'
+      - 'sitemap.xml'
+      - 'tools/open_graph_pages.json'
+      - 'tools/structured_data_pages.json'
+      - 'tools/check_public_examples_consolidation.py'
+      - '.github/workflows/public-examples-consolidation-check.yml'
+
+jobs:
+  validate-public-examples:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate examples, legacy redirect and SEO registries
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/check_public_examples_consolidation.py
