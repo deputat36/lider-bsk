@@ -1,0 +1,36 @@
+name: Public lead commercial contract check
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'assets/public-lead-form.js'
+      - 'assets/public-lead-form.css'
+      - 'supabase/functions/leader-public-lead/index.ts'
+      - 'docs/PUBLIC_SITE_COMMERCIAL_AUDIT_2026-07-12.md'
+      - 'tools/check_public_lead_commercial_contract.py'
+      - '.github/workflows/public-lead-commercial-contract-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'assets/public-lead-form.js'
+      - 'assets/public-lead-form.css'
+      - 'supabase/functions/leader-public-lead/index.ts'
+      - 'docs/PUBLIC_SITE_COMMERCIAL_AUDIT_2026-07-12.md'
+      - 'tools/check_public_lead_commercial_contract.py'
+      - '.github/workflows/public-lead-commercial-contract-check.yml'
+
+jobs:
+  validate-public-lead-commercial-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          show-progress: false
+
+      - name: Validate attribution, consent and accessibility markers
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/check_public_lead_commercial_contract.py

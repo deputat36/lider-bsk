@@ -50,7 +50,7 @@ source_checks = [
     (form, [
         "const ENDPOINT='https://ofewxuqfjhamgerwzull.supabase.co/functions/v1/leader-public-lead'",
         'request_id:rid',
-        "goal('lead_sent',{service,page:location.href,request_id:responseRequestId,duplicate})",
+        "goal('lead_sent',{service,page:location.href,page_path:location.pathname,request_id:responseRequestId,duplicate})",
     ]),
     (auth, [
         'function beginProfileCheck(session)',

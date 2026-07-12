@@ -44,7 +44,7 @@ def main() -> None:
         'responseRequestId',
         'form.dataset.lastRequestId=responseRequestId',
         'duplicate=data&&data.duplicate===true',
-        "goal('lead_sent',{service,page:location.href,request_id:responseRequestId,duplicate})",
+        "goal('lead_sent',{service,page:location.href,page_path:location.pathname,request_id:responseRequestId,duplicate})",
     ):
         require(public_form, marker, PUBLIC_FORM)
 

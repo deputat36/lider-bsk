@@ -47,7 +47,7 @@ jobs:
           grep -Fq 'responseRequestId' "$form"
           grep -Fq 'form.dataset.lastRequestId=responseRequestId' "$form"
           grep -Fq 'Номер обращения: ' "$form"
-          grep -Fq "goal('lead_sent',{service,page:location.href,request_id:responseRequestId,duplicate})" "$form"
+          grep -Fq "goal('lead_sent',{service,page:location.href,page_path:location.pathname,request_id:responseRequestId,duplicate})" "$form"
           grep -Fq 'assets/public-lead-reference-v1.js?v=1' "$page"
           grep -Fq 'data-request-page-version="20260628-clarity-2"' "$page"
           grep -Fq 'id="scenarios"' "$page"

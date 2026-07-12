@@ -118,7 +118,7 @@ jobs:
           grep -Fq "website:field(form,'website')" "$form"
           grep -Fq 'page_path' "$form"
           grep -Fq 'submitted_at' "$form"
-          grep -Fq "goal('lead_sent',{service,page:location.href,request_id:responseRequestId,duplicate})" "$form"
+          grep -Fq "goal('lead_sent',{service,page:location.href,page_path:location.pathname,request_id:responseRequestId,duplicate})" "$form"
           grep -Fq 'leader-lead-hp' "$css"
           grep -Fq 'overflow-x:hidden' "$css"
           grep -Fq '@media(max-width:1180px) and (min-width:1025px)' "$css"
