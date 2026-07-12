@@ -66,10 +66,10 @@ async function loadSnapshot(force = false) {
   scheduleRender();
   try {
     const [orders, expenses, needs, designTasks] = await Promise.all([
-      safeRows('Заказы', supabaseClient.from('leader_orders').select('id,order_number,project_name,status,deadline,lead_id,assigned_to,is_archived,created_at').order('created_at', { ascending: false }).limit(100)),
+      safeRows('Заказы', supabaseClient.from('leader_orders').select('id,order_number,status,deadline,lead_id,assigned_to,is_archived').order('order_number', { ascending: false }).limit(100)),
       safeRows('Расходы', supabaseClient.from('leader_expenses').select('order_id').not('order_id', 'is', null).limit(500)),
       safeRows('Потребности', supabaseClient.from('leader_lead_needs').select('lead_id,need_design').eq('need_design', true).not('lead_id', 'is', null).limit(500)),
-      safeRows('Дизайн-задачи', supabaseClient.from('leader_design_tasks').select('order_id,task_status').not('order_id', 'is', null).limit(500))
+      safeRows('Дизайн-задачи', supabaseClient.from('leader_design_tasks').select('order_id').not('order_id', 'is', null).limit(500))
     ]);
     snapshot = orderOperationalQualityQueues(orders, expenses, needs, designTasks);
     lastLoadedAt = Date.now();
@@ -98,7 +98,7 @@ function panelHtml() {
     ? `<div class="v4-order-quality-warning">Часть данных недоступна: ${warnings.map(esc).join('; ')}. Очереди показаны в частичном режиме.</div>`
     : '';
   const loadingText = loading ? '<div class="v4-order-quality-warning">Обновляю операционные очереди…</div>' : '';
-  return `<div class="v4-order-quality-head"><div><h3>Операционное качество заказов</h3><p>Read-only контроль расходов, дизайна, ответственных и сроков без клиентских контактов и денежных сумм.</p></div><button type="button" data-order-quality-refresh>Обновить очереди</button></div>${warning}${loadingText}<div class="v4-order-quality-grid">${stats}</div><p class="v4-order-quality-note">Очереди ничего не исправляют автоматически. Откройте заказ и примите решение в стандартном рабочем процессе.</p>`;
+  return `<div class="v4-order-quality-head"><div><h3>Операционное качество заказов</h3><p>Read-only контроль расходов, дизайна, ответственных и сроков без клиентских контактов, названий проектов и денежных сумм.</p></div><button type="button" data-order-quality-refresh>Обновить очереди</button></div>${warning}${loadingText}<div class="v4-order-quality-grid">${stats}</div><p class="v4-order-quality-note">Очереди ничего не исправляют автоматически. Откройте заказ и примите решение в стандартном рабочем процессе.</p>`;
 }
 
 function renderPanel() {
@@ -158,7 +158,7 @@ function openQueue(key) {
   modal.className = 'v4-order-quality-modal';
   const list = rows.length ? rows.map((order) => {
     const unknown = order.statusKnown ? '' : `<small class="is-warn">${esc(order.statusWarning)}</small>`;
-    return `<article class="v4-order-quality-row"><h4>№${esc(order.orderNumber || String(order.id).slice(0, 8))} — ${esc(order.projectName)}</h4><small>Статус: ${esc(order.statusLabel)}</small>${unknown}<small>Срок: ${esc(dateRu(order.deadline))}</small><button type="button" data-open-order="${esc(order.id)}" data-order-quality-close-after-open>Открыть заказ</button></article>`;
+    return `<article class="v4-order-quality-row"><h4>Заказ №${esc(order.orderNumber || String(order.id).slice(0, 8))}</h4><small>Статус: ${esc(order.statusLabel)}</small>${unknown}<small>Срок: ${esc(dateRu(order.deadline))}</small><button type="button" data-open-order="${esc(order.id)}" data-order-quality-close-after-open>Открыть заказ</button></article>`;
   }).join('') : '<div class="v4-order-quality-empty">В этой очереди нет заказов.</div>';
   modal.innerHTML = `<div class="v4-order-quality-dialog" role="dialog" aria-modal="true" aria-labelledby="orderQualityDialogTitle"><div class="v4-order-quality-dialog-head"><div><h3 id="orderQualityDialogTitle">${esc(config.label)}</h3><p>${esc(config.note)}</p></div><button type="button" data-order-quality-close>Закрыть</button></div><div class="v4-order-quality-list">${list}</div></div>`;
   document.body.appendChild(modal);
