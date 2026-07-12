@@ -41,7 +41,7 @@ checks = {
         'data-order-quality-queue',
         'data-open-order',
         'MutationObserver',
-        'partial mode',
+        'частичном режиме',
     ],
     bootstrap: [
         "import './order-operational-quality-v1.js';",
