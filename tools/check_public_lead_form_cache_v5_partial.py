@@ -7,11 +7,9 @@ ROOT = Path(__file__).resolve().parents[1]
 V5_SCRIPT = 'assets/public-lead-form.js?v=5'
 V4_SCRIPT = 'assets/public-lead-form.js?v=4'
 
-# Public pages already migrated to the current shared lead-form cache version.
-# Remaining large inline-CSS pages tracked in #191 are intentionally excluded
-# until they can be shortened and updated without risky full-file replacement.
 V5_PAGES = (
     'index.html',
+    'request.html',
     'uslugi.html',
     'kontakty.html',
     'kak-prohodit-zakaz.html',

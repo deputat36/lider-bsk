@@ -1,0 +1,42 @@
+name: Public request CSS and v5 check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'request.html'
+      - 'assets/public-request.css'
+      - 'assets/public-lead-form.css'
+      - 'assets/public-lead-form.js'
+      - 'assets/public-lead-reference-v1.js'
+      - 'tools/check_public_request_css_v5.py'
+      - 'tools/check_public_lead_form_cache_v5_partial.py'
+      - 'tools/check_public_v5_landing_seo_contract.py'
+      - '.github/workflows/public-request-css-v5-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'request.html'
+      - 'assets/public-request.css'
+      - 'assets/public-lead-form.css'
+      - 'assets/public-lead-form.js'
+      - 'assets/public-lead-reference-v1.js'
+      - 'tools/check_public_request_css_v5.py'
+      - 'tools/check_public_lead_form_cache_v5_partial.py'
+      - 'tools/check_public_v5_landing_seo_contract.py'
+      - '.github/workflows/public-request-css-v5-check.yml'
+
+jobs:
+  validate-request-css-v5:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate request CSS, reference helper and form v5
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/check_public_request_css_v5.py
+          python3 tools/check_public_lead_form_cache_v5_partial.py
+          python3 tools/check_public_v5_landing_seo_contract.py
+          node --check assets/public-lead-reference-v1.js
+          node --check assets/public-lead-form.js

@@ -1,0 +1,83 @@
+name: Public form complete contract check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '*.html'
+      - 'assets/public-lead-form.css'
+      - 'assets/public-lead-form.js'
+      - 'assets/public-request.css'
+      - 'supabase/functions/leader-public-lead/index.ts'
+      - 'tools/check_all_public_form_cache_versions.py'
+      - '.github/workflows/public-form-complete-contract-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '*.html'
+      - 'assets/public-lead-form.css'
+      - 'assets/public-lead-form.js'
+      - 'assets/public-request.css'
+      - 'supabase/functions/leader-public-lead/index.ts'
+      - 'tools/check_all_public_form_cache_versions.py'
+      - '.github/workflows/public-form-complete-contract-check.yml'
+
+jobs:
+  form-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate shared form assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          form='assets/public-lead-form.js'
+          test -f assets/public-lead-form.css
+          test -f assets/public-request.css
+          test -f "$form"
+          grep -Fq 'overflow-x:hidden' assets/public-lead-form.css
+          grep -Fq 'request_id' "$form"
+          grep -Fq 'page_path' "$form"
+          grep -Fq 'submitted_at' "$form"
+          grep -Fq "website:field(form,'website')" "$form"
+          if grep -Fq "if(field(form,'website'))return" "$form"; then
+            echo 'Client-side honeypot bypasses the server audit.' >&2
+            exit 1
+          fi
+
+  all-html-cache-v5-or-newer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate every public form page uses numeric v5 or newer
+        run: python3 tools/check_all_public_form_cache_versions.py
+
+  edge-function-source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate public lead Edge Function source
+        shell: bash
+        run: |
+          set -euo pipefail
+          fn='supabase/functions/leader-public-lead/index.ts'
+          test -f "$fn"
+          grep -Fq "/rest/v1/leader_leads'" "$fn"
+          grep -Fq "result: 'accepted'" "$fn"
+          grep -Fq "result: 'duplicate'" "$fn"
+          grep -Fq "reason: 'request_id_conflict'" "$fn"
+          grep -Fq 'isDuplicateRequest' "$fn"
+          grep -Fq 'duplicate: true' "$fn"
+          if grep -Fq 'leader_leads?on_conflict=request_id' "$fn"; then
+            echo 'Public lead function must not hide duplicates with on_conflict.' >&2
+            exit 1
+          fi
+          if grep -Fq 'resolution=ignore-duplicates' "$fn"; then
+            echo 'Public lead function must write duplicate audit events explicitly.' >&2
+            exit 1
+          fi
+          grep -Fq 'leader_public_lead_audit' "$fn"
+          grep -Fq 'if (!auditRes.ok)' "$fn"
+          grep -Fq 'leader_public_lead_audit_insert_failed' "$fn"
+          grep -Fq 'leader_public_lead_audit_request_failed' "$fn"
+          grep -Fq 'site_public_form_v7' "$fn"
