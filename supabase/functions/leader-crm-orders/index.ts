@@ -47,74 +47,142 @@ async function checkUser(req: Request, url: string, anon: string, serviceRole: s
   return { user, profile: profiles[0] }
 }
 
-const orderFields = 'id,order_number,created_at,project_name,client_name,client_phone,status,payment_status,deadline,client_total,profit,balance,source,layout_status,layout_comment,production_status,lead_id,client_id'
+const ROLE_MATRIX_VERSION = '20260712-edge-role-matrix-2'
 
-const ROLE_MATRIX_VERSION = '20260630-edge-role-matrix-1'
+const CANONICAL_ROLES = new Set([
+  'owner',
+  'admin',
+  'manager',
+  'accountant',
+  'designer',
+  'installer',
+  'contractor',
+])
 
 const ORDER_ACTIONS_BY_ROLE: Record<string, Set<string>> = {
   owner: new Set(['*']),
   admin: new Set(['*']),
-  manager: new Set(['list', 'update:any']),
-  designer: new Set(['list', 'update:layout_status', 'update:layout_comment']),
-  production: new Set(['list', 'update:production_status', 'update:layout_comment']),
-  installer: new Set(['list']),
+  manager: new Set([
+    'list',
+    'update:status',
+    'update:layout_status',
+    'update:production_status',
+    'update:layout_comment',
+    'update:deadline',
+  ]),
+  accountant: new Set(['list', 'update:payment_status']),
+  designer: new Set(),
+  installer: new Set(),
+  contractor: new Set(),
 }
 
-function role(profile: Record<string, unknown> | null | undefined) {
+const ORDER_FIELDS_BY_ROLE: Record<string, string> = {
+  owner: 'id,order_number,created_at,project_name,client_name,client_phone,status,payment_status,deadline,client_total,contractor_cost,profit,balance,source,layout_status,layout_comment,production_status,lead_id,client_id',
+  admin: 'id,order_number,created_at,project_name,client_name,client_phone,status,payment_status,deadline,client_total,contractor_cost,profit,balance,source,layout_status,layout_comment,production_status,lead_id,client_id',
+  manager: 'id,order_number,created_at,project_name,client_name,client_phone,status,payment_status,deadline,client_total,balance,source,layout_status,layout_comment,production_status,lead_id,client_id',
+  accountant: 'id,order_number,created_at,client_name,client_phone,status,payment_status,deadline,client_total,balance,source,lead_id,client_id',
+}
+
+const UPDATE_FIELDS = [
+  'status',
+  'payment_status',
+  'layout_status',
+  'production_status',
+  'layout_comment',
+  'deadline',
+]
+
+function profileRole(profile: Record<string, unknown> | null | undefined) {
   return clean(profile?.role, 80).toLowerCase()
 }
 
-function canOrderAction(profile: Record<string, unknown> | null | undefined, permission: string) {
-  const permissions = ORDER_ACTIONS_BY_ROLE[role(profile)]
-  return Boolean(permissions?.has('*') || permissions?.has(permission) || permissions?.has('update:any'))
+function isCanonicalRole(profile: Record<string, unknown> | null | undefined) {
+  return CANONICAL_ROLES.has(profileRole(profile))
 }
 
-function unauthorized(action: string, profile: Record<string, unknown> | null | undefined) {
-  return json(403, { error: 'forbidden', action, role: role(profile), matrix: ROLE_MATRIX_VERSION })
+function canOrderAction(profile: Record<string, unknown> | null | undefined, permission: string) {
+  const permissions = ORDER_ACTIONS_BY_ROLE[profileRole(profile)]
+  return Boolean(permissions?.has('*') || permissions?.has(permission))
+}
+
+function unauthorized(action: string, profile: Record<string, unknown> | null | undefined, permission?: string) {
+  return json(403, {
+    error: 'forbidden',
+    action,
+    permission: permission || null,
+    role: profileRole(profile),
+    matrix: ROLE_MATRIX_VERSION,
+  })
 }
 
 function requestedUpdateFields(body: Record<string, unknown>) {
-  return ['status', 'payment_status', 'layout_status', 'production_status', 'layout_comment', 'deadline']
-    .filter((field) => field in body)
+  return UPDATE_FIELDS.filter((field) => field in body)
 }
 
-function canUpdateOrder(profile: Record<string, unknown> | null | undefined, body: Record<string, unknown>) {
+function validateOrderUpdate(profile: Record<string, unknown> | null | undefined, body: Record<string, unknown>) {
   const fields = requestedUpdateFields(body)
-  if (!fields.length) return true
-  if (canOrderAction(profile, 'update:any')) return true
-  return fields.every((field) => canOrderAction(profile, `update:${field}`))
+  if (!fields.length) {
+    return { error: json(400, { error: 'no_update_fields', matrix: ROLE_MATRIX_VERSION }) }
+  }
+
+  for (const field of fields) {
+    const permission = `update:${field}`
+    if (!canOrderAction(profile, permission)) {
+      return { error: unauthorized('update', profile, permission) }
+    }
+  }
+
+  return { fields }
 }
 
-async function listOrders(url: string, serviceRole: string) {
+function orderFieldsForRole(profile: Record<string, unknown> | null | undefined) {
+  return ORDER_FIELDS_BY_ROLE[profileRole(profile)] || ''
+}
+
+async function listOrders(url: string, serviceRole: string, profile: Record<string, unknown>) {
+  const fields = orderFieldsForRole(profile)
+  if (!fields) return unauthorized('list', profile, 'orders.read')
+
   const res = await rest(
     url,
     serviceRole,
-    '/rest/v1/leader_orders?select=' + encodeURIComponent(orderFields) + '&order=created_at.desc&limit=80',
+    '/rest/v1/leader_orders?select=' + encodeURIComponent(fields) + '&order=created_at.desc&limit=80',
   )
   if (!res.ok) return json(500, { error: 'orders_read_failed', details: await res.text() })
-  return json(200, { ok: true, orders: await res.json() })
+  return json(200, { ok: true, orders: await res.json(), matrix: ROLE_MATRIX_VERSION })
 }
 
-async function updateOrder(url: string, serviceRole: string, body: Record<string, unknown>) {
+async function updateOrder(
+  url: string,
+  serviceRole: string,
+  profile: Record<string, unknown>,
+  body: Record<string, unknown>,
+  fields: string[],
+) {
   const id = clean(body.id, 80)
   if (!id) return json(400, { error: 'id_required' })
 
   const patch: Record<string, unknown> = {}
-  if ('status' in body) patch.status = clean(body.status, 120)
-  if ('payment_status' in body) patch.payment_status = clean(body.payment_status, 120)
-  if ('layout_status' in body) patch.layout_status = clean(body.layout_status, 120)
-  if ('production_status' in body) patch.production_status = clean(body.production_status, 120)
-  if ('layout_comment' in body) patch.layout_comment = clean(body.layout_comment, 2000)
-  if ('deadline' in body) patch.deadline = clean(body.deadline, 40) || null
+  for (const field of fields) {
+    if (field === 'status') patch.status = clean(body.status, 120)
+    if (field === 'payment_status') patch.payment_status = clean(body.payment_status, 120)
+    if (field === 'layout_status') patch.layout_status = clean(body.layout_status, 120)
+    if (field === 'production_status') patch.production_status = clean(body.production_status, 120)
+    if (field === 'layout_comment') patch.layout_comment = clean(body.layout_comment, 2000)
+    if (field === 'deadline') patch.deadline = clean(body.deadline, 40) || null
+  }
 
-  const res = await rest(url, serviceRole, '/rest/v1/leader_orders?id=eq.' + encodeURIComponent(id) + '&select=' + encodeURIComponent(orderFields), {
+  const responseFields = orderFieldsForRole(profile)
+  if (!responseFields) return unauthorized('update', profile, 'orders.update')
+
+  const res = await rest(url, serviceRole, '/rest/v1/leader_orders?id=eq.' + encodeURIComponent(id) + '&select=' + encodeURIComponent(responseFields), {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
     body: JSON.stringify(patch),
   })
   if (!res.ok) return json(500, { error: 'order_update_failed', details: await res.text() })
   const rows = await res.json()
-  return json(200, { ok: true, order: Array.isArray(rows) ? rows[0] : null })
+  return json(200, { ok: true, order: Array.isArray(rows) ? rows[0] : null, matrix: ROLE_MATRIX_VERSION })
 }
 
 Deno.serve(async (req: Request) => {
@@ -127,6 +195,7 @@ Deno.serve(async (req: Request) => {
 
   const checked = await checkUser(req, url, anon, serviceRole)
   if (checked.error) return checked.error
+  if (!isCanonicalRole(checked.profile)) return unauthorized('profile', checked.profile, 'canonical_role')
 
   let body: Record<string, unknown> = {}
   if (req.method === 'POST') {
@@ -135,13 +204,14 @@ Deno.serve(async (req: Request) => {
   const action = clean(body.action || 'list', 40)
 
   if (action === 'list') {
-    if (!canOrderAction(checked.profile, 'list')) return unauthorized(action, checked.profile)
-    return await listOrders(url, serviceRole)
+    if (!canOrderAction(checked.profile, 'list')) return unauthorized(action, checked.profile, 'orders.read')
+    return await listOrders(url, serviceRole, checked.profile)
   }
 
   if (action === 'update') {
-    if (!canUpdateOrder(checked.profile, body)) return unauthorized(action, checked.profile)
-    return await updateOrder(url, serviceRole, body)
+    const validation = validateOrderUpdate(checked.profile, body)
+    if (validation.error) return validation.error
+    return await updateOrder(url, serviceRole, checked.profile, body, validation.fields || [])
   }
 
   return json(400, { error: 'unknown_action' })
