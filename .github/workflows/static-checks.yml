@@ -39,7 +39,7 @@ jobs:
               assert pathlib.Path(path).is_file(), path
           PY
 
-      - name: Validate public lead form and function
+      - name: Validate public lead form assets and cache
         shell: bash
         run: |
           set -euo pipefail
@@ -52,18 +52,37 @@ jobs:
           grep -q 'page_path' "$form"
           grep -q 'submitted_at' "$form"
           grep -Fq "website:field(form,'website')" "$form"
-          if grep -lF 'assets/public-lead-form.js?v=4' -- *.html; then
-            echo 'Stale public form JS cache version v4 remains.' >&2
-            exit 1
-          fi
-          if grep -lF 'assets/public-lead-form.js?v=3' -- *.html; then
-            echo 'Old public form JS cache version remains.' >&2
-            exit 1
-          fi
           if grep -Fq "if(field(form,'website'))return" "$form"; then
             echo 'Client-side honeypot bypasses the server audit.' >&2
             exit 1
           fi
+          python3 - <<'PY'
+          from pathlib import Path
+          errors = []
+          found = 0
+          for path in sorted(Path('.').glob('*.html')):
+              text = path.read_text(encoding='utf-8')
+              refs = text.count('assets/public-lead-form.js')
+              if not refs:
+                  continue
+              found += 1
+              if refs != 1:
+                  errors.append(f'{path}: expected one public lead form script, found {refs}')
+              if text.count('assets/public-lead-form.js?v=5') != 1:
+                  errors.append(f'{path}: expected public lead form cache marker v5')
+              if 'assets/public-lead-form.js?v=4' in text or 'assets/public-lead-form.js?v=3' in text:
+                  errors.append(f'{path}: stale public lead form cache marker remains')
+          if found == 0:
+              errors.append('No public HTML pages reference the shared lead form')
+          if errors:
+              raise SystemExit('\n'.join(errors))
+          print(f'All {found} public HTML form pages use cache marker v5.')
+          PY
+
+      - name: Validate public lead Edge Function source
+        shell: bash
+        run: |
+          set -euo pipefail
           fn='supabase/functions/leader-public-lead/index.ts'
           test -f "$fn"
           grep -q "/rest/v1/leader_leads'" "$fn"
@@ -73,11 +92,11 @@ jobs:
           grep -q 'isDuplicateRequest' "$fn"
           grep -q 'duplicate: true' "$fn"
           if grep -q 'leader_leads?on_conflict=request_id' "$fn"; then
-            echo 'Public lead v8 must not hide duplicates with on_conflict.' >&2
+            echo 'Public lead function must not hide duplicates with on_conflict.' >&2
             exit 1
           fi
           if grep -q 'resolution=ignore-duplicates' "$fn"; then
-            echo 'Public lead v8 must write duplicate audit events explicitly.' >&2
+            echo 'Public lead function must write duplicate audit events explicitly.' >&2
             exit 1
           fi
           grep -q 'leader_public_lead_audit' "$fn"
