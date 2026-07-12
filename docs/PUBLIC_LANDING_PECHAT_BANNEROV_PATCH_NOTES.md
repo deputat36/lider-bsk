@@ -1,4 +1,6 @@
-# Pechat bannerov landing patch notes
+# Pechat bannerov landing migration
+
+Дата завершения: 2026-07-12.
 
 Scope: public site only.
 
@@ -6,37 +8,51 @@ Related issues: #185, #191, #195.
 
 Target file: `pechat-bannerov-borisoglebsk.html`.
 
-Why these notes exist:
+## Что выполнено
 
-The page has long inline CSS. Direct full-file replacement through the connector was blocked, so the next implementation should be done in a normal working copy or with a safe patch command.
+- подключён `assets/public-landing.css?v=1`;
+- общий stylesheet подключается до `assets/public-lead-form.css?v=4`;
+- удалён большой повторяющийся inline CSS foundation;
+- оставлены только короткие стили, специфичные для страницы печати баннеров;
+- HTML разбит на читаемые строки вместо нескольких минифицированных блоков;
+- сохранены все основные разделы, FAQ, ссылки, footer и JSON-LD;
+- сохранён блок формы `data-leader-lead-form`;
+- сохранена локальная подстановка услуги `Баннер`;
+- `assets/public-lead-form.js` обновлён с `v=4` до `v=5`;
+- title, description, canonical и Open Graph не изменены.
 
-Required changes:
+## Автоматическая проверка
 
-1. Add shared stylesheet in the page head:
-   - `assets/public-landing.css`
-2. Remove the repeated landing-page inline CSS that is already covered by the shared stylesheet.
-3. Keep all page content sections, FAQ, related links, footer and JSON-LD.
-4. Keep the local service prefill logic and the service value `Баннер`.
-5. After the HTML is shortened and readable, update the public lead form script from `v=4` to `v=5`.
+Добавлены:
 
-Concrete safe replacements:
+- `tools/check_public_pechat_bannerov_migration.py`;
+- `.github/workflows/public-pechat-bannerov-migration-check.yml`.
 
-- In the head, keep `assets/public-lead-form.css?v=4` and add `assets/public-landing.css` before it.
-- Remove the large `<style>...</style>` block only after confirming the shared CSS covers the landing classes used on the page.
-- In the footer scripts, replace `assets/public-lead-form.js?v=4` with `assets/public-lead-form.js?v=5`.
-- Do not remove the inline prefill script that sets `service.value='Баннер'`.
+Проверка подтверждает:
 
-Do not change:
+- правильный порядок stylesheets;
+- отсутствие старого повторяющегося CSS foundation;
+- ограниченный размер оставшегося inline CSS;
+- наличие canonical, JSON-LD и формы;
+- `public-lead-form.js?v=5` и отсутствие `v=4`;
+- подстановку услуги `Баннер`;
+- существование всех локальных HTML-ссылок.
 
-- CRM files;
-- nav files;
+## Ручная проверка после публикации
+
+Нужно открыть production-страницу на desktop и mobile и проверить:
+
+- шапку и первый экран;
+- карточки и сетки;
+- FAQ;
+- форму;
+- подстановку услуги `Баннер`;
+- получение номера обращения после реальной тестовой отправки.
+
+## Не изменялось
+
+- CRM;
+- `nav_*` и `nav_v2_*`;
 - Supabase Edge Functions;
-- Supabase database schema or data.
-
-Verification:
-
-- page title, description and canonical are preserved;
-- JSON-LD remains present;
-- lead form block remains present;
-- local prefill still sets service to `Баннер`;
-- final page uses `assets/public-lead-form.js?v=5`.
+- схема и данные Supabase;
+- содержание ценовых ориентиров страницы.
