@@ -42,11 +42,21 @@ Supabase baseline РА «Лидер»: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-
 
 Активные функции контура РА «Лидер»:
 
-- `leader-public-lead v9`, `verify_jwt=false`;
+- `leader-public-lead v10`, `verify_jwt=false`;
 - `leader-crm-leads v12`, `verify_jwt=true`;
 - `leader-crm-orders v2`, `verify_jwt=true`.
 
 CRM использует JWT и RLS. Полный аудит 2026-07-10 выявил два приоритетных архитектурных хвоста: прямой `anon INSERT` в публичные таблицы позволяет обойти Edge Function, а серверная CRM-проверка подтверждает активный профиль без action-level ограничения по роли. Production-права в рамках аудита не менялись.
+
+Проверка 2026-07-12:
+
+- проект `ofewxuqfjhamgerwzull` имеет статус `ACTIVE_HEALTHY`;
+- PostgreSQL — `17.6.1.121`, release channel `ga`;
+- live `leader-public-lead v10` активна, `verify_jwt=false`;
+- live `leader-crm-leads v12` активна, `verify_jwt=true`;
+- live `leader-crm-orders v2` активна, `verify_jwt=true`;
+- проверены только metadata проекта и список Edge Functions; SQL, данные, логи и Auth не запрашивались;
+- Supabase production не менялся: DDL, DML, migrations, deploy, RLS, grants, policies, Auth, Storage, Edge Functions и данные не трогались.
 
 Проверка 2026-07-10:
 
