@@ -67,8 +67,8 @@ def main() -> None:
         '.faq{display:grid',
         '.contacts{display:grid',
         '.mobile-cta',
-        '@media(max-width:1024px)',
-        '@media(max-width:640px)',
+        '@media(max-width:1060px)',
+        '@media(max-width:720px)',
     ):
         require(css, marker, 'assets/public-homepage.css')
 
