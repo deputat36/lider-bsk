@@ -1,3 +1,5 @@
+import { statusDefinition } from './status-transitions-v1.js';
+
 const STORAGE_KEY = 'leader_crm_v4_quick_start_v1';
 
 export const QUICK_START_STEP_IDS = Object.freeze(['lead', 'need', 'offer', 'order', 'finish']);
@@ -7,9 +9,16 @@ function completedList(value) {
   return [...new Set(source.map((item) => String(item || '').trim()).filter((item) => QUICK_START_STEP_IDS.includes(item)))];
 }
 
+function automaticList(value, completed) {
+  const completedSet = new Set(completed);
+  return completedList(value).filter((item) => completedSet.has(item));
+}
+
 export function normalizeQuickStartState(value = {}) {
+  const completed = completedList(value?.completed);
   return Object.freeze({
-    completed: Object.freeze(completedList(value?.completed)),
+    completed: Object.freeze(completed),
+    automatic: Object.freeze(automaticList(value?.automatic, completed)),
     collapsed: value?.collapsed === true
   });
 }
@@ -19,9 +28,22 @@ export function setQuickStartStep(value, stepId, done = true) {
   const id = String(stepId || '').trim();
   if (!QUICK_START_STEP_IDS.includes(id)) return state;
   const completed = new Set(state.completed);
+  const automatic = new Set(state.automatic);
   if (done) completed.add(id);
   else completed.delete(id);
-  return normalizeQuickStartState({ completed: [...completed], collapsed: state.collapsed });
+  automatic.delete(id);
+  return normalizeQuickStartState({ completed: [...completed], automatic: [...automatic], collapsed: state.collapsed });
+}
+
+export function completeQuickStartAutomatically(value, stepId) {
+  const state = normalizeQuickStartState(value);
+  const id = String(stepId || '').trim();
+  if (!QUICK_START_STEP_IDS.includes(id) || state.completed.includes(id)) return state;
+  return normalizeQuickStartState({
+    completed: [...state.completed, id],
+    automatic: [...state.automatic, id],
+    collapsed: state.collapsed
+  });
 }
 
 export function quickStartProgress(value) {
@@ -29,6 +51,37 @@ export function quickStartProgress(value) {
   const completed = state.completed.length;
   const total = QUICK_START_STEP_IDS.length;
   return Object.freeze({ completed, total, percent: total ? Math.round((completed / total) * 100) : 0 });
+}
+
+function successfulFinish(order = {}) {
+  const production = statusDefinition('production', order.production_status);
+  if (production && ['issued', 'not_required'].includes(production.key)) return true;
+  const installation = statusDefinition('installation', order.installation_status);
+  if (installation && ['completed', 'not_required'].includes(installation.key)) return true;
+  return statusDefinition('order', order.status)?.key === 'closed';
+}
+
+export function quickStartStepsForEvent(type, detail = {}) {
+  if (type === 'leader-v4:lead-card-rendered') {
+    return detail?.lead?.id && detail.lead.next_contact_at ? Object.freeze(['lead']) : Object.freeze([]);
+  }
+  if (type === 'leader-v4:needs-loaded') {
+    const ready = Array.isArray(detail?.needs) && detail.needs.some((need) => (
+      need?.status !== 'Архив' && Number(need?.completeness_score || 0) >= 80
+    ));
+    return ready ? Object.freeze(['need']) : Object.freeze([]);
+  }
+  if (type === 'leader-v4-order-updated' && detail?.order?.id) {
+    return Object.freeze(successfulFinish(detail.order) ? ['order', 'finish'] : ['order']);
+  }
+  return Object.freeze([]);
+}
+
+export function quickStartStepsForRenderedProof(proof = {}) {
+  return Object.freeze([
+    ...(proof.offer === true ? ['offer'] : []),
+    ...(proof.order === true ? ['order'] : [])
+  ]);
 }
 
 function readState() {
@@ -75,6 +128,20 @@ function ensureAccessLink(host) {
 }
 
 let state = normalizeQuickStartState();
+let detectionScheduled = false;
+
+function ensureAutomaticBadge(element) {
+  let badge = element.querySelector('[data-quick-start-auto-badge]');
+  if (badge) return badge;
+  badge = document.createElement('span');
+  badge.dataset.quickStartAutoBadge = '';
+  badge.className = 'v4-quick-start-auto-badge';
+  badge.textContent = 'Отмечено автоматически';
+  const actions = element.querySelector('.v4-quick-start-actions');
+  if (actions) actions.appendChild(badge);
+  else element.appendChild(badge);
+  return badge;
+}
 
 function render() {
   const host = document.getElementById('crmQuickStart');
@@ -94,8 +161,12 @@ function render() {
   }
 
   host.querySelectorAll('[data-quick-start-step]').forEach((element) => {
-    const done = state.completed.includes(element.dataset.quickStartStep || '');
+    const stepId = element.dataset.quickStartStep || '';
+    const done = state.completed.includes(stepId);
+    const automatic = state.automatic.includes(stepId);
     element.classList.toggle('is-done', done);
+    element.classList.toggle('is-auto', automatic);
+    ensureAutomaticBadge(element).hidden = !automatic;
   });
   host.querySelectorAll('[data-quick-start-done]').forEach((checkbox) => {
     checkbox.checked = state.completed.includes(checkbox.dataset.quickStartDone || '');
@@ -107,6 +178,36 @@ function render() {
     const available = tabAvailable(button.dataset.quickStartTab);
     button.disabled = !available;
     button.title = available ? '' : 'Раздел недоступен для вашей роли';
+  });
+}
+
+function applyAutomaticSteps(stepIds) {
+  const pending = stepIds.filter((stepId) => (
+    QUICK_START_STEP_IDS.includes(stepId) && !state.completed.includes(stepId)
+  ));
+  if (!pending.length) return;
+  let next = state;
+  for (const stepId of pending) next = completeQuickStartAutomatically(next, stepId);
+  state = writeState(next);
+  render();
+}
+
+function detectRenderedProgress() {
+  applyAutomaticSteps(quickStartStepsForRenderedProof({
+    offer: Boolean(document.querySelector('.v4-offer-card')),
+    order: Boolean(document.querySelector('.v4-order-modal-card'))
+  }));
+}
+
+function scheduleRenderedProgressDetection() {
+  if (detectionScheduled) return;
+  detectionScheduled = true;
+  const schedule = typeof window.requestAnimationFrame === 'function'
+    ? window.requestAnimationFrame.bind(window)
+    : (callback) => window.setTimeout(callback, 0);
+  schedule(() => {
+    detectionScheduled = false;
+    detectRenderedProgress();
   });
 }
 
@@ -142,7 +243,7 @@ function bootQuickStart() {
       return;
     }
     if (event.target.closest?.('[data-quick-start-reset]')) {
-      state = writeState({ completed: [], collapsed: false });
+      state = writeState({ completed: [], automatic: [], collapsed: false });
       render();
     }
   });
@@ -156,6 +257,17 @@ function bootQuickStart() {
 
   document.addEventListener('leader-v4:crm-ready', render);
   document.addEventListener('leader-v4:tab-opened', render);
+  for (const eventName of ['leader-v4:lead-card-rendered', 'leader-v4:needs-loaded', 'leader-v4-order-updated']) {
+    document.addEventListener(eventName, (event) => {
+      applyAutomaticSteps(quickStartStepsForEvent(eventName, event.detail));
+      scheduleRenderedProgressDetection();
+    });
+  }
+  if (typeof MutationObserver !== 'undefined') {
+    const observer = new MutationObserver(scheduleRenderedProgressDetection);
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
+  scheduleRenderedProgressDetection();
 }
 
 if (typeof document !== 'undefined') {
