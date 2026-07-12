@@ -1,0 +1,30 @@
+name: Public entrance migration check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'oformlenie-vhoda-borisoglebsk.html'
+      - 'assets/public-landing.css'
+      - 'assets/public-lead-form.js'
+      - 'tools/check_public_entrance_migration.py'
+      - '.github/workflows/public-entrance-migration-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'oformlenie-vhoda-borisoglebsk.html'
+      - 'assets/public-landing.css'
+      - 'assets/public-lead-form.js'
+      - 'tools/check_public_entrance_migration.py'
+      - '.github/workflows/public-entrance-migration-check.yml'
+
+jobs:
+  validate-entrance-migration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate shared CSS, service preset and local links
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/check_public_entrance_migration.py
