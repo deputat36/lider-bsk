@@ -44,6 +44,26 @@ REQUIRED_PERMISSIONS = {
     'production.write',
 }
 
+LEADS_SOURCE_MARKERS = (
+    "ROLE_MATRIX_VERSION = '20260712-leads-role-matrix-1'",
+    'CANONICAL_ROLES',
+    'ACTION_PERMISSION',
+    'ROLE_ACTIONS',
+    'LEAD_FIELDS_BY_ROLE',
+    'ORDER_FIELDS_BY_ROLE',
+    "accountant: new Set(['orders.read'])",
+    'designer: new Set()',
+    'installer: new Set()',
+    'contractor: new Set()',
+    'requireAction',
+    'leadFieldsForRole',
+    'orderFieldsForRole',
+    'projectRow',
+    'no_update_fields',
+    "if (!isCanonicalRole(checked.profile))",
+    'const permission = ACTION_PERMISSION[action]',
+)
+
 ORDER_SOURCE_MARKERS = (
     "ROLE_MATRIX_VERSION = '20260712-edge-role-matrix-2'",
     'CANONICAL_ROLES',
@@ -107,6 +127,7 @@ def main() -> None:
     for role in sorted(CANONICAL_ROLES):
         require(spec, f'`{role}`', SPEC, errors)
         require(registry, f'  {role}:', UI_REGISTRY, errors)
+        require(leads, f"'{role}'", LEADS_EDGE, errors)
         require(orders, f"'{role}'", ORDERS_EDGE, errors)
 
     for permission in sorted(REQUIRED_PERMISSIONS):
@@ -131,6 +152,9 @@ def main() -> None:
     ):
         require(spec, marker, SPEC, errors)
 
+    for marker in LEADS_SOURCE_MARKERS:
+        require(leads, marker, LEADS_EDGE, errors)
+
     for marker in ORDER_SOURCE_MARKERS:
         require(orders, marker, ORDERS_EDGE, errors)
 
@@ -138,12 +162,8 @@ def main() -> None:
         if marker in orders:
             errors.append(f'Forbidden stale order RBAC marker {marker!r} in {ORDERS_EDGE.relative_to(ROOT)}')
 
-    # The leads function remains the next implementation target. Keep this visible
-    # until an explicit server-owned permission registry and requireAction check exist.
-    if 'ACTION_PERMISSION' not in leads and 'requireAction(' not in leads:
-        require(spec, '`leader-crm-leads` не содержит action-level enforcement', SPEC, errors)
-
-    # Guard against accidentally presenting UI authorization as server security.
+    # GitHub source now contains candidate enforcement, but UI must still report
+    # source-only status until development and production deployment are proven.
     require(registry, 'serverEnforcement: false', UI_REGISTRY, errors)
     require(registry, "enforcement: 'ui_only'", UI_REGISTRY, errors)
 
