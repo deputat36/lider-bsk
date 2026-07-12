@@ -21,11 +21,11 @@ jobs:
           index='crm/v4/index.html'
           menu='crm/v4/assets/v4/crm-v4-expanded-menu-v1.js'
           auth='crm/v4/assets/v4/auth.js'
+          quick='crm/v4/assets/v4/crm-quick-start-v1.js'
           test -f "$index"
           test -f "$menu"
           test -f "$auth"
-          grep -Fq 'href="?tab=user_admin"' "$index"
-          grep -Fq 'Открыть доступ CRM' "$index"
+          test -f "$quick"
           grep -Fq 'Доступ и роли' "$index"
           grep -Fq 'data-v4-tab-button="user_admin"' "$index"
           grep -Fq 'crm-v4-tabs-lite.js?v=20260627-access-route-1' "$index"
@@ -33,6 +33,10 @@ jobs:
           grep -Fq 'auth.js?v=20260628-access-label-1' "$index"
           grep -Fq "import './user-admin-v1.js?v=20260628-access-label-1';" "$auth"
           grep -Fq "{ tab: 'user_admin', label: 'Доступ и роли' }" "$menu"
+          grep -Fq "link.href = '?tab=user_admin';" "$quick"
+          grep -Fq "link.textContent = 'Открыть доступ CRM';" "$quick"
+          grep -Fq "link.dataset.quickStartAccessLink = '';" "$quick"
+          grep -Fq "tabAvailable('user_admin')" "$quick"
 
       - name: Validate access runbook and status
         shell: bash
