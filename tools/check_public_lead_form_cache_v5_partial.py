@@ -19,6 +19,7 @@ V5_PAGES = (
     'banner-dlya-magazina-borisoglebsk.html',
     'oformlenie-vhoda-borisoglebsk.html',
     'nakleyki-na-vitrinu-borisoglebsk.html',
+    'rezhim-raboty-tablichki-borisoglebsk.html',
     'outdoor-advertising-borisoglebsk.html',
     'reklama-otkrytiya-magazina-borisoglebsk.html',
     'vizitki-borisoglebsk.html',
