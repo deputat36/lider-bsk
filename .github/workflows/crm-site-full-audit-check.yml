@@ -10,6 +10,7 @@ on:
       - 'docs/CRM_V4_ROLE_TAB_MATRIX_MANUAL_TEST_2026-07-10.md'
       - 'docs/CRM_V4_PRODUCTION_ROLE_DATA_MINIMIZATION_MANUAL_TEST_2026-07-10.md'
       - 'docs/CRM_OPERATIONAL_QUALITY_PANEL_MANUAL_TEST_2026-07-10.md'
+      - 'docs/CRM_MANAGEMENT_WORKLOAD_SLA_MANUAL_TEST_2026-07-12.md'
       - 'docs/CRM_ORDER_OPERATIONAL_QUALITY_MANUAL_TEST_2026-07-12.md'
       - 'docs/CRM_LOCAL_TRAINING_SCENARIO_2026-07-12.md'
       - 'docs/CRM_LOCAL_TRAINING_EXECUTION_ADDENDUM_2026-07-12.md'
@@ -30,6 +31,8 @@ on:
       - 'tools/check_crm_v4_role_tab_matrix.py'
       - 'tools/check_crm_v4_production_role_data_minimization.py'
       - 'tools/check_crm_operational_quality_panel.py'
+      - 'tools/check_management_workload_dashboard.py'
+      - 'tools/test_management_workload.mjs'
       - 'tools/check_crm_order_operational_quality.py'
       - 'tools/test_crm_order_operational_quality.mjs'
       - 'tools/check_crm_training_scenario.py'
@@ -53,6 +56,8 @@ on:
       - 'crm/v4/assets/v4/crm-v4-expanded-menu-v1.js'
       - 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
       - 'crm/v4/assets/v4/lead-operational-quality-v1.js'
+      - 'crm/v4/assets/v4/management-workload-model-v1.js'
+      - 'crm/v4/assets/v4/management-workload-panel-v1.js'
       - 'crm/v4/assets/v4/order-operational-quality-model-v1.js'
       - 'crm/v4/assets/v4/order-operational-quality-v1.js'
       - 'crm/v4/assets/v4/crm-training-scenario-v1.js'
@@ -69,6 +74,7 @@ on:
       - 'supabase/functions/leader-public-lead/index.ts'
       - 'supabase/functions/leader-crm-leads/index.ts'
       - 'supabase/functions/leader-crm-orders/index.ts'
+      - '.github/workflows/crm-management-workload-check.yml'
       - '.github/workflows/crm-site-full-audit-check.yml'
   pull_request:
     branches: [main]
@@ -79,6 +85,7 @@ on:
       - 'docs/CRM_V4_ROLE_TAB_MATRIX_MANUAL_TEST_2026-07-10.md'
       - 'docs/CRM_V4_PRODUCTION_ROLE_DATA_MINIMIZATION_MANUAL_TEST_2026-07-10.md'
       - 'docs/CRM_OPERATIONAL_QUALITY_PANEL_MANUAL_TEST_2026-07-10.md'
+      - 'docs/CRM_MANAGEMENT_WORKLOAD_SLA_MANUAL_TEST_2026-07-12.md'
       - 'docs/CRM_ORDER_OPERATIONAL_QUALITY_MANUAL_TEST_2026-07-12.md'
       - 'docs/CRM_LOCAL_TRAINING_SCENARIO_2026-07-12.md'
       - 'docs/CRM_LOCAL_TRAINING_EXECUTION_ADDENDUM_2026-07-12.md'
@@ -99,6 +106,8 @@ on:
       - 'tools/check_crm_v4_role_tab_matrix.py'
       - 'tools/check_crm_v4_production_role_data_minimization.py'
       - 'tools/check_crm_operational_quality_panel.py'
+      - 'tools/check_management_workload_dashboard.py'
+      - 'tools/test_management_workload.mjs'
       - 'tools/check_crm_order_operational_quality.py'
       - 'tools/test_crm_order_operational_quality.mjs'
       - 'tools/check_crm_training_scenario.py'
@@ -122,6 +131,8 @@ on:
       - 'crm/v4/assets/v4/crm-v4-expanded-menu-v1.js'
       - 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
       - 'crm/v4/assets/v4/lead-operational-quality-v1.js'
+      - 'crm/v4/assets/v4/management-workload-model-v1.js'
+      - 'crm/v4/assets/v4/management-workload-panel-v1.js'
       - 'crm/v4/assets/v4/order-operational-quality-model-v1.js'
       - 'crm/v4/assets/v4/order-operational-quality-v1.js'
       - 'crm/v4/assets/v4/crm-training-scenario-v1.js'
@@ -138,6 +149,7 @@ on:
       - 'supabase/functions/leader-public-lead/index.ts'
       - 'supabase/functions/leader-crm-leads/index.ts'
       - 'supabase/functions/leader-crm-orders/index.ts'
+      - '.github/workflows/crm-management-workload-check.yml'
       - '.github/workflows/crm-site-full-audit-check.yml'
 
 jobs:
@@ -156,6 +168,7 @@ jobs:
           python3 tools/check_crm_v4_role_tab_matrix.py
           python3 tools/check_crm_v4_production_role_data_minimization.py
           python3 tools/check_crm_operational_quality_panel.py
+          python3 tools/check_management_workload_dashboard.py
           python3 tools/check_crm_order_operational_quality.py
           python3 tools/check_crm_training_scenario.py
           python3 tools/check_crm_v4_backend_write_inventory.py
@@ -177,6 +190,10 @@ jobs:
           node --check crm/v4/assets/v4/crm-v4-expanded-menu-v1.js
           node --check crm/v4/assets/v4/lead-analytics-badges-v1.js
           node --check crm/v4/assets/v4/lead-operational-quality-v1.js
+          node --check crm/v4/assets/v4/management-workload-model-v1.js
+          node --check crm/v4/assets/v4/management-workload-panel-v1.js
+          node --check tools/test_management_workload.mjs
+          node tools/test_management_workload.mjs
           node --check crm/v4/assets/v4/order-operational-quality-model-v1.js
           node --check crm/v4/assets/v4/order-operational-quality-v1.js
           node --check tools/test_crm_order_operational_quality.mjs
