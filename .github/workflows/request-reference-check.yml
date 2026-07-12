@@ -63,7 +63,7 @@ jobs:
 
           page = Path('request.html').read_text(encoding='utf-8')
           helper = 'assets/public-lead-reference-v1.js?v=1'
-          form = 'assets/public-lead-form.js?v=4'
+          form = 'assets/public-lead-form.js?v=5'
           assert page.count(helper) == 1
           assert page.count(form) == 1
           assert page.index(helper) < page.index(form)
