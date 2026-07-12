@@ -1,0 +1,4 @@
+Extraction:
+Expected exactly one homepage style block; exact_start=0, all_start=0, end=0
+
+Validation:
