@@ -56,28 +56,7 @@ jobs:
             echo 'Client-side honeypot bypasses the server audit.' >&2
             exit 1
           fi
-          python3 - <<'PY'
-          from pathlib import Path
-          errors = []
-          found = 0
-          for path in sorted(Path('.').glob('*.html')):
-              text = path.read_text(encoding='utf-8')
-              refs = text.count('assets/public-lead-form.js')
-              if not refs:
-                  continue
-              found += 1
-              if refs != 1:
-                  errors.append(f'{path}: expected one public lead form script, found {refs}')
-              if text.count('assets/public-lead-form.js?v=5') != 1:
-                  errors.append(f'{path}: expected public lead form cache marker v5')
-              if 'assets/public-lead-form.js?v=4' in text or 'assets/public-lead-form.js?v=3' in text:
-                  errors.append(f'{path}: stale public lead form cache marker remains')
-          if found == 0:
-              errors.append('No public HTML pages reference the shared lead form')
-          if errors:
-              raise SystemExit('\n'.join(errors))
-          print(f'All {found} public HTML form pages use cache marker v5.')
-          PY
+          python3 tools/check_all_public_form_cache_versions.py
 
       - name: Validate public lead Edge Function source
         shell: bash
