@@ -11,6 +11,7 @@ V4_SCRIPT = 'assets/public-lead-form.js?v=4'
 # Remaining large inline-CSS pages tracked in #191 are intentionally excluded
 # until they can be shortened and updated without risky full-file replacement.
 V5_PAGES = (
+    'index.html',
     'uslugi.html',
     'kontakty.html',
     'kak-prohodit-zakaz.html',
