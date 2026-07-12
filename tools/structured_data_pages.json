@@ -46,12 +46,12 @@
       "breadcrumb": "Цены"
     },
     {
-      "path": "portfolio.html",
-      "url": "https://www.lider-bsk.ru/portfolio.html",
-      "name": "Портфолио и примеры работ — РА Лидер",
-      "description": "Примеры рекламных задач: баннеры, таблички, наклейки, оформление бизнеса, дизайн и комплексная реклама в Борисоглебске.",
+      "path": "primery-rabot-kejsy.html",
+      "url": "https://www.lider-bsk.ru/primery-rabot-kejsy.html",
+      "name": "Примеры рекламных задач — РА Лидер",
+      "description": "Типовые задачи по наружной рекламе, печати, оформлению, дизайну и продвижению бизнеса в Борисоглебске.",
       "kind": "collection",
-      "breadcrumb": "Портфолио"
+      "breadcrumb": "Примеры задач"
     },
     {
       "path": "bannery-borisoglebsk.html",
