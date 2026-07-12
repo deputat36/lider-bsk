@@ -25,7 +25,8 @@ for marker in (
     '.steps{display:grid',
     '.cta{position:relative',
     '.mobile-cta',
-    '@media(max-width:1024px)',
+    '@media(max-width:1060px)',
+    '@media(max-width:720px)',
 ):
     if marker not in css:
         raise SystemExit(f'Homepage CSS marker missing before extraction: {marker}')
