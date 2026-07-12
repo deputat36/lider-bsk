@@ -1,13 +1,6 @@
 name: Apply request CSS and v5 patch
 
 on:
-  push:
-    branches:
-      - 'fix/public-request-css-v5-2026-07-12'
-    paths:
-      - 'tools/apply_request_css_v5_patch.py'
-      - 'tools/check_public_request_css_v5.py'
-      - '.github/workflows/apply-request-css-v5-patch.yml'
   pull_request:
     branches: [main]
     paths:
@@ -18,9 +11,13 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: request-css-v5-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   apply-guarded-request-patch:
-    if: github.event_name == 'push' || github.head_ref == 'fix/public-request-css-v5-2026-07-12'
+    if: github.head_ref == 'fix/public-request-css-v5-2026-07-12'
     runs-on: ubuntu-latest
     env:
       TARGET_BRANCH: fix/public-request-css-v5-2026-07-12
@@ -37,25 +34,7 @@ jobs:
         run: git diff --check
 
       - name: Validate request page CSS and source copy
-        shell: bash
-        run: |
-          set -o pipefail
-          python3 tools/check_public_request_css_v5.py 2>&1 | tee /tmp/request-check.log
-
-      - name: Commit failed request checker diagnostic
-        if: failure()
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p docs/diagnostics
-          diagnostic="docs/diagnostics/request-css-v5-${GITHUB_RUN_ID}.txt"
-          cp /tmp/request-check.log "$diagnostic"
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add "$diagnostic"
-          git commit -m "Record request CSS checker diagnostic ${GITHUB_RUN_ID}"
-          git push origin HEAD:"$TARGET_BRANCH"
-          exit 1
+        run: python3 tools/check_public_request_css_v5.py
 
       - name: Validate complete public v5 coverage
         run: python3 tools/check_public_lead_form_cache_v5_partial.py
@@ -83,4 +62,5 @@ jobs:
             .github/workflows/public-site-audit-check.yml \
             .github/workflows/static-checks.yml
           git commit -m 'Extract request CSS and move public form to v5'
+          git pull --rebase origin "$TARGET_BRANCH"
           git push origin HEAD:"$TARGET_BRANCH"
