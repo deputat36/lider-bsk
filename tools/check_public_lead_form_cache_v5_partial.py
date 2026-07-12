@@ -8,13 +8,14 @@ V5_SCRIPT = 'assets/public-lead-form.js?v=5'
 V4_SCRIPT = 'assets/public-lead-form.js?v=4'
 
 # Public pages already migrated to the current shared lead-form cache version.
-# Large inline-CSS pages tracked in #191/#195 are intentionally excluded until
-# they can be shortened and updated without a risky full-file replacement.
+# Remaining large inline-CSS pages tracked in #191 are intentionally excluded
+# until they can be shortened and updated without risky full-file replacement.
 V5_PAGES = (
     'uslugi.html',
     'kontakty.html',
     'kak-prohodit-zakaz.html',
     'bannery-borisoglebsk.html',
+    'pechat-bannerov-borisoglebsk.html',
     'outdoor-advertising-borisoglebsk.html',
     'reklama-otkrytiya-magazina-borisoglebsk.html',
     'vizitki-borisoglebsk.html',

@@ -1,30 +1,60 @@
 # Public landing first page migration
 
+Дата обновления: 2026-07-12.
+
 Scope: public site only.
 
 Related issues: #185, #191, #195.
 
-Recommended first candidate: `pechat-bannerov-borisoglebsk.html`.
+## Первый кандидат завершён
 
-Why this page first:
+`pechat-bannerov-borisoglebsk.html` мигрирована на общий foundation:
 
-- it is one of the remaining pages that still needs the public lead form cache-bust;
-- it uses the same landing structure as other large outdoor advertising pages;
-- after successful conversion, the same pattern can be reused for banner, stickers and working-hours pages.
+- подключён `assets/public-landing.css?v=1`;
+- повторяющийся inline CSS удалён;
+- локальные стили сокращены;
+- форма сохранена;
+- service prefill остаётся `Баннер`;
+- `assets/public-lead-form.js?v=5` подключается один раз;
+- title, description, canonical, Open Graph и JSON-LD сохранены;
+- добавлен отдельный migration contract.
 
-Safe conversion checklist:
+Подробности: `docs/PUBLIC_LANDING_PECHAT_BANNEROV_PATCH_NOTES.md`.
 
-1. Add `assets/public-landing.css` to the page head.
-2. Remove only repeated landing CSS that is already covered by the shared file.
-3. Keep page-specific content, JSON-LD, form block and local service prefill logic.
-4. Change `assets/public-lead-form.js?v=4` to `assets/public-lead-form.js?v=5` only after the page is shortened and readable.
-5. Verify that the service prefill remains `Баннер`.
-6. Do not touch CRM, nav, Supabase functions or database migrations.
+## Следующий кандидат
 
-Manual verification after conversion:
+`banner-dlya-magazina-borisoglebsk.html`.
 
-- the page opens without layout breakage on desktop and mobile;
-- the lead form renders;
-- the form submits to `leader-public-lead`;
-- the service value is `Баннер`;
-- the page keeps canonical, title, description and JSON-LD.
+Причины:
+
+- страница входит в remaining blocked pages issues #185 и #191;
+- использует близкую структуру баннерной посадочной;
+- после успешной миграции тот же шаблон можно применить к оформлению входа, наклейкам на витрину и табличке режима работы.
+
+## Безопасный порядок следующего этапа
+
+1. Прочитать страницу целиком по частям и сохранить все контентные блоки.
+2. Подключить `assets/public-landing.css`.
+3. Удалить только foundation CSS, уже покрытый общим файлом.
+4. Сохранить локальные стили, JSON-LD, форму и service prefill.
+5. После сокращения страницы обновить `assets/public-lead-form.js?v=4` до `v=5`.
+6. Добавить отдельный contract checker и workflow.
+7. Проверить локальные ссылки и профильные GitHub Actions.
+
+## Ограничения
+
+- не трогать CRM;
+- не трогать `nav_*` и `nav_v2_*`;
+- не менять Supabase functions, migrations, schema или production data;
+- не менять клиентские цены и коммерческие обещания в техническом CSS-этапе.
+
+## Ручная проверка
+
+После публикации каждой страницы:
+
+- desktop и mobile layout;
+- отображение формы;
+- правильная подстановка услуги;
+- отправка тестового обращения;
+- появление номера обращения;
+- запись `request_id` и `source_page_path` через `leader-public-lead v10`.
