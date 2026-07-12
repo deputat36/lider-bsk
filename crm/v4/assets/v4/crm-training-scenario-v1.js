@@ -335,7 +335,8 @@ function bootTrainingScenario() {
   });
 }
 
-if (typeof document !== 'undefined') {
+if (typeof document !== 'undefined' && !window.LeaderV4TrainingScenarioV1Booted) {
+  window.LeaderV4TrainingScenarioV1Booted = true;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootTrainingScenario);
   else bootTrainingScenario();
 }

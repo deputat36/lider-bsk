@@ -8,6 +8,7 @@ on:
       - 'crm/v4/assets/v4/crm-training-scenario-v1.js'
       - 'crm/v4/assets/v4/crm-training-scenario-v1.css'
       - 'crm/v4/assets/v4/status-transitions-v1.js'
+      - 'crm/v4/assets/v4/site-cache-note-v1.js'
       - 'tools/test_crm_training_scenario.mjs'
       - 'tools/check_crm_training_scenario.py'
       - 'docs/CRM_V4_LOCAL_TRAINING_SCENARIO_2026-07-12.md'
@@ -20,6 +21,7 @@ on:
       - 'crm/v4/assets/v4/crm-training-scenario-v1.js'
       - 'crm/v4/assets/v4/crm-training-scenario-v1.css'
       - 'crm/v4/assets/v4/status-transitions-v1.js'
+      - 'crm/v4/assets/v4/site-cache-note-v1.js'
       - 'tools/test_crm_training_scenario.mjs'
       - 'tools/check_crm_training_scenario.py'
       - 'docs/CRM_V4_LOCAL_TRAINING_SCENARIO_2026-07-12.md'
@@ -35,6 +37,7 @@ jobs:
         run: |
           set -euo pipefail
           node --check crm/v4/assets/v4/crm-training-scenario-v1.js
+          node --check crm/v4/assets/v4/site-cache-note-v1.js
           node --check tools/test_crm_training_scenario.mjs
           node tools/test_crm_training_scenario.mjs
           python3 tools/check_crm_training_scenario.py

@@ -10,13 +10,17 @@ test = root / 'tools/test_crm_training_scenario.mjs'
 manual = root / 'docs/CRM_V4_LOCAL_TRAINING_SCENARIO_2026-07-12.md'
 status = root / 'docs/STATUS.md'
 workflow = root / '.github/workflows/crm-training-scenario-check.yml'
+loader = root / 'crm/v4/assets/v4/site-cache-note-v1.js'
 
 errors = []
 checks = {
     index: [
         'data-open-training-scenario', 'Пройти учебный заказ',
         'crm-training-scenario-v1.css?v=20260712-1',
-        'crm-training-scenario-v1.js?v=20260712-1',
+    ],
+    loader: [
+        "CRM_ACCESS_ROUTE_VERSION = '20260712-training-2'",
+        "import('./crm-training-scenario-v1.js?v=20260712-training-2')",
     ],
     module: [
         "leader_crm_v4_training_scenario_v1",
@@ -29,7 +33,7 @@ checks = {
         'запрещён registry', 'Безопасный режим',
         'не отправляет запросы', 'Учебная кофейня «Север»',
         'leader-v4:training-scenario-completed', 'localOnly: true',
-        'window.localStorage',
+        'window.localStorage', 'LeaderV4TrainingScenarioV1Booted',
     ],
     styles: [
         '.v4-training-modal', '.v4-training-safe',
@@ -56,6 +60,7 @@ checks = {
         'node tools/test_crm_training_scenario.mjs',
         'python3 tools/check_crm_training_scenario.py',
         'crm/v4/assets/v4/status-transitions-v1.js',
+        'crm/v4/assets/v4/site-cache-note-v1.js',
     ],
 }
 

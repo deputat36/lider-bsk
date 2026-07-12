@@ -7,8 +7,8 @@ on:
       - 'crm/v4/index.html'
       - 'crm/v4/assets/v4/crm-quick-start-v1.js'
       - 'crm/v4/assets/v4/crm-quick-start-v1.css'
-      - 'crm/v4/assets/v4/crm-training-scenario-model-v1.js'
       - 'crm/v4/assets/v4/crm-training-scenario-v1.js'
+      - 'crm/v4/assets/v4/crm-training-scenario-v1.css'
       - 'crm/v4/assets/v4/site-cache-note-v1.js'
       - 'crm/v4/assets/v4/status-transitions-v1.js'
       - 'tools/test_crm_quick_start.mjs'
@@ -16,7 +16,7 @@ on:
       - 'tools/check_crm_quick_start.py'
       - 'tools/check_crm_training_scenario.py'
       - 'docs/CRM_V4_QUICK_START_2026-07-12.md'
-      - 'docs/CRM_LOCAL_TRAINING_SCENARIO_2026-07-12.md'
+      - 'docs/CRM_V4_LOCAL_TRAINING_SCENARIO_2026-07-12.md'
       - 'docs/STATUS.md'
       - '.github/workflows/crm-quick-start-check.yml'
   pull_request:
@@ -25,8 +25,8 @@ on:
       - 'crm/v4/index.html'
       - 'crm/v4/assets/v4/crm-quick-start-v1.js'
       - 'crm/v4/assets/v4/crm-quick-start-v1.css'
-      - 'crm/v4/assets/v4/crm-training-scenario-model-v1.js'
       - 'crm/v4/assets/v4/crm-training-scenario-v1.js'
+      - 'crm/v4/assets/v4/crm-training-scenario-v1.css'
       - 'crm/v4/assets/v4/site-cache-note-v1.js'
       - 'crm/v4/assets/v4/status-transitions-v1.js'
       - 'tools/test_crm_quick_start.mjs'
@@ -34,7 +34,7 @@ on:
       - 'tools/check_crm_quick_start.py'
       - 'tools/check_crm_training_scenario.py'
       - 'docs/CRM_V4_QUICK_START_2026-07-12.md'
-      - 'docs/CRM_LOCAL_TRAINING_SCENARIO_2026-07-12.md'
+      - 'docs/CRM_V4_LOCAL_TRAINING_SCENARIO_2026-07-12.md'
       - 'docs/STATUS.md'
       - '.github/workflows/crm-quick-start-check.yml'
 
@@ -47,7 +47,6 @@ jobs:
         run: |
           set -euo pipefail
           node --check crm/v4/assets/v4/crm-quick-start-v1.js
-          node --check crm/v4/assets/v4/crm-training-scenario-model-v1.js
           node --check crm/v4/assets/v4/crm-training-scenario-v1.js
           node --check crm/v4/assets/v4/site-cache-note-v1.js
           node --check tools/test_crm_quick_start.mjs
