@@ -63,17 +63,18 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p docs/diagnostics
+          diagnostic="docs/diagnostics/homepage-css-extraction-${GITHUB_RUN_ID}.txt"
           {
             echo 'Extraction:'
             cat /tmp/homepage-extraction.log || true
             echo
             echo 'Validation:'
             cat /tmp/homepage-validation.log || true
-          } > docs/diagnostics/homepage-css-extraction.txt
+          } > "$diagnostic"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add docs/diagnostics/homepage-css-extraction.txt
-          git commit -m 'Record homepage CSS extraction diagnostic'
+          git add "$diagnostic"
+          git commit -m "Record homepage CSS extraction diagnostic ${GITHUB_RUN_ID}"
           git push origin HEAD:"$TARGET_BRANCH"
           exit 1
 
