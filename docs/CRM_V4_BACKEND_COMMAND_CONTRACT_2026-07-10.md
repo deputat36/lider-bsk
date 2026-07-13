@@ -1,6 +1,6 @@
 # CRM v4 backend command contract — 2026-07-10
 
-Related: #200, #202, #204, #217.
+Related: #200, #202, #204, #217, #226.
 
 Mode: source-only contract and read-only Supabase audit. It is not enforced by production Edge Functions, RPCs, RLS or browser writes.
 
@@ -28,7 +28,7 @@ The backend command contract does not repeat `allowedTo`, terminal flags, aliase
 
 - `CRM_STATUS_REGISTRY_VERSION`;
 - `CRM_STATUS_DOMAINS`;
-- canonical domains `lead`, `offer`, `order`, `production` and `installation`.
+- canonical domains `lead`, `offer`, `order`, `design_task`, `production` and `installation`.
 
 This separation prevents browser and future server code from drifting into two competing status graphs.
 
@@ -70,7 +70,7 @@ The status registry owns:
 Rules:
 
 - `request_id` is mandatory and supports idempotent retry;
-- `expected_updated_at` is mandatory for mutable existing entities;
+- `expected_updated_at` is mandatory for mutable existing entities and source entities used by transactional creation commands;
 - stale writes return `conflict` and must not overwrite newer data;
 - duplicate requests return the original successful result or `duplicate_request` according to the server implementation;
 - raw database, JWT, service credential and stack details are never returned.
@@ -109,10 +109,19 @@ Stable error codes:
 | `order.create_manual` | `orders.create` | order | not applicable | `leader_activity_log` |
 | `order.transition` | `orders.transition` | order | required | `leader_activity_log` |
 | `lead.transition` | `leads.transition` | lead | required | `leader_lead_events` |
+| `design_task.create_from_order` | `design.write` | design_task | required | `leader_design_task_events` |
 | `production_job.update` | `production.write` | production | required | `leader_production_events` |
 | `installation_job.update` | `installation.write` | installation | required | `leader_installation_events` |
 
 All permissions must exist in `crm/v4/assets/v4/action-permissions-v1.js`.
+
+Detailed design command contract:
+
+`contracts/design-task-create-from-order-v1.json`
+
+Detailed design command specification:
+
+`docs/CRM_DESIGN_TASK_CREATE_FROM_ORDER_SERVER_CONTRACT_2026-07-13.md`
 
 ## Calculation status exception
 
@@ -159,6 +168,21 @@ Must commit or roll back together:
 - status timestamp;
 - one audit event.
 
+### design_task.create_from_order
+
+Must commit or roll back together:
+
+- durable idempotency receipt reservation;
+- validation of the locked order and selected `need_design=true` evidence;
+- active-task conflict check with unknown raw statuses treated as active;
+- design task insert with server-owned initial status and author;
+- `leader_design_task_events` creation event;
+- persistence of the safe idempotent response projection.
+
+The browser must not choose `task_status`, author, owner, layout status, designer or source.
+
+An application-only `SELECT` followed by `INSERT` is not sufficient protection against concurrent active tasks. Database uniqueness and transaction serialization are required before enforcement.
+
 ### production and installation updates
 
 Must commit or roll back together:
@@ -178,11 +202,22 @@ Confirmed event/audit targets:
 
 - `leader_lead_events`;
 - `leader_commercial_offer_events`;
+- `leader_design_task_events`;
 - `leader_production_events`;
 - `leader_installation_events`;
 - `leader_activity_log`.
 
 `leader_activity_log` provides actor, action, entity, entity ID, JSON metadata and timestamp fields. Future commands must store privacy-safe metadata only.
+
+For `design_task.create_from_order`, live evidence additionally confirms:
+
+- `leader_design_tasks`, `leader_design_task_events` and `leader_design_task_comments` exist;
+- all three tables currently contain 0 rows;
+- two active orders require design but have no linked task;
+- `leader_design_tasks` has ordinary indexes but no active-task unique constraint;
+- no idempotency column or command receipt table exists;
+- current design RLS checks active profile but not canonical `design.write`;
+- live Edge Functions do not implement `design_task.create_from_order`.
 
 Live status values were inspected only to confirm compatibility with the separate canonical status registry. They are not copied into this command contract.
 
@@ -190,14 +225,15 @@ Live status values were inspected only to confirm compatibility with the separat
 
 1. Create or rebase an approved Supabase development branch.
 2. Generate a server-owned representation from this command contract and the canonical status registry.
-3. Implement one domain first, preferably offer transitions.
-4. Resolve authenticated user and active `leader_crm_profiles` role server-side.
-5. Check canonical permission server-side and fail closed for unknown roles/actions.
-6. Validate target status with `status-transitions-v1.js` contract data.
-7. Enforce `request_id` idempotency and `expected_updated_at` concurrency.
-8. Apply business write, dependent synchronization and audit in one transaction.
-9. Run positive, forbidden-role, stale-version, invalid-transition, duplicate-request and rollback tests.
-10. Record evidence before any production approval.
+3. Add durable command receipt storage and database-level active design task uniqueness.
+4. Implement one transaction-backed command, with `design_task.create_from_order` suitable as a bounded first vertical slice.
+5. Resolve authenticated user and active `leader_user_profiles` role server-side.
+6. Check canonical permission server-side and fail closed for unknown roles/actions.
+7. Validate statuses with the canonical registry contract data.
+8. Enforce `request_id` idempotency and `expected_updated_at` concurrency.
+9. Apply business write, dependent synchronization and audit in one transaction.
+10. Run positive, forbidden-role, stale-version, invalid-evidence, duplicate-request, concurrent-request and rollback tests.
+11. Record evidence before any production approval.
 
 ## Production boundary
 
@@ -215,6 +251,7 @@ No `nav_*`, Parket or Broker object was touched.
 - implement and test commands in a Supabase development branch;
 - add server-side role/action enforcement;
 - add transactional idempotency and optimistic concurrency;
+- add active-task uniqueness for design tasks;
 - verify role-specific result projections;
 - remove direct browser writes only after tested replacement and rollback proof;
 - obtain explicit approval before production deployment.
