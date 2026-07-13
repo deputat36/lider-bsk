@@ -19,12 +19,15 @@ TARGETS = (
     "yandex-karty-2gis.html",
 )
 ROBOTS = '  <meta name="robots" content="index, follow">'
-DESCRIPTION_RE = re.compile(r'^(\s*<meta\s+name="description"\s+content="[^"]*">)\s*$', re.MULTILINE)
+DESCRIPTION_RE = re.compile(
+    r'<meta\b(?=[^>]*\bname\s*=\s*["\']description["\'])[^>]*>',
+    re.IGNORECASE | re.DOTALL,
+)
 
 
 def patch(path: Path) -> bool:
     text = path.read_text(encoding="utf-8")
-    robots_count = text.count('<meta name="robots"')
+    robots_count = len(re.findall(r'<meta\b(?=[^>]*\bname\s*=\s*["\']robots["\'])[^>]*>', text, re.IGNORECASE | re.DOTALL))
     if robots_count == 1:
         if ROBOTS.strip() not in text:
             raise SystemExit(f"{path.name}: existing robots meta is not the expected index/follow value")
@@ -34,11 +37,14 @@ def patch(path: Path) -> bool:
 
     matches = list(DESCRIPTION_RE.finditer(text))
     if len(matches) != 1:
-        raise SystemExit(f"{path.name}: expected exactly one single-line meta description, found {len(matches)}")
+        raise SystemExit(f"{path.name}: expected exactly one meta description, found {len(matches)}")
 
     match = matches[0]
-    updated = text[: match.end()] + "\n" + ROBOTS + text[match.end() :]
-    if updated.count('<meta name="robots"') != 1:
+    line_start = text.rfind("\n", 0, match.start()) + 1
+    indent = text[line_start:match.start()]
+    updated = text[: match.end()] + "\n" + indent + ROBOTS.strip() + text[match.end() :]
+    robots_after = re.findall(r'<meta\b(?=[^>]*\bname\s*=\s*["\']robots["\'])[^>]*>', updated, re.IGNORECASE | re.DOTALL)
+    if robots_after != ['<meta name="robots" content="index, follow">']:
         raise SystemExit(f"{path.name}: robots meta insertion failed")
     path.write_text(updated, encoding="utf-8")
     return True
