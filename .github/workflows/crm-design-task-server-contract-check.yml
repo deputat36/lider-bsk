@@ -5,12 +5,15 @@ on:
     branches: [main]
     paths:
       - 'contracts/design-task-create-from-order-v1.json'
+      - 'contracts/design-task-database-rpc-candidate-v1.json'
       - 'contracts/crm-v4-backend-command-contract-v1.json'
       - 'docs/CRM_DESIGN_TASK_CREATE_FROM_ORDER_SERVER_CONTRACT_2026-07-13.md'
+      - 'docs/CRM_DESIGN_TASK_DATABASE_RPC_CANDIDATE_SPEC_2026-07-13.md'
       - 'docs/CRM_V4_BACKEND_COMMAND_CONTRACT_2026-07-10.md'
       - 'tools/design-task-create-from-order-reference-v1.mjs'
       - 'tools/test_design_task_create_from_order_contract.mjs'
       - 'tools/check_design_task_create_from_order_contract.py'
+      - 'tools/check_design_task_database_rpc_candidate.py'
       - 'tools/check_crm_v4_backend_command_contract.py'
       - 'crm/v4/assets/v4/action-permissions-v1.js'
       - 'crm/v4/assets/v4/status-transitions-v1.js'
@@ -21,12 +24,15 @@ on:
     branches: [main]
     paths:
       - 'contracts/design-task-create-from-order-v1.json'
+      - 'contracts/design-task-database-rpc-candidate-v1.json'
       - 'contracts/crm-v4-backend-command-contract-v1.json'
       - 'docs/CRM_DESIGN_TASK_CREATE_FROM_ORDER_SERVER_CONTRACT_2026-07-13.md'
+      - 'docs/CRM_DESIGN_TASK_DATABASE_RPC_CANDIDATE_SPEC_2026-07-13.md'
       - 'docs/CRM_V4_BACKEND_COMMAND_CONTRACT_2026-07-10.md'
       - 'tools/design-task-create-from-order-reference-v1.mjs'
       - 'tools/test_design_task_create_from_order_contract.mjs'
       - 'tools/check_design_task_create_from_order_contract.py'
+      - 'tools/check_design_task_database_rpc_candidate.py'
       - 'tools/check_crm_v4_backend_command_contract.py'
       - 'crm/v4/assets/v4/action-permissions-v1.js'
       - 'crm/v4/assets/v4/status-transitions-v1.js'
@@ -43,6 +49,7 @@ jobs:
       - name: Validate contract JSON
         run: |
           python3 -m json.tool contracts/design-task-create-from-order-v1.json >/dev/null
+          python3 -m json.tool contracts/design-task-database-rpc-candidate-v1.json >/dev/null
           python3 -m json.tool contracts/crm-v4-backend-command-contract-v1.json >/dev/null
 
       - name: Validate JavaScript syntax
@@ -58,6 +65,9 @@ jobs:
 
       - name: Validate detailed design action contract
         run: python3 tools/check_design_task_create_from_order_contract.py
+
+      - name: Validate database and RPC candidate
+        run: python3 tools/check_design_task_database_rpc_candidate.py
 
       - name: Validate general backend command registry
         run: python3 tools/check_crm_v4_backend_command_contract.py
