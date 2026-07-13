@@ -6,6 +6,7 @@ root = Path(__file__).resolve().parents[1]
 model = root / 'crm/v4/assets/v4/order-contract-model-v1.js'
 preview = root / 'crm/v4/assets/v4/order-contract-preview-v1.js'
 act = root / 'crm/v4/assets/v4/order-act-preview-v1.js'
+index = root / 'crm/v4/index.html'
 settings_preview = root / 'crm/v4/assets/v4/company-legal-settings-preview-v1.js'
 behavior = root / 'tools/test_crm_order_contract.mjs'
 manual = root / 'docs/CRM_ORDER_CONTRACT_GENERATOR_2026-07-13.md'
@@ -45,6 +46,9 @@ checks = {
     act: [
         "import './order-contract-preview-v1.js';",
     ],
+    index: [
+        'order-act-preview-v1.js?v=20260713-contract-1',
+    ],
     settings_preview: [
         'contractDraftExecutor',
         'contractDraftExecutorDetails',
@@ -74,6 +78,7 @@ checks = {
         'python3 tools/check_crm_order_contract.py',
         'node --check crm/v4/assets/v4/order-contract-model-v1.js',
         'node --check crm/v4/assets/v4/order-contract-preview-v1.js',
+        "grep -q 'order-act-preview-v1.js?v=20260713-contract-1' crm/v4/index.html",
     ],
 }
 
