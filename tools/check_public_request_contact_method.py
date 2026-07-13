@@ -36,9 +36,9 @@ def main() -> int:
     doc = read(DOC, errors)
 
     request_markers = (
-        'data-request-page-version="20260713-contact-method-1"',
-        'assets/public-request-contact-method-v1.css?v=1',
-        'assets/public-request-contact-method-v1.js?v=1',
+        'data-request-page-version="20260628-clarity-2"',
+        "script.src='assets/public-request-contact-method-v1.js?v=1'",
+        "script.async=false",
         'assets/public-lead-reference-v1.js?v=1',
         'assets/public-lead-form.js?v=5',
     )
@@ -48,11 +48,11 @@ def main() -> int:
     ordered = (
         'assets/public-lead-reference-v1.js?v=1',
         'assets/public-lead-form.js?v=5',
-        'assets/public-request-contact-method-v1.js?v=1',
+        "script.src='assets/public-request-contact-method-v1.js?v=1'",
     )
     positions = [request.find(marker) for marker in ordered]
     if any(position < 0 for position in positions) or positions != sorted(positions):
-        errors.append("request.html: public request scripts must keep reference → form → contact guard order")
+        errors.append("request.html: public request scripts must keep reference → form → contact guard bootstrap order")
 
     for marker in (
         '<option>Написать ВКонтакте</option>',
@@ -65,6 +65,8 @@ def main() -> int:
     guard_markers = (
         "const EMAIL_METHOD='Написать на email'",
         "const VK_METHOD='Написать ВКонтакте'",
+        "const STYLE_HREF='assets/public-request-contact-method-v1.css?v=1'",
+        "document.head.appendChild(link)",
         "detail.required=required",
         "detail.setAttribute('aria-required',required?'true':'false')",
         "details.removeAttribute('hidden')",
@@ -99,6 +101,7 @@ def main() -> int:
         "ВКонтакте без ссылки",
         "POST в `leader-public-lead` отсутствует",
         "production-заявка не создаётся",
+        "bootstrap",
         "общий form JS не меняется",
         "Edge Function и Supabase production не меняются",
     ):
