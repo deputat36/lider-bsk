@@ -13,14 +13,29 @@
 
 ## Реализация
 
-На `request.html` после общей формы подключён sidecar:
+Для `request.html` добавлен локальный sidecar:
 
 - `assets/public-request-contact-method-v1.js?v=1`;
 - `assets/public-request-contact-method-v1.css?v=1`.
 
+Страница сохраняет существующий основной контракт и два канонических внешних скрипта:
+
+1. `assets/public-lead-reference-v1.js?v=1`;
+2. `assets/public-lead-form.js?v=5`.
+
+После них небольшой bootstrap создаёт `<script>` для `assets/public-request-contact-method-v1.js?v=1`. Sidecar после загрузки подключает отдельную таблицу стилей `assets/public-request-contact-method-v1.css?v=1` через элемент `<link>`.
+
+Такой способ сохраняет:
+
+- прежний marker страницы `20260628-clarity-2`;
+- порядок `reference helper → shared form`;
+- существующий контракт стабильного `request_id`;
+- две основные внешние таблицы стилей страницы;
+- отсутствие inline CSS.
+
 Sidecar не изменяет `assets/public-lead-form.js`, Edge Function или структуру payload.
 
-Поведение:
+## Поведение
 
 1. Для «Написать на email» поле становится обязательным и получает подпись «Email для ответа».
 2. Для «Написать ВКонтакте» поле становится обязательным и получает подпись «Ссылка на профиль ВКонтакте».
@@ -30,15 +45,16 @@ Sidecar не изменяет `assets/public-lead-form.js`, Edge Function или
 6. Для звонка, MAX по указанному номеру и любого удобного способа дополнительное поле остаётся необязательным.
 7. Ошибка выбора фиксируется только аналитическим событием `contact_detail_missing`; POST в `leader-public-lead` не выполняется.
 
-## Порядок скриптов
+## Порядок выполнения
 
-На странице сохраняется порядок:
+На странице сохраняется последовательность:
 
-1. `public-lead-reference-v1.js`;
-2. `public-lead-form.js`;
-3. `public-request-contact-method-v1.js`.
+1. reference helper подготавливает стабильный `request_id`;
+2. shared form монтирует форму и основную submit-логику;
+3. bootstrap загружает contact-method sidecar;
+4. sidecar подключает свой CSS и регистрирует capture-submit проверку.
 
-Это сохраняет существующий контракт стабильного `request_id` и добавляет проверку только после монтажа общей формы.
+Capture-listener выполняется до общей submit-логики. При отсутствии обязательного email или ссылки ВКонтакте он останавливает событие до сетевого запроса.
 
 ## Ручная browser/Network проверка
 
