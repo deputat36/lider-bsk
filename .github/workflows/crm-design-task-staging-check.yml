@@ -1,0 +1,64 @@
+name: CRM design task staging check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'contracts/supabase-environments-v1.json'
+      - 'supabase/config.toml'
+      - 'supabase/staging-migrations/**'
+      - 'supabase/staging-tests/**'
+      - 'tools/check_supabase_staging_design_task.py'
+      - 'docs/SUPABASE_STAGING_DESIGN_TASK_RPC_2026-07-13.md'
+      - '.github/workflows/crm-design-task-staging-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'contracts/supabase-environments-v1.json'
+      - 'supabase/config.toml'
+      - 'supabase/staging-migrations/**'
+      - 'supabase/staging-tests/**'
+      - 'tools/check_supabase_staging_design_task.py'
+      - 'docs/SUPABASE_STAGING_DESIGN_TASK_RPC_2026-07-13.md'
+      - '.github/workflows/crm-design-task-staging-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-staging-design-task:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate environment contract JSON
+        run: python3 -m json.tool contracts/supabase-environments-v1.json >/dev/null
+
+      - name: Compile staging guard checker
+        run: python3 -m py_compile tools/check_supabase_staging_design_task.py
+
+      - name: Validate staging isolation, SQL and tests
+        run: python3 tools/check_supabase_staging_design_task.py
+
+      - name: Protect production project reference
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -R --line-number --fixed-strings 'ofewxuqfjhamgerwzull' supabase/staging-migrations supabase/staging-tests; then
+            echo 'Production project ref is forbidden in staging SQL.' >&2
+            exit 1
+          fi
+          grep -R --line-number --fixed-strings 'otulfnouybahfnsycxqn' supabase/staging-migrations supabase/staging-tests >/dev/null
+
+      - name: Reject executable secret material
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -R -E --line-number 'sb_secret_[A-Za-z0-9_-]{10,}|eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}' \
+            contracts/supabase-environments-v1.json \
+            supabase/staging-migrations \
+            supabase/staging-tests \
+            docs/SUPABASE_STAGING_DESIGN_TASK_RPC_2026-07-13.md; then
+            echo 'Possible Supabase secret found in staging source.' >&2
+            exit 1
+          fi
