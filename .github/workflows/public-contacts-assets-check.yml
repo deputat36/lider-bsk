@@ -1,0 +1,30 @@
+name: Public contacts assets check
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'kontakty.html'
+      - 'assets/public-contacts.css'
+      - 'assets/public-contacts.js'
+      - 'tools/check_public_contacts_assets.py'
+      - '.github/workflows/public-contacts-assets-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'kontakty.html'
+      - 'assets/public-contacts.css'
+      - 'assets/public-contacts.js'
+      - 'tools/check_public_contacts_assets.py'
+      - '.github/workflows/public-contacts-assets-check.yml'
+
+jobs:
+  validate-public-contacts-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate contacts page external assets and NAP boundary
+        run: |
+          python3 tools/check_public_contacts_assets.py
+          node --check assets/public-contacts.js
