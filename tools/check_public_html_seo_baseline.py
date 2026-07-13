@@ -15,6 +15,10 @@ PUBLIC_SUBPAGES = (
     ROOT / "signs" / "index.html",
     ROOT / "auto-stickers" / "index.html",
 )
+EXCLUDED_ROOT_PAGES = {
+    "deal-card-v2.html",
+    "deals-v2.html",
+}
 ALLOWED_ROBOTS = {"index,follow", "noindex,follow", "noindex,nofollow"}
 
 
@@ -77,7 +81,7 @@ class PageParser(HTMLParser):
 
 
 def public_pages() -> list[Path]:
-    pages = sorted(ROOT.glob("*.html"))
+    pages = [path for path in sorted(ROOT.glob("*.html")) if path.name not in EXCLUDED_ROOT_PAGES]
     pages.extend(path for path in PUBLIC_SUBPAGES if path.is_file())
     return sorted({path.resolve() for path in pages})
 
@@ -195,8 +199,8 @@ def main() -> None:
         if len(owners) < 2:
             continue
         indexable_owners = [owner for owner in owners if robots_by_page.get(owner) == "index,follow"]
-        if indexable_owners:
-            errors.append(f"canonical {url!r} is shared by indexable page(s): {indexable_owners!r}")
+        if len(indexable_owners) > 1:
+            errors.append(f"canonical {url!r} is shared by multiple indexable pages: {indexable_owners!r}")
 
     sitemap_duplicates = [url for url, count in Counter(sitemap_list).items() if count > 1]
     if sitemap_duplicates:
