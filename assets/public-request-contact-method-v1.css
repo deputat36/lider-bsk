@@ -1,0 +1,4 @@
+/* RA Lider request page contact method guidance. */
+#leader-lead-form .leader-contact-hint{display:block;margin-top:7px;color:#667085;font-size:13px;line-height:1.4}
+#leader-lead-form .leader-contact-detail-required label:after{content:" *";color:#ff6a00}
+#leader-lead-form .leader-contact-detail-required input:focus{border-color:#ff6a00;box-shadow:0 0 0 3px rgba(255,106,0,.12)}
