@@ -27,7 +27,18 @@ jobs:
         run: python3 tools/patch_public_services_catalog_css_once.py
 
       - name: Validate services catalog migration
-        run: python3 tools/check_public_services_catalog_css.py
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 tools/check_public_services_catalog_css.py 2>&1 | tee patch-public-services-catalog-css-report.txt
+
+      - name: Upload guarded migration report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: patch-public-services-catalog-css-report
+          path: patch-public-services-catalog-css-report.txt
+          if-no-files-found: error
 
       - name: Validate public SEO, DOM and resources
         shell: bash
