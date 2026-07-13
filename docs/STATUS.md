@@ -1,6 +1,6 @@
 # Статус проекта РА «Лидер»
 
-Дата обновления: 2026-07-12.
+Дата обновления: 2026-07-13.
 
 ## Основной контур
 
@@ -54,6 +54,22 @@ Supabase baseline РА «Лидер»: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-
 - добавлены чистая модель, behavior test, source checker, manual browser/Network checklist и отдельный GitHub Actions workflow;
 - автоматические назначения, SLA gates, backfill и server-side enforcement остаются approval-gated.
 
+## Предупреждение готовности потребности
+
+Обновление 2026-07-13:
+
+- добавлены `need-readiness-model-v1.js` и `need-readiness-panel-v1.js`;
+- перед сохранением расчёта показывается readiness выбранной потребности по `completeness_score` и `missing_fields`;
+- перед формированием КП readiness определяется через связь сохранённого расчёта `need_id` с потребностью;
+- потребность считается полностью готовой при балле не ниже 80 и пустом `missing_fields`;
+- архивные потребности исключаются;
+- непривязанный расчёт, отсутствующая потребность и оставшиеся поля показываются отдельными advisory-состояниями;
+- предупреждение не блокирует существующие действия сохранения расчёта и формирования КП;
+- readiness-модуль не импортирует Supabase client и использует только уже загруженные `v4State.leadNeeds` и `v4State.calculations`;
+- кнопки предупреждения только переводят к потребности, расчётам или нужному select и не выполняют write-запросы;
+- добавлены behavior test, source checker, отдельный workflow и manual browser/Network checklist;
+- реальный server-side gate, изменение формулы полноты и backfill остаются approval-gated.
+
 ## Supabase
 
 Активные функции контура РА «Лидер»:
@@ -63,6 +79,18 @@ Supabase baseline РА «Лидер»: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-
 - `leader-crm-orders v2`, `verify_jwt=true`.
 
 CRM использует JWT и RLS. Полный аудит 2026-07-10 выявил два приоритетных архитектурных хвоста: прямой `anon INSERT` в публичные таблицы позволяет обойти Edge Function, а серверная CRM-проверка подтверждает активный профиль без action-level ограничения по роли. Production-права в рамках аудита не менялись.
+
+Проверка 2026-07-13:
+
+- проект `ofewxuqfjhamgerwzull` имеет статус `ACTIVE_HEALTHY`;
+- PostgreSQL — `17.6.1.121`, release channel `ga`;
+- read-only schema check подтвердил поля `leader_lead_needs.completeness_score` и `leader_lead_needs.missing_fields`;
+- в live `leader_lead_needs` — 14 строк, из них 9 ниже 80 и 5 не ниже 80;
+- средний `completeness_score` — 76,9, минимум — 45, максимум — 96;
+- `missing_fields` хранится как JSON array;
+- подтверждены таблицы `leader_lead_calculations`, `leader_lead_calculation_items` и `leader_calculation_templates`;
+- проверялись только metadata и агрегаты без имён клиентов, телефонов, email, сообщений и финансов;
+- Supabase production не менялся: DDL, DML, migrations, deploy, RLS, grants, policies, Auth, Storage, Edge Functions и данные не трогались.
 
 Проверка 2026-07-12:
 
