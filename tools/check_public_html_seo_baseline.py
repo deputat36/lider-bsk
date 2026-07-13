@@ -100,10 +100,10 @@ def expected_self_canonical(page: Path) -> str:
     return HOST + "/" + rel
 
 
-def sitemap_urls() -> set[str]:
+def sitemap_urls() -> list[str]:
     sitemap = ROOT / "sitemap.xml"
     text = sitemap.read_text(encoding="utf-8")
-    return {item.strip() for item in re.findall(r"<loc>(.*?)</loc>", text, flags=re.S)}
+    return [item.strip() for item in re.findall(r"<loc>(.*?)</loc>", text, flags=re.S)]
 
 
 def main() -> None:
@@ -111,7 +111,8 @@ def main() -> None:
     if not pages:
         raise SystemExit("No public HTML pages found")
 
-    sitemap = sitemap_urls()
+    sitemap_list = sitemap_urls()
+    sitemap = set(sitemap_list)
     errors: list[str] = []
     canonical_owners: dict[str, list[str]] = {}
     indexable_pages = 0
@@ -188,7 +189,7 @@ def main() -> None:
         if indexable_owners:
             errors.append(f"canonical {url!r} is shared by indexable page(s): {indexable_owners!r}")
 
-    sitemap_duplicates = [url for url, count in Counter(sitemap).items() if count > 1]
+    sitemap_duplicates = [url for url, count in Counter(sitemap_list).items() if count > 1]
     if sitemap_duplicates:
         errors.append(f"sitemap contains duplicate URLs: {sitemap_duplicates!r}")
 
@@ -199,7 +200,7 @@ def main() -> None:
     print(
         "Public HTML SEO baseline is valid: "
         f"{len(pages)} pages, {indexable_pages} indexable, {noindex_pages} noindex, "
-        f"{len(sitemap)} sitemap URLs."
+        f"{len(sitemap_list)} sitemap URLs."
     )
 
 
