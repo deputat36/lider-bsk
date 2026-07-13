@@ -1,0 +1,41 @@
+name: Public order process assets check
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'kak-prohodit-zakaz.html'
+      - 'assets/public-order-process.css'
+      - 'assets/public-order-process.js'
+      - 'tools/check_public_order_process_assets.py'
+      - 'docs/PUBLIC_ORDER_PROCESS_ASSETS_2026-07-13.md'
+      - '.github/workflows/public-order-process-assets-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'kak-prohodit-zakaz.html'
+      - 'assets/public-order-process.css'
+      - 'assets/public-order-process.js'
+      - 'tools/check_public_order_process_assets.py'
+      - 'docs/PUBLIC_ORDER_PROCESS_ASSETS_2026-07-13.md'
+      - '.github/workflows/public-order-process-assets-check.yml'
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate order process assets
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 tools/check_public_order_process_assets.py 2>&1 | tee public-order-process-assets-report.txt
+          node --check assets/public-order-process.js
+      - name: Upload order process asset report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-order-process-assets-report
+          path: public-order-process-assets-report.txt
+          if-no-files-found: error
