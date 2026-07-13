@@ -35,7 +35,19 @@ jobs:
         run: python3 tools/patch_public_robots_meta_once.py
 
       - name: Validate resulting SEO baseline
-        run: python3 tools/check_public_html_seo_baseline.py
+        id: validate
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 tools/check_public_html_seo_baseline.py 2>&1 | tee patch-public-robots-seo-report.txt
+
+      - name: Upload guarded patch SEO report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: patch-public-robots-seo-report
+          path: patch-public-robots-seo-report.txt
+          if-no-files-found: error
 
       - name: Commit changed public HTML
         shell: bash
