@@ -9,7 +9,9 @@ on:
       - 'supabase/staging-migrations/**'
       - 'supabase/staging-tests/**'
       - 'tools/check_supabase_staging_design_task.py'
+      - 'tools/check_supabase_staging_design_validation.py'
       - 'docs/SUPABASE_STAGING_DESIGN_TASK_RPC_2026-07-13.md'
+      - 'docs/SUPABASE_STAGING_DESIGN_TASK_VALIDATION_2026-07-13.md'
       - '.github/workflows/crm-design-task-staging-check.yml'
   push:
     branches: [main]
@@ -19,7 +21,9 @@ on:
       - 'supabase/staging-migrations/**'
       - 'supabase/staging-tests/**'
       - 'tools/check_supabase_staging_design_task.py'
+      - 'tools/check_supabase_staging_design_validation.py'
       - 'docs/SUPABASE_STAGING_DESIGN_TASK_RPC_2026-07-13.md'
+      - 'docs/SUPABASE_STAGING_DESIGN_TASK_VALIDATION_2026-07-13.md'
       - '.github/workflows/crm-design-task-staging-check.yml'
 
 permissions:
@@ -34,11 +38,16 @@ jobs:
       - name: Validate environment contract JSON
         run: python3 -m json.tool contracts/supabase-environments-v1.json >/dev/null
 
-      - name: Compile staging guard checker
-        run: python3 -m py_compile tools/check_supabase_staging_design_task.py
+      - name: Compile staging checkers
+        run: |
+          python3 -m py_compile tools/check_supabase_staging_design_task.py
+          python3 -m py_compile tools/check_supabase_staging_design_validation.py
 
       - name: Validate staging isolation, SQL and tests
         run: python3 tools/check_supabase_staging_design_task.py
+
+      - name: Validate staging test evidence
+        run: python3 tools/check_supabase_staging_design_validation.py
 
       - name: Protect production project reference
         shell: bash
@@ -58,7 +67,8 @@ jobs:
             contracts/supabase-environments-v1.json \
             supabase/staging-migrations \
             supabase/staging-tests \
-            docs/SUPABASE_STAGING_DESIGN_TASK_RPC_2026-07-13.md; then
+            docs/SUPABASE_STAGING_DESIGN_TASK_RPC_2026-07-13.md \
+            docs/SUPABASE_STAGING_DESIGN_TASK_VALIDATION_2026-07-13.md; then
             echo 'Possible Supabase secret found in staging source.' >&2
             exit 1
           fi
