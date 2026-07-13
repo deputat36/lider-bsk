@@ -3,6 +3,7 @@ import { timeout, friendlyError } from './api.js';
 import { toast, setStatus } from './ui.js';
 import { CRM_V4_ACTIONS, canPerformV4Action, requireV4Action } from './action-permissions-v1.js';
 import './order-act-company-settings-v1.js';
+import './order-contract-preview-v1.js';
 
 const HOST_ID = 'orderActPreviewV1';
 const STYLE_ID = 'orderActPreviewV1Styles';

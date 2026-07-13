@@ -115,6 +115,23 @@ function applyToOpenAct(settings) {
   set('actDraftSignatoryRole', settings.signatory_role);
 }
 
+function applyToOpenContract(settings) {
+  const set = (id, value) => {
+    const element = document.getElementById(id);
+    if (element) element.value = value || '';
+  };
+  set('contractDraftExecutor', companyLegalName(settings));
+  set('contractDraftExecutorDetails', companyLegalDetailsText(settings));
+  set('contractDraftTaxMode', settings.tax_mode);
+  set('contractDraftExecutorRepresentative', settings.signatory_name);
+  set('contractDraftExecutorRole', settings.signatory_role);
+}
+
+function applyToOpenDocument(settings) {
+  applyToOpenAct(settings);
+  applyToOpenContract(settings);
+}
+
 async function openPreview() {
   if (!requireV4Action(CRM_V4_ACTIONS.SETTINGS_MANAGE)) {
     toast('Настройки реквизитов доступны только владельцу или администратору');
@@ -123,27 +140,31 @@ async function openPreview() {
   ensureStyles();
   const settings = await loadCompanyLegalSettings();
   const groups = FIELD_GROUPS.map((group) => `<section class="v4-company-settings-group"><h3>${esc(group.title)}</h3>${group.fields.map((field) => fieldHtml(field, settings)).join('')}</section>`).join('');
-  host().innerHTML = `<div class="v4-company-settings-modal"><div class="v4-company-settings-card"><header class="v4-company-settings-head"><div><h2>Проверка реквизитов организации</h2><p>Форма только проверяет и показывает реквизиты. Сохранение в production отключено.</p></div><button type="button" data-company-settings-close>Закрыть</button></header><form id="companyLegalSettingsPreviewForm"><div class="v4-company-settings-grid">${groups}</div><div class="v4-company-settings-result"><section class="v4-company-settings-preview"><b>Предпросмотр блока исполнителя</b><pre data-company-settings-preview-text></pre></section><section data-company-settings-validation class="v4-company-settings-validation"></section></div><div class="v4-company-settings-note">Данные не записываются в <code>leader_settings</code>. Кнопка ниже применит проверенные значения только к открытому несохранённому черновику акта.</div><div class="v4-company-settings-actions"><button type="submit" class="primary">Применить к текущему черновику</button><button type="button" data-company-settings-close>Отмена</button></div></form></div></div>`;
+  host().innerHTML = `<div class="v4-company-settings-modal"><div class="v4-company-settings-card"><header class="v4-company-settings-head"><div><h2>Проверка реквизитов организации</h2><p>Форма только проверяет и показывает реквизиты. Сохранение в production отключено.</p></div><button type="button" data-company-settings-close>Закрыть</button></header><form id="companyLegalSettingsPreviewForm"><div class="v4-company-settings-grid">${groups}</div><div class="v4-company-settings-result"><section class="v4-company-settings-preview"><b>Предпросмотр блока исполнителя</b><pre data-company-settings-preview-text></pre></section><section data-company-settings-validation class="v4-company-settings-validation"></section></div><div class="v4-company-settings-note">Данные не записываются в <code>leader_settings</code>. Кнопка ниже применит проверенные значения только к открытому несохранённому черновику акта или договора.</div><div class="v4-company-settings-actions"><button type="submit" class="primary">Применить к текущему черновику</button><button type="button" data-company-settings-close>Отмена</button></div></form></div></div>`;
   renderResult();
 }
 
 function injectOpenButton() {
-  const form = document.getElementById('orderActDraftForm');
-  if (!form) return;
-  const existing = form.querySelector('[data-company-settings-open]');
+  const forms = [
+    document.getElementById('orderActDraftForm'),
+    document.getElementById('orderContractDraftForm')
+  ].filter(Boolean);
+  if (!forms.length) return;
   if (!canPerformV4Action(CRM_V4_ACTIONS.SETTINGS_MANAGE)) {
-    existing?.remove();
+    forms.forEach((form) => form.querySelector('[data-company-settings-open]')?.remove());
     return;
   }
-  if (existing) return;
-  const submit = form.querySelector('button[type="submit"]');
-  if (!submit) return;
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = 'v4-company-settings-open';
-  button.dataset.companySettingsOpen = '1';
-  button.textContent = 'Проверить реквизиты';
-  submit.before(button);
+  forms.forEach((form) => {
+    if (form.querySelector('[data-company-settings-open]')) return;
+    const submit = form.querySelector('button[type="submit"]');
+    if (!submit) return;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'v4-company-settings-open';
+    button.dataset.companySettingsOpen = '1';
+    button.textContent = 'Проверить реквизиты';
+    submit.before(button);
+  });
 }
 
 function boot() {
@@ -174,9 +195,9 @@ function boot() {
       toast('Исправьте ошибки в реквизитах');
       return;
     }
-    applyToOpenAct(result.value);
+    applyToOpenDocument(result.value);
     closePreview();
-    toast('Реквизиты применены только к текущему черновику');
+    toast('Реквизиты применены только к открытому черновику');
   });
 }
 

@@ -65,4 +65,4 @@ jobs:
           node --check crm/v4/assets/v4/company-legal-settings-draft-v1.js
           node --check crm/v4/assets/v4/company-legal-settings-preview-v1.js
           node --check crm/v4/assets/v4/order-act-company-settings-v1.js
-          grep -q 'order-act-preview-v1.js?v=20260710-1' crm/v4/index.html
+          grep -q 'order-act-preview-v1.js?v=20260713-contract-1' crm/v4/index.html

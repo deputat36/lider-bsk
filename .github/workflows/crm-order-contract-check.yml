@@ -1,0 +1,56 @@
+name: CRM order contract check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'crm/v4/index.html'
+      - 'crm/v4/assets/v4/order-act-preview-v1.js'
+      - 'crm/v4/assets/v4/order-contract-model-v1.js'
+      - 'crm/v4/assets/v4/order-contract-preview-v1.js'
+      - 'crm/v4/assets/v4/company-legal-settings-v1.js'
+      - 'crm/v4/assets/v4/company-legal-settings-preview-v1.js'
+      - 'crm/v4/assets/v4/action-permissions-v1.js'
+      - 'tools/test_crm_order_contract.mjs'
+      - 'tools/check_crm_order_contract.py'
+      - 'tools/check_crm_order_completion_act.py'
+      - 'docs/CRM_ORDER_CONTRACT_GENERATOR_2026-07-13.md'
+      - 'docs/CRM_COMPANY_LEGAL_SETTINGS_CONTRACT_2026-07-10.md'
+      - 'docs/STATUS.md'
+      - '.github/workflows/crm-order-contract-check.yml'
+      - '.github/workflows/crm-order-completion-act-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'crm/v4/index.html'
+      - 'crm/v4/assets/v4/order-act-preview-v1.js'
+      - 'crm/v4/assets/v4/order-contract-model-v1.js'
+      - 'crm/v4/assets/v4/order-contract-preview-v1.js'
+      - 'crm/v4/assets/v4/company-legal-settings-v1.js'
+      - 'crm/v4/assets/v4/company-legal-settings-preview-v1.js'
+      - 'crm/v4/assets/v4/action-permissions-v1.js'
+      - 'tools/test_crm_order_contract.mjs'
+      - 'tools/check_crm_order_contract.py'
+      - 'tools/check_crm_order_completion_act.py'
+      - 'docs/CRM_ORDER_CONTRACT_GENERATOR_2026-07-13.md'
+      - 'docs/CRM_COMPANY_LEGAL_SETTINGS_CONTRACT_2026-07-10.md'
+      - 'docs/STATUS.md'
+      - '.github/workflows/crm-order-contract-check.yml'
+      - '.github/workflows/crm-order-completion-act-check.yml'
+
+jobs:
+  order-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate source-only contract generator
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check crm/v4/assets/v4/order-contract-model-v1.js
+          node --check crm/v4/assets/v4/order-contract-preview-v1.js
+          node --check tools/test_crm_order_contract.mjs
+          node tools/test_crm_order_contract.mjs
+          python3 tools/check_crm_order_contract.py
+          grep -q 'order-act-preview-v1.js?v=20260713-contract-1' crm/v4/index.html

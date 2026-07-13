@@ -87,7 +87,7 @@ If the row does not exist or cannot be read:
 
 Validation warnings identify incomplete address, contacts, signatory and bank details without blocking the unsaved draft.
 
-## Act activation
+## Act and contract activation
 
 The sidecar is activated through `order-act-preview-v1.js` with a small module import. No new script tag was added to `crm/v4/index.html`.
 
@@ -98,12 +98,20 @@ When an act editor opens:
 - missing or unreadable settings keep editable fallback values;
 - no database write is attempted.
 
-Owner/admin users with UI permission `settings.manage` also see `Проверить реквизиты` in the act editor. The form:
+The same read-only profile is used by `order-contract-preview-v1.js`:
+
+- executor name, requisites, tax mode and signatory fill the unsaved contract draft;
+- customer and order fields remain separate from organization settings;
+- owner/admin can apply checked values to the currently open act or contract;
+- passport data and raw signature images are not part of schema version 1;
+- no personal requisites are hardcoded in the public GitHub Pages source.
+
+Owner/admin users with UI permission `settings.manage` also see `Проверить реквизиты` in the act and contract editors. The form:
 
 - loads the current read-only setting;
 - validates field formats;
 - shows a formatted executor preview;
-- can apply valid values only to the current unsaved act draft;
+- can apply valid values only to the current unsaved act or contract draft;
 - has no production save action.
 
 Manager/accountant can generate an act but cannot open the organization-settings form. Designer/installer/contractor cannot generate the act.
