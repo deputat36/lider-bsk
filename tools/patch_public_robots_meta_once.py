@@ -18,18 +18,22 @@ TARGETS = (
     "vyveski-borisoglebsk.html",
     "yandex-karty-2gis.html",
 )
-ROBOTS = '  <meta name="robots" content="index, follow">'
+ROBOTS = '<meta name="robots" content="index, follow">'
 DESCRIPTION_RE = re.compile(
     r'<meta\b(?=[^>]*\bname\s*=\s*["\']description["\'])[^>]*>',
+    re.IGNORECASE | re.DOTALL,
+)
+ROBOTS_RE = re.compile(
+    r'<meta\b(?=[^>]*\bname\s*=\s*["\']robots["\'])[^>]*>',
     re.IGNORECASE | re.DOTALL,
 )
 
 
 def patch(path: Path) -> bool:
     text = path.read_text(encoding="utf-8")
-    robots_count = len(re.findall(r'<meta\b(?=[^>]*\bname\s*=\s*["\']robots["\'])[^>]*>', text, re.IGNORECASE | re.DOTALL))
+    robots_count = len(ROBOTS_RE.findall(text))
     if robots_count == 1:
-        if ROBOTS.strip() not in text:
+        if ROBOTS not in text:
             raise SystemExit(f"{path.name}: existing robots meta is not the expected index/follow value")
         return False
     if robots_count != 0:
@@ -41,11 +45,16 @@ def patch(path: Path) -> bool:
 
     match = matches[0]
     line_start = text.rfind("\n", 0, match.start()) + 1
-    indent = text[line_start:match.start()]
-    updated = text[: match.end()] + "\n" + indent + ROBOTS.strip() + text[match.end() :]
-    robots_after = re.findall(r'<meta\b(?=[^>]*\bname\s*=\s*["\']robots["\'])[^>]*>', updated, re.IGNORECASE | re.DOTALL)
-    if robots_after != ['<meta name="robots" content="index, follow">']:
+    line_prefix = text[line_start:match.start()]
+    indent_match = re.match(r"[ \t]*", line_prefix)
+    indent = indent_match.group(0) if indent_match else ""
+    updated = text[: match.end()] + "\n" + indent + ROBOTS + text[match.end() :]
+
+    robots_after = ROBOTS_RE.findall(updated)
+    if robots_after != [ROBOTS]:
         raise SystemExit(f"{path.name}: robots meta insertion failed")
+    if updated.lower().count("<!doctype html>") != text.lower().count("<!doctype html>"):
+        raise SystemExit(f"{path.name}: document count changed unexpectedly")
     path.write_text(updated, encoding="utf-8")
     return True
 
