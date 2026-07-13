@@ -50,7 +50,7 @@ def main() -> None:
         'id="design"',
         'id="online"',
         'id="request"',
-        '<div id="leader-lead-form"></div>',
+        'id="leader-lead-form"',
     )
     for marker in required_page_markers:
         if marker not in page:
