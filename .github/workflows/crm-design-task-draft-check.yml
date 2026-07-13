@@ -1,0 +1,47 @@
+name: CRM design task draft check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/design-task-draft-model-v1.js'
+      - 'crm/v4/assets/v4/design-task-draft-preview-v1.js'
+      - 'crm/v4/assets/v4/design-task-draft-entrypoints-v1.js'
+      - 'crm/v4/assets/v4/site-cache-note-v1.js'
+      - 'crm/v4/assets/v4/order-operational-quality-v1.js'
+      - 'crm/v4/assets/v4/order-operational-quality-model-v1.js'
+      - 'tools/test_design_task_draft.mjs'
+      - 'tools/check_design_task_draft_preview.py'
+      - 'docs/CRM_DESIGN_TASK_DRAFT_PREVIEW_MANUAL_TEST_2026-07-13.md'
+      - '.github/workflows/crm-design-task-draft-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/design-task-draft-model-v1.js'
+      - 'crm/v4/assets/v4/design-task-draft-preview-v1.js'
+      - 'crm/v4/assets/v4/design-task-draft-entrypoints-v1.js'
+      - 'crm/v4/assets/v4/site-cache-note-v1.js'
+      - 'crm/v4/assets/v4/order-operational-quality-v1.js'
+      - 'crm/v4/assets/v4/order-operational-quality-model-v1.js'
+      - 'tools/test_design_task_draft.mjs'
+      - 'tools/check_design_task_draft_preview.py'
+      - 'docs/CRM_DESIGN_TASK_DRAFT_PREVIEW_MANUAL_TEST_2026-07-13.md'
+      - '.github/workflows/crm-design-task-draft-check.yml'
+
+jobs:
+  validate-design-task-draft:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate source-only design task draft
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check crm/v4/assets/v4/design-task-draft-model-v1.js
+          node --check crm/v4/assets/v4/design-task-draft-preview-v1.js
+          node --check crm/v4/assets/v4/design-task-draft-entrypoints-v1.js
+          node --check crm/v4/assets/v4/site-cache-note-v1.js
+          node --check tools/test_design_task_draft.mjs
+          node tools/test_design_task_draft.mjs
+          python3 -m py_compile tools/check_design_task_draft_preview.py
+          python3 tools/check_design_task_draft_preview.py
