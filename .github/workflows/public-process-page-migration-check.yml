@@ -9,11 +9,14 @@ on:
       - 'assets/public-landing.css'
       - 'assets/public-lead-form.css'
       - 'assets/public-lead-form.js'
+      - 'assets/public-order-process.css'
+      - 'assets/public-order-process.js'
       - 'sitemap.xml'
       - 'tools/check_public_process_page_migration.py'
       - 'tools/check_public_lead_form_cache_v5_partial.py'
       - 'tools/check_public_v5_landing_seo_contract.py'
       - 'docs/PUBLIC_LANDING_CSS_MIGRATION.md'
+      - 'docs/PUBLIC_ORDER_PROCESS_ASSETS_2026-07-13.md'
       - '.github/workflows/public-process-page-migration-check.yml'
   pull_request:
     branches: [main]
@@ -22,11 +25,14 @@ on:
       - 'assets/public-landing.css'
       - 'assets/public-lead-form.css'
       - 'assets/public-lead-form.js'
+      - 'assets/public-order-process.css'
+      - 'assets/public-order-process.js'
       - 'sitemap.xml'
       - 'tools/check_public_process_page_migration.py'
       - 'tools/check_public_lead_form_cache_v5_partial.py'
       - 'tools/check_public_v5_landing_seo_contract.py'
       - 'docs/PUBLIC_LANDING_CSS_MIGRATION.md'
+      - 'docs/PUBLIC_ORDER_PROCESS_ASSETS_2026-07-13.md'
       - '.github/workflows/public-process-page-migration-check.yml'
 
 jobs:
@@ -44,3 +50,4 @@ jobs:
           python3 tools/check_public_process_page_migration.py
           python3 tools/check_public_lead_form_cache_v5_partial.py
           python3 tools/check_public_v5_landing_seo_contract.py
+          node --check assets/public-order-process.js
