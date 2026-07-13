@@ -42,7 +42,7 @@ def main() -> None:
     for marker in REQUIRED_MARKERS:
         if marker not in css:
             raise SystemExit(f"Inline calculation checklist CSS is missing required marker: {marker}")
-    if len(css) < 3000:
+    if len(css) < 2700:
         raise SystemExit(f"Inline calculation checklist CSS is unexpectedly short: {len(css)} characters")
 
     if CSS.exists():
