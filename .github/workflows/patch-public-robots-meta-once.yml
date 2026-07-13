@@ -1,0 +1,52 @@
+name: Patch public robots meta once
+
+on:
+  push:
+    branches:
+      - public/html-seo-baseline-2026-07-13
+    paths:
+      - 'tools/patch_public_robots_meta_once.py'
+      - '.github/workflows/patch-public-robots-meta-once.yml'
+      - 'bannery-borisoglebsk.html'
+      - 'dizayn-maketov.html'
+      - 'logotip-firmennyy-stil.html'
+      - 'nakleyki-plotternaya-rezka-borisoglebsk.html'
+      - 'oformlenie-vitrin-borisoglebsk.html'
+      - 'outdoor-advertising-borisoglebsk.html'
+      - 'pechat-na-plenke-borisoglebsk.html'
+      - 'socseti-kontent.html'
+      - 'tablichki-borisoglebsk.html'
+      - 'vyveski-borisoglebsk.html'
+      - 'yandex-karty-2gis.html'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: public/html-seo-baseline-2026-07-13
+          fetch-depth: 0
+
+      - name: Apply guarded robots meta patch
+        run: python3 tools/patch_public_robots_meta_once.py
+
+      - name: Validate resulting SEO baseline
+        run: python3 tools/check_public_html_seo_baseline.py
+
+      - name: Commit changed public HTML
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- '*.html'; then
+            echo 'No HTML changes to commit.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- '*.html'
+          git commit -m 'Add explicit robots meta to public landing pages'
+          git push origin HEAD:public/html-seo-baseline-2026-07-13
