@@ -4,8 +4,20 @@
 
   const EMAIL_METHOD='Написать на email';
   const VK_METHOD='Написать ВКонтакте';
+  const STYLE_ID='leader-request-contact-method-style';
+  const STYLE_HREF='assets/public-request-contact-method-v1.css?v=1';
+
+  function ensureStyles(){
+    if(document.getElementById(STYLE_ID))return;
+    const link=document.createElement('link');
+    link.id=STYLE_ID;
+    link.rel='stylesheet';
+    link.href=STYLE_HREF;
+    document.head.appendChild(link);
+  }
 
   function init(){
+    ensureStyles();
     const host=document.getElementById('leader-lead-form');
     const form=host&&host.querySelector('[data-leader-lead-widget]');
     if(!form||form.dataset.contactMethodGuard==='1')return;
