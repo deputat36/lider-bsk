@@ -24,6 +24,9 @@ on:
       - 'docs/PUBLIC_HOMEPAGE_SOURCE_COPY_2026-07-12.md'
       - 'docs/PUBLIC_HOMEPAGE_CSS_MIGRATION_2026-07-12.md'
       - 'docs/PUBLIC_REQUEST_CSS_V5_MIGRATION_2026-07-12.md'
+      - 'docs/PUBLIC_LOCAL_RESOURCE_INTEGRITY_2026-07-13.md'
+      - 'docs/PUBLIC_DOM_REFERENCE_INTEGRITY_2026-07-13.md'
+      - 'docs/PUBLIC_HTML_SEO_BASELINE_2026-07-13.md'
       - 'tools/check_public_vizitki_service.py'
       - 'tools/check_vizitki_page_local_service.py'
       - 'tools/check_public_poligrafiya_service.py'
@@ -39,6 +42,9 @@ on:
       - 'tools/check_public_homepage_source_copy.py'
       - 'tools/check_public_homepage_css_migration.py'
       - 'tools/check_public_request_css_v5.py'
+      - 'tools/check_public_local_resources.py'
+      - 'tools/check_public_dom_integrity.py'
+      - 'tools/check_public_html_seo_baseline.py'
       - 'tools/check_public_ci_workflows.py'
       - 'robots.txt'
       - 'sitemap.xml'
@@ -50,6 +56,9 @@ on:
       - '.github/workflows/public-no-secret-markers-check.yml'
       - '.github/workflows/public-window-stickers-migration-check.yml'
       - '.github/workflows/public-working-hours-migration-check.yml'
+      - '.github/workflows/public-local-resource-integrity-check.yml'
+      - '.github/workflows/public-dom-integrity-check.yml'
+      - '.github/workflows/public-html-seo-baseline-check.yml'
   pull_request:
     branches: [main]
     paths:
@@ -72,6 +81,9 @@ on:
       - 'docs/PUBLIC_HOMEPAGE_SOURCE_COPY_2026-07-12.md'
       - 'docs/PUBLIC_HOMEPAGE_CSS_MIGRATION_2026-07-12.md'
       - 'docs/PUBLIC_REQUEST_CSS_V5_MIGRATION_2026-07-12.md'
+      - 'docs/PUBLIC_LOCAL_RESOURCE_INTEGRITY_2026-07-13.md'
+      - 'docs/PUBLIC_DOM_REFERENCE_INTEGRITY_2026-07-13.md'
+      - 'docs/PUBLIC_HTML_SEO_BASELINE_2026-07-13.md'
       - 'tools/check_public_vizitki_service.py'
       - 'tools/check_vizitki_page_local_service.py'
       - 'tools/check_public_poligrafiya_service.py'
@@ -87,6 +99,9 @@ on:
       - 'tools/check_public_homepage_source_copy.py'
       - 'tools/check_public_homepage_css_migration.py'
       - 'tools/check_public_request_css_v5.py'
+      - 'tools/check_public_local_resources.py'
+      - 'tools/check_public_dom_integrity.py'
+      - 'tools/check_public_html_seo_baseline.py'
       - 'tools/check_public_ci_workflows.py'
       - 'robots.txt'
       - 'sitemap.xml'
@@ -98,6 +113,9 @@ on:
       - '.github/workflows/public-no-secret-markers-check.yml'
       - '.github/workflows/public-window-stickers-migration-check.yml'
       - '.github/workflows/public-working-hours-migration-check.yml'
+      - '.github/workflows/public-local-resource-integrity-check.yml'
+      - '.github/workflows/public-dom-integrity-check.yml'
+      - '.github/workflows/public-html-seo-baseline-check.yml'
 
 jobs:
   public-site-contract:
@@ -240,6 +258,15 @@ jobs:
 
       - name: Check request CSS and form v5 contract
         run: python3 tools/check_public_request_css_v5.py
+
+      - name: Check all public local resources
+        run: python3 tools/check_public_local_resources.py
+
+      - name: Check all public DOM references
+        run: python3 tools/check_public_dom_integrity.py
+
+      - name: Check public HTML SEO baseline
+        run: python3 tools/check_public_html_seo_baseline.py
 
       - name: Check public CI workflow contracts
         run: python3 tools/check_public_ci_workflows.py
