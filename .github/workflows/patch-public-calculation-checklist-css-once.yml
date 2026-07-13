@@ -24,13 +24,16 @@ jobs:
           fetch-depth: 0
 
       - name: Apply guarded calculation checklist CSS migration
-        run: python3 tools/patch_public_calculation_checklist_css_once.py
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 tools/patch_public_calculation_checklist_css_once.py 2>&1 | tee patch-public-calculation-checklist-css-report.txt
 
       - name: Validate calculation checklist migration
         shell: bash
         run: |
           set -o pipefail
-          python3 tools/check_public_calculation_checklist_css.py 2>&1 | tee patch-public-calculation-checklist-css-report.txt
+          python3 tools/check_public_calculation_checklist_css.py 2>&1 | tee -a patch-public-calculation-checklist-css-report.txt
 
       - name: Upload guarded migration report
         if: failure()
