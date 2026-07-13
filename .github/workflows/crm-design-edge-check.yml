@@ -1,0 +1,44 @@
+name: CRM design Edge check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/functions/leader-crm-design/**'
+      - 'supabase/config.toml'
+      - 'tools/check_crm_design_edge.py'
+      - 'docs/SUPABASE_STAGING_DESIGN_EDGE_2026-07-13.md'
+      - '.github/workflows/crm-design-edge-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/leader-crm-design/**'
+      - 'supabase/config.toml'
+      - 'tools/check_crm_design_edge.py'
+      - 'docs/SUPABASE_STAGING_DESIGN_EDGE_2026-07-13.md'
+      - '.github/workflows/crm-design-edge-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-design-edge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Type-check Edge Function
+        run: deno check supabase/functions/leader-crm-design/index.ts
+
+      - name: Run Edge contract behavior tests
+        run: deno test supabase/functions/leader-crm-design/contract_test.ts
+
+      - name: Compile source checker
+        run: python3 -m py_compile tools/check_crm_design_edge.py
+
+      - name: Validate Edge security and staging boundary
+        run: python3 tools/check_crm_design_edge.py
