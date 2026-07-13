@@ -1,0 +1,46 @@
+name: Public HTML SEO baseline check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '*.html'
+      - 'banner/**'
+      - 'signs/**'
+      - 'auto-stickers/**'
+      - 'sitemap.xml'
+      - 'tools/check_public_html_seo_baseline.py'
+      - 'docs/PUBLIC_HTML_SEO_BASELINE_2026-07-13.md'
+      - '.github/workflows/public-html-seo-baseline-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '*.html'
+      - 'banner/**'
+      - 'signs/**'
+      - 'auto-stickers/**'
+      - 'sitemap.xml'
+      - 'tools/check_public_html_seo_baseline.py'
+      - 'docs/PUBLIC_HTML_SEO_BASELINE_2026-07-13.md'
+      - '.github/workflows/public-html-seo-baseline-check.yml'
+
+jobs:
+  validate-public-html-seo-baseline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate public HTML metadata and sitemap coverage
+        id: validate
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 tools/check_public_html_seo_baseline.py 2>&1 | tee public-html-seo-baseline-report.txt
+
+      - name: Upload public HTML SEO baseline report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-html-seo-baseline-report
+          path: public-html-seo-baseline-report.txt
+          if-no-files-found: error
