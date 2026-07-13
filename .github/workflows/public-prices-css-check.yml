@@ -1,0 +1,39 @@
+name: Public prices CSS check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'prices.html'
+      - 'assets/public-prices.css'
+      - 'tools/check_public_prices_css.py'
+      - 'docs/PUBLIC_PRICES_CSS_MIGRATION_2026-07-13.md'
+      - '.github/workflows/public-prices-css-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'prices.html'
+      - 'assets/public-prices.css'
+      - 'tools/check_public_prices_css.py'
+      - 'docs/PUBLIC_PRICES_CSS_MIGRATION_2026-07-13.md'
+      - '.github/workflows/public-prices-css-check.yml'
+
+jobs:
+  validate-public-prices-css:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate prices CSS migration
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 tools/check_public_prices_css.py 2>&1 | tee public-prices-css-report.txt
+
+      - name: Upload prices CSS report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-prices-css-report
+          path: public-prices-css-report.txt
+          if-no-files-found: error
