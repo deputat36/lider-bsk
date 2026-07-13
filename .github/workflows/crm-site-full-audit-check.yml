@@ -12,6 +12,7 @@ on:
       - 'docs/CRM_OPERATIONAL_QUALITY_PANEL_MANUAL_TEST_2026-07-10.md'
       - 'docs/CRM_MANAGEMENT_WORKLOAD_SLA_MANUAL_TEST_2026-07-12.md'
       - 'docs/CRM_NEED_READINESS_WARNING_MANUAL_TEST_2026-07-13.md'
+      - 'docs/CRM_FINANCE_PLAN_ACTUAL_MANUAL_TEST_2026-07-13.md'
       - 'docs/CRM_ORDER_OPERATIONAL_QUALITY_MANUAL_TEST_2026-07-12.md'
       - 'docs/CRM_LOCAL_TRAINING_SCENARIO_2026-07-12.md'
       - 'docs/CRM_LOCAL_TRAINING_EXECUTION_ADDENDUM_2026-07-12.md'
@@ -36,6 +37,8 @@ on:
       - 'tools/test_management_workload.mjs'
       - 'tools/check_need_readiness_warning.py'
       - 'tools/test_need_readiness.mjs'
+      - 'tools/check_finance_plan_actual.py'
+      - 'tools/test_finance_plan_actual.mjs'
       - 'tools/check_crm_order_operational_quality.py'
       - 'tools/test_crm_order_operational_quality.mjs'
       - 'tools/check_crm_training_scenario.py'
@@ -63,6 +66,9 @@ on:
       - 'crm/v4/assets/v4/management-workload-panel-v1.js'
       - 'crm/v4/assets/v4/need-readiness-model-v1.js'
       - 'crm/v4/assets/v4/need-readiness-panel-v1.js'
+      - 'crm/v4/assets/v4/finance-plan-actual-model-v1.js'
+      - 'crm/v4/assets/v4/finance-plan-actual-panel-v1.js'
+      - 'crm/v4/assets/v4/order-card-v1.js'
       - 'crm/v4/assets/v4/order-operational-quality-model-v1.js'
       - 'crm/v4/assets/v4/order-operational-quality-v1.js'
       - 'crm/v4/assets/v4/crm-training-scenario-v1.js'
@@ -81,6 +87,7 @@ on:
       - 'supabase/functions/leader-crm-orders/index.ts'
       - '.github/workflows/crm-management-workload-check.yml'
       - '.github/workflows/crm-need-readiness-check.yml'
+      - '.github/workflows/crm-finance-plan-actual-check.yml'
       - '.github/workflows/crm-site-full-audit-check.yml'
   pull_request:
     branches: [main]
@@ -93,6 +100,7 @@ on:
       - 'docs/CRM_OPERATIONAL_QUALITY_PANEL_MANUAL_TEST_2026-07-10.md'
       - 'docs/CRM_MANAGEMENT_WORKLOAD_SLA_MANUAL_TEST_2026-07-12.md'
       - 'docs/CRM_NEED_READINESS_WARNING_MANUAL_TEST_2026-07-13.md'
+      - 'docs/CRM_FINANCE_PLAN_ACTUAL_MANUAL_TEST_2026-07-13.md'
       - 'docs/CRM_ORDER_OPERATIONAL_QUALITY_MANUAL_TEST_2026-07-12.md'
       - 'docs/CRM_LOCAL_TRAINING_SCENARIO_2026-07-12.md'
       - 'docs/CRM_LOCAL_TRAINING_EXECUTION_ADDENDUM_2026-07-12.md'
@@ -117,6 +125,8 @@ on:
       - 'tools/test_management_workload.mjs'
       - 'tools/check_need_readiness_warning.py'
       - 'tools/test_need_readiness.mjs'
+      - 'tools/check_finance_plan_actual.py'
+      - 'tools/test_finance_plan_actual.mjs'
       - 'tools/check_crm_order_operational_quality.py'
       - 'tools/test_crm_order_operational_quality.mjs'
       - 'tools/check_crm_training_scenario.py'
@@ -144,6 +154,9 @@ on:
       - 'crm/v4/assets/v4/management-workload-panel-v1.js'
       - 'crm/v4/assets/v4/need-readiness-model-v1.js'
       - 'crm/v4/assets/v4/need-readiness-panel-v1.js'
+      - 'crm/v4/assets/v4/finance-plan-actual-model-v1.js'
+      - 'crm/v4/assets/v4/finance-plan-actual-panel-v1.js'
+      - 'crm/v4/assets/v4/order-card-v1.js'
       - 'crm/v4/assets/v4/order-operational-quality-model-v1.js'
       - 'crm/v4/assets/v4/order-operational-quality-v1.js'
       - 'crm/v4/assets/v4/crm-training-scenario-v1.js'
@@ -162,6 +175,7 @@ on:
       - 'supabase/functions/leader-crm-orders/index.ts'
       - '.github/workflows/crm-management-workload-check.yml'
       - '.github/workflows/crm-need-readiness-check.yml'
+      - '.github/workflows/crm-finance-plan-actual-check.yml'
       - '.github/workflows/crm-site-full-audit-check.yml'
 
 jobs:
@@ -182,6 +196,7 @@ jobs:
           python3 tools/check_crm_operational_quality_panel.py
           python3 tools/check_management_workload_dashboard.py
           python3 tools/check_need_readiness_warning.py
+          python3 tools/check_finance_plan_actual.py
           python3 tools/check_crm_order_operational_quality.py
           python3 tools/check_crm_training_scenario.py
           python3 tools/check_crm_v4_backend_write_inventory.py
@@ -211,6 +226,11 @@ jobs:
           node --check crm/v4/assets/v4/need-readiness-panel-v1.js
           node --check tools/test_need_readiness.mjs
           node tools/test_need_readiness.mjs
+          node --check crm/v4/assets/v4/finance-plan-actual-model-v1.js
+          node --check crm/v4/assets/v4/finance-plan-actual-panel-v1.js
+          node --check crm/v4/assets/v4/order-card-v1.js
+          node --check tools/test_finance_plan_actual.mjs
+          node tools/test_finance_plan_actual.mjs
           node --check crm/v4/assets/v4/order-operational-quality-model-v1.js
           node --check crm/v4/assets/v4/order-operational-quality-v1.js
           node --check tools/test_crm_order_operational_quality.mjs
