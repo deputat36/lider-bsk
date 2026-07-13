@@ -45,6 +45,18 @@
       return 'optional';
     }
 
+    function validationMessage(current){
+      if(current==='email')return 'Укажите email для выбранного способа связи.';
+      if(current==='vk')return 'Укажите ссылку на профиль ВКонтакте.';
+      return '';
+    }
+
+    function updateValidity(){
+      const current=mode();
+      const value=String(detail.value||'').trim();
+      detail.setCustomValidity(current!=='optional'&&!value?validationMessage(current):'');
+    }
+
     function revealDetails(){
       if(details.hasAttribute('hidden')){
         details.removeAttribute('hidden');
@@ -78,28 +90,12 @@
         detail.placeholder='Необязательно. Заполните для email или ВКонтакте';
         detail.inputMode='text';
         detail.autocomplete='off';
-        detail.setCustomValidity('');
         hint.textContent='Поле необязательное, если достаточно телефона или MAX по указанному номеру.';
       }
+      updateValidity();
     }
 
-    function validateBeforeSubmit(event){
-      applyMode();
-      const current=mode();
-      const value=String(detail.value||'').trim();
-      if(current==='optional'||value){
-        detail.setCustomValidity('');
-        return;
-      }
-
-      detail.setCustomValidity(current==='email'
-        ?'Укажите email для выбранного способа связи.'
-        :'Укажите ссылку на профиль ВКонтакте.');
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      revealDetails();
-      detail.focus();
-      detail.reportValidity();
+    function trackMissingDetail(){
       if(typeof window.leaderGoal==='function'){
         window.leaderGoal('contact_detail_missing',{
           contact_method:method.value,
@@ -109,9 +105,22 @@
       }
     }
 
+    function validateBeforeSubmit(event){
+      applyMode();
+      if(detail.checkValidity())return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      revealDetails();
+      detail.focus();
+      detail.reportValidity();
+    }
+
     method.addEventListener('change',applyMode);
-    detail.addEventListener('input',function(){
-      if(String(detail.value||'').trim())detail.setCustomValidity('');
+    detail.addEventListener('input',updateValidity);
+    detail.addEventListener('invalid',function(){
+      revealDetails();
+      updateValidity();
+      trackMissingDetail();
     });
     form.addEventListener('submit',validateBeforeSubmit,true);
     applyMode();

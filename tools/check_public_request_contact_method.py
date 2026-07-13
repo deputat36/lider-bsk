@@ -37,18 +37,19 @@ def main() -> int:
 
     request_markers = (
         'data-request-page-version="20260628-clarity-2"',
-        "script.src='assets/public-request-contact-method-v1.js?v=1'",
+        "script.src='assets/public-request-contact-method-v1.js?v=2'",
         "script.async=false",
         'assets/public-lead-reference-v1.js?v=1',
         'assets/public-lead-form.js?v=5',
     )
     for marker in request_markers:
         require(request, marker, REQUEST, errors)
+    forbid(request, "script.src='assets/public-request-contact-method-v1.js?v=1'", REQUEST, errors)
 
     ordered = (
         'assets/public-lead-reference-v1.js?v=1',
         'assets/public-lead-form.js?v=5',
-        "script.src='assets/public-request-contact-method-v1.js?v=1'",
+        "script.src='assets/public-request-contact-method-v1.js?v=2'",
     )
     positions = [request.find(marker) for marker in ordered]
     if any(position < 0 for position in positions) or positions != sorted(positions):
@@ -67,9 +68,15 @@ def main() -> int:
         "const VK_METHOD='Написать ВКонтакте'",
         "const STYLE_HREF='assets/public-request-contact-method-v1.css?v=1'",
         "document.head.appendChild(link)",
+        "function validationMessage(current)",
+        "function updateValidity()",
+        "detail.setCustomValidity(current!=='optional'&&!value?validationMessage(current):'')",
         "detail.required=required",
         "detail.setAttribute('aria-required',required?'true':'false')",
         "details.removeAttribute('hidden')",
+        "detail.addEventListener('input',updateValidity)",
+        "detail.addEventListener('invalid',function()",
+        "trackMissingDetail()",
         "event.stopImmediatePropagation()",
         "detail.reportValidity()",
         "window.leaderGoal('contact_detail_missing'",
@@ -99,8 +106,11 @@ def main() -> int:
     for marker in (
         "Email без адреса",
         "ВКонтакте без ссылки",
+        "HTML5 constraint validation",
+        "событие `invalid`",
         "POST в `leader-public-lead` отсутствует",
         "production-заявка не создаётся",
+        "v2",
         "bootstrap",
         "общий form JS не меняется",
         "Edge Function и Supabase production не меняются",
