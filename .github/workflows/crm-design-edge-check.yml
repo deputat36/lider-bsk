@@ -6,16 +6,22 @@ on:
     paths:
       - 'supabase/functions/leader-crm-design/**'
       - 'supabase/config.toml'
+      - 'contracts/supabase-environments-v1.json'
       - 'tools/check_crm_design_edge.py'
+      - 'tools/check_crm_design_edge_deployment.py'
       - 'docs/SUPABASE_STAGING_DESIGN_EDGE_2026-07-13.md'
+      - 'docs/SUPABASE_STAGING_DESIGN_EDGE_DEPLOYMENT_2026-07-13.md'
       - '.github/workflows/crm-design-edge-check.yml'
   push:
     branches: [main]
     paths:
       - 'supabase/functions/leader-crm-design/**'
       - 'supabase/config.toml'
+      - 'contracts/supabase-environments-v1.json'
       - 'tools/check_crm_design_edge.py'
+      - 'tools/check_crm_design_edge_deployment.py'
       - 'docs/SUPABASE_STAGING_DESIGN_EDGE_2026-07-13.md'
+      - 'docs/SUPABASE_STAGING_DESIGN_EDGE_DEPLOYMENT_2026-07-13.md'
       - '.github/workflows/crm-design-edge-check.yml'
 
 permissions:
@@ -37,8 +43,13 @@ jobs:
       - name: Run Edge contract behavior tests
         run: deno test supabase/functions/leader-crm-design/contract_test.ts
 
-      - name: Compile source checker
-        run: python3 -m py_compile tools/check_crm_design_edge.py
+      - name: Compile Edge checkers
+        run: |
+          python3 -m py_compile tools/check_crm_design_edge.py
+          python3 -m py_compile tools/check_crm_design_edge_deployment.py
 
       - name: Validate Edge security and staging boundary
         run: python3 tools/check_crm_design_edge.py
+
+      - name: Validate staging deployment evidence
+        run: python3 tools/check_crm_design_edge_deployment.py
