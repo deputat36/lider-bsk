@@ -44,7 +44,7 @@ checks = {
     ],
     index: [
         'assets/v4/order-card-v1.js',
-        'assets/v4/order-act-preview-v1.js?v=20260710-1',
+        'assets/v4/order-act-preview-v1.js?v=20260713-contract-1',
     ],
     architecture: [
         'leader_order_documents',
