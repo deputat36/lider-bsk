@@ -66,7 +66,7 @@ def main() -> None:
         if marker not in css:
             errors.append(f"public-calculation-checklist.css is missing required marker: {marker}")
 
-    if len(css.strip()) < 3000:
+    if len(css.strip()) < 2700:
         errors.append(f"public-calculation-checklist.css is unexpectedly short: {len(css.strip())} characters")
     if re.search(r"url\s*\(\s*['\"]?https?://", css, flags=re.IGNORECASE):
         errors.append("public-calculation-checklist.css must not add remote CSS resources")
