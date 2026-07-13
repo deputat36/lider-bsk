@@ -12,22 +12,23 @@
 - выделенная страница проверки заявки: `https://www.lider-bsk.ru/request.html`;
 - Supabase project: `ofewxuqfjhamgerwzull`.
 
-Использовать только объекты `leader_*`. Объекты `nav_*` относятся к другому проектному контуру.
+Использовать только объекты `leader_*`. Объекты `nav_*`, `nav-*`, `parket-*` и `broker-*` относятся к другим проектным контурам.
 
 Режим автономной работы закреплён в `docs/AUTOPILOT_RULES.md`.
-Операционный checkpoint Codex: `docs/CODEX_OPERATING_STATUS_2026-06-28.md`.
-Supabase baseline РА «Лидер»: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-28.md`.
 
 ## Публичный сайт — актуальный статус
 
 Обновление 2026-07-13:
 
-- в `main` объединены PR #247, #248, #250, #251 и #252;
-- 55 корневых публичных HTML защищены от внутренней терминологии `CRM`, «себестоимость», «маржа» и «рабочий контур»;
+- в `main` объединены актуальные этапы публичного сайта, включая PR #247, #248, #250, #251, #252, #257, #259 и #260;
+- 55 корневых публичных HTML защищены от внутренней терминологии `CRM`, «себестоимость», «маржа», «рабочий контур» и инфраструктурных формулировок;
 - телефон `8 980 245-74-71`, `tel:+79802457471` и email `zakaz@lider-bsk.ru` защищены единым contact identity contract;
+- страница заявки требует пригодный email или VK-контакт и корректно обрабатывает native invalid state;
 - до подтверждения issue #236 JSON-LD не может получить точный адрес, часы работы, координаты, карты или `sameAs`;
 - подготовлен контролируемый browser E2E-runbook: `docs/PUBLIC_REQUEST_BROWSER_E2E_RUNBOOK_2026-07-12.md`;
 - source-checker подтверждает порядок reference-helper → form, consent version, стабильный `request_id` и текущий Edge Function contract;
+- read-only SQL показывает 12 заявок;
+- в аудите доказан один audit-результат `accepted / lead_insert_created`;
 - текущая публичная очередь сосредоточена в issues #235, #236 и #206;
 - production-заявка не отправлялась, данные Supabase в ходе этих этапов не изменялись.
 
@@ -38,33 +39,24 @@ Supabase baseline РА «Лидер»: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-
 - технические заглушки «CRM готова» и «Автопилот проверки» заменены встроенным маршрутом обучения из пяти рабочих шагов;
 - маршрут ведёт пользователя по цепочке заявка → потребность → расчёт/КП → заказ → производство/монтаж;
 - кнопки перехода учитывают доступность разделов для текущей роли;
-- прогресс и свёрнутое состояние хранятся только в браузере и не создают записи в Supabase;
-- быстрый старт автоматически отмечает доказанные шаги: следующий контакт, потребность с полнотой от 80, КП, заказ и успешное завершение производства/монтажа;
-- отменённые production/installation статусы не считаются успешным завершением обучения;
-- добавлен локальный учебный заказ: он показывает путь от заявки до выдачи, хранится только в браузере и не создаёт строки в Supabase;
-- учебное производство использует canonical registry и наглядно блокирует запрещённый прямой переход `Не передано → Выдано`;
-- интерфейс прямо предупреждает не создавать вымышленных клиентов в production;
-- локальный тренажёр получил ролевые маршруты для менеджера, производства и монтажа;
-- маршрут по умолчанию и доступные переключатели определяются по роли; подсказки учитывают реально доступные вкладки CRM;
-- скрытая или отключённая вкладка не открывается из тренажёра, а недоступный маршрут не продолжается после смены роли;
-- маршрут монтажа использует canonical цепочку `Не назначен → Запланирован → В работе → Выполнен` и блокирует прямое завершение;
-- все ролевые маршруты продолжают использовать единственный localStorage-ключ `leader_crm_v4_training_scenario_v1` и не создают production-строки;
-- добавлены behavior test, source checker, подробный manual browser/Network checklist и отдельная GitHub Actions проверка.
+- прогресс и свёрнутое состояние хранятся только в браузере и не создают production-строки;
+- быстрый старт автоматически отмечает доказанные шаги;
+- добавлен локальный учебный заказ, который не создаёт строки в Supabase;
+- локальный учебный заказ имеет ролевые маршруты для менеджера, производства и монтажа;
+- подсказки учитывают реально доступные вкладки;
+- canonical переход `Не передано → В производстве → Готово → Выдано` проверяется registry;
+- запрещённый прямой переход `Не передано → Выдано` отклоняется;
+- единственный localStorage-ключ тренажёра: `leader_crm_v4_training_scenario_v1`.
 
 ## Нагрузка и SLA по ответственным
 
 Обновление 2026-07-12:
 
-- управленческий дашборд получил отдельный read-only модуль `management-workload-panel-v1.js`;
+- управленческий дашборд использует `management-workload-panel-v1.js`;
 - панель показывает активные заявки, заявки без ответственного, нарушения SLA, покрытие SLA и контакты на сегодня;
-- нагрузка группируется по активным owner/admin/manager, а заявки без `assigned_to` выводятся отдельной очередью;
-- SLA считается выполненным, когда у активной заявки назначен непросроченный следующий контакт;
-- терминальные статусы исключаются через canonical status registry;
-- каждая строка ответственного открывает read-only очередь с переходом в существующую карточку заявки;
-- в очередях не показываются имя клиента, телефон, email, сообщение, внутренние комментарии и финансовые суммы;
-- используются только read-only SELECT к `leader_leads` и `leader_user_profiles` с минимальным набором полей;
-- модуль не выполняет INSERT, UPDATE, DELETE, UPSERT, RPC или Edge Function write-команды;
-- добавлены чистая модель, behavior test, source checker, manual browser/Network checklist и отдельный GitHub Actions workflow;
+- нагрузка группируется по активным owner/admin/manager;
+- терминальные статусы исключаются через canonical registry;
+- используются только read-only SELECT к `leader_leads` и `leader_user_profiles` с минимальными полями;
 - автоматические назначения, SLA gates, backfill и server-side enforcement остаются approval-gated.
 
 ## Предупреждение готовности потребности
@@ -72,35 +64,42 @@ Supabase baseline РА «Лидер»: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-
 Обновление 2026-07-13:
 
 - добавлены `need-readiness-model-v1.js` и `need-readiness-panel-v1.js`;
-- перед сохранением расчёта показывается readiness выбранной потребности по `completeness_score` и `missing_fields`;
-- перед формированием КП readiness определяется через связь сохранённого расчёта `need_id` с потребностью;
+- перед расчётом и КП показывается readiness по `completeness_score` и `missing_fields`;
 - потребность считается полностью готовой при балле не ниже 80 и пустом `missing_fields`;
-- архивные потребности исключаются;
-- непривязанный расчёт, отсутствующая потребность и оставшиеся поля показываются отдельными advisory-состояниями;
-- предупреждение не блокирует существующие действия сохранения расчёта и формирования КП;
-- readiness-модуль не импортирует Supabase client и использует только уже загруженные `v4State.leadNeeds` и `v4State.calculations`;
-- кнопки предупреждения только переводят к потребности, расчётам или нужному select и не выполняют write-запросы;
-- добавлены behavior test, source checker, отдельный workflow и manual browser/Network checklist;
-- реальный server-side gate, изменение формулы полноты и backfill остаются approval-gated.
+- предупреждение advisory и не блокирует существующие write-действия;
+- readiness-модуль использует уже загруженное состояние и не выполняет Supabase-запросы;
+- server-side gate, изменение формулы полноты и backfill остаются approval-gated.
 
 ## Плановые и подтверждённые фактические финансы
 
 Обновление 2026-07-13:
 
 - добавлены `finance-plan-actual-model-v1.js` и `finance-plan-actual-panel-v1.js`;
-- раздел «Финансы» разделяет плановую выручку, плановую себестоимость и плановую прибыль от подтверждённых денежных движений;
-- подтверждённый факт учитывает только `leader_payments.is_confirmed = true`, исключает отменённые платежи и вычитает возвраты или исходящие движения;
-- расходы включаются только при подтверждённом статусе; черновые, ожидающие, неизвестные и отменённые расходы не входят в факт;
+- раздел «Финансы» отделяет плановую выручку, себестоимость и прибыль от подтверждённых денежных движений;
 - отсутствие расходов не считается нулевой фактической себестоимостью;
-- если у заказа есть плановая себестоимость, но нет подтверждённых расходов, фактическая прибыль не рассчитана, а поступления показываются отдельно как денежный результат;
-- карточка заказа больше не показывает старое вводящее в заблуждение поле «Факт прибыль» при нулевом наборе расходов;
-- верхние финансовые показатели карточки явно подписаны как плановые;
-- финансовая панель не запрашивает имена клиентов, телефоны, email, комментарии и контрагентов;
-- используются только read-only SELECT к `leader_orders`, `leader_payments` и `leader_expenses` с минимальными полями;
+- если плановая себестоимость есть, а подтверждённых расходов нет, фактическая прибыль не рассчитана;
 - live baseline: 5 заказов, плановая выручка 115 030 ₽, плановая себестоимость 63 440 ₽, плановая прибыль 51 590 ₽, подтверждённые приходы 61 400 ₽, расходы отсутствуют;
-- для текущего baseline денежный результат равен 61 400 ₽, но фактическая прибыль не рассчитана;
-- добавлены behavior test, source checker, manual browser/Network checklist и отдельный GitHub Actions workflow;
-- признак полноты расходов, backfill и server-side financial-close gate остаются approval-gated.
+- денежный результат показывается отдельно от фактической прибыли;
+- backfill, признак полноты расходов и server-side financial-close gate остаются approval-gated.
+
+## Локальный preview черновика дизайн-задачи
+
+Обновление 2026-07-13:
+
+- существующая очередь `Нужен дизайн, задачи нет` дополнена локальным preview будущей design task;
+- preview доступен из очереди операционного качества и секции `Дизайн в заказе` карточки заказа;
+- добавлены `design-task-draft-model-v1.js`, `design-task-draft-preview-v1.js` и `design-task-draft-entrypoints-v1.js`;
+- модель использует canonical домен `design_task` из `status-transitions-v1.js`;
+- доступ определяется через `design.read` и `design.write`;
+- неизвестный raw-статус существующей задачи сохраняется без автоматической замены;
+- безопасный command envelope использует будущую команду `design_task.create_from_order` и детерминированный idempotency key;
+- payload не содержит имени клиента, телефона, оплаты, себестоимости, прибыли и внутренних комментариев;
+- preview выполняет только read-only SELECT к `leader_orders`, `leader_lead_needs` и `leader_design_tasks`;
+- кнопка `Создать задачу в CRM — отключено` остаётся disabled;
+- production design task, event, comment или общая задача не создаются;
+- добавлены behavior test, source checker, отдельный workflow и manual Browser/Network checklist;
+- checker включён в общий order/full-audit путь;
+- будущий server action, INSERT, audit event, назначение дизайнера и backfill остаются approval-gated.
 
 ## Supabase
 
@@ -110,128 +109,26 @@ Supabase baseline РА «Лидер»: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-
 - `leader-crm-leads v12`, `verify_jwt=true`;
 - `leader-crm-orders v2`, `verify_jwt=true`.
 
-CRM использует JWT и RLS. Полный аудит 2026-07-10 выявил два приоритетных архитектурных хвоста: прямой `anon INSERT` в публичные таблицы позволяет обойти Edge Function, а серверная CRM-проверка подтверждает активный профиль без action-level ограничения по роли. Production-права в рамках аудита не менялись.
-
 Проверка 2026-07-13:
 
 - проект `ofewxuqfjhamgerwzull` имеет статус `ACTIVE_HEALTHY`;
 - PostgreSQL — `17.6.1.121`, release channel `ga`;
-- live `leader-public-lead v10` активна, `verify_jwt=false`;
-- live `leader-crm-leads v12` активна, `verify_jwt=true`;
-- live `leader-crm-orders v2` активна, `verify_jwt=true`;
-- read-only SQL показывает 12 заявок, одну с `request_id`, одну с `source_page_path` и шесть с `utm_source`;
-- в `leader_public_lead_audit` доказан один audit-результат `accepted / lead_insert_created`;
-- `duplicate`, `suspicious`, `rejected` и `error` ещё не доказаны опубликованным browser E2E;
-- read-only schema check подтвердил поля `leader_lead_needs.completeness_score` и `leader_lead_needs.missing_fields`;
-- в live `leader_lead_needs` — 14 строк, из них 9 ниже 80 и 5 не ниже 80;
-- средний `completeness_score` — 76,9, минимум — 45, максимум — 96;
-- `missing_fields` хранится как JSON array;
-- подтверждены таблицы `leader_lead_calculations`, `leader_lead_calculation_items` и `leader_calculation_templates`;
-- read-only schema check подтвердил `leader_orders`, `leader_payments`, `leader_expenses` и финансовые поля план/факт;
-- в live — 5 неархивных заказов на 115 030 ₽ плановой выручки, 63 440 ₽ плановой себестоимости и 51 590 ₽ плановой прибыли;
-- подтверждены 3 проведённых прихода на 61 400 ₽; строки расходов отсутствуют;
-- статусы по умолчанию: платеж `Проведён`, тип `Приход`, `is_confirmed = true`; расход `Проведён`;
-- проверялись metadata и агрегаты без имён клиентов, телефонов, email, сообщений, комментариев и контрагентов;
-- подготовка runbook и CI не создала новых заявок, платежей, расходов или заказов;
+- read-only schema check подтвердил `leader_design_tasks`, `leader_design_task_events` и `leader_design_task_comments`;
+- активных неархивных заказов — 5;
+- заказов с доказанной design-потребностью — 2;
+- оба заказа находятся в очереди `Нужен дизайн, задачи нет`;
+- всего потребностей `need_design=true` — 4;
+- одна design-потребность имеет `completeness_score` ниже 80;
+- одна design-потребность не имеет `deadline_date`;
+- у design-потребностей заполнено поле `design_reason`;
+- `leader_design_tasks` — 0 строк;
+- `leader_design_task_events` — 0 строк;
+- `leader_design_task_comments` — 0 строк;
+- агрегаты проверялись без имён клиентов, телефонов, финансовых сумм, комментариев и содержимого ТЗ;
+- первый агрегатный запрос был исправлен после подтверждения, что у `leader_lead_needs` нет поля `is_archived`;
 - Supabase production не менялся: DDL, DML, migrations, deploy, RLS, grants, policies, Auth, Storage, Edge Functions и данные не трогались.
-
-Проверка 2026-07-12:
-
-- проект `ofewxuqfjhamgerwzull` имеет статус `ACTIVE_HEALTHY`;
-- PostgreSQL — `17.6.1.121`, release channel `ga`;
-- live `leader-public-lead v10` активна, `verify_jwt=false`;
-- live `leader-crm-leads v12` активна, `verify_jwt=true`;
-- live `leader-crm-orders v2` активна, `verify_jwt=true`;
-- проверены только metadata проекта и список Edge Functions; SQL, данные, логи и Auth не запрашивались;
-- Supabase production не менялся: DDL, DML, migrations, deploy, RLS, grants, policies, Auth, Storage, Edge Functions и данные не трогались.
-
-Проверка 2026-07-10:
-
-- проект `ofewxuqfjhamgerwzull` активен и имеет статус `ACTIVE_HEALTHY`;
-- live `leader-public-lead v9`, `leader-crm-leads v12`, `leader-crm-orders v2` активны;
-- `leader_leads.request_id` защищён уникальным ограничением;
-- `leader_request_trace` использует `security_invoker=true`, `anon/public` не имеют чтения;
-- read-only SQL показал 12 заявок, одну заявку с `request_id`, одно audit-событие и одну полную трассировку;
-- `duplicate`, `suspicious`, `rejected`, `error` пока не доказаны production end-to-end тестом;
-- `anon` всё ещё имеет прямой `INSERT` в `leader_leads` и `leader_public_lead_audit`; целевой hardening описан, но не применён;
-- активные роли: owner — 2, admin — 1, manager — 1;
-- UI-матрица содержит будущие роли, но серверная action-level авторизация ещё не реализована;
-- полный отчёт: `docs/FULL_SITE_CRM_AUDIT_2026-07-10.md`;
-- план: `docs/SITE_CRM_IMPROVEMENT_PLAN_2026-07-10.md`;
-- Supabase production не менялся: DDL, DML, deploy, RLS, grants, policies, Auth и данные не трогались.
-
-Проверка 2026-07-09:
-
-- проект `ofewxuqfjhamgerwzull` активен;
-- Security Advisor и Performance Advisor проверены read-only;
-- запись сохранена в `docs/SUPABASE_ADVISOR_2026-07-09.md`;
-- performance warnings включают смешанные контуры, включая `leader_*`, но изменения индексов/RLS не применялись без отдельного анализа нагрузки;
-- Supabase production не менялся: DDL, DML, Edge Function deploy, RLS, grants, policies и данные не трогались.
-
-Проверка 2026-07-08:
-
-- проект `ofewxuqfjhamgerwzull` активен;
-- `leader-public-lead v9` активна;
-- короткая запись аудита сохранена в `docs/SUPABASE_AUDIT_2026-07-08.md`;
-- Supabase production не менялся: DDL, DML, Edge Function deploy, RLS, grants, policies и данные не трогались.
-
-Проверка 2026-06-28:
-
-- live `leader-public-lead v9` активна и работает в публичном режиме `verify_jwt=false`;
-- live `leader-crm-leads v12` активна, `verify_jwt=true`;
-- live `leader-crm-orders v2` активна, `verify_jwt=true`;
-- baseline live-состояния сохранён в `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-28.md`;
-- active access admins (`owner` + `admin`): 3; active `manager`: 1; inactive profiles: 0;
-- `leader_user_profiles` и `leader_user_invites` имеют RLS и grants для `authenticated` только `SELECT`, `INSERT`, `UPDATE`;
-- `leader_apply_profile_invite`, `leader_create_order_from_offer_rpc`, `leader_ensure_profile` доступны на execute только `{postgres,service_role}`;
-- среди `public.leader_%` SECURITY DEFINER функций нет функций, доступных `anon`, `authenticated` или `public`;
-- Supabase production не менялся: DDL, DML, Edge Function deploy, RLS, grants, policies и данные не трогались.
-
-Проверка 2026-06-27:
-
-- live `leader-public-lead v9` активна и работает в публичном режиме `verify_jwt=false`;
-- `leader-public-lead v9` сохраняет контракт `request_id`, `website` honeypot, UTM, audit events и duplicate handling;
-- live `leader-crm-leads v12` активна, `verify_jwt=true`;
-- `leader-crm-leads v12` создаёт новый CRM-профиль как pending через service role REST после проверки JWT пользователя;
-- `create_order_from_offer` в `leader-crm-leads v12` делегирует атомарную конвертацию в `leader_create_order_from_offer_rpc(jsonb)`;
-- среди `public.leader_%` SECURITY DEFINER функций нет функций, доступных `anon`, `authenticated` или `public`;
-- `leader_user_profiles` и `leader_user_invites` имеют RLS и grants для `authenticated` только `SELECT`, `INSERT`, `UPDATE`;
-- invite/profile policies, triggers и FK indexes проверены в live Supabase;
-- migration-history caveat зафиксирован в `docs/SUPABASE_MIGRATION_HISTORY_NORMALIZATION_2026-06-27.md`: текущие CRM SQL-файлы являются final-state snapshots, перед `supabase db push` / preview branches нужна нормализация истории.
-
-Проверка 2026-06-26:
-
-- проект `ofewxuqfjhamgerwzull` активен;
-- `leader-public-lead` работает в публичном режиме `verify_jwt=false`;
-- функция принимает `request_id`, `website` honeypot, UTM и данные страницы;
-- `leader_leads.request_id` защищён уникальным ограничением `leader_leads_request_id_key`;
-- `leader_public_lead_audit` используется для событий `accepted`, `duplicate`, `suspicious`, `rejected`, `error`;
-- гранты по публичной цепочке соответствуют текущей модели: `anon` имеет `INSERT` в `leader_leads` и `leader_public_lead_audit`, `authenticated` имеет чтение аудита и `leader_request_trace`;
-- Security Advisor по-прежнему показывает предупреждения по `nav_*` SECURITY DEFINER и leaked password protection, контур РА «Лидер» и публичный сайт в рамках этой задачи не менялись;
-- после этапов Open Graph и PNG-обложки Supabase не изменялся: Edge Functions, таблицы, RLS, политики и данные не трогались.
-
-Проверка 2026-06-25:
-
-- создана read-only view `public.leader_request_trace` для трассировки `request_id` между `leader_leads` и `leader_public_lead_audit`;
-- view использует `security_invoker = true`, чтобы сохранялась RLS базовых таблиц;
-- `anon` и `public` не имеют прав на view;
-- `authenticated` имеет только `SELECT`;
-- миграции view и прав сохранены в репозитории;
-- проверка `Request trace view check` защищает `security_invoker` и минимальные права доступа.
-
-Проверка 2026-06-24:
-
-- PostgreSQL 17.6, предупреждение о завершении поддержки PostgreSQL 14 проект не затрагивает;
-- у внешних ключей `leader_*` нет отсутствующих покрывающих индексов;
-- предупреждения Security Advisor по `SECURITY DEFINER` относятся к `nav_*`, их в контуре РА «Лидер» не изменяли;
-- политика чтения `leader_public_lead_audit` оптимизирована через `(select auth.uid())` без изменения ролей и прав;
-- `anon` по-прежнему имеет только `INSERT` в аудит, `authenticated` — только `SELECT`.
 
 ## Изоляция контуров
-
-Основная и временная CRM размещены на одном origin `deputat36.github.io`. Ранее они использовали общий ключ `leader_crm_v4_session`, поэтому два разных Supabase-клиента могли одновременно обновлять один refresh token.
-
-Исправление 2026-06-24:
 
 - основной контур использует `leader_crm_v4_main_session`;
 - временный контур использует `leader_crm_v4_test_session`;
@@ -241,20 +138,13 @@ CRM использует JWT и RLS. Полный аудит 2026-07-10 выяв
 - подключения обновлены до `v=20260624-contour-1`;
 - CI запрещает возврат к общему ключу.
 
-После обновления требуется один повторный вход отдельно в каждую CRM. Выход и обновление токена в одном контуре больше не должны влиять на другой.
-
 ## Авторизация
-
-В обоих контурах:
 
 - обрабатывается `refresh_token_not_found`;
 - устаревшая локальная сессия очищается;
 - выход использует `scope: 'local'`;
-- сбой сети при выходе не оставляет интерфейс в состоянии активной сессии.
-
-Во временном Supabase-клиенте refresh token обновляется через единый `refreshPromise`, также реализован `auth.getUser()` для диагностики.
-
-В журнале Supabase Auth за 2026-06-24 есть успешные входы и успешное обновление токена. Новых `refresh_token_not_found` после последней правки в доступном журнале не видно.
+- сбой сети при выходе не оставляет интерфейс в состоянии активной сессии;
+- server-side action-level authorization остаётся открытым архитектурным этапом #202/#204.
 
 ## Публичный сайт и связка с CRM
 
@@ -266,35 +156,6 @@ CRM использует JWT и RLS. Полный аудит 2026-07-10 выяв
 - доказана только цепочка `accepted`; остальные audit outcomes остаются открытыми в issue #206;
 - реальные материалы портфолио и полный NAP ожидаются в issues #235 и #236;
 - production Supabase не менялся.
-
-Полный аудит 2026-07-10:
-
-- работа ведётся в ветке `audit/site-crm-full-2026-07-10`;
-- создан актуальный checklist `docs/CRM_V4_AUDIT_V9_CHECK.md`;
-- CRM audit helper обновлён с пользовательской маркировки v8 до v9;
-- добавлен `tools/check_site_crm_chain_contract.py`;
-- добавлен workflow `.github/workflows/site-crm-chain-check.yml`;
-- CRM получила модуль `crm/v4/assets/v4/public-lead-request-id-v1.js`, который показывает и копирует `request_id` в обычном списке и карточке заявки;
-- архитектурные решения по public ingestion и role/action authorization записаны в `docs/DECISIONS.md`;
-- live browser/Lighthouse аудит ограничен сетевым DNS-доступом среды и остаётся ручным этапом;
-- production Supabase не менялся.
-
-UI и аудит 2026-07-08:
-
-- вспомогательный скрипт главной `assets/packages-link.js` отвечает за защиту шапки, короткое верхнее меню, компактный hero-блок, блок популярных ссылок и мобильное меню;
-- мобильное меню закрывается по кнопке и по клику на пункт навигации;
-- добавлена проверка `tools/check_public_homepage_helper.py`;
-- `.github/workflows/public-site-audit-check.yml` запускает `node --check assets/packages-link.js` и `python3 tools/check_public_homepage_helper.py`;
-- добавлен отдельный workflow `.github/workflows/public-no-secret-markers-check.yml` для проверки публичных HTML/assets на служебные Supabase-маркеры;
-- открытый хвост: cache version для `assets/packages-link.js` в `index.html` пока не обновлён из-за риска безопасной правки большого inline-файла.
-
-Аудит 2026-06-26:
-
-- проведён аудит публичного сайта без изменения CRM и без DDL в Supabase;
-- выводы и план сохранены в `docs/PUBLIC_SITE_AUDIT.md`;
-- добавлена защитная проверка `.github/workflows/public-site-audit-check.yml`;
-- проверка контролирует `robots.txt`, `sitemap.xml`, sitemap-домен, отсутствие CRM/nav в sitemap, контракт публичной формы, порядок подключения `request_id` helper на `request.html`, отсутствие service-role маркеров в публичных HTML/assets;
-- GitHub/Supabase доступ подтверждён, работа ведётся в `deputat36/lider-bsk`.
 
 ## Исторические CI guard markers
 
