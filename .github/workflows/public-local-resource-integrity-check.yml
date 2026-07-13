@@ -34,7 +34,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Validate public local links, assets and anchors
+        id: integrity
         shell: bash
         run: |
-          set -euo pipefail
-          python3 tools/check_public_local_resources.py
+          set +e
+          python3 tools/check_public_local_resources.py > public-local-resource-report.txt 2>&1
+          status=$?
+          cat public-local-resource-report.txt
+          exit "$status"
+      - name: Upload local resource integrity report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-local-resource-report
+          path: public-local-resource-report.txt
+          if-no-files-found: error
