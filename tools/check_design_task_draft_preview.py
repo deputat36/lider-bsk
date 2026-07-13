@@ -8,6 +8,7 @@ ENTRYPOINTS = ROOT / "crm/v4/assets/v4/design-task-draft-entrypoints-v1.js"
 LOADER = ROOT / "crm/v4/assets/v4/site-cache-note-v1.js"
 QUALITY = ROOT / "crm/v4/assets/v4/order-operational-quality-v1.js"
 QUALITY_MODEL = ROOT / "crm/v4/assets/v4/order-operational-quality-model-v1.js"
+QUALITY_CHECKER = ROOT / "tools/check_crm_order_operational_quality.py"
 TEST = ROOT / "tools/test_design_task_draft.mjs"
 MANUAL = ROOT / "docs/CRM_DESIGN_TASK_DRAFT_PREVIEW_MANUAL_TEST_2026-07-13.md"
 WORKFLOW = ROOT / ".github/workflows/crm-design-task-draft-check.yml"
@@ -38,6 +39,7 @@ def main() -> None:
     loader = read(LOADER)
     quality = read(QUALITY)
     quality_model = read(QUALITY_MODEL)
+    quality_checker = read(QUALITY_CHECKER)
     test = read(TEST)
     manual = read(MANUAL)
     workflow = read(WORKFLOW)
@@ -157,6 +159,14 @@ def main() -> None:
         ["designWithoutTask", "need_design === true", "designTaskOrderIds"],
         "existing quality model",
     )
+    require(
+        quality_checker,
+        [
+            "check_design_task_draft_preview.py",
+            "CRM design task draft checker is included in the order full-audit path.",
+        ],
+        "transitive full-audit integration",
+    )
 
     require(
         test,
@@ -178,12 +188,12 @@ def main() -> None:
         manual,
         [
             "локальный preview черновика дизайн-задачи",
-            "leader_design_tasks — 0 строк",
+            "`leader_design_tasks` — 0 строк",
             "Создать задачу в CRM — отключено",
             "Network checklist",
             "design_task.create_from_order",
             "Approval gates",
-            "не создавать production-строку ради теста",
+            "Не создавать production-строку ради теста.",
         ],
         "manual test",
     )
