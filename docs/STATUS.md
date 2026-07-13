@@ -10,7 +10,8 @@
 - временная CRM v4: `https://deputat36.github.io/lidercalculator/app-v4.html`;
 - публичный сайт: `https://www.lider-bsk.ru`;
 - выделенная страница проверки заявки: `https://www.lider-bsk.ru/request.html`;
-- Supabase project: `ofewxuqfjhamgerwzull`.
+- Supabase production: `ofewxuqfjhamgerwzull`;
+- Supabase staging: `otulfnouybahfnsycxqn`.
 
 Использовать только объекты `leader_*`. Объекты `nav_*`, `nav-*`, `parket-*` и `broker-*` относятся к другим проектным контурам.
 
@@ -101,7 +102,24 @@ Supabase baseline РА «Лидер»: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-
 - production design task, event, comment или общая задача не создаются;
 - добавлены behavior test, source checker, отдельный workflow и manual Browser/Network checklist;
 - checker включён в общий order/full-audit путь;
-- будущий server action, INSERT, audit event, назначение дизайнера и backfill остаются approval-gated.
+- production server action, назначение дизайнера и backfill остаются approval-gated.
+
+## Staging backend дизайн-задач
+
+Обновление 2026-07-13:
+
+- PR #277 добавил изолированный staging-контур database/RPC для `design_task.create_from_order`;
+- staging использует exact environment guard и не содержит production data;
+- private receipt, active-task uniqueness, canonical role check и atomic task + event + receipt проверены синтетическими тестами;
+- forced event/receipt failures подтвердили полный rollback;
+- после тестов staging business tables очищены до нуля;
+- PR #279 добавил JWT-protected, RPC-only Edge Function `leader-crm-design`;
+- `leader-crm-design v1` развёрнута только в staging, имеет статус `ACTIVE` и `verify_jwt=true`;
+- Edge source fail-closed возвращает `wrong_environment` вне staging;
+- security/performance advisors не имеют WARN/ERROR;
+- внешний unauthenticated smoke не подтверждён из-за DNS текущей среды;
+- authenticated positive E2E не выполнялся, потому что staging Auth user ещё не создан;
+- production RPC, receipt, unique index и `leader-crm-design` отсутствуют.
 
 ## Договоры из заказа
 
@@ -119,29 +137,36 @@ Supabase baseline РА «Лидер»: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-
 
 ## Supabase
 
-Активные функции контура РА «Лидер»:
+Активные функции production-контура РА «Лидер»:
 
 - `leader-public-lead v10`, `verify_jwt=false`;
 - `leader-crm-leads v12`, `verify_jwt=true`;
 - `leader-crm-orders v2`, `verify_jwt=true`.
 
+Активные функции staging-контура:
+
+- `leader-crm-design v1`, `verify_jwt=true`.
+
 Проверка 2026-07-13:
 
-- проект `ofewxuqfjhamgerwzull` имеет статус `ACTIVE_HEALTHY`;
-- PostgreSQL — `17.6.1.121`, release channel `ga`;
-- read-only schema check подтвердил `leader_design_tasks`, `leader_design_task_events` и `leader_design_task_comments`;
-- активных неархивных заказов — 5;
-- заказов с доказанной design-потребностью — 2;
+- production `ofewxuqfjhamgerwzull` имеет статус `ACTIVE_HEALTHY`;
+- production PostgreSQL — `17.6.1.121`, release channel `ga`;
+- staging `otulfnouybahfnsycxqn` имеет статус `ACTIVE_HEALTHY`, регион `eu-west-1`, PostgreSQL 17;
+- production schema check подтвердил `leader_design_tasks`, `leader_design_task_events` и `leader_design_task_comments`;
+- активных неархивных production-заказов — 5;
+- production-заказов с доказанной design-потребностью — 2;
 - оба заказа находятся в очереди `Нужен дизайн, задачи нет`;
-- всего потребностей `need_design=true` — 4;
+- всего production-потребностей `need_design=true` — 4;
 - одна design-потребность имеет `completeness_score` ниже 80;
 - одна design-потребность не имеет `deadline_date`;
 - у design-потребностей заполнено поле `design_reason`;
-- `leader_design_tasks` — 0 строк;
-- `leader_design_task_events` — 0 строк;
-- `leader_design_task_comments` — 0 строк;
+- production `leader_design_tasks` — 0 строк;
+- production `leader_design_task_events` — 0 строк;
+- production `leader_design_task_comments` — 0 строк;
+- staging profiles/orders/needs/design tasks/events/receipts — 0 строк после тестов и deploy;
+- staging environment guard — 1 строка;
 - агрегаты проверялись без имён клиентов, телефонов, финансовых сумм, комментариев и содержимого ТЗ;
-- первый агрегатный запрос был исправлен после подтверждения, что у `leader_lead_needs` нет поля `is_archived`;
+- первый production агрегатный запрос был исправлен после подтверждения, что у `leader_lead_needs` нет поля `is_archived`;
 - Supabase production не менялся: DDL, DML, migrations, deploy, RLS, grants, policies, Auth, Storage, Edge Functions и данные не трогались.
 
 Проверка 2026-06-28:
@@ -165,7 +190,7 @@ Supabase baseline РА «Лидер»: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-
 - устаревшая локальная сессия очищается;
 - выход использует `scope: 'local'`;
 - сбой сети при выходе не оставляет интерфейс в состоянии активной сессии;
-- server-side action-level authorization остаётся открытым архитектурным этапом #202/#204.
+- production server-side action-level authorization остаётся открытым архитектурным этапом #202/#204.
 
 ## Публичный сайт и связка с CRM
 
