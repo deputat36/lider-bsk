@@ -40,17 +40,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate source-only design task server contract
-        shell: bash
+      - name: Validate contract JSON
         run: |
-          set -euo pipefail
           python3 -m json.tool contracts/design-task-create-from-order-v1.json >/dev/null
           python3 -m json.tool contracts/crm-v4-backend-command-contract-v1.json >/dev/null
+
+      - name: Validate JavaScript syntax
+        run: |
           node --check tools/design-task-create-from-order-reference-v1.mjs
           node --check tools/test_design_task_create_from_order_contract.mjs
           node --check crm/v4/assets/v4/action-permissions-v1.js
           node --check crm/v4/assets/v4/status-transitions-v1.js
           node --check crm/v4/assets/v4/design-task-draft-model-v1.js
-          node tools/test_design_task_create_from_order_contract.mjs
-          python3 tools/check_design_task_create_from_order_contract.py
-          python3 tools/check_crm_v4_backend_command_contract.py
+
+      - name: Run server contract behavior test
+        run: node tools/test_design_task_create_from_order_contract.mjs
+
+      - name: Validate detailed design action contract
+        run: python3 tools/check_design_task_create_from_order_contract.py
+
+      - name: Validate general backend command registry
+        run: python3 tools/check_crm_v4_backend_command_contract.py
