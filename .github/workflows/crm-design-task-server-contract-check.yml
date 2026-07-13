@@ -67,7 +67,21 @@ jobs:
         run: python3 tools/check_design_task_create_from_order_contract.py
 
       - name: Validate database and RPC candidate
-        run: python3 tools/check_design_task_database_rpc_candidate.py
+        shell: bash
+        run: |
+          set +e
+          python3 tools/check_design_task_database_rpc_candidate.py > design-task-db-rpc-candidate-check.log 2>&1
+          code=$?
+          cat design-task-db-rpc-candidate-check.log
+          exit $code
+
+      - name: Upload candidate checker diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: design-task-db-rpc-candidate-check-log
+          path: design-task-db-rpc-candidate-check.log
+          retention-days: 3
 
       - name: Validate general backend command registry
-        run: python3 tools/check_crm_v4_backend_command_contract.py
+        run: python3 tools/check_crm_v4-backend-command-contract.py
