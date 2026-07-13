@@ -47,13 +47,13 @@ require(index, [
     "error: 'wrong_environment'",
     "if (req.method !== 'POST')",
     "contentLength > 64 * 1024",
-    "'/auth/v1/user'",
+    '/auth/v1/user',
     'leader_user_profiles?user_id=eq.',
     '&is_active=eq.true',
     'if (!canWriteDesign(profileResult.profile.role))',
     "permission: 'design.write'",
     'validateDesignRequest(input)',
-    "'/rest/v1/rpc/leader_create_design_task_from_order_rpc'",
+    '/rest/v1/rpc/leader_create_design_task_from_order_rpc',
     'actor_id: checked.user.id',
     'actor_email: checked.user.email',
     'request: validation.request',
@@ -65,8 +65,8 @@ for forbidden in (
     '/rest/v1/leader_design_tasks',
     '/rest/v1/leader_design_task_events',
     '/rest/v1/leader_command_receipts',
-    'method: \'PATCH\'',
-    'method: \'DELETE\'',
+    "method: 'PATCH'",
+    "method: 'DELETE'",
     'details: await',
 ):
     if forbidden in index:
@@ -84,11 +84,11 @@ require(contract, [
     "case 'duplicate_request':",
 ], 'Edge contract')
 
-if any(role in contract for role in ("'production'", "'accountant'", "'installer'", "'contractor'")):
-    # Denied roles may only appear in tests, not the allow set/contract implementation.
-    allowed_block = re.search(r'DESIGN_WRITE_ROLES\s*=.*?\]\)\)', contract, re.S)
-    if allowed_block and any(role in allowed_block.group(0) for role in ("'production'", "'accountant'", "'installer'", "'contractor'")):
-        errors.append('Non-canonical role entered the design-write allow set')
+allowed_block = re.search(r'DESIGN_WRITE_ROLES\s*=.*?\]\)\)', contract, re.S)
+if not allowed_block:
+    errors.append('Canonical design-write allow set was not found')
+elif any(role in allowed_block.group(0) for role in ("'production'", "'accountant'", "'installer'", "'contractor'")):
+    errors.append('Non-canonical role entered the design-write allow set')
 
 require(test, [
     'canonical design-write roles are allowed',
