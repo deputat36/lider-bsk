@@ -1,0 +1,26 @@
+name: Public FAQ CSS check
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'faq.html'
+      - 'assets/public-faq.css'
+      - 'tools/check_public_faq_css.py'
+      - '.github/workflows/public-faq-css-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'faq.html'
+      - 'assets/public-faq.css'
+      - 'tools/check_public_faq_css.py'
+      - '.github/workflows/public-faq-css-check.yml'
+
+jobs:
+  validate-public-faq-css:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate FAQ external CSS and content contract
+        run: python3 tools/check_public_faq_css.py
