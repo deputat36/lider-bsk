@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -10,6 +11,7 @@ ACTIONS = ROOT / 'crm' / 'v4' / 'assets' / 'v4' / 'action-permissions-v1.js'
 STATUSES = ROOT / 'crm' / 'v4' / 'assets' / 'v4' / 'status-transitions-v1.js'
 DOC = ROOT / 'docs' / 'CRM_V4_BACKEND_COMMAND_CONTRACT_2026-07-10.md'
 ADDENDUM = ROOT / 'docs' / 'CRM_BACKEND_COMMAND_CONTRACT_EXECUTION_ADDENDUM_2026-07-10.md'
+DETAIL_CHECKER = ROOT / 'tools' / 'check_design_task_create_from_order_contract.py'
 
 errors = []
 
@@ -53,6 +55,7 @@ required_commands = {
     'order.create_manual': ('orders.create', 'order'),
     'order.transition': ('orders.transition', 'order'),
     'lead.transition': ('leads.transition', 'lead'),
+    'design_task.create_from_order': ('design.write', 'design_task'),
     'production_job.update': ('production.write', 'production'),
     'installation_job.update': ('installation.write', 'installation'),
 }
@@ -65,6 +68,7 @@ allowed_audit_targets = {
     'leader_activity_log',
     'leader_lead_events',
     'leader_commercial_offer_events',
+    'leader_design_task_events',
     'leader_production_events',
     'leader_installation_events',
 }
@@ -158,12 +162,18 @@ if data:
         if not contract.get('side_effects'):
             errors.append(f'{command_name}: side effects must be documented')
 
+    design_command = commands.get('design_task.create_from_order') or {}
+    if design_command.get('detail_contract') != 'contracts/design-task-create-from-order-v1.json':
+        errors.append('design_task.create_from_order must reference its detail contract')
+
 for path, label, markers in (
     (DOC, 'backend command contract document', [
         'status-transitions-v1.js is the only authoritative status graph',
         'leader-backend-command-contract-v1',
         'source_only_not_enforced',
         'calculation.save',
+        'design_task.create_from_order',
+        'leader_design_task_events',
         'installation_job.update',
         'No production DDL or DML was executed',
     ]),
@@ -187,6 +197,20 @@ contract_text = CONTRACT.read_text(encoding='utf-8') if CONTRACT.exists() else '
 for forbidden in ('"transition_domains"', 'nav_', 'nav-v2', 'service_role', 'sb_secret_'):
     if forbidden in contract_text:
         errors.append(f'Backend command contract contains forbidden marker: {forbidden}')
+
+if not DETAIL_CHECKER.exists():
+    errors.append('Missing design task detail contract checker')
+else:
+    result = subprocess.run(
+        [sys.executable, str(DETAIL_CHECKER)],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        output = (result.stdout + '\n' + result.stderr).strip()
+        errors.append('Design task detail contract check failed:\n' + output)
 
 if errors:
     print('\n'.join(errors))

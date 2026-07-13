@@ -1,0 +1,337 @@
+{
+  "contract_version": "leader-design-task-create-from-order-v1",
+  "status": "source_only_not_enforced",
+  "scope": "leader_crm_v4",
+  "action": "design_task.create_from_order",
+  "permission": "design.write",
+  "entity": "design_task",
+  "status_domain": "design_task",
+  "canonical_sources": {
+    "command_registry": "contracts/crm-v4-backend-command-contract-v1.json",
+    "permission_registry": "crm/v4/assets/v4/action-permissions-v1.js",
+    "status_registry": "crm/v4/assets/v4/status-transitions-v1.js",
+    "status_registry_version": 1,
+    "draft_model": "crm/v4/assets/v4/design-task-draft-model-v1.js"
+  },
+  "runtime_boundary": {
+    "edge_verify_jwt": true,
+    "authenticated_user_required": true,
+    "active_profile_required": true,
+    "profile_table": "leader_user_profiles",
+    "permission_check_before_business_reads": true,
+    "permission_check_before_service_role_calls": true,
+    "unknown_role_fails_closed": true,
+    "generic_order_update_forbidden": true,
+    "transaction_backed_rpc_or_database_function_required": true,
+    "sequential_service_role_rest_writes_compliant": false
+  },
+  "request": {
+    "envelope_required": [
+      "action",
+      "request_id",
+      "expected_updated_at",
+      "payload"
+    ],
+    "payload_required": [
+      "order_id",
+      "idempotency_key",
+      "need_ids",
+      "task"
+    ],
+    "payload_optional": [
+      "production_job_id"
+    ],
+    "task_allowed_fields": [
+      "title",
+      "priority",
+      "deadline",
+      "task_text",
+      "reference_link"
+    ],
+    "task_rejected_client_fields": [
+      "task_status",
+      "layout_status",
+      "designer_name",
+      "layout_link",
+      "source",
+      "owner_id",
+      "created_by",
+      "updated_by",
+      "client_name",
+      "client_phone",
+      "client_comment",
+      "internal_comment",
+      "result_comment"
+    ],
+    "expected_updated_at_semantics": "leader_orders.updated_at",
+    "request_id_format": "uuid",
+    "idempotency_key_max_length": 180,
+    "need_ids_min_items": 1,
+    "need_ids_unique": true
+  },
+  "server_owned_defaults": {
+    "task_status": {
+      "status_key": "new",
+      "label_from_canonical_registry": "Новая"
+    },
+    "layout_status": {
+      "value": "Макет не начат",
+      "compatibility": "live_database_default_not_canonical_layout_transition_input"
+    },
+    "designer_name": null,
+    "layout_link": null,
+    "source": "crm_v4_server_action",
+    "owner_id": "authenticated_user_id",
+    "created_by": "authenticated_user_id",
+    "updated_by": null
+  },
+  "minimal_read_sets": {
+    "leader_user_profiles": [
+      "user_id",
+      "role",
+      "is_active"
+    ],
+    "leader_orders": [
+      "id",
+      "order_number",
+      "lead_id",
+      "status",
+      "priority",
+      "deadline",
+      "layout_status",
+      "layout_link",
+      "is_archived",
+      "updated_at"
+    ],
+    "leader_lead_needs": [
+      "id",
+      "lead_id",
+      "need_type",
+      "title",
+      "need_design",
+      "design_reason",
+      "deadline_date",
+      "status",
+      "completeness_score",
+      "missing_fields",
+      "updated_at"
+    ],
+    "leader_production_jobs": [
+      "id",
+      "order_id",
+      "production_status"
+    ],
+    "leader_design_tasks": [
+      "id",
+      "order_id",
+      "production_job_id",
+      "task_status",
+      "updated_at"
+    ]
+  },
+  "validation_order": [
+    "validate request envelope and action",
+    "resolve authenticated user",
+    "load active CRM profile",
+    "require canonical permission design.write",
+    "reserve idempotency receipt using action and idempotency_key",
+    "lock and load order",
+    "compare expected_updated_at with order.updated_at",
+    "reject archived terminal or unknown order status",
+    "load and validate all need_ids against order.lead_id",
+    "require every selected need to have need_design=true",
+    "reject archived or cancelled need statuses",
+    "validate optional production_job_id belongs to the same order",
+    "lock existing design tasks for the order",
+    "treat unknown design task status as active",
+    "reject when any nonterminal design task already exists",
+    "derive server-owned status author source and safe brief snapshot",
+    "insert design task",
+    "insert design_task.created audit event",
+    "persist successful idempotency response",
+    "commit transaction"
+  ],
+  "need_readiness_policy": {
+    "mode": "advisory_v1",
+    "blocking_conditions": [
+      "no selected need exists",
+      "selected need belongs to another lead",
+      "need_design is not true",
+      "selected need is archived or cancelled"
+    ],
+    "warning_conditions": [
+      "completeness_score below 80",
+      "missing_fields is not empty",
+      "design_reason is empty",
+      "deadline is empty"
+    ],
+    "warnings_returned_in_success_envelope": true
+  },
+  "active_task_rule": {
+    "terminal_status_keys": [
+      "completed",
+      "cancelled"
+    ],
+    "nonterminal_status_keys": [
+      "new",
+      "in_progress",
+      "review",
+      "revisions",
+      "approved"
+    ],
+    "unknown_raw_status_behavior": "block_creation_as_active_conflict",
+    "approved_is_active_until_completed": true,
+    "database_uniqueness_required_before_production": true,
+    "candidate_partial_unique_rule": "one order_id where task_status is not terminal",
+    "application_only_duplicate_check_is_sufficient": false
+  },
+  "idempotency": {
+    "request_id_required": true,
+    "idempotency_key_required": true,
+    "request_hash_required": true,
+    "durable_receipt_storage_required_before_enforcement": true,
+    "live_receipt_storage_present": false,
+    "candidate_receipt_table": "leader_command_receipts",
+    "receipt_unique_scope": [
+      "action",
+      "idempotency_key"
+    ],
+    "same_key_same_hash": "return_original_success_projection",
+    "same_key_different_hash": "conflict",
+    "same_request_in_progress": "duplicate_request",
+    "failed_transaction_receipt": "must_not_be_marked_successful",
+    "browser_generated_author_or_status_trusted": false
+  },
+  "transaction": {
+    "required": true,
+    "isolation_goal": "serialize creation per order",
+    "lock_order_before_existing_task_check": true,
+    "atomic_writes": [
+      "idempotency receipt reservation",
+      "leader_design_tasks insert",
+      "leader_design_task_events insert",
+      "idempotency success projection persistence"
+    ],
+    "rollback_if_event_insert_fails": true,
+    "rollback_if_receipt_persistence_fails": true,
+    "best_effort_audit_allowed": false
+  },
+  "audit": {
+    "target": "leader_design_task_events",
+    "event_type": "created",
+    "stable_event_key": "design_task.created_from_order",
+    "old_status": null,
+    "new_status_from_canonical_registry": "Новая",
+    "body_policy": "privacy_safe_no_client_contact_or_finance",
+    "required_links": [
+      "task_id",
+      "order_id",
+      "created_by"
+    ]
+  },
+  "success_projection": {
+    "envelope_required": [
+      "ok",
+      "request_id",
+      "entity",
+      "order",
+      "events",
+      "warnings",
+      "idempotent_replay"
+    ],
+    "entity_fields": [
+      "id",
+      "order_id",
+      "production_job_id",
+      "title",
+      "task_status",
+      "layout_status",
+      "priority",
+      "designer_name",
+      "deadline",
+      "source",
+      "layout_link",
+      "reference_link",
+      "created_at",
+      "updated_at"
+    ],
+    "order_fields": [
+      "id",
+      "order_number",
+      "status",
+      "deadline",
+      "layout_status",
+      "layout_link"
+    ],
+    "event_fields": [
+      "id",
+      "task_id",
+      "order_id",
+      "event_type",
+      "old_status",
+      "new_status",
+      "created_at"
+    ],
+    "forbidden_fields": [
+      "client_name",
+      "client_phone",
+      "client_total",
+      "contractor_cost",
+      "profit",
+      "balance",
+      "prepayment",
+      "payment_status",
+      "internal_comment",
+      "client_comment",
+      "owner_id",
+      "created_by",
+      "updated_by",
+      "order.data"
+    ]
+  },
+  "error_contract": {
+    "access_denied": "authenticated user has no active CRM profile",
+    "forbidden": "profile role is unknown or lacks design.write",
+    "unknown_action": "action does not equal design_task.create_from_order",
+    "validation_error": "request shape or design evidence is invalid",
+    "not_found": "order need or production job is unavailable",
+    "conflict": "stale order archived order terminal or unknown order status existing active design task or idempotency hash mismatch",
+    "duplicate_request": "same idempotent request is already in progress",
+    "persistence_failed": "transaction could not persist task event and receipt together"
+  },
+  "forbidden_side_effects": [
+    "change order status",
+    "change order layout_status",
+    "change order layout_link",
+    "change production status",
+    "create or update production job",
+    "change payment status",
+    "create payment or expense",
+    "complete or archive order",
+    "assign designer automatically",
+    "overwrite an approved layout",
+    "copy client phone or financial values into design task"
+  ],
+  "live_schema_evidence": {
+    "design_tasks_rows": 0,
+    "design_task_events_rows": 0,
+    "design_task_comments_rows": 0,
+    "active_orders_requiring_design_without_task": 2,
+    "idempotency_column_present": false,
+    "active_task_unique_index_present": false,
+    "command_receipt_table_present": false,
+    "current_design_rls_is_active_profile_only": true,
+    "current_action_level_design_write_enforced": false
+  },
+  "approval_gates": [
+    "Supabase development branch creation",
+    "leader_command_receipts schema",
+    "active design task uniqueness constraint",
+    "transaction-backed RPC or database function",
+    "Edge Function route and deploy",
+    "server-side RBAC enforcement",
+    "RLS or grant hardening",
+    "production backfill",
+    "production deployment"
+  ]
+}
