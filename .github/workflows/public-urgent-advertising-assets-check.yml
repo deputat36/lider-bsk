@@ -1,0 +1,31 @@
+name: Public urgent advertising assets check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'srochnaya-reklama-borisoglebsk.html'
+      - 'assets/public-urgent-advertising.css'
+      - 'assets/public-urgent-advertising.js'
+      - 'tools/check_public_urgent_advertising_assets.py'
+      - '.github/workflows/public-urgent-advertising-assets-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'srochnaya-reklama-borisoglebsk.html'
+      - 'assets/public-urgent-advertising.css'
+      - 'assets/public-urgent-advertising.js'
+      - 'tools/check_public_urgent_advertising_assets.py'
+      - '.github/workflows/public-urgent-advertising-assets-check.yml'
+
+jobs:
+  validate-public-urgent-advertising-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate urgent advertising page assets and content
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/check_public_urgent_advertising_assets.py
+          node --check assets/public-urgent-advertising.js
