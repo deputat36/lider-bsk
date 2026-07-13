@@ -3,164 +3,44 @@ name: Docs checks
 on:
   push:
     branches: [main]
+    paths:
+      - 'docs/**'
+      - 'tools/check_docs_contract.py'
+      - 'tools/check_current_public_ops_docs.py'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/workflows/docs-checks.yml'
   pull_request:
     branches: [main]
+    paths:
+      - 'docs/**'
+      - 'tools/check_docs_contract.py'
+      - 'tools/check_current_public_ops_docs.py'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/workflows/docs-checks.yml'
 
 jobs:
-  validate-crm-docs:
+  validate-project-docs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate current CRM documentation
+      - name: Validate documentation contracts
+        id: contract
         shell: bash
         run: |
-          set -euo pipefail
-          access_doc='docs/CRM_V4_TEST_ACCESS.md'
-          checklist='docs/CRM_V4_TESTER_CHECKLIST.md'
-          onboarding='docs/CRM_ADMIN_TESTER_ONBOARDING.md'
-          next_steps='docs/NEXT_SAFE_STEPS.md'
-          status_doc='docs/STATUS.md'
-          manual_checklist='docs/MANUAL_TEST_CHECKLIST.md'
-          decisions_doc='docs/DECISIONS.md'
-          static_runbook='docs/STATIC_CHECKS_RUNBOOK.md'
-          browser_report='docs/CRM_V4_BROWSER_TEST_REPORT.md'
-          audit_doc='docs/PUBLIC_LEAD_AUDIT.md'
-          public_site_audit='docs/PUBLIC_SITE_AUDIT.md'
-          audit_v8_check='docs/CRM_V4_AUDIT_V8_CHECK.md'
-          issue_template='.github/ISSUE_TEMPLATE/crm-v4-browser-test.md'
-
-          for file in "$access_doc" "$checklist" "$onboarding" "$next_steps" "$status_doc" "$manual_checklist" "$decisions_doc" "$static_runbook" "$browser_report" "$audit_doc" "$public_site_audit" "$audit_v8_check" "$issue_template"; do
-            test -f "$file"
-          done
-
-          grep -Fq 'https://deputat36.github.io/lidercalculator/app-v4.html' "$access_doc"
-          grep -Fq 'leader_user_profiles' "$access_doc"
-          grep -Fq 'user_metadata' "$access_doc"
-          grep -Fq 'is_active = false' "$access_doc"
-
-          grep -Fq 'Ctrl + F5' "$checklist"
-          grep -Fq 'Проверить CRM' "$checklist"
-          grep -Fq 'Аудит заявок' "$checklist"
-          grep -Fq 'request_id' "$checklist"
-          grep -Fq 'docs/CRM_V4_BROWSER_TEST_REPORT.md' "$checklist"
-          grep -Fq 'https://www.lider-bsk.ru/request.html' "$checklist"
-          grep -Fq 'Тест CRM v4 audit v8' "$checklist"
-          grep -Fq 'Скопировать request_id' "$checklist"
-          grep -Fq 'docs/CRM_V4_AUDIT_V8_CHECK.md' "$checklist"
-          if grep -Fq 'Тест CRM v4 audit v7' "$checklist"; then
-            echo 'CRM_V4_TESTER_CHECKLIST.md must use audit v8 wording.' >&2
-            exit 1
-          fi
-
-          grep -Fq 'Проверка аудита публичной заявки v8' "$audit_v8_check"
-          grep -Fq 'Тест CRM v4 audit v8' "$audit_v8_check"
-          grep -Fq 'Скопировать request_id' "$audit_v8_check"
-          grep -Fq 'Проверить request_id' "$audit_v8_check"
-          grep -Fq 'Проверить цепочку' "$audit_v8_check"
-          grep -Fq 'С request_id' "$audit_v8_check"
-          grep -Fq 'Без request_id' "$audit_v8_check"
-          grep -Fq 'Открыть заявку' "$audit_v8_check"
-          grep -Fq 'Цепочка полная' "$audit_v8_check"
-          grep -Fq 'Дубль' "$audit_v8_check"
-
-          grep -Fq 'ADR-008. Идемпотентность публичных заявок и явный audit дублей' "$decisions_doc"
-          grep -Fq 'ADR-009. Трассировка request_id через read-only view' "$decisions_doc"
-          grep -Fq 'leader_request_trace' "$decisions_doc"
-          grep -Fq 'security_invoker = true' "$decisions_doc"
-          grep -Fq 'request_id_conflict' "$decisions_doc"
-          if grep -Fq 'ignore-duplicates' "$decisions_doc"; then
-            echo 'DECISIONS.md must describe public lead v8, not the old ignore-duplicates flow.' >&2
-            exit 1
-          fi
-
-          grep -Fq 'Дата: 2026-06-29.' "$static_runbook"
-          grep -Fq 'leader-public-lead v9' "$static_runbook"
-          grep -Fq 'leader-crm-leads v12' "$static_runbook"
-          grep -Fq 'leader_request_trace' "$static_runbook"
-          grep -Fq 'public-lead-audit-v1.js?v=20260629-trace-button-1' "$static_runbook"
-          grep -Fq 'public-lead-audit-helper-v1.js?v=20260629-trace-open-lead-1' "$static_runbook"
-          grep -Fq 'public-lead-audit-summary-v1.js?v=20260629-request-summary-1' "$static_runbook"
-          grep -Fq 'Проверить request_id' "$static_runbook"
-          grep -Fq 'Проверить цепочку' "$static_runbook"
-          grep -Fq 'С request_id' "$static_runbook"
-          grep -Fq 'Без request_id' "$static_runbook"
-          grep -Fq 'Открыть заявку' "$static_runbook"
-          grep -Fq 'Цепочка полная' "$static_runbook"
-
-          grep -Fq 'kvmbsk@yandex.ru' "$onboarding"
-          grep -Fq 'роль admin' "$onboarding"
-          grep -Fq 'leader_user_profiles.is_active = false' "$onboarding"
-
-          grep -Fq 'Дата: 2026-06-25.' "$next_steps"
-          grep -Fq 'leader-public-lead v9' "$next_steps"
-          grep -Fq 'accepted' "$next_steps"
-          grep -Fq 'duplicate' "$next_steps"
-          grep -Fq 'leader-crm-leads v12' "$next_steps"
-          grep -Fq 'leader-crm-orders v2' "$next_steps"
-          grep -Fq 'leader_crm_v4_main_session' "$next_steps"
-          grep -Fq 'leader_crm_v4_test_session' "$next_steps"
-          grep -Fq 'leader_crm_v4_session' "$next_steps"
-          grep -Fq '20260624-contour-1' "$next_steps"
-          grep -Fq 'refreshPromise' "$next_steps"
-          grep -Fq 'live Supabase не менять без понятного плана, миграции и проверки' "$next_steps"
-
-          grep -Fq 'leader-public-lead v9' "$status_doc"
-          grep -Fq 'leader-crm-leads v12' "$status_doc"
-          grep -Fq 'leader_crm_v4_main_session' "$status_doc"
-          grep -Fq 'leader_crm_v4_test_session' "$status_doc"
-          grep -Fq 'один повторный вход' "$status_doc"
-          grep -Fq 'duplicate' "$status_doc"
-          grep -Fq 'Проверить request_id' "$status_doc"
-          grep -Fq 'Цепочка полная' "$status_doc"
-          grep -Fq '20260628-clarity-2' "$status_doc"
-          grep -Fq 'Выберите похожую задачу' "$status_doc"
-          grep -Fq 'Этап расширения Open Graph 2026-06-28' "$status_doc"
-          grep -Fq 'srochnaya-reklama-borisoglebsk.html' "$status_doc"
-          grep -Fq 'reklama-dlya-servisa-masterskoy-borisoglebsk.html' "$status_doc"
-          grep -Fq 'tablichki-borisoglebsk.html' "$status_doc"
-          grep -Fq 'oformlenie-vitrin-borisoglebsk.html' "$status_doc"
-          grep -Fq 'pechat-na-plenke-borisoglebsk.html' "$status_doc"
-          grep -Fq 'первые два пакета из 8 страниц услуг уже закрыты' "$status_doc"
-          grep -Fq '20260628-access-label-1' "$status_doc"
-          grep -Fq 'Доступ и роли' "$status_doc"
-
-          grep -Fq 'Дата: 2026-06-28.' "$manual_checklist"
-          grep -Fq 'Доступ и роли' "$manual_checklist"
-          grep -Fq 'auth.js?v=20260628-access-label-1' "$manual_checklist"
-          grep -Fq 'user-admin-v1.js?v=20260628-access-label-1' "$manual_checklist"
-          grep -Fq 'crm-v4-expanded-menu-v1.js?v=20260628-access-label-1' "$manual_checklist"
-          grep -Fq 'marker `20260628-access-label-1`' "$manual_checklist"
-          if grep -Fq 'auth.js?v=20260627-access-3' "$manual_checklist"; then
-            echo 'MANUAL_TEST_CHECKLIST.md must use current access label marker.' >&2
-            exit 1
-          fi
-
-          grep -Fq '`v9`' "$audit_doc"
-          grep -Fq 'v8 audit contract' "$audit_doc"
-          grep -Fq 'duplicate' "$audit_doc"
-          grep -Fq 'Скопировать request_id' "$audit_doc"
-          grep -Fq 'leader_public_lead_audit_insert_failed' "$audit_doc"
-          grep -Fq 'rollback-smoke-test' "$audit_doc"
-          if grep -Fq '`v7`' "$audit_doc"; then
-            echo 'PUBLIC_LEAD_AUDIT.md must describe the current v9 function and v8 audit contract, not v7.' >&2
-            exit 1
-          fi
-
-          grep -Fq 'Обновление статуса: 2026-06-29.' "$public_site_audit"
-          grep -Fq 'leader-public-lead v9' "$public_site_audit"
-          grep -Fq 'v8 audit contract' "$public_site_audit"
-          grep -Fq 'После PR #102' "$public_site_audit"
-          grep -Fq 'После PR #103' "$public_site_audit"
-          grep -Fq 'leader-public-header-guard-v1' "$public_site_audit"
-          grep -Fq 'index.html' "$public_site_audit"
-          if grep -Fq 'после v8' "$public_site_audit"; then
-            echo 'PUBLIC_SITE_AUDIT.md must use the current v9 public lead baseline.' >&2
-            exit 1
-          fi
-
-          grep -Fq 'CRM v4 browser test report' "$browser_report"
-          grep -Fq 'Итог: прошло / прошло с замечаниями / не прошло' "$browser_report"
-          grep -Fq 'CRM v4 browser test' "$issue_template"
-          grep -Fq 'request_id' "$issue_template"
-
-          ! grep -Fq '### Шаг 3. Добавить серверный аудит публичных заявок' "$next_steps"
+          set +e
+          python3 tools/check_docs_contract.py > /tmp/docs-contract-report.txt 2>&1
+          status=$?
+          cat /tmp/docs-contract-report.txt
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+      - name: Upload documentation failure report
+        if: steps.contract.outputs.exit_code != '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-contract-report
+          path: /tmp/docs-contract-report.txt
+          retention-days: 7
+      - name: Fail when documentation contract is invalid
+        if: steps.contract.outputs.exit_code != '0'
+        shell: bash
+        run: exit 1
