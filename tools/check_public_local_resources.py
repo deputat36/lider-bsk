@@ -34,14 +34,12 @@ class ResourceParser(HTMLParser):
             if value:
                 self.references.append((tag.lower(), attr, value.strip()))
 
-        for attr in ("srcset",):
-            value = values.get(attr)
-            if not value:
-                continue
+        value = values.get("srcset")
+        if value:
             for item in value.split(","):
                 candidate = item.strip().split()[0] if item.strip() else ""
                 if candidate:
-                    self.references.append((tag.lower(), attr, candidate))
+                    self.references.append((tag.lower(), "srcset", candidate))
 
 
 _parser_cache: dict[Path, ResourceParser] = {}
@@ -88,13 +86,14 @@ def local_target(source: Path, raw_url: str) -> tuple[Path, str] | None:
 
     if not path_text:
         candidate = source
+    elif path_text == "/":
+        candidate = ROOT / "index.html"
     elif path_text.startswith("/"):
-        relative = path_text.lstrip("/")
-        candidate = ROOT / (relative or "index.html")
+        candidate = ROOT / path_text.lstrip("/")
     else:
         candidate = source.parent / path_text
 
-    if path_text.endswith("/"):
+    if path_text.endswith("/") and path_text != "/":
         candidate = candidate / "index.html"
 
     candidate = candidate.resolve()
