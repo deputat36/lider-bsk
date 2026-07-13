@@ -1,0 +1,54 @@
+{
+  "contract_version": "leader-supabase-environments-v1",
+  "organization": {
+    "id": "tcbupmmcojrcxfqjuwsm",
+    "name": "Lider",
+    "plan": "free"
+  },
+  "environments": {
+    "production": {
+      "project_id": "ofewxuqfjhamgerwzull",
+      "project_name": "deputat36's Project",
+      "region": "eu-west-1",
+      "postgres_major": 17,
+      "purpose": "live_ra_lider",
+      "mutations_require_explicit_approval": true
+    },
+    "staging": {
+      "project_id": "otulfnouybahfnsycxqn",
+      "project_name": "lider-bsk-staging",
+      "region": "eu-west-1",
+      "postgres_major": 17,
+      "purpose": "isolated_schema_rpc_and_edge_validation",
+      "production_data_allowed": false
+    }
+  },
+  "repository_binding": {
+    "repository": "deputat36/lider-bsk",
+    "supabase_config_project": "production",
+    "standard_migrations_target": "production_after_separate_approval",
+    "staging_migrations_path": "supabase/staging-migrations",
+    "staging_tests_path": "supabase/staging-tests",
+    "automatic_github_deploy_enabled": false
+  },
+  "hard_guards": {
+    "production_id_must_not_appear_in_staging_sql": true,
+    "staging_id_must_not_replace_supabase_config_project_id": true,
+    "staging_sql_must_require_environment_guard": true,
+    "service_role_or_database_password_in_repository": false,
+    "production_data_copy_to_staging": false,
+    "nav_objects_in_staging_design_scope": false,
+    "parket_objects_in_staging_design_scope": false,
+    "broker_objects_in_staging_design_scope": false
+  },
+  "observed_baseline_2026_07_13": {
+    "production_status": "ACTIVE_HEALTHY",
+    "staging_status": "ACTIVE_HEALTHY",
+    "staging_public_tables": 0,
+    "staging_migrations": 0,
+    "staging_edge_functions": 0,
+    "staging_pgcrypto_present": true,
+    "staging_automatic_rls_trigger_present": true,
+    "staging_leader_private_schema_present": false
+  }
+}
