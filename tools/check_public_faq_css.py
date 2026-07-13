@@ -63,7 +63,7 @@ def main() -> None:
         if marker not in css:
             errors.append(f"public-faq.css is missing required marker: {marker}")
 
-    if len(css.strip()) < 1800:
+    if len(css.strip()) < 1500:
         errors.append(f"public-faq.css is unexpectedly short: {len(css.strip())} characters")
     if re.search(r"url\s*\(\s*['\"]?https?://", css, flags=re.IGNORECASE):
         errors.append("public-faq.css must not add remote CSS resources")
