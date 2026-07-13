@@ -18,6 +18,19 @@
 Операционный checkpoint Codex: `docs/CODEX_OPERATING_STATUS_2026-06-28.md`.
 Supabase baseline РА «Лидер»: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-28.md`.
 
+## Публичный сайт — актуальный статус
+
+Обновление 2026-07-13:
+
+- в `main` объединены PR #247, #248, #250, #251 и #252;
+- 55 корневых публичных HTML защищены от внутренней терминологии `CRM`, «себестоимость», «маржа» и «рабочий контур»;
+- телефон `8 980 245-74-71`, `tel:+79802457471` и email `zakaz@lider-bsk.ru` защищены единым contact identity contract;
+- до подтверждения issue #236 JSON-LD не может получить точный адрес, часы работы, координаты, карты или `sameAs`;
+- подготовлен контролируемый browser E2E-runbook: `docs/PUBLIC_REQUEST_BROWSER_E2E_RUNBOOK_2026-07-12.md`;
+- source-checker подтверждает порядок reference-helper → form, consent version, стабильный `request_id` и текущий Edge Function contract;
+- текущая публичная очередь сосредоточена в issues #235, #236 и #206;
+- production-заявка не отправлялась, данные Supabase в ходе этих этапов не изменялись.
+
 ## Быстрый старт CRM
 
 Обновление 2026-07-12:
@@ -84,12 +97,19 @@ CRM использует JWT и RLS. Полный аудит 2026-07-10 выяв
 
 - проект `ofewxuqfjhamgerwzull` имеет статус `ACTIVE_HEALTHY`;
 - PostgreSQL — `17.6.1.121`, release channel `ga`;
+- live `leader-public-lead v10` активна, `verify_jwt=false`;
+- live `leader-crm-leads v12` активна, `verify_jwt=true`;
+- live `leader-crm-orders v2` активна, `verify_jwt=true`;
+- read-only SQL показывает 12 заявок, одну с `request_id`, одну с `source_page_path` и шесть с `utm_source`;
+- в `leader_public_lead_audit` доказан один audit-результат `accepted / lead_insert_created`;
+- `duplicate`, `suspicious`, `rejected` и `error` ещё не доказаны опубликованным browser E2E;
 - read-only schema check подтвердил поля `leader_lead_needs.completeness_score` и `leader_lead_needs.missing_fields`;
 - в live `leader_lead_needs` — 14 строк, из них 9 ниже 80 и 5 не ниже 80;
 - средний `completeness_score` — 76,9, минимум — 45, максимум — 96;
 - `missing_fields` хранится как JSON array;
 - подтверждены таблицы `leader_lead_calculations`, `leader_lead_calculation_items` и `leader_calculation_templates`;
-- проверялись только metadata и агрегаты без имён клиентов, телефонов, email, сообщений и финансов;
+- проверялись metadata и агрегаты без имён клиентов, телефонов, email, сообщений и финансов;
+- подготовка runbook и CI не создала новых заявок;
 - Supabase production не менялся: DDL, DML, migrations, deploy, RLS, grants, policies, Auth, Storage, Edge Functions и данные не трогались.
 
 Проверка 2026-07-12:
@@ -215,6 +235,15 @@ CRM использует JWT и RLS. Полный аудит 2026-07-10 выяв
 
 ## Публичный сайт и связка с CRM
 
+Текущий публичный baseline 2026-07-13:
+
+- клиентский сайт, форма, контакты и JSON-LD защищены отдельными source-checkers;
+- `leader-public-lead v10` активна;
+- browser E2E подготовлен, но не выполнен без отдельного разрешения владельца;
+- доказана только цепочка `accepted`; остальные audit outcomes остаются открытыми в issue #206;
+- реальные материалы портфолио и полный NAP ожидаются в issues #235 и #236;
+- production Supabase не менялся.
+
 Полный аудит 2026-07-10:
 
 - работа ведётся в ветке `audit/site-crm-full-2026-07-10`;
@@ -246,7 +275,7 @@ UI и аудит 2026-07-08:
 
 ## Исторические CI guard markers
 
-Этот блок сохраняет точные исторические формулировки, которые используются действующими workflow документации. Он не отменяет актуальный статус 2026-07-10.
+Этот блок сохраняет точные исторические формулировки, которые используются действующими workflow документации. Он не отменяет актуальный статус 2026-07-13.
 
 - Исторический checkpoint: Дата обновления: 2026-06-28.
 - Быстрый путь: Открыть доступ CRM через `?tab=user_admin`; раздел называется `Доступ и роли`.
