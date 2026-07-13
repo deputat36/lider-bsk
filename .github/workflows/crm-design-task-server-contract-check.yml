@@ -1,0 +1,56 @@
+name: CRM design task server contract check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'contracts/design-task-create-from-order-v1.json'
+      - 'contracts/crm-v4-backend-command-contract-v1.json'
+      - 'docs/CRM_DESIGN_TASK_CREATE_FROM_ORDER_SERVER_CONTRACT_2026-07-13.md'
+      - 'docs/CRM_V4_BACKEND_COMMAND_CONTRACT_2026-07-10.md'
+      - 'tools/design-task-create-from-order-reference-v1.mjs'
+      - 'tools/test_design_task_create_from_order_contract.mjs'
+      - 'tools/check_design_task_create_from_order_contract.py'
+      - 'tools/check_crm_v4_backend_command_contract.py'
+      - 'crm/v4/assets/v4/action-permissions-v1.js'
+      - 'crm/v4/assets/v4/status-transitions-v1.js'
+      - 'crm/v4/assets/v4/design-task-draft-model-v1.js'
+      - 'supabase/functions/leader-crm-orders/index.ts'
+      - '.github/workflows/crm-design-task-server-contract-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'contracts/design-task-create-from-order-v1.json'
+      - 'contracts/crm-v4-backend-command-contract-v1.json'
+      - 'docs/CRM_DESIGN_TASK_CREATE_FROM_ORDER_SERVER_CONTRACT_2026-07-13.md'
+      - 'docs/CRM_V4_BACKEND_COMMAND_CONTRACT_2026-07-10.md'
+      - 'tools/design-task-create-from-order-reference-v1.mjs'
+      - 'tools/test_design_task_create_from_order_contract.mjs'
+      - 'tools/check_design_task_create_from_order_contract.py'
+      - 'tools/check_crm_v4_backend_command_contract.py'
+      - 'crm/v4/assets/v4/action-permissions-v1.js'
+      - 'crm/v4/assets/v4/status-transitions-v1.js'
+      - 'crm/v4/assets/v4/design-task-draft-model-v1.js'
+      - 'supabase/functions/leader-crm-orders/index.ts'
+      - '.github/workflows/crm-design-task-server-contract-check.yml'
+
+jobs:
+  validate-design-task-server-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate source-only design task server contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m json.tool contracts/design-task-create-from-order-v1.json >/dev/null
+          python3 -m json.tool contracts/crm-v4-backend-command-contract-v1.json >/dev/null
+          node --check tools/design-task-create-from-order-reference-v1.mjs
+          node --check tools/test_design_task_create_from_order_contract.mjs
+          node --check crm/v4/assets/v4/action-permissions-v1.js
+          node --check crm/v4/assets/v4/status-transitions-v1.js
+          node --check crm/v4/assets/v4/design-task-draft-model-v1.js
+          node tools/test_design_task_create_from_order_contract.mjs
+          python3 tools/check_design_task_create_from_order_contract.py
+          python3 tools/check_crm_v4_backend_command_contract.py
