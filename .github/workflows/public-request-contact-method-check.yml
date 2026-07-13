@@ -1,0 +1,35 @@
+name: Public request contact method check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'request.html'
+      - 'assets/public-lead-form.js'
+      - 'assets/public-request-contact-method-v1.js'
+      - 'assets/public-request-contact-method-v1.css'
+      - 'tools/check_public_request_contact_method.py'
+      - 'docs/PUBLIC_REQUEST_CONTACT_METHOD_GUARD_2026-07-13.md'
+      - '.github/workflows/public-request-contact-method-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'request.html'
+      - 'assets/public-lead-form.js'
+      - 'assets/public-request-contact-method-v1.js'
+      - 'assets/public-request-contact-method-v1.css'
+      - 'tools/check_public_request_contact_method.py'
+      - 'docs/PUBLIC_REQUEST_CONTACT_METHOD_GUARD_2026-07-13.md'
+      - '.github/workflows/public-request-contact-method-check.yml'
+
+jobs:
+  contact-method-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate request contact method guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check assets/public-request-contact-method-v1.js
+          python3 tools/check_public_request_contact_method.py
