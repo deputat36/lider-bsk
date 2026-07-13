@@ -15,7 +15,7 @@ PUBLIC_SUBPAGES = (
     ROOT / "signs" / "index.html",
     ROOT / "auto-stickers" / "index.html",
 )
-ALLOWED_ROBOTS = {"index,follow", "noindex,follow"}
+ALLOWED_ROBOTS = {"index,follow", "noindex,follow", "noindex,nofollow"}
 
 
 class PageParser(HTMLParser):
@@ -106,6 +106,14 @@ def sitemap_urls() -> list[str]:
     return [item.strip() for item in re.findall(r"<loc>(.*?)</loc>", text, flags=re.S)]
 
 
+def valid_canonical(name: str, canonical: str, errors: list[str]) -> bool:
+    parsed = urlsplit(canonical)
+    if parsed.scheme != "https" or parsed.netloc != "www.lider-bsk.ru" or parsed.query or parsed.fragment:
+        errors.append(f"{name}: invalid public canonical {canonical!r}")
+        return False
+    return True
+
+
 def main() -> None:
     pages = public_pages()
     if not pages:
@@ -115,8 +123,10 @@ def main() -> None:
     sitemap = set(sitemap_list)
     errors: list[str] = []
     canonical_owners: dict[str, list[str]] = {}
+    robots_by_page: dict[str, str] = {}
     indexable_pages = 0
-    noindex_pages = 0
+    noindex_follow_pages = 0
+    closed_utility_pages = 0
 
     for page in pages:
         parser = PageParser()
@@ -144,16 +154,6 @@ def main() -> None:
         if len(parser.h1_texts) != 1 or not parser.h1_texts[0]:
             errors.append(f"{name}: expected exactly one non-empty H1, got {parser.h1_texts!r}")
 
-        if len(parser.canonicals) != 1:
-            errors.append(f"{name}: expected exactly one canonical, got {parser.canonicals!r}")
-            canonical = ""
-        else:
-            canonical = parser.canonicals[0]
-            parsed = urlsplit(canonical)
-            if parsed.scheme != "https" or parsed.netloc != "www.lider-bsk.ru" or parsed.query or parsed.fragment:
-                errors.append(f"{name}: invalid public canonical {canonical!r}")
-            canonical_owners.setdefault(canonical, []).append(name)
-
         if len(parser.robots) != 1:
             errors.append(f"{name}: expected exactly one robots meta, got {parser.robots!r}")
             robots = ""
@@ -161,31 +161,40 @@ def main() -> None:
             robots = normalize_robots(parser.robots[0])
             if robots not in ALLOWED_ROBOTS:
                 errors.append(f"{name}: unsupported robots value {parser.robots[0]!r}")
+        robots_by_page[name] = robots
+
+        canonical = ""
+        canonical_required = robots in {"index,follow", "noindex,follow"}
+        if canonical_required and len(parser.canonicals) != 1:
+            errors.append(f"{name}: expected exactly one canonical for {robots!r}, got {parser.canonicals!r}")
+        elif robots == "noindex,nofollow" and len(parser.canonicals) > 1:
+            errors.append(f"{name}: closed utility page may have at most one canonical, got {parser.canonicals!r}")
+
+        if len(parser.canonicals) == 1:
+            canonical = parser.canonicals[0]
+            if valid_canonical(name, canonical, errors):
+                canonical_owners.setdefault(canonical, []).append(name)
 
         self_canonical = expected_self_canonical(page)
-        is_indexable = robots == "index,follow"
-        if is_indexable:
+        if robots == "index,follow":
             indexable_pages += 1
             if canonical and canonical != self_canonical:
                 errors.append(f"{name}: indexable page canonical must be self URL {self_canonical!r}, got {canonical!r}")
             if page.parent == ROOT and self_canonical not in sitemap:
                 errors.append(f"{name}: indexable root page is missing from sitemap: {self_canonical}")
         elif robots == "noindex,follow":
-            noindex_pages += 1
+            noindex_follow_pages += 1
             if self_canonical in sitemap:
                 errors.append(f"{name}: noindex page must not be present in sitemap: {self_canonical}")
+        elif robots == "noindex,nofollow":
+            closed_utility_pages += 1
+            if self_canonical in sitemap:
+                errors.append(f"{name}: closed utility page must not be present in sitemap: {self_canonical}")
 
-    duplicates = {url: owners for url, owners in canonical_owners.items() if len(owners) > 1}
-    for url, owners in sorted(duplicates.items()):
-        # Duplicate canonical is allowed only when every owner is noindex; the page-level
-        # rules above already ensure indexable pages use their own unique canonical.
-        indexable_owners = []
-        for owner in owners:
-            page = ROOT / owner
-            parser = PageParser()
-            parser.feed(page.read_text(encoding="utf-8"))
-            if parser.robots and normalize_robots(parser.robots[0]) == "index,follow":
-                indexable_owners.append(owner)
+    for url, owners in sorted(canonical_owners.items()):
+        if len(owners) < 2:
+            continue
+        indexable_owners = [owner for owner in owners if robots_by_page.get(owner) == "index,follow"]
         if indexable_owners:
             errors.append(f"canonical {url!r} is shared by indexable page(s): {indexable_owners!r}")
 
@@ -199,7 +208,8 @@ def main() -> None:
 
     print(
         "Public HTML SEO baseline is valid: "
-        f"{len(pages)} pages, {indexable_pages} indexable, {noindex_pages} noindex, "
+        f"{len(pages)} pages, {indexable_pages} indexable, "
+        f"{noindex_follow_pages} noindex-follow, {closed_utility_pages} closed utility, "
         f"{len(sitemap_list)} sitemap URLs."
     )
 
