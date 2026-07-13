@@ -15,6 +15,8 @@
 Использовать только объекты `leader_*`. Объекты `nav_*`, `nav-*`, `parket-*` и `broker-*` относятся к другим проектным контурам.
 
 Режим автономной работы закреплён в `docs/AUTOPILOT_RULES.md`.
+Операционный checkpoint Codex: `docs/CODEX_OPERATING_STATUS_2026-06-28.md`.
+Supabase baseline РА «Лидер»: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-28.md`.
 
 ## Публичный сайт — актуальный статус
 
@@ -127,6 +129,11 @@
 - агрегаты проверялись без имён клиентов, телефонов, финансовых сумм, комментариев и содержимого ТЗ;
 - первый агрегатный запрос был исправлен после подтверждения, что у `leader_lead_needs` нет поля `is_archived`;
 - Supabase production не менялся: DDL, DML, migrations, deploy, RLS, grants, policies, Auth, Storage, Edge Functions и данные не трогались.
+
+Проверка 2026-06-28:
+
+- Supabase production не менялся;
+- исторический baseline сохранён в `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-28.md`.
 
 ## Изоляция контуров
 
