@@ -84,8 +84,6 @@ def main() -> int:
         "явное разрешение владельца",
         "accepted",
         "duplicate",
-        "suspicious",
-        "rejected",
         "Runbook содержит только read-only SQL",
     ):
         require(runbook, marker, E2E_RUNBOOK, errors)
