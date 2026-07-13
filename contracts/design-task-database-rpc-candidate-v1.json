@@ -217,7 +217,7 @@
     "success does not mutate order payment layout production or status fields",
     "response and stored receipt exclude client and financial fields",
     "security and performance advisors are reviewed",
-    "application rollback and schema rollback are rehearsed"
+    "rollback rehearsal covers application rollback and schema rollback"
   ],
   "rollback": {
     "strategy": "application_first_keep_data",
