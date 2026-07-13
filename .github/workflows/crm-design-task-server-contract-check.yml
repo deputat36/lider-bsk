@@ -54,30 +54,7 @@ jobs:
           node --check crm/v4/assets/v4/design-task-draft-model-v1.js
 
       - name: Run server contract behavior test
-        id: behavior
-        continue-on-error: true
-        shell: bash
-        run: |
-          set +e
-          node tools/test_design_task_create_from_order_contract.mjs > design-contract-test.log 2>&1
-          code=$?
-          cat design-contract-test.log
-          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
-          exit 0
-
-      - name: Upload behavior diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: design-contract-test-log
-          path: design-contract-test.log
-          if-no-files-found: error
-          retention-days: 3
-
-      - name: Enforce behavior result
-        shell: bash
-        run: |
-          test "${{ steps.behavior.outputs.exit_code }}" = "0"
+        run: node tools/test_design_task_create_from_order_contract.mjs
 
       - name: Validate detailed design action contract
         run: python3 tools/check_design_task_create_from_order_contract.py
