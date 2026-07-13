@@ -26,5 +26,7 @@ function bootSiteCacheNote() {
   import('./management-workload-panel-v1.js?v=20260712-workload-1').catch(() => {});
   import('./need-readiness-panel-v1.js?v=20260713-readiness-1').catch(() => {});
   import('./finance-plan-actual-panel-v1.js?v=20260713-finance-1').catch(() => {});
+  import('./design-task-draft-preview-v1.js?v=20260713-design-draft-1').catch(() => {});
+  import('./design-task-draft-entrypoints-v1.js?v=20260713-design-draft-1').catch(() => {});
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootSiteCacheNote); else bootSiteCacheNote();

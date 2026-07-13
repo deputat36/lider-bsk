@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import subprocess
 import sys
 
 root = Path(__file__).resolve().parents[1]
@@ -8,6 +9,7 @@ ui = root / 'crm/v4/assets/v4/order-operational-quality-v1.js'
 bootstrap = root / 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
 test = root / 'tools/test_crm_order_operational_quality.mjs'
 manual = root / 'docs/CRM_ORDER_OPERATIONAL_QUALITY_MANUAL_TEST_2026-07-12.md'
+design_draft_checker = root / 'tools/check_design_task_draft_preview.py'
 
 errors = []
 
@@ -107,8 +109,23 @@ if ui.exists():
         if marker in text:
             errors.append(f'Order operational quality UI must not request sensitive or unnecessary field: {marker}')
 
+if not design_draft_checker.exists():
+    errors.append('Missing transitive design task draft checker')
+else:
+    result = subprocess.run(
+        [sys.executable, str(design_draft_checker)],
+        cwd=root,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        details = (result.stdout + result.stderr).strip()
+        errors.append(f'Design task draft checker failed through full audit: {details}')
+
 if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
 print('CRM order operational quality queues are read-only, privacy-minimized and registry-backed.')
+print('CRM design task draft checker is included in the order full-audit path.')
