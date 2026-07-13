@@ -1,0 +1,63 @@
+name: Patch public calculation checklist CSS once
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'chto-nuzhno-dlya-rascheta.html'
+      - 'assets/public-calculation-checklist.css'
+      - 'tools/patch_public_calculation_checklist_css_once.py'
+      - 'tools/check_public_calculation_checklist_css.py'
+      - '.github/workflows/patch-public-calculation-checklist-css-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.head_ref == 'public/calculation-checklist-css-2026-07-13'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Apply guarded calculation checklist CSS migration
+        run: python3 tools/patch_public_calculation_checklist_css_once.py
+
+      - name: Validate calculation checklist migration
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 tools/check_public_calculation_checklist_css.py 2>&1 | tee patch-public-calculation-checklist-css-report.txt
+
+      - name: Upload guarded migration report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: patch-public-calculation-checklist-css-report
+          path: patch-public-calculation-checklist-css-report.txt
+          if-no-files-found: error
+
+      - name: Validate public SEO, DOM and resources
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/check_public_html_seo_baseline.py
+          python3 tools/check_public_dom_integrity.py
+          python3 tools/check_public_local_resources.py
+
+      - name: Commit migrated page and stylesheet
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- chto-nuzhno-dlya-rascheta.html assets/public-calculation-checklist.css; then
+            echo 'No migration changes to commit.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add chto-nuzhno-dlya-rascheta.html assets/public-calculation-checklist.css
+          git commit -m 'Move calculation checklist CSS to a cacheable asset'
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
