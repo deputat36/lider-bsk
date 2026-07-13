@@ -228,6 +228,37 @@
         "write lead event"
       ]
     },
+    "design_task.create_from_order": {
+      "permission": "design.write",
+      "entity": "design_task",
+      "status_domain": "design_task",
+      "status_handling": "validate_with_canonical_status_registry",
+      "transaction_required": true,
+      "optimistic_concurrency": "required",
+      "audit_target": "leader_design_task_events",
+      "audit_event": "design_task.created_from_order",
+      "required_payload_fields": [
+        "order_id",
+        "idempotency_key",
+        "need_ids",
+        "task"
+      ],
+      "result_fields": [
+        "entity",
+        "order",
+        "events",
+        "warnings"
+      ],
+      "side_effects": [
+        "validate active profile and design.write before business reads",
+        "validate order and selected design needs",
+        "prevent concurrent active design tasks for the order",
+        "derive canonical initial status and author server-side",
+        "insert design task and creation event atomically",
+        "persist idempotency receipt and safe response projection"
+      ],
+      "detail_contract": "contracts/design-task-create-from-order-v1.json"
+    },
     "production_job.update": {
       "permission": "production.write",
       "entity": "production_job",
