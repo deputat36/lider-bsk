@@ -1,0 +1,44 @@
+name: Public DOM integrity check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '*.html'
+      - 'banner/index.html'
+      - 'signs/index.html'
+      - 'auto-stickers/index.html'
+      - 'tools/check_public_dom_integrity.py'
+      - 'docs/PUBLIC_DOM_REFERENCE_INTEGRITY_2026-07-13.md'
+      - '.github/workflows/public-dom-integrity-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '*.html'
+      - 'banner/index.html'
+      - 'signs/index.html'
+      - 'auto-stickers/index.html'
+      - 'tools/check_public_dom_integrity.py'
+      - 'docs/PUBLIC_DOM_REFERENCE_INTEGRITY_2026-07-13.md'
+      - '.github/workflows/public-dom-integrity-check.yml'
+
+jobs:
+  validate-public-dom-integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate public IDs and DOM references
+        shell: bash
+        run: |
+          set +e
+          python3 tools/check_public_dom_integrity.py > public-dom-integrity-report.txt 2>&1
+          status=$?
+          cat public-dom-integrity-report.txt
+          exit "$status"
+      - name: Upload public DOM integrity report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-dom-integrity-report
+          path: public-dom-integrity-report.txt
+          if-no-files-found: error
