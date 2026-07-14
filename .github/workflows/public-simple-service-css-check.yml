@@ -7,6 +7,7 @@ on:
       - 'socseti-kontent.html'
       - 'dizayn-maketov.html'
       - 'logotip-firmennyy-stil.html'
+      - 'yandex-karty-2gis.html'
       - 'assets/public-simple-service.css'
       - 'tools/check_public_simple_service_css.py'
       - '.github/workflows/public-simple-service-css-check.yml'
@@ -16,6 +17,7 @@ on:
       - 'socseti-kontent.html'
       - 'dizayn-maketov.html'
       - 'logotip-firmennyy-stil.html'
+      - 'yandex-karty-2gis.html'
       - 'assets/public-simple-service.css'
       - 'tools/check_public_simple_service_css.py'
       - '.github/workflows/public-simple-service-css-check.yml'
@@ -25,5 +27,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate three service pages and shared stylesheet
+      - name: Validate four service pages and shared stylesheet
         run: python3 tools/check_public_simple_service_css.py

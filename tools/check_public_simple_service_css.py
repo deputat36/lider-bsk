@@ -26,16 +26,24 @@ PAGES = {
         'section': 'Что можно заказать',
         'cta': 'Заявка на логотип или стиль',
     },
+    'yandex-karty-2gis.html': {
+        'body_class': 'page-maps-listing',
+        'canonical': 'https://www.lider-bsk.ru/yandex-karty-2gis.html',
+        'h1': 'Оформление карточки в Яндекс Картах и 2ГИС',
+        'section': 'Что можно сделать',
+        'cta': 'Заявка на оформление карточки',
+    },
 }
 
 css = CSS.read_text(encoding='utf-8')
-if len(css) < 1400:
+if len(css) < 1450:
     raise SystemExit(f'Shared simple service CSS is unexpectedly small: {len(css)} bytes')
 
 for marker in (
     'body.page-social-content{--hero-start:#0b1020;--hero-end:#1f2937}',
     'body.page-design-service{--hero-start:#080b14;--hero-end:#111827}',
     'body.page-brand-identity{--hero-start:#080b14;--hero-end:#111827}',
+    'body.page-maps-listing{--hero-start:#0b1020;--hero-end:#1f2937}',
     '.hero{background:linear-gradient(135deg,var(--hero-start),var(--hero-end))',
     '.grid{display:grid;grid-template-columns:repeat(3,1fr)',
     '.cta{background:#111827;color:#fff',
@@ -50,7 +58,11 @@ for page_name, expected in PAGES.items():
 
     if '<style' in html.lower() or '</style>' in html.lower():
         raise SystemExit(f'{page_name}: inline style block returned')
-    if re.search(r'<script(?![^>]*\bsrc=)[^>]*>', html, flags=re.I):
+    if re.search(
+        r'<script(?![^>]*\bsrc=)(?![^>]*\btype=["\']application/ld\+json["\'])[^>]*>',
+        html,
+        flags=re.I,
+    ):
         raise SystemExit(f'{page_name}: executable inline script is not allowed')
 
     form_css = 'assets/public-lead-form.css?v=4'
@@ -79,4 +91,4 @@ for page_name, expected in PAGES.items():
     if 'href="tel:+79802457471"' not in html:
         raise SystemExit(f'{page_name}: phone link missing')
 
-print('Shared simple service CSS contract is valid for three pages.')
+print('Shared simple service CSS contract is valid for four pages.')
