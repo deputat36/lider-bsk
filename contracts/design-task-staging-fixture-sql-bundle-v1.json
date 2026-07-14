@@ -1,0 +1,120 @@
+{
+  "contract_version": "leader-design-task-staging-fixture-sql-bundle-v1",
+  "status": "source_only_operator_ready_auth_user_required",
+  "environment": {
+    "project_ref": "otulfnouybahfnsycxqn",
+    "production_project_ref": "ofewxuqfjhamgerwzull",
+    "production_enabled": false,
+    "repository": "deputat36/lider-bsk",
+    "exact_environment_guard_required": true
+  },
+  "input": {
+    "manifest_version": "leader-design-task-staging-fixture-manifest-v1",
+    "manifest_required": true,
+    "manifest_must_be_valid_and_unexpired": true,
+    "auth_user_must_already_exist": true,
+    "credentials_allowed": false
+  },
+  "outputs": {
+    "seed_sql": "artifacts/design-task-staging-fixture-seed.sql",
+    "cleanup_sql": "artifacts/design-task-staging-fixture-cleanup.sql",
+    "summary_json": "artifacts/design-task-staging-fixture-sql-bundle.json",
+    "file_mode": "0600",
+    "gitignored": true
+  },
+  "seed": {
+    "transaction_required": true,
+    "environment_guard_first": true,
+    "expiry_guard_required": true,
+    "auth_user_exists_guard_required": true,
+    "collision_guards_required": true,
+    "allowed_inserts": [
+      "public.leader_user_profiles",
+      "public.leader_leads",
+      "public.leader_orders",
+      "public.leader_lead_needs"
+    ],
+    "forbidden_inserts": [
+      "auth.users",
+      "public.leader_design_tasks",
+      "public.leader_design_task_events",
+      "leader_private.leader_command_receipts"
+    ],
+    "profile": {
+      "role": "manager",
+      "is_active": true,
+      "email": null,
+      "permissions": {}
+    },
+    "order": {
+      "status": "Новый",
+      "priority": "Обычный",
+      "is_archived": false,
+      "client_name": null,
+      "client_phone": null,
+      "financial_fields_zero": true,
+      "updated_at_equals_manifest_expected_updated_at": true
+    },
+    "need": {
+      "need_design": true,
+      "status": "Подтверждено",
+      "completeness_score": 100,
+      "missing_fields": []
+    },
+    "postconditions": {
+      "profiles": 1,
+      "leads": 1,
+      "orders": 1,
+      "needs": 1,
+      "design_tasks": 0,
+      "design_events": 0,
+      "receipts": 0,
+      "environment_guard": 1
+    }
+  },
+  "cleanup": {
+    "transaction_required": true,
+    "environment_guard_first": true,
+    "auth_user_delete_by_sql_forbidden": true,
+    "delete_order": [
+      "receipt",
+      "design_event",
+      "design_task",
+      "production_job",
+      "need",
+      "order",
+      "lead",
+      "profile"
+    ],
+    "auth_user_deleted_externally_last": true,
+    "postconditions_before_auth_user_delete": {
+      "profiles": 0,
+      "leads": 0,
+      "orders": 0,
+      "needs": 0,
+      "production_jobs": 0,
+      "design_tasks": 0,
+      "design_events": 0,
+      "receipts": 0,
+      "environment_guard": 1,
+      "auth_user_expected": 1
+    }
+  },
+  "privacy": {
+    "real_client_data_allowed": false,
+    "real_employee_data_allowed": false,
+    "email_in_bundle_allowed": false,
+    "password_allowed": false,
+    "jwt_allowed": false,
+    "publishable_key_allowed": false,
+    "service_role_key_allowed": false,
+    "production_ref_in_generated_sql_allowed": false
+  },
+  "execution": {
+    "generator_performs_network_calls": false,
+    "generator_executes_sql": false,
+    "operator_runs_seed_only_after_dashboard_auth_user_creation": true,
+    "operator_runs_cleanup_before_dashboard_auth_user_deletion": true,
+    "post_cleanup_snapshot_validator_required": true
+  }
+}
