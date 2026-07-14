@@ -1,0 +1,29 @@
+name: Public community advertising assets check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'reklama-v-soobshchestvah-borisoglebska.html'
+      - 'assets/public-community-ads.css'
+      - 'assets/public-community-ads.js'
+      - 'tools/check_public_community_ads_assets.py'
+      - '.github/workflows/public-community-ads-assets-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'reklama-v-soobshchestvah-borisoglebska.html'
+      - 'assets/public-community-ads.css'
+      - 'assets/public-community-ads.js'
+      - 'tools/check_public_community_ads_assets.py'
+      - '.github/workflows/public-community-ads-assets-check.yml'
+
+jobs:
+  validate-community-advertising-page:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate page assets and contract
+        run: |
+          python3 tools/check_public_community_ads_assets.py
+          node --check assets/public-community-ads.js
