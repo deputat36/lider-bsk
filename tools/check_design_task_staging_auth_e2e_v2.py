@@ -210,7 +210,7 @@ require(generator_test, [
     'validateFixtureManifest',
     'manifestDigest',
     'cleanup_order',
-    'contains_credentials',
+    "JSON.stringify(manifest).includes('password')",
     'Staging fixture manifest generator is exact-environment',
 ], 'fixture generator test')
 
