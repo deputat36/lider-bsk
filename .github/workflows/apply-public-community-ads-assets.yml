@@ -1,0 +1,46 @@
+name: Apply public community advertising asset migration
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'reklama-v-soobshchestvah-borisoglebska.html'
+      - 'assets/public-community-ads.css'
+      - 'assets/public-community-ads.js'
+      - 'tools/apply_public_community_ads_assets.py'
+      - 'tools/check_public_community_ads_assets.py'
+      - '.github/workflows/apply-public-community-ads-assets.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-migration:
+    if: github.head_ref == 'public/community-ads-assets-2026-07-14'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Apply guarded migration
+        run: python3 tools/apply_public_community_ads_assets.py
+      - name: Validate page contract
+        run: |
+          python3 tools/check_public_community_ads_assets.py
+          node --check assets/public-community-ads.js
+      - name: Validate global public contracts
+        run: |
+          python3 tools/check_public_html_seo_baseline.py
+          python3 tools/check_public_dom_integrity.py
+          python3 tools/check_public_local_resources.py
+      - name: Commit migrated page
+        run: |
+          if git diff --quiet -- reklama-v-soobshchestvah-borisoglebska.html; then
+            echo 'No page changes required.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add reklama-v-soobshchestvah-borisoglebska.html
+          git commit -m 'Externalize community advertising page assets'
+          git push origin HEAD:${{ github.head_ref }}
