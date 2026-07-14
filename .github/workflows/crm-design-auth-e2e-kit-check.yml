@@ -1,0 +1,112 @@
+name: CRM design authenticated E2E kit check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'contracts/design-task-staging-auth-e2e-v1.json'
+      - 'contracts/design-task-staging-read-path-v1.json'
+      - 'tools/design-task-staging-auth-e2e.mjs'
+      - 'tools/test_design_task_staging_auth_e2e.mjs'
+      - 'tools/run_design_task_staging_auth_e2e.ps1'
+      - 'tools/check_design_task_staging_auth_e2e.py'
+      - 'crm/v4/assets/v4/design-task-draft-preview-v1.js'
+      - 'crm/v4/assets/v4/design-task-staging-transport-v1.js'
+      - 'docs/CRM_DESIGN_TASK_STAGING_AUTH_E2E_OPERATOR_KIT_2026-07-14.md'
+      - 'docs/CRM_DESIGN_TASK_STAGING_TRANSPORT_RUNBOOK_2026-07-14.md'
+      - 'supabase/config.toml'
+      - '.github/workflows/crm-design-auth-e2e-kit-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'contracts/design-task-staging-auth-e2e-v1.json'
+      - 'contracts/design-task-staging-read-path-v1.json'
+      - 'tools/design-task-staging-auth-e2e.mjs'
+      - 'tools/test_design_task_staging_auth_e2e.mjs'
+      - 'tools/run_design_task_staging_auth_e2e.ps1'
+      - 'tools/check_design_task_staging_auth_e2e.py'
+      - 'crm/v4/assets/v4/design-task-draft-preview-v1.js'
+      - 'crm/v4/assets/v4/design-task-staging-transport-v1.js'
+      - 'docs/CRM_DESIGN_TASK_STAGING_AUTH_E2E_OPERATOR_KIT_2026-07-14.md'
+      - 'docs/CRM_DESIGN_TASK_STAGING_TRANSPORT_RUNBOOK_2026-07-14.md'
+      - 'supabase/config.toml'
+      - '.github/workflows/crm-design-auth-e2e-kit-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-authenticated-e2e-kit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate authenticated E2E contract JSON
+        run: python3 -m json.tool contracts/design-task-staging-auth-e2e-v1.json >/dev/null
+
+      - name: Validate source syntax
+        run: |
+          node --check tools/design-task-staging-auth-e2e.mjs
+          node --check tools/test_design_task_staging_auth_e2e.mjs
+          python3 -m py_compile tools/check_design_task_staging_auth_e2e.py
+
+      - name: Validate PowerShell launcher syntax
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path 'tools/run_design_task_staging_auth_e2e.ps1'),
+            [ref]$tokens,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            exit 1
+          }
+
+      - name: Run fake-network behavior tests
+        run: node tools/test_design_task_staging_auth_e2e.mjs
+
+      - name: Validate source contracts and production boundary
+        run: python3 tools/check_design_task_staging_auth_e2e.py
+
+      - name: Validate no-network plan mode
+        shell: pwsh
+        run: |
+          ./tools/run_design_task_staging_auth_e2e.ps1 -Mode plan | Tee-Object -FilePath auth-e2e-plan.json
+          $plan = Get-Content auth-e2e-plan.json -Raw | ConvertFrom-Json
+          if ($plan.project_ref -ne 'otulfnouybahfnsycxqn') { throw 'Staging project ref drifted.' }
+          if ($plan.production_enabled -ne $false) { throw 'Production must remain disabled.' }
+          if ($plan.auth_user_required -ne $true) { throw 'Auth user gate must remain explicit.' }
+
+      - name: Reject committed secret material
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -R -E --line-number \
+            'sb_secret_[A-Za-z0-9_-]{10,}|eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}|database[_-]?password[[:space:]]*[=:]' \
+            contracts/design-task-staging-auth-e2e-v1.json \
+            tools/design-task-staging-auth-e2e.mjs \
+            tools/test_design_task_staging_auth_e2e.mjs \
+            tools/run_design_task_staging_auth_e2e.ps1 \
+            docs/CRM_DESIGN_TASK_STAGING_AUTH_E2E_OPERATOR_KIT_2026-07-14.md; then
+            echo 'Possible secret material found in authenticated staging E2E kit.' >&2
+            exit 1
+          fi
+
+      - name: Protect exact environment boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -R --fixed-strings 'otulfnouybahfnsycxqn' \
+            contracts/design-task-staging-auth-e2e-v1.json \
+            tools/design-task-staging-auth-e2e.mjs \
+            tools/run_design_task_staging_auth_e2e.ps1 >/dev/null
+          grep --fixed-strings 'project_id = "ofewxuqfjhamgerwzull"' supabase/config.toml >/dev/null
+          if grep -R --line-number --fixed-strings '/rest/v1/rpc/leader_create_design_task_from_order_rpc' \
+            tools/design-task-staging-auth-e2e.mjs \
+            tools/run_design_task_staging_auth_e2e.ps1; then
+            echo 'Direct RPC path is forbidden in the operator kit.' >&2
+            exit 1
+          fi
