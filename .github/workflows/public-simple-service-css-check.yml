@@ -1,0 +1,27 @@
+name: Public simple service CSS check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'socseti-kontent.html'
+      - 'dizayn-maketov.html'
+      - 'assets/public-simple-service.css'
+      - 'tools/check_public_simple_service_css.py'
+      - '.github/workflows/public-simple-service-css-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'socseti-kontent.html'
+      - 'dizayn-maketov.html'
+      - 'assets/public-simple-service.css'
+      - 'tools/check_public_simple_service_css.py'
+      - '.github/workflows/public-simple-service-css-check.yml'
+
+jobs:
+  validate-shared-simple-service-css:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate both service pages and shared stylesheet
+        run: python3 tools/check_public_simple_service_css.py
