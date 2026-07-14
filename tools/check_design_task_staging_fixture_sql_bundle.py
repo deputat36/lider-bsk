@@ -144,7 +144,7 @@ require(generator, [
     'buildCleanupSql',
     'buildSqlBundle',
     "from leader_staging.environment_guard",
-    f"project_ref = '{STAGING}'",
+    "project_ref = '${STAGING_PROJECT_REF}'",
     "repository = 'deputat36/lider-bsk'",
     "from auth.users",
     "email_confirmed_at is not null",
