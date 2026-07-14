@@ -1,6 +1,7 @@
 body{--hero-start:#080b14;--hero-end:#111827;margin:0;font-family:Arial,Helvetica,sans-serif;color:#111827;line-height:1.6}
 body.page-social-content{--hero-start:#0b1020;--hero-end:#1f2937}
 body.page-design-service{--hero-start:#080b14;--hero-end:#111827}
+body.page-brand-identity{--hero-start:#080b14;--hero-end:#111827}
 *{box-sizing:border-box}
 a{color:inherit}
 .wrap{width:min(100% - 32px,1080px);margin:0 auto}
