@@ -9,27 +9,39 @@
 - `socseti-kontent.html`;
 - `dizayn-maketov.html`;
 - `logotip-firmennyy-stil.html`;
-- `yandex-karty-2gis.html`.
+- `yandex-karty-2gis.html`;
+- `bannery-borisoglebsk.html`;
+- `tablichki-borisoglebsk.html`;
+- `vyveski-borisoglebsk.html`;
+- `pechat-na-plenke-borisoglebsk.html`;
+- `oformlenie-vitrin-borisoglebsk.html`.
 
 ## Что изменено
 
-Четыре страницы использовали одинаковую или почти одинаковую визуальную систему. Повторяющиеся стили перенесены в единый файл:
+Девять страниц используют одну визуальную систему: hero, сетку карточек, информационный блок, CTA и одинаковый мобильный breakpoint. Повторяющиеся стили перенесены в единый файл:
 
-- `assets/public-simple-service.css?v=1`.
+- `assets/public-simple-service.css`.
+
+Первые четыре страницы продолжают использовать cache marker `v=1`. Пять новых страниц подключают `v=2`, чтобы браузер гарантированно получил расширенный набор page-классов.
 
 Различия hero-фона сохранены через классы страницы:
 
 - `page-social-content`;
 - `page-design-service`;
 - `page-brand-identity`;
-- `page-maps-listing`.
+- `page-maps-listing`;
+- `page-banner-service`;
+- `page-signage-service`;
+- `page-shop-sign-service`;
+- `page-film-print-service`;
+- `page-window-branding`.
 
 ## Что сохранено
 
 - заголовки и клиентские тексты;
 - по шесть карточек услуг на каждой странице;
 - canonical и robots;
-- Open Graph и JSON-LD страницы карт;
+- Open Graph и существующий JSON-LD;
 - телефон;
 - форма `public-lead-form.js?v=5`;
 - стили формы `public-lead-form.css?v=4`;
@@ -38,7 +50,7 @@
 
 ## Польза
 
-- один HTTP-кешируемый stylesheet вместо четырёх повторяющихся inline-блоков;
+- один HTTP-кешируемый stylesheet вместо девяти повторяющихся inline-блоков;
 - меньше размер HTML;
 - проще синхронно поддерживать адаптивность;
 - ниже риск визуального расхождения родственных страниц;
@@ -46,12 +58,12 @@
 
 ## Постоянная защита
 
-Добавлены:
+Используются:
 
 - `tools/check_public_simple_service_css.py`;
 - `.github/workflows/public-simple-service-css-check.yml`.
 
-Контракт проверяет четыре страницы одновременно, порядок CSS, hero-варианты, количество карточек, форму, canonical и отсутствие inline CSS или executable JavaScript. JSON-LD остаётся допустимым структурированным содержимым.
+Контракт проверяет девять страниц одновременно, порядок CSS, hero-варианты, количество карточек, форму, canonical и отсутствие inline CSS или executable JavaScript. JSON-LD остаётся допустимым структурированным содержимым.
 
 ## Не затронуто
 
