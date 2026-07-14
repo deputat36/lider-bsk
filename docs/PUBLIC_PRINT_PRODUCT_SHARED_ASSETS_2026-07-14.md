@@ -1,10 +1,10 @@
-# Публичный сайт РА «Лидер»: общие assets для полиграфических товаров
+# Публичный сайт РА «Лидер»: общие assets для полиграфических страниц
 
 Дата: 2026-07-14.
 
 Контур: только публичный сайт.
 
-## Страницы
+## Товарные страницы
 
 - `blanki-borisoglebsk.html`;
 - `buklety-borisoglebsk.html`;
@@ -13,21 +13,33 @@
 - `otkrytki-priglasheniya-borisoglebsk.html`;
 - `kalendari-borisoglebsk.html`;
 - `birki-etiketki-borisoglebsk.html`;
-- `papki-konverty-borisoglebsk.html`.
+- `papki-konverty-borisoglebsk.html`;
+- `razdatochnye-materialy-borisoglebsk.html`.
 
-## Что изменено
-
-Восемь страниц использовали одинаковый inline CSS и одинаковую inline-логику предзаполнения формы. Они перенесены в два общих файла:
+Девять страниц используют:
 
 - `assets/public-print-product.css?v=1`;
 - `assets/public-print-product.js?v=1`.
 
-Индивидуальный текст заявки хранится в `data-lead-message`, а услуга — в `data-lead-service` на `<body>`.
+## Полиграфический хаб
+
+`poligrafiya-borisoglebsk.html` сохраняет собственный stylesheet и визуальную систему, но использует общий `assets/public-print-product.js?v=1` для предзаполнения формы.
+
+Общий JavaScript активируется только при наличии явных `data-lead-service` или `data-lead-message` на `<body>`. Это позволяет применять его к разным визуальным шаблонам без скрытой зависимости от CSS-класса.
+
+## Что изменено
+
+- девять одинаковых inline CSS-блоков заменены одним кешируемым stylesheet;
+- десять одинаковых inline form-preset скриптов заменены одним data-driven JavaScript;
+- индивидуальный текст заявки хранится в `data-lead-message`;
+- услуга хранится в `data-lead-service`;
+- полиграфический хаб не подключает товарный CSS и сохраняет собственный дизайн.
 
 ## Что сохранено
 
 - все клиентские тексты;
-- 48 карточек суммарно;
+- 54 карточки на девяти товарных страницах;
+- шесть карточек на полиграфическом хабе;
 - индивидуальные H1 и CTA;
 - canonical и robots;
 - телефон;
@@ -35,12 +47,13 @@
 - блок связанных услуг `public-related-services.js?v=2`;
 - сервис «Полиграфия»;
 - точные сообщения каждой страницы;
+- Service JSON-LD хаба;
 - мобильный breakpoint 900 px.
 
 ## Польза
 
-- один кешируемый stylesheet вместо восьми inline CSS-блоков;
-- один data-driven preset вместо восьми inline JavaScript-блоков;
+- один кешируемый stylesheet вместо девяти inline CSS-блоков;
+- один data-driven preset вместо десяти inline JavaScript-блоков;
 - меньше HTML;
 - синхронная поддержка формы;
 - ниже риск расхождения сообщений и поведения;
@@ -48,12 +61,12 @@
 
 ## Постоянная защита
 
-Добавлены:
+Используются:
 
 - `tools/check_public_print_product_assets.py`;
 - `.github/workflows/public-print-product-assets-check.yml`.
 
-Контракт проверяет восемь страниц одновременно, 48 карточек, индивидуальные тексты, порядок assets, форму, canonical, телефон и отсутствие inline CSS/исполняемого JavaScript. JavaScript также проходит `node --check`.
+Контракт проверяет девять товарных страниц, 54 товарные карточки и полиграфический хаб: индивидуальные тексты, порядок assets, форму, canonical, телефон, отсутствие inline CSS/исполняемого JavaScript на товарных страницах и сохранность отдельного дизайна хаба. JavaScript проходит `node --check`.
 
 ## Не затронуто
 
