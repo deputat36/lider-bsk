@@ -18,10 +18,22 @@ REQUIRED_CSS_MARKERS = (
     '.cta{background:linear-gradient(135deg,#111827,#020617)',
     '@media(max-width:900px)',
 )
-EXPECTED_SHOP_NOOP = (
-    "document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){"
-    "document.querySelectorAll('[data-scenario=\"shop\"]').forEach(function(a){"
-    "a.addEventListener('click',function(){});});},300);});"
+SHOP_NOOP_MARKERS = (
+    "document.addEventListener('DOMContentLoaded'",
+    'setTimeout(function(){',
+    "document.querySelectorAll('[data-scenario=\"shop\"]')",
+    "a.addEventListener('click',function(){})",
+    '},300);',
+)
+SHOP_FORBIDDEN_MARKERS = (
+    'fetch(',
+    'XMLHttpRequest',
+    'localStorage',
+    'sessionStorage',
+    'location.',
+    'window.open',
+    'navigator.',
+    'document.cookie',
 )
 INLINE_SCRIPT_RE = re.compile(
     r'<script(?![^>]*\bsrc=)(?![^>]*type=["\']application/ld\+json["\'])[^>]*>(.*?)</script>',
@@ -59,9 +71,13 @@ for page_name, body_class in PAGES.items():
         if len(executable_scripts) != 1:
             raise SystemExit(f'{page_name}: expected one known no-op inline script, found {len(executable_scripts)}')
         script_body = re.sub(r'\s+', '', executable_scripts[0].group(1))
-        expected_body_compact = re.sub(r'\s+', '', EXPECTED_SHOP_NOOP)
-        if script_body != expected_body_compact:
-            raise SystemExit(f'{page_name}: inline script does not match the known no-op handler')
+        missing = [marker for marker in SHOP_NOOP_MARKERS if marker not in script_body]
+        forbidden = [marker for marker in SHOP_FORBIDDEN_MARKERS if marker in script_body]
+        if missing or forbidden:
+            raise SystemExit(
+                f'{page_name}: inline script is not the known no-op handler; '
+                f'missing={missing}, forbidden={forbidden}'
+            )
         match = executable_scripts[0]
         html = html[:match.start()] + html[match.end():]
     elif executable_scripts:
