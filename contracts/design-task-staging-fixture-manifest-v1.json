@@ -1,0 +1,111 @@
+{
+  "contract_version": "leader-design-task-staging-fixture-manifest-v1",
+  "status": "operator_template_no_live_ids",
+  "environment": {
+    "project_ref": "otulfnouybahfnsycxqn",
+    "production_project_ref": "ofewxuqfjhamgerwzull",
+    "production_enabled": false,
+    "exact_environment_guard_required": true
+  },
+  "purpose": "Describe one disposable synthetic staging fixture set for authenticated design-task HTTP E2E and deterministic cleanup without storing credentials.",
+  "required_document": {
+    "manifest_version": "leader-design-task-staging-fixture-manifest-v1",
+    "manifest_id": "uuid",
+    "project_ref": "otulfnouybahfnsycxqn",
+    "synthetic_only": true,
+    "production_enabled": false,
+    "created_at": "ISO-8601 timestamp",
+    "expires_at": "ISO-8601 timestamp not more than 24 hours after created_at",
+    "fixture_ids": {
+      "auth_user_id": "uuid",
+      "profile_user_id": "same uuid as auth_user_id",
+      "lead_id": "uuid",
+      "order_id": "uuid",
+      "need_id": "uuid"
+    },
+    "order_snapshot": {
+      "expected_updated_at": "ISO-8601 timestamp",
+      "need_design": true,
+      "is_archived": false
+    },
+    "command": {
+      "action": "design_task.create_from_order",
+      "idempotency_key": "non-secret unique string, max 180 characters",
+      "task_title": "synthetic title, max 300 characters"
+    },
+    "baseline_counts": {
+      "profiles": 1,
+      "leads": 1,
+      "orders": 1,
+      "needs": 1,
+      "design_tasks": 0,
+      "design_events": 0,
+      "receipts": 0,
+      "environment_guard": 1
+    },
+    "expected_after_success": {
+      "profiles": 1,
+      "leads": 1,
+      "orders": 1,
+      "needs": 1,
+      "design_tasks": 1,
+      "design_events": 1,
+      "successful_receipts": 1,
+      "environment_guard": 1
+    },
+    "cleanup_order": [
+      "receipt",
+      "design_event",
+      "design_task",
+      "need",
+      "order",
+      "lead",
+      "profile",
+      "auth_user"
+    ]
+  },
+  "identity_rules": {
+    "profile_user_id_must_equal_auth_user_id": true,
+    "lead_order_need_ids_must_be_distinct": true,
+    "all_ids_must_be_uuid": true,
+    "real_employee_or_client_ids_forbidden": true,
+    "production_auth_identity_forbidden": true
+  },
+  "secret_rules": {
+    "forbidden_keys": [
+      "email",
+      "password",
+      "access_token",
+      "refresh_token",
+      "authorization",
+      "apikey",
+      "api_key",
+      "service_role",
+      "secret"
+    ],
+    "forbidden_values": [
+      "JWT",
+      "Bearer token",
+      "publishable key value",
+      "service-role key",
+      "production project ref"
+    ]
+  },
+  "operator_lifecycle": {
+    "create_auth_user": "Supabase Dashboard or supported Auth Admin API, staging only",
+    "create_business_rows": "approved staging-only fixture SQL or Dashboard operation",
+    "run_denied_probes_before_allowed_suite": true,
+    "run_allowed_suite_once": true,
+    "validate_evidence_before_cleanup": true,
+    "delete_business_rows_in_cleanup_order": true,
+    "delete_auth_user_last": true,
+    "confirm_zero_business_counts": true,
+    "confirm_environment_guard_equals_one": true,
+    "rerun_security_and_performance_advisors": true
+  },
+  "approval_gates": [
+    "Auth user creation remains outside the connected Supabase tool until a safe lifecycle action exists",
+    "production rollout requires a separate explicit owner decision",
+    "production DDL, DML, Auth, RLS, grants, Edge and data changes are forbidden"
+  ]
+}
