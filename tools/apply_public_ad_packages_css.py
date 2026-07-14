@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import re
-import textwrap
 
 ROOT = Path(__file__).resolve().parents[1]
 PAGE = ROOT / 'komplekty-reklamy.html'
 CSS = ROOT / 'assets' / 'public-ad-packages.css'
 LINK = '  <link rel="stylesheet" href="assets/public-ad-packages.css?v=1">'
 
+
+def normalize_css(text: str) -> str:
+    return '\n'.join(line.strip() for line in text.strip().splitlines() if line.strip())
+
+
 html = PAGE.read_text(encoding='utf-8')
-css = textwrap.dedent(CSS.read_text(encoding='utf-8')).strip()
+css = normalize_css(CSS.read_text(encoding='utf-8'))
 
 if LINK in html and '<style>' not in html:
     print('Advertising packages CSS migration already applied.')
@@ -19,7 +23,7 @@ matches = re.findall(r'(?s)^  <style>\s*(.*?)\s*</style>$', html, flags=re.M)
 if len(matches) != 1:
     raise SystemExit(f'Expected exactly one page style block, found {len(matches)}')
 
-inline_css = textwrap.dedent(matches[0]).strip()
+inline_css = normalize_css(matches[0])
 if inline_css != css:
     raise SystemExit('Inline CSS does not match assets/public-ad-packages.css')
 
