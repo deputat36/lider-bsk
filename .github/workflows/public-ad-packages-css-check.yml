@@ -1,0 +1,25 @@
+name: Public advertising packages CSS check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'komplekty-reklamy.html'
+      - 'assets/public-ad-packages.css'
+      - 'tools/check_public_ad_packages_css.py'
+      - '.github/workflows/public-ad-packages-css-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'komplekty-reklamy.html'
+      - 'assets/public-ad-packages.css'
+      - 'tools/check_public_ad_packages_css.py'
+      - '.github/workflows/public-ad-packages-css-check.yml'
+
+jobs:
+  validate-ad-packages-page:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate packages page and external stylesheet
+        run: python3 tools/check_public_ad_packages_css.py
