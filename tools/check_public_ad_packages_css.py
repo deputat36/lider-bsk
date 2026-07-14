@@ -52,7 +52,7 @@ def main() -> None:
     for title in package_titles:
         require(html, title, PAGE)
 
-    if html.count('<article class="card">') + html.count('<article class="card"><div class="label">') != 6:
+    if html.count('<article class="card">') != 6:
         raise SystemExit('Expected exactly six advertising package cards')
     if html.count('<div class="level">') != 18:
         raise SystemExit('Expected three package levels for each of six packages')
