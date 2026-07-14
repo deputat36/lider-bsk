@@ -1,0 +1,162 @@
+name: CRM design staging profile probe SQL bundle check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'contracts/design-task-staging-profile-probe-sql-bundle-v1.json'
+      - 'contracts/design-task-staging-fixture-manifest-v1.json'
+      - 'crm/v4/assets/v4/action-permissions-v1.js'
+      - 'tools/create-design-task-staging-fixture-manifest.mjs'
+      - 'tools/create-design-task-staging-profile-probe-sql-bundle.mjs'
+      - 'tools/design-task-staging-auth-e2e.mjs'
+      - 'tools/design-task-staging-auth-e2e-v2.mjs'
+      - 'tools/test_create_design_task_staging_profile_probe_sql_bundle.mjs'
+      - 'tools/check_design_task_staging_profile_probe_sql_bundle.py'
+      - 'docs/CRM_DESIGN_TASK_STAGING_PROFILE_PROBE_SQL_BUNDLE_2026-07-14.md'
+      - '.github/workflows/crm-design-profile-probe-sql-bundle-check.yml'
+      - '.gitignore'
+      - 'supabase/config.toml'
+  push:
+    branches: [main]
+    paths:
+      - 'contracts/design-task-staging-profile-probe-sql-bundle-v1.json'
+      - 'contracts/design-task-staging-fixture-manifest-v1.json'
+      - 'crm/v4/assets/v4/action-permissions-v1.js'
+      - 'tools/create-design-task-staging-fixture-manifest.mjs'
+      - 'tools/create-design-task-staging-profile-probe-sql-bundle.mjs'
+      - 'tools/design-task-staging-auth-e2e.mjs'
+      - 'tools/design-task-staging-auth-e2e-v2.mjs'
+      - 'tools/test_create_design_task_staging_profile_probe_sql_bundle.mjs'
+      - 'tools/check_design_task_staging_profile_probe_sql_bundle.py'
+      - 'docs/CRM_DESIGN_TASK_STAGING_PROFILE_PROBE_SQL_BUNDLE_2026-07-14.md'
+      - '.github/workflows/crm-design-profile-probe-sql-bundle-check.yml'
+      - '.gitignore'
+      - 'supabase/config.toml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-profile-probe-sql-bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate contract JSON
+        run: python3 -m json.tool contracts/design-task-staging-profile-probe-sql-bundle-v1.json >/dev/null
+
+      - name: Validate source syntax
+        run: |
+          node --check tools/create-design-task-staging-profile-probe-sql-bundle.mjs
+          node --check tools/test_create_design_task_staging_profile_probe_sql_bundle.mjs
+          python3 -m py_compile tools/check_design_task_staging_profile_probe_sql_bundle.py
+
+      - name: Run profile probe SQL behavior tests
+        run: node tools/test_create_design_task_staging_profile_probe_sql_bundle.mjs
+
+      - name: Validate source contracts and canonical role sync
+        run: python3 tools/check_design_task_staging_profile_probe_sql_bundle.py
+
+      - name: Generate temporary fixture manifest and profile probe SQL locally
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          created_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          expires_at="$(date -u -d '+2 hours' +%Y-%m-%dT%H:%M:%SZ)"
+          node tools/create-design-task-staging-fixture-manifest.mjs \
+            --auth-user-id=22222222-2222-4222-8222-222222222222 \
+            --lead-id=33333333-3333-4333-8333-333333333333 \
+            --order-id=44444444-4444-4444-8444-444444444444 \
+            --need-id=55555555-5555-4555-8555-555555555555 \
+            --expected-updated-at="$created_at" \
+            --idempotency-key=ci-profile-probe-bundle \
+            --task-title='CI staging profile probe bundle' \
+            --created-at="$created_at" \
+            --expires-at="$expires_at" \
+            --output=artifacts/design-task-staging-fixture-manifest.json
+          node tools/create-design-task-staging-profile-probe-sql-bundle.mjs \
+            --manifest=artifacts/design-task-staging-fixture-manifest.json \
+            --output-dir=artifacts/design-task-staging-profile-probes \
+            --summary-output=artifacts/design-task-staging-profile-probe-sql-bundle.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          summary = json.loads(Path('artifacts/design-task-staging-profile-probe-sql-bundle.json').read_text(encoding='utf-8'))
+          assert summary['project_ref'] == 'otulfnouybahfnsycxqn'
+          assert summary['production_enabled'] is False
+          assert summary['contains_credentials'] is False
+          assert summary['performs_network_calls'] is False
+          assert summary['executes_sql'] is False
+          assert summary['auth_user_required'] is True
+          assert summary['auth_user_created_or_deleted_by_sql'] is False
+          assert summary['allowed_update_tables'] == ['public.leader_user_profiles']
+          assert summary['probe_order'] == [
+              'forbidden_role', 'inactive_profile', 'unknown_role', 'restore_manager'
+          ]
+          assert all(len(value) == 64 for value in summary['script_sha256'].values())
+          PY
+
+      - name: Protect generated SQL boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          dir=artifacts/design-task-staging-profile-probes
+          test -f "$dir/forbidden-role.sql"
+          test -f "$dir/inactive-profile.sql"
+          test -f "$dir/unknown-role.sql"
+          test -f "$dir/restore-manager.sql"
+          grep --fixed-strings 'otulfnouybahfnsycxqn' "$dir"/*.sql >/dev/null
+          if grep --fixed-strings 'ofewxuqfjhamgerwzull' "$dir"/*.sql; then
+            echo 'Production ref leaked into profile probe SQL.' >&2
+            exit 1
+          fi
+          if grep -E -i '\b(insert into|delete from|upsert)\b' "$dir"/*.sql; then
+            echo 'Profile probe SQL must not insert, delete or upsert.' >&2
+            exit 1
+          fi
+          if grep -E -i '\b(create|alter|drop|grant|revoke|truncate)\b' "$dir"/*.sql; then
+            echo 'Profile probe SQL must not contain DDL or grants.' >&2
+            exit 1
+          fi
+          if grep -E -i '\b(update|insert into|delete from)[[:space:]]+auth\.users\b' "$dir"/*.sql; then
+            echo 'Profile probe SQL must never mutate auth.users.' >&2
+            exit 1
+          fi
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          expected = {
+              'forbidden-role.sql': ("'accountant'", 'true'),
+              'inactive-profile.sql': ("'manager'", 'false'),
+              'unknown-role.sql': ("'staging_unknown_probe'", 'true'),
+              'restore-manager.sql': ("'manager'", 'true'),
+          }
+          for name, (role, active) in expected.items():
+              sql = Path('artifacts/design-task-staging-profile-probes', name).read_text(encoding='utf-8').lower()
+              updates = re.findall(r'update\s+([a-z0-9_.]+)', sql)
+              assert updates == ['public.leader_user_profiles'], (name, updates)
+              assert f'set role = {role}' in sql, name
+              assert f'is_active = {active}' in sql, name
+              assert 'profile_probe_business_state_changed' in sql, name
+          PY
+
+      - name: Reject committed or generated secret material
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -R -E --line-number \
+            'sb_secret_[A-Za-z0-9_-]{10,}|eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}|database[_-]?password[[:space:]]*[=:]|Bearer[[:space:]]+[A-Za-z0-9._-]{20,}' \
+            contracts/design-task-staging-profile-probe-sql-bundle-v1.json \
+            tools/create-design-task-staging-profile-probe-sql-bundle.mjs \
+            tools/test_create_design_task_staging_profile_probe_sql_bundle.mjs \
+            docs/CRM_DESIGN_TASK_STAGING_PROFILE_PROBE_SQL_BUNDLE_2026-07-14.md \
+            artifacts/design-task-staging-profile-probes \
+            artifacts/design-task-staging-profile-probe-sql-bundle.json; then
+            echo 'Possible secret material found in profile probe SQL bundle.' >&2
+            exit 1
+          fi
+
+      - name: Protect production config
+        run: grep --fixed-strings 'project_id = "ofewxuqfjhamgerwzull"' supabase/config.toml >/dev/null
