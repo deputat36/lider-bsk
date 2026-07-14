@@ -1,0 +1,207 @@
+{
+  "contract_version": "leader-design-task-staging-auth-e2e-v1",
+  "status": "operator_ready_auth_user_required",
+  "environment": {
+    "project_ref": "otulfnouybahfnsycxqn",
+    "supabase_url": "https://otulfnouybahfnsycxqn.supabase.co",
+    "production_project_ref": "ofewxuqfjhamgerwzull",
+    "production_enabled": false,
+    "exact_environment_guard_required": true
+  },
+  "purpose": "Run a real authenticated HTTP E2E against the already isolated staging design-task Edge/RPC/read-path without storing credentials or changing production.",
+  "operator_inputs": {
+    "secret_environment_variables": [
+      "STAGING_SUPABASE_PUBLISHABLE_KEY",
+      "STAGING_TEST_EMAIL",
+      "STAGING_TEST_PASSWORD"
+    ],
+    "non_secret_environment_variables": [
+      "STAGING_SUPABASE_URL",
+      "STAGING_ORDER_ID",
+      "STAGING_NEED_ID",
+      "STAGING_EXPECTED_UPDATED_AT",
+      "STAGING_IDEMPOTENCY_KEY",
+      "STAGING_TASK_TITLE",
+      "STAGING_EVIDENCE_PATH"
+    ],
+    "never_commit": [
+      "publishable key value",
+      "password",
+      "access token",
+      "refresh token",
+      "authorization header",
+      "service-role key",
+      "production JWT"
+    ]
+  },
+  "network_allowlist": {
+    "auth_token": "/auth/v1/token?grant_type=password",
+    "auth_user": "/auth/v1/user",
+    "auth_logout": "/auth/v1/logout",
+    "edge_function": "/functions/v1/leader-crm-design",
+    "read_tables": [
+      "leader_orders",
+      "leader_lead_needs",
+      "leader_design_tasks"
+    ],
+    "forbidden": [
+      "/rest/v1/rpc/leader_create_design_task_from_order_rpc",
+      "/rest/v1/leader_command_receipts",
+      "service_role",
+      "production project endpoints"
+    ]
+  },
+  "safe_read_projections": {
+    "leader_orders": [
+      "id",
+      "order_number",
+      "lead_id",
+      "project_name",
+      "status",
+      "priority",
+      "deadline",
+      "layout_status",
+      "layout_link",
+      "is_archived",
+      "updated_at"
+    ],
+    "leader_lead_needs": [
+      "id",
+      "lead_id",
+      "need_type",
+      "title",
+      "need_design",
+      "design_reason",
+      "deadline_date",
+      "status",
+      "completeness_score"
+    ],
+    "leader_design_tasks": [
+      "id",
+      "order_id",
+      "task_status",
+      "layout_status",
+      "designer_name",
+      "deadline",
+      "layout_link",
+      "created_at"
+    ]
+  },
+  "allowed_suite": {
+    "name": "create_replay_conflicts",
+    "steps": [
+      {
+        "name": "authenticate",
+        "expected_http": 200
+      },
+      {
+        "name": "safe_read_before",
+        "expected_http": 200
+      },
+      {
+        "name": "create",
+        "expected_http": 201,
+        "expected": {
+          "ok": true,
+          "idempotent_replay": false
+        }
+      },
+      {
+        "name": "exact_replay",
+        "expected_http": 200,
+        "expected": {
+          "ok": true,
+          "idempotent_replay": true
+        }
+      },
+      {
+        "name": "same_key_modified_payload",
+        "expected_http": 409,
+        "expected_error_code": "conflict"
+      },
+      {
+        "name": "new_key_active_task",
+        "expected_http": 409,
+        "expected_error_code": "conflict"
+      },
+      {
+        "name": "safe_read_after",
+        "expected_http": 200,
+        "expected_task_count": 1
+      },
+      {
+        "name": "logout_current_session",
+        "expected_http": [200, 204]
+      }
+    ]
+  },
+  "single_probe_modes": [
+    {
+      "name": "forbidden_role",
+      "expected_http": 403,
+      "expected_error_codes": ["forbidden", "access_denied"]
+    },
+    {
+      "name": "inactive_profile",
+      "expected_http": 403,
+      "expected_error_codes": ["access_denied", "profile_check_failed"]
+    },
+    {
+      "name": "unknown_role",
+      "expected_http": 403,
+      "expected_error_codes": ["forbidden", "access_denied"]
+    },
+    {
+      "name": "safe_read_denied",
+      "expected_row_count": 0
+    }
+  ],
+  "evidence": {
+    "format": "leader-design-task-staging-auth-e2e-evidence-v1",
+    "must_include": [
+      "started_at",
+      "finished_at",
+      "project_ref",
+      "mode",
+      "steps",
+      "safe_projection_columns",
+      "cleanup_required"
+    ],
+    "must_not_include": [
+      "password",
+      "email",
+      "publishable key value",
+      "access token",
+      "refresh token",
+      "authorization header",
+      "service-role key",
+      "client contacts",
+      "finance",
+      "internal comments"
+    ]
+  },
+  "cleanup": {
+    "runner_revokes_current_session": true,
+    "runner_deletes_auth_user": false,
+    "runner_deletes_database_fixtures": false,
+    "required_external_cleanup": [
+      "delete synthetic receipt",
+      "delete synthetic event",
+      "delete synthetic design task",
+      "delete synthetic need",
+      "delete synthetic order",
+      "delete synthetic lead",
+      "delete staging profile",
+      "delete temporary staging Auth user through Dashboard or Admin API",
+      "confirm business counts are zero",
+      "confirm environment guard equals one",
+      "rerun security and performance advisors"
+    ]
+  },
+  "approval_gates": [
+    "temporary staging Auth user must be created outside the connector",
+    "production rollout requires a separate explicit owner decision",
+    "production Auth identities or JWTs are forbidden",
+    "real employee or client data is forbidden"
+  ]
+}
