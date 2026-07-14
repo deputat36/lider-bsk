@@ -88,10 +88,9 @@ for page_name, expected in PAGES.items():
         raise SystemExit(f'{page_name}: H1 changed')
     if f'<h2>{expected["cta"]}</h2>' not in html:
         raise SystemExit(f'{page_name}: CTA heading changed')
-    if html.count('class="card"') != expected['cards']:
-        raise SystemExit(
-            f'{page_name}: expected {expected["cards"]} cards, found {html.count("class=\"card\"")}'
-        )
+    card_count = html.count('class="card"')
+    if card_count != expected['cards']:
+        raise SystemExit(f'{page_name}: expected {expected["cards"]} cards, found {card_count}')
     if html.count('class="step"') != 4:
         raise SystemExit(f'{page_name}: expected four process steps')
     if html.count('id="leader-lead-form"') != 1:
