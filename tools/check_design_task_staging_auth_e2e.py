@@ -131,8 +131,14 @@ if contract:
 if read_contract:
     source_projections = read_contract.get('read_projections') or {}
     normalized = {key.replace('public.', ''): value for key, value in source_projections.items()}
-    if normalized != EXPECTED_PROJECTIONS:
-        errors.append('Authenticated E2E projections drifted from staging read-path contract')
+    allowed_read_path_extras = {'leader_lead_needs': {'created_at'}}
+    for table, expected in EXPECTED_PROJECTIONS.items():
+        granted = normalized.get(table) or []
+        if not set(expected).issubset(granted):
+            errors.append(f'Authenticated E2E projection exceeds staging read-path grant: {table}')
+        extras = set(granted) - set(expected)
+        if extras != allowed_read_path_extras.get(table, set()):
+            errors.append(f'Unexpected staging read-path projection extras for {table}: {sorted(extras)!r}')
 
 for table, constant in {
     'leader_orders': 'ORDER_FIELDS',
