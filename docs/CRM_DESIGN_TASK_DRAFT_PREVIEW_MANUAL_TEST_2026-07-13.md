@@ -272,3 +272,5 @@ Live design tasks сейчас отсутствуют. Не создавать p
 - блокировки передачи в производство;
 - backfill задач для двух текущих заказов;
 - изменений схемы, RLS, grants, RPC или Edge Functions.
+
+Source-only staging transport и оставшиеся Auth/read-path gates описаны в `docs/CRM_DESIGN_TASK_STAGING_TRANSPORT_RUNBOOK_2026-07-14.md`. В текущей production CRM кнопка по-прежнему должна показывать `Создать задачу в CRM — отключено`.

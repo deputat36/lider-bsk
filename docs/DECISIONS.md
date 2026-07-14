@@ -158,3 +158,19 @@
 4. `duplicate`, `suspicious` и `rejected` выполняются только как отдельные согласованные сценарии.
 5. Персональные данные не публикуются в GitHub issue и отчётах.
 6. До разрешения владельца production-заявка не отправляется.
+
+## ADR-014. Создание дизайн-задачи подключается через staging-locked transport
+
+Решение: browser transport команды `design_task.create_from_order` сначала существует только как source-only модуль с точной проверкой staging project ref. Production CRM остаётся read-only preview и не получает рабочую кнопку до отдельного решения владельца.
+
+Причина: staging Edge/RPC уже проверяют JWT, активный профиль, canonical `design.write`, транзакционность и идемпотентность, но authenticated positive E2E и безопасный browser read-path ещё не доказаны. Нельзя превращать готовность backend-кода в скрытый production rollout.
+
+Требования:
+
+1. Использовать текущую Supabase-сессию пользователя, не service-role key.
+2. Проверять `design.write` через `action-permissions-v1.js`, не создавать вторую browser-матрицу ролей.
+3. Отправлять только минимальный command envelope без actor/status/designer/client/finance/internal fields.
+4. Точный повтор должен возвращать replay без дубликата.
+5. После успеха перечитывать задачу через отдельно проверенный safe staging read-path.
+6. Production project ref должен fail closed до любого сетевого вызова.
+7. Auth user, read grants/RLS, browser E2E и production rollout остаются отдельными gates.

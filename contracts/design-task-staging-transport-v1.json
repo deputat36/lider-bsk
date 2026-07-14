@@ -1,0 +1,77 @@
+{
+  "contract_version": "leader-design-task-staging-transport-v1",
+  "scope": "crm_v4_source_only_staging_transport",
+  "environment": {
+    "allowed_project_ref": "otulfnouybahfnsycxqn",
+    "production_project_ref": "ofewxuqfjhamgerwzull",
+    "production_enabled": false,
+    "function_slug": "leader-crm-design",
+    "verify_jwt_required": true
+  },
+  "authorization": {
+    "session_source": "current_supabase_client_session",
+    "required_action": "design.write",
+    "canonical_registry": "crm/v4/assets/v4/action-permissions-v1.js",
+    "browser_service_role_allowed": false,
+    "browser_actor_fields_allowed": false
+  },
+  "request": {
+    "action": "design_task.create_from_order",
+    "envelope_fields": [
+      "action",
+      "request_id",
+      "expected_updated_at",
+      "payload"
+    ],
+    "payload_fields": [
+      "order_id",
+      "production_job_id",
+      "idempotency_key",
+      "need_ids",
+      "task"
+    ],
+    "task_fields": [
+      "title",
+      "priority",
+      "deadline",
+      "task_text",
+      "reference_link"
+    ]
+  },
+  "forbidden_browser_fields": [
+    "actor_id",
+    "actor_email",
+    "author",
+    "owner_id",
+    "created_by",
+    "designer_name",
+    "task_status",
+    "layout_status",
+    "source",
+    "client_name",
+    "client_phone",
+    "client_total",
+    "contractor_cost",
+    "profit",
+    "payment_status",
+    "internal_comment"
+  ],
+  "results": {
+    "create_http": 201,
+    "replay_http": 200,
+    "validation_http": 400,
+    "forbidden_http": 403,
+    "not_found_http": 404,
+    "conflict_http": 409,
+    "persistence_http": 500,
+    "read_after_success_required": true
+  },
+  "current_gates": [
+    "separate staging Auth user",
+    "active staging leader_user_profiles row",
+    "authenticated positive E2E",
+    "safe staging read-path grants and RLS validation",
+    "manual browser Network evidence",
+    "separate production approval"
+  ]
+}

@@ -180,6 +180,7 @@ export function buildDesignTaskDraftPreview({
     statusKnown: orderStatus.known,
     priority: text(order?.priority) || 'Обычный',
     deadline: dateIso(order?.deadline),
+    updatedAt: dateIso(order?.updated_at),
     layoutStatus: text(order?.layout_status),
     layoutLinkPresent: Boolean(text(order?.layout_link)),
     leadId

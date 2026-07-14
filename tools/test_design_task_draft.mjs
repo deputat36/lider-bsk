@@ -12,6 +12,7 @@ const order = {
   layout_status: 'Макета нет',
   layout_link: '',
   is_archived: false,
+  updated_at: '2026-07-14T08:00:00.000Z',
   client_total: 999999,
   contractor_cost: 777777,
   profit: 222222,
@@ -48,6 +49,7 @@ assert.equal(ready.draft.order_id, 'order-1');
 assert.equal(ready.draft.idempotency_key, 'design_task.create_from_order:order-1:v1');
 assert.equal(ready.draft.task.task_status, 'Новая');
 assert.equal(ready.draft.task.deadline, '2026-07-18T00:00:00.000Z');
+assert.equal(ready.order.updatedAt, '2026-07-14T08:00:00.000Z');
 assert.equal(ready.draft.evidence.deadline_source, 'need.deadline_date');
 assert.deepEqual(ready.statusFlow.allowedFromInitial.map((item) => item.key), ['in_progress', 'cancelled']);
 

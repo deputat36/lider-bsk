@@ -106,7 +106,7 @@ Supabase baseline РА «Лидер»: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-
 
 ## Staging backend дизайн-задач
 
-Обновление 2026-07-13:
+Обновление 2026-07-14:
 
 - PR #277 добавил изолированный staging-контур database/RPC для `design_task.create_from_order`;
 - staging использует exact environment guard и не содержит production data;
@@ -117,8 +117,14 @@ Supabase baseline РА «Лидер»: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-
 - `leader-crm-design v1` развёрнута только в staging, имеет статус `ACTIVE` и `verify_jwt=true`;
 - Edge source fail-closed возвращает `wrong_environment` вне staging;
 - security/performance advisors не имеют WARN/ERROR;
-- внешний unauthenticated smoke не подтверждён из-за DNS текущей среды;
+- внешний unauthenticated POST подтверждён: HTTP `401`, `UNAUTHORIZED_NO_AUTH_HEADER`;
 - authenticated positive E2E не выполнялся, потому что staging Auth user ещё не создан;
+- подготовлен source-only `design-task-staging-transport-v1.js` с exact staging lock и текущей JWT-сессией;
+- production `config.js` не менялся, рабочая кнопка создания задачи остаётся отключённой;
+- transport минимизирует command envelope, различает create/replay/ошибки и вызывает safe read-path после успеха;
+- behavior tests покрывают production lock, отсутствие server-owned/client/finance fields, replay и конфликты;
+- staging browser read-path пока заблокирован отсутствием минимальных `authenticated` SELECT grants/RLS policies;
+- точный Auth/read-path/cleanup runbook: `docs/CRM_DESIGN_TASK_STAGING_TRANSPORT_RUNBOOK_2026-07-14.md`;
 - production RPC, receipt, unique index и `leader-crm-design` отсутствуют.
 
 ## Договоры из заказа
@@ -163,7 +169,7 @@ Supabase baseline РА «Лидер»: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-
 - production `leader_design_tasks` — 0 строк;
 - production `leader_design_task_events` — 0 строк;
 - production `leader_design_task_comments` — 0 строк;
-- staging profiles/orders/needs/design tasks/events/receipts — 0 строк после тестов и deploy;
+- staging profiles/orders/needs/design tasks/events/receipts — 0 строк после тестов, deploy и unauthenticated smoke;
 - staging environment guard — 1 строка;
 - агрегаты проверялись без имён клиентов, телефонов, финансовых сумм, комментариев и содержимого ТЗ;
 - первый production агрегатный запрос был исправлен после подтверждения, что у `leader_lead_needs` нет поля `is_archived`;
