@@ -1,0 +1,102 @@
+{
+  "contract_version": "leader-design-task-staging-post-cleanup-snapshot-contract-v1",
+  "snapshot_version": "leader-design-task-staging-post-cleanup-snapshot-v1",
+  "status": "source_only_read_only_validator_ready",
+  "environment": {
+    "project_ref": "otulfnouybahfnsycxqn",
+    "production_project_ref": "ofewxuqfjhamgerwzull",
+    "production_enabled": false,
+    "exact_environment_guard_required": true
+  },
+  "purpose": "Prove that temporary staging Auth and design-task E2E fixtures were fully removed while the approved staging RPC, read-path and privilege boundaries remain intact.",
+  "collector": {
+    "path": "supabase/staging-queries/20260714_design_task_post_cleanup_snapshot.sql",
+    "read_only": true,
+    "forbidden_sql": [
+      "insert",
+      "update",
+      "delete",
+      "truncate",
+      "alter",
+      "drop",
+      "create",
+      "grant",
+      "revoke"
+    ]
+  },
+  "expected_counts": {
+    "auth_users": 0,
+    "profiles": 0,
+    "leads": 0,
+    "orders": 0,
+    "needs": 0,
+    "production_jobs": 0,
+    "design_tasks": 0,
+    "design_events": 0,
+    "receipts": 0,
+    "environment_guard": 1
+  },
+  "required_objects": {
+    "design_rpc_present": true,
+    "read_helper_present": true,
+    "active_index_present": true,
+    "select_policy_count": 3
+  },
+  "required_privileges": {
+    "authenticated_direct_rpc_execute": false,
+    "authenticated_receipt_select": false,
+    "authenticated_orders_table_select": false,
+    "authenticated_orders_id_select": true,
+    "authenticated_orders_client_phone_select": false
+  },
+  "runtime_invariants": {
+    "staging_edge_function": {
+      "slug": "leader-crm-design",
+      "version": 1,
+      "status": "ACTIVE",
+      "verify_jwt": true
+    },
+    "production_edge_function_absent": "leader-crm-design",
+    "production_database_objects_absent": [
+      "public.leader_create_design_task_from_order_rpc(jsonb)",
+      "leader_private.leader_command_receipts",
+      "public.leader_design_tasks_one_active_per_order_uidx",
+      "leader_private.leader_has_crm_action(text)"
+    ]
+  },
+  "validation": {
+    "validator": "tools/validate-design-task-staging-post-cleanup-snapshot.mjs",
+    "requires_exact_keys": true,
+    "requires_iso_timestamp": true,
+    "rejects_production_ref": true,
+    "rejects_credentials_or_private_data": true,
+    "rejects_extra_top_level_fields": true
+  },
+  "evidence_rules": {
+    "allowed_top_level_fields": [
+      "snapshot_version",
+      "project_ref",
+      "captured_at",
+      "counts",
+      "objects",
+      "privileges"
+    ],
+    "forbidden_content": [
+      "email",
+      "phone",
+      "password",
+      "access token",
+      "refresh token",
+      "authorization header",
+      "service-role key",
+      "client contacts",
+      "finance",
+      "internal comments",
+      "production project ref"
+    ]
+  },
+  "approval_gates": [
+    "real authenticated E2E still requires a disposable staging Auth user created outside the connector",
+    "production rollout requires a separate explicit owner decision"
+  ]
+}
