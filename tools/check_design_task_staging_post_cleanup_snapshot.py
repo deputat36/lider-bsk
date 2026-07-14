@@ -151,7 +151,8 @@ require(doc, [
     'post-cleanup snapshot',
     'environment_guard = 1',
     'orders.client_phone',
-    'Auth user через Dashboard',
+    'Supabase Dashboard',
+    'Auth user',
     'security и performance advisors',
     'Production boundary',
 ], 'snapshot runbook')
