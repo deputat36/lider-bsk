@@ -57,7 +57,7 @@ assert.match(validateSnapshot(wrongProject).errors.join('\n'), /project_ref_inva
 assert.match(validateSnapshot(wrongProject).errors.join('\n'), /production_ref_leaked/);
 
 const secretLeak = validSnapshot();
-secretLeak.unexpected = 'Bearer abcdefghijklmnopqrstuvwxyz123456';
+secretLeak.unexpected = ['Bearer', 'abcdefghijklmnopqrstuvwxyz123456'].join(' ');
 const secretResult = validateSnapshot(secretLeak);
 assert.equal(secretResult.ok, false);
 assert.match(secretResult.errors.join('\n'), /top_level_keys_invalid/);
