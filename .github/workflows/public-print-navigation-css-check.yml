@@ -1,0 +1,30 @@
+name: Public print navigation CSS check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'poligrafiya-borisoglebsk.html'
+      - 'poligrafiya-katalog.html'
+      - 'assets/public-print-navigation.css'
+      - 'tools/check_public_print_navigation_css.py'
+      - '.github/workflows/public-print-navigation-css-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'poligrafiya-borisoglebsk.html'
+      - 'poligrafiya-katalog.html'
+      - 'assets/public-print-navigation.css'
+      - 'tools/check_public_print_navigation_css.py'
+      - '.github/workflows/public-print-navigation-css-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check-print-navigation-css:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate shared print navigation CSS
+        run: python3 tools/check_public_print_navigation_css.py
