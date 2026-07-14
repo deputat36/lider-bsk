@@ -1,0 +1,133 @@
+name: CRM design post-cleanup snapshot check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'contracts/design-task-staging-post-cleanup-snapshot-v1.json'
+      - 'supabase/staging-queries/20260714_design_task_post_cleanup_snapshot.sql'
+      - 'tools/validate-design-task-staging-post-cleanup-snapshot.mjs'
+      - 'tools/test_design_task_staging_post_cleanup_snapshot.mjs'
+      - 'tools/check_design_task_staging_post_cleanup_snapshot.py'
+      - 'docs/CRM_DESIGN_TASK_STAGING_POST_CLEANUP_SNAPSHOT_2026-07-14.md'
+      - '.github/workflows/crm-design-post-cleanup-snapshot-check.yml'
+      - '.gitignore'
+      - 'supabase/config.toml'
+  push:
+    branches: [main]
+    paths:
+      - 'contracts/design-task-staging-post-cleanup-snapshot-v1.json'
+      - 'supabase/staging-queries/20260714_design_task_post_cleanup_snapshot.sql'
+      - 'tools/validate-design-task-staging-post-cleanup-snapshot.mjs'
+      - 'tools/test_design_task_staging_post_cleanup_snapshot.mjs'
+      - 'tools/check_design_task_staging_post_cleanup_snapshot.py'
+      - 'docs/CRM_DESIGN_TASK_STAGING_POST_CLEANUP_SNAPSHOT_2026-07-14.md'
+      - '.github/workflows/crm-design-post-cleanup-snapshot-check.yml'
+      - '.gitignore'
+      - 'supabase/config.toml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-post-cleanup-snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate contract JSON
+        run: python3 -m json.tool contracts/design-task-staging-post-cleanup-snapshot-v1.json >/dev/null
+
+      - name: Validate source syntax
+        run: |
+          node --check tools/validate-design-task-staging-post-cleanup-snapshot.mjs
+          node --check tools/test_design_task_staging_post_cleanup_snapshot.mjs
+          python3 -m py_compile tools/check_design_task_staging_post_cleanup_snapshot.py
+
+      - name: Run validator behavior tests
+        run: node tools/test_design_task_staging_post_cleanup_snapshot.mjs
+
+      - name: Validate source contracts and production boundary
+        run: python3 tools/check_design_task_staging_post_cleanup_snapshot.py
+
+      - name: Validate a local clean snapshot fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          cat > artifacts/design-task-staging-post-cleanup-snapshot.json <<'JSON'
+          {
+            "snapshot_version": "leader-design-task-staging-post-cleanup-snapshot-v1",
+            "project_ref": "otulfnouybahfnsycxqn",
+            "captured_at": "2026-07-14T10:55:52.829916+00:00",
+            "counts": {
+              "auth_users": 0,
+              "profiles": 0,
+              "leads": 0,
+              "orders": 0,
+              "needs": 0,
+              "production_jobs": 0,
+              "design_tasks": 0,
+              "design_events": 0,
+              "receipts": 0,
+              "environment_guard": 1
+            },
+            "objects": {
+              "design_rpc_present": true,
+              "read_helper_present": true,
+              "active_index_present": true,
+              "select_policy_count": 3
+            },
+            "privileges": {
+              "authenticated_direct_rpc_execute": false,
+              "authenticated_receipt_select": false,
+              "authenticated_orders_table_select": false,
+              "authenticated_orders_id_select": true,
+              "authenticated_orders_client_phone_select": false
+            }
+          }
+          JSON
+          node tools/validate-design-task-staging-post-cleanup-snapshot.mjs \
+            artifacts/design-task-staging-post-cleanup-snapshot.json \
+            | tee post-cleanup-validation.json
+          python3 - <<'PY'
+          import json
+          result = json.load(open('post-cleanup-validation.json', encoding='utf-8'))
+          assert result['ok'] is True
+          assert result['summary']['cleanup_complete'] is True
+          PY
+
+      - name: Protect read-only SQL collector
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          source = Path('supabase/staging-queries/20260714_design_task_post_cleanup_snapshot.sql').read_text(encoding='utf-8')
+          source = re.sub(r'--[^\n]*', '', source).lower()
+          for verb in ('insert', 'update', 'delete', 'truncate', 'alter', 'drop', 'create', 'grant', 'revoke'):
+              assert not re.search(rf'\b{verb}\b', source), verb
+          assert 'otulfnouybahfnsycxqn' in source
+          PY
+
+      - name: Reject committed secret material
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -R -E --line-number \
+            'sb_secret_[A-Za-z0-9_-]{10,}|eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}|database[_-]?password[[:space:]]*[=:]' \
+            contracts/design-task-staging-post-cleanup-snapshot-v1.json \
+            supabase/staging-queries/20260714_design_task_post_cleanup_snapshot.sql \
+            tools/validate-design-task-staging-post-cleanup-snapshot.mjs \
+            tools/test_design_task_staging_post_cleanup_snapshot.mjs \
+            docs/CRM_DESIGN_TASK_STAGING_POST_CLEANUP_SNAPSHOT_2026-07-14.md; then
+            echo 'Possible secret material found in post-cleanup snapshot package.' >&2
+            exit 1
+          fi
+
+      - name: Protect production config
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep --fixed-strings 'project_id = "ofewxuqfjhamgerwzull"' supabase/config.toml >/dev/null
