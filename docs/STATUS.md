@@ -1,6 +1,6 @@
 # Статус проекта РА «Лидер»
 
-Дата обновления: 2026-07-13.
+Дата обновления: 2026-07-14.
 
 ## Основной контур
 
@@ -116,16 +116,19 @@ Supabase baseline РА «Лидер»: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-
 - PR #279 добавил JWT-protected, RPC-only Edge Function `leader-crm-design`;
 - `leader-crm-design v1` развёрнута только в staging, имеет статус `ACTIVE` и `verify_jwt=true`;
 - Edge source fail-closed возвращает `wrong_environment` вне staging;
-- security/performance advisors не имеют WARN/ERROR;
 - внешний unauthenticated POST подтверждён: HTTP `401`, `UNAUTHORIZED_NO_AUTH_HEADER`;
-- authenticated positive E2E не выполнялся, потому что staging Auth user ещё не создан;
-- подготовлен source-only `design-task-staging-transport-v1.js` с exact staging lock и текущей JWT-сессией;
+- PR #281 добавил source-only staging transport с текущей JWT-сессией и production lock;
 - production `config.js` не менялся, рабочая кнопка создания задачи остаётся отключённой;
-- transport минимизирует command envelope, различает create/replay/ошибки и вызывает safe read-path после успеха;
-- behavior tests покрывают production lock, отсутствие server-owned/client/finance fields, replay и конфликты;
-- staging browser read-path пока заблокирован отсутствием минимальных `authenticated` SELECT grants/RLS policies;
+- staging browser read-path теперь использует только column-level SELECT к `leader_orders`, `leader_lead_needs` и `leader_design_tasks`;
+- RLS требует `auth.uid()`, активный профиль и canonical `design.read`;
+- owner/admin/manager/designer разрешены; accountant/installer/contractor/inactive/unknown fail closed;
+- private columns, browser writes, receipt SELECT и direct design RPC для `authenticated` запрещены;
+- SQL role simulation подтвердила safe projections и отрицательные сценарии без создания Auth users;
+- после проверки profiles/orders/needs/tasks/events/receipts снова равны нулю, environment guard равен 1;
+- security/performance advisors не имеют WARN/ERROR по staging `leader_*`;
+- authenticated HTTP create/replay/conflict/role и реальный read-after-success остаются непроверенными до отдельного staging Auth user;
 - точный Auth/read-path/cleanup runbook: `docs/CRM_DESIGN_TASK_STAGING_TRANSPORT_RUNBOOK_2026-07-14.md`;
-- production RPC, receipt, unique index и `leader-crm-design` отсутствуют.
+- production RPC, receipt, unique index, read-path policies и `leader-crm-design` отсутствуют.
 
 ## Договоры из заказа
 
@@ -153,7 +156,7 @@ Supabase baseline РА «Лидер»: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-
 
 - `leader-crm-design v1`, `verify_jwt=true`.
 
-Проверка 2026-07-13:
+Проверка 2026-07-14:
 
 - production `ofewxuqfjhamgerwzull` имеет статус `ACTIVE_HEALTHY`;
 - production PostgreSQL — `17.6.1.121`, release channel `ga`;
@@ -169,10 +172,11 @@ Supabase baseline РА «Лидер»: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-
 - production `leader_design_tasks` — 0 строк;
 - production `leader_design_task_events` — 0 строк;
 - production `leader_design_task_comments` — 0 строк;
-- staging profiles/orders/needs/design tasks/events/receipts — 0 строк после тестов, deploy и unauthenticated smoke;
+- staging read-path имеет 3 SELECT policies и exact column-level grants для `authenticated`;
+- staging profiles/orders/needs/design tasks/events/receipts — 0 строк после проверки и cleanup;
 - staging environment guard — 1 строка;
+- staging security/performance advisors не имеют WARN/ERROR по `leader_*`;
 - агрегаты проверялись без имён клиентов, телефонов, финансовых сумм, комментариев и содержимого ТЗ;
-- первый production агрегатный запрос был исправлен после подтверждения, что у `leader_lead_needs` нет поля `is_archived`;
 - Supabase production не менялся: DDL, DML, migrations, deploy, RLS, grants, policies, Auth, Storage, Edge Functions и данные не трогались.
 
 Проверка 2026-06-28:
