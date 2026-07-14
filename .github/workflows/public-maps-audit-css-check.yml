@@ -1,0 +1,25 @@
+name: Public maps audit CSS check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'audit-kart-yandex-2gis-borisoglebsk.html'
+      - 'assets/public-maps-audit.css'
+      - 'tools/check_public_maps_audit_css.py'
+      - '.github/workflows/public-maps-audit-css-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'audit-kart-yandex-2gis-borisoglebsk.html'
+      - 'assets/public-maps-audit.css'
+      - 'tools/check_public_maps_audit_css.py'
+      - '.github/workflows/public-maps-audit-css-check.yml'
+
+jobs:
+  validate-public-maps-audit-css:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate maps audit page and stylesheet
+        run: python3 tools/check_public_maps_audit_css.py
