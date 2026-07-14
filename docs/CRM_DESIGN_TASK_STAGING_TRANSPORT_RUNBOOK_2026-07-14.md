@@ -5,7 +5,7 @@
 - staging: `otulfnouybahfnsycxqn`;
 - production: `ofewxuqfjhamgerwzull`;
 - `leader-crm-design v1` — `ACTIVE`, `verify_jwt=true`;
-- unauthenticated POST подтверждён: HTTP 401;
+- unauthenticated POST подтверждён: HTTP 401, `UNAUTHORIZED_NO_AUTH_HEADER`;
 - RPC, private receipt и unique active-task index присутствуют только в staging;
 - safe staging read-path применён и проверен;
 - staging business counts после проверки — 0;
@@ -28,7 +28,7 @@ Authenticated positive E2E не выполнен: подключённый ин�
 
 Рабочая CRM продолжает указывать на production, поэтому production-кнопка остаётся отключённой.
 
-## Safe staging read-path — выполнено
+## safe staging read-path — выполнено
 
 Migration:
 
