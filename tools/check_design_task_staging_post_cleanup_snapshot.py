@@ -127,7 +127,7 @@ require(validator, [
     'EXPECTED_PRIVILEGES',
     'unwrapSnapshot',
     'validateSnapshot',
-    'top_level_keys_invalid',
+    '_keys_invalid',
     'production_ref_leaked',
     'secret_like_value',
     'cleanup_complete',
