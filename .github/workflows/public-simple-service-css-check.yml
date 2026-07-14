@@ -13,6 +13,8 @@ on:
       - 'vyveski-borisoglebsk.html'
       - 'pechat-na-plenke-borisoglebsk.html'
       - 'oformlenie-vitrin-borisoglebsk.html'
+      - 'outdoor-advertising-borisoglebsk.html'
+      - 'nakleyki-plotternaya-rezka-borisoglebsk.html'
       - 'assets/public-simple-service.css'
       - 'tools/check_public_simple_service_css.py'
       - '.github/workflows/public-simple-service-css-check.yml'
@@ -28,6 +30,8 @@ on:
       - 'vyveski-borisoglebsk.html'
       - 'pechat-na-plenke-borisoglebsk.html'
       - 'oformlenie-vitrin-borisoglebsk.html'
+      - 'outdoor-advertising-borisoglebsk.html'
+      - 'nakleyki-plotternaya-rezka-borisoglebsk.html'
       - 'assets/public-simple-service.css'
       - 'tools/check_public_simple_service_css.py'
       - '.github/workflows/public-simple-service-css-check.yml'
@@ -37,5 +41,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate nine service pages and shared stylesheet
+      - name: Validate eleven service pages and shared stylesheet
         run: python3 tools/check_public_simple_service_css.py
