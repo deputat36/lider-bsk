@@ -8,12 +8,15 @@ body.page-signage-service{--hero-start:#0b1020;--hero-end:#1f2937}
 body.page-shop-sign-service{--hero-start:#080b14;--hero-end:#111827}
 body.page-film-print-service{--hero-start:#080b14;--hero-end:#111827}
 body.page-window-branding{--hero-start:#080b14;--hero-end:#111827}
+body.page-outdoor-overview{--hero-start:#080b14;--hero-end:#111827}
+body.page-plotter-stickers{--hero-start:#07111f;--hero-end:#111827}
 *{box-sizing:border-box}
 a{color:inherit}
 .wrap{width:min(100% - 32px,1080px);margin:0 auto}
 .hero{background:linear-gradient(135deg,var(--hero-start),var(--hero-end));color:#fff;padding:62px 0}
 .hero h1{font-size:clamp(36px,6vw,62px);line-height:1;margin:0 0 18px;font-weight:900}
 .hero p{font-size:20px;color:rgba(255,255,255,.82);max-width:850px}
+body.page-outdoor-overview .hero p{max-width:860px}
 .btn{display:inline-flex;background:#f6c343;color:#111827;border-radius:999px;padding:13px 20px;text-decoration:none;font-weight:900;margin-top:12px}
 .section{padding:54px 0}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
@@ -25,4 +28,5 @@ h3{font-size:22px;margin:0 0 10px}
 .cta{background:#111827;color:#fff;border-radius:30px;padding:32px;display:grid;grid-template-columns:.9fr 1.1fr;gap:24px}
 .cta p{color:rgba(255,255,255,.8)}
 .back{display:inline-block;margin-bottom:20px;color:rgba(255,255,255,.75)}
+body.page-outdoor-overview .back{color:#667085}
 @media(max-width:860px){.grid,.cta{grid-template-columns:1fr}}
