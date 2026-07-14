@@ -7,4 +7,7 @@
 /artifacts/design-task-staging-post-cleanup-snapshot.json
 /artifacts/design-task-staging-profile-probes/
 /artifacts/design-task-staging-profile-probe-sql-bundle.json
+/artifacts/design-task-staging-stale-order/
+/artifacts/design-task-staging-stale-order-sql-bundle.json
+/artifacts/design-task-staging-stale-order-evidence.json
 /auth-e2e-plan.json

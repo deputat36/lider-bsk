@@ -1,0 +1,190 @@
+name: CRM design staging stale-order probe check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'contracts/design-task-staging-stale-order-probe-v1.json'
+      - 'contracts/design-task-staging-fixture-manifest-v1.json'
+      - 'crm/v4/assets/v4/action-permissions-v1.js'
+      - 'tools/create-design-task-staging-fixture-manifest.mjs'
+      - 'tools/create-design-task-staging-stale-order-sql-bundle.mjs'
+      - 'tools/design-task-staging-auth-e2e.mjs'
+      - 'tools/design-task-staging-auth-e2e-v2.mjs'
+      - 'tools/design-task-staging-stale-order-e2e-v1.mjs'
+      - 'tools/validate-design-task-staging-stale-order-evidence.mjs'
+      - 'tools/run_design_task_staging_stale_order_e2e.ps1'
+      - 'tools/test_create_design_task_staging_stale_order_sql_bundle.mjs'
+      - 'tools/test_design_task_staging_stale_order_e2e_v1.mjs'
+      - 'tools/check_design_task_staging_stale_order_probe.py'
+      - 'docs/CRM_DESIGN_TASK_STAGING_STALE_ORDER_PROBE_2026-07-14.md'
+      - '.github/workflows/crm-design-stale-order-probe-check.yml'
+      - '.gitignore'
+      - 'supabase/config.toml'
+  push:
+    branches: [main]
+    paths:
+      - 'contracts/design-task-staging-stale-order-probe-v1.json'
+      - 'contracts/design-task-staging-fixture-manifest-v1.json'
+      - 'crm/v4/assets/v4/action-permissions-v1.js'
+      - 'tools/create-design-task-staging-fixture-manifest.mjs'
+      - 'tools/create-design-task-staging-stale-order-sql-bundle.mjs'
+      - 'tools/design-task-staging-auth-e2e.mjs'
+      - 'tools/design-task-staging-auth-e2e-v2.mjs'
+      - 'tools/design-task-staging-stale-order-e2e-v1.mjs'
+      - 'tools/validate-design-task-staging-stale-order-evidence.mjs'
+      - 'tools/run_design_task_staging_stale_order_e2e.ps1'
+      - 'tools/test_create_design_task_staging_stale_order_sql_bundle.mjs'
+      - 'tools/test_design_task_staging_stale_order_e2e_v1.mjs'
+      - 'tools/check_design_task_staging_stale_order_probe.py'
+      - 'docs/CRM_DESIGN_TASK_STAGING_STALE_ORDER_PROBE_2026-07-14.md'
+      - '.github/workflows/crm-design-stale-order-probe-check.yml'
+      - '.gitignore'
+      - 'supabase/config.toml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-stale-order-probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate contract JSON
+        run: python3 -m json.tool contracts/design-task-staging-stale-order-probe-v1.json >/dev/null
+
+      - name: Validate source syntax
+        run: |
+          node --check tools/create-design-task-staging-stale-order-sql-bundle.mjs
+          node --check tools/design-task-staging-stale-order-e2e-v1.mjs
+          node --check tools/validate-design-task-staging-stale-order-evidence.mjs
+          node --check tools/test_create_design_task_staging_stale_order_sql_bundle.mjs
+          node --check tools/test_design_task_staging_stale_order_e2e_v1.mjs
+          python3 -m py_compile tools/check_design_task_staging_stale_order_probe.py
+
+      - name: Run stale-order SQL behavior tests
+        run: node tools/test_create_design_task_staging_stale_order_sql_bundle.mjs
+
+      - name: Run stale-order HTTP and evidence tests
+        run: node tools/test_design_task_staging_stale_order_e2e_v1.mjs
+
+      - name: Validate source contracts and boundaries
+        run: python3 tools/check_design_task_staging_stale_order_probe.py
+
+      - name: Validate source-only operator plan
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/design-task-staging-stale-order-e2e-v1.mjs --mode=plan > stale-order-plan.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          plan = json.loads(Path('stale-order-plan.json').read_text(encoding='utf-8'))
+          assert plan['project_ref'] == 'otulfnouybahfnsycxqn'
+          assert plan['production_enabled'] is False
+          assert plan['mode'] == 'stale_order'
+          assert plan['fixture_manifest_required'] is True
+          assert plan['fixture_manifest_valid'] is False
+          assert plan['auth_user_required'] is True
+          assert plan['connector_can_create_or_delete_auth_user'] is False
+          assert plan['stale_order_sql_required'] is True
+          assert plan['restore_order_version_required'] is True
+          assert plan['cleanup_required'] is True
+          PY
+
+      - name: Generate temporary manifest and stale-order SQL locally
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          created_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          expires_at="$(date -u -d '+2 hours' +%Y-%m-%dT%H:%M:%SZ)"
+          node tools/create-design-task-staging-fixture-manifest.mjs \
+            --auth-user-id=22222222-2222-4222-8222-222222222222 \
+            --lead-id=33333333-3333-4333-8333-333333333333 \
+            --order-id=44444444-4444-4444-8444-444444444444 \
+            --need-id=55555555-5555-4555-8555-555555555555 \
+            --expected-updated-at="$created_at" \
+            --idempotency-key=ci-stale-order-probe \
+            --task-title='CI staging stale-order probe' \
+            --created-at="$created_at" \
+            --expires-at="$expires_at" \
+            --output=artifacts/design-task-staging-fixture-manifest.json
+          node tools/create-design-task-staging-stale-order-sql-bundle.mjs \
+            --manifest=artifacts/design-task-staging-fixture-manifest.json \
+            --output-dir=artifacts/design-task-staging-stale-order \
+            --summary-output=artifacts/design-task-staging-stale-order-sql-bundle.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          summary = json.loads(Path('artifacts/design-task-staging-stale-order-sql-bundle.json').read_text(encoding='utf-8'))
+          assert summary['project_ref'] == 'otulfnouybahfnsycxqn'
+          assert summary['production_enabled'] is False
+          assert summary['contains_credentials'] is False
+          assert summary['performs_network_calls'] is False
+          assert summary['executes_sql'] is False
+          assert summary['auth_user_required'] is True
+          assert summary['auth_user_created_or_deleted_by_sql'] is False
+          assert summary['transition_order'] == ['stale_order', 'restore_order_version']
+          assert summary['allowed_update_tables'] == ['public.leader_orders']
+          assert summary['allowed_update_columns'] == ['updated_at']
+          assert all(len(value) == 64 for value in summary['script_sha256'].values())
+          PY
+
+      - name: Protect generated SQL boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          dir=artifacts/design-task-staging-stale-order
+          test -f "$dir/stale-order.sql"
+          test -f "$dir/restore-order-version.sql"
+          grep --fixed-strings 'otulfnouybahfnsycxqn' "$dir"/*.sql >/dev/null
+          if grep --fixed-strings 'ofewxuqfjhamgerwzull' "$dir"/*.sql; then
+            echo 'Production ref leaked into stale-order SQL.' >&2
+            exit 1
+          fi
+          if grep -E -i '\b(insert into|delete from|upsert)\b' "$dir"/*.sql; then
+            echo 'Stale-order SQL must not insert, delete or upsert.' >&2
+            exit 1
+          fi
+          if grep -E -i '\b(create|alter|drop|grant|revoke|truncate)\b' "$dir"/*.sql; then
+            echo 'Stale-order SQL must not contain DDL or grants.' >&2
+            exit 1
+          fi
+          if grep -E -i '\b(update|insert into|delete from)[[:space:]]+auth\.users\b' "$dir"/*.sql; then
+            echo 'Stale-order SQL must never mutate auth.users.' >&2
+            exit 1
+          fi
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          for name in ['stale-order.sql', 'restore-order-version.sql']:
+              sql = Path('artifacts/design-task-staging-stale-order', name).read_text(encoding='utf-8').lower()
+              updates = re.findall(r'update\s+([a-z0-9_.]+)', sql)
+              assert updates == ['public.leader_orders'], (name, updates)
+              assert 'set updated_at =' in sql, name
+              assert 'stale_order_non_version_fields_changed' in sql, name
+              assert 'stale_order_business_counts_changed' in sql, name
+          PY
+
+      - name: Reject committed or generated secret material
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -R -E --line-number \
+            'sb_secret_[A-Za-z0-9_-]{10,}|eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}|database[_-]?password[[:space:]]*[=:]|Bearer[[:space:]]+[A-Za-z0-9._-]{20,}' \
+            contracts/design-task-staging-stale-order-probe-v1.json \
+            tools/create-design-task-staging-stale-order-sql-bundle.mjs \
+            tools/design-task-staging-stale-order-e2e-v1.mjs \
+            tools/validate-design-task-staging-stale-order-evidence.mjs \
+            tools/run_design_task_staging_stale_order_e2e.ps1 \
+            docs/CRM_DESIGN_TASK_STAGING_STALE_ORDER_PROBE_2026-07-14.md \
+            artifacts/design-task-staging-stale-order \
+            artifacts/design-task-staging-stale-order-sql-bundle.json; then
+            echo 'Possible secret material found in stale-order probe package.' >&2
+            exit 1
+          fi
+
+      - name: Protect production config
+        run: grep --fixed-strings 'project_id = "ofewxuqfjhamgerwzull"' supabase/config.toml >/dev/null
