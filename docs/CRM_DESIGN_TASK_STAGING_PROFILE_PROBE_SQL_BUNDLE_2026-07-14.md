@@ -71,6 +71,8 @@ artifacts/design-task-staging-profile-probes/restore-manager.sql
 artifacts/design-task-staging-profile-probe-sql-bundle.json
 ```
 
+Machine names в bundle: `forbidden_role`, `inactive_profile`, `unknown_role`, `restore_manager`.
+
 Все файлы исключены из Git.
 
 ## Общие защитные проверки
@@ -166,6 +168,8 @@ update public.leader_user_profiles
 
 `restore-manager.sql`
 
+Machine name операции восстановления: `restore_manager`.
+
 Ожидаемое состояние:
 
 - role: `manager`;
@@ -188,7 +192,7 @@ update public.leader_user_profiles
 4. Применить seed SQL только в staging.
 5. Сгенерировать profile probe SQL bundle.
 6. Последовательно выполнить `forbidden_role`, `inactive_profile`, `unknown_role`.
-7. Применить `restore-manager.sql`.
+7. Применить `restore-manager.sql` (`restore_manager`).
 8. Выполнить `create_replay_conflicts`.
 9. Проверить evidence validator.
 10. Применить manifest-bound cleanup SQL.
