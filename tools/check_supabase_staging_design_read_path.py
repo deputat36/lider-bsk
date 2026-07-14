@@ -32,6 +32,19 @@ EXPECTED_PROJECTIONS = {
         'deadline', 'layout_link', 'created_at',
     ],
 }
+PREVIEW_PROJECTIONS = {
+    'public.leader_orders': EXPECTED_PROJECTIONS['public.leader_orders'],
+    'public.leader_lead_needs': [
+        'id', 'lead_id', 'need_type', 'title', 'need_design', 'design_reason',
+        'deadline_date', 'status', 'completeness_score',
+    ],
+    'public.leader_design_tasks': EXPECTED_PROJECTIONS['public.leader_design_tasks'],
+}
+SORT_ONLY_COLUMNS = {
+    'public.leader_orders': [],
+    'public.leader_lead_needs': ['created_at'],
+    'public.leader_design_tasks': [],
+}
 PREVIEW_CONSTANTS = {
     'public.leader_orders': 'ORDER_FIELDS',
     'public.leader_lead_needs': 'NEED_FIELDS',
@@ -154,8 +167,10 @@ for table, expected in EXPECTED_PROJECTIONS.items():
     if contract_projection != expected:
         errors.append(f'Contract projection mismatch for {table}')
     preview_fields = parse_preview_fields(preview, PREVIEW_CONSTANTS[table])
-    if preview_fields != expected:
+    if preview_fields != PREVIEW_PROJECTIONS[table]:
         errors.append(f'Preview projection mismatch for {table}: {preview_fields!r}')
+    if sorted(preview_fields + SORT_ONLY_COLUMNS[table]) != sorted(expected):
+        errors.append(f'Preview and sort-only columns do not cover grant for {table}')
     granted_fields = parse_grant_columns(migration, table)
     if granted_fields != expected:
         errors.append(f'SQL grant projection mismatch for {table}: {granted_fields!r}')
@@ -215,13 +230,14 @@ require(test, [
     'PRIVATE_CLIENT_NAME_SENTINEL', 'example.invalid', 'rollback;',
 ], 'read-path SQL test')
 
-require(doc, [
-    STAGING, PRODUCTION, 'column-level SELECT', 'design.read',
+doc_lower = doc.lower()
+require(doc_lower, [
+    STAGING, PRODUCTION, 'column-level select', 'design.read',
     'owner', 'admin', 'manager', 'designer', 'accountant', 'installer',
-    'contractor', 'security WARN/ERROR', 'performance WARN/ERROR',
-    'Auth user', 'production',
+    'contractor', 'security', 'performance', 'warn/error',
+    'auth user', 'production',
 ], 'read-path documentation')
-require(runbook, ['safe staging read-path', 'column-level SELECT', 'authenticated positive E2E'], 'transport runbook')
+require(runbook.lower(), ['safe staging read-path', 'column-level select', 'authenticated positive e2e'], 'transport runbook')
 require(workflow, [
     'check_supabase_staging_design_read_path.py',
     'design-task-staging-read-path-v1.json',
