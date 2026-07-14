@@ -54,7 +54,19 @@ jobs:
         run: node tools/test_create_design_task_staging_fixture_sql_bundle.mjs
 
       - name: Validate source contracts and production boundary
-        run: python3 tools/check_design_task_staging_fixture_sql_bundle.py
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 tools/check_design_task_staging_fixture_sql_bundle.py 2>&1 | tee fixture-sql-check.log
+
+      - name: Upload temporary fixture SQL checker diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fixture-sql-check-diagnostics
+          path: fixture-sql-check.log
+          if-no-files-found: error
+          retention-days: 1
 
       - name: Generate temporary manifest and SQL bundle locally
         shell: bash
