@@ -1,0 +1,63 @@
+name: Apply public print product assets once
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/apply_public_print_product_assets_once.py'
+      - 'assets/public-print-product.css'
+      - 'assets/public-print-product.js'
+      - 'tools/check_public_print_product_assets.py'
+      - '.github/workflows/apply-public-print-product-assets-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-print-product-assets:
+    if: github.head_ref == 'public/print-products-shared-assets-2026-07-14'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Apply guarded HTML migration
+        shell: bash
+        run: |
+          set +e
+          python3 tools/apply_public_print_product_assets_once.py > print-product-apply-report.txt 2>&1
+          code=$?
+          cat print-product-apply-report.txt
+          exit "$code"
+      - name: Upload migration diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: print-product-apply-report
+          path: print-product-apply-report.txt
+      - name: Validate migrated pages
+        run: |
+          python3 tools/check_public_print_product_assets.py
+          node --check assets/public-print-product.js
+      - name: Commit migrated HTML
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            blanki-borisoglebsk.html \
+            buklety-borisoglebsk.html \
+            gramoty-borisoglebsk.html \
+            menyu-dlya-kafe-borisoglebsk.html \
+            otkrytki-priglasheniya-borisoglebsk.html \
+            kalendari-borisoglebsk.html \
+            birki-etiketki-borisoglebsk.html \
+            papki-konverty-borisoglebsk.html
+          if git diff --cached --quiet; then
+            echo 'No HTML changes to commit.'
+            exit 0
+          fi
+          git commit -m 'Apply shared assets to print product pages'
+          git push origin HEAD:${{ github.head_ref }}
