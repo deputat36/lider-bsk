@@ -220,7 +220,7 @@ if STAGING in config:
 require(doc, [
     STAGING, PRODUCTION, 'source-only операторский kit',
     'не предоставляет безопасные create/delete Auth user операции',
-    'PowerShell launcher', 'publishable key', 'service-role',
+    'Windows launcher', 'publishable key', 'service-role',
     'HTTP 201', 'idempotent_replay=false', 'HTTP 200',
     'idempotent_replay=true', 'HTTP 409', 'HTTP 403',
     'Evidence', 'Cleanup', 'Production boundary',
