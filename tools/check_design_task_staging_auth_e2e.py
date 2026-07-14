@@ -208,9 +208,17 @@ require(powershell, [
     "Read-Host 'Temporary staging Auth password' -AsSecureString",
     'ConvertFrom-SecureValue',
     'Remove-Item "Env:$name"',
-    'node tools/design-task-staging-auth-e2e.mjs',
+    "tools/design-task-staging-auth-e2e-v2.mjs",
+    "tools/validate-design-task-staging-auth-e2e-evidence.mjs",
+    'STAGING_FIXTURE_MANIFEST_PATH',
+    'node $Runner',
+    'node $Validator',
 ], 'PowerShell launcher')
-forbid(powershell, ['SUPABASE_SERVICE_ROLE_KEY', 'service_role'], 'PowerShell launcher boundary')
+forbid(powershell, [
+    'node tools/design-task-staging-auth-e2e.mjs',
+    'SUPABASE_SERVICE_ROLE_KEY',
+    'service_role',
+], 'PowerShell launcher boundary')
 
 if f'project_id = "{PRODUCTION}"' not in config:
     errors.append('supabase/config.toml must continue to identify production')
