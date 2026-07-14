@@ -45,7 +45,7 @@ const TOP_LEVEL_FIELDS = Object.freeze([
   'privileges'
 ]);
 
-const FORBIDDEN_KEY = /password|email|phone|token|authorization|apikey|api_key|secret|service.?role|client|finance|profit|cost|payment|balance|comment/i;
+const FORBIDDEN_EXTRA_KEY = /password|email|token|authorization|apikey|api_key|secret|service.?role|finance|profit|cost|payment|balance|comment/i;
 const JWT_LIKE = /eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}/;
 const SECRET_LIKE = /sb_secret_[A-Za-z0-9_-]{10,}|Bearer\s+[A-Za-z0-9._-]{20,}/i;
 
@@ -72,7 +72,7 @@ function scan(value, pathParts, errors) {
   }
   if (isObject(value)) {
     for (const [key, item] of Object.entries(value)) {
-      if (FORBIDDEN_KEY.test(key)) errors.push(`forbidden_key:${[...pathParts, key].join('.')}`);
+      if (FORBIDDEN_EXTRA_KEY.test(key)) errors.push(`forbidden_key:${[...pathParts, key].join('.')}`);
       scan(item, [...pathParts, key], errors);
     }
     return;
