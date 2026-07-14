@@ -28,15 +28,15 @@
 <header class="hero"><div class="wrap"><a class="back-link" href="uslugi.html">← Все услуги</a><h1>Визитки в Борисоглебске</h1><p>Выберите параметры визиток. Цена на странице не показывается: заявка уйдет с готовым описанием заказа.</p></div></header>
 <main>
 <section class="section soft"><div class="wrap"><h2>Конструктор заказа визиток</h2><div class="grid"><div class="card"><div class="calc" id="card-calc">
-<div class="field"><label>Вид визиток</label><select data-calc="kind"><option>Стандартные</option><option>Квадратные</option><option>Складные</option></select></div>
-<div class="field"><label>Формат</label><select data-calc="format"><option>90 × 50 мм</option><option>85 × 55 мм</option><option>Другой формат</option></select></div>
-<div class="field"><label>Стороны печати</label><select data-calc="sides"><option>Одна сторона</option><option>Две стороны</option></select></div>
-<div class="field"><label>Тираж</label><select data-calc="qty"><option>100 шт.</option><option>200 шт.</option><option>300 шт.</option><option>500 шт.</option><option>Другой тираж</option></select></div>
-<div class="field"><label>Бумага</label><select data-calc="paper"><option>Картон мелованный 300 г/м²</option><option>Матовая бумага / картон</option><option>Дизайнерская бумага</option><option>Нужно подобрать</option></select></div>
-<div class="field"><label>Ламинация</label><select data-calc="lamination"><option>Без ламинации</option><option>Ламинация двухсторонняя</option><option>Нужно обсудить</option></select></div>
-<div class="field"><label>Скругление углов</label><select data-calc="corners"><option>Не нужно</option><option>Нужно</option></select></div>
-<div class="field full"><label>Макет / дизайн</label><select data-calc="design"><option>Макет готов</option><option>Нужен дизайн с нуля</option><option>Есть пример, нужно доработать</option><option>Нужна проверка макета</option></select></div>
-</div></div><div class="card"><h3>Итоговое описание</h3><div class="summary" id="card-summary"></div><p><button class="btn" id="send-card-summary" type="button">Перенести в заявку</button></p></div></div></div></section>
+<div class="field"><label for="card-kind">Вид визиток</label><select id="card-kind" data-calc="kind"><option>Стандартные</option><option>Квадратные</option><option>Складные</option></select></div>
+<div class="field"><label for="card-format">Формат</label><select id="card-format" data-calc="format"><option>90 × 50 мм</option><option>85 × 55 мм</option><option>Другой формат</option></select></div>
+<div class="field"><label for="card-sides">Стороны печати</label><select id="card-sides" data-calc="sides"><option>Одна сторона</option><option>Две стороны</option></select></div>
+<div class="field"><label for="card-qty">Тираж</label><select id="card-qty" data-calc="qty"><option>100 шт.</option><option>200 шт.</option><option>300 шт.</option><option>500 шт.</option><option>Другой тираж</option></select></div>
+<div class="field"><label for="card-paper">Бумага</label><select id="card-paper" data-calc="paper"><option>Картон мелованный 300 г/м²</option><option>Матовая бумага / картон</option><option>Дизайнерская бумага</option><option>Нужно подобрать</option></select></div>
+<div class="field"><label for="card-lamination">Ламинация</label><select id="card-lamination" data-calc="lamination"><option>Без ламинации</option><option>Ламинация двухсторонняя</option><option>Нужно обсудить</option></select></div>
+<div class="field"><label for="card-corners">Скругление углов</label><select id="card-corners" data-calc="corners"><option>Не нужно</option><option>Нужно</option></select></div>
+<div class="field full"><label for="card-design">Макет / дизайн</label><select id="card-design" data-calc="design"><option>Макет готов</option><option>Нужен дизайн с нуля</option><option>Есть пример, нужно доработать</option><option>Нужна проверка макета</option></select></div>
+</div></div><div class="card"><h3>Итоговое описание</h3><div class="summary" id="card-summary" aria-live="polite"></div><p><button class="btn" id="send-card-summary" type="button">Перенести в заявку</button></p></div></div></div></section>
 <section id="request" class="section"><div class="wrap"><div class="cta"><div><h2>Рассчитать визитки</h2><p>Заполните параметры выше или просто оставьте телефон.</p><p><a class="phone-link" href="tel:+79802457471">8 980 245-74-71</a></p></div><div id="leader-lead-form" data-leader-lead-form></div></div></div></section>
 </main>
 <script src="assets/public-lead-form.js?v=5"></script>
