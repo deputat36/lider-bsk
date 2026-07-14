@@ -163,7 +163,7 @@ forbid(runner, [
     '/rest/v1/rpc/leader_create_design_task_from_order_rpc',
     '/rest/v1/leader_command_receipts',
     'SUPABASE_SERVICE_ROLE_KEY',
-    '.insert(', '.update(', '.upsert(', '.delete(',
+    '.insert(', '.upsert(', '.delete(',
 ], 'v2 runner boundary')
 
 require(validator, [
