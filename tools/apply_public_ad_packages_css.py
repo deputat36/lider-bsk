@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import re
+import textwrap
 
 ROOT = Path(__file__).resolve().parents[1]
 PAGE = ROOT / 'komplekty-reklamy.html'
@@ -8,7 +9,7 @@ CSS = ROOT / 'assets' / 'public-ad-packages.css'
 LINK = '  <link rel="stylesheet" href="assets/public-ad-packages.css?v=1">'
 
 html = PAGE.read_text(encoding='utf-8')
-css = CSS.read_text(encoding='utf-8').strip()
+css = textwrap.dedent(CSS.read_text(encoding='utf-8')).strip()
 
 if LINK in html and '<style>' not in html:
     print('Advertising packages CSS migration already applied.')
@@ -18,7 +19,7 @@ matches = re.findall(r'(?s)^  <style>\s*(.*?)\s*</style>$', html, flags=re.M)
 if len(matches) != 1:
     raise SystemExit(f'Expected exactly one page style block, found {len(matches)}')
 
-inline_css = matches[0].strip()
+inline_css = textwrap.dedent(matches[0]).strip()
 if inline_css != css:
     raise SystemExit('Inline CSS does not match assets/public-ad-packages.css')
 
