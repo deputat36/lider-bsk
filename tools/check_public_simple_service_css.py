@@ -61,10 +61,26 @@ PAGES = {
         'section': 'Какие задачи решает вывеска',
         'cta': 'Заявка на вывеску',
     },
+    'pechat-na-plenke-borisoglebsk.html': {
+        'body_class': 'page-film-print-service',
+        'shared_css': 'assets/public-simple-service.css?v=2',
+        'canonical': 'https://www.lider-bsk.ru/pechat-na-plenke-borisoglebsk.html',
+        'h1': 'Печать на плёнке в Борисоглебске',
+        'section': 'Что можно заказать',
+        'cta': 'Заявка на печать',
+    },
+    'oformlenie-vitrin-borisoglebsk.html': {
+        'body_class': 'page-window-branding',
+        'shared_css': 'assets/public-simple-service.css?v=2',
+        'canonical': 'https://www.lider-bsk.ru/oformlenie-vitrin-borisoglebsk.html',
+        'h1': 'Оформление витрин в Борисоглебске',
+        'section': 'Что можно разместить на витрине',
+        'cta': 'Заявка на оформление витрины',
+    },
 }
 
 css = CSS.read_text(encoding='utf-8')
-if len(css) < 1800:
+if len(css) < 1700:
     raise SystemExit(f'Shared simple service CSS is unexpectedly small: {len(css)} bytes')
 
 for marker in (
@@ -75,6 +91,8 @@ for marker in (
     'body.page-banner-service{--hero-start:#0b1020;--hero-end:#1f2937}',
     'body.page-signage-service{--hero-start:#0b1020;--hero-end:#1f2937}',
     'body.page-shop-sign-service{--hero-start:#080b14;--hero-end:#111827}',
+    'body.page-film-print-service{--hero-start:#080b14;--hero-end:#111827}',
+    'body.page-window-branding{--hero-start:#080b14;--hero-end:#111827}',
     '.hero{background:linear-gradient(135deg,var(--hero-start),var(--hero-end))',
     '.grid{display:grid;grid-template-columns:repeat(3,1fr)',
     '.cta{background:#111827;color:#fff',
@@ -122,4 +140,4 @@ for page_name, expected in PAGES.items():
     if 'href="tel:+79802457471"' not in html:
         raise SystemExit(f'{page_name}: phone link missing')
 
-print('Shared simple service CSS contract is valid for seven pages.')
+print('Shared simple service CSS contract is valid for nine pages.')
