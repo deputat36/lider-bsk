@@ -50,7 +50,10 @@ function syncExpandedMenu() {
   applyV4TabButtonVisibility(nav);
   const activeTab = document.body?.dataset?.v4Tab || '';
   nav.querySelectorAll('[data-v4-tab-button]').forEach((button) => {
-    button.classList.toggle('is-active', !button.hidden && button.dataset.v4TabButton === activeTab);
+    const active = !button.hidden && button.dataset.v4TabButton === activeTab;
+    button.classList.toggle('is-active', active);
+    if (active) button.setAttribute('aria-current', 'page');
+    else button.removeAttribute('aria-current');
   });
 }
 
