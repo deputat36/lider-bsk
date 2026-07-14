@@ -1,0 +1,31 @@
+name: Public business segment CSS check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'reklama-dlya-magazina-borisoglebsk.html'
+      - 'reklama-dlya-kafe-borisoglebsk.html'
+      - 'reklama-dlya-salona-krasoty-borisoglebsk.html'
+      - 'reklama-dlya-servisa-masterskoy-borisoglebsk.html'
+      - 'assets/public-business-segment.css'
+      - 'tools/check_public_business_segment_css.py'
+      - '.github/workflows/public-business-segment-css-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'reklama-dlya-magazina-borisoglebsk.html'
+      - 'reklama-dlya-kafe-borisoglebsk.html'
+      - 'reklama-dlya-salona-krasoty-borisoglebsk.html'
+      - 'reklama-dlya-servisa-masterskoy-borisoglebsk.html'
+      - 'assets/public-business-segment.css'
+      - 'tools/check_public_business_segment_css.py'
+      - '.github/workflows/public-business-segment-css-check.yml'
+
+jobs:
+  validate-business-segment-css:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate four business segment pages and shared stylesheet
+        run: python3 tools/check_public_business_segment_css.py
