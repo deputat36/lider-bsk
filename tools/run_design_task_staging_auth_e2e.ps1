@@ -3,17 +3,15 @@ param(
     [ValidateSet('plan', 'create_replay_conflicts', 'forbidden_role', 'inactive_profile', 'unknown_role')]
     [string]$Mode = 'plan',
 
-    [string]$OrderId,
-    [string]$NeedId,
-    [string]$ExpectedUpdatedAt,
-    [string]$IdempotencyKey,
-    [string]$TaskTitle = 'Synthetic staging design E2E',
-    [string]$EvidencePath = 'artifacts/design-task-staging-auth-e2e-evidence.json'
+    [string]$FixtureManifestPath = 'artifacts/design-task-staging-fixture-manifest.json',
+    [string]$EvidencePath = 'artifacts/design-task-staging-auth-e2e-evidence-v2.json'
 )
 
 $ErrorActionPreference = 'Stop'
 $StagingUrl = 'https://otulfnouybahfnsycxqn.supabase.co'
 $ProductionRef = 'ofewxuqfjhamgerwzull'
+$Runner = 'tools/design-task-staging-auth-e2e-v2.mjs'
+$Validator = 'tools/validate-design-task-staging-auth-e2e-evidence.mjs'
 
 function ConvertFrom-SecureValue {
     param([Security.SecureString]$Value)
@@ -26,21 +24,28 @@ function ConvertFrom-SecureValue {
     }
 }
 
-if ($Mode -eq 'plan') {
-    node tools/design-task-staging-auth-e2e.mjs --mode=plan
-    exit $LASTEXITCODE
-}
-
-foreach ($required in @('OrderId', 'NeedId', 'ExpectedUpdatedAt', 'IdempotencyKey')) {
-    if ([string]::IsNullOrWhiteSpace((Get-Variable -Name $required -ValueOnly))) {
-        throw "Missing required parameter: $required"
-    }
-}
-
 if ($StagingUrl.Contains($ProductionRef)) {
     throw 'Production endpoint is forbidden.'
 }
 
+if ($Mode -eq 'plan') {
+    try {
+        if (Test-Path -LiteralPath $FixtureManifestPath) {
+            $env:STAGING_FIXTURE_MANIFEST_PATH = (Resolve-Path -LiteralPath $FixtureManifestPath).Path
+        }
+        node $Runner --mode=plan
+        exit $LASTEXITCODE
+    }
+    finally {
+        Remove-Item 'Env:STAGING_FIXTURE_MANIFEST_PATH' -ErrorAction SilentlyContinue
+    }
+}
+
+if (-not (Test-Path -LiteralPath $FixtureManifestPath)) {
+    throw "Fixture manifest not found: $FixtureManifestPath"
+}
+
+$resolvedManifest = (Resolve-Path -LiteralPath $FixtureManifestPath).Path
 $publishableKeySecure = Read-Host 'Staging publishable key' -AsSecureString
 $testEmail = Read-Host 'Temporary staging Auth email'
 $testPasswordSecure = Read-Host 'Temporary staging Auth password' -AsSecureString
@@ -53,16 +58,17 @@ try {
     $env:STAGING_SUPABASE_PUBLISHABLE_KEY = $publishableKey
     $env:STAGING_TEST_EMAIL = $testEmail
     $env:STAGING_TEST_PASSWORD = $testPassword
-    $env:STAGING_ORDER_ID = $OrderId
-    $env:STAGING_NEED_ID = $NeedId
-    $env:STAGING_EXPECTED_UPDATED_AT = $ExpectedUpdatedAt
-    $env:STAGING_IDEMPOTENCY_KEY = $IdempotencyKey
-    $env:STAGING_TASK_TITLE = $TaskTitle
+    $env:STAGING_FIXTURE_MANIFEST_PATH = $resolvedManifest
     $env:STAGING_EVIDENCE_PATH = $EvidencePath
 
-    node tools/design-task-staging-auth-e2e.mjs "--mode=$Mode"
+    node $Runner "--mode=$Mode"
     if ($LASTEXITCODE -ne 0) {
-        throw "Authenticated staging E2E runner failed with exit code $LASTEXITCODE"
+        throw "Authenticated staging E2E v2 runner failed with exit code $LASTEXITCODE"
+    }
+
+    node $Validator "--evidence=$EvidencePath" "--manifest=$resolvedManifest"
+    if ($LASTEXITCODE -ne 0) {
+        throw "Authenticated staging E2E evidence validation failed with exit code $LASTEXITCODE"
     }
 }
 finally {
@@ -71,15 +77,12 @@ finally {
         'STAGING_SUPABASE_PUBLISHABLE_KEY',
         'STAGING_TEST_EMAIL',
         'STAGING_TEST_PASSWORD',
-        'STAGING_ORDER_ID',
-        'STAGING_NEED_ID',
-        'STAGING_EXPECTED_UPDATED_AT',
-        'STAGING_IDEMPOTENCY_KEY',
-        'STAGING_TASK_TITLE',
+        'STAGING_FIXTURE_MANIFEST_PATH',
         'STAGING_EVIDENCE_PATH'
     )) {
         Remove-Item "Env:$name" -ErrorAction SilentlyContinue
     }
     $publishableKey = $null
     $testPassword = $null
+    $testEmail = $null
 }
