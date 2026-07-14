@@ -14,17 +14,19 @@
 - `tablichki-borisoglebsk.html`;
 - `vyveski-borisoglebsk.html`;
 - `pechat-na-plenke-borisoglebsk.html`;
-- `oformlenie-vitrin-borisoglebsk.html`.
+- `oformlenie-vitrin-borisoglebsk.html`;
+- `outdoor-advertising-borisoglebsk.html`;
+- `nakleyki-plotternaya-rezka-borisoglebsk.html`.
 
 ## Что изменено
 
-Девять страниц используют одну визуальную систему: hero, сетку карточек, информационный блок, CTA и одинаковый мобильный breakpoint. Повторяющиеся стили перенесены в единый файл:
+Одиннадцать страниц используют одну визуальную систему: hero, сетку карточек, информационный блок, CTA и одинаковый мобильный breakpoint. Повторяющиеся стили перенесены в единый файл:
 
 - `assets/public-simple-service.css`.
 
-Первые четыре страницы продолжают использовать cache marker `v=1`. Пять новых страниц подключают `v=2`, чтобы браузер гарантированно получил расширенный набор page-классов.
+Первые четыре страницы продолжают использовать cache marker `v=1`, следующая группа из пяти страниц — `v=2`, а две новые страницы — `v=3`. Это гарантирует получение расширенного набора page-классов без массового изменения уже проверенных страниц.
 
-Различия hero-фона сохранены через классы страницы:
+Различия hero-фона и локальных визуальных параметров сохранены через классы страницы:
 
 - `page-social-content`;
 - `page-design-service`;
@@ -34,7 +36,11 @@
 - `page-signage-service`;
 - `page-shop-sign-service`;
 - `page-film-print-service`;
-- `page-window-branding`.
+- `page-window-branding`;
+- `page-outdoor-overview`;
+- `page-plotter-stickers`.
+
+Для обзорной страницы наружной рекламы отдельно сохранены исходная ширина hero-текста и цвет ссылки возврата.
 
 ## Что сохранено
 
@@ -50,7 +56,7 @@
 
 ## Польза
 
-- один HTTP-кешируемый stylesheet вместо девяти повторяющихся inline-блоков;
+- один HTTP-кешируемый stylesheet вместо одиннадцати повторяющихся inline-блоков;
 - меньше размер HTML;
 - проще синхронно поддерживать адаптивность;
 - ниже риск визуального расхождения родственных страниц;
@@ -63,7 +69,7 @@
 - `tools/check_public_simple_service_css.py`;
 - `.github/workflows/public-simple-service-css-check.yml`.
 
-Контракт проверяет девять страниц одновременно, порядок CSS, hero-варианты, количество карточек, форму, canonical и отсутствие inline CSS или executable JavaScript. JSON-LD остаётся допустимым структурированным содержимым.
+Контракт проверяет одиннадцать страниц одновременно, порядок CSS, hero-варианты, количество карточек, форму, canonical и отсутствие inline CSS или executable JavaScript. JSON-LD остаётся допустимым структурированным содержимым.
 
 ## Не затронуто
 
