@@ -120,7 +120,7 @@ if contract:
 
 require(manifest_generator, [
     'buildFixtureManifest',
-    'leader-design-task-staging-fixture-manifest-v1',
+    'FIXTURE_MANIFEST_VERSION',
     'contains_credentials: false',
 ], 'existing fixture manifest generator')
 
