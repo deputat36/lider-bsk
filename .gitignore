@@ -5,4 +5,6 @@
 /artifacts/design-task-staging-fixture-cleanup.sql
 /artifacts/design-task-staging-fixture-sql-bundle.json
 /artifacts/design-task-staging-post-cleanup-snapshot.json
+/artifacts/design-task-staging-profile-probes/
+/artifacts/design-task-staging-profile-probe-sql-bundle.json
 /auth-e2e-plan.json
