@@ -19,15 +19,23 @@ PAGES = {
         'section': 'Какие макеты можно заказать',
         'cta': 'Заявка на дизайн',
     },
+    'logotip-firmennyy-stil.html': {
+        'body_class': 'page-brand-identity',
+        'canonical': 'https://www.lider-bsk.ru/logotip-firmennyy-stil.html',
+        'h1': 'Логотип и фирменный стиль',
+        'section': 'Что можно заказать',
+        'cta': 'Заявка на логотип или стиль',
+    },
 }
 
 css = CSS.read_text(encoding='utf-8')
-if len(css) < 1300:
+if len(css) < 1400:
     raise SystemExit(f'Shared simple service CSS is unexpectedly small: {len(css)} bytes')
 
 for marker in (
     'body.page-social-content{--hero-start:#0b1020;--hero-end:#1f2937}',
     'body.page-design-service{--hero-start:#080b14;--hero-end:#111827}',
+    'body.page-brand-identity{--hero-start:#080b14;--hero-end:#111827}',
     '.hero{background:linear-gradient(135deg,var(--hero-start),var(--hero-end))',
     '.grid{display:grid;grid-template-columns:repeat(3,1fr)',
     '.cta{background:#111827;color:#fff',
@@ -71,4 +79,4 @@ for page_name, expected in PAGES.items():
     if 'href="tel:+79802457471"' not in html:
         raise SystemExit(f'{page_name}: phone link missing')
 
-print('Shared simple service CSS contract is valid for two pages.')
+print('Shared simple service CSS contract is valid for three pages.')
