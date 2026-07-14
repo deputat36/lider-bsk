@@ -4,17 +4,24 @@ import {
   canPerformV4Action,
   requireV4Action
 } from './action-permissions-v1.js';
+import { V4_CONFIG } from './config.js';
 import { buildDesignTaskDraftPreview } from './design-task-draft-model-v1.js';
+import {
+  designStagingTransportAvailability,
+  invokeStagingDesignTask
+} from './design-task-staging-transport-v1.js';
 import { supabaseClient } from './supabase-client.js';
 import { toast } from './ui.js';
 
 const MODAL_ID = 'designTaskDraftPreviewV1';
 const STYLE_ID = 'designTaskDraftPreviewV1Styles';
-const ORDER_FIELDS = 'id,order_number,lead_id,project_name,status,priority,deadline,layout_status,layout_link,is_archived';
+const ORDER_FIELDS = 'id,order_number,lead_id,project_name,status,priority,deadline,layout_status,layout_link,is_archived,updated_at';
 const NEED_FIELDS = 'id,lead_id,need_type,title,need_design,design_reason,deadline_date,status,completeness_score';
 const TASK_FIELDS = 'id,order_id,task_status,layout_status,designer_name,deadline,layout_link,created_at';
 
 let busy = false;
+let stagingBusy = false;
+let currentPreviewContext = null;
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>\"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[char]));
@@ -34,12 +41,14 @@ function ensureStyles() {
   if (document.getElementById(STYLE_ID)) return;
   const style = document.createElement('style');
   style.id = STYLE_ID;
-  style.textContent = `.v4-design-draft-modal{position:fixed;inset:0;z-index:840;background:rgba(15,23,42,.68);display:grid;place-items:center;padding:16px}.v4-design-draft-dialog{width:min(980px,100%);max-height:92vh;overflow:auto;background:#fff;border:1px solid #c4b5fd;border-radius:22px;padding:17px;box-shadow:0 30px 100px rgba(15,23,42,.4)}.v4-design-draft-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;border-bottom:1px solid #e2e8f0;padding-bottom:11px}.v4-design-draft-head h2{margin:0;color:#4c1d95}.v4-design-draft-head p{margin:5px 0 0;color:#64748b}.v4-design-draft-actions{display:flex;gap:8px;flex-wrap:wrap;margin:13px 0}.v4-design-draft-actions button{border:1px solid #c4b5fd;background:#f5f3ff;color:#5b21b6;border-radius:11px;padding:9px 12px;font-weight:900;cursor:pointer}.v4-design-draft-actions button[disabled]{cursor:not-allowed;opacity:.62}.v4-design-draft-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:9px;margin:12px 0}.v4-design-draft-card{border:1px solid #ddd6fe;background:#faf5ff;border-radius:15px;padding:11px}.v4-design-draft-card span{display:block;color:#6b7280;font-size:11px;font-weight:900;text-transform:uppercase}.v4-design-draft-card b{display:block;margin-top:4px;color:#312e81}.v4-design-draft-note{border:1px solid #c4b5fd;background:#f5f3ff;color:#4c1d95;border-radius:14px;padding:11px;font-weight:800;margin:11px 0}.v4-design-draft-note.is-warn{border-color:#fde68a;background:#fffbeb;color:#92400e}.v4-design-draft-note.is-danger{border-color:#fecaca;background:#fff1f2;color:#991b1b}.v4-design-draft-section{border:1px solid #e2e8f0;border-radius:17px;padding:13px;margin-top:12px}.v4-design-draft-section h3{margin:0 0 9px}.v4-design-draft-list{display:grid;gap:8px}.v4-design-draft-row{border:1px solid #e2e8f0;background:#f8fafc;border-radius:13px;padding:10px}.v4-design-draft-row b,.v4-design-draft-row small{display:block}.v4-design-draft-row small{color:#64748b;margin-top:3px}.v4-design-draft-code{white-space:pre-wrap;overflow-wrap:anywhere;background:#0f172a;color:#e2e8f0;border-radius:15px;padding:13px;font:12px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace}.v4-design-draft-empty{border:1px dashed #c4b5fd;background:#faf5ff;color:#5b21b6;border-radius:14px;padding:12px;font-weight:800}@media(max-width:700px){.v4-design-draft-head{display:grid}.v4-design-draft-actions button{width:100%}}`;
+  style.textContent = `.v4-design-draft-modal{position:fixed;inset:0;z-index:840;background:rgba(15,23,42,.68);display:grid;place-items:center;padding:16px}.v4-design-draft-dialog{width:min(980px,100%);max-height:92vh;overflow:auto;background:#fff;border:1px solid #c4b5fd;border-radius:22px;padding:17px;box-shadow:0 30px 100px rgba(15,23,42,.4)}.v4-design-draft-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;border-bottom:1px solid #e2e8f0;padding-bottom:11px}.v4-design-draft-head h2{margin:0;color:#4c1d95}.v4-design-draft-head p{margin:5px 0 0;color:#64748b}.v4-design-draft-actions{display:flex;gap:8px;flex-wrap:wrap;margin:13px 0}.v4-design-draft-actions button{border:1px solid #c4b5fd;background:#f5f3ff;color:#5b21b6;border-radius:11px;padding:9px 12px;font-weight:900;cursor:pointer}.v4-design-draft-actions button[data-design-task-staging-create]{background:#5b21b6;color:#fff}.v4-design-draft-actions button[disabled]{cursor:not-allowed;opacity:.62}.v4-design-draft-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:9px;margin:12px 0}.v4-design-draft-card{border:1px solid #ddd6fe;background:#faf5ff;border-radius:15px;padding:11px}.v4-design-draft-card span{display:block;color:#6b7280;font-size:11px;font-weight:900;text-transform:uppercase}.v4-design-draft-card b{display:block;margin-top:4px;color:#312e81}.v4-design-draft-note{border:1px solid #c4b5fd;background:#f5f3ff;color:#4c1d95;border-radius:14px;padding:11px;font-weight:800;margin:11px 0}.v4-design-draft-note.is-warn{border-color:#fde68a;background:#fffbeb;color:#92400e}.v4-design-draft-note.is-danger{border-color:#fecaca;background:#fff1f2;color:#991b1b}.v4-design-staging-result{border:1px solid #86efac;background:#f0fdf4;color:#166534;border-radius:14px;padding:11px;font-weight:800;margin:11px 0}.v4-design-staging-result.is-error{border-color:#fecaca;background:#fff1f2;color:#991b1b}.v4-design-draft-section{border:1px solid #e2e8f0;border-radius:17px;padding:13px;margin-top:12px}.v4-design-draft-section h3{margin:0 0 9px}.v4-design-draft-list{display:grid;gap:8px}.v4-design-draft-row{border:1px solid #e2e8f0;background:#f8fafc;border-radius:13px;padding:10px}.v4-design-draft-row b,.v4-design-draft-row small{display:block}.v4-design-draft-row small{color:#64748b;margin-top:3px}.v4-design-draft-code{white-space:pre-wrap;overflow-wrap:anywhere;background:#0f172a;color:#e2e8f0;border-radius:15px;padding:13px;font:12px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace}.v4-design-draft-empty{border:1px dashed #c4b5fd;background:#faf5ff;color:#5b21b6;border-radius:14px;padding:12px;font-weight:800}@media(max-width:700px){.v4-design-draft-head{display:grid}.v4-design-draft-actions button{width:100%}}`;
   document.head.appendChild(style);
 }
 
 function closeModal() {
   document.getElementById(MODAL_ID)?.remove();
+  currentPreviewContext = null;
+  stagingBusy = false;
 }
 
 function host() {
@@ -106,14 +115,38 @@ function payloadHtml(result) {
   return `<section class="v4-design-draft-section"><h3>Безопасный command envelope</h3><p>Payload не содержит имени клиента, телефона, оплаты, себестоимости, прибыли и внутренних комментариев.</p><pre class="v4-design-draft-code">${esc(moneylessJson(result.draft))}</pre></section>`;
 }
 
-function renderResult(modal, result) {
+function stagingFeedbackHtml(feedback) {
+  if (!feedback) return '';
+  const suffix = feedback.ok && feedback.refreshFailed
+    ? '<br><small>Задача создана, но безопасное перечитывание не завершилось. Обновите preview.</small>'
+    : '';
+  return `<div class="v4-design-staging-result ${feedback.ok ? '' : 'is-error'}"><b>${feedback.ok ? 'Staging' : 'Staging: действие не выполнено'}</b><br>${esc(feedback.message)}${suffix}</div>`;
+}
+
+function stagingActionHtml(result) {
+  const availability = designStagingTransportAvailability({
+    supabaseUrl: V4_CONFIG.supabaseUrl,
+    canWrite: result.canWrite,
+    draft: result.draft,
+    expectedUpdatedAt: result.order?.updatedAt
+  });
+  if (availability.enabled) {
+    return `<button type="button" data-design-task-staging-create ${stagingBusy ? 'disabled' : ''}>${stagingBusy ? 'Создаю только в staging…' : 'Создать тестовую задачу в staging'}</button>`;
+  }
+  if (availability.staging) {
+    return '<button type="button" disabled title="Нужны design.write, актуальный заказ и готовый command envelope">Тестовое создание в staging недоступно</button>';
+  }
+  return '<button type="button" disabled title="Production rollout требует отдельного явного решения владельца">Создать задачу в CRM — отключено</button>';
+}
+
+function renderResult(modal, result, feedback = null) {
   const payloadButton = result.draft
     ? '<button type="button" data-design-task-draft-copy>Скопировать JSON</button>'
     : '';
   const openOrder = result.order?.id
     ? `<button type="button" data-open-order="${esc(result.order.id)}" data-design-task-draft-close-after-open>Открыть заказ</button>`
     : '';
-  modal.innerHTML = `<div class="v4-design-draft-dialog" role="dialog" aria-modal="true" aria-labelledby="designTaskDraftTitle"><div class="v4-design-draft-head"><div><h2 id="designTaskDraftTitle">Черновик дизайн-задачи</h2><p>Локальный source-only preview. Production-запись отключена.</p></div><button type="button" data-design-task-draft-close>Закрыть</button></div><div class="v4-design-draft-note ${stateClass(result.state)}"><b>${esc(stateLabel(result.state))}</b><br>${esc(result.message)}</div>${orderSummary(result)}${warningsHtml(result)}<div class="v4-design-draft-actions">${openOrder}${payloadButton}<button type="button" disabled title="Требуется approved server action design_task.create_from_order">Создать задачу в CRM — отключено</button></div>${needsHtml(result)}${existingTasksHtml(result)}${flowHtml(result)}${payloadHtml(result)}</div>`;
+  modal.innerHTML = `<div class="v4-design-draft-dialog" role="dialog" aria-modal="true" aria-labelledby="designTaskDraftTitle"><div class="v4-design-draft-head"><div><h2 id="designTaskDraftTitle">Черновик дизайн-задачи</h2><p>Production-запись отключена. Тестовый transport работает только при точном staging project ref.</p></div><button type="button" data-design-task-draft-close>Закрыть</button></div><div class="v4-design-draft-note ${stateClass(result.state)}"><b>${esc(stateLabel(result.state))}</b><br>${esc(result.message)}</div>${stagingFeedbackHtml(feedback)}${orderSummary(result)}${warningsHtml(result)}<div class="v4-design-draft-actions">${openOrder}${payloadButton}${stagingActionHtml(result)}</div>${needsHtml(result)}${existingTasksHtml(result)}${flowHtml(result)}${payloadHtml(result)}</div>`;
   modal.dataset.payload = result.draft ? moneylessJson(result.draft) : '';
 }
 
@@ -173,12 +206,46 @@ async function openPreview(orderId) {
       canRead: canPerformV4Action(CRM_V4_ACTIONS.DESIGN_READ),
       canWrite: canPerformV4Action(CRM_V4_ACTIONS.DESIGN_WRITE)
     });
+    currentPreviewContext = { order, needs, result };
     renderResult(modal, result);
   } catch (error) {
+    currentPreviewContext = null;
     renderError(modal, error);
   } finally {
     busy = false;
   }
+}
+
+async function createStagingDesignTask() {
+  if (stagingBusy || !currentPreviewContext?.result?.draft) return;
+  if (!requireV4Action(CRM_V4_ACTIONS.DESIGN_WRITE)) return;
+  const modal = document.getElementById(MODAL_ID);
+  if (!modal) return;
+
+  stagingBusy = true;
+  renderResult(modal, currentPreviewContext.result);
+  const response = await invokeStagingDesignTask({
+    client: supabaseClient,
+    supabaseUrl: V4_CONFIG.supabaseUrl,
+    canWrite: canPerformV4Action(CRM_V4_ACTIONS.DESIGN_WRITE),
+    draft: currentPreviewContext.result.draft,
+    expectedUpdatedAt: currentPreviewContext.result.order?.updatedAt,
+    readAfterSuccess: () => fetchTasks(currentPreviewContext.order.id)
+  });
+  stagingBusy = false;
+
+  if (response.ok && Array.isArray(response.refreshed)) {
+    const nextResult = buildDesignTaskDraftPreview({
+      order: currentPreviewContext.order,
+      needs: currentPreviewContext.needs,
+      designTasks: response.refreshed,
+      canRead: canPerformV4Action(CRM_V4_ACTIONS.DESIGN_READ),
+      canWrite: canPerformV4Action(CRM_V4_ACTIONS.DESIGN_WRITE)
+    });
+    currentPreviewContext.result = nextResult;
+  }
+  renderResult(modal, currentPreviewContext.result, response);
+  toast(response.message);
 }
 
 async function copyPayload() {
@@ -217,6 +284,11 @@ function boot() {
     if (event.target.closest?.('[data-design-task-draft-copy]')) {
       event.preventDefault();
       copyPayload();
+      return;
+    }
+    if (event.target.closest?.('[data-design-task-staging-create]')) {
+      event.preventDefault();
+      createStagingDesignTask();
       return;
     }
     if (event.target.closest?.('[data-design-task-draft-close-after-open]')) setTimeout(closeModal, 0);

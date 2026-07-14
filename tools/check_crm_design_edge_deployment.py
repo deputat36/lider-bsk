@@ -53,13 +53,14 @@ require(report, [
     'command receipts — 0',
     'security WARN/ERROR — 0',
     'performance WARN/ERROR — 0',
-    'не смог разрешить staging DNS',
+    'UNAUTHORIZED_NO_AUTH_HEADER',
+    'внешний POST без `Authorization`',
     'authenticated positive E2E',
     'production deploy',
     'production DDL/DML',
 ], 'deployment report')
 
-if 'Эти пункты нельзя считать пройденными' not in report:
+if 'Authenticated positive E2E нельзя считать пройденным' not in report:
     errors.append('Deployment report must explicitly preserve unverified smoke limitations')
 if 'Production Auth не используется' not in report:
     errors.append('Deployment report must forbid using production Auth for staging smoke')

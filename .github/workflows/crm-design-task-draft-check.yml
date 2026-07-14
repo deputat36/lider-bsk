@@ -7,12 +7,17 @@ on:
       - 'crm/v4/assets/v4/design-task-draft-model-v1.js'
       - 'crm/v4/assets/v4/design-task-draft-preview-v1.js'
       - 'crm/v4/assets/v4/design-task-draft-entrypoints-v1.js'
+      - 'crm/v4/assets/v4/design-task-staging-transport-v1.js'
       - 'crm/v4/assets/v4/site-cache-note-v1.js'
       - 'crm/v4/assets/v4/order-operational-quality-v1.js'
       - 'crm/v4/assets/v4/order-operational-quality-model-v1.js'
       - 'tools/test_design_task_draft.mjs'
+      - 'tools/test_design_task_staging_transport.mjs'
       - 'tools/check_design_task_draft_preview.py'
+      - 'tools/check_design_task_staging_transport.py'
+      - 'contracts/design-task-staging-transport-v1.json'
       - 'docs/CRM_DESIGN_TASK_DRAFT_PREVIEW_MANUAL_TEST_2026-07-13.md'
+      - 'docs/CRM_DESIGN_TASK_STAGING_TRANSPORT_RUNBOOK_2026-07-14.md'
       - '.github/workflows/crm-design-task-draft-check.yml'
   pull_request:
     branches: [main]
@@ -20,12 +25,17 @@ on:
       - 'crm/v4/assets/v4/design-task-draft-model-v1.js'
       - 'crm/v4/assets/v4/design-task-draft-preview-v1.js'
       - 'crm/v4/assets/v4/design-task-draft-entrypoints-v1.js'
+      - 'crm/v4/assets/v4/design-task-staging-transport-v1.js'
       - 'crm/v4/assets/v4/site-cache-note-v1.js'
       - 'crm/v4/assets/v4/order-operational-quality-v1.js'
       - 'crm/v4/assets/v4/order-operational-quality-model-v1.js'
       - 'tools/test_design_task_draft.mjs'
+      - 'tools/test_design_task_staging_transport.mjs'
       - 'tools/check_design_task_draft_preview.py'
+      - 'tools/check_design_task_staging_transport.py'
+      - 'contracts/design-task-staging-transport-v1.json'
       - 'docs/CRM_DESIGN_TASK_DRAFT_PREVIEW_MANUAL_TEST_2026-07-13.md'
+      - 'docs/CRM_DESIGN_TASK_STAGING_TRANSPORT_RUNBOOK_2026-07-14.md'
       - '.github/workflows/crm-design-task-draft-check.yml'
 
 jobs:
@@ -40,8 +50,13 @@ jobs:
           node --check crm/v4/assets/v4/design-task-draft-model-v1.js
           node --check crm/v4/assets/v4/design-task-draft-preview-v1.js
           node --check crm/v4/assets/v4/design-task-draft-entrypoints-v1.js
+          node --check crm/v4/assets/v4/design-task-staging-transport-v1.js
           node --check crm/v4/assets/v4/site-cache-note-v1.js
           node --check tools/test_design_task_draft.mjs
+          node --check tools/test_design_task_staging_transport.mjs
           node tools/test_design_task_draft.mjs
+          node tools/test_design_task_staging_transport.mjs
           python3 -m py_compile tools/check_design_task_draft_preview.py
+          python3 -m py_compile tools/check_design_task_staging_transport.py
           python3 tools/check_design_task_draft_preview.py
+          python3 tools/check_design_task_staging_transport.py

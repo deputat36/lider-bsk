@@ -112,4 +112,19 @@ Deploy разрешён только в `otulfnouybahfnsycxqn` после зел
 - synthetic task/event/receipt после smoke удаляются;
 - advisors не получают новых WARN/ERROR.
 
+## Source-only CRM transport
+
+Обновление 2026-07-14:
+
+- подготовлен `design-task-staging-transport-v1.js` с exact staging project lock;
+- transport использует только текущую Supabase-сессию и `functions.invoke('leader-crm-design')`;
+- production `config.js` не менялся, поэтому рабочая кнопка остаётся отключённой;
+- browser command повторно минимизируется и не содержит actor/status/designer/client/finance/internal fields;
+- create/replay и безопасные классы ошибок покрыты Node behavior test;
+- после успешного вызова transport обязан вызвать переданный safe read-path;
+- unauthenticated внешний smoke теперь подтверждён HTTP `401 / UNAUTHORIZED_NO_AUTH_HEADER`;
+- authenticated positive E2E не выполнен: нет отдельного staging Auth user и staging browser read policies/grants.
+
+Runbook: `docs/CRM_DESIGN_TASK_STAGING_TRANSPORT_RUNBOOK_2026-07-14.md`.
+
 На текущем этапе production deploy запрещён. Чтобы разрешить production, потребуется отдельный PR, удаление staging-only lock, повторное production preflight и явное одобрение владельца.

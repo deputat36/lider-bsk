@@ -68,15 +68,18 @@ Production:
 
 - Supabase deployment status `ACTIVE`;
 - `verify_jwt=true`;
+- 2026-07-14 внешний POST без `Authorization` достиг staging gateway и получил HTTP `401`;
+- gateway вернул `sb-error-code: UNAUTHORIZED_NO_AUTH_HEADER` и project ref `otulfnouybahfnsycxqn`;
 - database counters не изменились;
-- Edge logs пусты до первого успешного обращения.
+- unauthenticated запрос был остановлен gateway до выполнения Edge-кода и RPC.
 
 Не доказано в текущем этапе:
 
-- внешний unauthenticated HTTP smoke: runtime текущей рабочей среды не смог разрешить staging DNS;
 - authenticated positive E2E: в staging ещё нет отдельного Auth user и active CRM profile.
 
-Эти пункты нельзя считать пройденными. Для positive E2E требуется отдельно создать синтетического staging Auth user, связать только staging-профиль, выполнить create/replay/cleanup и удалить тестовую учётную запись. Production Auth не используется.
+Authenticated positive E2E нельзя считать пройденным. Подключённый Supabase-инструмент не предоставляет безопасных операций создания и удаления Auth user. Для positive E2E требуется отдельно создать синтетического staging Auth user, связать только staging-профиль, выполнить create/replay/conflict/cleanup и удалить тестовую учётную запись. Production Auth не используется.
+
+Точный сценарий и оставшийся safe staging read-path gate зафиксированы в `docs/CRM_DESIGN_TASK_STAGING_TRANSPORT_RUNBOOK_2026-07-14.md`.
 
 ## Production boundary
 
@@ -88,4 +91,4 @@ Production:
 - production backfill;
 - копирование production data или Auth users в staging.
 
-Следующий gate — отдельное разрешение на создание временного синтетического Auth user только в staging либо ручной browser smoke владельцем проекта.
+Следующий gate — staging-only read policies/grants для минимального существующего preview path, затем создание временного синтетического Auth user только в staging и ручной authenticated browser smoke.
