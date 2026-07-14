@@ -1,5 +1,8 @@
 /artifacts/design-task-staging-auth-e2e-evidence.json
 /artifacts/design-task-staging-auth-e2e-evidence-v2.json
 /artifacts/design-task-staging-fixture-manifest.json
+/artifacts/design-task-staging-fixture-seed.sql
+/artifacts/design-task-staging-fixture-cleanup.sql
+/artifacts/design-task-staging-fixture-sql-bundle.json
 /artifacts/design-task-staging-post-cleanup-snapshot.json
 /auth-e2e-plan.json
