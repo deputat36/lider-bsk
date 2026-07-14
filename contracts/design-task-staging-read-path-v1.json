@@ -1,0 +1,182 @@
+{
+  "contract_version": "leader-design-task-staging-read-path-v1",
+  "scope": "crm_v4_staging_browser_read_path",
+  "environment": {
+    "project_ref": "otulfnouybahfnsycxqn",
+    "environment_name": "staging",
+    "repository": "deputat36/lider-bsk",
+    "production_project_ref": "ofewxuqfjhamgerwzull",
+    "production_enabled": false,
+    "production_data_allowed": false
+  },
+  "authorization": {
+    "required_action": "design.read",
+    "canonical_registry": "crm/v4/assets/v4/action-permissions-v1.js",
+    "profile_table": "public.leader_user_profiles",
+    "active_profile_required": true,
+    "auth_uid_required": true,
+    "allowed_roles": [
+      "owner",
+      "admin",
+      "manager",
+      "designer"
+    ],
+    "denied_roles": [
+      "accountant",
+      "installer",
+      "contractor",
+      "production",
+      "unknown",
+      ""
+    ],
+    "unknown_role_fails_closed": true,
+    "inactive_profile_fails_closed": true,
+    "database_helper": {
+      "name": "leader_private.leader_has_crm_action(text)",
+      "security": "SECURITY DEFINER",
+      "search_path": "",
+      "auth_identity_source": "auth.uid()",
+      "accepted_action": "design.read",
+      "browser_payload_user_id_allowed": false,
+      "schema_exposed_to_data_api": false,
+      "returns_only_boolean": true
+    }
+  },
+  "read_projections": {
+    "public.leader_orders": [
+      "id",
+      "order_number",
+      "lead_id",
+      "project_name",
+      "status",
+      "priority",
+      "deadline",
+      "layout_status",
+      "layout_link",
+      "is_archived",
+      "updated_at"
+    ],
+    "public.leader_lead_needs": [
+      "id",
+      "lead_id",
+      "need_type",
+      "title",
+      "need_design",
+      "design_reason",
+      "deadline_date",
+      "status",
+      "completeness_score",
+      "created_at"
+    ],
+    "public.leader_design_tasks": [
+      "id",
+      "order_id",
+      "task_status",
+      "layout_status",
+      "designer_name",
+      "deadline",
+      "layout_link",
+      "created_at"
+    ]
+  },
+  "forbidden_columns": {
+    "public.leader_orders": [
+      "owner_id",
+      "client_name",
+      "client_phone",
+      "payment_status",
+      "client_total",
+      "contractor_cost",
+      "profit",
+      "prepayment",
+      "balance",
+      "production_status",
+      "internal_comment",
+      "data"
+    ],
+    "public.leader_lead_needs": [
+      "description",
+      "structured_data",
+      "missing_fields",
+      "created_by",
+      "updated_by"
+    ],
+    "public.leader_design_tasks": [
+      "owner_id",
+      "production_job_id",
+      "title",
+      "client_name",
+      "client_phone",
+      "priority",
+      "source",
+      "reference_link",
+      "task_text",
+      "client_comment",
+      "internal_comment",
+      "result_comment",
+      "created_by",
+      "updated_by"
+    ]
+  },
+  "privileges": {
+    "authenticated": {
+      "column_level_select_only": true,
+      "table_level_select": false,
+      "insert": false,
+      "update": false,
+      "delete": false,
+      "truncate": false,
+      "references": false,
+      "trigger": false,
+      "direct_design_rpc_execute": false,
+      "receipt_table_access": false
+    },
+    "anon": {
+      "select": false,
+      "write": false,
+      "helper_execute": false,
+      "direct_design_rpc_execute": false
+    }
+  },
+  "rls": {
+    "tables": [
+      "public.leader_orders",
+      "public.leader_lead_needs",
+      "public.leader_design_tasks"
+    ],
+    "command": "SELECT",
+    "target_role": "authenticated",
+    "predicate": "leader_private.leader_has_crm_action('design.read')",
+    "one_policy_per_table": true,
+    "browser_write_policies": false
+  },
+  "validation": {
+    "sql_role_simulation_without_auth_user": true,
+    "positive_roles": [
+      "owner",
+      "admin",
+      "manager",
+      "designer"
+    ],
+    "negative_roles": [
+      "accountant",
+      "installer",
+      "contractor",
+      "inactive manager",
+      "unknown"
+    ],
+    "column_privilege_tests": true,
+    "write_denial_tests": true,
+    "direct_rpc_denial_test": true,
+    "receipt_denial_test": true,
+    "transaction_rollback_cleanup": true,
+    "real_http_authenticated_e2e": false
+  },
+  "remaining_gates": [
+    "separate staging Auth user",
+    "authenticated HTTP create/replay/conflict/role E2E",
+    "browser Network evidence",
+    "post-create safe read through a real staging session",
+    "separate production approval"
+  ]
+}

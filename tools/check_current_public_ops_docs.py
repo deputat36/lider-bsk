@@ -38,8 +38,11 @@ def main() -> int:
     decisions = read(DECISIONS, errors)
     runbook = read(E2E_RUNBOOK, errors)
 
+    # STATUS is a project-wide document and may advance after the public-site
+    # baseline. Protect the dated public section rather than freezing the file's
+    # top-level update date.
     for marker in (
-        "Дата обновления: 2026-07-13.",
+        "Обновление 2026-07-13:",
         "## Публичный сайт — актуальный статус",
         "leader-public-lead v10",
         "55 корневых публичных HTML",
@@ -93,7 +96,7 @@ def main() -> int:
         print("\n".join(errors))
         return 1
 
-    print("Current public-site operational documentation is valid for 2026-07-13.")
+    print("Current public-site operational documentation baseline remains valid after project STATUS updates.")
     return 0
 
 

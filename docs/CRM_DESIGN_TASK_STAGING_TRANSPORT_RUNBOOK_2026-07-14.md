@@ -4,122 +4,98 @@
 
 - staging: `otulfnouybahfnsycxqn`;
 - production: `ofewxuqfjhamgerwzull`;
-- `leader-crm-design v1` в staging имеет статус `ACTIVE` и `verify_jwt=true`;
-- внешний запрос без `Authorization` подтверждён: HTTP `401`, `sb-error-code: UNAUTHORIZED_NO_AUTH_HEADER`;
-- staging RPC, private receipt и unique active-task index присутствуют;
-- staging profiles/orders/needs/tasks/events/receipts после проверки — 0;
-- production Edge/RPC/receipt/index отсутствуют, production design tasks/events/comments — 0.
+- `leader-crm-design v1` — `ACTIVE`, `verify_jwt=true`;
+- unauthenticated POST подтверждён: HTTP 401, `UNAUTHORIZED_NO_AUTH_HEADER`;
+- RPC, private receipt и unique active-task index присутствуют только в staging;
+- safe staging read-path применён и проверен;
+- staging business counts после проверки — 0;
+- production Edge/RPC/receipt/index отсутствуют, production design rows — 0.
 
-Authenticated positive E2E не выполнен. Подключённый Supabase-инструмент не умеет безопасно создавать и удалять Auth users, а в staging нет отдельного тестового пользователя. Успех нельзя имитировать SQL-вставкой в `auth.users` или production JWT.
+Authenticated positive E2E не выполнен: подключённый инструмент не предоставляет безопасный lifecycle отдельного staging Auth user. SQL role simulation нельзя выдавать за реальный HTTP/browser E2E.
 
-## Что подготовлено в source
+## Source transport
 
 `design-task-staging-transport-v1.js`:
 
-- разрешает вызов только при точном project ref `otulfnouybahfnsycxqn`;
-- использует текущую сессию `supabaseClient.auth.getSession()`;
-- вызывает только `leader-crm-design` через `supabaseClient.functions.invoke()`;
-- не принимает и не отправляет actor, author, owner, status, designer, source, контакты клиента, финансы и внутренние комментарии;
-- формирует UUID `request_id` через `crypto.randomUUID()`;
-- сохраняет детерминированный idempotency key из черновика;
-- различает create, replay, validation error, forbidden, stale order, active task conflict, idempotency conflict и persistence failure;
-- после успеха вызывает переданный safe staging read-path.
+- работает только при точном staging project ref;
+- использует текущую сессию `supabaseClient`;
+- вызывает только `leader-crm-design`;
+- не отправляет actor, author, owner, status, designer, source, контакты клиента, финансы и внутренние комментарии;
+- формирует UUID request_id;
+- сохраняет детерминированный idempotency key;
+- различает create, replay, validation, forbidden, stale order, active-task conflict, idempotency conflict и persistence failure;
+- после успеха вызывает safe staging read-path.
 
-Текущий `crm/v4/assets/v4/config.js` продолжает указывать на production. Поэтому рабочая CRM показывает только `Создать задачу в CRM — отключено`, а transport не выполняет сетевой вызов.
+Рабочая CRM продолжает указывать на production, поэтому production-кнопка остаётся отключённой.
 
-## Оставшийся safe staging read-path gate
+## safe staging read-path — выполнено
 
-Изолированный staging harness намеренно не выдаёт `authenticated` прямой `SELECT` к `leader_orders`, `leader_lead_needs` и `leader_design_tasks`; RLS включён без browser policies. Поэтому существующий preview ещё нельзя открыть под staging Auth, а post-create перечитывание нельзя считать доказанным.
+Migration:
 
-Перед browser E2E нужен отдельный staging-only этап:
+`supabase/staging-migrations/20260714_03_design_task_read_path.sql`
 
-1. Зафиксировать минимальные `SELECT` projections для заказа, design-потребности и design task.
-2. Добавить RLS policies только для активного staging-профиля с canonical `design.read`.
-3. Синхронизировать разрешённые роли с `action-permissions-v1.js` checker-ом.
-4. Не выдавать `INSERT`, `UPDATE`, `DELETE` или RPC EXECUTE browser-ролям.
-5. Проверить отрицательные сценарии для inactive, accountant, installer, contractor и unknown role.
-6. После DDL запустить security/performance advisors.
+Contract:
 
-До этого safe staging read-path не выполнен и не должен объявляться пройденным.
+`contracts/design-task-staging-read-path-v1.json`
 
-## Точный authenticated E2E после снятия двух gates
+Browser получает только column-level SELECT к:
 
-### 1. Тестовый Auth user
+- `leader_orders`;
+- `leader_lead_needs`;
+- `leader_design_tasks`.
 
-Создать только в staging отдельного пользователя через Supabase Dashboard или Admin API:
+RLS требует:
 
-- адрес явно тестовый, не совпадает с сотрудниками и клиентами;
-- пароль генерируется на время теста и не попадает в GitHub, issue, логи или скриншоты;
-- production Auth не используется;
-- сохранить только UUID пользователя в локальной временной заметке.
+- действующий `auth.uid()`;
+- активный `leader_user_profiles`;
+- canonical `design.read`;
+- роль owner, admin, manager или designer.
 
-Создать в staging `leader_user_profiles` активный профиль с ролью `manager`. Не использовать production UUID, email, телефоны или реальные имена.
+Accountant, installer, contractor, inactive manager, unknown role и запрос без `auth.uid()` fail closed.
 
-### 2. Синтетические fixtures
+Не выдаются:
 
-Создать только в staging:
+- клиентские контакты;
+- финансовые поля;
+- production status;
+- внутренние комментарии и task text;
+- author/owner fields;
+- browser INSERT, UPDATE, DELETE;
+- receipt SELECT;
+- direct RPC EXECUTE.
 
-- один lead;
-- один order с нейтральным названием и фиксированным `updated_at`;
-- одну lead need с `need_design=true`;
-- не создавать client rows, оплаты, расходы и production данные.
+SQL validation подтвердила positive/negative роли, safe projections, private-column denial, write denial и cleanup. Security и performance advisors не имеют WARN/ERROR по staging `leader_*`.
 
-Использовать `example.invalid` для любых ссылок и sentinel-строки без персональных данных.
+## Оставшийся authenticated positive E2E
 
-### 3. Browser/Network create
+Для полноценной проверки требуется отдельный временный staging Auth user, созданный через Dashboard или Admin API. Нельзя использовать production identity или реальные данные.
 
-В отдельной staging-сборке CRM:
+После создания пользователя:
 
-1. Войти тестовым staging-пользователем.
-2. Открыть preview синтетического заказа.
-3. Убедиться, что видна кнопка `Создать тестовую задачу в staging`.
-4. Проверить request body: только `action`, `request_id`, `expected_updated_at`, `payload`.
-5. Проверить отсутствие actor/status/designer/client/finance/internal fields.
-6. Получить HTTP `201` и `idempotent_replay=false`.
-7. Подтвердить автоматическое перечитывание design task через safe staging read-path.
+1. Создать активный staging-профиль manager.
+2. Создать синтетические lead, order и need с `need_design=true`.
+3. Войти в отдельную staging-сборку CRM.
+4. Открыть preview и подтвердить safe read-path.
+5. Выполнить create: HTTP 201, `idempotent_replay=false`.
+6. Выполнить exact replay: HTTP 200, `idempotent_replay=true`.
+7. Изменить payload при прежнем idempotency key: HTTP 409.
+8. Проверить stale order и active-task conflict: HTTP 409.
+9. Проверить accountant, inactive manager и unknown role: HTTP 403.
+10. Подтвердить ровно одну task, один event и один successful receipt.
+11. Подтвердить неизменность workflow, production, payment, finance и client fields заказа.
+12. Подтвердить read-after-success через обычную browser session.
+13. Удалить все synthetic business rows, staging profile и временного Auth user.
+14. Подтвердить business counts = 0, environment guard = 1 и повторно запустить advisors.
 
-### 4. Replay и конфликты
+## Network evidence
 
-- повторить точный command: HTTP `200`, `idempotent_replay=true`;
-- изменить payload при том же idempotency key: HTTP `409`;
-- изменить `order.updated_at` после подготовки preview: HTTP `409`, stale order;
-- попытаться создать вторую active task с новой key: HTTP `409`, active task conflict.
+В DevTools должны быть зафиксированы:
 
-### 5. Роли и активность
-
-Последовательно менять только staging-профиль и обновлять JWT/session при необходимости:
-
-- manager или designer active → разрешено;
-- accountant → HTTP `403`;
-- inactive manager → HTTP `403`;
-- unknown role → HTTP `403`.
-
-После каждого отрицательного сценария task/event/receipt counts не должны увеличиваться.
-
-### 6. Инварианты
-
-После первого create и всех повторов должно существовать ровно:
-
-- 1 design task;
-- 1 audit event;
-- 1 successful receipt.
-
-Не должны измениться order status, layout status, production status, payment status, суммы, client data и internal comments. Ответ, task, event и receipt не должны содержать контакты, финансы или внутренние комментарии.
-
-### 7. Очистка
-
-Удалить в staging в безопасном порядке:
-
-1. synthetic receipt;
-2. design event;
-3. design task;
-4. need;
-5. order;
-6. lead;
-7. staging profile;
-8. тестового Auth user через Dashboard/Admin API.
-
-Подтвердить business counts = 0 и environment guard = 1. Удалить локальные пароль, access token, refresh token и UUID-заметки. Затем повторно запустить security/performance advisors.
+- запрос только к staging `leader-crm-design`;
+- request envelope только из `action`, `request_id`, `expected_updated_at`, `payload`;
+- отсутствие browser actor/status/designer/client/finance/internal fields;
+- после успеха только SELECT к трём разрешённым таблицам;
+- отсутствие browser writes и direct RPC calls.
 
 ## Production rollout
 

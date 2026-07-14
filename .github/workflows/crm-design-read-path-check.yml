@@ -1,0 +1,76 @@
+name: CRM design read path check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'contracts/design-task-staging-read-path-v1.json'
+      - 'supabase/staging-migrations/20260714_03_design_task_read_path.sql'
+      - 'supabase/staging-tests/20260714_design_task_read_path.sql'
+      - 'crm/v4/assets/v4/action-permissions-v1.js'
+      - 'crm/v4/assets/v4/design-task-draft-preview-v1.js'
+      - 'tools/check_supabase_staging_design_read_path.py'
+      - 'docs/SUPABASE_STAGING_DESIGN_READ_PATH_2026-07-14.md'
+      - 'docs/CRM_DESIGN_TASK_STAGING_TRANSPORT_RUNBOOK_2026-07-14.md'
+      - 'supabase/config.toml'
+      - '.github/workflows/crm-design-read-path-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'contracts/design-task-staging-read-path-v1.json'
+      - 'supabase/staging-migrations/20260714_03_design_task_read_path.sql'
+      - 'supabase/staging-tests/20260714_design_task_read_path.sql'
+      - 'crm/v4/assets/v4/action-permissions-v1.js'
+      - 'crm/v4/assets/v4/design-task-draft-preview-v1.js'
+      - 'tools/check_supabase_staging_design_read_path.py'
+      - 'docs/SUPABASE_STAGING_DESIGN_READ_PATH_2026-07-14.md'
+      - 'docs/CRM_DESIGN_TASK_STAGING_TRANSPORT_RUNBOOK_2026-07-14.md'
+      - 'supabase/config.toml'
+      - '.github/workflows/crm-design-read-path-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-design-read-path:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate read-path contract JSON
+        run: python3 -m json.tool contracts/design-task-staging-read-path-v1.json >/dev/null
+
+      - name: Compile read-path checker
+        run: python3 -m py_compile tools/check_supabase_staging_design_read_path.py
+
+      - name: Validate role sync, projections and write-closed boundary
+        run: python3 tools/check_supabase_staging_design_read_path.py
+
+      - name: Protect production project reference
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -n --fixed-strings 'ofewxuqfjhamgerwzull' \
+            supabase/staging-migrations/20260714_03_design_task_read_path.sql \
+            supabase/staging-tests/20260714_design_task_read_path.sql; then
+            echo 'Production project ref is forbidden in staging read-path SQL.' >&2
+            exit 1
+          fi
+          grep -n --fixed-strings 'otulfnouybahfnsycxqn' \
+            supabase/staging-migrations/20260714_03_design_task_read_path.sql \
+            supabase/staging-tests/20260714_design_task_read_path.sql >/dev/null
+
+      - name: Reject secret material
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -R -E --line-number \
+            'sb_secret_[A-Za-z0-9_-]{10,}|eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}|database[_-]?password[[:space:]]*[=:]' \
+            contracts/design-task-staging-read-path-v1.json \
+            supabase/staging-migrations/20260714_03_design_task_read_path.sql \
+            supabase/staging-tests/20260714_design_task_read_path.sql \
+            docs/SUPABASE_STAGING_DESIGN_READ_PATH_2026-07-14.md \
+            docs/CRM_DESIGN_TASK_STAGING_TRANSPORT_RUNBOOK_2026-07-14.md; then
+            echo 'Possible secret material found in staging read-path source.' >&2
+            exit 1
+          fi
