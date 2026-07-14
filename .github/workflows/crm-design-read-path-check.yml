@@ -44,24 +44,7 @@ jobs:
         run: python3 -m py_compile tools/check_supabase_staging_design_read_path.py
 
       - name: Validate role sync, projections and write-closed boundary
-        id: read_path_checker
-        continue-on-error: true
-        shell: bash
-        run: |
-          set -o pipefail
-          python3 tools/check_supabase_staging_design_read_path.py 2>&1 | tee read-path-check.log
-
-      - name: Upload temporary read-path diagnostic
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: read-path-check-diagnostic
-          path: read-path-check.log
-          retention-days: 1
-
-      - name: Fail when read-path checker is invalid
-        if: steps.read_path_checker.outcome != 'success'
-        run: exit 1
+        run: python3 tools/check_supabase_staging_design_read_path.py
 
       - name: Protect production project reference
         shell: bash
