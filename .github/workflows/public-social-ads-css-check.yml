@@ -1,0 +1,25 @@
+name: Public social advertising CSS check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'reklama-v-socsetyah-borisoglebsk.html'
+      - 'assets/public-social-ads.css'
+      - 'tools/check_public_social_ads_css.py'
+      - '.github/workflows/public-social-ads-css-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'reklama-v-socsetyah-borisoglebsk.html'
+      - 'assets/public-social-ads.css'
+      - 'tools/check_public_social_ads_css.py'
+      - '.github/workflows/public-social-ads-css-check.yml'
+
+jobs:
+  validate-social-advertising-page:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate external stylesheet and page contract
+        run: python3 tools/check_public_social_ads_css.py
