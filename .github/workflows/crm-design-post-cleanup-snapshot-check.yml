@@ -48,19 +48,7 @@ jobs:
         run: node tools/test_design_task_staging_post_cleanup_snapshot.mjs
 
       - name: Validate source contracts and production boundary
-        shell: bash
-        run: |
-          set -o pipefail
-          python3 tools/check_design_task_staging_post_cleanup_snapshot.py 2>&1 | tee post-cleanup-check.log
-
-      - name: Upload temporary checker diagnostics
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: post-cleanup-check-diagnostics
-          path: post-cleanup-check.log
-          if-no-files-found: error
-          retention-days: 1
+        run: python3 tools/check_design_task_staging_post_cleanup_snapshot.py
 
       - name: Validate a local clean snapshot fixture
         shell: bash
