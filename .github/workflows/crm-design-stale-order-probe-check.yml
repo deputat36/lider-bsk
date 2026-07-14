@@ -34,7 +34,7 @@ on:
       - 'tools/design-task-staging-stale-order-e2e-v1.mjs'
       - 'tools/validate-design-task-staging-stale-order-evidence.mjs'
       - 'tools/run_design_task_staging_stale_order_e2e.ps1'
-      - 'tools/test_create_design_task_staging_stale-order-sql-bundle.mjs'
+      - 'tools/test_create_design_task_staging_stale_order_sql_bundle.mjs'
       - 'tools/test_design_task_staging_stale_order_e2e_v1.mjs'
       - 'tools/check_design_task_staging_stale_order_probe.py'
       - 'docs/CRM_DESIGN_TASK_STAGING_STALE_ORDER_PROBE_2026-07-14.md'
@@ -70,19 +70,7 @@ jobs:
         run: node tools/test_design_task_staging_stale_order_e2e_v1.mjs
 
       - name: Validate source contracts and boundaries
-        shell: bash
-        run: |
-          set -o pipefail
-          python3 tools/check_design_task_staging_stale_order_probe.py 2>&1 | tee stale-order-check.log
-
-      - name: Upload temporary stale-order checker diagnostics
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: stale-order-check-diagnostics
-          path: stale-order-check.log
-          if-no-files-found: error
-          retention-days: 1
+        run: python3 tools/check_design_task_staging_stale_order_probe.py
 
       - name: Validate source-only operator plan
         shell: bash
