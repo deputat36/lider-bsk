@@ -3,6 +3,11 @@ body.page-social-content{--hero-start:#0b1020;--hero-end:#1f2937}
 body.page-design-service{--hero-start:#080b14;--hero-end:#111827}
 body.page-brand-identity{--hero-start:#080b14;--hero-end:#111827}
 body.page-maps-listing{--hero-start:#0b1020;--hero-end:#1f2937}
+body.page-banner-service{--hero-start:#0b1020;--hero-end:#1f2937}
+body.page-signage-service{--hero-start:#0b1020;--hero-end:#1f2937}
+body.page-shop-sign-service{--hero-start:#080b14;--hero-end:#111827}
+body.page-film-print-service{--hero-start:#080b14;--hero-end:#111827}
+body.page-window-branding{--hero-start:#080b14;--hero-end:#111827}
 *{box-sizing:border-box}
 a{color:inherit}
 .wrap{width:min(100% - 32px,1080px);margin:0 auto}
