@@ -1,0 +1,25 @@
+name: Public event advertising CSS check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'reklama-dlya-meropriyatiy-borisoglebsk.html'
+      - 'assets/public-event-ads.css'
+      - 'tools/check_public_event_ads_css.py'
+      - '.github/workflows/public-event-ads-css-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'reklama-dlya-meropriyatiy-borisoglebsk.html'
+      - 'assets/public-event-ads.css'
+      - 'tools/check_public_event_ads_css.py'
+      - '.github/workflows/public-event-ads-css-check.yml'
+
+jobs:
+  validate-event-advertising-page:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate external stylesheet and page contract
+        run: python3 tools/check_public_event_ads_css.py
