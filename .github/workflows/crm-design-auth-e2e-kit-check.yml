@@ -69,24 +69,7 @@ jobs:
         run: node tools/test_design_task_staging_auth_e2e.mjs
 
       - name: Validate source contracts and production boundary
-        id: source_checker
-        continue-on-error: true
-        shell: bash
-        run: |
-          set -o pipefail
-          python3 tools/check_design_task_staging_auth_e2e.py 2>&1 | tee auth-e2e-check.log
-
-      - name: Upload temporary checker diagnostic
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: auth-e2e-check-diagnostic
-          path: auth-e2e-check.log
-          retention-days: 1
-
-      - name: Fail when source checker is invalid
-        if: steps.source_checker.outcome != 'success'
-        run: exit 1
+        run: python3 tools/check_design_task_staging_auth_e2e.py
 
       - name: Validate no-network plan mode
         shell: pwsh
