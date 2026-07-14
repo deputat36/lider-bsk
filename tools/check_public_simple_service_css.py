@@ -77,10 +77,26 @@ PAGES = {
         'section': 'Что можно разместить на витрине',
         'cta': 'Заявка на оформление витрины',
     },
+    'outdoor-advertising-borisoglebsk.html': {
+        'body_class': 'page-outdoor-overview',
+        'shared_css': 'assets/public-simple-service.css?v=3',
+        'canonical': 'https://www.lider-bsk.ru/outdoor-advertising-borisoglebsk.html',
+        'h1': 'Наружная реклама в Борисоглебске',
+        'section': 'Что можно заказать',
+        'cta': 'Оставьте заявку',
+    },
+    'nakleyki-plotternaya-rezka-borisoglebsk.html': {
+        'body_class': 'page-plotter-stickers',
+        'shared_css': 'assets/public-simple-service.css?v=3',
+        'canonical': 'https://www.lider-bsk.ru/nakleyki-plotternaya-rezka-borisoglebsk.html',
+        'h1': 'Наклейки и плоттерная резка в Борисоглебске',
+        'section': 'Что можно сделать',
+        'cta': 'Заявка на наклейки',
+    },
 }
 
 css = CSS.read_text(encoding='utf-8')
-if len(css) < 1700:
+if len(css) < 1950:
     raise SystemExit(f'Shared simple service CSS is unexpectedly small: {len(css)} bytes')
 
 for marker in (
@@ -93,6 +109,10 @@ for marker in (
     'body.page-shop-sign-service{--hero-start:#080b14;--hero-end:#111827}',
     'body.page-film-print-service{--hero-start:#080b14;--hero-end:#111827}',
     'body.page-window-branding{--hero-start:#080b14;--hero-end:#111827}',
+    'body.page-outdoor-overview{--hero-start:#080b14;--hero-end:#111827}',
+    'body.page-plotter-stickers{--hero-start:#07111f;--hero-end:#111827}',
+    'body.page-outdoor-overview .hero p{max-width:860px}',
+    'body.page-outdoor-overview .back{color:#667085}',
     '.hero{background:linear-gradient(135deg,var(--hero-start),var(--hero-end))',
     '.grid{display:grid;grid-template-columns:repeat(3,1fr)',
     '.cta{background:#111827;color:#fff',
@@ -140,4 +160,4 @@ for page_name, expected in PAGES.items():
     if 'href="tel:+79802457471"' not in html:
         raise SystemExit(f'{page_name}: phone link missing')
 
-print('Shared simple service CSS contract is valid for nine pages.')
+print('Shared simple service CSS contract is valid for eleven pages.')
