@@ -18,10 +18,14 @@ REQUIRED_CSS_MARKERS = (
     '.cta{background:linear-gradient(135deg,#111827,#020617)',
     '@media(max-width:900px)',
 )
-SHOP_NOOP_SCRIPT = (
-    '<script>document.addEventListener(\'DOMContentLoaded\',function(){setTimeout(function(){'
-    'document.querySelectorAll(\'[data-scenario="shop"]\').forEach(function(a){'
-    'a.addEventListener(\'click\',function(){});});},300);});</script>'
+EXPECTED_SHOP_NOOP = (
+    "document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){"
+    "document.querySelectorAll('[data-scenario=\"shop\"]').forEach(function(a){"
+    "a.addEventListener('click',function(){});});},300);});"
+)
+INLINE_SCRIPT_RE = re.compile(
+    r'<script(?![^>]*\bsrc=)(?![^>]*type=["\']application/ld\+json["\'])[^>]*>(.*?)</script>',
+    flags=re.I | re.S,
 )
 
 changed = []
@@ -50,11 +54,18 @@ for page_name, body_class in PAGES.items():
             raise SystemExit(f'{page_name}: expected one plain body tag')
         html = html.replace('<body>', expected_body, 1)
 
+    executable_scripts = list(INLINE_SCRIPT_RE.finditer(html))
     if page_name == 'reklama-dlya-magazina-borisoglebsk.html':
-        if SHOP_NOOP_SCRIPT in html:
-            html = html.replace(SHOP_NOOP_SCRIPT, '', 1)
-        elif re.search(r'<script(?![^>]*\bsrc=)(?![^>]*type=["\']application/ld\+json["\'])', html, flags=re.I):
-            raise SystemExit(f'{page_name}: unexpected executable inline script')
+        if len(executable_scripts) != 1:
+            raise SystemExit(f'{page_name}: expected one known no-op inline script, found {len(executable_scripts)}')
+        script_body = re.sub(r'\s+', '', executable_scripts[0].group(1))
+        expected_body_compact = re.sub(r'\s+', '', EXPECTED_SHOP_NOOP)
+        if script_body != expected_body_compact:
+            raise SystemExit(f'{page_name}: inline script does not match the known no-op handler')
+        match = executable_scripts[0]
+        html = html[:match.start()] + html[match.end():]
+    elif executable_scripts:
+        raise SystemExit(f'{page_name}: unexpected executable inline script')
 
     if html.lower().count('<!doctype html>') != 1:
         raise SystemExit(f'{page_name}: migration changed doctype count')
