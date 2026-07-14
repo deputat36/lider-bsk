@@ -59,7 +59,6 @@ function manifestEvidence(config) {
 function staleCommand(config, cryptoObject) {
   return buildDesignCommand({
     ...config,
-    idempotencyKey: config.idempotencyKey.slice(0, 168),
     requestId: requestId(cryptoObject),
     keySuffix: STALE_ORDER_KEY_SUFFIX,
     titleSuffix: ' stale order'
