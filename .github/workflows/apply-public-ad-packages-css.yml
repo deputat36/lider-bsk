@@ -1,0 +1,43 @@
+name: Apply public advertising packages CSS migration
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'komplekty-reklamy.html'
+      - 'assets/public-ad-packages.css'
+      - 'tools/apply_public_ad_packages_css.py'
+      - 'tools/check_public_ad_packages_css.py'
+      - '.github/workflows/apply-public-ad-packages-css.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-migration:
+    if: github.head_ref == 'public/ad-packages-css-2026-07-14'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Apply guarded extraction
+        run: python3 tools/apply_public_ad_packages_css.py
+      - name: Validate page contract
+        run: python3 tools/check_public_ad_packages_css.py
+      - name: Validate global public contracts
+        run: |
+          python3 tools/check_public_html_seo_baseline.py
+          python3 tools/check_public_dom_integrity.py
+          python3 tools/check_public_local_resources.py
+      - name: Commit migrated page
+        run: |
+          if git diff --quiet -- komplekty-reklamy.html; then
+            echo 'No page changes required.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add komplekty-reklamy.html
+          git commit -m 'Move advertising packages page CSS to external asset'
+          git push origin HEAD:${{ github.head_ref }}
