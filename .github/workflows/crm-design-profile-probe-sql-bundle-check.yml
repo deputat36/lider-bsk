@@ -56,19 +56,7 @@ jobs:
         run: node tools/test_create_design_task_staging_profile_probe_sql_bundle.mjs
 
       - name: Validate source contracts and canonical role sync
-        shell: bash
-        run: |
-          set -o pipefail
-          python3 tools/check_design_task_staging_profile_probe_sql_bundle.py 2>&1 | tee profile-probe-check.log
-
-      - name: Upload temporary profile probe checker diagnostics
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: profile-probe-check-diagnostics
-          path: profile-probe-check.log
-          if-no-files-found: error
-          retention-days: 1
+        run: python3 tools/check_design_task_staging_profile_probe_sql_bundle.py
 
       - name: Generate temporary fixture manifest and profile probe SQL locally
         shell: bash
