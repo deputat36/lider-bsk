@@ -1,7 +1,7 @@
 (function(){
   function applyPrintProductPreset(){
     var page=document.body;
-    if(!page||!page.classList.contains('page-print-product'))return;
+    if(!page||(!page.hasAttribute('data-lead-service')&&!page.hasAttribute('data-lead-message')))return;
     var serviceName=page.getAttribute('data-lead-service')||'Полиграфия';
     var defaultMessage=page.getAttribute('data-lead-message')||'';
     var form=document.querySelector('[data-leader-lead-widget]');

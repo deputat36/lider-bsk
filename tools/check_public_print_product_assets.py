@@ -5,7 +5,7 @@ import re
 ROOT = Path(__file__).resolve().parents[1]
 CSS = ROOT / 'assets' / 'public-print-product.css'
 JS = ROOT / 'assets' / 'public-print-product.js'
-PAGES = {
+PRODUCT_PAGES = {
     'blanki-borisoglebsk.html': {
         'canonical': 'https://www.lider-bsk.ru/blanki-borisoglebsk.html',
         'h1': 'Бланки и документы',
@@ -54,6 +54,19 @@ PAGES = {
         'cta': 'Рассчитать папки',
         'message': 'Страница: папки и конверты. Нужно рассчитать фирменные папки, конверты, обложки или деловой комплект. Нужно уточнить формат, тираж, бумагу, срок и нужен ли дизайн.',
     },
+    'razdatochnye-materialy-borisoglebsk.html': {
+        'canonical': 'https://www.lider-bsk.ru/razdatochnye-materialy-borisoglebsk.html',
+        'h1': 'Раздаточные материалы',
+        'cta': 'Рассчитать материалы',
+        'message': 'Страница: раздаточные материалы. Нужно рассчитать листовки, флаеры, мини-прайсы, вкладыши или карточки услуг. Нужно уточнить формат, тираж, стороны печати, бумагу, срок, содержание и нужен ли дизайн.',
+    },
+}
+HUB = {
+    'page': 'poligrafiya-borisoglebsk.html',
+    'canonical': 'https://www.lider-bsk.ru/poligrafiya-borisoglebsk.html',
+    'h1': 'Печатные материалы для бизнеса',
+    'cta': 'Рассчитать полиграфию',
+    'message': 'Страница: полиграфия. Нужно рассчитать печатные материалы: визитки, листовки, наклейки, бирки, бланки, буклеты или другой тираж. Нужно уточнить формат, количество, материал, сроки и нужен ли дизайн.',
 }
 
 css = CSS.read_text(encoding='utf-8')
@@ -73,7 +86,8 @@ for marker in (
         raise SystemExit(f'Missing CSS contract marker: {marker}')
 
 for marker in (
-    "page.classList.contains('page-print-product')",
+    "page.hasAttribute('data-lead-service')",
+    "page.hasAttribute('data-lead-message')",
     "page.getAttribute('data-lead-service')||'Полиграфия'",
     "page.getAttribute('data-lead-message')||''",
     "document.querySelector('[data-leader-lead-widget]')",
@@ -86,18 +100,22 @@ for forbidden in ('fetch(', 'XMLHttpRequest', 'localStorage', 'sessionStorage'):
     if forbidden in js:
         raise SystemExit(f'Print product preset must not use {forbidden}')
 
-for page_name, expected in PAGES.items():
-    html = (ROOT / page_name).read_text(encoding='utf-8')
-    if '<style' in html.lower() or '</style>' in html.lower():
-        raise SystemExit(f'{page_name}: inline style block returned')
+form_css = 'assets/public-lead-form.css?v=4'
+shared_css = 'assets/public-print-product.css?v=1'
+form_js = 'assets/public-lead-form.js?v=5'
+related_js = 'assets/public-related-services.js?v=2'
+preset_js = 'assets/public-print-product.js?v=1'
+
+def assert_no_executable_inline(page_name: str, html: str) -> None:
     if re.search(r'<script(?![^>]*\bsrc=)(?![^>]*type=["\']application/ld\+json["\'])[^>]*>', html, flags=re.I):
         raise SystemExit(f'{page_name}: executable inline script returned')
 
-    form_css = 'assets/public-lead-form.css?v=4'
-    shared_css = 'assets/public-print-product.css?v=1'
-    form_js = 'assets/public-lead-form.js?v=5'
-    related_js = 'assets/public-related-services.js?v=2'
-    preset_js = 'assets/public-print-product.js?v=1'
+for page_name, expected in PRODUCT_PAGES.items():
+    html = (ROOT / page_name).read_text(encoding='utf-8')
+    if '<style' in html.lower() or '</style>' in html.lower():
+        raise SystemExit(f'{page_name}: inline style block returned')
+    assert_no_executable_inline(page_name, html)
+
     for marker in (form_css, shared_css, form_js, related_js, preset_js):
         if html.count(marker) != 1:
             raise SystemExit(f'{page_name}: expected exactly one {marker}')
@@ -125,4 +143,35 @@ for page_name, expected in PAGES.items():
     if 'href="tel:+79802457471"' not in html:
         raise SystemExit(f'{page_name}: phone link missing')
 
-print('Shared print product assets contract is valid for eight pages and 48 cards.')
+hub_name = HUB['page']
+hub_html = (ROOT / hub_name).read_text(encoding='utf-8')
+assert_no_executable_inline(hub_name, hub_html)
+if shared_css in hub_html:
+    raise SystemExit(f'{hub_name}: product CSS must not replace the hub design')
+for marker in (form_css, form_js, related_js, preset_js):
+    if hub_html.count(marker) != 1:
+        raise SystemExit(f'{hub_name}: expected exactly one {marker}')
+if not (hub_html.index(form_js) < hub_html.index(related_js) < hub_html.index(preset_js)):
+    raise SystemExit(f'{hub_name}: script order must be form -> related services -> print preset')
+hub_body = (
+    '<body class="page-print-hub" data-lead-service="Полиграфия" '
+    f'data-lead-message="{HUB["message"]}">'
+)
+if hub_body not in hub_html:
+    raise SystemExit(f'{hub_name}: hub preset attributes mismatch')
+if f'<link rel="canonical" href="{HUB["canonical"]}">' not in hub_html:
+    raise SystemExit(f'{hub_name}: canonical mismatch')
+if f'<h1>{HUB["h1"]}</h1>' not in hub_html:
+    raise SystemExit(f'{hub_name}: H1 changed')
+if f'<h2>{HUB["cta"]}</h2>' not in hub_html:
+    raise SystemExit(f'{hub_name}: CTA heading changed')
+if hub_html.count('class="card"') != 6:
+    raise SystemExit(f'{hub_name}: expected six hub cards')
+if hub_html.count('id="leader-lead-form"') != 1:
+    raise SystemExit(f'{hub_name}: lead form container mismatch')
+if 'href="tel:+79802457471"' not in hub_html:
+    raise SystemExit(f'{hub_name}: phone link missing')
+if '"@type":"Service"' not in hub_html:
+    raise SystemExit(f'{hub_name}: Service JSON-LD missing')
+
+print('Shared print assets contract is valid for nine product pages, 54 product cards, and the print hub preset.')
