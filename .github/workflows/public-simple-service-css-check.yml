@@ -8,6 +8,9 @@ on:
       - 'dizayn-maketov.html'
       - 'logotip-firmennyy-stil.html'
       - 'yandex-karty-2gis.html'
+      - 'bannery-borisoglebsk.html'
+      - 'tablichki-borisoglebsk.html'
+      - 'vyveski-borisoglebsk.html'
       - 'assets/public-simple-service.css'
       - 'tools/check_public_simple_service_css.py'
       - '.github/workflows/public-simple-service-css-check.yml'
@@ -18,6 +21,9 @@ on:
       - 'dizayn-maketov.html'
       - 'logotip-firmennyy-stil.html'
       - 'yandex-karty-2gis.html'
+      - 'bannery-borisoglebsk.html'
+      - 'tablichki-borisoglebsk.html'
+      - 'vyveski-borisoglebsk.html'
       - 'assets/public-simple-service.css'
       - 'tools/check_public_simple_service_css.py'
       - '.github/workflows/public-simple-service-css-check.yml'
@@ -27,5 +33,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate four service pages and shared stylesheet
+      - name: Validate seven service pages and shared stylesheet
         run: python3 tools/check_public_simple_service_css.py
