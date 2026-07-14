@@ -226,7 +226,7 @@ require(doc, [
     'Evidence', 'Cleanup', 'Production boundary',
 ], 'operator kit documentation')
 require(runbook, [
-    'Auth user', 'safe staging read-path', 'authenticated positive E2E',
+    'Auth user', 'safe staging read-path', 'Authenticated positive E2E',
 ], 'existing staging runbook')
 require(workflow, [
     'CRM design authenticated E2E kit check',
