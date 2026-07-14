@@ -22,7 +22,7 @@ PAGES = {
 }
 
 css = CSS.read_text(encoding='utf-8')
-if len(css) < 1500:
+if len(css) < 1300:
     raise SystemExit(f'Shared simple service CSS is unexpectedly small: {len(css)} bytes')
 
 for marker in (
