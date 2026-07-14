@@ -203,6 +203,8 @@ assert.equal(evidence.runner_version, STALE_ORDER_RUNNER_VERSION);
 assert.equal(evidence.project_ref, STAGING_PROJECT_REF);
 assert.equal(evidence.mode, STALE_ORDER_MODE);
 assert.deepEqual(evidence.steps.map((step) => step.name), STALE_ORDER_STEP_ORDER);
+assert.equal(evidence.steps.at(-1).name, 'logout_current_session');
+assert.equal(evidence.steps.at(-1).passed, true);
 assert.deepEqual(fake.calls.map((call) => call.path), [
   '/auth/v1/token',
   '/auth/v1/user',
