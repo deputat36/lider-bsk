@@ -1,0 +1,44 @@
+name: Apply public business segment CSS once
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/apply_public_business_segment_css_once.py'
+      - 'assets/public-business-segment.css'
+      - 'tools/check_public_business_segment_css.py'
+      - '.github/workflows/apply-public-business-segment-css-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-business-segment-css:
+    if: github.head_ref == 'public/business-segment-shared-css-2026-07-14'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Apply guarded HTML migration
+        run: python3 tools/apply_public_business_segment_css_once.py
+      - name: Validate migrated pages
+        run: python3 tools/check_public_business_segment_css.py
+      - name: Commit migrated HTML
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            reklama-dlya-magazina-borisoglebsk.html \
+            reklama-dlya-kafe-borisoglebsk.html \
+            reklama-dlya-salona-krasoty-borisoglebsk.html \
+            reklama-dlya-servisa-masterskoy-borisoglebsk.html
+          if git diff --cached --quiet; then
+            echo 'No HTML changes to commit.'
+            exit 0
+          fi
+          git commit -m 'Apply shared CSS to business segment pages'
+          git push origin HEAD:${{ github.head_ref }}
