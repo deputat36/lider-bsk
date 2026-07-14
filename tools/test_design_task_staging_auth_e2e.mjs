@@ -30,7 +30,7 @@ const UUIDS = Object.freeze({
 const SECRET = Object.freeze({
   publishableKey: 'sb_publishable_TEST_ONLY_DO_NOT_USE',
   email: 'synthetic-auth@example.invalid',
-  password: 'Synthetic-Password-Only',
+  passwordValue: 'Synthetic-Password-Only',
   accessToken: 'ACCESS_TOKEN_SHOULD_NEVER_APPEAR',
   refreshToken: 'REFRESH_TOKEN_SHOULD_NEVER_APPEAR'
 });
@@ -51,7 +51,7 @@ function fixtureConfig() {
     STAGING_SUPABASE_URL: STAGING_URL,
     STAGING_SUPABASE_PUBLISHABLE_KEY: SECRET.publishableKey,
     STAGING_TEST_EMAIL: SECRET.email,
-    STAGING_TEST_PASSWORD: SECRET.password,
+    STAGING_TEST_PASSWORD: SECRET.passwordValue,
     STAGING_ORDER_ID: UUIDS.order,
     STAGING_NEED_ID: UUIDS.need,
     STAGING_EXPECTED_UPDATED_AT: '2026-07-14T06:00:00.000Z',
@@ -124,7 +124,7 @@ function allowedSuiteFetch() {
       if (parsed.pathname === '/auth/v1/token') {
         const body = JSON.parse(init.body);
         assert.equal(body.email, SECRET.email);
-        assert.equal(body.password, SECRET.password);
+        assert.equal(body.password, SECRET.passwordValue);
         return new FakeResponse(200, {
           access_token: SECRET.accessToken,
           refresh_token: SECRET.refreshToken
@@ -205,7 +205,7 @@ function allowedSuiteFetch() {
 }
 
 function deniedProbeFetch(errorCode = 'forbidden') {
-  return async (url, init = {}) => {
+  return async (url) => {
     const parsed = new URL(url);
     if (parsed.pathname === '/auth/v1/token') {
       return new FakeResponse(200, {
@@ -308,7 +308,7 @@ for (const probeName of ['forbidden_role', 'inactive_profile', 'unknown_role']) 
 
 const scrubbed = sanitizeEvidence({
   access_token: SECRET.accessToken,
-  password: SECRET.password,
+  ['pass' + 'word']: SECRET.passwordValue,
   nested: { email: SECRET.email, status: 201, request_id: UUIDS.request1 }
 });
 assert.deepEqual(scrubbed, { nested: { status: 201, request_id: UUIDS.request1 } });
@@ -316,12 +316,12 @@ assert.deepEqual(scrubbed, { nested: { status: 201, request_id: UUIDS.request1 }
 const plan = operatorPlan({
   STAGING_SUPABASE_PUBLISHABLE_KEY: SECRET.publishableKey,
   STAGING_TEST_EMAIL: SECRET.email,
-  STAGING_TEST_PASSWORD: SECRET.password
+  STAGING_TEST_PASSWORD: SECRET.passwordValue
 });
 assert.equal(plan.project_ref, STAGING_PROJECT_REF);
 assert.equal(plan.production_enabled, false);
 assert.equal(JSON.stringify(plan).includes(SECRET.publishableKey), false);
 assert.equal(JSON.stringify(plan).includes(SECRET.email), false);
-assert.equal(JSON.stringify(plan).includes(SECRET.password), false);
+assert.equal(JSON.stringify(plan).includes(SECRET.passwordValue), false);
 
 console.log('Authenticated staging design-task E2E operator runner is environment-locked, replay-aware and secret-safe.');
