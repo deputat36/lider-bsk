@@ -1,0 +1,112 @@
+{
+  "contract_version": "leader-design-task-staging-stale-order-probe-v1",
+  "status": "source_only_operator_ready_auth_user_required",
+  "environment": {
+    "project_ref": "otulfnouybahfnsycxqn",
+    "production_project_ref": "ofewxuqfjhamgerwzull",
+    "production_enabled": false,
+    "repository": "deputat36/lider-bsk",
+    "exact_environment_guard_required": true
+  },
+  "input": {
+    "fixture_manifest_version": "leader-design-task-staging-fixture-manifest-v1",
+    "manifest_required": true,
+    "manifest_digest": "sha256",
+    "manifest_must_be_unexpired": true,
+    "credentials_allowed_in_manifest": false,
+    "auth_user_must_already_exist": true,
+    "auth_user_must_be_email_confirmed": true,
+    "profile_user_id_must_equal_auth_user_id": true
+  },
+  "canonical_permission_sync": {
+    "source": "crm/v4/assets/v4/action-permissions-v1.js",
+    "permission": "design.write",
+    "required_role": "manager",
+    "checker_required": true
+  },
+  "transition_sql": {
+    "bundle_version": "leader-design-task-staging-stale-order-sql-bundle-v1",
+    "scripts": [
+      {
+        "name": "stale_order",
+        "output": "stale-order.sql",
+        "allowed_update_table": "public.leader_orders",
+        "allowed_update_columns": [
+          "updated_at"
+        ],
+        "precondition": "order.updated_at equals manifest expected_updated_at",
+        "postcondition": "order.updated_at differs by exactly one second"
+      },
+      {
+        "name": "restore_order_version",
+        "output": "restore-order-version.sql",
+        "allowed_update_table": "public.leader_orders",
+        "allowed_update_columns": [
+          "updated_at"
+        ],
+        "precondition": "order.updated_at differs by exactly one second",
+        "postcondition": "order.updated_at equals manifest expected_updated_at"
+      }
+    ],
+    "insert_forbidden": true,
+    "delete_forbidden": true,
+    "upsert_forbidden": true,
+    "ddl_forbidden": true,
+    "grants_and_policies_forbidden": true,
+    "rpc_execute_forbidden": true,
+    "auth_user_mutation_forbidden": true,
+    "non_version_order_fields_must_not_change": true,
+    "scoped_business_counts_must_not_change": true,
+    "requires_zero_tasks_events_receipts": true
+  },
+  "http_probe": {
+    "runner_version": "leader-design-task-staging-stale-order-runner-v1",
+    "evidence_version": "leader-design-task-staging-stale-order-evidence-v1",
+    "function_slug": "leader-crm-design",
+    "request_action": "design_task.create_from_order",
+    "idempotency_key_suffix": "-stale-order",
+    "expected_http": 409,
+    "expected_error_code": "conflict",
+    "expected_task_count": 0,
+    "safe_read_tables": [
+      "leader_orders",
+      "leader_design_tasks"
+    ],
+    "direct_rpc_forbidden": true,
+    "browser_write_forbidden": true,
+    "service_role_forbidden": true,
+    "logout_required": true
+  },
+  "evidence": {
+    "independent_validator_required": true,
+    "manifest_digest_check": true,
+    "exact_step_order": [
+      "fixture_manifest",
+      "authenticate",
+      "auth_user",
+      "safe_read_stale_version",
+      "stale_order",
+      "safe_read_no_task",
+      "logout_current_session"
+    ],
+    "credentials_forbidden": true,
+    "production_ref_forbidden": true,
+    "cleanup_required": true,
+    "restore_order_version_required": true
+  },
+  "execution": {
+    "generators_perform_network_calls": false,
+    "generators_execute_sql": false,
+    "generated_files_private_mode": "0600",
+    "real_http_e2e_performed": false,
+    "synthetic_rows_created": false,
+    "auth_users_created_or_deleted": false
+  },
+  "approval_gates": [
+    "temporary staging Auth user must be created outside the connector",
+    "seed SQL must be applied before stale-order transition",
+    "stale-order SQL must be applied only to otulfnouybahfnsycxqn",
+    "restore-order-version SQL must be applied after the probe",
+    "production rollout requires a separate explicit owner decision"
+  ]
+}
