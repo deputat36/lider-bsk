@@ -1,0 +1,156 @@
+name: CRM design authenticated E2E v2 evidence check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'contracts/design-task-staging-fixture-manifest-v1.json'
+      - 'contracts/design-task-staging-auth-e2e-evidence-v2.json'
+      - 'tools/design-task-staging-auth-e2e.mjs'
+      - 'tools/design-task-staging-auth-e2e-v2.mjs'
+      - 'tools/validate-design-task-staging-auth-e2e-evidence.mjs'
+      - 'tools/create-design-task-staging-fixture-manifest.mjs'
+      - 'tools/test_design_task_staging_auth_e2e_v2.mjs'
+      - 'tools/test_create_design_task_staging_fixture_manifest.mjs'
+      - 'tools/check_design_task_staging_auth_e2e_v2.py'
+      - 'tools/run_design_task_staging_auth_e2e.ps1'
+      - 'docs/CRM_DESIGN_TASK_STAGING_E2E_EVIDENCE_V2_2026-07-14.md'
+      - '.github/workflows/crm-design-auth-e2e-v2-check.yml'
+      - '.gitignore'
+      - 'supabase/config.toml'
+  push:
+    branches: [main]
+    paths:
+      - 'contracts/design-task-staging-fixture-manifest-v1.json'
+      - 'contracts/design-task-staging-auth-e2e-evidence-v2.json'
+      - 'tools/design-task-staging-auth-e2e.mjs'
+      - 'tools/design-task-staging-auth-e2e-v2.mjs'
+      - 'tools/validate-design-task-staging-auth-e2e-evidence.mjs'
+      - 'tools/create-design-task-staging-fixture-manifest.mjs'
+      - 'tools/test_design_task_staging_auth_e2e_v2.mjs'
+      - 'tools/test_create_design_task_staging_fixture_manifest.mjs'
+      - 'tools/check_design_task_staging_auth_e2e_v2.py'
+      - 'tools/run_design_task_staging_auth_e2e.ps1'
+      - 'docs/CRM_DESIGN_TASK_STAGING_E2E_EVIDENCE_V2_2026-07-14.md'
+      - '.github/workflows/crm-design-auth-e2e-v2-check.yml'
+      - '.gitignore'
+      - 'supabase/config.toml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-e2e-v2:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate contracts
+        run: |
+          python3 -m json.tool contracts/design-task-staging-fixture-manifest-v1.json >/dev/null
+          python3 -m json.tool contracts/design-task-staging-auth-e2e-evidence-v2.json >/dev/null
+
+      - name: Validate source syntax
+        run: |
+          node --check tools/design-task-staging-auth-e2e-v2.mjs
+          node --check tools/validate-design-task-staging-auth-e2e-evidence.mjs
+          node --check tools/create-design-task-staging-fixture-manifest.mjs
+          node --check tools/test_design_task_staging_auth_e2e_v2.mjs
+          node --check tools/test_create_design_task_staging_fixture_manifest.mjs
+          python3 -m py_compile tools/check_design_task_staging_auth_e2e_v2.py
+
+      - name: Validate PowerShell launcher syntax
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path 'tools/run_design_task_staging_auth_e2e.ps1'),
+            [ref]$tokens,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            exit 1
+          }
+
+      - name: Run fixture manifest generator tests
+        run: node tools/test_create_design_task_staging_fixture_manifest.mjs
+
+      - name: Run v2 fake-network evidence tests
+        run: node tools/test_design_task_staging_auth_e2e_v2.mjs
+
+      - name: Validate source contracts and production boundary
+        run: python3 tools/check_design_task_staging_auth_e2e_v2.py
+
+      - name: Validate no-network plan without manifest
+        shell: pwsh
+        run: |
+          ./tools/run_design_task_staging_auth_e2e.ps1 -Mode plan | Tee-Object -FilePath auth-e2e-plan.json
+          $plan = Get-Content auth-e2e-plan.json -Raw | ConvertFrom-Json
+          if ($plan.runner_version -ne 'leader-design-task-staging-auth-e2e-runner-v2') { throw 'Runner version drifted.' }
+          if ($plan.project_ref -ne 'otulfnouybahfnsycxqn') { throw 'Staging project ref drifted.' }
+          if ($plan.production_enabled -ne $false) { throw 'Production must remain disabled.' }
+          if ($plan.fixture_manifest_required -ne $true) { throw 'Fixture manifest gate must remain enabled.' }
+          if ($plan.auth_user_required -ne $true) { throw 'Auth user gate must remain enabled.' }
+
+      - name: Generate and validate temporary manifest locally
+        shell: bash
+        run: |
+          set -euo pipefail
+          created_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          expires_at="$(date -u -d '+2 hours' +%Y-%m-%dT%H:%M:%SZ)"
+          node tools/create-design-task-staging-fixture-manifest.mjs \
+            --auth-user-id=22222222-2222-4222-8222-222222222222 \
+            --lead-id=33333333-3333-4333-8333-333333333333 \
+            --order-id=44444444-4444-4444-8444-444444444444 \
+            --need-id=55555555-5555-4555-8555-555555555555 \
+            --expected-updated-at="$created_at" \
+            --idempotency-key=ci-local-fixture-only \
+            --task-title='CI local fixture only' \
+            --created-at="$created_at" \
+            --expires-at="$expires_at" \
+            --output=artifacts/design-task-staging-fixture-manifest.json
+          STAGING_FIXTURE_MANIFEST_PATH=artifacts/design-task-staging-fixture-manifest.json \
+            node tools/design-task-staging-auth-e2e-v2.mjs --mode=plan > auth-e2e-plan-with-manifest.json
+          python3 - <<'PY'
+          import json
+          plan = json.load(open('auth-e2e-plan-with-manifest.json', encoding='utf-8'))
+          assert plan['fixture_manifest_valid'] is True
+          assert len(plan['fixture_manifest_digest_sha256']) == 64
+          assert plan['production_enabled'] is False
+          PY
+
+      - name: Reject committed secret material
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -R -E --line-number \
+            'sb_secret_[A-Za-z0-9_-]{10,}|eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}|database[_-]?password[[:space:]]*[=:]' \
+            contracts/design-task-staging-fixture-manifest-v1.json \
+            contracts/design-task-staging-auth-e2e-evidence-v2.json \
+            tools/design-task-staging-auth-e2e-v2.mjs \
+            tools/validate-design-task-staging-auth-e2e-evidence.mjs \
+            tools/create-design-task-staging-fixture-manifest.mjs \
+            tools/test_design_task_staging_auth_e2e_v2.mjs \
+            tools/test_create_design_task_staging_fixture_manifest.mjs \
+            tools/run_design_task_staging_auth_e2e.ps1 \
+            docs/CRM_DESIGN_TASK_STAGING_E2E_EVIDENCE_V2_2026-07-14.md; then
+            echo 'Possible secret material found in staging E2E v2 sources.' >&2
+            exit 1
+          fi
+
+      - name: Protect exact environment boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep --fixed-strings 'project_id = "ofewxuqfjhamgerwzull"' supabase/config.toml >/dev/null
+          grep --fixed-strings "STAGING_PROJECT_REF = 'otulfnouybahfnsycxqn'" tools/design-task-staging-auth-e2e.mjs >/dev/null
+          if grep -R --line-number --fixed-strings '/rest/v1/rpc/leader_create_design_task_from_order_rpc' \
+            tools/design-task-staging-auth-e2e-v2.mjs \
+            tools/validate-design-task-staging-auth-e2e-evidence.mjs \
+            tools/create-design-task-staging-fixture-manifest.mjs \
+            tools/run_design_task_staging_auth_e2e.ps1; then
+            echo 'Direct RPC path is forbidden in E2E v2 operator sources.' >&2
+            exit 1
+          fi
