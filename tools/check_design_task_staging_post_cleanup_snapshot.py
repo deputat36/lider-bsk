@@ -150,7 +150,7 @@ require(doc, [
     PRODUCTION,
     'post-cleanup snapshot',
     'environment_guard = 1',
-    'authenticated_orders_client_phone_select',
+    'orders.client_phone',
     'Auth user через Dashboard',
     'security и performance advisors',
     'Production boundary',
