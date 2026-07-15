@@ -115,14 +115,6 @@ def main() -> None:
         "        'MIN_VERSION = 5',\n        'CORE_VERSION = 23',\n        \"'index.html'\",\n        \"'request.html'\",\n        \"'uslugi.html'\",\n        \"'prices.html'\",\n        \"'kontakty.html'\",\n",
     )
 
-    workflow = '.github/workflows/public-cache-docs-current-check.yml'
-    replace_exact(
-        workflow,
-        "      - 'docs/PUBLIC_LEAD_FORM_CACHE_V5_COVERAGE_2026-07-10.md'\n",
-        "      - 'docs/PUBLIC_LEAD_FORM_CACHE_V5_COVERAGE_2026-07-10.md'\n      - 'docs/PUBLIC_CORE_FORM_CACHE_V23_2026-07-15.md'\n",
-        expected=2,
-    )
-
     print('Core public form cache markers migrated to v=23.')
 
 
