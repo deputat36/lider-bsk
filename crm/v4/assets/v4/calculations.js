@@ -2,6 +2,7 @@ import { supabaseClient } from './supabase-client.js';
 import { timeout, friendlyError } from './api.js';
 import { v4State, setState } from './state.js';
 import { byId, setStatus, toast } from './ui.js';
+import { marginPercentFromMarkup, markupPercentForSubtotal, priceWithMarkup, repriceAutomaticItems } from './calculation-pricing-model-v1.js';
 
 const CALC_FIELDS = 'id,lead_id,need_id,client_id,title,status,version_number,client_total,contractor_cost,profit,margin_percent,warning_level,warnings,public_comment,internal_comment,commercial_offer_id,order_id,created_by,updated_by,created_at,updated_at';
 const ITEM_FIELDS = 'id,calculation_id,lead_id,catalog_id,category,item_type,name,unit,qty,contractor_price,contractor_sum,markup_percent,client_price,client_sum,profit,margin_percent,comment,data,sort_order,created_at,updated_at';
@@ -72,31 +73,20 @@ function catalogOptions(filter, selected = '') {
   return CATALOG.filter(filter).map((item) => `<option value="${esc(item.name)}" ${item.name === selected ? 'selected' : ''}>${esc(item.name)} · ${money(item.price)} / ${esc(item.unit)}</option>`).join('');
 }
 
-function markupFractionFromInput(value) {
-  const raw = String(value ?? '').trim();
-  if (!raw) return null;
-  const parsed = parseNum(raw);
-  if (!Number.isFinite(parsed)) return null;
-  return parsed > 1 ? parsed / 100 : parsed;
-}
-
 function calcSettings() {
   return {
-    manualMarkup: markupFractionFromInput(byId('calcMarkup')?.value),
+    fixedMarkup: byId('calcMarkup')?.value ?? '',
     smallLimit: num('calcSmallLimit') || 3000,
-    smallMarkup: markupFractionFromInput(byId('calcSmallMarkup')?.value) ?? 0.30,
+    smallMarkup: num('calcSmallMarkup') || 30,
     medLimit: num('calcMedLimit') || 10000,
-    medMarkup: markupFractionFromInput(byId('calcMedMarkup')?.value) ?? 0.20,
-    largeMarkup: markupFractionFromInput(byId('calcLargeMarkup')?.value) ?? 0.10,
+    mediumMarkup: num('calcMedMarkup') || 20,
+    largeMarkup: num('calcLargeMarkup') || 10,
     roundStep: Math.max(1, num('calcRoundStep') || 10)
   };
 }
 
 function autoMarkupBySubtotal(subtotal, settings = calcSettings()) {
-  if (settings.manualMarkup !== null) return settings.manualMarkup;
-  if (subtotal <= settings.smallLimit) return settings.smallMarkup;
-  if (subtotal <= settings.medLimit) return settings.medMarkup;
-  return settings.largeMarkup;
+  return markupPercentForSubtotal(subtotal, { ...settings, mediumLimit: settings.medLimit }) / 100;
 }
 
 function makeRawItem({ category, itemType, name, unit, qty, contractorPrice, clientPrice, comment, data }) {
@@ -120,8 +110,8 @@ function applyAutoPrice(rows) {
   const markup = autoMarkupBySubtotal(currentContractor + newContractor, settings);
   return rows.map((item) => ({
     ...item,
-    client_price: Number(item.client_price || 0) > 0 ? Number(item.client_price || 0) : Math.ceil(Number(item.contractor_price || 0) * (1 + markup)),
-    data: { ...(item.data || {}), auto_markup_fraction: markup }
+    client_price: Number(item.client_price || 0) > 0 ? Number(item.client_price || 0) : priceWithMarkup(item.contractor_price, markup * 100, settings.roundStep),
+    data: { ...(item.data || {}), price_source: Number(item.client_price || 0) > 0 ? 'manual' : 'auto', applied_markup_percent: markup * 100 }
   }));
 }
 
@@ -441,11 +431,11 @@ function currentModeItems() {
   if (mode === 'service') {
     const cost = num('calcServiceCost');
     const client = num('calcServiceClient');
-    return [makeRawItem({ category: 'Услуги', itemType: 'Услуга', name: val('calcServiceName') || 'Услуга', unit: 'услуга', qty: 1, contractorPrice: cost, clientPrice: client || Math.ceil(cost * (1 + autoMarkupBySubtotal(cost))), comment: val('calcServiceComment'), data: { calculation_mode: 'service' } })];
+    return applyAutoPrice([makeRawItem({ category: 'Услуги', itemType: 'Услуга', name: val('calcServiceName') || 'Услуга', unit: 'услуга', qty: 1, contractorPrice: cost, clientPrice: client, comment: val('calcServiceComment'), data: { calculation_mode: 'service', price_source: client > 0 ? 'manual' : 'auto' } })]);
   }
   const customCost = num('calcCustomCost');
   const customClient = num('calcCustomClient');
-  return [makeRawItem({ category: 'Ручная позиция', itemType: 'Услуга', name: val('calcCustomName') || 'Ручная позиция', unit: val('calcCustomUnit') || 'шт', qty: num('calcCustomQty') || 1, contractorPrice: customCost, clientPrice: customClient || Math.ceil(customCost * (1 + autoMarkupBySubtotal(customCost))), comment: val('calcCustomComment'), data: { calculation_mode: 'custom' } })];
+  return applyAutoPrice([makeRawItem({ category: 'Ручная позиция', itemType: 'Услуга', name: val('calcCustomName') || 'Ручная позиция', unit: val('calcCustomUnit') || 'шт', qty: num('calcCustomQty') || 1, contractorPrice: customCost, clientPrice: customClient, comment: val('calcCustomComment'), data: { calculation_mode: 'custom', price_source: customClient > 0 ? 'manual' : 'auto' } })]);
 }
 
 function renderSmartPreview() {
@@ -505,6 +495,7 @@ function renderDraftItems() {
       : '<div class="v4-calc-ok">Расчёт можно сохранять. КП сформируется из клиентских сумм, себестоимость клиенту не покажется.</div>';
   }
   renderSmartPreview();
+  renderPricingExplanation();
 }
 
 function renderCalcForm() {
@@ -514,9 +505,9 @@ function renderCalcForm() {
       <div class="v4-calc-wizard-head">
         <div>
           <h4>Новый расчёт</h4>
-          <p>Выберите тип позиции. Поля и формулы подстроятся под задачу: баннер считается по площади, проклейка по периметру, люверсы по шагу.</p>
+          <p>Один расчёт для типовых и нестандартных заказов. Добавляйте материалы, услуги и ручные позиции в общую смету.</p>
         </div>
-        <div class="v4-calc-steps"><span>1. Тип позиции</span><span>2. Авторасчёт</span><span>3. КП</span></div>
+        <div class="v4-calc-steps"><span>1. Позиции</span><span>2. Цена и прибыль</span><span>3. КП</span></div>
       </div>
       <div class="v4-form-grid">
         <label>Название расчёта
@@ -529,6 +520,12 @@ function renderCalcForm() {
           <input id="calcPublicComment" placeholder="Что входит в стоимость">
         </label>
       </div>
+      <section class="v4-pricing-control" aria-label="Управление ценой расчёта">
+        <div><h4>Наценка к себестоимости</h4><p>Наценка 20% означает: себестоимость 1 000 ₽ → клиенту 1 200 ₽. Итоговая маржа при этом 16,7%.</p></div>
+        <div class="v4-markup-presets" role="group" aria-label="Быстрый выбор наценки"><button type="button" data-calc-markup="auto" class="is-active">Авто 10–30%</button><button type="button" data-calc-markup="10">10%</button><button type="button" data-calc-markup="20">20%</button><button type="button" data-calc-markup="30">30%</button></div>
+        <label class="v4-markup-input">Своя наценка, %<input id="calcMarkup" type="number" min="0" step="1" placeholder="Автоматически"></label>
+        <div id="calcPricingExplanation" class="v4-pricing-explanation" aria-live="polite"></div>
+      </section>
       <div class="v4-calc-auto-box">
         <h4>Тип позиции</h4>
         <div class="v4-mode-buttons">${renderModeButtons(selectedMode)}</div>
@@ -537,11 +534,8 @@ function renderCalcForm() {
         </label>
         <div id="calcModeFields">${renderModeFields(selectedMode)}</div>
         <details class="v4-calc-settings">
-          <summary>Наценка и округление</summary>
+          <summary>Дополнительные правила автоматической цены</summary>
           <div class="v4-form-grid">
-            <label>Фиксированная наценка, %
-              <input id="calcMarkup" placeholder="пусто = авто">
-            </label>
             <label>Мелкий заказ до, ₽
               <input id="calcSmallLimit" type="number" value="3000">
             </label>
@@ -663,6 +657,25 @@ function addSmartItems() {
   }
   renderDraftItems();
   toast(`Добавлено позиций: ${items.length}`);
+}
+
+function renderPricingExplanation() {
+  const box = byId('calcPricingExplanation');
+  if (!box) return;
+  const settings = calcSettings();
+  const subtotal = draftItems.reduce((sum, item) => sum + Number(item.qty || 0) * Number(item.contractor_price || 0), 0);
+  const markup = markupPercentForSubtotal(subtotal, { ...settings, mediumLimit: settings.medLimit });
+  const margin = marginPercentFromMarkup(markup);
+  const fixed = String(byId('calcMarkup')?.value || '').trim();
+  box.innerHTML = `<b>${fixed ? `Фиксированная наценка ${Math.round(markup)}%` : `Автоматическая наценка ${Math.round(markup)}%`}</b><span>Ориентировочная маржа ${margin.toLocaleString('ru-RU', { maximumFractionDigits: 1 })}% до округления. Ручные цены позиций не изменяются.</span>`;
+  document.querySelectorAll('[data-calc-markup]').forEach((button) => button.classList.toggle('is-active', button.dataset.calcMarkup === 'auto' ? !fixed : fixed === button.dataset.calcMarkup));
+}
+
+function refreshDraftPricing() {
+  const settings = calcSettings();
+  draftItems = repriceAutomaticItems(draftItems, { ...settings, mediumLimit: settings.medLimit });
+  renderDraftItems();
+  renderPricingExplanation();
 }
 
 async function rollbackCalculation(id) {
@@ -792,6 +805,13 @@ function bindCalculationEvents() {
       setCalcMode(modeButton.dataset.calcMode);
       return;
     }
+    const markupButton = event.target.closest('button[data-calc-markup]');
+    if (markupButton) {
+      const input = byId('calcMarkup');
+      if (input) input.value = markupButton.dataset.calcMarkup === 'auto' ? '' : markupButton.dataset.calcMarkup;
+      refreshDraftPricing();
+      return;
+    }
     if (event.target.closest('#addSmartCalcItemBtn')) addSmartItems();
     if (event.target.closest('#clearCalculationBtn')) {
       draftItems = [];
@@ -809,6 +829,7 @@ function bindCalculationEvents() {
     if (event.target.closest('#calculationsBox')) renderSmartPreview();
   });
   byId('leadCardSection')?.addEventListener('input', (event) => {
+    if (event.target?.id === 'calcMarkup') { refreshDraftPricing(); return; }
     if (event.target.closest('#calculationsBox')) renderSmartPreview();
   });
   document.addEventListener('leader-v4:lead-card-rendered', () => renderCalculations());
