@@ -65,6 +65,7 @@ for (const forbidden of ['calculation_id', 'lead_id', 'contractor_sum', 'client_
 const safeResponse = {
   ok: true,
   request_id: ids.request,
+  source_calculation_id: ids.source,
   calculation: {
     id: ids.calculation,
     lead_id: ids.lead,
@@ -108,13 +109,21 @@ const safeResponse = {
   idempotent_replay: false
 };
 
-assert.equal(validateSafeCalculationResponse(safeResponse), true);
+assert.equal(validateSafeCalculationResponse(safeResponse, ids.source), true);
+assert.throws(
+  () => validateSafeCalculationResponse({ ...safeResponse, source_calculation_id: ids.need }, ids.source),
+  /source_calculation_id_mismatch/
+);
+assert.throws(
+  () => validateSafeCalculationResponse(({ ok: true, request_id: ids.request, calculation: safeResponse.calculation, items: safeResponse.items, idempotent_replay: false }), ids.source),
+  /top_level_projection_drift/
+);
 for (const forbidden of ['created_by', 'updated_by', 'commercial_offer_id', 'order_id']) {
   assert.throws(
     () => validateSafeCalculationResponse({
       ...safeResponse,
       calculation: { ...safeResponse.calculation, [forbidden]: ids.client }
-    }),
+    }, ids.source),
     /calculation_projection_drift/,
     `calculation response accepted forbidden field: ${forbidden}`
   );
@@ -124,7 +133,7 @@ for (const forbidden of ['calculation_id', 'lead_id']) {
     () => validateSafeCalculationResponse({
       ...safeResponse,
       items: [{ ...safeResponse.items[0], [forbidden]: ids.calculation }]
-    }),
+    }, ids.source),
     /item_projection_drift/,
     `item response accepted forbidden field: ${forbidden}`
   );
