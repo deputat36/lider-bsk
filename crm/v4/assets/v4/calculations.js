@@ -4,6 +4,7 @@ import { v4State, setState } from './state.js';
 import { byId, setStatus, toast } from './ui.js';
 import { marginPercentFromMarkup, markupPercentForSubtotal, priceWithMarkup, repriceAutomaticItems } from './calculation-pricing-model-v1.js';
 import { needCalculationPrefill } from './need-calculation-prefill-v1.js';
+import { circleAreaSquareMeters, parseCalculationDiameters, parseCalculationPairs } from './calculation-spec-model-v1.js';
 
 const CALC_FIELDS = 'id,lead_id,need_id,client_id,title,status,version_number,client_total,contractor_cost,profit,margin_percent,warning_level,warnings,public_comment,internal_comment,commercial_offer_id,order_id,created_by,updated_by,created_at,updated_at';
 const ITEM_FIELDS = 'id,calculation_id,lead_id,catalog_id,category,item_type,name,unit,qty,contractor_price,contractor_sum,markup_percent,client_price,client_sum,profit,margin_percent,comment,data,sort_order,created_at,updated_at';
@@ -35,6 +36,8 @@ const MODES = [
   ['banner', 'Баннер'],
   ['film', 'Плёнка / наклейки'],
   ['sheet', 'ПВХ / листовой материал'],
+  ['pvc_shapes', 'ПВХ-фигуры'],
+  ['letters', 'Буквы / цифры'],
   ['photo', 'Фото A4'],
   ['service', 'Дизайн / монтаж / доставка'],
   ['custom', 'Ручная позиция']
@@ -341,6 +344,32 @@ function renderModeFields(mode = 'banner') {
       </div>
     `;
   }
+  if (mode === 'pvc_shapes') {
+    return `
+      <div class="v4-calc-mode-help"><b>Круги и фигурная резка:</b> укажите размеры как «30, 35, 40» или «30×2, 40×3». Расчёт сам разложит материал, печать и резку на строки.</div>
+      <div class="v4-form-grid">
+        <label>Толщина ПВХ, мм<input id="calcPvcThickness" type="number" min="1" step="1" value="20"></label>
+        <label>Диаметры, см<input id="calcPvcDiameters" value="30, 35, 40" placeholder="30×2, 40×3"></label>
+        <label>Коэффициент запаса<input id="calcPvcWaste" type="number" min="1" step="0.05" value="1.35"></label>
+        <label>ПВХ, ₽/м²<input id="calcPvcCost" type="number" min="0" step="1" value="7600"></label>
+        <label>Печать, ₽/м²<input id="calcPvcPrintCost" type="number" min="0" step="1" value="900"></label>
+        <label>Фигурная резка, ₽/шт<input id="calcPvcCutCost" type="number" min="0" step="1" value="180"></label>
+        <label>Что печатаем<input id="calcPvcPrintDescription" placeholder="Например: логотип или фотография"></label>
+        <label>Файл / ссылка / примечание<input id="calcPvcFile" placeholder="Где находится макет"></label>
+      </div>`;
+  }
+  if (mode === 'letters') {
+    return `
+      <div class="v4-calc-mode-help"><b>Буквы и цифры:</b> перечислите знаки и количество, например «3-2шт, 0-2шт, 5-1шт».</div>
+      <div class="v4-form-grid">
+        <label>Спецификация<input id="calcLettersSpec" placeholder="3-2шт, 0-2шт, 5-1шт"></label>
+        <label>Высота, см<input id="calcLettersHeight" type="number" min="1" step="1" value="10"></label>
+        <label>Цвет<input id="calcLettersColor" value="чёрный"></label>
+        <label>Материал<input id="calcLettersMaterial" value="самоклеящаяся плёнка"></label>
+        <label>Себестоимость, ₽/шт<input id="calcLettersCost" type="number" min="0" step="1" value="25"></label>
+        <label>Цена клиенту, ₽/шт<input id="calcLettersClient" type="number" min="0" step="1" placeholder="Пусто = по общей наценке"></label>
+      </div>`;
+  }
   if (mode === 'service') {
     return `
       <div class="v4-form-grid">
@@ -364,6 +393,12 @@ function renderModeFields(mode = 'banner') {
       <label>Название позиции
         <input id="calcCustomName" placeholder="Например: сложная вывеска / нестандартная работа">
       </label>
+      <label>Категория
+        <input id="calcCustomCategory" value="Ручная позиция">
+      </label>
+      <label>Тип
+        <select id="calcCustomType"><option>Изготовление</option><option>Услуга</option><option>Материал</option><option>Дизайн</option><option>Монтаж</option></select>
+      </label>
       <label>Ед.
         <select id="calcCustomUnit"><option>шт</option><option>м²</option><option>м</option><option>комплект</option><option>услуга</option></select>
       </label>
@@ -378,6 +413,9 @@ function renderModeFields(mode = 'banner') {
       </label>
       <label>Комментарий
         <input id="calcCustomComment" placeholder="Что входит в позицию">
+      </label>
+      <label>Характеристики
+        <textarea id="calcCustomData" rows="2" placeholder="Размер, цвет, материал, способ изготовления"></textarea>
       </label>
     </div>
   `;
@@ -459,6 +497,29 @@ function currentModeItems() {
     }
     return applyAutoPrice(rows);
   }
+  if (mode === 'pvc_shapes') {
+    const diameters = parseCalculationDiameters(val('calcPvcDiameters'));
+    const thickness = num('calcPvcThickness') || 20;
+    const waste = Math.max(1, num('calcPvcWaste') || 1.35);
+    const description = val('calcPvcPrintDescription') || 'печать по макету';
+    const file = val('calcPvcFile');
+    diameters.forEach((part) => {
+      const area = circleAreaSquareMeters(part.diameter, part.qty);
+      const materialArea = Math.round(area * waste * 100) / 100;
+      const printArea = Math.round(area * 100) / 100;
+      rows.push(makeRawItem({ category: 'ПВХ / фигуры', itemType: 'Изготовление', name: `ПВХ ${thickness} мм · круг ${part.diameter} см · ${part.qty} шт`, unit: 'м²', qty: materialArea, contractorPrice: num('calcPvcCost'), comment: `Площадь с запасом ${waste}: ${materialArea} м²`, data: { calculation_mode: 'pvc_shape_material', diameter_cm: part.diameter, thickness_mm: thickness, pieces: part.qty, file } }));
+      rows.push(makeRawItem({ category: 'Печать', itemType: 'Изготовление', name: `Печать на круге ${part.diameter} см`, unit: 'м²', qty: printArea, contractorPrice: num('calcPvcPrintCost'), comment: [description, file].filter(Boolean).join('. '), data: { calculation_mode: 'pvc_shape_print', diameter_cm: part.diameter, pieces: part.qty } }));
+      rows.push(makeRawItem({ category: 'Фигурная резка', itemType: 'Услуга', name: `Резка круга ${part.diameter} см`, unit: 'шт', qty: part.qty, contractorPrice: num('calcPvcCutCost'), data: { calculation_mode: 'pvc_shape_cut', diameter_cm: part.diameter } }));
+    });
+    return applyAutoPrice(rows);
+  }
+  if (mode === 'letters') {
+    const clientPrice = num('calcLettersClient');
+    const height = num('calcLettersHeight') || 10;
+    const color = val('calcLettersColor') || 'чёрный';
+    const material = val('calcLettersMaterial') || 'самоклеящаяся плёнка';
+    return applyAutoPrice(parseCalculationPairs(val('calcLettersSpec')).map((part) => makeRawItem({ category: 'Буквы / цифры', itemType: 'Изготовление', name: `Буква/цифра «${part.name}» · ${height} см · ${color}`, unit: 'шт', qty: part.qty, contractorPrice: num('calcLettersCost'), clientPrice, comment: material, data: { calculation_mode: 'letters', symbol: part.name, height_cm: height, color, material, price_source: clientPrice > 0 ? 'manual' : 'auto' } })));
+  }
   if (mode === 'service') {
     const cost = num('calcServiceCost');
     const client = num('calcServiceClient');
@@ -466,7 +527,7 @@ function currentModeItems() {
   }
   const customCost = num('calcCustomCost');
   const customClient = num('calcCustomClient');
-  return applyAutoPrice([makeRawItem({ category: 'Ручная позиция', itemType: 'Услуга', name: val('calcCustomName') || 'Ручная позиция', unit: val('calcCustomUnit') || 'шт', qty: num('calcCustomQty') || 1, contractorPrice: customCost, clientPrice: customClient, comment: val('calcCustomComment'), data: { calculation_mode: 'custom', price_source: customClient > 0 ? 'manual' : 'auto' } })]);
+  return applyAutoPrice([makeRawItem({ category: val('calcCustomCategory') || 'Ручная позиция', itemType: val('calcCustomType') || 'Услуга', name: val('calcCustomName') || 'Ручная позиция', unit: val('calcCustomUnit') || 'шт', qty: num('calcCustomQty') || 1, contractorPrice: customCost, clientPrice: customClient, comment: val('calcCustomComment'), data: { calculation_mode: 'custom', characteristics: val('calcCustomData'), price_source: customClient > 0 ? 'manual' : 'auto' } })]);
 }
 
 function renderSmartPreview() {
