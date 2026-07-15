@@ -26,8 +26,14 @@ checks = [
     ('print preset reads explicit message data', "page.getAttribute('data-lead-message')||''" in print_preset),
     ('print preset can add missing service option', 'service.add(new Option(serviceName,serviceName))' in print_preset),
     ('print preset does not submit independently', 'fetch(' not in print_preset and 'XMLHttpRequest' not in print_preset),
-    ('pechat bannerov page sets service to Banner', "service.value='Баннер'" in pechat_bannerov),
-    ('shop banner page sets service to Banner', "service.value='Баннер'" in banner_shop),
+    ('pechat bannerov page exposes Banner CTA', 'data-service="Баннер"' in pechat_bannerov),
+    ('shop banner page exposes Banner CTA', 'data-service="Баннер"' in banner_shop),
+    ('pechat bannerov page loads shared banner CSS', 'assets/public-banner-detail.css?v=1' in pechat_bannerov),
+    ('shop banner page loads shared banner CSS', 'assets/public-banner-detail.css?v=1' in banner_shop),
+    ('pechat bannerov page has no inline preset', 'function prefill()' not in pechat_bannerov),
+    ('shop banner page has no inline preset', 'function prefill()' not in banner_shop),
+    ('form has pechat bannerov preset', "'pechat-bannerov-borisoglebsk.html':{service:'Баннер'" in form),
+    ('form has shop banner preset', "'banner-dlya-magazina-borisoglebsk.html':{service:'Баннер'" in form),
     ('stickers page exposes Stickers CTA', 'data-service="Наклейки"' in stickers),
     ('stickers page uses shared v5 form', 'assets/public-lead-form.js?v=5' in stickers),
     ('form has stickers page preset', "'nakleyki-na-vitrinu-borisoglebsk.html':{service:'Наклейки'" in form),
@@ -44,4 +50,4 @@ if failed:
     print('Missing checks: ' + '; '.join(failed))
     sys.exit(1)
 
-print('Specialized public pages send correct service values through shared and page-specific presets.')
+print('Specialized public pages send correct service values through shared presets.')
