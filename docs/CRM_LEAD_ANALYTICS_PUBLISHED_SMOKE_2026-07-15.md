@@ -1,22 +1,29 @@
 # CRM lead analytics published smoke — 2026-07-15
 
-Scope: published static CRM v4 assets on GitHub Pages.
+Scope: published static CRM v4 assets served by GitHub Pages on the official domain.
 
 Related issues: #142, #198, #199.
 
-Published base URL:
+Canonical published URL:
+
+`https://www.lider-bsk.ru/crm/v4/`
+
+GitHub Pages alias:
 
 `https://deputat36.github.io/lider-bsk/crm/v4/`
 
+The alias must redirect to the canonical official domain.
+
 ## Purpose
 
-Repository source and the Node runtime harness prove the analytics implementation before merge. This smoke check adds a separate deployment boundary: it verifies that GitHub Pages actually serves the expected CRM index and analytics assets after changes reach `main`.
+Repository source and the Node runtime harness prove the analytics implementation before merge. This smoke check adds a separate deployment boundary: it verifies that the GitHub Pages deployment actually serves the expected CRM index and analytics assets after changes reach `main`.
 
 The check is read-only. It does not log in, submit forms, call Supabase, use browser storage or create CRM records.
 
 ## Checked published files
 
-- `crm/v4/index.html` through the published CRM URL;
+- the GitHub Pages alias and its redirect to the canonical CRM index;
+- the canonical `crm/v4/index.html`;
 - `assets/v4/leads.js?v=20260715-filter-state-1`;
 - `assets/v4/lead-analytics-badges-v1.js?v=20260709-1`;
 - `assets/v4/lead-analytics-summary-v1.js`;
@@ -26,9 +33,10 @@ The check is read-only. It does not log in, submit forms, call Supabase, use bro
 
 The checker validates:
 
-- HTTP 200 for every target;
-- HTTPS and the exact `deputat36.github.io` origin;
-- the expected `/lider-bsk/crm/v4/` path prefix after redirects;
+- HTTP 200 for every final target;
+- HTTPS and the exact canonical `www.lider-bsk.ru` origin;
+- the expected `/crm/v4/` path prefix after redirects;
+- the `deputat36.github.io/lider-bsk/crm/v4/` alias redirects to the canonical origin;
 - appropriate HTML or JavaScript content type;
 - UTF-8 decoding;
 - a bounded response size;
@@ -52,6 +60,8 @@ Every request contains a cache-busting query parameter and `Cache-Control: no-ca
 - after relevant analytics source files are pushed to `main`.
 
 A push to `main` can precede GitHub Pages deployment. For that event the workflow retries for up to approximately five minutes. Pull-request and scheduled checks use a shorter retry window because they validate the already-published `main` state.
+
+The workflow always uploads `published-smoke.log` for seven days, including on failure, so redirect, HTTP or marker problems can be diagnosed without weakening the contract.
 
 ## Local command
 
