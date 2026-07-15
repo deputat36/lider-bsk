@@ -43,9 +43,19 @@ const ITEM_FIELDS = Object.freeze(new Set([
 
 export type JsonObject = Record<string, unknown>
 
+type ValidationError = {
+  ok: false
+  code: 'invalid_payload' | 'unknown_action' | 'empty_items' | 'invalid_item'
+  message: string
+}
+
+type ItemValidationResult =
+  | { ok: true; item: JsonObject }
+  | ValidationError
+
 export type ValidationResult =
   | { ok: true; request: JsonObject }
-  | { ok: false; code: 'invalid_payload' | 'unknown_action' | 'empty_items' | 'invalid_item'; message: string }
+  | ValidationError
 
 export function asObject(value: unknown): JsonObject | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null
@@ -99,7 +109,7 @@ function normalizeData(value: unknown): JsonObject {
   return asObject(value) || {}
 }
 
-function normalizeItem(value: unknown, index: number): ValidationResult | { ok: true; item: JsonObject } {
+function normalizeItem(value: unknown, index: number): ItemValidationResult {
   const item = asObject(value)
   if (!item || !hasOnlyFields(item, ITEM_FIELDS)) {
     return { ok: false, code: 'invalid_item', message: `Item ${index + 1} contains unknown or server-owned fields` }
