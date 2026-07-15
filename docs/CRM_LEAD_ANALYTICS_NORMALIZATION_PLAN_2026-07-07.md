@@ -8,6 +8,7 @@ Previous source audit: `docs/PUBLIC_LEAD_FUNNEL_AGGREGATES_READONLY_2026-07-05.m
 Current normalized dry run: `docs/CRM_LEAD_ANALYTICS_NORMALIZED_DRY_RUN_READONLY_2026-07-15.md`.
 Previous normalized dry run: `docs/CRM_LEAD_ANALYTICS_NORMALIZED_DRY_RUN_READONLY_2026-07-10.md`.
 Runtime harness: `docs/CRM_LEAD_ANALYTICS_RUNTIME_HARNESS_2026-07-15.md`.
+Published deployment smoke: `docs/CRM_LEAD_ANALYTICS_PUBLISHED_SMOKE_2026-07-15.md`.
 
 This is a planning and implementation-status document. Do not rewrite existing `leader_leads.service` or `leader_leads.source` values without explicit data-change approval.
 
@@ -42,10 +43,12 @@ Implemented in GitHub source:
 - `tools/test_crm_lead_analytics_runtime.mjs` executes normalization, actual lead haystack, summary toggle and badge idempotency behavior in Node.
 - `tools/check_crm_lead_analytics_runtime_harness.py` protects the runtime harness, reduced manual scope and no-network boundary.
 - `.github/workflows/crm-lead-analytics-check.yml` runs source checks, JavaScript syntax checks and the runtime harness.
+- `tools/check_crm_lead_analytics_published.py` verifies that GitHub Pages serves the current index, lead search integration, badges, summary and normalization modules.
+- `.github/workflows/crm-lead-analytics-published-check.yml` runs the published smoke manually, daily and after relevant pushes to `main`, with deployment retries.
 
 Still in progress:
 
-- Manual browser verification remains required before closing #198 and #199, but it is now limited to authenticated published-bundle loading, visual placement, live refresh/tab integration and console-error checks.
+- Manual browser verification remains required before closing #198 and #199, but it is now limited to authenticated real-lead loading, visual placement, live refresh/tab integration, responsive readability and console-error checks. Static published asset delivery is covered automatically.
 - `patches/crm-lead-derived-search.patch` remains as documentation of the minimal safe patch for `crm/v4/assets/v4/leads.js`.
 
 ## Current read-only normalized dry run

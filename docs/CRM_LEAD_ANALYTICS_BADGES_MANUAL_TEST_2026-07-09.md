@@ -2,9 +2,11 @@
 
 Scope: RA Lider CRM v4 lead list.
 
-Test URL:
+Canonical test URL:
 
-`https://deputat36.github.io/lider-bsk/crm/v4/?tab=leads`
+`https://www.lider-bsk.ru/crm/v4/?tab=leads`
+
+The GitHub Pages alias `https://deputat36.github.io/lider-bsk/crm/v4/?tab=leads` redirects to this official domain and is covered by the published smoke checker.
 
 Related issues: #196, #197, #198, #199.
 
@@ -20,9 +22,11 @@ GitHub source now contains a derived analytics UI layer for lead cards, a small 
 
 The implementation does not change Supabase data and does not rewrite raw `leader_leads.service` or `leader_leads.source` values.
 
-## Automated coverage added on 2026-07-15
+## Automated runtime coverage added on 2026-07-15
 
-The following behavior is now executed in CI by:
+Automated coverage added on 2026-07-15 is split between the local runtime harness and the published deployment smoke.
+
+The following behavior is executed in CI by:
 
 `node tools/test_crm_lead_analytics_runtime.mjs`
 
@@ -39,13 +43,34 @@ Detailed automated scope and boundaries:
 
 `docs/CRM_LEAD_ANALYTICS_RUNTIME_HARNESS_2026-07-15.md`
 
-The manual check below remains required only for the authenticated published-browser integration and visual behavior.
+## Automated published deployment coverage added on 2026-07-15
+
+The separate checker:
+
+`python3 tools/check_crm_lead_analytics_published.py`
+
+verifies that the Pages alias redirects to the canonical official domain and that the canonical deployment serves:
+
+- the current CRM index;
+- the current `leads.js` search integration;
+- the badges module;
+- the summary module;
+- the normalization helper;
+- the expected cache markers and import links.
+
+The runtime harness proves that summary category clicks fill the search field and filter the list; the published checker proves that the required modules are deployed.
+
+Detailed deployment scope and retry behavior:
+
+`docs/CRM_LEAD_ANALYTICS_PUBLISHED_SMOKE_2026-07-15.md`
+
+The remaining manual check is therefore limited to authenticated published-browser integration with real data and visual/browser behavior. It does not need to re-prove static asset publication or isolated JavaScript behavior.
 
 ## Remaining manual test checklist
 
-1. Open `https://deputat36.github.io/lider-bsk/crm/v4/?tab=leads`.
+1. Open `https://www.lider-bsk.ru/crm/v4/?tab=leads`.
 2. Log in as an allowed CRM user.
-3. Wait until the lead list is loaded.
+3. Wait until the real lead list is loaded.
 4. Confirm that lead cards still show the original raw source and service in the metadata line.
 5. Confirm that each lead card also shows derived badges:
    - `Услуга: ...`;
@@ -55,7 +80,7 @@ The manual check below remains required only for the authenticated published-bro
    - `Услуги`;
    - `Источники`.
 8. Use the search field with one derived category, for example `Баннеры` or `Сайт`.
-9. Confirm that the visible card count changes and matching cards remain visible.
+9. Confirm that the visible card count changes and matching real cards remain visible.
 10. Click a category pill inside `Сводка по заявкам`.
 11. Confirm that the search field is filled, the list is filtered, the selected pill is visually active and has `aria-pressed="true"`.
 12. Click the same active category pill again and confirm that the full list returns.
@@ -63,7 +88,7 @@ The manual check below remains required only for the authenticated published-bro
 14. Click `Обновить заявки` and confirm that badges and the summary appear again without duplicates.
 15. Switch away from the leads tab and back to `Заявки`.
 16. Open a lead card and return to the list.
-17. Confirm that no browser console errors appear from `leads.js`, `lead-analytics-badges-v1.js` or `lead-analytics-summary-v1.js`.
+17. Confirm that no browser console errors appear from `leads.js`, `lead-analytics-badges-v1.js` or `lead-analytics-summary-v1.js` after authenticated data loading.
 18. Repeat the visual check at a narrow mobile viewport and confirm that the summary and badges remain readable.
 
 ## Expected examples
@@ -80,14 +105,14 @@ The exact category depends on the raw lead values:
 
 The test is passed if:
 
-- lead cards load normally;
-- badges appear on cards;
+- authenticated real lead cards load normally;
+- badges appear on real cards;
 - the summary block appears and shows service/source groups;
-- summary category clicks fill the search field and filter the list;
+- summary category clicks fill the search field and filter the live list;
 - active summary category is visually highlighted;
 - clicking the active category again clears the search;
 - the `Сбросить поиск` button clears the search and active state;
-- search works by derived categories;
+- search works by derived categories on the real loaded list;
 - badges are not duplicated after refresh/re-render;
 - raw source/service values remain visible;
 - no data changes are made in Supabase;
@@ -104,4 +129,4 @@ Keep #198 or #199 open and record:
 - category clicked if summary click/toggle failed;
 - screenshot of the card or summary block;
 - console error text if any;
-- whether the list loaded before the badges, summary or search failed.
+- whether the authenticated list loaded before the badges, summary or search failed.
