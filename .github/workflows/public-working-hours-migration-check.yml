@@ -6,6 +6,7 @@ on:
     paths:
       - 'rezhim-raboty-tablichki-borisoglebsk.html'
       - 'assets/public-landing.css'
+      - 'assets/public-entry-detail.css'
       - 'assets/public-lead-form.js'
       - 'tools/check_public_working_hours_migration.py'
       - 'tools/check_public_lead_form_cache_v5_partial.py'
@@ -15,6 +16,7 @@ on:
     paths:
       - 'rezhim-raboty-tablichki-borisoglebsk.html'
       - 'assets/public-landing.css'
+      - 'assets/public-entry-detail.css'
       - 'assets/public-lead-form.js'
       - 'tools/check_public_working_hours_migration.py'
       - 'tools/check_public_lead_form_cache_v5_partial.py'
@@ -25,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate shared CSS, form preset and local links
+      - name: Validate external detail CSS, form preset and local links
         shell: bash
         run: |
           set -euo pipefail
