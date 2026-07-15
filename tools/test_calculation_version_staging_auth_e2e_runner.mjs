@@ -109,20 +109,26 @@ const safeResponse = {
 };
 
 assert.equal(validateSafeCalculationResponse(safeResponse), true);
-assert.throws(
-  () => validateSafeCalculationResponse({
-    ...safeResponse,
-    calculation: { ...safeResponse.calculation, created_by: ids.client }
-  }),
-  /calculation_projection_drift/
-);
-assert.throws(
-  () => validateSafeCalculationResponse({
-    ...safeResponse,
-    items: [{ ...safeResponse.items[0], calculation_id: ids.calculation }]
-  }),
-  /item_projection_drift/
-);
+for (const forbidden of ['created_by', 'updated_by', 'commercial_offer_id', 'order_id']) {
+  assert.throws(
+    () => validateSafeCalculationResponse({
+      ...safeResponse,
+      calculation: { ...safeResponse.calculation, [forbidden]: ids.client }
+    }),
+    /calculation_projection_drift/,
+    `calculation response accepted forbidden field: ${forbidden}`
+  );
+}
+for (const forbidden of ['calculation_id', 'lead_id']) {
+  assert.throws(
+    () => validateSafeCalculationResponse({
+      ...safeResponse,
+      items: [{ ...safeResponse.items[0], [forbidden]: ids.calculation }]
+    }),
+    /item_projection_drift/,
+    `item response accepted forbidden field: ${forbidden}`
+  );
+}
 
 assert.equal(responseErrorCode({ error: { code: 'source_changed' } }), 'source_changed');
 assert.equal(responseErrorCode({ error: 'forbidden' }), 'forbidden');
