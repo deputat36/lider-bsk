@@ -42,13 +42,18 @@ required_doc_markers = (
     '20260715153930 staging_calculation_version_grant_hardening_20260715',
     '20260715155505 staging_calculation_version_fk_indexes_20260715',
     '91b4c99c-a03e-4cfb-ad2a-0ca4de29b7ea',
-    'version: `1`',
+    'version: `3`',
     '`verify_jwt=true`',
-    '5685a77b94f4cf742e3e14038b8d519fc13972a56553d134e6e8256815715780',
+    '0df6d23cc6d8b19903babbf711bb1da765111ff1f64eb7f8e970f1bcc9760ee4',
+    'canonical permission `calculations.write`',
+    'Superseded v2',
+    '`normalizeRole(value)`',
+    '`normalizeRole(role)`',
+    'v2 не считается валидированным deployment',
+    'Edge logs за доступный период — пустые',
+    'Auth users — 0',
     'WARN/ERROR — 0',
     'authenticated HTTP 201 create',
-    'staging содержит 0 Auth users',
-    'DNS resolution failure',
     'Production rollout остаётся запрещён',
 )
 for marker in required_doc_markers:
@@ -71,12 +76,17 @@ for marker in (
 for marker in (
     "export const STAGING_PROJECT_REF = 'otulfnouybahfnsycxqn'",
     "export const CALCULATION_ACTION = 'calculation.create_version'",
+    "export const CALCULATION_PERMISSION = 'calculations.write'",
+    'return CALCULATION_WRITE_ROLES.has(normalizeRole(role))',
     "'owner'",
     "'admin'",
     "'manager'",
 ):
     if marker not in contract:
         errors.append(f'Missing calculation contract marker: {marker}')
+
+if 'normalizeRole(value)' in contract.split('export function canWriteCalculation', 1)[-1].split('}', 1)[0]:
+    errors.append('canWriteCalculation must normalize its role parameter, not a free value identifier')
 
 for source, markers in (
     (install, (
@@ -136,4 +146,4 @@ if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('Calculation staging deployment evidence is internally consistent and production remains gated.')
+print('Calculation staging deployment v3 evidence is internally consistent and production remains gated.')
