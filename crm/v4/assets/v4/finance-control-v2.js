@@ -1,9 +1,10 @@
 import { supabaseClient } from './supabase-client.js';
 import { friendlyError } from './api.js';
 import { setStatus, toast } from './ui.js';
+import { isActiveOrderStatus, orderStatusUiModel } from './order-status-ui-model-v1.js';
+import { paymentNeedsAttention, paymentStatusUiModel } from './payment-status-ui-model-v1.js';
 
 const FIELDS = 'id,order_number,project_name,status,deadline,client_name,client_phone,client_total,contractor_cost,profit,payment_status,created_at,layout_status,data';
-const CLOSED = new Set(['Готово', 'Выдано', 'Закрыт', 'Отменён', 'Отмена']);
 
 let rows = [];
 let warnings = [];
@@ -64,16 +65,24 @@ function marginPercent(order) {
 }
 
 function active(order) {
-  return !CLOSED.has(order.status || 'Новый');
+  return isActiveOrderStatus(order.status);
+}
+
+function rawPaymentText(order) {
+  const data = dataOf(order);
+  return String(order.payment_status || data.payment_status || data.paymentStatus || '').trim();
+}
+
+function paymentModel(order) {
+  return paymentStatusUiModel(rawPaymentText(order));
 }
 
 function paymentText(order) {
-  return String(order.payment_status || dataOf(order).payment_status || dataOf(order).paymentStatus || '').trim();
+  return paymentModel(order).label;
 }
 
 function unpaid(order) {
-  const text = paymentText(order).toLowerCase();
-  return !text || text.includes('не') || text.includes('част') || text.includes('долг') || text.includes('ожид') || text.includes('без оплат');
+  return paymentNeedsAttention(rawPaymentText(order));
 }
 
 function noCost(order) {
@@ -90,6 +99,7 @@ function grouped() {
   return {
     active: activeRows,
     unpaid: activeRows.filter(unpaid),
+    unknownPayment: activeRows.filter((order) => paymentModel(order).known === false),
     noCost: activeRows.filter(noCost),
     lowMargin: activeRows.filter(lowMargin),
     risky: activeRows.filter((order) => unpaid(order) || noCost(order) || lowMargin(order))
@@ -100,7 +110,7 @@ function ensureStyles() {
   if (document.getElementById('financeControlV2Styles')) return;
   const style = document.createElement('style');
   style.id = 'financeControlV2Styles';
-  style.textContent = `.v4-fin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:14px 0}.v4-fin-stat{border:1px solid #e2e8f0;background:#fff;border-radius:18px;padding:14px;box-shadow:0 8px 22px rgba(15,23,42,.05)}.v4-fin-stat span{display:block;color:#64748b;font-size:13px;font-weight:800}.v4-fin-stat b{font-size:24px;line-height:1.15}.v4-fin-stat.is-danger{border-color:#fecaca;background:#fff7f7}.v4-fin-stat.is-warn{border-color:#fde68a;background:#fffdf3}.v4-fin-stat.is-good{border-color:#bbf7d0;background:#f0fdf4}.v4-fin-warnings{border:1px solid #fde68a;background:#fffdf3;color:#92400e;border-radius:14px;padding:10px;margin:12px 0;font-weight:800}.v4-fin-actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.v4-fin-actions button{border:1px solid #cbd5e1;background:#fff;border-radius:999px;padding:9px 12px;font-weight:900}.v4-fin-actions .v4-primary{background:#0f172a;border-color:#0f172a;color:#fff}.v4-fin-columns{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px}.v4-fin-column{border:1px solid #e2e8f0;background:#fff;border-radius:18px;padding:14px}.v4-fin-column h3{margin:0 0 10px}.v4-fin-list{display:grid;gap:10px}.v4-fin-item{border:1px solid #e2e8f0;background:#f8fafc;border-radius:14px;padding:11px;display:grid;gap:6px}.v4-fin-item.is-danger{border-color:#fecaca;background:#fff7f7}.v4-fin-item.is-warn{border-color:#fde68a;background:#fffdf3}.v4-fin-item-head{display:flex;justify-content:space-between;gap:10px}.v4-fin-item h4{margin:0;font-size:15px}.v4-fin-item small{color:#64748b}.v4-fin-item button{justify-self:start;border:1px solid #cbd5e1;background:#fff;color:#0f172a;border-radius:12px;padding:8px 10px;font-weight:900}`;
+  style.textContent = `.v4-fin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:14px 0}.v4-fin-stat{border:1px solid #e2e8f0;background:#fff;border-radius:18px;padding:14px;box-shadow:0 8px 22px rgba(15,23,42,.05)}.v4-fin-stat span{display:block;color:#64748b;font-size:13px;font-weight:800}.v4-fin-stat b{font-size:24px;line-height:1.15}.v4-fin-stat.is-danger{border-color:#fecaca;background:#fff7f7}.v4-fin-stat.is-warn{border-color:#fde68a;background:#fffdf3}.v4-fin-stat.is-good{border-color:#bbf7d0;background:#f0fdf4}.v4-fin-warnings{border:1px solid #fde68a;background:#fffdf3;color:#92400e;border-radius:14px;padding:10px;margin:12px 0;font-weight:800}.v4-fin-actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.v4-fin-actions button{border:1px solid #cbd5e1;background:#fff;border-radius:999px;padding:9px 12px;font-weight:900}.v4-fin-actions .v4-primary{background:#0f172a;border-color:#0f172a;color:#fff}.v4-fin-columns{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px}.v4-fin-column{border:1px solid #e2e8f0;background:#fff;border-radius:18px;padding:14px}.v4-fin-column h3{margin:0 0 10px}.v4-fin-list{display:grid;gap:10px}.v4-fin-item{border:1px solid #e2e8f0;background:#f8fafc;border-radius:14px;padding:11px;display:grid;gap:6px}.v4-fin-item.is-danger{border-color:#fecaca;background:#fff7f7}.v4-fin-item.is-warn{border-color:#fde68a;background:#fffdf3}.v4-fin-item-head{display:flex;justify-content:space-between;gap:10px}.v4-fin-item h4{margin:0;font-size:15px}.v4-fin-item small{color:#64748b}.v4-fin-item button{justify-self:start;border:1px solid #cbd5e1;background:#fff;color:#0f172a;border-radius:12px;padding:8px 10px;font-weight:900}.v4-fin-status-warning{border-left:3px solid #f59e0b;padding-left:8px;color:#92400e!important;font-weight:800}`;
   document.head.appendChild(style);
 }
 
@@ -142,7 +152,10 @@ function title(order) {
 
 function card(order, note = '', type = '') {
   const margin = marginPercent(order);
-  return `<article class="v4-fin-item ${type}"><div class="v4-fin-item-head"><h4>${esc(title(order))}</h4><small>${esc(order.status || 'Новый')}</small></div><small>${esc(order.client_name || 'Клиент не указан')} · ${esc(order.client_phone || 'телефон не указан')}</small><small>Оплата: ${esc(paymentText(order) || 'Не указана')} · Срок: ${dateRu(order.deadline)}</small><small>Клиенту: ${money(clientTotal(order))} · Себестоимость: ${money(costTotal(order))} · Прибыль: ${money(profitTotal(order))}${margin !== null ? ` · Маржа: ${margin}%` : ''}</small>${note ? `<small>${esc(note)}</small>` : ''}<button type="button" data-open-order="${esc(order.id)}">Открыть заказ</button></article>`;
+  const orderStatus = orderStatusUiModel(order.status);
+  const paymentStatus = paymentModel(order);
+  const statusWarnings = [orderStatus.warning, paymentStatus.warning].filter(Boolean);
+  return `<article class="v4-fin-item ${type}"><div class="v4-fin-item-head"><h4>${esc(title(order))}</h4><small>${esc(orderStatus.label)}</small></div><small>${esc(order.client_name || 'Клиент не указан')} · ${esc(order.client_phone || 'телефон не указан')}</small><small>Оплата: ${esc(paymentStatus.label)} · Срок: ${dateRu(order.deadline)}</small><small>Клиенту: ${money(clientTotal(order))} · Себестоимость: ${money(costTotal(order))} · Прибыль: ${money(profitTotal(order))}${margin !== null ? ` · Маржа: ${margin}%` : ''}</small>${statusWarnings.map((warning) => `<small class="v4-fin-status-warning" data-unknown-payment-status>${esc(warning)}</small>`).join('')}${note ? `<small>${esc(note)}</small>` : ''}<button type="button" data-open-order="${esc(order.id)}">Открыть заказ</button></article>`;
 }
 
 function top(list, mapper) {
@@ -169,7 +182,7 @@ function render() {
   const unpaidTotal = groups.unpaid.reduce((sum, order) => sum + clientTotal(order), 0);
   const margin = activeTotal ? Math.round((activeProfit / activeTotal) * 100) : 0;
   const warningHtml = warnings.length ? `<div class="v4-fin-warnings">${warnings.map(esc).join('; ')}. Раздел показан в частичном режиме.</div>` : '';
-  content.innerHTML = `${warningHtml}<div class="v4-fin-grid">${stat('Активных заказов', groups.active.length)}${stat('Активная сумма', money(activeTotal), activeTotal ? 'is-good' : '')}${stat('Себестоимость', money(activeCost))}${stat('Потенц. прибыль', money(activeProfit), activeProfit > 0 ? 'is-good' : 'is-warn')}${stat('Средняя маржа', `${margin}%`, margin < 25 && activeTotal ? 'is-danger' : 'is-good')}${stat('Не оплачено / частично', groups.unpaid.length, groups.unpaid.length ? 'is-danger' : '')}${stat('Сумма к контролю оплаты', money(unpaidTotal), unpaidTotal ? 'is-danger' : '')}${stat('Без себестоимости', groups.noCost.length, groups.noCost.length ? 'is-warn' : '')}${stat('Низкая маржа', groups.lowMargin.length, groups.lowMargin.length ? 'is-danger' : '')}</div><div class="v4-fin-actions"><button type="button" class="v4-primary" data-order-tab-open>Открыть все заказы</button><button type="button" data-finance-control-refresh>Обновить</button></div><div class="v4-fin-columns"><section class="v4-fin-column"><h3>Оплата под контролем</h3><div class="v4-fin-list">${top(groups.unpaid, (order) => card(order, 'Проверьте оплату.', 'is-danger'))}</div></section><section class="v4-fin-column"><h3>Без себестоимости</h3><div class="v4-fin-list">${top(groups.noCost, (order) => card(order, 'Себестоимость не заполнена.', 'is-warn'))}</div></section><section class="v4-fin-column"><h3>Низкая маржа</h3><div class="v4-fin-list">${top(groups.lowMargin, (order) => card(order, 'Маржа ниже 25%.', 'is-danger'))}</div></section><section class="v4-fin-column"><h3>Финансовые риски</h3><div class="v4-fin-list">${top(groups.risky, (order) => card(order, 'Есть финансовый риск.', 'is-warn'))}</div></section></div>`;
+  content.innerHTML = `${warningHtml}<div class="v4-fin-grid">${stat('Активных заказов', groups.active.length)}${stat('Активная сумма', money(activeTotal), activeTotal ? 'is-good' : '')}${stat('Себестоимость', money(activeCost))}${stat('Потенц. прибыль', money(activeProfit), activeProfit > 0 ? 'is-good' : 'is-warn')}${stat('Средняя маржа', `${margin}%`, margin < 25 && activeTotal ? 'is-danger' : 'is-good')}${stat('Не оплачено / частично', groups.unpaid.length, groups.unpaid.length ? 'is-danger' : '')}${stat('Сумма к контролю оплаты', money(unpaidTotal), unpaidTotal ? 'is-danger' : '')}${stat('Неизвестный статус оплаты', groups.unknownPayment.length, groups.unknownPayment.length ? 'is-warn' : '')}${stat('Без себестоимости', groups.noCost.length, groups.noCost.length ? 'is-warn' : '')}${stat('Низкая маржа', groups.lowMargin.length, groups.lowMargin.length ? 'is-danger' : '')}</div><div class="v4-fin-actions"><button type="button" class="v4-primary" data-order-tab-open>Открыть все заказы</button><button type="button" data-finance-control-refresh>Обновить</button></div><div class="v4-fin-columns"><section class="v4-fin-column"><h3>Оплата под контролем</h3><div class="v4-fin-list">${top(groups.unpaid, (order) => card(order, 'Проверьте оплату.', 'is-danger'))}</div></section><section class="v4-fin-column"><h3>Без себестоимости</h3><div class="v4-fin-list">${top(groups.noCost, (order) => card(order, 'Себестоимость не заполнена.', 'is-warn'))}</div></section><section class="v4-fin-column"><h3>Низкая маржа</h3><div class="v4-fin-list">${top(groups.lowMargin, (order) => card(order, 'Маржа ниже 25%.', 'is-danger'))}</div></section><section class="v4-fin-column"><h3>Финансовые риски</h3><div class="v4-fin-list">${top(groups.risky, (order) => card(order, 'Есть финансовый риск.', 'is-warn'))}</div></section></div>`;
 }
 
 async function loadData(force = false) {
