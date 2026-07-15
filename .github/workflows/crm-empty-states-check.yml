@@ -1,0 +1,57 @@
+name: CRM empty states check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/crm-empty-state-model-v1.js'
+      - 'crm/v4/assets/v4/crm-empty-state-enhancer-v1.js'
+      - 'crm/v4/assets/v4/crm-empty-state-v1.css'
+      - 'crm/v4/assets/v4/crm-v4-tabs-lite.js'
+      - 'crm/v4/assets/v4/leads.js'
+      - 'crm/v4/assets/v4/orders.js'
+      - 'crm/v4/assets/v4/finance-control-v2.js'
+      - 'crm/v4/assets/v4/public-lead-audit-v1.js'
+      - 'tools/test_crm_empty_state_model.mjs'
+      - 'tools/check_crm_empty_states.py'
+      - 'docs/CRM_UI_EMPTY_STATES_2026-07-15.md'
+      - '.github/workflows/crm-empty-states-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/crm-empty-state-model-v1.js'
+      - 'crm/v4/assets/v4/crm-empty-state-enhancer-v1.js'
+      - 'crm/v4/assets/v4/crm-empty-state-v1.css'
+      - 'crm/v4/assets/v4/crm-v4-tabs-lite.js'
+      - 'crm/v4/assets/v4/leads.js'
+      - 'crm/v4/assets/v4/orders.js'
+      - 'crm/v4/assets/v4/finance-control-v2.js'
+      - 'crm/v4/assets/v4/public-lead-audit-v1.js'
+      - 'tools/test_crm_empty_state_model.mjs'
+      - 'tools/check_crm_empty_states.py'
+      - 'docs/CRM_UI_EMPTY_STATES_2026-07-15.md'
+      - '.github/workflows/crm-empty-states-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-crm-empty-states:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check JavaScript syntax
+        run: |
+          node --check crm/v4/assets/v4/crm-empty-state-model-v1.js
+          node --check crm/v4/assets/v4/crm-empty-state-enhancer-v1.js
+          node --check crm/v4/assets/v4/crm-v4-tabs-lite.js
+
+      - name: Test empty-state model
+        run: node tools/test_crm_empty_state_model.mjs
+
+      - name: Compile source checker
+        run: python3 -m py_compile tools/check_crm_empty_states.py
+
+      - name: Validate contextual read-only empty states
+        run: python3 tools/check_crm_empty_states.py
