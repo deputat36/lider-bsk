@@ -7,6 +7,7 @@ Current source audit: `docs/PUBLIC_LEAD_FUNNEL_AGGREGATES_READONLY_2026-07-15.md
 Previous source audit: `docs/PUBLIC_LEAD_FUNNEL_AGGREGATES_READONLY_2026-07-05.md`.
 Current normalized dry run: `docs/CRM_LEAD_ANALYTICS_NORMALIZED_DRY_RUN_READONLY_2026-07-15.md`.
 Previous normalized dry run: `docs/CRM_LEAD_ANALYTICS_NORMALIZED_DRY_RUN_READONLY_2026-07-10.md`.
+Runtime harness: `docs/CRM_LEAD_ANALYTICS_RUNTIME_HARNESS_2026-07-15.md`.
 
 This is a planning and implementation-status document. Do not rewrite existing `leader_leads.service` or `leader_leads.source` values without explicit data-change approval.
 
@@ -28,7 +29,7 @@ Read-only aggregates show that the CRM lead funnel works, but analytics fields a
 
 This is the right boundary for the public write path. The public Edge Function should keep saving the original user/form values. Analytics normalization should be derived later in CRM/reporting code or in a separately approved database view.
 
-## 2026-07-09 UI implementation status
+## 2026-07-15 implementation status
 
 Implemented in GitHub source:
 
@@ -38,11 +39,13 @@ Implemented in GitHub source:
 - `crm/v4/assets/v4/leads.js` includes `leadAnalyticsSearchText(lead)` in `leadHaystack(lead)`, so browser-side search can find derived categories.
 - `crm/v4/index.html` loads the badges module after `leads.js` using `assets/v4/lead-analytics-badges-v1.js?v=20260709-1`; the badges module loads the summary module.
 - `tools/check_crm_lead_analytics_normalization.py` validates the helper, badges module, summary module, index hook and guardrails.
-- `.github/workflows/crm-lead-analytics-check.yml` runs the checker and JavaScript syntax checks.
+- `tools/test_crm_lead_analytics_runtime.mjs` executes normalization, actual lead haystack, summary toggle and badge idempotency behavior in Node.
+- `tools/check_crm_lead_analytics_runtime_harness.py` protects the runtime harness, reduced manual scope and no-network boundary.
+- `.github/workflows/crm-lead-analytics-check.yml` runs source checks, JavaScript syntax checks and the runtime harness.
 
 Still in progress:
 
-- Manual browser verification remains required before closing #198 and #199.
+- Manual browser verification remains required before closing #198 and #199, but it is now limited to authenticated published-bundle loading, visual placement, live refresh/tab integration and console-error checks.
 - `patches/crm-lead-derived-search.patch` remains as documentation of the minimal safe patch for `crm/v4/assets/v4/leads.js`.
 
 ## Current read-only normalized dry run

@@ -11,13 +11,16 @@ on:
       - 'crm/v4/assets/v4/leads.js'
       - 'docs/CRM_LEAD_ANALYTICS_NORMALIZATION_PLAN_2026-07-07.md'
       - 'docs/CRM_LEAD_ANALYTICS_BADGES_MANUAL_TEST_2026-07-09.md'
+      - 'docs/CRM_LEAD_ANALYTICS_RUNTIME_HARNESS_2026-07-15.md'
       - 'docs/PUBLIC_LEAD_FUNNEL_AGGREGATES_READONLY_2026-07-05.md'
       - 'docs/PUBLIC_LEAD_FUNNEL_AGGREGATES_READONLY_2026-07-15.md'
       - 'docs/CRM_LEAD_ANALYTICS_NORMALIZED_DRY_RUN_READONLY_2026-07-10.md'
       - 'docs/CRM_LEAD_ANALYTICS_NORMALIZED_DRY_RUN_READONLY_2026-07-15.md'
       - 'patches/crm-lead-derived-search.patch'
       - 'tools/check_crm_lead_analytics_normalization.py'
+      - 'tools/check_crm_lead_analytics_runtime_harness.py'
       - 'tools/check_crm_lead_derived_search_patch.py'
+      - 'tools/test_crm_lead_analytics_runtime.mjs'
       - '.github/workflows/crm-lead-analytics-check.yml'
   pull_request:
     branches: [main]
@@ -29,13 +32,16 @@ on:
       - 'crm/v4/assets/v4/leads.js'
       - 'docs/CRM_LEAD_ANALYTICS_NORMALIZATION_PLAN_2026-07-07.md'
       - 'docs/CRM_LEAD_ANALYTICS_BADGES_MANUAL_TEST_2026-07-09.md'
+      - 'docs/CRM_LEAD_ANALYTICS_RUNTIME_HARNESS_2026-07-15.md'
       - 'docs/PUBLIC_LEAD_FUNNEL_AGGREGATES_READONLY_2026-07-05.md'
       - 'docs/PUBLIC_LEAD_FUNNEL_AGGREGATES_READONLY_2026-07-15.md'
       - 'docs/CRM_LEAD_ANALYTICS_NORMALIZED_DRY_RUN_READONLY_2026-07-10.md'
       - 'docs/CRM_LEAD_ANALYTICS_NORMALIZED_DRY_RUN_READONLY_2026-07-15.md'
       - 'patches/crm-lead-derived-search.patch'
       - 'tools/check_crm_lead_analytics_normalization.py'
+      - 'tools/check_crm_lead_analytics_runtime_harness.py'
       - 'tools/check_crm_lead_derived_search_patch.py'
+      - 'tools/test_crm_lead_analytics_runtime.mjs'
       - '.github/workflows/crm-lead-analytics-check.yml'
 
 jobs:
@@ -44,11 +50,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate lead funnel, normalization plan and current read-only snapshots
+      - name: Validate lead funnel, normalization plan and runtime harness contracts
         shell: bash
         run: |
           set -euo pipefail
           python3 tools/check_crm_lead_analytics_normalization.py
+          python3 tools/check_crm_lead_analytics_runtime_harness.py
           python3 tools/check_crm_lead_derived_search_patch.py
 
       - name: Check helper JavaScript syntax
@@ -59,4 +66,11 @@ jobs:
           node --check crm/v4/assets/v4/lead-analytics-normalization.js
           node --check crm/v4/assets/v4/lead-analytics-badges-v1.js
           node --check crm/v4/assets/v4/lead-analytics-summary-v1.js
+          node --check tools/test_crm_lead_analytics_runtime.mjs
           grep -q 'lead-analytics-badges-v1.js?v=20260709-1' crm/v4/index.html
+
+      - name: Run lead analytics runtime harness
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/test_crm_lead_analytics_runtime.mjs
