@@ -6,6 +6,11 @@ on:
     paths:
       - 'tools/bump_public_core_form_cache_v23.py'
       - '.github/workflows/apply-core-form-cache-v23.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/bump_public_core_form_cache_v23.py'
+      - '.github/workflows/apply-core-form-cache-v23.yml'
 
 permissions:
   contents: write
@@ -16,7 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: public-core-form-cache-v23
+          ref: ${{ github.head_ref || github.ref_name }}
           fetch-depth: 0
       - name: Apply guarded replacements
         run: python3 tools/bump_public_core_form_cache_v23.py
@@ -32,6 +37,8 @@ jobs:
           python3 tools/check_public_cache_docs_current.py
           git diff --check
       - name: Commit generated migration
+        env:
+          TARGET_BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
@@ -50,4 +57,4 @@ jobs:
             exit 0
           fi
           git commit -m 'Bump core public form cache to v23'
-          git push origin HEAD:public-core-form-cache-v23
+          git push origin "HEAD:${TARGET_BRANCH}"
