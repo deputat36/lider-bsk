@@ -137,7 +137,7 @@ require('doc', [
     'Scenario: inactive',
     'HTTP `403 inactive_profile`',
     'cleanupRequired: true',
-    'temporary Auth user',
+    'временный Auth user',
     'production migration history и Edge Functions не изменились',
     'GitHub Actions не выполняет сетевой E2E и не требует secrets',
 ])
