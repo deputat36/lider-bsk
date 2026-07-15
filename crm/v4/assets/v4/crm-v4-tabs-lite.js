@@ -1,8 +1,9 @@
 import { applyV4TabButtonVisibility, canOpenV4Tab, firstAllowedV4Tab } from './role-tab-permissions-v1.js';
+import { CRM_NAVIGATION_TABS, crmNavigationUrl, normalizeCrmNavigationTab, readCrmNavigationTab } from './crm-navigation-route-v1.js';
 
 const MANAGED_TABS = new Set(['management_dashboard', 'orders', 'order_control', 'finance_control', 'production', 'public_lead_audit', 'contact_control', 'user_admin']);
 const SETTABLE_TABS = new Set([...MANAGED_TABS, 'leads', 'card']);
-const ROUTABLE_TABS = new Set([...MANAGED_TABS, 'leads']);
+const ROUTABLE_TABS = new Set(CRM_NAVIGATION_TABS);
 
 function showElement(id) {
   const element = document.getElementById(id);
@@ -32,14 +33,17 @@ function normalizeTab(tab, allowedTabs = SETTABLE_TABS) {
 }
 
 function readInitialTab() {
-  const params = new URLSearchParams(window.location.search || '');
-  const queryTab = normalizeTab(params.get('tab'), ROUTABLE_TABS);
-  if (queryTab) return queryTab;
+  return normalizeTab(readCrmNavigationTab(window.location.href), ROUTABLE_TABS);
+}
 
-  const hashTab = normalizeTab((window.location.hash || '').replace(/^#/, ''), ROUTABLE_TABS);
-  if (hashTab) return hashTab;
-
-  return '';
+function syncTabUrl(tab, historyMode) {
+  const normalized = normalizeCrmNavigationTab(tab);
+  if (!normalized || historyMode === 'none') return;
+  const nextUrl = crmNavigationUrl(window.location.href, normalized);
+  const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  if (nextUrl === currentUrl) return;
+  const method = historyMode === 'replace' ? 'replaceState' : 'pushState';
+  window.history[method]({ ...(window.history.state || {}), v4Tab: normalized }, '', nextUrl);
 }
 
 function hideAllWorkSections() {
@@ -59,7 +63,7 @@ function dispatchDenied(requested, reason) {
   document.dispatchEvent(new CustomEvent('leader-v4:tab-denied', { detail: { requested, reason } }));
 }
 
-function setActiveTab(tab) {
+function setActiveTab(tab, options = {}) {
   applyV4TabButtonVisibility(document);
   const activeTab = permittedTab(tab);
   if (!activeTab) {
@@ -71,7 +75,10 @@ function setActiveTab(tab) {
 
   document.body.dataset.v4Tab = activeTab;
   document.querySelectorAll('[data-v4-tab-button]').forEach((button) => {
-    button.classList.toggle('is-active', button.dataset.v4TabButton === activeTab);
+    const active = button.dataset.v4TabButton === activeTab;
+    button.classList.toggle('is-active', active);
+    if (active) button.setAttribute('aria-current', 'page');
+    else button.removeAttribute('aria-current');
   });
 
   if (activeTab === 'leads') {
@@ -99,12 +106,13 @@ function setActiveTab(tab) {
     });
   }
 
+  syncTabUrl(activeTab, options.historyMode || 'push');
   document.dispatchEvent(new CustomEvent('leader-v4:tab-opened', { detail: { tab: activeTab } }));
   return true;
 }
 
 function bootTabsLite() {
-  window.v4SetTab = setActiveTab;
+  window.v4SetTab = (tab) => setActiveTab(tab, { historyMode: 'push' });
 
   document.addEventListener('click', (event) => {
     const restrictedOrderAction = event.target.closest?.('[data-open-order]');
@@ -125,17 +133,21 @@ function bootTabsLite() {
       dispatchDenied(tab, 'role_not_allowed');
       return;
     }
-    setActiveTab(tab);
+    setActiveTab(tab, { historyMode: 'push' });
   });
 
   document.addEventListener('leader-v4:crm-ready', () => {
     applyV4TabButtonVisibility(document);
     const current = normalizeTab(document.body?.dataset?.v4Tab);
-    setActiveTab(current || readInitialTab() || firstAllowedV4Tab());
+    setActiveTab(current || readInitialTab() || firstAllowedV4Tab(), { historyMode: 'replace' });
+  });
+
+  window.addEventListener('popstate', () => {
+    setActiveTab(readInitialTab() || firstAllowedV4Tab(), { historyMode: 'none' });
   });
 
   const initialTab = readInitialTab();
-  if (initialTab) window.setTimeout(() => setActiveTab(initialTab), 0);
+  if (initialTab) window.setTimeout(() => setActiveTab(initialTab, { historyMode: 'none' }), 0);
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootTabsLite); else bootTabsLite();
