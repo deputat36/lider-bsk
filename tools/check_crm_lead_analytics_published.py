@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Verify that GitHub Pages serves the current CRM lead analytics assets.
+"""Verify the published CRM lead analytics assets on the official domain.
 
-This is a read-only deployment smoke check. It performs HTTPS GET requests only
-against the fixed GitHub Pages origin and never logs in, submits forms or calls
+This read-only deployment smoke check performs HTTPS GET requests only. It
+verifies the GitHub Pages alias redirect and the static files served from the
+canonical www.lider-bsk.ru origin. It never logs in, submits forms or calls
 Supabase.
 """
 
@@ -14,41 +15,50 @@ import time
 from dataclasses import dataclass
 from typing import Iterable
 from urllib.error import HTTPError, URLError
-from urllib.parse import parse_qsl, urlencode, urljoin, urlparse, urlunparse
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 from urllib.request import Request, urlopen
 
-BASE_URL = "https://deputat36.github.io/lider-bsk/crm/v4/"
+CANONICAL_BASE_URL = "https://www.lider-bsk.ru/crm/v4/"
+GITHUB_PAGES_ALIAS_URL = "https://deputat36.github.io/lider-bsk/crm/v4/"
 EXPECTED_SCHEME = "https"
-EXPECTED_HOST = "deputat36.github.io"
-EXPECTED_PATH_PREFIX = "/lider-bsk/crm/v4/"
+EXPECTED_HOST = "www.lider-bsk.ru"
+EXPECTED_PATH_PREFIX = "/crm/v4/"
 MAX_RESPONSE_BYTES = 2_000_000
-USER_AGENT = "lider-bsk-published-smoke/1.0"
+USER_AGENT = "lider-bsk-published-smoke/1.1"
+
+INDEX_MARKERS = (
+    "<title>РА Лидер — CRM v4</title>",
+    'assets/v4/leads.js?v=20260715-filter-state-1',
+    'assets/v4/lead-analytics-badges-v1.js?v=20260709-1',
+    'id="leadSearch"',
+    'id="leadsList"',
+)
 
 
 @dataclass(frozen=True)
 class Target:
     name: str
-    relative_url: str
+    url: str
     kind: str
     markers: tuple[str, ...]
 
 
 TARGETS = (
     Target(
-        "CRM index",
-        "",
+        "GitHub Pages alias redirect",
+        GITHUB_PAGES_ALIAS_URL,
         "html",
-        (
-            "<title>РА Лидер — CRM v4</title>",
-            'assets/v4/leads.js?v=20260715-filter-state-1',
-            'assets/v4/lead-analytics-badges-v1.js?v=20260709-1',
-            'id="leadSearch"',
-            'id="leadsList"',
-        ),
+        INDEX_MARKERS,
+    ),
+    Target(
+        "canonical CRM index",
+        CANONICAL_BASE_URL,
+        "html",
+        INDEX_MARKERS,
     ),
     Target(
         "lead list module",
-        "assets/v4/leads.js?v=20260715-filter-state-1",
+        f"{CANONICAL_BASE_URL}assets/v4/leads.js?v=20260715-filter-state-1",
         "javascript",
         (
             "import { leadAnalyticsSearchText } from './lead-analytics-normalization.js';",
@@ -59,7 +69,7 @@ TARGETS = (
     ),
     Target(
         "analytics badges module",
-        "assets/v4/lead-analytics-badges-v1.js?v=20260709-1",
+        f"{CANONICAL_BASE_URL}assets/v4/lead-analytics-badges-v1.js?v=20260709-1",
         "javascript",
         (
             "import './lead-analytics-summary-v1.js';",
@@ -72,7 +82,7 @@ TARGETS = (
     ),
     Target(
         "analytics summary module",
-        "assets/v4/lead-analytics-summary-v1.js",
+        f"{CANONICAL_BASE_URL}assets/v4/lead-analytics-summary-v1.js",
         "javascript",
         (
             "Сводка по заявкам",
@@ -84,7 +94,7 @@ TARGETS = (
     ),
     Target(
         "analytics normalization module",
-        "assets/v4/lead-analytics-normalization.js",
+        f"{CANONICAL_BASE_URL}assets/v4/lead-analytics-normalization.js",
         "javascript",
         (
             "normalizeLeadServiceCategory",
@@ -107,9 +117,9 @@ def cache_busted(url: str) -> str:
 def validate_final_url(url: str) -> None:
     parsed = urlparse(url)
     if parsed.scheme != EXPECTED_SCHEME or parsed.netloc != EXPECTED_HOST:
-        raise RuntimeError(f"unexpected redirect origin: {url}")
+        raise RuntimeError(f"unexpected canonical origin: {url}")
     if not parsed.path.startswith(EXPECTED_PATH_PREFIX):
-        raise RuntimeError(f"unexpected redirect path: {url}")
+        raise RuntimeError(f"unexpected canonical path: {url}")
 
 
 def validate_content_type(kind: str, content_type: str) -> None:
@@ -126,9 +136,8 @@ def validate_content_type(kind: str, content_type: str) -> None:
 
 
 def fetch_text(target: Target, timeout: float) -> str:
-    url = cache_busted(urljoin(BASE_URL, target.relative_url))
     request = Request(
-        url,
+        cache_busted(target.url),
         headers={
             "User-Agent": USER_AGENT,
             "Accept": "text/html,application/javascript,text/javascript;q=0.9,*/*;q=0.5",
@@ -195,7 +204,7 @@ def main() -> int:
         print(f"Published analytics smoke attempt {attempt}/{args.attempts}")
         errors = run_once(args.timeout)
         if not errors:
-            print("Published CRM lead analytics assets are valid.")
+            print("Published CRM lead analytics assets are valid on the canonical domain.")
             return 0
         for error in errors:
             print(f"ERROR {error}", file=sys.stderr)
