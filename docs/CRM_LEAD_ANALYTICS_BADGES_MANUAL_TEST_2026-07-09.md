@@ -2,9 +2,11 @@
 
 Scope: RA Lider CRM v4 lead list.
 
-Test URL:
+Canonical test URL:
 
-`https://deputat36.github.io/lider-bsk/crm/v4/?tab=leads`
+`https://www.lider-bsk.ru/crm/v4/?tab=leads`
+
+The GitHub Pages alias `https://deputat36.github.io/lider-bsk/crm/v4/?tab=leads` redirects to this official domain and is covered by the published smoke checker.
 
 Related issues: #196, #197, #198, #199.
 
@@ -45,7 +47,7 @@ The separate checker:
 
 `python3 tools/check_crm_lead_analytics_published.py`
 
-verifies that GitHub Pages serves:
+verifies that the Pages alias redirects to the canonical official domain and that the canonical deployment serves:
 
 - the current CRM index;
 - the current `leads.js` search integration;
@@ -58,11 +60,11 @@ Detailed deployment scope and retry behavior:
 
 `docs/CRM_LEAD_ANALYTICS_PUBLISHED_SMOKE_2026-07-15.md`
 
-The remaining manual check is therefore limited to authenticated real-data integration and visual/browser behavior. It does not need to re-prove static asset publication or isolated JavaScript behavior.
+The remaining manual check is therefore limited to authenticated published-browser integration with real data and visual/browser behavior. It does not need to re-prove static asset publication or isolated JavaScript behavior.
 
 ## Remaining manual test checklist
 
-1. Open `https://deputat36.github.io/lider-bsk/crm/v4/?tab=leads`.
+1. Open `https://www.lider-bsk.ru/crm/v4/?tab=leads`.
 2. Log in as an allowed CRM user.
 3. Wait until the real lead list is loaded.
 4. Confirm that lead cards still show the original raw source and service in the metadata line.
