@@ -1,0 +1,98 @@
+.v4-saved-calc-integrity,
+.v4-saved-calc-version-guard{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+  border:1px solid #cbd5e1;
+  border-radius:16px;
+  background:#f8fafc;
+  padding:12px 14px;
+}
+.v4-saved-calc-integrity b,
+.v4-saved-calc-version-guard b{
+  display:block;
+  color:#0f172a;
+  font-weight:900;
+}
+.v4-saved-calc-integrity p,
+.v4-saved-calc-version-guard p{
+  margin:4px 0 0;
+  color:#475569;
+  line-height:1.45;
+}
+.v4-saved-calc-integrity > span,
+.v4-saved-calc-version-guard > span{
+  flex:0 0 auto;
+  border-radius:999px;
+  background:#fff;
+  padding:6px 9px;
+  font-size:12px;
+  font-weight:900;
+  white-space:nowrap;
+}
+.v4-saved-calc-integrity.is-error,
+.v4-saved-calc-version-guard.is-error{
+  border-color:#fca5a5;
+  background:#fef2f2;
+}
+.v4-saved-calc-integrity.is-error b,
+.v4-saved-calc-version-guard.is-error b,
+.v4-saved-calc-integrity.is-error > span,
+.v4-saved-calc-version-guard.is-error > span{
+  color:#b91c1c;
+}
+.v4-saved-calc-version-guard.is-warn{
+  border-color:#fcd34d;
+  background:#fffbeb;
+}
+.v4-saved-calc-version-guard.is-warn b,
+.v4-saved-calc-version-guard.is-warn > span{
+  color:#92400e;
+}
+.v4-saved-calc-version-guard.is-locked{
+  border-color:#93c5fd;
+  background:#eff6ff;
+}
+.v4-saved-calc-version-guard.is-locked b,
+.v4-saved-calc-version-guard.is-locked > span{
+  color:#1d4ed8;
+}
+.v4-saved-calc-version-guard{
+  margin:12px 0 14px;
+}
+.v4-saved-calc-card.is-version-duplicate{
+  border-color:#ef4444;
+  box-shadow:0 0 0 2px rgba(239,68,68,.08);
+}
+.v4-saved-calc-card.is-version-protected:not(.is-version-duplicate){
+  border-left:4px solid #60a5fa;
+}
+.v4-saved-calc-version-badge{
+  font-weight:900;
+}
+.v4-saved-calc-version-badge.is-error{
+  border-color:#fecaca!important;
+  background:#fef2f2!important;
+  color:#b91c1c!important;
+}
+.v4-saved-calc-version-badge.is-warn{
+  border-color:#fde68a!important;
+  background:#fffbeb!important;
+  color:#92400e!important;
+}
+.v4-saved-calc-version-badge.is-locked{
+  border-color:#bfdbfe!important;
+  background:#eff6ff!important;
+  color:#1d4ed8!important;
+}
+@media(max-width:720px){
+  .v4-saved-calc-integrity,
+  .v4-saved-calc-version-guard{
+    flex-direction:column;
+  }
+  .v4-saved-calc-integrity > span,
+  .v4-saved-calc-version-guard > span{
+    white-space:normal;
+  }
+}

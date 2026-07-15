@@ -1,0 +1,43 @@
+name: CRM calculation version integrity check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'crm/v4/index.html'
+      - 'crm/v4/assets/v4/calculation-version-integrity-model-v1.js'
+      - 'crm/v4/assets/v4/calculations-saved-tools-v2.js'
+      - 'crm/v4/assets/v4/calculation-version-integrity-v1.css'
+      - 'contracts/calculation-create-version-server-contract-v1.json'
+      - 'docs/CRM_CALCULATION_VERSION_INTEGRITY_AUDIT_2026-07-15.md'
+      - 'docs/CRM_CALCULATION_CREATE_VERSION_SERVER_CONTRACT_2026-07-15.md'
+      - 'tools/test_calculation_version_integrity_model.mjs'
+      - 'tools/check_calculation_version_integrity.py'
+      - '.github/workflows/crm-calculation-version-integrity-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'crm/v4/index.html'
+      - 'crm/v4/assets/v4/calculation-version-integrity-model-v1.js'
+      - 'crm/v4/assets/v4/calculations-saved-tools-v2.js'
+      - 'crm/v4/assets/v4/calculation-version-integrity-v1.css'
+      - 'contracts/calculation-create-version-server-contract-v1.json'
+      - 'docs/CRM_CALCULATION_VERSION_INTEGRITY_AUDIT_2026-07-15.md'
+      - 'docs/CRM_CALCULATION_CREATE_VERSION_SERVER_CONTRACT_2026-07-15.md'
+      - 'tools/test_calculation_version_integrity_model.mjs'
+      - 'tools/check_calculation_version_integrity.py'
+      - '.github/workflows/crm-calculation-version-integrity-check.yml'
+
+jobs:
+  calculation-version-integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check version model syntax
+        run: node --check crm/v4/assets/v4/calculation-version-integrity-model-v1.js
+      - name: Check saved calculation UI syntax
+        run: node --check crm/v4/assets/v4/calculations-saved-tools-v2.js
+      - name: Test version integrity model
+        run: node tools/test_calculation_version_integrity_model.mjs
+      - name: Validate source-only version contract
+        run: python3 tools/check_calculation_version_integrity.py

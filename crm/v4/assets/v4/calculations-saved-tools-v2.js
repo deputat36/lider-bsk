@@ -7,6 +7,11 @@ import {
   savedCalculationItemReview,
   savedCalculationPositionLabel
 } from './calculation-saved-review-model-v1.js';
+import {
+  calculationVersionAudit,
+  calculationVersionIntegrityCopy,
+  calculationVersionState
+} from './calculation-version-integrity-model-v1.js';
 
 const CALC_FIELDS = 'id,lead_id,need_id,client_id,title,status,version_number,client_total,contractor_cost,profit,margin_percent,warning_level,warnings,public_comment,internal_comment,commercial_offer_id,order_id,created_by,updated_by,created_at,updated_at';
 const ITEM_FIELDS = 'id,calculation_id,lead_id,catalog_id,category,item_type,name,unit,qty,contractor_price,contractor_sum,markup_percent,client_price,client_sum,profit,margin_percent,comment,data,sort_order,created_at,updated_at';
@@ -81,26 +86,36 @@ async function loadCalculations(force = false) {
   }
 }
 
-function calcClass(calc) {
-  if (calc.order_id) return ' is-good';
-  if (calc.commercial_offer_id) return ' is-warn';
-  return '';
+function calcClass(calc, versionState) {
+  const classes = [];
+  if (calc.order_id) classes.push('is-good');
+  else if (calc.commercial_offer_id) classes.push('is-warn');
+  if (versionState.isDuplicate) classes.push('is-version-duplicate');
+  if (versionState.protectedSource) classes.push('is-version-protected');
+  return classes.length ? ` ${classes.join(' ')}` : '';
 }
 
-function renderCalc(calc) {
+function renderVersionBadges(versionState) {
+  if (!versionState.badges.length) return '';
+  return versionState.badges
+    .map((badge) => `<span class="v4-saved-calc-version-badge is-${esc(versionState.tone)}">${esc(badge)}</span>`)
+    .join('');
+}
+
+function renderCalc(calc, audit) {
   const active = calc.id === selectedId;
+  const versionState = calculationVersionState(calc, audit);
   return `
-    <article class="v4-saved-calc-card${active ? ' is-active' : ''}${calcClass(calc)}">
+    <article class="v4-saved-calc-card${active ? ' is-active' : ''}${calcClass(calc, versionState)}" data-version-state="${esc(versionState.tone)}">
       <div>
         <div class="v4-saved-calc-title"><h4>${esc(calc.title || 'Расчёт')}</h4><span>${esc(calc.status || 'Черновик')}</span></div>
         <div class="v4-saved-calc-meta">
-          <span><b>Версия:</b> ${Number(calc.version_number || 1)}</span>
+          <span><b>Версия:</b> ${versionState.version}</span>
           <span><b>Клиенту:</b> ${money(calc.client_total)}</span>
           <span><b>Себест.:</b> ${money(calc.contractor_cost)}</span>
           <span><b>Прибыль:</b> ${money(calc.profit)}</span>
           <span><b>Маржа:</b> ${Math.round(Number(calc.margin_percent || 0))}%</span>
-          ${calc.commercial_offer_id ? '<span>Есть КП</span>' : ''}
-          ${calc.order_id ? '<span>Есть заказ</span>' : ''}
+          ${renderVersionBadges(versionState)}
         </div>
       </div>
       <div class="v4-saved-calc-actions">
@@ -122,7 +137,19 @@ function renderItemName(item, index) {
   `;
 }
 
-function renderDetails() {
+function renderVersionGuard(calc, audit) {
+  const versionState = calculationVersionState(calc, audit);
+  return `
+    <div class="v4-saved-calc-version-guard is-${esc(versionState.tone)}" role="note" data-version-guard="${esc(versionState.tone)}">
+      <div>
+        <b>${esc(versionState.title)}</b>
+        <p>${esc(versionState.message)}</p>
+      </div>
+      <span>v${versionState.version} → новая v${versionState.nextVersion}</span>
+    </div>`;
+}
+
+function renderDetails(audit) {
   const calc = (v4State.calculations || []).find((item) => item.id === selectedId);
   if (!selectedId) return '<div class="v4-empty">Выберите расчёт и нажмите «Показать состав», чтобы проверить сохранённые строки.</div>';
   if (detailsBusy) return '<div class="v4-empty">Загружаю состав расчёта...</div>';
@@ -150,6 +177,7 @@ function renderDetails() {
         <div><h3>Состав расчёта: ${esc(calc.title || 'Расчёт')}</h3><p>Создан: ${dateRu(calc.created_at)}. ${esc(savedCalculationDetailsCopy(selectedItems.length))}</p></div>
         <div class="v4-saved-calc-details-actions"><span class="v4-saved-calc-count" aria-live="polite">${esc(savedCalculationPositionLabel(selectedItems.length))}</span><button type="button" data-v2-calc-close>Скрыть состав</button></div>
       </div>
+      ${renderVersionGuard(calc, audit)}
       <div class="v4-table-wrap v4-saved-calc-review-table">
         <table class="v4-table v4-saved-calc-table">
           <thead><tr><th>Позиция</th><th>Ед.</th><th>Кол-во</th><th>Себест. ед.</th><th>Клиенту ед.</th><th>Сумма</th><th>Маржа</th></tr></thead>
@@ -168,6 +196,8 @@ function render() {
     return;
   }
   const calculations = v4State.calculations || [];
+  const audit = calculationVersionAudit(calculations);
+  const integrity = calculationVersionIntegrityCopy(calculations);
   box.className = 'v4-calculations-host v4-saved-calc-host';
   box.innerHTML = `
     <section class="v4-subcard v4-saved-calc-section">
@@ -178,10 +208,14 @@ function render() {
         </div>
         <div class="v4-form-actions"><button type="button" data-v2-calc-refresh>Обновить список</button></div>
       </div>
-      <div class="v4-saved-calc-list">
-        ${v4State.calculationsBusy ? '<div class="v4-empty">Загружаю расчёты...</div>' : v4State.calculationsError ? `<div class="v4-empty is-error">${esc(v4State.calculationsError)}</div>` : calculations.length ? calculations.map(renderCalc).join('') : '<div class="v4-empty">Сохранённых расчётов пока нет. Ниже можно создать первый расчёт в едином конструкторе.</div>'}
+      <div class="v4-saved-calc-integrity is-${esc(integrity.tone)}" role="status" data-version-integrity="${audit.hasDuplicates ? 'duplicate' : 'ok'}">
+        <div><b>${esc(integrity.title)}</b><p>${esc(integrity.message)}</p></div>
+        ${audit.calculationCount ? `<span>${audit.calculationCount} сохранено</span>` : ''}
       </div>
-      ${renderDetails()}
+      <div class="v4-saved-calc-list">
+        ${v4State.calculationsBusy ? '<div class="v4-empty">Загружаю расчёты...</div>' : v4State.calculationsError ? `<div class="v4-empty is-error">${esc(v4State.calculationsError)}</div>` : calculations.length ? calculations.map((calc) => renderCalc(calc, audit)).join('') : '<div class="v4-empty">Сохранённых расчётов пока нет. Ниже можно создать первый расчёт в едином конструкторе.</div>'}
+      </div>
+      ${renderDetails(audit)}
     </section>`;
 }
 

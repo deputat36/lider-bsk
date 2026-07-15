@@ -1,0 +1,103 @@
+{
+  "contract_version": "1.0.0",
+  "status": "source_only_candidate",
+  "action": "calculation.create_version",
+  "purpose": "Create a new immutable calculation version without overwriting the source calculation or its items.",
+  "transport": {
+    "edge_function": "leader-crm-calculations",
+    "verify_jwt": true,
+    "browser_calls_rpc_directly": false,
+    "service_role_server_only": true
+  },
+  "authorization": {
+    "profile_table": "public.leader_user_profiles",
+    "profile_must_be_active": true,
+    "permission": "calculation.write",
+    "allowed_roles": ["owner", "admin", "manager"],
+    "unknown_role": "deny",
+    "actor_source": "verified_jwt",
+    "client_actor_fields": "ignored_and_overwritten"
+  },
+  "request": {
+    "required": ["source_calculation_id", "idempotency_key", "expected_source_updated_at", "items"],
+    "optional": ["title", "need_id", "public_comment", "internal_comment"],
+    "items_required_fields": ["category", "item_type", "name", "unit", "qty", "contractor_price", "client_price", "comment", "data", "sort_order"],
+    "idempotency_key_max_length": 160,
+    "items_max_count": 200
+  },
+  "source_rules": {
+    "load_source_for_update": true,
+    "source_lead_must_match_route": true,
+    "expected_updated_at_required": true,
+    "source_calculation_update": "forbidden",
+    "source_items_update": "forbidden",
+    "source_delete": "forbidden",
+    "preserve_commercial_offer_link": true,
+    "preserve_order_link": true,
+    "duplicate_existing_version_numbers": "block_rollout_and_require_audited_remediation"
+  },
+  "new_version_rules": {
+    "status": "Черновик",
+    "commercial_offer_id": null,
+    "order_id": null,
+    "version_assignment": "max(version_number for lead_id) + 1 inside transaction",
+    "copy_lead_id_from_source": true,
+    "copy_client_id_from_source": true,
+    "copy_need_id_from_source_unless_explicit": true,
+    "created_by": "verified_actor_user_id",
+    "updated_by": "verified_actor_user_id",
+    "totals_recalculated_server_side": true,
+    "reject_empty_items": true,
+    "reject_non_positive_client_total": true,
+    "reject_negative_profit": true
+  },
+  "concurrency": {
+    "transaction_required": true,
+    "advisory_lock_key": "calculation.create_version + lead_id",
+    "source_row_lock": "FOR UPDATE",
+    "version_scan_inside_lock": true,
+    "future_unique_index": "unique (lead_id, version_number) after duplicate remediation"
+  },
+  "idempotency": {
+    "receipt_table": "leader_private.leader_command_receipts",
+    "receipt_action": "calculation.create_version",
+    "request_hash": "sha256 canonical payload",
+    "same_key_same_hash": "return_original_success",
+    "same_key_different_hash": "409 idempotency_conflict",
+    "receipt_written_in_same_transaction": true
+  },
+  "atomicity": {
+    "calculation_insert": true,
+    "calculation_items_insert": true,
+    "receipt_insert": true,
+    "all_or_nothing": true,
+    "client_side_compensating_delete": false
+  },
+  "response": {
+    "success_status": 201,
+    "fields": ["calculation", "items", "source_calculation_id", "idempotent_replay"],
+    "calculation_fields": ["id", "lead_id", "need_id", "client_id", "title", "status", "version_number", "client_total", "contractor_cost", "profit", "margin_percent", "warning_level", "warnings", "public_comment", "internal_comment", "created_at", "updated_at"]
+  },
+  "errors": {
+    "400": ["invalid_payload", "empty_items", "invalid_item", "invalid_totals"],
+    "401": ["missing_or_invalid_jwt"],
+    "403": ["inactive_profile", "forbidden"],
+    "404": ["source_calculation_not_found"],
+    "409": ["source_changed", "idempotency_conflict", "version_conflict", "duplicate_version_inventory"],
+    "500": ["calculation_version_create_failed"]
+  },
+  "rollout_gates": [
+    "production duplicate inventory reviewed and remediated with explicit approval",
+    "staging migration applied with explicit approval",
+    "staging concurrency and idempotency tests pass",
+    "security and performance advisors reviewed",
+    "Edge deployment approved",
+    "production migration and deployment separately approved"
+  ],
+  "rollback": {
+    "app_first": true,
+    "disable_create_version_action": true,
+    "retain_created_versions_and_receipts_as_evidence": true,
+    "no_automatic_deletion_or_renumbering": true
+  }
+}
