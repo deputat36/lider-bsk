@@ -37,11 +37,16 @@ function renderNeedCard(need) {
   const data = need.structured_data || {};
   const flags = [need.need_design ? 'Нужен дизайн' : '', need.need_installation ? 'Нужен монтаж' : ''].filter(Boolean);
   const missing = Array.isArray(need.missing_fields) ? need.missing_fields : [];
-  return `<article class="v4-need-card" data-id="${esc(need.id)}"><div><div class="v4-need-title-row"><h4>${esc(need.title || need.need_type || 'Потребность')}</h4><span>${esc(need.status || 'Черновик')} · ${Number(need.completeness_score || 0)}%</span></div><p>${esc(need.description || 'Описание пока не заполнено.')}</p><div class="v4-need-meta"><span>${esc(need.need_type || 'Другое')}</span>${data.width || data.height ? `<span>Размер: ${esc(data.width || '—')} × ${esc(data.height || '—')}</span>` : ''}${data.quantity ? `<span>Количество: ${esc(data.quantity)}</span>` : ''}${data.print_run ? `<span>Тираж: ${esc(data.print_run)}</span>` : ''}${data.material ? `<span>Материал: ${esc(data.material)}</span>` : ''}${need.deadline_text ? `<span>Срок: ${esc(need.deadline_text)}</span>` : ''}${flags.map((flag) => `<span>${esc(flag)}</span>`).join('')}</div>${data.installation_address ? `<div class="v4-need-note"><b>Адрес монтажа:</b> ${esc(data.installation_address)}</div>` : ''}${missing.length ? `<div class="v4-need-missing">Не хватает: ${missing.map(esc).join(', ')}</div>` : ''}</div><div class="v4-need-actions"><button type="button" data-action="archive-need">В архив</button></div></article>`;
+  return `<article class="v4-need-card" data-id="${esc(need.id)}"><div><div class="v4-need-title-row"><h4>${esc(need.title || need.need_type || 'Потребность')}</h4><span>${esc(need.status || 'Черновик')} · ${Number(need.completeness_score || 0)}%</span></div><p>${esc(need.description || 'Описание пока не заполнено.')}</p><div class="v4-need-meta"><span>${esc(need.need_type || 'Другое')}</span>${data.width || data.height ? `<span>Размер: ${esc(data.width || '—')} × ${esc(data.height || '—')}</span>` : ''}${data.quantity ? `<span>Количество: ${esc(data.quantity)}</span>` : ''}${data.print_run ? `<span>Тираж: ${esc(data.print_run)}</span>` : ''}${data.material ? `<span>Материал: ${esc(data.material)}</span>` : ''}${need.deadline_text ? `<span>Срок: ${esc(need.deadline_text)}</span>` : ''}${flags.map((flag) => `<span>${esc(flag)}</span>`).join('')}</div>${data.installation_address ? `<div class="v4-need-note"><b>Адрес монтажа:</b> ${esc(data.installation_address)}</div>` : ''}${missing.length ? `<div class="v4-need-missing">Не хватает: ${missing.map(esc).join(', ')}</div>` : ''}</div><div class="v4-need-actions"><button type="button" class="v4-primary" data-action="calculate-need">Перейти к расчёту</button><button type="button" data-action="archive-need">В архив</button></div></article>`;
 }
 
 function renderNeedForm() {
-  return `<form id="needForm" class="v4-need-form"><div class="v4-form-grid"><label>Тип потребности<select id="needType">${typeOptions()}</select></label><label>Название<input id="needTitle" placeholder="Например: баннер 3×2 на фасад"></label><label class="wide">Описание<textarea id="needDescription" rows="3" placeholder="Что нужно сделать, где будет использоваться, какие пожелания клиента"></textarea></label><label>Ширина<input id="needWidth" placeholder="Например: 3 м"></label><label>Высота<input id="needHeight" placeholder="Например: 2 м"></label><label>Количество<input id="needQuantity" placeholder="Например: 1 шт"></label><label>Тираж / формат<input id="needPrintRun" placeholder="Например: 1000 шт / A5"></label><label>Материал<input id="needMaterial" placeholder="Баннер, пленка, бумага, пластик"></label><label>Срок<input id="needDeadline" placeholder="Например: до пятницы"></label><label class="wide">Адрес монтажа<input id="needInstallAddress" placeholder="Если нужен монтаж"></label><label class="v4-check"><input id="needDesign" type="checkbox"> Нужен дизайн / макет</label><label class="v4-check"><input id="needInstallation" type="checkbox"> Нужен монтаж</label><label class="wide">Комментарий по дизайну<input id="needDesignReason" placeholder="Макета нет, плохой макет, нужна адаптация"></label><label class="wide">Комментарий по монтажу<input id="needInstallationReason" placeholder="Высота, сложность, доступ, крепление"></label></div><div class="v4-form-actions"><button class="v4-primary" type="submit">Сохранить потребность</button><button id="cancelNeedBtn" type="button">Отмена</button></div></form>`;
+  return `<form id="needForm" class="v4-need-form"><div class="v4-need-form-intro"><b>Короткий бриф</b><span>Сначала зафиксируйте главное. Дополнительные параметры нужны только для точного расчёта.</span></div><div class="v4-form-grid"><label>Что нужно клиенту<select id="needType">${typeOptions()}</select></label><label>Краткое название<input id="needTitle" placeholder="Например: баннер 3×2 на фасад"></label><label>Количество<input id="needQuantity" placeholder="Например: 1 шт"></label><label>Срок<input id="needDeadline" placeholder="Например: до пятницы"></label><label class="wide">Пожелания клиента<textarea id="needDescription" rows="3" placeholder="Что изготовить, где использовать, важные пожелания"></textarea></label></div><details class="v4-need-extra"><summary>Размер, материал и тираж</summary><div class="v4-form-grid"><label>Ширина<input id="needWidth" placeholder="Например: 3 м"></label><label>Высота<input id="needHeight" placeholder="Например: 2 м"></label><label>Тираж / формат<input id="needPrintRun" placeholder="Например: 1000 шт / A5"></label><label>Материал<input id="needMaterial" placeholder="Баннер, плёнка, бумага, пластик"></label></div></details><div class="v4-option-row"><label><input id="needDesign" type="checkbox"> Нужен дизайн / макет</label><label><input id="needInstallation" type="checkbox"> Нужен монтаж</label></div><div class="v4-form-grid v4-need-conditional"><label class="wide" data-need-design-details hidden>Что нужно по дизайну<input id="needDesignReason" placeholder="Макета нет, нужна адаптация или разработка"></label><label class="wide" data-need-installation-details hidden>Адрес монтажа<input id="needInstallAddress" placeholder="Адрес и место установки"></label><label class="wide" data-need-installation-details hidden>Особенности монтажа<input id="needInstallationReason" placeholder="Высота, доступ, поверхность, крепление"></label></div><div class="v4-form-actions"><button class="v4-primary" type="submit">Сохранить потребность</button><button id="cancelNeedBtn" type="button">Очистить</button></div></form>`;
+}
+
+function syncNeedConditionalFields() {
+  document.querySelectorAll('[data-need-design-details]').forEach((element) => { element.hidden = !byId('needDesign')?.checked; });
+  document.querySelectorAll('[data-need-installation-details]').forEach((element) => { element.hidden = !byId('needInstallation')?.checked; });
 }
 
 export function renderNeeds() {
@@ -58,6 +63,7 @@ export function renderNeeds() {
     formBox.innerHTML = renderNeedForm();
     formBox.dataset.ready = '1';
   }
+  syncNeedConditionalFields();
 }
 
 export async function loadNeeds(leadId = v4State.route.leadId) {
@@ -127,7 +133,7 @@ function readNeedForm() {
   return payload;
 }
 
-function resetNeedForm() { byId('needForm')?.reset(); }
+function resetNeedForm() { byId('needForm')?.reset(); syncNeedConditionalFields(); }
 
 async function createNeed() {
   if (!v4State.route.leadId) { toast('Сначала откройте карточку заявки'); return; }
@@ -173,6 +179,12 @@ function bindNeedsEvents() {
   });
   byId('leadCardSection')?.addEventListener('click', async (event) => {
     if (event.target?.id === 'cancelNeedBtn') { resetNeedForm(); return; }
+    const calculate = event.target.closest('button[data-action="calculate-need"]');
+    if (calculate) {
+      const need = (v4State.leadNeeds || []).find((item) => item.id === calculate.closest('.v4-need-card')?.dataset.id);
+      if (need) document.dispatchEvent(new CustomEvent('leader-v4:calculate-need', { detail: { need } }));
+      return;
+    }
     const button = event.target.closest('button[data-action="archive-need"]');
     if (!button) return;
     const card = button.closest('.v4-need-card');
@@ -187,6 +199,9 @@ function bindNeedsEvents() {
     } finally {
       button.disabled = false;
     }
+  });
+  byId('leadCardSection')?.addEventListener('change', (event) => {
+    if (event.target?.id === 'needDesign' || event.target?.id === 'needInstallation') syncNeedConditionalFields();
   });
   document.addEventListener('leader-v4:lead-card-rendered', () => renderNeeds());
   document.addEventListener('leader-v4:route-change', (event) => {

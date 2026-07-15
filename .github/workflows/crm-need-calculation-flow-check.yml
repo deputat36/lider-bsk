@@ -1,0 +1,18 @@
+name: CRM need calculation flow check
+on:
+  push:
+    branches: [main]
+    paths: ['crm/v4/index.html', 'crm/v4/assets/v4/needs.js', 'crm/v4/assets/v4/needs-brief.css', 'crm/v4/assets/v4/calculations.js', 'crm/v4/assets/v4/need-calculation-prefill-v1.js', 'tools/test_need_calculation_prefill.mjs', 'tools/check_crm_need_calculation_flow.py', '.github/workflows/crm-need-calculation-flow-check.yml']
+  pull_request:
+    branches: [main]
+    paths: ['crm/v4/index.html', 'crm/v4/assets/v4/needs.js', 'crm/v4/assets/v4/needs-brief.css', 'crm/v4/assets/v4/calculations.js', 'crm/v4/assets/v4/need-calculation-prefill-v1.js', 'tools/test_need_calculation_prefill.mjs', 'tools/check_crm_need_calculation_flow.py', '.github/workflows/crm-need-calculation-flow-check.yml']
+jobs:
+  need-calculation-flow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          node --check crm/v4/assets/v4/needs.js
+          node --check crm/v4/assets/v4/calculations.js
+          node tools/test_need_calculation_prefill.mjs
+          python3 tools/check_crm_need_calculation_flow.py
