@@ -16,6 +16,7 @@ FILES = {
     'readme': ROOT / 'supabase/staging-tests/README.md',
     'report': ROOT / 'docs/SUPABASE_STAGING_CALCULATION_VERSION_VERIFICATION_2026-07-15.md',
     'edge': ROOT / 'supabase/functions/leader-crm-calculations/index.ts',
+    'contract': ROOT / 'supabase/functions/leader-crm-calculations/contract.ts',
     'workflow': ROOT / '.github/workflows/crm-calculation-staging-install-check.yml',
 }
 
@@ -36,13 +37,13 @@ def require(name, markers):
             errors.append(f'{name}: missing marker {marker!r}')
 
 
-for name in ('install', 'grants', 'indexes', 'acceptance', 'safe_acceptance', 'readme'):
+for name in ('install', 'grants', 'indexes', 'acceptance', 'safe_acceptance', 'readme', 'contract'):
     if STAGING not in texts[name]:
         errors.append(f'{name}: exact staging ref is missing')
 
-for name in ('install', 'grants', 'indexes', 'acceptance', 'safe_acceptance'):
+for name in ('install', 'grants', 'indexes', 'acceptance', 'safe_acceptance', 'edge', 'contract'):
     if PRODUCTION in texts[name]:
-        errors.append(f'{name}: production ref must not appear in executable staging SQL')
+        errors.append(f'{name}: production ref must not appear in staging executable source')
 
 require('indexes', [
     'leader_lead_calculations_need_id_idx',
@@ -105,12 +106,16 @@ require('report', [
 ])
 
 require('edge', [
-    "const STAGING_PROJECT_REF = 'otulfnouybahfnsycxqn'",
+    'STAGING_PROJECT_REF',
     '/rest/v1/rpc/leader_create_calculation_version_rpc',
     'validateCalculationRequest(input)',
 ])
-if PRODUCTION in texts['edge']:
-    errors.append('edge: production project ref must not be embedded in staging candidate')
+require('contract', [
+    "export const STAGING_PROJECT_REF = 'otulfnouybahfnsycxqn'",
+    "export const CALCULATION_EDGE_CONTRACT_VERSION = 'leader-crm-calculations-edge-v1'",
+    "export const CALCULATION_ACTION = 'calculation.create_version'",
+    "export const CALCULATION_PERMISSION = 'calculation.write'",
+])
 
 require('workflow', [
     "- 'supabase/staging-migrations/20260715_06_calculation_version_fk_indexes.sql'",
