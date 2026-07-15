@@ -47,7 +47,7 @@ required_doc_markers = (
     '5685a77b94f4cf742e3e14038b8d519fc13972a56553d134e6e8256815715780',
     'WARN/ERROR — 0',
     'authenticated HTTP 201 create',
-    'staging contains 0 Auth users',
+    'staging содержит 0 Auth users',
     'DNS resolution failure',
     'Production rollout остаётся запрещён',
 )
@@ -87,7 +87,8 @@ for source, markers in (
         'jsonb_build_object',
     )),
     (grants, (
-        'revoke all on table public.leader_lead_calculations from service_role',
+        'revoke all on table public.leader_lead_calculations from public, anon, authenticated, service_role',
+        'revoke all on table public.leader_lead_calculation_items from public, anon, authenticated, service_role',
         'grant select, insert on table public.leader_lead_calculations to service_role',
         "has_table_privilege('service_role', 'public.leader_lead_calculations', 'UPDATE')",
         "has_table_privilege('authenticated', 'public.leader_lead_calculations', 'SELECT')",
