@@ -113,7 +113,7 @@ Deno.test('invalid IDs timestamps quantities prices and nulls fail closed', () =
   assert(!validateCalculationRequest({ ...base, payload: { ...payload, items: [item({ client_price: null })] } }).ok, 'null client price accepted')
 })
 
-Deno.test('empty oversized lists and oversized idempotency keys are rejected', () => {
+Deno.test('empty and oversized item lists are rejected with oversized idempotency keys', () => {
   const base = request()
   const payload = base.payload as Record<string, unknown>
   const empty = validateCalculationRequest({ ...base, payload: { ...payload, items: [] } })
