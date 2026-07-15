@@ -20,7 +20,28 @@ GitHub source now contains a derived analytics UI layer for lead cards, a small 
 
 The implementation does not change Supabase data and does not rewrite raw `leader_leads.service` or `leader_leads.source` values.
 
-## Manual test checklist
+## Automated coverage added on 2026-07-15
+
+The following behavior is now executed in CI by:
+
+`node tools/test_crm_lead_analytics_runtime.mjs`
+
+- normalization mappings for services and sources;
+- actual `leadHaystack` inclusion of derived categories;
+- summary aggregation and active pill rendering;
+- summary search apply, toggle-off and clear actions;
+- escaping of summary labels;
+- badge service/source content;
+- reuse of the hints container;
+- badges are not duplicated on repeated decoration.
+
+Detailed automated scope and boundaries:
+
+`docs/CRM_LEAD_ANALYTICS_RUNTIME_HARNESS_2026-07-15.md`
+
+The manual check below remains required only for the authenticated published-browser integration and visual behavior.
+
+## Remaining manual test checklist
 
 1. Open `https://deputat36.github.io/lider-bsk/crm/v4/?tab=leads`.
 2. Log in as an allowed CRM user.
@@ -33,25 +54,17 @@ The implementation does not change Supabase data and does not rewrite raw `leade
 7. Confirm that the summary has two groups:
    - `Услуги`;
    - `Источники`.
-8. Use the search field with derived category examples:
-   - `Баннеры`;
-   - `Наклейки`;
-   - `Сайт`;
-   - `ВКонтакте`.
+8. Use the search field with one derived category, for example `Баннеры` or `Сайт`.
 9. Confirm that the visible card count changes and matching cards remain visible.
 10. Click a category pill inside `Сводка по заявкам`.
-11. Confirm that the search field is filled with the clicked category and the list is filtered.
-12. Confirm that the selected pill is visually active and has `aria-pressed="true"`.
-13. Click the same active category pill again.
-14. Confirm that the search field clears and the full list returns.
-15. Apply a category again and click `Сбросить поиск`.
-16. Confirm that the search field clears, the active state disappears and the full list returns.
-17. Click `Обновить заявки`.
-18. Confirm that the badges and summary appear again after the list refreshes.
-19. Switch away from the leads tab and back to `Заявки`.
-20. Confirm that the badges still appear and are not duplicated multiple times on the same card.
-21. Open a lead card and return to the list.
-22. Confirm that the lead list still works and no browser console errors appear from `leads.js`, `lead-analytics-badges-v1.js` or `lead-analytics-summary-v1.js`.
+11. Confirm that the search field is filled, the list is filtered, the selected pill is visually active and has `aria-pressed="true"`.
+12. Click the same active category pill again and confirm that the full list returns.
+13. Apply a category again, click `Сбросить поиск` and confirm that the active state disappears.
+14. Click `Обновить заявки` and confirm that badges and the summary appear again without duplicates.
+15. Switch away from the leads tab and back to `Заявки`.
+16. Open a lead card and return to the list.
+17. Confirm that no browser console errors appear from `leads.js`, `lead-analytics-badges-v1.js` or `lead-analytics-summary-v1.js`.
+18. Repeat the visual check at a narrow mobile viewport and confirm that the summary and badges remain readable.
 
 ## Expected examples
 
@@ -78,7 +91,8 @@ The test is passed if:
 - badges are not duplicated after refresh/re-render;
 - raw source/service values remain visible;
 - no data changes are made in Supabase;
-- no browser console errors appear from the leads, analytics badges or summary modules.
+- no browser console errors appear from the leads, analytics badges or summary modules;
+- desktop and mobile layouts remain readable.
 
 ## If the test fails
 
