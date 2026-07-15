@@ -6,7 +6,9 @@ on:
     branches: [main]
     paths:
       - 'docs/CRM_SERVER_ACTION_RBAC_SPEC_2026-07-10.md'
+      - 'docs/CRM_EDGE_EMPTY_UPDATE_GUARD_2026-07-15.md'
       - 'tools/check_crm_server_action_rbac_spec.py'
+      - 'tools/check_crm_edge_empty_update_guard.py'
       - 'crm/v4/assets/v4/action-permissions-v1.js'
       - 'supabase/functions/leader-crm-leads/index.ts'
       - 'supabase/functions/leader-crm-orders/index.ts'
@@ -15,7 +17,9 @@ on:
     branches: [main]
     paths:
       - 'docs/CRM_SERVER_ACTION_RBAC_SPEC_2026-07-10.md'
+      - 'docs/CRM_EDGE_EMPTY_UPDATE_GUARD_2026-07-15.md'
       - 'tools/check_crm_server_action_rbac_spec.py'
+      - 'tools/check_crm_edge_empty_update_guard.py'
       - 'crm/v4/assets/v4/action-permissions-v1.js'
       - 'supabase/functions/leader-crm-leads/index.ts'
       - 'supabase/functions/leader-crm-orders/index.ts'
@@ -39,3 +43,4 @@ jobs:
         run: |
           set -euo pipefail
           python3 tools/check_crm_server_action_rbac_spec.py
+          python3 tools/check_crm_edge_empty_update_guard.py
