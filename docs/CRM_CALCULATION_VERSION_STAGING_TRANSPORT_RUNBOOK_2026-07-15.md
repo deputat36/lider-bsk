@@ -12,9 +12,11 @@ Staging:
 
 - project ref: `otulfnouybahfnsycxqn`;
 - Edge Function: `leader-crm-calculations`;
-- version: `1` до синхронизации permission label;
+- active version: `3`;
+- deployment hash: `0df6d23cc6d8b19903babbf711bb1da765111ff1f64eb7f8e970f1bcc9760ee4`;
 - status: `ACTIVE`;
-- `verify_jwt=true`.
+- `verify_jwt=true`;
+- canonical permission label: `calculations.write`.
 
 Production:
 
@@ -41,7 +43,21 @@ Production:
 
 Accountant, designer, installer, contractor, inactive и unknown должны fail closed.
 
-Ранее использованная строка `calculation.write` была неканоничным информационным label. Авторизация Edge фактически выполняется по активному профилю и allowlist ролей. Source синхронизирован с `calculations.write`; staging Edge требует redeploy v2 после merge.
+Ранее использованная строка `calculation.write` была неканоничным информационным label. Авторизация Edge фактически выполняется по активному профилю и allowlist ролей. GitHub source и staging Edge v3 синхронизированы с `calculations.write`.
+
+## Superseded v2
+
+Staging deployment v2 был создан после синхронизации permission label, но при ручной упаковке deploy payload в bundle попала опечатка `normalizeRole(value)` вместо `normalizeRole(role)`.
+
+Post-deploy проверка обнаружила дефект немедленно. v2 сразу заменён v3.
+
+v2:
+
+- не подключался к browser UI;
+- не использовался authenticated пользователем;
+- не имеет Edge logs за доступный период;
+- не создал profiles, calculations, items или receipts;
+- не является допустимой rollback-версией.
 
 ## Минимальный command envelope
 
@@ -129,7 +145,7 @@ Transport не использует:
 
 ## Authenticated positive E2E
 
-На момент подготовки runbook staging содержит 0 Auth users. Подключённый Supabase connector не предоставляет безопасные create/delete Auth user operations.
+На момент обновления runbook staging содержит 0 Auth users. Подключённый Supabase connector не предоставляет безопасные create/delete Auth user operations.
 
 Нельзя:
 
@@ -146,7 +162,7 @@ Transport не использует:
 4. вызвать transport и подтвердить HTTP 201;
 5. повторить exact command и подтвердить HTTP 200 + replay;
 6. изменить payload с тем же key и подтвердить HTTP 409;
-7. изменить role на accountant и подтвердить HTTP 403;
+7. изменить role на accountant и подтвердить HTTP 403 с `permission=calculations.write`;
 8. вернуть manager, сделать profile inactive и подтвердить HTTP 403;
 9. проверить safe response Network payload;
 10. проверить Edge logs и receipt correlation;
@@ -165,4 +181,4 @@ Transport не использует:
 - исправление исторического дубля production;
 - автоматическое удаление или перенумерование расчётов.
 
-Следующий safe gate после source-only transport — staging Edge v2 с canonical permission label, затем authenticated staging E2E.
+Следующий safe gate после source-only transport и staging Edge v3 — authenticated staging E2E, затем отдельное staging UI wiring.
