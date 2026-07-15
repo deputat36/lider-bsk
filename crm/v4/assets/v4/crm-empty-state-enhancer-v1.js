@@ -24,6 +24,12 @@ function containerInfo(node) {
   return { root, context, financeColumn, columnTitle };
 }
 
+function readableText(node) {
+  const copy = node.cloneNode(true);
+  copy.querySelectorAll('button').forEach((button) => button.remove());
+  return String(copy.textContent || '').replace(/\s+/g, ' ').trim();
+}
+
 function moveExistingButtons(node) {
   return [...node.querySelectorAll('button')].map((button) => {
     button.remove();
@@ -46,7 +52,7 @@ function enhanceNode(node) {
   const info = containerInfo(node);
   if (!info) return;
 
-  const rawText = String(node.textContent || '').trim();
+  const rawText = readableText(node);
   const model = crmEmptyStateModel({
     context: info.context,
     text: rawText,
