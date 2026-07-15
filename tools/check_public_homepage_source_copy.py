@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PAGE = ROOT / 'index.html'
 HELPER = ROOT / 'assets' / 'packages-link.js'
+FORM_SCRIPT = 'assets/public-lead-form.js?v=23'
 
 
 class HomepageParser(HTMLParser):
@@ -90,7 +91,6 @@ def main() -> None:
     if parser.menu_button_count != 1:
         raise SystemExit(f'Homepage must contain exactly one mobile menu button, found {parser.menu_button_count}')
 
-    # Preserve the original cascade: form CSS was before the homepage inline CSS.
     expected_stylesheets = [
         'assets/public-lead-form.css?v=4',
         'assets/public-homepage.css?v=1',
@@ -98,12 +98,14 @@ def main() -> None:
     if parser.stylesheets != expected_stylesheets:
         raise SystemExit(f'Unexpected homepage stylesheets: {parser.stylesheets}')
 
-    form_script = 'assets/public-lead-form.js?v=5'
     helper_script = 'assets/packages-link.js?v=1'
-    if parser.scripts.count(form_script) != 1 or parser.scripts.count(helper_script) != 1:
+    if parser.scripts.count(FORM_SCRIPT) != 1 or parser.scripts.count(helper_script) != 1:
         raise SystemExit(f'Unexpected homepage scripts: {parser.scripts}')
-    if parser.scripts.index(form_script) > parser.scripts.index(helper_script):
+    if parser.scripts.index(FORM_SCRIPT) > parser.scripts.index(helper_script):
         raise SystemExit('Homepage helper must load after the public form script')
+    for stale in ('assets/public-lead-form.js?v=4', 'assets/public-lead-form.js?v=5'):
+        if stale in page:
+            raise SystemExit(f'Stale homepage form cache marker remains: {stale}')
 
     for marker in (
         'function clientCopy()',
@@ -114,7 +116,7 @@ def main() -> None:
     ):
         require(helper, marker, 'assets/packages-link.js')
 
-    print('Homepage source copy and structural contract is valid.')
+    print('Homepage source copy and structural contract is valid with core form cache v23.')
 
 
 if __name__ == '__main__':
