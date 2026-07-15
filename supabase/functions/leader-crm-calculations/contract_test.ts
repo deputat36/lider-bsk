@@ -99,7 +99,7 @@ Deno.test('server-derived item fields are rejected', () => {
   assert(!result.ok && result.code === 'invalid_item', 'server-derived item fields must fail validation')
 })
 
-Deno.test('invalid IDs timestamps quantities and prices fail closed', () => {
+Deno.test('invalid IDs timestamps quantities prices and nulls fail closed', () => {
   assert(!validateCalculationRequest({ ...request(), request_id: 'bad' }).ok, 'bad request id accepted')
   assert(!validateCalculationRequest({ ...request(), expected_updated_at: 'bad' }).ok, 'bad timestamp accepted')
 
@@ -109,9 +109,11 @@ Deno.test('invalid IDs timestamps quantities and prices fail closed', () => {
   assert(!validateCalculationRequest({ ...base, payload: { ...payload, items: [item({ qty: 0 })] } }).ok, 'zero qty accepted')
   assert(!validateCalculationRequest({ ...base, payload: { ...payload, items: [item({ contractor_price: -1 })] } }).ok, 'negative contractor price accepted')
   assert(!validateCalculationRequest({ ...base, payload: { ...payload, items: [item({ client_price: -1 })] } }).ok, 'negative client price accepted')
+  assert(!validateCalculationRequest({ ...base, payload: { ...payload, items: [item({ contractor_price: null })] } }).ok, 'null contractor price accepted')
+  assert(!validateCalculationRequest({ ...base, payload: { ...payload, items: [item({ client_price: null })] } }).ok, 'null client price accepted')
 })
 
-Deno.test('empty and oversized item lists are rejected', () => {
+Deno.test('empty oversized lists and oversized idempotency keys are rejected', () => {
   const base = request()
   const payload = base.payload as Record<string, unknown>
   const empty = validateCalculationRequest({ ...base, payload: { ...payload, items: [] } })
@@ -122,6 +124,9 @@ Deno.test('empty and oversized item lists are rejected', () => {
     payload: { ...payload, items: Array.from({ length: MAX_CALCULATION_ITEMS + 1 }, (_, index) => item({ sort_order: index })) },
   })
   assert(!oversized.ok && oversized.code === 'invalid_payload', 'oversized rows accepted')
+
+  const longKey = validateCalculationRequest({ ...base, payload: { ...payload, idempotency_key: 'x'.repeat(161) } })
+  assert(!longKey.ok && longKey.code === 'invalid_payload', 'oversized idempotency key was truncated instead of rejected')
 })
 
 Deno.test('unknown action is stable', () => {
