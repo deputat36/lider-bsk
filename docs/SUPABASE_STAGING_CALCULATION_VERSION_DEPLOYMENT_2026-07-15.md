@@ -13,6 +13,9 @@
 - PR #329 / `7783c03b4c5918695fd439a76d191503966d4157` — safe response wrapper вместо whole-row JSON.
 - PR #330 / `b0debeea145d42e4f1b7d515c87e859c8b49a486` — canonical first-install migrations 04 и 05.
 - PR #331 / `34f9e8060bee2887c3a4d722d34988bfaddb9089` — covering FK indexes.
+- PR #332 / `78cf2e3abff6cd7760e86d69c7cb45176ced1657` — initial deployment evidence.
+- PR #333 / `dc31c27a0998c45ea2b0ad47011fdfcf90eab9f5` — acceptance verification evidence.
+- PR #334 / `739279ee51fb6b8ae8795a5183dbf43cd6617c62` — source-only browser transport и canonical permission sync.
 
 PR-head CI:
 
@@ -20,6 +23,8 @@ PR-head CI:
 - PR #329: 18/18 workflows successful.
 - PR #330: 18/18 workflows successful.
 - PR #331: 18/18 workflows successful.
+- PR #332: 17/17 workflows successful.
+- PR #334: 23/23 workflows successful.
 
 GitHub connector не вернул отдельный набор main-push runs для squash-коммитов, поэтому PR CI подтверждён, а main-push Actions отдельно не подтверждены.
 
@@ -65,6 +70,7 @@ Reference migrations 02 и 03 в staging не применялись. Чиста
 
 - требует active profile;
 - разрешён только ролям owner/admin/manager;
+- canonical permission label: `calculations.write`;
 - использует optimistic concurrency через `expected_updated_at`;
 - блокирует исходный расчёт и namespace заявки;
 - использует advisory lock по idempotency key;
@@ -111,8 +117,9 @@ Safe item response не содержит:
    - browser EXECUTE denied;
    - service-role EXECUTE present.
 
-После обоих tests:
+После обоих tests и после Edge redeploy:
 
+- Auth users — 0;
 - profiles — 0;
 - leads — 0;
 - needs — 0;
@@ -137,18 +144,48 @@ Performance advisors после migration 06:
 
 ## Edge deployment
 
-Развёрнуто только в staging:
+Текущий active deployment только в staging:
 
 - slug: `leader-crm-calculations`;
 - id: `91b4c99c-a03e-4cfb-ad2a-0ca4de29b7ea`;
-- version: `1`;
+- version: `3`;
 - status: `ACTIVE`;
 - `verify_jwt=true`;
-- deployment hash: `5685a77b94f4cf742e3e14038b8d519fc13972a56553d134e6e8256815715780`.
+- deployment hash: `0df6d23cc6d8b19903babbf711bb1da765111ff1f64eb7f8e970f1bcc9760ee4`.
 
-Source имеет exact staging lock `otulfnouybahfnsycxqn` и возвращает `wrong_environment` при другом `SUPABASE_URL`.
+Source имеет exact staging lock `otulfnouybahfnsycxqn`, canonical permission `calculations.write` и возвращает `wrong_environment` при другом `SUPABASE_URL`.
+
+### Superseded v2
+
+После PR #334 был выполнен staging-only redeploy v2 для синхронизации permission label. При ручной упаковке deploy payload в `contract.ts` попала опечатка `normalizeRole(value)` вместо корректного GitHub source `normalizeRole(role)`.
+
+Дефект обнаружен немедленной post-deploy проверкой bundle. v2 был сразу заменён v3 до подключения transport к UI и до authenticated E2E.
+
+Подтверждения отсутствия воздействия:
+
+- staging Auth users — 0;
+- staging profiles/business rows/receipts — 0;
+- Edge logs за доступный период — пустые;
+- production UI не загружает staging transport;
+- production function отсутствует.
+
+v2 не считается валидированным deployment и не должен использоваться как rollback target.
 
 В production функция `leader-crm-calculations` отсутствует. Production Edge Functions, database schema, data, RLS, grants, Auth и policies не менялись.
+
+## Browser transport
+
+Source-only transport подготовлен PR #334:
+
+- exact staging environment lock;
+- текущая JWT-сессия;
+- вызов только `leader-crm-calculations`;
+- минимальный command allowlist;
+- client totals/server IDs не передаются;
+- create/replay/error mapping;
+- production `calculations.js` и рабочая кнопка не изменены.
+
+Transport ещё не подключён к CRM UI.
 
 ## HTTP E2E status
 
@@ -162,7 +199,7 @@ Source имеет exact staging lock `otulfnouybahfnsycxqn` и возвраща�
 
 Причина: staging содержит 0 Auth users, а подключённый Supabase connector не предоставляет безопасные create/delete Auth user operations.
 
-Попытка внешнего unauthenticated smoke из текущего execution container не достигла Supabase из-за DNS resolution failure. Edge logs остались пустыми. Этот smoke не считается пройденным и не заменяет ранее подтверждённый gateway smoke для `leader-crm-design`.
+Попытка внешнего unauthenticated smoke из текущего execution container ранее не достигла Supabase из-за DNS resolution failure. Этот smoke не считается пройденным.
 
 ## Remaining gates
 
@@ -171,8 +208,10 @@ Source имеет exact staging lock `otulfnouybahfnsycxqn` и возвраща�
 1. вручную создать временного Auth user только в staging;
 2. создать active staging CRM profile с одной из ролей owner/admin/manager;
 3. выполнить authenticated create/replay/conflict/forbidden/inactive tests;
-4. удалить fixtures, profile, sessions и Auth user;
-5. подготовить staging-only UI transport с exact environment lock;
-6. отдельно принять решение о production migration, production Edge deployment и включении CRM-кнопки.
+4. проверить safe Network response и Edge logs;
+5. удалить fixtures, profile, sessions и Auth user;
+6. подтвердить нулевые staging counters;
+7. только затем подключать transport к отдельному staging UI;
+8. отдельно принять решение о production migration, production Edge deployment и включении CRM-кнопки.
 
 Production rollout остаётся запрещён без отдельного явного решения владельца.
