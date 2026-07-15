@@ -50,8 +50,7 @@ jobs:
             tools/check_public_prices_css.py \
             tools/check_public_contacts_assets.py \
             tools/check_all_public_form_cache_versions.py \
-            tools/check_public_cache_docs_current.py \
-            .github/workflows/public-cache-docs-current-check.yml
+            tools/check_public_cache_docs_current.py
           if git diff --cached --quiet; then
             echo 'Core cache markers are already current.'
             exit 0
