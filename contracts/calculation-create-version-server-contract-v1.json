@@ -1,5 +1,5 @@
 {
-  "contract_version": "1.1.0",
+  "contract_version": "1.1.1",
   "status": "staging_deployed_production_gated",
   "action": "calculation.create_version",
   "purpose": "Create a new immutable calculation version without overwriting the source calculation or its items.",
@@ -11,7 +11,8 @@
   },
   "transport": {
     "edge_function": "leader-crm-calculations",
-    "staging_version": 1,
+    "staging_version": 3,
+    "staging_deployment_hash": "0df6d23cc6d8b19903babbf711bb1da765111ff1f64eb7f8e970f1bcc9760ee4",
     "verify_jwt": true,
     "browser_calls_rpc_directly": false,
     "service_role_server_only": true,
@@ -103,8 +104,18 @@
     "security_warn_error": 0,
     "performance_warn_error": 0,
     "authenticated_http_e2e_passed": false,
-    "auth_gate_reason": "temporary staging Auth user is not available"
+    "auth_gate_reason": "temporary staging Auth user is not available",
+    "active_edge_logs_empty_at_v3_verification": true,
+    "staging_auth_users_at_v3_verification": 0,
+    "staging_business_rows_at_v3_verification": 0
   },
+  "superseded_deployments": [
+    {
+      "version": 2,
+      "valid_for_rollback": false,
+      "reason": "manual deployment packaging typo normalizeRole(value); immediately replaced by v3 before UI wiring or authenticated use"
+    }
+  ],
   "remaining_gates": [
     "staging browser transport remains source-only until authenticated HTTP E2E",
     "temporary staging Auth user and active test profile",
@@ -118,6 +129,7 @@
     "app_first": true,
     "disable_create_version_action": true,
     "retain_created_versions_and_receipts_as_evidence": true,
-    "no_automatic_deletion_or_renumbering": true
+    "no_automatic_deletion_or_renumbering": true,
+    "staging_version_2_is_not_a_valid_rollback_target": true
   }
 }
