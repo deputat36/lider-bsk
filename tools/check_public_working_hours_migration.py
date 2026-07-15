@@ -2,10 +2,12 @@
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlsplit
+import re
 
 ROOT = Path(__file__).resolve().parents[1]
 PAGE = ROOT / 'rezhim-raboty-tablichki-borisoglebsk.html'
 SHARED_CSS = ROOT / 'assets' / 'public-landing.css'
+DETAIL_CSS = ROOT / 'assets' / 'public-entry-detail.css'
 FORM_SCRIPT = ROOT / 'assets' / 'public-lead-form.js'
 
 
@@ -52,6 +54,7 @@ def forbid(text: str, marker: str, source: str = 'page') -> None:
 def main() -> None:
     text = PAGE.read_text(encoding='utf-8')
     shared = SHARED_CSS.read_text(encoding='utf-8')
+    detail = DETAIL_CSS.read_text(encoding='utf-8')
     form_script = FORM_SCRIPT.read_text(encoding='utf-8')
     parser = PageParser()
     parser.feed(text)
@@ -60,6 +63,7 @@ def main() -> None:
         '<title>Режим работы и таблички в Борисоглебске — наклейки на дверь, график, контакты | РА Лидер</title>',
         '<meta name="description" content="Изготовим режим работы, табличку на дверь',
         '<link rel="canonical" href="https://www.lider-bsk.ru/rezhim-raboty-tablichki-borisoglebsk.html">',
+        '<body class="page-working-hours-detail">',
         '<script type="application/ld+json">',
         '"@type":"Service"',
         'id="leader-lead-form" data-leader-lead-form',
@@ -73,11 +77,22 @@ def main() -> None:
     ):
         require(text, marker)
 
-    if parser.stylesheets[:2] != [
+    expected_stylesheets = [
         'assets/public-landing.css?v=1',
         'assets/public-lead-form.css?v=4',
-    ]:
-        raise SystemExit(f'Unexpected stylesheet order: {parser.stylesheets[:2]}')
+        'assets/public-entry-detail.css?v=1',
+    ]
+    if parser.stylesheets[:3] != expected_stylesheets:
+        raise SystemExit(f'Unexpected stylesheet order: {parser.stylesheets[:3]}')
+
+    if parser.inline_styles:
+        raise SystemExit('Working hours page must not contain inline CSS')
+    if re.search(
+        r'<script(?![^>]*\bsrc=)(?![^>]*\btype=["\']application/ld\+json["\'])[^>]*>',
+        text,
+        flags=re.I,
+    ):
+        raise SystemExit('Working hours page must not contain executable inline JavaScript')
 
     for marker in (
         'assets/public-lead-form.js?v=4',
@@ -88,10 +103,6 @@ def main() -> None:
         'function prefill()',
     ):
         forbid(text, marker)
-
-    inline_size = sum(len(style.strip()) for style in parser.inline_styles)
-    if inline_size > 4200:
-        raise SystemExit(f'Inline CSS remains too large: {inline_size} characters')
 
     for marker in (
         '--leader-black:#1a1a1a',
@@ -104,6 +115,16 @@ def main() -> None:
         '.footer',
     ):
         require(shared, marker, 'assets/public-landing.css')
+
+    for marker in (
+        'body.page-entrance-detail,body.page-window-stickers-detail,body.page-working-hours-detail{--entry-grid-columns:1.02fr .98fr;--entry-section-head-width:840px}',
+        '.hero{padding:74px 0 58px}',
+        '.hero__grid{position:relative;z-index:1;grid-template-columns:var(--entry-grid-columns)',
+        '.section-head{max-width:var(--entry-section-head-width);margin-bottom:28px}',
+        '.faq details{background:#fff;border:1px solid var(--leader-line)',
+        '@media(max-width:920px){body.page-entrance-detail .steps{grid-template-columns:1fr}h1{letter-spacing:-1px}.header__in{min-height:66px}}',
+    ):
+        require(detail, marker, 'assets/public-entry-detail.css')
 
     require(
         form_script,
@@ -118,7 +139,7 @@ def main() -> None:
         if not (ROOT / path).is_file():
             raise SystemExit(f'Broken local link: {href}')
 
-    print('Working hours shared CSS migration contract is valid.')
+    print('Working hours external detail CSS contract is valid.')
 
 
 if __name__ == '__main__':

@@ -2,10 +2,12 @@
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlsplit
+import re
 
 ROOT = Path(__file__).resolve().parents[1]
 PAGE = ROOT / 'oformlenie-vhoda-borisoglebsk.html'
 SHARED_CSS = ROOT / 'assets' / 'public-landing.css'
+DETAIL_CSS = ROOT / 'assets' / 'public-entry-detail.css'
 FORM_SCRIPT = ROOT / 'assets' / 'public-lead-form.js'
 
 
@@ -52,6 +54,7 @@ def forbid(text: str, marker: str, source: str = 'page') -> None:
 def main() -> None:
     text = PAGE.read_text(encoding='utf-8')
     shared = SHARED_CSS.read_text(encoding='utf-8')
+    detail = DETAIL_CSS.read_text(encoding='utf-8')
     form_script = FORM_SCRIPT.read_text(encoding='utf-8')
     parser = PageParser()
     parser.feed(text)
@@ -60,6 +63,7 @@ def main() -> None:
         '<title>Оформление входа в Борисоглебске — вывески, таблички, режим работы, витрины | РА Лидер</title>',
         '<meta name="description" content="Оформление входной группы',
         '<link rel="canonical" href="https://www.lider-bsk.ru/oformlenie-vhoda-borisoglebsk.html">',
+        '<body class="page-entrance-detail">',
         '<script type="application/ld+json">',
         '"@type":"Service"',
         'id="leader-lead-form" data-leader-lead-form',
@@ -67,14 +71,26 @@ def main() -> None:
         'assets/public-lead-form.js?v=5',
         'номер обращения — его можно использовать для быстрой проверки',
         'privacy.html',
+        'Как проходит заказ',
     ):
         require(text, marker)
 
-    if parser.stylesheets[:2] != [
+    expected_stylesheets = [
         'assets/public-landing.css?v=1',
         'assets/public-lead-form.css?v=4',
-    ]:
-        raise SystemExit(f'Unexpected stylesheet order: {parser.stylesheets[:2]}')
+        'assets/public-entry-detail.css?v=1',
+    ]
+    if parser.stylesheets[:3] != expected_stylesheets:
+        raise SystemExit(f'Unexpected stylesheet order: {parser.stylesheets[:3]}')
+
+    if parser.inline_styles:
+        raise SystemExit('Entrance page must not contain inline CSS')
+    if re.search(
+        r'<script(?![^>]*\bsrc=)(?![^>]*\btype=["\']application/ld\+json["\'])[^>]*>',
+        text,
+        flags=re.I,
+    ):
+        raise SystemExit('Entrance page must not contain executable inline JavaScript')
 
     for marker in (
         'assets/public-lead-form.js?v=4',
@@ -84,10 +100,6 @@ def main() -> None:
         'найдёт вашу заявку в CRM',
     ):
         forbid(text, marker)
-
-    inline_size = sum(len(style.strip()) for style in parser.inline_styles)
-    if inline_size > 4500:
-        raise SystemExit(f'Inline CSS remains too large: {inline_size} characters')
 
     for marker in (
         '--leader-black:#1a1a1a',
@@ -100,6 +112,16 @@ def main() -> None:
         '.footer',
     ):
         require(shared, marker, 'assets/public-landing.css')
+
+    for marker in (
+        'body.page-entrance-detail{--entry-grid-columns:1.04fr .96fr;--entry-section-head-width:820px}',
+        'body.page-entrance-detail .btn--accent{box-shadow:0 14px 32px rgba(255,106,0,.28)}',
+        'body.page-entrance-detail .hero,body.page-window-stickers-detail .hero{position:relative;overflow:hidden}',
+        '.hero__grid{position:relative;z-index:1;grid-template-columns:var(--entry-grid-columns)',
+        'body.page-entrance-detail .steps{counter-reset:s;display:grid;grid-template-columns:repeat(4,1fr)',
+        '@media(max-width:920px){body.page-entrance-detail .steps{grid-template-columns:1fr}',
+    ):
+        require(detail, marker, 'assets/public-entry-detail.css')
 
     require(
         form_script,
@@ -114,7 +136,7 @@ def main() -> None:
         if not (ROOT / path).is_file():
             raise SystemExit(f'Broken local link: {href}')
 
-    print('Entrance shared CSS migration contract is valid.')
+    print('Entrance external detail CSS contract is valid.')
 
 
 if __name__ == '__main__':
