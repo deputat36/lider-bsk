@@ -3,7 +3,8 @@
 Scope: RA Lider CRM analytics.
 
 Related issues: #196, #197, #198, #199.
-Source audit: `docs/PUBLIC_LEAD_FUNNEL_AGGREGATES_READONLY_2026-07-05.md`.
+Current source audit: `docs/PUBLIC_LEAD_FUNNEL_AGGREGATES_READONLY_2026-07-15.md`.
+Previous source audit: `docs/PUBLIC_LEAD_FUNNEL_AGGREGATES_READONLY_2026-07-05.md`.
 Current normalized dry run: `docs/CRM_LEAD_ANALYTICS_NORMALIZED_DRY_RUN_READONLY_2026-07-15.md`.
 Previous normalized dry run: `docs/CRM_LEAD_ANALYTICS_NORMALIZED_DRY_RUN_READONLY_2026-07-10.md`.
 
