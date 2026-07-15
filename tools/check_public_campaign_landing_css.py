@@ -82,7 +82,7 @@ for page_name, expected in PAGES.items():
 
     if html.count('<article class="card">') != 6:
         raise SystemExit(f'{page_name}: expected six campaign cards')
-    if html.count('class="hero-grid"') != 1:
+    if html.count('class="container hero-grid"') != 1:
         raise SystemExit(f'{page_name}: hero grid mismatch')
     if html.count('class="container cta"') != 1:
         raise SystemExit(f'{page_name}: CTA grid mismatch')
