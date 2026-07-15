@@ -1,0 +1,32 @@
+name: CRM calculation FK indexes check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/staging-migrations/20260715_06_calculation_version_fk_indexes.sql'
+      - 'docs/SUPABASE_STAGING_CALCULATION_VERSION_FK_INDEXES_2026-07-15.md'
+      - 'tools/check_crm_calculation_fk_indexes.py'
+      - '.github/workflows/crm-calculation-fk-indexes-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/staging-migrations/20260715_06_calculation_version_fk_indexes.sql'
+      - 'docs/SUPABASE_STAGING_CALCULATION_VERSION_FK_INDEXES_2026-07-15.md'
+      - 'tools/check_crm_calculation_fk_indexes.py'
+      - '.github/workflows/crm-calculation-fk-indexes-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-calculation-fk-indexes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compile calculation FK index checker
+        run: python3 -m py_compile tools/check_crm_calculation_fk_indexes.py
+
+      - name: Validate focused staging FK indexes
+        run: python3 tools/check_crm_calculation_fk_indexes.py
