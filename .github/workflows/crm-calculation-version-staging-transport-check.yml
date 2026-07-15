@@ -15,7 +15,11 @@ on:
       - 'supabase/config.toml'
       - 'tools/test_calculation_version_staging_transport.mjs'
       - 'tools/check_calculation_version_staging_transport.py'
+      - 'tools/run_calculation_version_staging_auth_e2e.mjs'
+      - 'tools/test_calculation_version_staging_auth_e2e_runner.mjs'
+      - 'tools/check_calculation_version_staging_auth_e2e_runner.py'
       - 'docs/CRM_CALCULATION_VERSION_STAGING_TRANSPORT_RUNBOOK_2026-07-15.md'
+      - 'docs/CRM_CALCULATION_VERSION_STAGING_AUTH_E2E_RUNNER_2026-07-15.md'
       - '.github/workflows/crm-calculation-version-staging-transport-check.yml'
   push:
     branches: [main]
@@ -31,7 +35,11 @@ on:
       - 'supabase/config.toml'
       - 'tools/test_calculation_version_staging_transport.mjs'
       - 'tools/check_calculation_version_staging_transport.py'
+      - 'tools/run_calculation_version_staging_auth_e2e.mjs'
+      - 'tools/test_calculation_version_staging_auth_e2e_runner.mjs'
+      - 'tools/check_calculation_version_staging_auth_e2e_runner.py'
       - 'docs/CRM_CALCULATION_VERSION_STAGING_TRANSPORT_RUNBOOK_2026-07-15.md'
+      - 'docs/CRM_CALCULATION_VERSION_STAGING_AUTH_E2E_RUNNER_2026-07-15.md'
       - '.github/workflows/crm-calculation-version-staging-transport-check.yml'
 
 permissions:
@@ -49,6 +57,12 @@ jobs:
       - name: Test browser transport behavior
         run: node tools/test_calculation_version_staging_transport.mjs
 
+      - name: Check authenticated E2E runner syntax
+        run: node --check tools/run_calculation_version_staging_auth_e2e.mjs
+
+      - name: Test authenticated E2E runner offline
+        run: node tools/test_calculation_version_staging_auth_e2e_runner.mjs
+
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
@@ -59,8 +73,13 @@ jobs:
       - name: Test Edge contract after permission sync
         run: deno test supabase/functions/leader-crm-calculations/contract_test.ts
 
-      - name: Compile source checker
-        run: python3 -m py_compile tools/check_calculation_version_staging_transport.py
+      - name: Compile source checkers
+        run: |
+          python3 -m py_compile tools/check_calculation_version_staging_transport.py
+          python3 -m py_compile tools/check_calculation_version_staging_auth_e2e_runner.py
 
       - name: Validate environment lock, minimal payload and production boundary
         run: python3 tools/check_calculation_version_staging_transport.py
+
+      - name: Validate credential boundary and offline E2E runner contract
+        run: python3 tools/check_calculation_version_staging_auth_e2e_runner.py
