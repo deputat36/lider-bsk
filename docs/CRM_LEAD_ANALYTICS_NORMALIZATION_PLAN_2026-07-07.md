@@ -4,7 +4,8 @@ Scope: RA Lider CRM analytics.
 
 Related issues: #196, #197, #198, #199.
 Source audit: `docs/PUBLIC_LEAD_FUNNEL_AGGREGATES_READONLY_2026-07-05.md`.
-Normalized dry run: `docs/CRM_LEAD_ANALYTICS_NORMALIZED_DRY_RUN_READONLY_2026-07-10.md`.
+Current normalized dry run: `docs/CRM_LEAD_ANALYTICS_NORMALIZED_DRY_RUN_READONLY_2026-07-15.md`.
+Previous normalized dry run: `docs/CRM_LEAD_ANALYTICS_NORMALIZED_DRY_RUN_READONLY_2026-07-10.md`.
 
 This is a planning and implementation-status document. Do not rewrite existing `leader_leads.service` or `leader_leads.source` values without explicit data-change approval.
 
@@ -43,11 +44,13 @@ Still in progress:
 - Manual browser verification remains required before closing #198 and #199.
 - `patches/crm-lead-derived-search.patch` remains as documentation of the minimal safe patch for `crm/v4/assets/v4/leads.js`.
 
-## 2026-07-10 read-only normalized dry run
+## Current read-only normalized dry run
 
-A read-only SQL dry run has been captured in `docs/CRM_LEAD_ANALYTICS_NORMALIZED_DRY_RUN_READONLY_2026-07-10.md`.
+The current full-table control snapshot is captured in `docs/CRM_LEAD_ANALYTICS_NORMALIZED_DRY_RUN_READONLY_2026-07-15.md`.
 
-It gives database-side control totals for normalized categories without changing raw values.
+It records 13 leads and explains the only change from the 2026-07-10 snapshot: one manual CRM lead increased `Баннеры` from 3 to 4 and `Ручной ввод` from 4 to 5.
+
+The snapshot gives database-side control totals for normalized categories without changing raw values.
 
 Important comparison boundary:
 
