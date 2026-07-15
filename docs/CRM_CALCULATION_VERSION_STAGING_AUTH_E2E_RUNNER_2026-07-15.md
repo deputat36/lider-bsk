@@ -39,7 +39,8 @@ Runner:
 - не использует browser table writes, service role или direct RPC;
 - не печатает email, пароль, publishable key или JWT;
 - выполняет best-effort logout;
-- сообщает ID созданной staging-версии для последующего cleanup.
+- проверяет, что safe response относится к точному `source_calculation_id`;
+- сообщает ID исходной и созданной staging-версий для последующего cleanup.
 
 ## Подготовка
 
@@ -103,14 +104,15 @@ Remove-Item Env:LIDER_STAGING_PASSWORD
 Для active manager/admin/owner runner проверяет:
 
 1. HTTP `201` — создана новая версия;
-2. exact safe response projection;
+2. exact safe response projection, включая точный `source_calculation_id`;
 3. HTTP `200` — exact replay без дубликата;
-4. тот же calculation ID при replay;
+4. тот же calculation ID и тот же source calculation ID при replay;
 5. HTTP `409 idempotency_conflict` при изменённом payload и том же key;
 6. HTTP `409 source_changed` при устаревшем `expected_updated_at`.
 
 Успешный итог содержит:
 
+- `sourceCalculationId`;
 - `createdCalculationId`;
 - `requestId`;
 - `cleanupRequired: true`.
@@ -169,7 +171,7 @@ GitHub Actions не выполняет сетевой E2E и не требует
 CI запускает только:
 
 - syntax check runner-а;
-- offline Node tests конфигурации, environment lock, command minimization и safe response projection;
+- offline Node tests конфигурации, environment lock, command minimization, source binding и safe response projection;
 - Python source checker, запрещающий production ref, service role и secret-like material.
 
 Authenticated HTTP E2E будет считаться завершённым только после фактического запуска runner-а с временным staging user, проверки Edge logs/receipt correlation и полного cleanup.
