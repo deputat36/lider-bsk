@@ -1,0 +1,41 @@
+name: CRM management attention check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'crm/v4/index.html'
+      - 'crm/v4/assets/v4/management-dashboard-v3.js'
+      - 'crm/v4/assets/v4/management-attention-model-v1.js'
+      - 'crm/v4/assets/v4/status-transitions-v1.js'
+      - 'tools/test_management_attention_queue.mjs'
+      - 'tools/check_management_attention_queue.py'
+      - 'docs/CRM_MANAGEMENT_ATTENTION_QUEUE_2026-07-15.md'
+      - 'docs/STATUS.md'
+      - '.github/workflows/crm-management-attention-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'crm/v4/index.html'
+      - 'crm/v4/assets/v4/management-dashboard-v3.js'
+      - 'crm/v4/assets/v4/management-attention-model-v1.js'
+      - 'crm/v4/assets/v4/status-transitions-v1.js'
+      - 'tools/test_management_attention_queue.mjs'
+      - 'tools/check_management_attention_queue.py'
+      - 'docs/CRM_MANAGEMENT_ATTENTION_QUEUE_2026-07-15.md'
+      - 'docs/STATUS.md'
+      - '.github/workflows/crm-management-attention-check.yml'
+
+jobs:
+  management-attention-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate unique prioritized management queue
+        run: |
+          set -euo pipefail
+          node --check crm/v4/assets/v4/management-attention-model-v1.js
+          node --check crm/v4/assets/v4/management-dashboard-v3.js
+          node --check tools/test_management_attention_queue.mjs
+          node tools/test_management_attention_queue.mjs
+          python3 tools/check_management_attention_queue.py
