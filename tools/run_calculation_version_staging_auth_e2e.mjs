@@ -23,7 +23,7 @@ const ITEM_FIELDS = new Set([
   'created_at', 'updated_at'
 ]);
 const TOP_LEVEL_FIELDS = new Set([
-  'ok', 'request_id', 'calculation', 'items', 'idempotent_replay'
+  'ok', 'request_id', 'source_calculation_id', 'calculation', 'items', 'idempotent_replay'
 ]);
 
 function text(value) {
@@ -124,10 +124,15 @@ function exactKeys(value, allowed, label) {
   }
 }
 
-export function validateSafeCalculationResponse(value) {
+export function validateSafeCalculationResponse(value, expectedSourceCalculationId = '') {
   const result = object(value);
   if (!result || result.ok !== true) throw new Error('safe_response_not_success');
   exactKeys(result, TOP_LEVEL_FIELDS, 'top_level');
+  const sourceCalculationId = text(result.source_calculation_id);
+  if (!sourceCalculationId) throw new Error('source_calculation_id_missing');
+  if (text(expectedSourceCalculationId) && sourceCalculationId !== text(expectedSourceCalculationId)) {
+    throw new Error('source_calculation_id_mismatch');
+  }
   exactKeys(result.calculation, CALCULATION_FIELDS, 'calculation');
   if (!Array.isArray(result.items) || result.items.length < 1) throw new Error('items_missing');
   for (const item of result.items) exactKeys(item, ITEM_FIELDS, 'item');
@@ -201,12 +206,12 @@ async function runAllowed(config, accessToken) {
   const command = buildRunnerCommand(config);
   const created = await invoke(config, accessToken, command);
   expectResponse('create', created, 201);
-  validateSafeCalculationResponse(created.body);
+  validateSafeCalculationResponse(created.body, config.sourceCalculationId);
   if (created.body.idempotent_replay !== false) throw new Error('create_replay_flag_invalid');
 
   const replay = await invoke(config, accessToken, command);
   expectResponse('replay', replay, 200);
-  validateSafeCalculationResponse(replay.body);
+  validateSafeCalculationResponse(replay.body, config.sourceCalculationId);
   if (replay.body.idempotent_replay !== true) throw new Error('replay_flag_missing');
   if (replay.body.calculation.id !== created.body.calculation.id) throw new Error('replay_calculation_changed');
 
@@ -227,6 +232,7 @@ async function runAllowed(config, accessToken) {
   return Object.freeze({
     scenario: 'allowed',
     statuses: { create: 201, replay: 200, conflict: 409, stale: 409 },
+    sourceCalculationId: created.body.source_calculation_id,
     createdCalculationId: created.body.calculation.id,
     requestId: command.request_id,
     cleanupRequired: true
