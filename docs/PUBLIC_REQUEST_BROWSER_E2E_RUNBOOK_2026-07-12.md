@@ -2,13 +2,15 @@
 
 Контур: публичный сайт РА «Лидер» → `leader-public-lead` → `leader_leads` → `leader_public_lead_audit`.
 
-Связано: #142, #200.
+Связано: #142, #200, #206.
 
 ## Статус
 
 Runbook подготовлен, но production E2E ещё не выполнен.
 
-Не выполнять отправку без явного подтверждения владельца. Даже тестовая форма создаёт production-запись в `leader_leads` и audit-событие. В рамках подготовки этого документа заявки не отправлялись, данные не изменялись.
+Не выполнять отправку без явного подтверждения владельца. Даже тестовая форма создаёт production-запись в `leader_leads` и audit-событие. В рамках подготовки и обновления этого документа заявки не отправлялись, данные не изменялись.
+
+Read-only baseline обновлён 2026-07-15. Новая последняя запись создана вручную в CRM и не является доказательством или опровержением работы публичной формы.
 
 ## Что нужно доказать
 
@@ -231,13 +233,17 @@ order by created_at asc;
 
 ## Текущая production-база до теста
 
-Read-only snapshot на 2026-07-12:
+Read-only snapshot обновлён 2026-07-15:
 
+- Supabase project `ofewxuqfjhamgerwzull`: `ACTIVE_HEALTHY`;
 - `leader-public-lead`: ACTIVE v10, `verify_jwt=false`;
-- `leader_leads`: 12 строк;
+- `leader_leads`: 13 строк;
 - с `request_id`: 1;
 - с `source_page_path`: 1;
 - с заполненным `utm_source`: 6;
-- последняя заявка: 2026-06-28 10:32:31 UTC.
+- последняя запись: 2026-07-15 09:55:01 UTC, источник `Вручную`, `page_url = 'CRM v4 / ручное создание'`;
+- последняя trace-заявка с `request_id`: 2026-06-28 10:32:49 UTC, `source_page_path = '/reklama-v-soobshchestvah-borisoglebska.html'`;
+- в `leader_public_lead_audit` по-прежнему одно событие `accepted / lead_insert_created` от 2026-06-28 10:32:49 UTC;
+- новая ручная запись не подтверждает и не опровергает published browser E2E.
 
 CRM UI, `nav_*`, Supabase schema, RLS, grants, Auth и Edge Function этим runbook не изменяются.

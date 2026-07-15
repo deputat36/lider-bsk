@@ -34,6 +34,7 @@ def main() -> int:
     runbook_markers = (
         "Runbook подготовлен, но production E2E ещё не выполнен",
         "Не выполнять отправку без явного подтверждения владельца",
+        "Read-only baseline обновлён 2026-07-15",
         "https://www.lider-bsk.ru/request.html?utm_source=manual_e2e",
         "utm_medium=browser",
         "utm_campaign=public_request_chain_20260712",
@@ -50,11 +51,24 @@ def main() -> int:
         "reason = 'request_id_conflict'",
         "Не удалять и не изменять production-запись через SQL",
         "Runbook содержит только read-only SQL",
+        "Supabase project `ofewxuqfjhamgerwzull`: `ACTIVE_HEALTHY`",
         "leader-public-lead`: ACTIVE v10",
-        "`leader_leads`: 12 строк",
+        "`leader_leads`: 13 строк",
+        "последняя запись: 2026-07-15 09:55:01 UTC, источник `Вручную`",
+        "последняя trace-заявка с `request_id`: 2026-06-28 10:32:49 UTC",
+        "одно событие `accepted / lead_insert_created` от 2026-06-28 10:32:49 UTC",
+        "новая ручная запись не подтверждает и не опровергает published browser E2E",
     )
     for marker in runbook_markers:
         require(runbook, marker, str(RUNBOOK.relative_to(ROOT)), errors)
+
+    for stale in (
+        "`leader_leads`: 12 строк",
+        "Read-only snapshot на 2026-07-12",
+        "последняя заявка: 2026-06-28 10:32:31 UTC",
+    ):
+        if stale in runbook:
+            errors.append(f"Stale baseline marker {stale!r} remains in {RUNBOOK.relative_to(ROOT)}")
 
     destructive_sql = (
         "delete from public.leader_leads",
@@ -112,7 +126,7 @@ def main() -> int:
         print("\n".join(errors))
         return 1
 
-    print("Public request browser E2E runbook and source contracts are valid with form cache v23.")
+    print("Public request browser E2E runbook, refreshed 2026-07-15 baseline and source contracts are valid with form cache v23.")
     return 0
 
 
