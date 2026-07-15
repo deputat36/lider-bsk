@@ -2,6 +2,11 @@ import { supabaseClient } from './supabase-client.js';
 import { timeout, friendlyError } from './api.js';
 import { v4State, setState } from './state.js';
 import { byId, setStatus, toast } from './ui.js';
+import {
+  savedCalculationDetailsCopy,
+  savedCalculationItemReview,
+  savedCalculationPositionLabel
+} from './calculation-saved-review-model-v1.js';
 
 const CALC_FIELDS = 'id,lead_id,need_id,client_id,title,status,version_number,client_total,contractor_cost,profit,margin_percent,warning_level,warnings,public_comment,internal_comment,commercial_offer_id,order_id,created_by,updated_by,created_at,updated_at';
 const ITEM_FIELDS = 'id,calculation_id,lead_id,catalog_id,category,item_type,name,unit,qty,contractor_price,contractor_sum,markup_percent,client_price,client_sum,profit,margin_percent,comment,data,sort_order,created_at,updated_at';
@@ -83,12 +88,13 @@ function calcClass(calc) {
 }
 
 function renderCalc(calc) {
-  const active = calc.id === selectedId ? ' is-active' : '';
+  const active = calc.id === selectedId;
   return `
-    <article class="v4-saved-calc-card${active}${calcClass(calc)}">
+    <article class="v4-saved-calc-card${active ? ' is-active' : ''}${calcClass(calc)}">
       <div>
         <div class="v4-saved-calc-title"><h4>${esc(calc.title || 'Расчёт')}</h4><span>${esc(calc.status || 'Черновик')}</span></div>
         <div class="v4-saved-calc-meta">
+          <span><b>Версия:</b> ${Number(calc.version_number || 1)}</span>
           <span><b>Клиенту:</b> ${money(calc.client_total)}</span>
           <span><b>Себест.:</b> ${money(calc.contractor_cost)}</span>
           <span><b>Прибыль:</b> ${money(calc.profit)}</span>
@@ -98,41 +104,55 @@ function renderCalc(calc) {
         </div>
       </div>
       <div class="v4-saved-calc-actions">
-        <button type="button" data-v2-calc-details="${esc(calc.id)}">Состав</button>
-        <button type="button" data-v2-calc-refresh>Обновить</button>
+        <button type="button" data-v2-calc-details="${esc(calc.id)}" aria-expanded="${active ? 'true' : 'false'}" aria-controls="savedCalculationDetails">${active ? 'Обновить состав' : 'Показать состав'}</button>
       </div>
     </article>`;
 }
 
+function renderItemName(item, index) {
+  const review = savedCalculationItemReview(item, index);
+  const characteristics = review.characteristics.length
+    ? `<ul class="v4-saved-calc-characteristics">${review.characteristics.map((value) => `<li>${esc(value)}</li>`).join('')}</ul>`
+    : '';
+  return `
+    <div class="v4-saved-calc-item-title"><span class="v4-saved-calc-row-number">${review.rowNumber}</span><b>${esc(review.name)}</b></div>
+    <div class="v4-saved-calc-item-tags"><span>${esc(review.category)}</span><span>${esc(review.itemType)}</span>${review.modeLabel && review.modeLabel !== review.itemType ? `<span>${esc(review.modeLabel)}</span>` : ''}${review.priceSource ? `<span>${esc(review.priceSource)}</span>` : ''}</div>
+    ${item.comment ? `<small>${esc(item.comment)}</small>` : ''}
+    ${characteristics}
+  `;
+}
+
 function renderDetails() {
   const calc = (v4State.calculations || []).find((item) => item.id === selectedId);
-  if (!selectedId) return '<div class="v4-empty">Выберите расчёт и нажмите «Состав», чтобы посмотреть строки.</div>';
+  if (!selectedId) return '<div class="v4-empty">Выберите расчёт и нажмите «Показать состав», чтобы проверить сохранённые строки.</div>';
   if (detailsBusy) return '<div class="v4-empty">Загружаю состав расчёта...</div>';
   if (detailsError) return `<div class="v4-empty is-error">${esc(detailsError)}</div>`;
   if (!calc) return '<div class="v4-empty is-error">Расчёт не найден.</div>';
   if (!selectedItems.length) return '<div class="v4-empty">В расчёте нет сохранённых позиций.</div>';
 
-  const rows = selectedItems.map((item) => `
-    <tr>
-      <td>${esc(item.name || 'Позиция')}<small>${esc(item.comment || '')}</small></td>
-      <td>${esc(item.category || '—')}</td>
-      <td>${esc(item.unit || 'шт')}</td>
-      <td>${Number(item.qty || 0).toLocaleString('ru-RU')}</td>
-      <td>${money(item.contractor_price)}</td>
-      <td>${money(item.client_price)}</td>
-      <td>${money(item.client_sum)}</td>
-      <td>${Math.round(Number(item.margin_percent || 0))}%</td>
-    </tr>`).join('');
+  const rows = selectedItems.map((item, index) => {
+    const review = savedCalculationItemReview(item, index);
+    return `
+      <tr aria-label="${esc(review.rowLabel)}">
+        <td data-label="Позиция">${renderItemName(item, index)}</td>
+        <td data-label="Единица">${esc(item.unit || 'шт')}</td>
+        <td data-label="Количество">${Number(item.qty || 0).toLocaleString('ru-RU')}</td>
+        <td data-label="Себестоимость за единицу">${money(item.contractor_price)}</td>
+        <td data-label="Цена клиенту за единицу">${money(item.client_price)}</td>
+        <td data-label="Сумма клиенту">${money(item.client_sum)}</td>
+        <td data-label="Маржа">${Math.round(Number(item.margin_percent || 0))}%</td>
+      </tr>`;
+  }).join('');
 
   return `
-    <div class="v4-saved-calc-details">
+    <div id="savedCalculationDetails" class="v4-saved-calc-details">
       <div class="v4-subcard-head">
-        <div><h3>Состав расчёта: ${esc(calc.title || 'Расчёт')}</h3><p>Создан: ${dateRu(calc.created_at)}. Эти строки используются для КП и заказа.</p></div>
-        <button type="button" data-v2-calc-close>Скрыть состав</button>
+        <div><h3>Состав расчёта: ${esc(calc.title || 'Расчёт')}</h3><p>Создан: ${dateRu(calc.created_at)}. ${esc(savedCalculationDetailsCopy(selectedItems.length))}</p></div>
+        <div class="v4-saved-calc-details-actions"><span class="v4-saved-calc-count" aria-live="polite">${esc(savedCalculationPositionLabel(selectedItems.length))}</span><button type="button" data-v2-calc-close>Скрыть состав</button></div>
       </div>
-      <div class="v4-table-wrap">
+      <div class="v4-table-wrap v4-saved-calc-review-table">
         <table class="v4-table v4-saved-calc-table">
-          <thead><tr><th>Позиция</th><th>Категория</th><th>Ед.</th><th>Кол-во</th><th>Себест. ед.</th><th>Клиенту ед.</th><th>Сумма</th><th>Маржа</th></tr></thead>
+          <thead><tr><th>Позиция</th><th>Ед.</th><th>Кол-во</th><th>Себест. ед.</th><th>Клиенту ед.</th><th>Сумма</th><th>Маржа</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
@@ -154,12 +174,12 @@ function render() {
       <div class="v4-subcard-head">
         <div>
           <h3>Сохранённые расчёты</h3>
-          <p>Здесь только уже сохранённые варианты. Новые расчёты создаются ниже: сначала типовой, затем нестандартный.</p>
+          <p>Здесь находятся сохранённые версии. Новый расчёт создаётся ниже в едином конструкторе для типовых и нестандартных позиций.</p>
         </div>
-        <div class="v4-form-actions"><button type="button" data-v2-calc-refresh>Обновить</button></div>
+        <div class="v4-form-actions"><button type="button" data-v2-calc-refresh>Обновить список</button></div>
       </div>
       <div class="v4-saved-calc-list">
-        ${v4State.calculationsBusy ? '<div class="v4-empty">Загружаю расчёты...</div>' : v4State.calculationsError ? `<div class="v4-empty is-error">${esc(v4State.calculationsError)}</div>` : calculations.length ? calculations.map(renderCalc).join('') : '<div class="v4-empty">Сохранённых расчётов пока нет. Ниже можно создать типовой или нестандартный расчёт.</div>'}
+        ${v4State.calculationsBusy ? '<div class="v4-empty">Загружаю расчёты...</div>' : v4State.calculationsError ? `<div class="v4-empty is-error">${esc(v4State.calculationsError)}</div>` : calculations.length ? calculations.map(renderCalc).join('') : '<div class="v4-empty">Сохранённых расчётов пока нет. Ниже можно создать первый расчёт в едином конструкторе.</div>'}
       </div>
       ${renderDetails()}
     </section>`;

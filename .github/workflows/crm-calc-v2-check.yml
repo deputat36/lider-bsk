@@ -11,6 +11,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Validate saved calculation review
+        run: |
+          node --check crm/v4/assets/v4/calculation-saved-review-model-v1.js
+          node --check crm/v4/assets/v4/calculations-saved-tools-v2.js
+          node tools/test_calculation_saved_review_model.mjs
       - name: Validate CRM calc v2 docs
         run: python3 tools/check_calc_v2.py
       - name: Validate offer rules v2
