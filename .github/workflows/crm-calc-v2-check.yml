@@ -17,7 +17,18 @@ jobs:
           node --check crm/v4/assets/v4/calculations-saved-tools-v2.js
           node tools/test_calculation_saved_review_model.mjs
       - name: Validate CRM calc v2 docs
-        run: python3 tools/check_calc_v2.py
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 tools/check_calc_v2.py 2>&1 | tee saved-calculation-check.log
+      - name: Upload temporary saved calculation diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: saved-calculation-check-diagnostics
+          path: saved-calculation-check.log
+          if-no-files-found: error
+          retention-days: 1
       - name: Validate offer rules v2
         run: python3 tools/check_offer_rules_v2.py
       - name: Validate offer visibility integration doc
