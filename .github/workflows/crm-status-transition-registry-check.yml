@@ -17,6 +17,8 @@ on:
       - 'crm/v4/assets/v4/orders-fast-loader-v1.js'
       - 'crm/v4/assets/v4/order-control-v2.js'
       - 'crm/v4/assets/v4/order-card-v1.js'
+      - 'crm/v4/assets/v4/payment-status-ui-model-v1.js'
+      - 'crm/v4/assets/v4/finance-control-v2.js'
       - 'crm/v4/assets/v4/production-status-ui-model-v1.js'
       - 'crm/v4/assets/v4/production-job-card-v2.js'
       - 'crm/v4/assets/v4/installation-status-ui-model-v1.js'
@@ -28,6 +30,7 @@ on:
       - 'docs/CRM_LEAD_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md'
       - 'docs/CRM_OFFER_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md'
       - 'docs/CRM_ORDER_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md'
+      - 'docs/CRM_PAYMENT_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-15.md'
       - 'docs/CRM_PRODUCTION_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md'
       - 'docs/CRM_INSTALLATION_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md'
       - 'docs/CRM_PRODUCTION_BOARD_STATUS_REGISTRY_MANUAL_TEST_2026-07-12.md'
@@ -35,6 +38,7 @@ on:
       - 'tools/check_crm_lead_status_ui_registry.py'
       - 'tools/check_crm_offer_status_ui_registry.py'
       - 'tools/check_crm_order_status_ui_registry.py'
+      - 'tools/check_crm_payment_status_ui_registry.py'
       - 'tools/check_crm_production_status_ui_registry.py'
       - 'tools/check_crm_installation_status_ui_registry.py'
       - 'tools/check_crm_production_board_status_registry.py'
@@ -42,6 +46,7 @@ on:
       - 'tools/test_crm_lead_status_ui.mjs'
       - 'tools/test_crm_offer_status_ui.mjs'
       - 'tools/test_crm_order_status_ui.mjs'
+      - 'tools/test_crm_payment_status_ui.mjs'
       - 'tools/test_crm_production_status_ui.mjs'
       - 'tools/test_crm_installation_status_ui.mjs'
       - 'tools/test_crm_production_board_status_model.mjs'
@@ -62,6 +67,8 @@ on:
       - 'crm/v4/assets/v4/orders-fast-loader-v1.js'
       - 'crm/v4/assets/v4/order-control-v2.js'
       - 'crm/v4/assets/v4/order-card-v1.js'
+      - 'crm/v4/assets/v4/payment-status-ui-model-v1.js'
+      - 'crm/v4/assets/v4/finance-control-v2.js'
       - 'crm/v4/assets/v4/production-status-ui-model-v1.js'
       - 'crm/v4/assets/v4/production-job-card-v2.js'
       - 'crm/v4/assets/v4/installation-status-ui-model-v1.js'
@@ -73,6 +80,7 @@ on:
       - 'docs/CRM_LEAD_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md'
       - 'docs/CRM_OFFER_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md'
       - 'docs/CRM_ORDER_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md'
+      - 'docs/CRM_PAYMENT_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-15.md'
       - 'docs/CRM_PRODUCTION_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md'
       - 'docs/CRM_INSTALLATION_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md'
       - 'docs/CRM_PRODUCTION_BOARD_STATUS_REGISTRY_MANUAL_TEST_2026-07-12.md'
@@ -80,6 +88,7 @@ on:
       - 'tools/check_crm_lead_status_ui_registry.py'
       - 'tools/check_crm_offer_status_ui_registry.py'
       - 'tools/check_crm_order_status_ui_registry.py'
+      - 'tools/check_crm_payment_status_ui_registry.py'
       - 'tools/check_crm_production_status_ui_registry.py'
       - 'tools/check_crm_installation_status_ui_registry.py'
       - 'tools/check_crm_production_board_status_registry.py'
@@ -87,6 +96,7 @@ on:
       - 'tools/test_crm_lead_status_ui.mjs'
       - 'tools/test_crm_offer_status_ui.mjs'
       - 'tools/test_crm_order_status_ui.mjs'
+      - 'tools/test_crm_payment_status_ui.mjs'
       - 'tools/test_crm_production_status_ui.mjs'
       - 'tools/test_crm_installation_status_ui.mjs'
       - 'tools/test_crm_production_board_status_model.mjs'
@@ -106,6 +116,7 @@ jobs:
           python3 tools/check_crm_lead_status_ui_registry.py
           python3 tools/check_crm_offer_status_ui_registry.py
           python3 tools/check_crm_order_status_ui_registry.py
+          python3 tools/check_crm_payment_status_ui_registry.py
           python3 tools/check_crm_production_status_ui_registry.py
           python3 tools/check_crm_installation_status_ui_registry.py
           python3 tools/check_crm_production_board_status_registry.py
@@ -125,6 +136,8 @@ jobs:
           node --check crm/v4/assets/v4/orders-fast-loader-v1.js
           node --check crm/v4/assets/v4/order-control-v2.js
           node --check crm/v4/assets/v4/order-card-v1.js
+          node --check crm/v4/assets/v4/payment-status-ui-model-v1.js
+          node --check crm/v4/assets/v4/finance-control-v2.js
           node --check crm/v4/assets/v4/production-status-ui-model-v1.js
           node --check crm/v4/assets/v4/production-job-card-v2.js
           node --check crm/v4/assets/v4/installation-status-ui-model-v1.js
@@ -135,6 +148,7 @@ jobs:
           node --check tools/test_crm_lead_status_ui.mjs
           node --check tools/test_crm_offer_status_ui.mjs
           node --check tools/test_crm_order_status_ui.mjs
+          node --check tools/test_crm_payment_status_ui.mjs
           node --check tools/test_crm_production_status_ui.mjs
           node --check tools/test_crm_installation_status_ui.mjs
           node --check tools/test_crm_production_board_status_model.mjs
@@ -142,6 +156,7 @@ jobs:
           node tools/test_crm_lead_status_ui.mjs
           node tools/test_crm_offer_status_ui.mjs
           node tools/test_crm_order_status_ui.mjs
+          node tools/test_crm_payment_status_ui.mjs
           node tools/test_crm_production_status_ui.mjs
           node tools/test_crm_installation_status_ui.mjs
           node tools/test_crm_production_board_status_model.mjs
