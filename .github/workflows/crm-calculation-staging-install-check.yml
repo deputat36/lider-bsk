@@ -6,22 +6,30 @@ on:
     paths:
       - 'supabase/staging-migrations/20260715_04_calculation_version_install.sql'
       - 'supabase/staging-migrations/20260715_05_calculation_version_grant_hardening.sql'
+      - 'supabase/staging-migrations/20260715_06_calculation_version_fk_indexes.sql'
       - 'supabase/staging-tests/20260715_calculation_version_acceptance.sql'
       - 'supabase/staging-tests/20260715_calculation_version_safe_response.sql'
+      - 'supabase/staging-tests/README.md'
       - 'supabase/functions/leader-crm-calculations/**'
       - 'docs/SUPABASE_STAGING_CALCULATION_VERSION_INSTALL_2026-07-15.md'
+      - 'docs/SUPABASE_STAGING_CALCULATION_VERSION_VERIFICATION_2026-07-15.md'
       - 'tools/check_crm_calculation_staging_install.py'
+      - 'tools/check_crm_calculation_staging_verification.py'
       - '.github/workflows/crm-calculation-staging-install-check.yml'
   push:
     branches: [main]
     paths:
       - 'supabase/staging-migrations/20260715_04_calculation_version_install.sql'
       - 'supabase/staging-migrations/20260715_05_calculation_version_grant_hardening.sql'
+      - 'supabase/staging-migrations/20260715_06_calculation_version_fk_indexes.sql'
       - 'supabase/staging-tests/20260715_calculation_version_acceptance.sql'
       - 'supabase/staging-tests/20260715_calculation_version_safe_response.sql'
+      - 'supabase/staging-tests/README.md'
       - 'supabase/functions/leader-crm-calculations/**'
       - 'docs/SUPABASE_STAGING_CALCULATION_VERSION_INSTALL_2026-07-15.md'
+      - 'docs/SUPABASE_STAGING_CALCULATION_VERSION_VERIFICATION_2026-07-15.md'
       - 'tools/check_crm_calculation_staging_install.py'
+      - 'tools/check_crm_calculation_staging_verification.py'
       - '.github/workflows/crm-calculation-staging-install-check.yml'
 
 permissions:
@@ -33,8 +41,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Compile staging-install checker
-        run: python3 -m py_compile tools/check_crm_calculation_staging_install.py
+      - name: Compile staging-install checkers
+        run: |
+          python3 -m py_compile tools/check_crm_calculation_staging_install.py
+          python3 -m py_compile tools/check_crm_calculation_staging_verification.py
 
       - name: Validate consolidated install, safe projection and least privileges
         run: python3 tools/check_crm_calculation_staging_install.py
+
+      - name: Validate applied staging evidence and rollback contract
+        run: python3 tools/check_crm_calculation_staging_verification.py
