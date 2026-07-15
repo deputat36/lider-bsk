@@ -24,6 +24,8 @@ The implementation does not change Supabase data and does not rewrite raw `leade
 
 ## Automated runtime coverage added on 2026-07-15
 
+Automated coverage added on 2026-07-15 is split between the local runtime harness and the published deployment smoke.
+
 The following behavior is executed in CI by:
 
 `node tools/test_crm_lead_analytics_runtime.mjs`
@@ -55,6 +57,8 @@ verifies that the Pages alias redirects to the canonical official domain and tha
 - the summary module;
 - the normalization helper;
 - the expected cache markers and import links.
+
+The runtime harness proves that summary category clicks fill the search field and filter the list; the published checker proves that the required modules are deployed.
 
 Detailed deployment scope and retry behavior:
 
