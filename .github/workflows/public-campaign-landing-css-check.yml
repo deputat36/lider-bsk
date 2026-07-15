@@ -1,0 +1,27 @@
+name: Public campaign landing CSS check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'reklamnye-posty-vk-borisoglebsk.html'
+      - 'reklama-otkrytiya-magazina-borisoglebsk.html'
+      - 'assets/public-campaign-landing.css'
+      - 'tools/check_public_campaign_landing_css.py'
+      - '.github/workflows/public-campaign-landing-css-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'reklamnye-posty-vk-borisoglebsk.html'
+      - 'reklama-otkrytiya-magazina-borisoglebsk.html'
+      - 'assets/public-campaign-landing.css'
+      - 'tools/check_public_campaign_landing_css.py'
+      - '.github/workflows/public-campaign-landing-css-check.yml'
+
+jobs:
+  validate-campaign-landing-css:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate two campaign pages and shared stylesheet
+        run: python3 tools/check_public_campaign_landing_css.py
