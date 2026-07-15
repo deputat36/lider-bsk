@@ -9,7 +9,8 @@ summary = root / 'crm/v4/assets/v4/lead-analytics-summary-v1.js'
 leads = root / 'crm/v4/assets/v4/leads.js'
 index = root / 'crm/v4/index.html'
 plan = root / 'docs/CRM_LEAD_ANALYTICS_NORMALIZATION_PLAN_2026-07-07.md'
-dry_run = root / 'docs/CRM_LEAD_ANALYTICS_NORMALIZED_DRY_RUN_READONLY_2026-07-10.md'
+dry_run = root / 'docs/CRM_LEAD_ANALYTICS_NORMALIZED_DRY_RUN_READONLY_2026-07-15.md'
+previous_dry_run = root / 'docs/CRM_LEAD_ANALYTICS_NORMALIZED_DRY_RUN_READONLY_2026-07-10.md'
 manual_test = root / 'docs/CRM_LEAD_ANALYTICS_BADGES_MANUAL_TEST_2026-07-09.md'
 
 errors = []
@@ -29,6 +30,8 @@ else:
         'Вывески',
         'ПВХ изделия',
         'Ручной ввод',
+        "['Сайт', ['сайт', 'site', 'lider-bsk.ru', 'форма сайта']]",
+        "['Ручной ввод', ['вручную', 'звонок', 'офис', 'рекомендация']]",
     ]
     for marker in required:
         if marker not in text:
@@ -113,34 +116,49 @@ else:
         'Current public lead contract',
         'Manual browser verification remains required',
         'leadAnalyticsSearchText(lead)',
-        'CRM_LEAD_ANALYTICS_NORMALIZED_DRY_RUN_READONLY_2026-07-10.md',
+        'CRM_LEAD_ANALYTICS_NORMALIZED_DRY_RUN_READONLY_2026-07-15.md',
+        'Previous normalized dry run',
+        'one manual CRM lead increased `Баннеры` from 3 to 4',
     ]
     for marker in required:
         if marker not in text:
             errors.append(f'Missing plan marker: {marker}')
 
+if not previous_dry_run.exists():
+    errors.append('Missing previous normalized lead analytics dry run document')
+
 if not dry_run.exists():
-    errors.append('Missing normalized lead analytics dry run document')
+    errors.append('Missing current normalized lead analytics dry run document')
 else:
     text = dry_run.read_text(encoding='utf-8')
     required = [
         'Mode: read-only SQL dry run',
         'Snapshot metadata',
-        'Total leads: 12',
+        'Total leads: 13',
         '2026-06-07 09:44:56.778722+00',
-        '2026-07-01 14:20:01.704428+00',
+        '2026-07-15 09:55:01.673176+00',
         'Service category dry run',
         'Source category dry run',
-        '| Баннеры | 3 | 1 |',
-        '| Ручной ввод | 4 | 2 |',
+        '| Баннеры | 4 | 1 |',
+        '| Наклейки | 3 | 0 |',
+        '| Таблички | 3 | 3 |',
+        '| Ручной ввод | 5 | 2 |',
+        '| Сайт | 4 | 1 |',
+        'Control total: 13 leads',
+        'Change from the 2026-07-10 snapshot',
+        'This row is not a public-form submission',
+        'source matching uses the combined raw `source` and `page_url` text',
         'Сбросить поиск',
         'No DDL was executed',
         'No DML was executed',
         'No Edge Function deploy was executed',
+        'No CRM UI code was changed',
     ]
     for marker in required:
         if marker not in text:
-            errors.append(f'Missing dry-run marker: {marker}')
+            errors.append(f'Missing current dry-run marker: {marker}')
+    if 'Total leads: 12' in text or '| Баннеры | 3 | 1 |' in text or '| Ручной ввод | 4 | 2 |' in text:
+        errors.append('Current dry-run document contains stale 2026-07-10 control totals')
 
 if not manual_test.exists():
     errors.append('Missing lead analytics badges manual test document')
@@ -168,4 +186,4 @@ if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('CRM lead analytics normalization, derived search toggle, clickable summary, dry-run snapshot, badges, plan and manual test are valid.')
+print('CRM lead analytics normalization, current 13-lead read-only snapshot, derived search toggle, clickable summary, badges, plan and manual test are valid.')
