@@ -96,6 +96,7 @@ function ensureDraftReviewHead(wrap, count) {
 
 function addReviewMeta(firstCell, descriptor) {
   firstCell.querySelector('.v4-calc-row-review-meta')?.remove();
+  firstCell.querySelector('.v4-calc-row-characteristics')?.remove();
   const meta = document.createElement('div');
   meta.className = 'v4-calc-row-review-meta';
   const category = document.createElement('span');
