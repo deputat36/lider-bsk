@@ -1,3 +1,5 @@
+import { paymentRecordStatusModel } from './payment-record-status-model-v1.js';
+
 const CANCELLED_TOKENS = ['отмен', 'аннулир', 'сторнир'];
 const PENDING_TOKENS = ['чернов', 'ожид', 'не провед', 'не подтверж', 'на соглас'];
 const CONFIRMED_EXPENSE_TOKENS = ['провед', 'оплачен', 'подтверж', 'выплачен', 'заверш', 'исполнен'];
@@ -24,15 +26,27 @@ function explicitProfit(order, plannedRevenue, plannedCost) {
 
 export function confirmedPaymentEffect(payment = {}) {
   const amount = Math.abs(number(payment.amount));
-  if (!amount) return Object.freeze({ included: false, signedAmount: 0, direction: 'none', reason: 'empty_amount' });
-  if (payment.is_confirmed !== true) return Object.freeze({ included: false, signedAmount: 0, direction: 'none', reason: 'not_confirmed' });
-  if (includesAny(payment.payment_status, CANCELLED_TOKENS)) return Object.freeze({ included: false, signedAmount: 0, direction: 'none', reason: 'cancelled' });
+  if (!amount) return Object.freeze({ included: false, signedAmount: 0, direction: 'none', reason: 'empty_amount', statusKnown: true, statusKey: '' });
+  if (payment.is_confirmed !== true) return Object.freeze({ included: false, signedAmount: 0, direction: 'none', reason: 'not_confirmed', statusKnown: true, statusKey: '' });
+  const status = paymentRecordStatusModel(payment.payment_status);
+  if (!status.posted) {
+    return Object.freeze({
+      included: false,
+      signedAmount: 0,
+      direction: 'none',
+      reason: status.reason,
+      statusKnown: status.known,
+      statusKey: status.key
+    });
+  }
   const outgoing = includesAny(payment.payment_type, OUTGOING_PAYMENT_TOKENS);
   return Object.freeze({
     included: true,
     signedAmount: outgoing ? -amount : amount,
     direction: outgoing ? 'outgoing' : 'incoming',
-    reason: 'confirmed'
+    reason: 'confirmed',
+    statusKnown: true,
+    statusKey: status.key
   });
 }
 
@@ -65,6 +79,8 @@ export function buildOrderFinanceSnapshot(order = {}, payments = [], expenses = 
     .reduce((sum, { effect }) => sum + effect.amount, 0);
   const confirmedExpenseRows = expenseEffects.filter(({ effect }) => effect.included).length;
   const ignoredPaymentRows = paymentEffects.filter(({ effect }) => !effect.included).length;
+  const unknownPaymentStatusRows = paymentEffects.filter(({ effect }) => effect.reason === 'unknown_status').length;
+  const notPostedPaymentRows = paymentEffects.filter(({ effect }) => effect.reason === 'not_posted').length;
   const ignoredExpenseRows = expenseEffects.filter(({ effect }) => !effect.included).length;
   const cashResult = confirmedNetReceipts - confirmedExpenses;
   const debt = Math.max(plannedRevenue - confirmedNetReceipts, 0);
@@ -79,7 +95,9 @@ export function buildOrderFinanceSnapshot(order = {}, payments = [], expenses = 
   const warnings = [];
   if (!statusKnown) warnings.push('Статус заказа не сопоставлен с canonical registry.');
   if (plannedCost > 0 && confirmedExpenseRows === 0) warnings.push('Нет подтверждённых расходов: фактическая прибыль не рассчитана.');
-  if (ignoredPaymentRows > 0) warnings.push(`Не учтено неподтверждённых или отменённых платежей: ${ignoredPaymentRows}.`);
+  if (ignoredPaymentRows > 0) warnings.push(`Не учтено непроведённых, неподтверждённых, неизвестных или отменённых платежей: ${ignoredPaymentRows}.`);
+  if (unknownPaymentStatusRows > 0) warnings.push(`Платежей с неизвестным статусом: ${unknownPaymentStatusRows}.`);
+  if (notPostedPaymentRows > 0) warnings.push(`Плановых платежей, ещё не включённых в факт: ${notPostedPaymentRows}.`);
   if (ignoredExpenseRows > 0) warnings.push(`Не учтено неподтверждённых, неизвестных или отменённых расходов: ${ignoredExpenseRows}.`);
   if (!terminal && actualProfitState !== 'unknown') warnings.push('Заказ не закрыт: финансовый результат предварительный.');
 
@@ -99,6 +117,8 @@ export function buildOrderFinanceSnapshot(order = {}, payments = [], expenses = 
     confirmedExpenses,
     confirmedExpenseRows,
     ignoredPaymentRows,
+    unknownPaymentStatusRows,
+    notPostedPaymentRows,
     ignoredExpenseRows,
     cashResult,
     debt,
@@ -163,6 +183,8 @@ export function buildFinancePortfolioSnapshot(orders = [], payments = [], expens
     acc.cashResult += item.cashResult;
     acc.debt += item.debt;
     acc.ignoredPaymentRows += item.ignoredPaymentRows;
+    acc.unknownPaymentStatusRows += item.unknownPaymentStatusRows;
+    acc.notPostedPaymentRows += item.notPostedPaymentRows;
     acc.ignoredExpenseRows += item.ignoredExpenseRows;
     if (item.plannedCost > 0) acc.costBearingOrders += 1;
     if (item.plannedCost > 0 && item.confirmedExpenseRows > 0) acc.ordersWithExpenseEvidence += 1;
@@ -180,6 +202,8 @@ export function buildFinancePortfolioSnapshot(orders = [], payments = [], expens
     cashResult: 0,
     debt: 0,
     ignoredPaymentRows: 0,
+    unknownPaymentStatusRows: 0,
+    notPostedPaymentRows: 0,
     ignoredExpenseRows: 0,
     costBearingOrders: 0,
     ordersWithExpenseEvidence: 0,

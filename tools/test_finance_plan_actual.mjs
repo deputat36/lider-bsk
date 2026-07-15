@@ -29,8 +29,26 @@ const expenses = [
 ];
 
 assert.equal(confirmedPaymentEffect(payments[0]).signedAmount, 100000);
+assert.equal(confirmedPaymentEffect(payments[0]).statusKey, 'posted');
 assert.equal(confirmedPaymentEffect(payments[1]).signedAmount, -10000);
 assert.equal(confirmedPaymentEffect(payments[2]).included, false);
+assert.equal(confirmedPaymentEffect(payments[2]).reason, 'not_confirmed');
+
+const plannedPayment = confirmedPaymentEffect({ amount: 3000, payment_type: 'Приход', payment_status: 'Планируется', is_confirmed: true });
+assert.equal(plannedPayment.included, false);
+assert.equal(plannedPayment.reason, 'not_posted');
+assert.equal(plannedPayment.statusKey, 'planned');
+
+const cancelledPayment = confirmedPaymentEffect({ amount: 3000, payment_type: 'Приход', payment_status: 'Отменен', is_confirmed: true });
+assert.equal(cancelledPayment.included, false);
+assert.equal(cancelledPayment.reason, 'cancelled');
+assert.equal(cancelledPayment.statusKey, 'cancelled');
+
+const unknownPayment = confirmedPaymentEffect({ amount: 3000, payment_type: 'Приход', payment_status: 'Ожидает проверки', is_confirmed: true });
+assert.equal(unknownPayment.included, false);
+assert.equal(unknownPayment.reason, 'unknown_status');
+assert.equal(unknownPayment.statusKnown, false);
+
 assert.equal(confirmedExpenseEffect(expenses[0]).amount, 55000);
 assert.equal(confirmedExpenseEffect(expenses[1]).included, false);
 assert.equal(confirmedExpenseEffect(expenses[2]).included, false);
@@ -51,7 +69,25 @@ assert.equal(order1.actualProfitState, 'provisional');
 assert.equal(order1.actualProfit, 35000);
 assert.equal(order1.planFactDiff, -5000);
 assert.equal(order1.ignoredPaymentRows, 1);
+assert.equal(order1.unknownPaymentStatusRows, 0);
+assert.equal(order1.notPostedPaymentRows, 0);
 assert.equal(order1.ignoredExpenseRows, 2);
+
+const statusCases = buildOrderFinanceSnapshot(
+  { id: 'o4', status: 'Новый', client_total: 9000, contractor_cost: 0 },
+  [
+    { amount: 1000, payment_type: 'Приход', payment_status: 'Планируется', is_confirmed: true },
+    { amount: 2000, payment_type: 'Приход', payment_status: 'Ожидает проверки', is_confirmed: true }
+  ],
+  [],
+  { terminal: false, statusKnown: true }
+);
+assert.equal(statusCases.confirmedIncoming, 0);
+assert.equal(statusCases.ignoredPaymentRows, 2);
+assert.equal(statusCases.unknownPaymentStatusRows, 1);
+assert.equal(statusCases.notPostedPaymentRows, 1);
+assert.match(statusCases.warnings.join(' '), /неизвестным статусом/i);
+assert.match(statusCases.warnings.join(' '), /Плановых платежей/i);
 
 const order2 = buildOrderFinanceSnapshot(
   orders[1],
@@ -79,6 +115,8 @@ assert.equal(portfolio.debt, 40000);
 assert.equal(portfolio.paymentCoveragePercent, 73);
 assert.equal(portfolio.expenseCoveragePercent, 50);
 assert.equal(portfolio.unknownActualProfitOrders, 1);
+assert.equal(portfolio.unknownPaymentStatusRows, 0);
+assert.equal(portfolio.notPostedPaymentRows, 0);
 assert.equal(portfolio.actualProfitState, 'unknown');
 assert.equal(portfolio.actualProfit, null);
 assert.equal(portfolio.confirmedUnattributedPayments, 7000);

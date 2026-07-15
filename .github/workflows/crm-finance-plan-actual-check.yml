@@ -6,14 +6,18 @@ on:
     paths:
       - 'crm/v4/assets/v4/finance-plan-actual-model-v1.js'
       - 'crm/v4/assets/v4/finance-plan-actual-panel-v1.js'
+      - 'crm/v4/assets/v4/payment-record-status-model-v1.js'
       - 'crm/v4/assets/v4/order-card-v1.js'
       - 'crm/v4/assets/v4/order-status-ui-model-v1.js'
       - 'crm/v4/assets/v4/status-transitions-v1.js'
       - 'crm/v4/assets/v4/role-tab-permissions-v1.js'
       - 'crm/v4/assets/v4/site-cache-note-v1.js'
       - 'tools/test_finance_plan_actual.mjs'
+      - 'tools/test_crm_payment_record_status.mjs'
       - 'tools/check_finance_plan_actual.py'
+      - 'tools/check_crm_payment_record_status_registry.py'
       - 'docs/CRM_FINANCE_PLAN_ACTUAL_MANUAL_TEST_2026-07-13.md'
+      - 'docs/CRM_PAYMENT_RECORD_STATUS_REGISTRY_MANUAL_TEST_2026-07-15.md'
       - 'docs/STATUS.md'
       - '.github/workflows/crm-finance-plan-actual-check.yml'
   pull_request:
@@ -21,14 +25,18 @@ on:
     paths:
       - 'crm/v4/assets/v4/finance-plan-actual-model-v1.js'
       - 'crm/v4/assets/v4/finance-plan-actual-panel-v1.js'
+      - 'crm/v4/assets/v4/payment-record-status-model-v1.js'
       - 'crm/v4/assets/v4/order-card-v1.js'
       - 'crm/v4/assets/v4/order-status-ui-model-v1.js'
       - 'crm/v4/assets/v4/status-transitions-v1.js'
       - 'crm/v4/assets/v4/role-tab-permissions-v1.js'
       - 'crm/v4/assets/v4/site-cache-note-v1.js'
       - 'tools/test_finance_plan_actual.mjs'
+      - 'tools/test_crm_payment_record_status.mjs'
       - 'tools/check_finance_plan_actual.py'
+      - 'tools/check_crm_payment_record_status_registry.py'
       - 'docs/CRM_FINANCE_PLAN_ACTUAL_MANUAL_TEST_2026-07-13.md'
+      - 'docs/CRM_PAYMENT_RECORD_STATUS_REGISTRY_MANUAL_TEST_2026-07-15.md'
       - 'docs/STATUS.md'
       - '.github/workflows/crm-finance-plan-actual-check.yml'
 
@@ -43,11 +51,15 @@ jobs:
           set -euo pipefail
           node --check crm/v4/assets/v4/finance-plan-actual-model-v1.js
           node --check crm/v4/assets/v4/finance-plan-actual-panel-v1.js
+          node --check crm/v4/assets/v4/payment-record-status-model-v1.js
           node --check crm/v4/assets/v4/order-card-v1.js
           node --check crm/v4/assets/v4/order-status-ui-model-v1.js
           node --check crm/v4/assets/v4/status-transitions-v1.js
           node --check crm/v4/assets/v4/role-tab-permissions-v1.js
           node --check crm/v4/assets/v4/site-cache-note-v1.js
           node --check tools/test_finance_plan_actual.mjs
+          node --check tools/test_crm_payment_record_status.mjs
           node tools/test_finance_plan_actual.mjs
+          node tools/test_crm_payment_record_status.mjs
           python3 tools/check_finance_plan_actual.py
+          python3 tools/check_crm_payment_record_status_registry.py
