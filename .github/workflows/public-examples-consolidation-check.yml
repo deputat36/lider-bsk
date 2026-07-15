@@ -6,20 +6,26 @@ on:
     paths:
       - 'portfolio.html'
       - 'primery-rabot-kejsy.html'
+      - 'assets/public-examples.css'
+      - 'assets/public-lead-form.js'
       - 'sitemap.xml'
       - 'tools/open_graph_pages.json'
       - 'tools/structured_data_pages.json'
       - 'tools/check_public_examples_consolidation.py'
+      - 'docs/PUBLIC_EXAMPLES_CSS_2026-07-15.md'
       - '.github/workflows/public-examples-consolidation-check.yml'
   pull_request:
     branches: [main]
     paths:
       - 'portfolio.html'
       - 'primery-rabot-kejsy.html'
+      - 'assets/public-examples.css'
+      - 'assets/public-lead-form.js'
       - 'sitemap.xml'
       - 'tools/open_graph_pages.json'
       - 'tools/structured_data_pages.json'
       - 'tools/check_public_examples_consolidation.py'
+      - 'docs/PUBLIC_EXAMPLES_CSS_2026-07-15.md'
       - '.github/workflows/public-examples-consolidation-check.yml'
 
 jobs:
@@ -27,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate examples, legacy redirect and SEO registries
+      - name: Validate examples content, external CSS, legacy redirect and SEO registries
         shell: bash
         run: |
           set -euo pipefail
