@@ -146,7 +146,7 @@ for forbidden in [
 
 require('contract', [
     "CALCULATION_ACTION = 'calculation.create_version'",
-    "CALCULATION_PERMISSION = 'calculation.write'",
+    "CALCULATION_PERMISSION = 'calculations.write'",
     "STAGING_PROJECT_REF = 'otulfnouybahfnsycxqn'",
     'MAX_CALCULATION_ITEMS = 200',
     "'owner'", "'admin'", "'manager'",
@@ -167,6 +167,8 @@ elif any(role in allowed_block.group(0) for role in ("'designer'", "'accountant'
     errors.append('Non-canonical role entered the calculation-write allow set')
 
 require('test', [
+    'canonical permission matches CRM action registry',
+    "CALCULATION_PERMISSION === 'calculations.write'",
     'canonical calculation-write roles are allowed',
     "['owner', 'admin', 'manager']",
     'server-owned envelope and payload fields are rejected',
@@ -220,8 +222,16 @@ if environment.get('environments', {}).get('staging', {}).get('project_id') != S
     errors.append('Environment registry staging ref drifted')
 if action_contract.get('action') != 'calculation.create_version':
     errors.append('Action contract drifted from calculation.create_version')
-if action_contract.get('status') != 'source_only_candidate':
-    errors.append('Action contract must remain source_only_candidate')
+if action_contract.get('status') != 'staging_deployed_production_gated':
+    errors.append('Action contract must reflect staging deployment and production gate')
+if action_contract.get('authorization', {}).get('permission') != 'calculations.write':
+    errors.append('Action contract permission drifted from canonical CRM registry')
+if action_contract.get('environment', {}).get('staging_project_ref') != STAGING:
+    errors.append('Action contract staging ref drifted')
+if action_contract.get('environment', {}).get('production_project_ref') != PRODUCTION:
+    errors.append('Action contract production ref drifted')
+if action_contract.get('environment', {}).get('production_deployed') is not False:
+    errors.append('Action contract must keep production undeployed')
 
 require('workflow', [
     'denoland/setup-deno@v2',
@@ -246,4 +256,4 @@ if errors:
         print(f'- {error}', file=sys.stderr)
     raise SystemExit(1)
 
-print('Calculation create-version candidate is staging-locked, JWT-protected, RPC-only, atomic and source-only.')
+print('Calculation create-version contract is staging-deployed, JWT-protected, RPC-only, atomic and production-gated.')
