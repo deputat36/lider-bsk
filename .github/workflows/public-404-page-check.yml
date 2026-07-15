@@ -5,15 +5,19 @@ on:
     branches: [main]
     paths:
       - '404.html'
+      - 'assets/public-utility-pages.css'
       - 'tools/check_public_404_page.py'
       - 'docs/PUBLIC_404_PAGE_2026-07-13.md'
+      - 'docs/PUBLIC_UTILITY_PAGES_CSS_2026-07-15.md'
       - '.github/workflows/public-404-page-check.yml'
   pull_request:
     branches: [main]
     paths:
       - '404.html'
+      - 'assets/public-utility-pages.css'
       - 'tools/check_public_404_page.py'
       - 'docs/PUBLIC_404_PAGE_2026-07-13.md'
+      - 'docs/PUBLIC_UTILITY_PAGES_CSS_2026-07-15.md'
       - '.github/workflows/public-404-page-check.yml'
 
 jobs:
@@ -21,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate branded recovery page
+      - name: Validate branded recovery page and external CSS
         shell: bash
         run: |
           set -euo pipefail
