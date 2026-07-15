@@ -1,0 +1,66 @@
+name: CRM calculation version staging transport check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/calculation-version-staging-transport-v1.js'
+      - 'crm/v4/assets/v4/calculations.js'
+      - 'crm/v4/assets/v4/action-permissions-v1.js'
+      - 'crm/v4/assets/v4/config.js'
+      - 'crm/v4/index.html'
+      - 'contracts/calculation-version-staging-transport-v1.json'
+      - 'contracts/calculation-create-version-server-contract-v1.json'
+      - 'supabase/functions/leader-crm-calculations/**'
+      - 'supabase/config.toml'
+      - 'tools/test_calculation_version_staging_transport.mjs'
+      - 'tools/check_calculation_version_staging_transport.py'
+      - 'docs/CRM_CALCULATION_VERSION_STAGING_TRANSPORT_RUNBOOK_2026-07-15.md'
+      - '.github/workflows/crm-calculation-version-staging-transport-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/calculation-version-staging-transport-v1.js'
+      - 'crm/v4/assets/v4/calculations.js'
+      - 'crm/v4/assets/v4/action-permissions-v1.js'
+      - 'crm/v4/assets/v4/config.js'
+      - 'crm/v4/index.html'
+      - 'contracts/calculation-version-staging-transport-v1.json'
+      - 'contracts/calculation-create-version-server-contract-v1.json'
+      - 'supabase/functions/leader-crm-calculations/**'
+      - 'supabase/config.toml'
+      - 'tools/test_calculation_version_staging_transport.mjs'
+      - 'tools/check_calculation_version_staging_transport.py'
+      - 'docs/CRM_CALCULATION_VERSION_STAGING_TRANSPORT_RUNBOOK_2026-07-15.md'
+      - '.github/workflows/crm-calculation-version-staging-transport-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-calculation-staging-transport:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check browser transport syntax
+        run: node --check crm/v4/assets/v4/calculation-version-staging-transport-v1.js
+
+      - name: Test browser transport behavior
+        run: node tools/test_calculation_version_staging_transport.mjs
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Check Edge source after permission sync
+        run: deno check supabase/functions/leader-crm-calculations/index.ts
+
+      - name: Test Edge contract after permission sync
+        run: deno test supabase/functions/leader-crm-calculations/contract_test.ts
+
+      - name: Compile source checker
+        run: python3 -m py_compile tools/check_calculation_version_staging_transport.py
+
+      - name: Validate environment lock, minimal payload and production boundary
+        run: python3 tools/check_calculation_version_staging_transport.py
