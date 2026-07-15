@@ -1,0 +1,47 @@
+name: CRM lead analytics published check
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 5 * * *'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/check_crm_lead_analytics_published.py'
+      - 'docs/CRM_LEAD_ANALYTICS_PUBLISHED_SMOKE_2026-07-15.md'
+      - '.github/workflows/crm-lead-analytics-published-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'crm/v4/index.html'
+      - 'crm/v4/assets/v4/leads.js'
+      - 'crm/v4/assets/v4/lead-analytics-normalization.js'
+      - 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
+      - 'crm/v4/assets/v4/lead-analytics-summary-v1.js'
+      - 'tools/check_crm_lead_analytics_published.py'
+      - 'docs/CRM_LEAD_ANALYTICS_PUBLISHED_SMOKE_2026-07-15.md'
+      - '.github/workflows/crm-lead-analytics-published-check.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: crm-lead-analytics-published-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  published-assets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check published CRM analytics assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            python3 tools/check_crm_lead_analytics_published.py --attempts 30 --delay 10 --timeout 20
+          else
+            python3 tools/check_crm_lead_analytics_published.py --attempts 3 --delay 2 --timeout 20
+          fi
