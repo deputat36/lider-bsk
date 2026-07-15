@@ -7,6 +7,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 STAGING = 'otulfnouybahfnsycxqn'
 PRODUCTION = 'ofewxuqfjhamgerwzull'
+ACTIVE_EDGE_VERSION = 3
+ACTIVE_EDGE_HASH = '0df6d23cc6d8b19903babbf711bb1da765111ff1f64eb7f8e970f1bcc9760ee4'
 
 FILES = {
     'transport': ROOT / 'crm/v4/assets/v4/calculation-version-staging-transport-v1.js',
@@ -86,6 +88,7 @@ require('edge_contract', [
     "CALCULATION_PERMISSION = 'calculations.write'",
     "CALCULATION_ACTION = 'calculation.create_version'",
     f"STAGING_PROJECT_REF = '{STAGING}'",
+    'return CALCULATION_WRITE_ROLES.has(normalizeRole(role))',
 ])
 require('edge_test', [
     "CALCULATION_PERMISSION === 'calculations.write'",
@@ -142,6 +145,12 @@ if server_contract.get('environment', {}).get('production_deployed') is not Fals
     errors.append('server contract must keep production undeployed')
 if server_contract.get('transport', {}).get('production_ui_enabled') is not False:
     errors.append('server contract must keep production UI disabled')
+if server_contract.get('transport', {}).get('staging_version') != ACTIVE_EDGE_VERSION:
+    errors.append('server contract active staging Edge version drifted')
+if server_contract.get('transport', {}).get('staging_deployment_hash') != ACTIVE_EDGE_HASH:
+    errors.append('server contract active staging Edge hash drifted')
+if server_contract.get('rollback', {}).get('staging_version_2_is_not_a_valid_rollback_target') is not True:
+    errors.append('server contract must forbid rollback to superseded v2')
 
 require('test', [
     "permission, 'calculations.write'",
@@ -160,13 +169,19 @@ require('runbook', [
     STAGING,
     PRODUCTION,
     '`calculations.write`',
+    'active version: `3`',
+    ACTIVE_EDGE_HASH,
+    'Superseded v2',
+    '`normalizeRole(value)`',
+    '`normalizeRole(role)`',
+    'не является допустимой rollback-версией',
     '0 Auth users',
     'HTTP 201',
     'HTTP 200',
     'HTTP 409',
     'HTTP 403',
     'production `calculations.js`',
-    'staging Edge v2',
+    'staging Edge v3',
 ])
 require('workflow', [
     'node --check crm/v4/assets/v4/calculation-version-staging-transport-v1.js',
@@ -195,4 +210,4 @@ if errors:
         print(f'- {error}', file=sys.stderr)
     raise SystemExit(1)
 
-print('Calculation staging transport is environment-locked, canonical-permission aligned, minimized and not wired to production UI.')
+print('Calculation staging transport is environment-locked, aligned with active Edge v3 and not wired to production UI.')
