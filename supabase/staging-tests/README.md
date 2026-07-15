@@ -2,7 +2,7 @@
 
 Canonical environment: Supabase project `otulfnouybahfnsycxqn` (`lider-bsk-staging`).
 
-Production project `ofewxuqfjhamgerwzull` must never be used for these scripts.
+The production project must never be used for these scripts.
 
 ## Canonical clean-staging order
 
