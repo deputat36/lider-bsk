@@ -1,0 +1,40 @@
+name: CRM calculation safe response check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/staging-migrations/20260715_02_calculation_version_harness.sql'
+      - 'supabase/staging-migrations/20260715_03_calculation_version_safe_response.sql'
+      - 'supabase/staging-tests/20260715_calculation_version_safe_response.sql'
+      - 'supabase/functions/leader-crm-calculations/**'
+      - 'contracts/calculation-create-version-server-contract-v1.json'
+      - 'docs/SUPABASE_STAGING_CALCULATION_VERSION_SAFE_RESPONSE_2026-07-15.md'
+      - 'tools/check_crm_calculation_safe_response.py'
+      - '.github/workflows/crm-calculation-safe-response-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/staging-migrations/20260715_02_calculation_version_harness.sql'
+      - 'supabase/staging-migrations/20260715_03_calculation_version_safe_response.sql'
+      - 'supabase/staging-tests/20260715_calculation_version_safe_response.sql'
+      - 'supabase/functions/leader-crm-calculations/**'
+      - 'contracts/calculation-create-version-server-contract-v1.json'
+      - 'docs/SUPABASE_STAGING_CALCULATION_VERSION_SAFE_RESPONSE_2026-07-15.md'
+      - 'tools/check_crm_calculation_safe_response.py'
+      - '.github/workflows/crm-calculation-safe-response-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-calculation-safe-response:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compile safe-response checker
+        run: python3 -m py_compile tools/check_crm_calculation_safe_response.py
+
+      - name: Validate explicit response projection and private implementation boundary
+        run: python3 tools/check_crm_calculation_safe_response.py
