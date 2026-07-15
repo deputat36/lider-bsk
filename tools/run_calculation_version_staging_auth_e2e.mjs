@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { randomUUID } from 'node:crypto';
+import { pathToFileURL } from 'node:url';
 import {
   buildStagingCalculationVersionCommand,
   isStagingCalculationEnvironment
@@ -262,7 +263,11 @@ function safeFailure(error) {
   return message.replace(/Bearer\s+[A-Za-z0-9._-]+/gi, 'Bearer [redacted]');
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+const isEntrypoint = process.argv[1]
+  ? import.meta.url === pathToFileURL(process.argv[1]).href
+  : false;
+
+if (isEntrypoint) {
   runStagingAuthE2E()
     .then((summary) => {
       console.log(JSON.stringify({ ok: true, ...summary }, null, 2));
