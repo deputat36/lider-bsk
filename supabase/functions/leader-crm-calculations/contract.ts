@@ -101,6 +101,7 @@ function validIsoDateTime(value: unknown): boolean {
 }
 
 function finiteNumber(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null
   const number = typeof value === 'number' ? value : Number(value)
   return Number.isFinite(number) ? number : null
 }
@@ -185,9 +186,9 @@ export function validateCalculationRequest(value: unknown): ValidationResult {
     return { ok: false, code: 'invalid_payload', message: 'need_id must be UUID or null' }
   }
 
-  const idempotencyKey = cleanText(payload.idempotency_key, 160)
+  const idempotencyKey = cleanText(payload.idempotency_key, 1000)
   if (!idempotencyKey || idempotencyKey.length > 160) {
-    return { ok: false, code: 'invalid_payload', message: 'idempotency_key is required' }
+    return { ok: false, code: 'invalid_payload', message: 'idempotency_key must contain 1 to 160 characters' }
   }
   if (!Array.isArray(payload.items) || payload.items.length === 0) {
     return { ok: false, code: 'empty_items', message: 'items must be a non-empty array' }
