@@ -2,9 +2,27 @@
 
 Дата: 15 июля 2026 года.
 
-Статус: source-only candidate. Не развёрнут в Supabase.
+Статус: staging deployed, production gated. Source-only этап завершён.
 
 Action: `calculation.create_version`.
+
+## Окружения
+
+Staging:
+
+- project ref: `otulfnouybahfnsycxqn`;
+- database/RPC-контур установлен;
+- Edge Function `leader-crm-calculations v1` развёрнута;
+- `verify_jwt=true`;
+- SQL acceptance и safe-response acceptance пройдены;
+- Auth-positive HTTP E2E ещё не выполнен.
+
+Production:
+
+- project ref: `ofewxuqfjhamgerwzull`;
+- Edge Function и target RPC отсутствуют;
+- рабочая CRM-кнопка не переведена на новый транспорт;
+- DDL, DML, RLS, grants, Auth и данные не менялись.
 
 ## Задача
 
@@ -19,7 +37,7 @@ Action: `calculation.create_version`.
 
 ## Транспорт
 
-Кандидат Edge Function: `leader-crm-calculations`.
+Edge Function: `leader-crm-calculations`.
 
 Требования:
 
@@ -27,29 +45,38 @@ Action: `calculation.create_version`.
 - browser не вызывает RPC напрямую;
 - JWT проверяется сервером;
 - service role остаётся только внутри Edge Function;
-- actor из payload игнорируется и заменяется данными проверенного JWT.
+- actor из payload игнорируется и заменяется данными проверенного JWT;
+- вне staging source возвращает `wrong_environment`.
 
 ## Авторизация
 
 Edge Function получает активный профиль из `public.leader_user_profiles`.
 
-Каноническое разрешение: `calculation.write`.
+Каноническое разрешение: `calculations.write`.
 
-Допустимые роли на первом этапе:
+Источник разрешения: `CRM_V4_ACTIONS.CALCULATIONS_WRITE` в `action-permissions-v1.js`.
+
+Допустимые роли:
 
 - owner;
 - admin;
 - manager.
 
-Неизвестная роль, отключённый профиль или отсутствие разрешения должны завершаться отказом до любых записей.
+Accountant, designer, installer, contractor, неизвестная роль и отключённый профиль должны завершаться отказом до любых записей.
 
 ## Входные данные
 
-Обязательные поля:
+Envelope:
+
+- `action`;
+- `request_id`;
+- `expected_updated_at`;
+- `payload`.
+
+Обязательные поля payload:
 
 - `source_calculation_id`;
 - `idempotency_key`;
-- `expected_source_updated_at`;
 - `items`.
 
 Дополнительные поля:
@@ -59,7 +86,23 @@ Edge Function получает активный профиль из `public.lead
 - `public_comment`;
 - `internal_comment`.
 
-Максимум 200 строк. Пустой список строк запрещён.
+Максимум 200 строк. Пустой список строк запрещён. Idempotency key — не более 160 символов.
+
+Browser может передать в позиции только:
+
+- `catalog_id`;
+- `category`;
+- `item_type`;
+- `name`;
+- `unit`;
+- `qty`;
+- `contractor_price`;
+- `client_price`;
+- `comment`;
+- `data`;
+- `sort_order`.
+
+Browser не передаёт суммы, прибыль, маржу, наценку, version number, status, actor, lead/calculation parent IDs, КП или order link.
 
 ## Защита источника
 
@@ -68,9 +111,9 @@ Edge Function получает активный профиль из `public.lead
 Сервер проверяет:
 
 - существование исходного расчёта;
-- принадлежность текущей заявке;
-- совпадение `expected_source_updated_at`;
-- отсутствие подмены lead/client/actor;
+- совпадение `expected_updated_at`;
+- принадлежность явно выбранной потребности той же заявке;
+- отсутствие подмены actor и server-owned полей;
 - состояние исторических дублей номера версии.
 
 Запрещены:
@@ -84,7 +127,7 @@ Edge Function получает активный профиль из `public.lead
 
 ## Новая версия
 
-Новая запись создаётся со следующими правилами:
+Новая запись создаётся по правилам:
 
 - `lead_id` и `client_id` копируются из источника;
 - `need_id` копируется либо заменяется явно переданным значением;
@@ -98,43 +141,50 @@ Edge Function получает активный профиль из `public.lead
 
 ## Номер версии и конкуренция
 
-Вся операция выполняется одной транзакцией.
+Вся операция выполняется одной транзакцией:
 
-Порядок:
+1. Получить advisory lock по action + idempotency key.
+2. Проверить `leader_private.leader_command_receipts`.
+3. Заблокировать исходный расчёт `FOR UPDATE`.
+4. Получить advisory lock по action + lead ID.
+5. Проверить optimistic concurrency через `expected_updated_at`.
+6. Заблокировать создание при существующих дублях версий.
+7. Определить `max(version_number)` для заявки.
+8. Назначить `max + 1`.
+9. Создать расчёт и snapshot строк.
+10. Сохранить safe response в receipt.
 
-1. Получить advisory transaction lock для `calculation.create_version + lead_id`.
-2. Заблокировать исходный расчёт `FOR UPDATE`.
-3. Проверить optimistic concurrency через `expected_source_updated_at`.
-4. Определить `max(version_number)` для заявки внутри той же блокировки.
-5. Назначить `max + 1`.
-6. Создать расчёт.
-7. Создать все строки.
-8. Создать receipt.
-9. Зафиксировать транзакцию.
+В staging действует unique index `(lead_id, version_number)`.
 
-После отдельного исправления исторических дублей должен быть добавлен уникальный индекс `(lead_id, version_number)`.
-
-До этого preflight обязан возвращать `409 duplicate_version_inventory`, если для заявки уже обнаружены повторяющиеся номера.
+Read-only production-аудит ранее выявил 11 сохранённых расчётов, 30 строк и одну заявку, где две записи имеют номер версии 1. Production remediation требует отдельного согласования.
 
 ## Идемпотентность
 
 Используется `leader_private.leader_command_receipts`.
 
-Ключ receipt:
+- тот же key + тот же SHA-256 canonical payload возвращает первоначальный результат;
+- тот же key + другой payload возвращает `409 idempotency_conflict`;
+- receipt, расчёт и строки создаются одной транзакцией;
+- replay возвращает ту же safe projection.
 
-- action: `calculation.create_version`;
-- idempotency key;
-- SHA-256 canonical payload.
+## Safe response
 
-Повтор с тем же ключом и тем же hash возвращает первоначальный успешный результат.
+Calculation response содержит только явный allowlist и не возвращает:
 
-Повтор с тем же ключом и другим hash возвращает `409 idempotency_conflict`.
+- `created_by`;
+- `updated_by`;
+- `commercial_offer_id`;
+- `order_id`.
 
-Receipt, расчёт и строки создаются одной транзакцией.
+Item response не возвращает:
+
+- `calculation_id`;
+- `lead_id`.
 
 ## Ошибки
 
 - `400 invalid_payload`;
+- `400 unknown_action`;
 - `400 empty_items`;
 - `400 invalid_item`;
 - `400 invalid_totals`;
@@ -148,47 +198,50 @@ Receipt, расчёт и строки создаются одной транза
 - `409 duplicate_version_inventory`;
 - `500 calculation_version_create_failed`.
 
-## Атомарность
+## Подтверждено в staging
 
-Создание новой версии не должно использовать клиентский compensating DELETE.
+- create version 2;
+- server-side totals;
+- immutable source;
+- exact replay;
+- idempotency conflict;
+- negative-profit rejection;
+- safe response allowlists;
+- receipt safe projection;
+- browser RPC execute denied;
+- service-role RPC execute allowed;
+- security WARN/ERROR — 0;
+- performance WARN/ERROR — 0;
+- fixtures после ROLLBACK — 0.
 
-Расчёт, строки и receipt либо создаются вместе, либо не создаётся ничего. Это устраняет текущий риск частичного сохранения между отдельными browser INSERT.
+## Не подтверждено
 
-## Проверка staging
+- authenticated HTTP 201;
+- replay HTTP 200;
+- modified payload HTTP 409;
+- forbidden role HTTP 403;
+- inactive profile HTTP 403;
+- browser Network safe-response evidence.
 
-После отдельного разрешения необходимо проверить:
-
-- параллельные запросы для одного lead;
-- одинаковый idempotency key и одинаковый payload;
-- одинаковый key и различный payload;
-- forced failure при вставке строки;
-- forced failure при записи receipt;
-- изменение source между чтением и командой;
-- source с КП;
-- source с заказом;
-- duplicate version inventory;
-- отсутствие UPDATE/DELETE источника;
-- security и performance advisors.
+Причина: staging содержит 0 Auth users, а connector не предоставляет безопасные create/delete Auth user operations.
 
 ## Rollback
 
 Rollback выполняется app-first:
 
-1. Отключить action в Edge Function.
+1. Не подключать или отключить browser action.
 2. Остановить новые команды.
-3. Сохранить уже созданные версии и receipts как доказательство.
+3. Сохранить созданные версии и receipts как доказательство.
 4. Не удалять и не перенумеровывать данные автоматически.
-5. Откат схемы рассматривать только отдельным согласованным изменением.
+5. Схемный rollback выполнять только отдельной согласованной миграцией.
 
-## Approval gates
+## Remaining approval gates
 
 Отдельного разрешения требуют:
 
+- временный staging Auth user и authenticated E2E;
+- подключение staging transport к тестовому UI;
 - исправление исторического дубля production;
-- применение staging migration;
-- staging Edge deployment;
-- добавление уникального индекса;
-- production migration;
-- production Edge deployment.
-
-Текущий PR не выполняет ни одно из этих действий.
+- production migration и rollback plan;
+- production Edge deployment;
+- включение production CRM action.

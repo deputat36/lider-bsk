@@ -1,6 +1,6 @@
 export const CALCULATION_EDGE_CONTRACT_VERSION = 'leader-crm-calculations-edge-v1'
 export const CALCULATION_ACTION = 'calculation.create_version'
-export const CALCULATION_PERMISSION = 'calculation.write'
+export const CALCULATION_PERMISSION = 'calculations.write'
 export const STAGING_PROJECT_REF = 'otulfnouybahfnsycxqn'
 export const MAX_CALCULATION_ITEMS = 200
 

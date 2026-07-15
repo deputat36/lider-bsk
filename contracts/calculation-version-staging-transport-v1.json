@@ -1,0 +1,52 @@
+{
+  "contract_version": "1.0.0",
+  "status": "source_only_staging_transport",
+  "action": "calculation.create_version",
+  "environment": {
+    "allowed_project_ref": "otulfnouybahfnsycxqn",
+    "production_project_ref": "ofewxuqfjhamgerwzull",
+    "production_enabled": false,
+    "wrong_environment": "fail_closed_before_session_or_invoke"
+  },
+  "transport": {
+    "module": "crm/v4/assets/v4/calculation-version-staging-transport-v1.js",
+    "edge_function": "leader-crm-calculations",
+    "verify_jwt": true,
+    "uses_current_supabase_session": true,
+    "direct_table_write": false,
+    "direct_rpc": false,
+    "service_role_in_browser": false,
+    "production_ui_wired": false
+  },
+  "authorization": {
+    "permission": "calculations.write",
+    "canonical_registry": "crm/v4/assets/v4/action-permissions-v1.js",
+    "allowed_roles": ["owner", "admin", "manager"],
+    "browser_service_role_allowed": false,
+    "server_profile_check_required": true
+  },
+  "command": {
+    "top_level_fields": ["action", "request_id", "expected_updated_at", "payload"],
+    "payload_fields": ["source_calculation_id", "idempotency_key", "title", "need_id", "public_comment", "internal_comment", "items"],
+    "item_fields": ["catalog_id", "category", "item_type", "name", "unit", "qty", "contractor_price", "client_price", "comment", "data", "sort_order"],
+    "max_items": 200,
+    "idempotency_key_max_length": 160,
+    "client_totals_allowed": false,
+    "client_version_number_allowed": false,
+    "client_actor_fields_allowed": false,
+    "client_parent_ids_in_items_allowed": false
+  },
+  "results": {
+    "created_status": 201,
+    "replay_status": 200,
+    "read_after_success_optional": true,
+    "error_kinds": ["wrong_environment", "auth_required", "forbidden", "validation_error", "stale_source", "not_found", "idempotency_conflict", "duplicate_inventory", "version_conflict", "network_error", "persistence_failed"]
+  },
+  "boundaries": {
+    "calculations_js_unchanged": true,
+    "existing_save_button_unchanged": true,
+    "production_config_unchanged": true,
+    "staging_auth_e2e_required_before_ui_wiring": true,
+    "production_rollout_requires_explicit_approval": true
+  }
+}

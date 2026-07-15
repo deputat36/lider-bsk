@@ -63,12 +63,12 @@ for marker in [
         errors.append('Missing version asset marker: ' + marker)
 
 for forbidden in [
-    ".insert(",
-    ".update(",
-    ".delete(",
-    "service_role",
-    "supabase/migrations",
-    "deploy_edge_function",
+    '.insert(',
+    '.update(',
+    '.delete(',
+    'service_role',
+    'supabase/migrations',
+    'deploy_edge_function',
 ]:
     if forbidden in texts.get('ui', '') or forbidden in texts.get('model', ''):
         errors.append('Version integrity browser code must remain read-only: ' + forbidden)
@@ -81,7 +81,7 @@ except json.JSONDecodeError as exc:
 
 expected = {
     'action': 'calculation.create_version',
-    'status': 'source_only_candidate',
+    'status': 'staging_deployed_production_gated',
 }
 for key, value in expected.items():
     if contract.get(key) != value:
@@ -92,6 +92,12 @@ if transport.get('verify_jwt') is not True:
     errors.append('Server contract must require verify_jwt=true')
 if transport.get('browser_calls_rpc_directly') is not False:
     errors.append('Browser must not call the version RPC directly')
+if transport.get('production_ui_enabled') is not False:
+    errors.append('Production version action must remain disabled')
+
+authorization = contract.get('authorization', {})
+if authorization.get('permission') != 'calculations.write':
+    errors.append('Server permission must match CRM_V4_ACTIONS.CALCULATIONS_WRITE')
 
 source_rules = contract.get('source_rules', {})
 for marker in ['source_calculation_update', 'source_items_update', 'source_delete']:
@@ -126,7 +132,9 @@ for marker in [
     'leader_command_receipts',
     'duplicate_version_inventory',
     'app-first',
-    'Текущий PR не выполняет ни одно из этих действий',
+    'staging deployed, production gated',
+    'Каноническое разрешение: `calculations.write`',
+    'Auth-positive HTTP E2E ещё не выполнен',
 ]:
     if marker not in texts.get('spec', ''):
         errors.append('Missing server specification marker: ' + marker)
@@ -144,4 +152,4 @@ for marker in [
 if errors:
     print('\n'.join(errors))
     sys.exit(1)
-print('Calculation versions are audited in read-only UI and the atomic create-version server contract is source-only.')
+print('Calculation versions are audited in read-only UI; staging create-version is deployed and production remains gated.')

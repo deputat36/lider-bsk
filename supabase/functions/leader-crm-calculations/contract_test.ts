@@ -1,5 +1,6 @@
 import {
   CALCULATION_ACTION,
+  CALCULATION_PERMISSION,
   MAX_CALCULATION_ITEMS,
   STAGING_PROJECT_REF,
   canWriteCalculation,
@@ -50,6 +51,10 @@ function request(overrides: Record<string, unknown> = {}) {
 Deno.test('staging URL resolves exact project ref', () => {
   assert(projectRefFromUrl(`https://${STAGING_PROJECT_REF}.supabase.co`) === STAGING_PROJECT_REF, 'project ref mismatch')
   assert(projectRefFromUrl('not-a-url') === '', 'invalid URL must fail closed')
+})
+
+Deno.test('canonical permission matches CRM action registry', () => {
+  assert(CALCULATION_PERMISSION === 'calculations.write', 'permission drifted from CRM_V4_ACTIONS.CALCULATIONS_WRITE')
 })
 
 Deno.test('canonical calculation-write roles are allowed', () => {
