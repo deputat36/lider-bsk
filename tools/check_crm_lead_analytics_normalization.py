@@ -9,6 +9,8 @@ summary = root / 'crm/v4/assets/v4/lead-analytics-summary-v1.js'
 leads = root / 'crm/v4/assets/v4/leads.js'
 index = root / 'crm/v4/index.html'
 plan = root / 'docs/CRM_LEAD_ANALYTICS_NORMALIZATION_PLAN_2026-07-07.md'
+source_audit = root / 'docs/PUBLIC_LEAD_FUNNEL_AGGREGATES_READONLY_2026-07-15.md'
+previous_source_audit = root / 'docs/PUBLIC_LEAD_FUNNEL_AGGREGATES_READONLY_2026-07-05.md'
 dry_run = root / 'docs/CRM_LEAD_ANALYTICS_NORMALIZED_DRY_RUN_READONLY_2026-07-15.md'
 previous_dry_run = root / 'docs/CRM_LEAD_ANALYTICS_NORMALIZED_DRY_RUN_READONLY_2026-07-10.md'
 manual_test = root / 'docs/CRM_LEAD_ANALYTICS_BADGES_MANUAL_TEST_2026-07-09.md'
@@ -116,6 +118,8 @@ else:
         'Current public lead contract',
         'Manual browser verification remains required',
         'leadAnalyticsSearchText(lead)',
+        'PUBLIC_LEAD_FUNNEL_AGGREGATES_READONLY_2026-07-15.md',
+        'Previous source audit',
         'CRM_LEAD_ANALYTICS_NORMALIZED_DRY_RUN_READONLY_2026-07-15.md',
         'Previous normalized dry run',
         'one manual CRM lead increased `Баннеры` from 3 to 4',
@@ -123,6 +127,51 @@ else:
     for marker in required:
         if marker not in text:
             errors.append(f'Missing plan marker: {marker}')
+
+if not previous_source_audit.exists():
+    errors.append('Missing previous public lead funnel source audit')
+
+if not source_audit.exists():
+    errors.append('Missing current public lead funnel source audit')
+else:
+    text = source_audit.read_text(encoding='utf-8')
+    required = [
+        'read-only aggregate checks only',
+        'Total leads checked: `13`',
+        '2026-06-07 09:44:56.778722+00',
+        '2026-07-15 09:55:01.673176+00',
+        'leader-public-lead` v10',
+        '| Создан заказ | 5 |',
+        '| Новая | 3 |',
+        '| Расчёт подготовлен | 3 |',
+        '| Баннер | 2 |',
+        '| Вручную | 2 |',
+        '| Сайт | 2 |',
+        '| `request_id` | 1 | 7.7% |',
+        '| `source_page_path` | 1 | 7.7% |',
+        '| `submitted_at` | 1 | 7.7% |',
+        '| `utm_source` | 6 | 46.2% |',
+        '| `page_url` | 9 | 69.2% |',
+        '`5` of `13` leads have status `Создан заказ`',
+        'Source and service normalization tasks #196 and #197 are completed',
+        'controlled production browser E2E is still approval-gated in issue #206',
+        'No DDL was executed',
+        'No DML was executed',
+        'No CRM UI code was changed',
+    ]
+    for marker in required:
+        if marker not in text:
+            errors.append(f'Missing current source-audit marker: {marker}')
+    stale_markers = (
+        'Total leads checked: `12`',
+        '`5` of `12` leads',
+        '`Расчёт подготовлен`: `2`',
+        'Add a future CRM/reporting task to normalize service categories',
+        'Add a future CRM/reporting task to normalize source categories',
+    )
+    for marker in stale_markers:
+        if marker in text:
+            errors.append(f'Current source audit contains stale marker: {marker}')
 
 if not previous_dry_run.exists():
     errors.append('Missing previous normalized lead analytics dry run document')
@@ -186,4 +235,4 @@ if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('CRM lead analytics normalization, current 13-lead read-only snapshot, derived search toggle, clickable summary, badges, plan and manual test are valid.')
+print('CRM lead analytics normalization, current 13-lead funnel and normalized read-only snapshots, derived search toggle, clickable summary, badges, plan and manual test are valid.')
