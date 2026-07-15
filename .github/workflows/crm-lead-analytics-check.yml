@@ -12,6 +12,7 @@ on:
       - 'docs/CRM_LEAD_ANALYTICS_NORMALIZATION_PLAN_2026-07-07.md'
       - 'docs/CRM_LEAD_ANALYTICS_BADGES_MANUAL_TEST_2026-07-09.md'
       - 'docs/CRM_LEAD_ANALYTICS_NORMALIZED_DRY_RUN_READONLY_2026-07-10.md'
+      - 'docs/CRM_LEAD_ANALYTICS_NORMALIZED_DRY_RUN_READONLY_2026-07-15.md'
       - 'patches/crm-lead-derived-search.patch'
       - 'tools/check_crm_lead_analytics_normalization.py'
       - 'tools/check_crm_lead_derived_search_patch.py'
@@ -27,6 +28,7 @@ on:
       - 'docs/CRM_LEAD_ANALYTICS_NORMALIZATION_PLAN_2026-07-07.md'
       - 'docs/CRM_LEAD_ANALYTICS_BADGES_MANUAL_TEST_2026-07-09.md'
       - 'docs/CRM_LEAD_ANALYTICS_NORMALIZED_DRY_RUN_READONLY_2026-07-10.md'
+      - 'docs/CRM_LEAD_ANALYTICS_NORMALIZED_DRY_RUN_READONLY_2026-07-15.md'
       - 'patches/crm-lead-derived-search.patch'
       - 'tools/check_crm_lead_analytics_normalization.py'
       - 'tools/check_crm_lead_derived_search_patch.py'
@@ -38,7 +40,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate lead analytics normalization plan
+      - name: Validate lead analytics normalization plan and current read-only snapshot
         shell: bash
         run: |
           set -euo pipefail
