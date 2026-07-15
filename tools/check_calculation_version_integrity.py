@@ -41,7 +41,7 @@ for marker in [
     'is-version-duplicate',
     'is-version-protected',
     'calculationVersionAudit',
-    'Новая v',
+    '→ новая v',
 ]:
     if marker not in texts.get('ui', ''):
         errors.append('Missing version UI marker: ' + marker)
