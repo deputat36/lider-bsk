@@ -33,9 +33,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate calculation version integrity
-        run: |
-          node --check crm/v4/assets/v4/calculation-version-integrity-model-v1.js
-          node --check crm/v4/assets/v4/calculations-saved-tools-v2.js
-          node tools/test_calculation_version_integrity_model.mjs
-          python3 tools/check_calculation_version_integrity.py
+      - name: Check version model syntax
+        run: node --check crm/v4/assets/v4/calculation-version-integrity-model-v1.js
+      - name: Check saved calculation UI syntax
+        run: node --check crm/v4/assets/v4/calculations-saved-tools-v2.js
+      - name: Test version integrity model
+        run: node tools/test_calculation_version_integrity_model.mjs
+      - name: Validate source-only version contract
+        run: python3 tools/check_calculation_version_integrity.py
