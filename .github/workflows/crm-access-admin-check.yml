@@ -37,6 +37,7 @@ jobs:
           page='crm/v4/index.html'
           menu='crm/v4/assets/v4/crm-v4-expanded-menu-v1.js'
           tabs='crm/v4/assets/v4/crm-v4-tabs-lite.js'
+          route='crm/v4/assets/v4/crm-navigation-route-v1.js'
           auth='crm/v4/assets/v4/auth.js'
           admin='crm/v4/assets/v4/user-admin-v1.js'
           selfcheck='crm/v4/assets/v4/crm-ui-selfcheck-v1.js'
@@ -45,6 +46,7 @@ jobs:
           test -f "$page"
           test -f "$menu"
           test -f "$tabs"
+          test -f "$route"
           test -f "$auth"
           test -f "$admin"
           test -f "$selfcheck"
@@ -58,7 +60,8 @@ jobs:
           grep -Fq "SETTABLE_TABS" "$tabs"
           grep -Fq "ROUTABLE_TABS" "$tabs"
           grep -Fq "'card'" "$tabs"
-          grep -Fq "URLSearchParams" "$tabs"
+          grep -Fq "new URL(href" "$route"
+          grep -Fq "searchParams.get('tab')" "$route"
           grep -Fq "function readInitialTab()" "$tabs"
           grep -Fq "readCrmNavigationTab(window.location.href)" "$tabs"
           grep -Fq "import './user-admin-v1.js?v=20260628-access-label-1';" "$auth"
@@ -93,5 +96,6 @@ jobs:
           node --check crm/v4/assets/v4/auth.js
           node --check crm/v4/assets/v4/crm-v4-expanded-menu-v1.js
           node --check crm/v4/assets/v4/crm-v4-tabs-lite.js
+          node --check crm/v4/assets/v4/crm-navigation-route-v1.js
           node --check crm/v4/assets/v4/user-admin-v1.js
           node --check crm/v4/assets/v4/crm-ui-selfcheck-v1.js
