@@ -4,6 +4,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CACHE_BUST = ROOT / 'docs' / 'PUBLIC_LEAD_FORM_CACHE_BUST_2026-07-01.md'
 COVERAGE = ROOT / 'docs' / 'PUBLIC_LEAD_FORM_CACHE_V5_COVERAGE_2026-07-10.md'
+CORE_BUST = ROOT / 'docs' / 'PUBLIC_CORE_FORM_CACHE_V23_2026-07-15.md'
 COMPLETE_CHECKER = ROOT / 'tools' / 'check_all_public_form_cache_versions.py'
 
 
@@ -20,6 +21,7 @@ def forbid(text: str, marker: str, source: Path) -> None:
 def main() -> None:
     cache_bust = CACHE_BUST.read_text(encoding='utf-8')
     coverage = COVERAGE.read_text(encoding='utf-8')
+    core_bust = CORE_BUST.read_text(encoding='utf-8')
     checker = COMPLETE_CHECKER.read_text(encoding='utf-8')
 
     for marker in (
@@ -45,7 +47,20 @@ def main() -> None:
     ):
         require(coverage, marker, COVERAGE)
 
-    for source, text in ((CACHE_BUST, cache_bust), (COVERAGE, coverage)):
+    for marker in (
+        'completed 2026-07-15',
+        'assets/public-lead-form.js?v=23',
+        'index.html',
+        'request.html',
+        'uslugi.html',
+        'prices.html',
+        'kontakty.html',
+        'source `Вручную`',
+        'production Supabase was not changed',
+    ):
+        require(core_bust, marker, CORE_BUST)
+
+    for source, text in ((CACHE_BUST, cache_bust), (COVERAGE, coverage), (CORE_BUST, core_bust)):
         for marker in (
             'Remaining blocked pages',
             'remain unchanged until',
@@ -57,6 +72,12 @@ def main() -> None:
 
     for marker in (
         'MIN_VERSION = 5',
+        'CORE_VERSION = 23',
+        "'index.html'",
+        "'request.html'",
+        "'uslugi.html'",
+        "'prices.html'",
+        "'kontakty.html'",
         "ROOT.glob('*.html')",
         'if len(parser.form_sources) != 1',
         'cache version must be numeric',

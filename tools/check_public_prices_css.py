@@ -10,7 +10,7 @@ PAGE = ROOT / "prices.html"
 CSS = ROOT / "assets" / "public-prices.css"
 CSS_LINK = '<link rel="stylesheet" href="assets/public-prices.css?v=1">'
 FORM_CSS_LINK = '<link rel="stylesheet" href="assets/public-lead-form.css?v=14">'
-FORM_SCRIPT = '<script src="assets/public-lead-form.js?v=14"></script>'
+FORM_SCRIPT = '<script src="assets/public-lead-form.js?v=23"></script>'
 
 
 def main() -> None:
@@ -31,7 +31,7 @@ def main() -> None:
     if page.count(FORM_CSS_LINK) != 1:
         errors.append("prices.html must retain public-lead-form.css?v=14 exactly once")
     if page.count(FORM_SCRIPT) != 1:
-        errors.append("prices.html must retain public-lead-form.js?v=14 exactly once")
+        errors.append("prices.html must load public-lead-form.js?v=23 exactly once")
     if CSS_LINK in page and FORM_CSS_LINK in page and page.index(FORM_CSS_LINK) > page.index(CSS_LINK):
         errors.append("Shared form CSS must load before the page-specific prices CSS")
 

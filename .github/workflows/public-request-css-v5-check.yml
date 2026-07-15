@@ -1,4 +1,4 @@
-name: Public request CSS and v5 check
+name: Public request CSS and core form check
 
 on:
   push:
@@ -27,11 +27,11 @@ on:
       - '.github/workflows/public-request-css-v5-check.yml'
 
 jobs:
-  validate-request-css-v5:
+  validate-request-css-core-form:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate request CSS, reference helper and form v5
+      - name: Validate request CSS, reference helper and core form cache
         shell: bash
         run: |
           set -euo pipefail

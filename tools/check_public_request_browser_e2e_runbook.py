@@ -9,6 +9,7 @@ REQUEST_PAGE = ROOT / "request.html"
 FORM = ROOT / "assets" / "public-lead-form.js"
 REFERENCE = ROOT / "assets" / "public-lead-reference-v1.js"
 EDGE = ROOT / "supabase" / "functions" / "leader-public-lead" / "index.ts"
+FORM_SCRIPT = "assets/public-lead-form.js?v=23"
 
 
 def read(path: Path) -> str:
@@ -71,11 +72,13 @@ def main() -> int:
             errors.append(f"Destructive SQL marker {marker!r} is forbidden in the runbook")
 
     helper = "assets/public-lead-reference-v1.js?v=1"
-    form_script = "assets/public-lead-form.js?v=5"
     require(request_page, helper, "request.html", errors)
-    require(request_page, form_script, "request.html", errors)
-    if helper in request_page and form_script in request_page:
-        if request_page.index(helper) > request_page.index(form_script):
+    require(request_page, FORM_SCRIPT, "request.html", errors)
+    for stale in ("assets/public-lead-form.js?v=4", "assets/public-lead-form.js?v=5"):
+        if stale in request_page:
+            errors.append(f"request.html: stale form script marker {stale!r} is forbidden")
+    if helper in request_page and FORM_SCRIPT in request_page:
+        if request_page.index(helper) > request_page.index(FORM_SCRIPT):
             errors.append("request.html: reference helper must load before the public form")
 
     for marker in (
@@ -109,7 +112,7 @@ def main() -> int:
         print("\n".join(errors))
         return 1
 
-    print("Public request browser E2E runbook and source contracts are valid.")
+    print("Public request browser E2E runbook and source contracts are valid with form cache v23.")
     return 0
 
 

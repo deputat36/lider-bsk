@@ -4,14 +4,19 @@ import sys
 
 
 ROOT = Path(__file__).resolve().parents[1]
+CORE_SCRIPT = 'assets/public-lead-form.js?v=23'
 V5_SCRIPT = 'assets/public-lead-form.js?v=5'
 V4_SCRIPT = 'assets/public-lead-form.js?v=4'
 
-V5_PAGES = (
+CORE_PAGES = (
     'index.html',
     'request.html',
     'uslugi.html',
+    'prices.html',
     'kontakty.html',
+)
+
+V5_PAGES = (
     'kak-prohodit-zakaz.html',
     'bannery-borisoglebsk.html',
     'pechat-bannerov-borisoglebsk.html',
@@ -36,17 +41,22 @@ V5_PAGES = (
     'audit-kart-yandex-2gis-borisoglebsk.html',
 )
 
+EXPECTED_SCRIPTS = {
+    **{name: CORE_SCRIPT for name in CORE_PAGES},
+    **{name: V5_SCRIPT for name in V5_PAGES},
+}
+
 errors = []
 
-for name in V5_PAGES:
+for name, expected_script in EXPECTED_SCRIPTS.items():
     path = ROOT / name
     if not path.is_file():
         errors.append(f'Missing public page: {name}')
         continue
 
     text = path.read_text(encoding='utf-8')
-    if text.count(V5_SCRIPT) != 1:
-        errors.append(f'{name}: expected exactly one {V5_SCRIPT}')
+    if text.count(expected_script) != 1:
+        errors.append(f'{name}: expected exactly one {expected_script}')
     if V4_SCRIPT in text:
         errors.append(f'{name}: stale {V4_SCRIPT} reference remains')
     if text.count('assets/public-lead-form.js') != 1:
@@ -56,4 +66,7 @@ if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print(f'Public lead form cache v5 coverage is valid for {len(V5_PAGES)} pages.')
+print(
+    'Public lead form cache coverage is valid: '
+    f'{len(CORE_PAGES)} core pages on v23 and {len(V5_PAGES)} gradual-migration pages on v5.'
+)

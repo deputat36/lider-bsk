@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate CSS extraction, source copy and form v5
+      - name: Validate CSS extraction, source copy and core form cache
         shell: bash
         run: |
           set -euo pipefail

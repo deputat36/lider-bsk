@@ -1,4 +1,4 @@
-name: Public v5 landing SEO contract check
+name: Public landing SEO and cache contract check
 
 on:
   workflow_dispatch:
@@ -20,30 +20,30 @@ on:
       - '.github/workflows/public-v5-landing-seo-contract-check.yml'
 
 jobs:
-  validate-public-v5-seo:
+  validate-public-landing-seo:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           show-progress: false
 
-      - name: Validate public v5 landing SEO and contour contract
+      - name: Validate core v23 and gradual v5 landing contracts
         shell: bash
         run: |
           set +e
           {
             python3 tools/check_public_lead_form_cache_v5_partial.py
             python3 tools/check_public_v5_landing_seo_contract.py
-          } > public-v5-seo-report.txt 2>&1
+          } > public-landing-seo-report.txt 2>&1
           status=$?
-          cat public-v5-seo-report.txt
+          cat public-landing-seo-report.txt
           exit "$status"
 
       - name: Upload SEO diagnostic report
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: public-v5-seo-report
-          path: public-v5-seo-report.txt
+          name: public-landing-seo-report
+          path: public-landing-seo-report.txt
           if-no-files-found: error
           retention-days: 7

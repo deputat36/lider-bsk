@@ -11,7 +11,7 @@ CSS = ROOT / "assets" / "public-contacts.css"
 JS = ROOT / "assets" / "public-contacts.js"
 FORM_CSS = 'assets/public-lead-form.css?v=4'
 PAGE_CSS = 'assets/public-contacts.css?v=1'
-FORM_JS = 'assets/public-lead-form.js?v=5'
+FORM_JS = 'assets/public-lead-form.js?v=23'
 PAGE_JS = 'assets/public-contacts.js?v=1'
 
 

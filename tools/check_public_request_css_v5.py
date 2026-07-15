@@ -67,6 +67,7 @@ def main() -> None:
         'Заявка попадет в CRM',
         'Заявка сразу попадёт в CRM',
         'assets/public-lead-form.js?v=4',
+        'assets/public-lead-form.js?v=5',
         '<style>',
         '</style>',
     ):
@@ -84,7 +85,7 @@ def main() -> None:
 
     expected_scripts = [
         'assets/public-lead-reference-v1.js?v=1',
-        'assets/public-lead-form.js?v=5',
+        'assets/public-lead-form.js?v=23',
     ]
     if parser.scripts != expected_scripts:
         raise SystemExit(f'Unexpected request script order: {parser.scripts}')
@@ -119,7 +120,7 @@ def main() -> None:
     ):
         require(css, marker, 'assets/public-request.css')
 
-    print('Request page CSS, source copy and form v5 contract is valid.')
+    print('Request page CSS, source copy and form v23 contract is valid.')
 
 
 if __name__ == '__main__':

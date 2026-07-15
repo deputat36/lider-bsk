@@ -6,6 +6,7 @@ on:
     paths:
       - 'docs/PUBLIC_LEAD_FORM_CACHE_BUST_2026-07-01.md'
       - 'docs/PUBLIC_LEAD_FORM_CACHE_V5_COVERAGE_2026-07-10.md'
+      - 'docs/PUBLIC_CORE_FORM_CACHE_V23_2026-07-15.md'
       - 'tools/check_all_public_form_cache_versions.py'
       - 'tools/check_public_cache_docs_current.py'
       - '.github/workflows/public-cache-docs-current-check.yml'
@@ -14,6 +15,7 @@ on:
     paths:
       - 'docs/PUBLIC_LEAD_FORM_CACHE_BUST_2026-07-01.md'
       - 'docs/PUBLIC_LEAD_FORM_CACHE_V5_COVERAGE_2026-07-10.md'
+      - 'docs/PUBLIC_CORE_FORM_CACHE_V23_2026-07-15.md'
       - 'tools/check_all_public_form_cache_versions.py'
       - 'tools/check_public_cache_docs_current.py'
       - '.github/workflows/public-cache-docs-current-check.yml'

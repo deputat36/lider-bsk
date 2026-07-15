@@ -10,7 +10,7 @@ PAGE = ROOT / "uslugi.html"
 CSS = ROOT / "assets" / "public-services.css"
 CSS_LINK = '<link rel="stylesheet" href="assets/public-services.css?v=1">'
 FORM_CSS_LINK = '<link rel="stylesheet" href="assets/public-lead-form.css?v=5">'
-FORM_SCRIPT = '<script src="assets/public-lead-form.js?v=5"></script>'
+FORM_SCRIPT = '<script src="assets/public-lead-form.js?v=23"></script>'
 
 
 def main() -> None:
@@ -38,7 +38,9 @@ def main() -> None:
         errors.append("uslugi.html must retain public-lead-form.css?v=5 exactly once")
 
     if page.count(FORM_SCRIPT) != 1:
-        errors.append("uslugi.html must retain public-lead-form.js?v=5 exactly once")
+        errors.append("uslugi.html must load public-lead-form.js?v=23 exactly once")
+    if 'assets/public-lead-form.js?v=5' in page:
+        errors.append("uslugi.html must not retain the stale form script v=5 marker")
 
     if CSS_LINK in page and FORM_CSS_LINK in page and page.index(FORM_CSS_LINK) > page.index(CSS_LINK):
         errors.append("Shared form CSS must load before the page-specific services CSS")
@@ -80,7 +82,7 @@ def main() -> None:
 
     print(
         "Public services catalog CSS contract is valid: "
-        f"external CSS {len(css.strip())} characters, no inline style block."
+        f"external CSS {len(css.strip())} characters, core form cache v23."
     )
 
 
