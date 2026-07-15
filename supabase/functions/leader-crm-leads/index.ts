@@ -168,6 +168,7 @@ async function updateLead(supabaseUrl: string, serviceRole: string, body: Record
   if ('next_contact_at' in body) patch.next_contact_at = cleanText(body.next_contact_at, 80) || null
   if ('message' in body) patch.message = cleanText(body.message, 2000)
   if ('reject_reason' in body) patch.reject_reason = cleanText(body.reject_reason, 300)
+  if (!Object.keys(patch).length) return json(400, { error: 'no_update_fields' })
   const res = await rest(supabaseUrl, serviceRole, '/rest/v1/leader_leads?id=eq.' + encodeURIComponent(id) + '&select=' + encodeURIComponent(leadFields), { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Prefer': 'return=representation' }, body: JSON.stringify(patch) })
   if (!res.ok) return json(500, { error: 'lead_update_failed', details: await res.text() })
   const rows = await res.json()
