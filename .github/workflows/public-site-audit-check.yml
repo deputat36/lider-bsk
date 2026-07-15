@@ -24,6 +24,7 @@ on:
       - 'docs/PUBLIC_HOMEPAGE_SOURCE_COPY_2026-07-12.md'
       - 'docs/PUBLIC_HOMEPAGE_CSS_MIGRATION_2026-07-12.md'
       - 'docs/PUBLIC_REQUEST_CSS_V5_MIGRATION_2026-07-12.md'
+      - 'docs/PUBLIC_CORE_FORM_CACHE_V23_2026-07-15.md'
       - 'docs/PUBLIC_LOCAL_RESOURCE_INTEGRITY_2026-07-13.md'
       - 'docs/PUBLIC_DOM_REFERENCE_INTEGRITY_2026-07-13.md'
       - 'docs/PUBLIC_HTML_SEO_BASELINE_2026-07-13.md'
@@ -81,6 +82,7 @@ on:
       - 'docs/PUBLIC_HOMEPAGE_SOURCE_COPY_2026-07-12.md'
       - 'docs/PUBLIC_HOMEPAGE_CSS_MIGRATION_2026-07-12.md'
       - 'docs/PUBLIC_REQUEST_CSS_V5_MIGRATION_2026-07-12.md'
+      - 'docs/PUBLIC_CORE_FORM_CACHE_V23_2026-07-15.md'
       - 'docs/PUBLIC_LOCAL_RESOURCE_INTEGRITY_2026-07-13.md'
       - 'docs/PUBLIC_DOM_REFERENCE_INTEGRITY_2026-07-13.md'
       - 'docs/PUBLIC_HTML_SEO_BASELINE_2026-07-13.md'
@@ -208,10 +210,11 @@ jobs:
           from pathlib import Path
           page = Path('request.html').read_text(encoding='utf-8')
           helper = 'assets/public-lead-reference-v1.js?v=1'
-          form = 'assets/public-lead-form.js?v=5'
+          form = 'assets/public-lead-form.js?v=23'
           assert page.count(helper) == 1
           assert page.count(form) == 1
           assert page.index(helper) < page.index(form)
+          assert 'assets/public-lead-form.js?v=5' not in page
           PY
 
       - name: Check vizitki service contract
@@ -226,10 +229,10 @@ jobs:
       - name: Check poligrafiya catalog contract
         run: python3 tools/check_public_poligrafiya_catalog.py
 
-      - name: Check public lead v5 coverage
+      - name: Check public lead cache coverage
         run: python3 tools/check_public_lead_form_cache_v5_partial.py
 
-      - name: Check public v5 SEO contract
+      - name: Check public landing SEO and cache contract
         run: python3 tools/check_public_v5_landing_seo_contract.py
 
       - name: Check legacy redirects
@@ -256,7 +259,7 @@ jobs:
       - name: Check homepage CSS migration contract
         run: python3 tools/check_public_homepage_css_migration.py
 
-      - name: Check request CSS and form v5 contract
+      - name: Check request CSS and core form contract
         run: python3 tools/check_public_request_css_v5.py
 
       - name: Check all public local resources
