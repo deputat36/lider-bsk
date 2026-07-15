@@ -10,7 +10,7 @@ errors = []
 
 for forbidden in ['calculations-standard.js?', 'calculations-advanced.js?']:
     if forbidden in html: errors.append('Duplicate calculator remains connected: ' + forbidden)
-for marker in ['calculations.js?v=20260715-unified-pricing-1', 'calculations-unified.css?v=20260715-1']:
+for marker in ['calculations.js?v=20260715-need-prefill-2', 'calculations-unified.css?v=20260715-1']:
     if marker not in html: errors.append('Missing unified calculation asset: ' + marker)
 for marker in ['Наценка к себестоимости', 'data-calc-markup="auto"', 'Своя наценка', 'Ручные цены позиций не изменяются', 'repriceAutomaticItems']:
     if marker not in calc: errors.append('Missing pricing UX marker: ' + marker)

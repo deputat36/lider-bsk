@@ -3,6 +3,7 @@ import { timeout, friendlyError } from './api.js';
 import { v4State, setState } from './state.js';
 import { byId, setStatus, toast } from './ui.js';
 import { marginPercentFromMarkup, markupPercentForSubtotal, priceWithMarkup, repriceAutomaticItems } from './calculation-pricing-model-v1.js';
+import { needCalculationPrefill } from './need-calculation-prefill-v1.js';
 
 const CALC_FIELDS = 'id,lead_id,need_id,client_id,title,status,version_number,client_total,contractor_cost,profit,margin_percent,warning_level,warnings,public_comment,internal_comment,commercial_offer_id,order_id,created_by,updated_by,created_at,updated_at';
 const ITEM_FIELDS = 'id,calculation_id,lead_id,catalog_id,category,item_type,name,unit,qty,contractor_price,contractor_sum,markup_percent,client_price,client_sum,profit,margin_percent,comment,data,sort_order,created_at,updated_at';
@@ -798,6 +799,18 @@ function setCalcMode(mode) {
   renderSmartPreview();
 }
 
+function applyNeedToCalculation(need) {
+  const prefill = needCalculationPrefill(need);
+  setCalcMode(prefill.mode);
+  const values = { calcNeedId: prefill.needId, calcTitle: prefill.title, calcPublicComment: prefill.comment, calcWidth: prefill.width, calcHeight: prefill.height, calcQty: prefill.quantity };
+  Object.entries(values).forEach(([id, value]) => { const element = byId(id); if (element && value !== '') element.value = value; });
+  const material = byId('calcCatalogItem');
+  if (material && prefill.material) { const option = [...material.options].find((item) => item.textContent.toLowerCase().includes(prefill.material.toLowerCase())); if (option) material.value = option.value; }
+  renderSmartPreview();
+  byId('calculationsBox')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  toast('Потребность перенесена в расчёт');
+}
+
 function bindCalculationEvents() {
   byId('leadCardSection')?.addEventListener('click', (event) => {
     const modeButton = event.target.closest('button[data-calc-mode]');
@@ -836,6 +849,7 @@ function bindCalculationEvents() {
   document.addEventListener('leader-v4:needs-loaded', (event) => {
     if (event.detail?.leadId === v4State.route.leadId) refreshNeedSelect();
   });
+  document.addEventListener('leader-v4:calculate-need', (event) => applyNeedToCalculation(event.detail?.need || {}));
   document.addEventListener('leader-v4:route-change', (event) => {
     const id = event.detail?.leadId || null;
     draftItems = [];

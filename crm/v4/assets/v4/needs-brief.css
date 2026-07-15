@@ -1,0 +1,3 @@
+.v4-need-form-intro{display:grid;gap:4px;margin-bottom:12px;border-left:4px solid var(--primary);padding:8px 10px;background:#fff7ed;border-radius:0 12px 12px 0}
+.v4-need-form-intro span{color:#7c2d12}.v4-need-extra{margin:12px 0;border:1px solid var(--line);border-radius:14px;padding:10px;background:#f8fafc}.v4-need-extra summary{cursor:pointer;font-weight:900;color:#334155}.v4-need-extra .v4-form-grid{margin-top:10px}
+.v4-need-conditional [hidden]{display:none}.v4-need-actions .v4-primary{background:var(--primary);border-color:var(--primary);color:#fff}
