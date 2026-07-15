@@ -34,6 +34,7 @@ REQUIRED_MARKERS = {
         "leader_create_order_from_offer_rpc",
         "SUPABASE_SERVICE_ROLE_KEY",
         "access_denied",
+        "no_update_fields",
     ],
     "leader-crm-orders": [
         "leader_user_profiles",
@@ -46,6 +47,7 @@ REQUIRED_MARKERS = {
         "ORDER_ACTIONS_BY_ROLE",
         "canUpdateOrder",
         "matrix: ROLE_MATRIX_VERSION",
+        "no_update_fields",
     ],
 }
 
