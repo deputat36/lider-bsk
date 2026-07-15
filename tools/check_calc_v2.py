@@ -63,7 +63,7 @@ checks = {
         'savedCalculationPositionLabel',
         'Показать состав',
         'Обновить состав',
-        'единый конструктор',
+        'едином конструкторе',
         'data-label="Позиция"',
         'aria-expanded',
         'v4-saved-calc-item-tags',
@@ -79,7 +79,7 @@ checks = {
     ],
     saved_review_doc: [
         'Сохранённый состав расчёта',
-        'единый конструктор',
+        'едином конструкторе',
         'Mobile 360 и 390 px',
         'Network',
         'Supabase не изменяется',
