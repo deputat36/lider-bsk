@@ -1,0 +1,40 @@
+name: CRM calculation staging install check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/staging-migrations/20260715_04_calculation_version_install.sql'
+      - 'supabase/staging-migrations/20260715_05_calculation_version_grant_hardening.sql'
+      - 'supabase/staging-tests/20260715_calculation_version_acceptance.sql'
+      - 'supabase/staging-tests/20260715_calculation_version_safe_response.sql'
+      - 'supabase/functions/leader-crm-calculations/**'
+      - 'docs/SUPABASE_STAGING_CALCULATION_VERSION_INSTALL_2026-07-15.md'
+      - 'tools/check_crm_calculation_staging_install.py'
+      - '.github/workflows/crm-calculation-staging-install-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/staging-migrations/20260715_04_calculation_version_install.sql'
+      - 'supabase/staging-migrations/20260715_05_calculation_version_grant_hardening.sql'
+      - 'supabase/staging-tests/20260715_calculation_version_acceptance.sql'
+      - 'supabase/staging-tests/20260715_calculation_version_safe_response.sql'
+      - 'supabase/functions/leader-crm-calculations/**'
+      - 'docs/SUPABASE_STAGING_CALCULATION_VERSION_INSTALL_2026-07-15.md'
+      - 'tools/check_crm_calculation_staging_install.py'
+      - '.github/workflows/crm-calculation-staging-install-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-calculation-staging-install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compile staging-install checker
+        run: python3 -m py_compile tools/check_crm_calculation_staging_install.py
+
+      - name: Validate consolidated install, safe projection and least privileges
+        run: python3 tools/check_crm_calculation_staging_install.py
