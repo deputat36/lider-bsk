@@ -198,7 +198,7 @@ require('doc', [
     '30 сохранённых строк',
     'две записи имеют номер версии 1',
     'verify_jwt=true',
-    'SECURITY',
+    'RPC execute разрешён только `service_role`',
     'max(version_number) + 1',
     'FOR UPDATE',
     'leader_command_receipts',
