@@ -12,25 +12,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run unified calculation checks
-        shell: bash
         run: |
-          set -o pipefail
-          {
-            node --check crm/v4/assets/v4/calculation-pricing-model-v1.js
-            node --check crm/v4/assets/v4/calculation-spec-model-v1.js
-            node --check crm/v4/assets/v4/calculation-draft-review-model-v1.js
-            node --check crm/v4/assets/v4/calculation-draft-review-v1.js
-            node --check crm/v4/assets/v4/calculations.js
-            node tools/test_calculation_pricing_model.mjs
-            node tools/test_calculation_spec_model.mjs
-            node tools/test_calculation_draft_review_model.mjs
-            python3 tools/check_crm_unified_calculation.py
-          } 2>&1 | tee unified-calculation-check.log
-      - name: Upload temporary unified calculation diagnostics
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: unified-calculation-check-diagnostics
-          path: unified-calculation-check.log
-          if-no-files-found: error
-          retention-days: 1
+          node --check crm/v4/assets/v4/calculation-pricing-model-v1.js
+          node --check crm/v4/assets/v4/calculation-spec-model-v1.js
+          node --check crm/v4/assets/v4/calculation-draft-review-model-v1.js
+          node --check crm/v4/assets/v4/calculation-draft-review-v1.js
+          node --check crm/v4/assets/v4/calculations.js
+          node tools/test_calculation_pricing_model.mjs
+          node tools/test_calculation_spec_model.mjs
+          node tools/test_calculation_draft_review_model.mjs
+          python3 tools/check_crm_unified_calculation.py
