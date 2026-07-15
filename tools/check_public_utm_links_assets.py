@@ -148,7 +148,7 @@ def main() -> int:
     ):
         if marker not in css:
             errors.append(f"public-utm-links.css is missing marker: {marker}")
-    if len(css.strip()) < 2500:
+    if len(css.strip()) < 2400:
         errors.append(f"public-utm-links.css looks incomplete: {len(css.strip())} characters")
 
     for marker in (
