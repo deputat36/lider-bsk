@@ -32,9 +32,10 @@ import {
   const state = calculationVersionState(calculations[0], audit);
   assert.equal(state.isDuplicate, true);
   assert.equal(state.tone, 'error');
-  assert.match(state.message, /не изменяются автоматически/i);
+  assert.match(state.message, /перенумерование.*запрещено/i);
   const copy = calculationVersionIntegrityCopy(calculations);
   assert.equal(copy.tone, 'error');
+  assert.match(copy.message, /не изменяются автоматически/i);
   assert.match(copy.message, /1/);
 }
 
