@@ -5,7 +5,9 @@ from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 PAGE = ROOT / 'banner-dlya-magazina-borisoglebsk.html'
-SHARED_CSS = ROOT / 'assets' / 'public-landing.css'
+BASE_CSS = ROOT / 'assets' / 'public-landing.css'
+DETAIL_CSS = ROOT / 'assets' / 'public-banner-detail.css'
+FORM_SCRIPT = ROOT / 'assets' / 'public-lead-form.js'
 
 
 class PageParser(HTMLParser):
@@ -13,9 +15,8 @@ class PageParser(HTMLParser):
         super().__init__()
         self.hrefs: list[str] = []
         self.stylesheets: list[str] = []
-        self.inline_styles: list[str] = []
-        self._in_style = False
-        self._style_parts: list[str] = []
+        self.inline_styles = 0
+        self.executable_inline_scripts = 0
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         values = dict(attrs)
@@ -24,18 +25,11 @@ class PageParser(HTMLParser):
         if tag == 'link' and values.get('rel') == 'stylesheet' and values.get('href'):
             self.stylesheets.append(values['href'] or '')
         if tag == 'style':
-            self._in_style = True
-            self._style_parts = []
-
-    def handle_data(self, data: str) -> None:
-        if self._in_style:
-            self._style_parts.append(data)
-
-    def handle_endtag(self, tag: str) -> None:
-        if tag == 'style' and self._in_style:
-            self.inline_styles.append(''.join(self._style_parts))
-            self._in_style = False
-            self._style_parts = []
+            self.inline_styles += 1
+        if tag == 'script' and not values.get('src'):
+            script_type = (values.get('type') or '').lower()
+            if script_type != 'application/ld+json':
+                self.executable_inline_scripts += 1
 
 
 def require(text: str, marker: str, source: str = 'page') -> None:
@@ -50,7 +44,9 @@ def forbid(text: str, marker: str, source: str = 'page') -> None:
 
 def main() -> None:
     text = PAGE.read_text(encoding='utf-8')
-    shared = SHARED_CSS.read_text(encoding='utf-8')
+    base_css = BASE_CSS.read_text(encoding='utf-8')
+    detail_css = DETAIL_CSS.read_text(encoding='utf-8')
+    form_script = FORM_SCRIPT.read_text(encoding='utf-8')
     parser = PageParser()
     parser.feed(text)
 
@@ -61,26 +57,32 @@ def main() -> None:
         '<script type="application/ld+json">',
         '"@type":"Service"',
         'id="leader-lead-form" data-leader-lead-form',
-        "service.value='Баннер'",
+        'data-service="Баннер"',
         'assets/public-lead-form.js?v=5',
         'privacy.html',
     ):
         require(text, marker)
 
-    if parser.stylesheets[:2] != [
+    expected_stylesheets = [
         'assets/public-landing.css?v=1',
         'assets/public-lead-form.css?v=4',
-    ]:
-        raise SystemExit(f'Unexpected stylesheet order: {parser.stylesheets[:2]}')
+        'assets/public-banner-detail.css?v=1',
+    ]
+    if parser.stylesheets[:3] != expected_stylesheets:
+        raise SystemExit(f'Unexpected stylesheet order: {parser.stylesheets[:3]}')
+    if parser.inline_styles:
+        raise SystemExit('Inline CSS returned to banner-dlya-magazina-borisoglebsk.html')
+    if parser.executable_inline_scripts:
+        raise SystemExit('Executable inline JavaScript returned to banner-dlya-magazina-borisoglebsk.html')
 
-    forbid(text, 'assets/public-lead-form.js?v=4')
-    forbid(text, ':root{--black:#1a1a1a')
-    forbid(text, '*{box-sizing:border-box}')
-    forbid(text, 'body{margin:0;font-family:Montserrat')
-
-    inline_size = sum(len(style.strip()) for style in parser.inline_styles)
-    if inline_size > 3000:
-        raise SystemExit(f'Inline CSS remains too large: {inline_size} characters')
+    for marker in (
+        'assets/public-lead-form.js?v=4',
+        'function prefill()',
+        "service.value='Баннер'",
+        ':root{--black:#1a1a1a',
+        '*{box-sizing:border-box}',
+    ):
+        forbid(text, marker)
 
     for marker in (
         '--leader-black:#1a1a1a',
@@ -92,7 +94,22 @@ def main() -> None:
         '.price',
         '.footer',
     ):
-        require(shared, marker, 'assets/public-landing.css')
+        require(base_css, marker, 'assets/public-landing.css')
+
+    for marker in (
+        '.top__in{min-height:42px',
+        '.hero__grid{grid-template-columns:1.02fr .98fr',
+        '.hero-card{background:rgba(255,255,255,.09)',
+        '.links a{border:1px solid var(--leader-line)',
+        '@media(max-width:560px){.top__in{justify-content:center',
+    ):
+        require(detail_css, marker, 'assets/public-banner-detail.css')
+
+    require(
+        form_script,
+        "'banner-dlya-magazina-borisoglebsk.html':{service:'Баннер'",
+        'assets/public-lead-form.js',
+    )
 
     for href in parser.hrefs:
         path = urlsplit(href).path
@@ -101,7 +118,7 @@ def main() -> None:
         if not (ROOT / path).is_file():
             raise SystemExit(f'Broken local link: {href}')
 
-    print('Store banner shared CSS migration contract is valid.')
+    print('Store banner external CSS and shared preset contract is valid.')
 
 
 if __name__ == '__main__':
