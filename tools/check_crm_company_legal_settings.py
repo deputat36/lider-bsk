@@ -5,12 +5,15 @@ import sys
 root = Path(__file__).resolve().parents[1]
 helper = root / 'crm/v4/assets/v4/company-legal-settings-v1.js'
 draft = root / 'crm/v4/assets/v4/company-legal-settings-draft-v1.js'
+entry = root / 'crm/v4/assets/v4/company-legal-settings-entry-v1.js'
 sidecar = root / 'crm/v4/assets/v4/order-act-company-settings-v1.js'
 preview = root / 'crm/v4/assets/v4/company-legal-settings-preview-v1.js'
 act = root / 'crm/v4/assets/v4/order-act-preview-v1.js'
 doc = root / 'docs/CRM_COMPANY_LEGAL_SETTINGS_CONTRACT_2026-07-10.md'
+admin_doc = root / 'docs/CRM_COMPANY_LEGAL_SETTINGS_ADMIN_ENTRY_2026-07-15.md'
 manual = root / 'docs/CRM_ORDER_COMPLETION_ACT_MANUAL_TEST_2026-07-10.md'
 behavior = root / 'tools/test_crm_company_legal_settings.mjs'
+entry_behavior = root / 'tools/test_crm_company_legal_settings_entry.mjs'
 index = root / 'crm/v4/index.html'
 
 errors = []
@@ -38,6 +41,16 @@ checks = {
         'Расчётный счёт должен содержать 20 цифр',
         'БИК должен содержать 9 цифр',
     ],
+    entry: [
+        "DOCUMENT: 'document'",
+        "STANDALONE: 'standalone'",
+        'companyLegalSettingsEntryMode',
+        'companyLegalSettingsEntryCopy',
+        'companyLegalSettingsJson',
+        'Применить к текущему черновику',
+        'Проверка завершена',
+        'Сохранение в CRM отключено',
+    ],
     sidecar: [
         "import './company-legal-settings-preview-v1.js';",
         "from './company-legal-settings-v1.js'",
@@ -51,13 +64,20 @@ checks = {
         'new MutationObserver(applyCompanySettings)',
     ],
     preview: [
+        "from './company-legal-settings-entry-v1.js'",
         'CRM_V4_ACTIONS.SETTINGS_MANAGE',
         'requireV4Action',
+        'canPerformV4Action',
         'validateCompanyLegalSettingsDraft',
-        'Проверка реквизитов организации',
-        'Сохранение в production отключено',
+        'companyLegalSettingsEntryMode',
+        'companyLegalSettingsEntryCopy',
+        'companyLegalSettingsJson',
+        'Реквизиты документов',
+        'Открыть реквизиты',
+        'JSON для будущей безопасной настройки',
+        'data-company-settings-json',
+        'Проверка завершена. Сохранение реквизитов пока отключено.',
         'Данные не записываются в <code>leader_settings</code>',
-        'Применить к текущему черновику',
         'applyToOpenAct',
         'new MutationObserver(injectOpenButton)',
     ],
@@ -74,6 +94,14 @@ checks = {
         'existing act preview remains usable with manual entry',
         'No production setting, DDL, DML, RLS, grant, policy, Auth, Storage or Edge Function change was made',
     ],
+    admin_doc: [
+        '`Доступ и роли`',
+        '`Реквизиты документов`',
+        'Document mode',
+        'Standalone mode',
+        'read-only JSON',
+        'Production сохранение остаётся отдельным approval gate',
+    ],
     manual: [
         'Проверить реквизиты',
         'only owner/admin',
@@ -86,6 +114,13 @@ checks = {
         'api_token',
         'CRM company legal settings draft validation is valid.',
     ],
+    entry_behavior: [
+        'COMPANY_LEGAL_SETTINGS_ENTRY_MODES.DOCUMENT',
+        'COMPANY_LEGAL_SETTINGS_ENTRY_MODES.STANDALONE',
+        "documentCopy.action, 'Применить к текущему черновику'",
+        "standaloneCopy.action, 'Проверка завершена'",
+        'CRM company legal settings entry model is document-aware and standalone-safe.',
+    ],
 }
 
 for path, markers in checks.items():
@@ -97,11 +132,11 @@ for path, markers in checks.items():
         if marker not in text:
             errors.append(f'Missing company legal settings marker in {path.relative_to(root)}: {marker}')
 
-for path in [helper, draft, sidecar, preview]:
+for path in [helper, draft, entry, sidecar, preview]:
     if not path.exists():
         continue
     text = path.read_text(encoding='utf-8')
-    for marker in ['.insert(', '.update(', '.delete(']:
+    for marker in ['.insert(', '.update(', '.delete(', '.upsert(', '.rpc(']:
         if marker in text:
             errors.append(f'Company legal settings source contains write marker in {path.relative_to(root)}: {marker}')
 
@@ -113,11 +148,12 @@ if helper.exists():
 
 if index.exists():
     text = index.read_text(encoding='utf-8')
-    if 'order-act-company-settings-v1.js' in text:
-        errors.append('Company settings sidecar must be activated through the existing act module, not a new index script tag')
+    for marker in ['order-act-company-settings-v1.js', 'company-legal-settings-preview-v1.js', 'company-legal-settings-entry-v1.js']:
+        if marker in text:
+            errors.append('Company settings modules must be activated through the existing act module, not a new index script tag')
 
 if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('CRM company legal settings are read-only, validated, permission-guarded and activated for act drafts.')
+print('CRM company legal settings are read-only, validated, permission-guarded and available in document and standalone admin modes.')
