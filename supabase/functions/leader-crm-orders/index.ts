@@ -106,6 +106,7 @@ async function updateOrder(url: string, serviceRole: string, body: Record<string
   if ('production_status' in body) patch.production_status = clean(body.production_status, 120)
   if ('layout_comment' in body) patch.layout_comment = clean(body.layout_comment, 2000)
   if ('deadline' in body) patch.deadline = clean(body.deadline, 40) || null
+  if (!Object.keys(patch).length) return json(400, { error: 'no_update_fields' })
 
   const res = await rest(url, serviceRole, '/rest/v1/leader_orders?id=eq.' + encodeURIComponent(id) + '&select=' + encodeURIComponent(orderFields), {
     method: 'PATCH',
