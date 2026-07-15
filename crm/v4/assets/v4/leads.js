@@ -4,6 +4,7 @@ import { v4State, setState, setLeadFilters } from './state.js';
 import { byId, setStatus, toast } from './ui.js';
 import { openLeadRoute } from './router.js';
 import { leadAnalyticsSearchText } from './lead-analytics-normalization.js';
+import { describeLeadFilters, loadLeadListPreferences, resetLeadListPreferences, saveLeadListPreferences, sortLeadRows } from './lead-list-preferences-v1.js';
 
 const LEAD_LIST_FIELDS = 'id,created_at,name,phone,source,service,message,status,next_contact_at,page_url,budget,estimated_amount,city,converted_order_id,converted_client_id';
 const CLOSED_STATUSES = ['Спам', 'Создан заказ', 'Отказ', 'Не отвечает', 'Дорого', 'Передумал'];
@@ -60,9 +61,9 @@ function uniqueSources(leads) {
 }
 
 function filteredLeads() {
-  const { status, source, search } = v4State.leadFilters;
+  const { status, source, search, sort } = v4State.leadFilters;
   const query = String(search || '').toLowerCase().trim();
-  return (v4State.leads || []).filter((lead) => {
+  const filtered = (v4State.leads || []).filter((lead) => {
     const leadStatus = lead.status || 'Новая';
     if (status === 'active' && !isActiveLead(lead)) return false;
     if (status === 'archive' && !ARCHIVE_STATUSES.has(leadStatus)) return false;
@@ -74,6 +75,26 @@ function filteredLeads() {
     if (query && !leadHaystack(lead).includes(query)) return false;
     return true;
   });
+  return sortLeadRows(filtered, sort);
+}
+
+function persistLeadListPreferences() {
+  saveLeadListPreferences(v4State.leadFilters);
+}
+
+function syncFilterControls() {
+  const search = byId('leadSearch');
+  const sort = byId('leadSort');
+  if (search && search.value !== String(v4State.leadFilters.search || '')) search.value = v4State.leadFilters.search || '';
+  if (sort) sort.value = v4State.leadFilters.sort || 'created_desc';
+  const descriptions = describeLeadFilters(v4State.leadFilters);
+  const summary = byId('leadActiveFilters');
+  if (summary) {
+    summary.textContent = descriptions.length ? `Активно: ${descriptions.join('; ')}` : 'Активны стандартные фильтры: заявки в работе, сначала новые.';
+    summary.dataset.hasCustomFilters = descriptions.length ? '1' : '0';
+  }
+  const reset = byId('resetLeadFiltersBtn');
+  if (reset) reset.disabled = !descriptions.length;
 }
 
 function renderStats() {
@@ -91,12 +112,13 @@ function renderStats() {
 function renderSourceOptions() {
   const select = byId('leadSourceFilter');
   if (!select) return;
-  const current = select.value || v4State.leadFilters.source || 'Все';
+  const current = v4State.leadFilters.source || 'Все';
   const sources = uniqueSources(v4State.leads || []);
   select.innerHTML = sources.map((source) => `<option ${source === current ? 'selected' : ''}>${esc(source)}</option>`).join('');
-  if (!sources.includes(current)) {
+  if (v4State.leadsLoaded && !sources.includes(current)) {
     select.value = 'Все';
     setLeadFilters({ source: 'Все' });
+    saveLeadListPreferences(v4State.leadFilters);
   }
 }
 
@@ -164,6 +186,7 @@ export function renderLeads() {
   renderStats();
   renderStatusOptions();
   renderSourceOptions();
+  syncFilterControls();
   const list = byId('leadsList');
   const counter = byId('leadsCounter');
   if (!list) return;
@@ -186,7 +209,8 @@ export function renderLeads() {
     return;
   }
   if (!leads.length) {
-    list.innerHTML = '<div class="v4-empty">Заявки загружены, но по выбранному фильтру ничего нет.</div>';
+    const descriptions = describeLeadFilters(v4State.leadFilters);
+    list.innerHTML = `<div class="v4-empty">По выбранным условиям заявок нет.${descriptions.length ? `<div class="v4-empty-detail">Проверьте: ${esc(descriptions.join('; '))}.</div>` : ''}<div class="v4-form-actions"><button type="button" class="v4-primary" data-reset-lead-filters>Сбросить фильтры</button></div></div>`;
     return;
   }
   list.innerHTML = leads.map(renderLeadCard).join('');
@@ -256,15 +280,32 @@ async function updateLeadStatus(id, status) {
 function bindLeadFilters() {
   byId('leadStatusFilter')?.addEventListener('change', (event) => {
     setLeadFilters({ status: event.target.value || 'active' });
+    persistLeadListPreferences();
     renderLeads();
   });
   byId('leadSourceFilter')?.addEventListener('change', (event) => {
     setLeadFilters({ source: event.target.value || 'Все' });
+    persistLeadListPreferences();
     renderLeads();
   });
   byId('leadSearch')?.addEventListener('input', (event) => {
     setLeadFilters({ search: event.target.value || '' });
     renderLeads();
+  });
+  byId('leadSort')?.addEventListener('change', (event) => {
+    setLeadFilters({ sort: event.target.value || 'created_desc' });
+    persistLeadListPreferences();
+    renderLeads();
+  });
+  const reset = () => {
+    const defaults = resetLeadListPreferences();
+    setLeadFilters({ ...defaults, search: '' });
+    renderLeads();
+    byId('leadSearch')?.focus();
+  };
+  byId('resetLeadFiltersBtn')?.addEventListener('click', reset);
+  byId('leadsList')?.addEventListener('click', (event) => {
+    if (event.target.closest?.('[data-reset-lead-filters]')) reset();
   });
 }
 
@@ -302,6 +343,7 @@ function bindLeadActions() {
 }
 
 export function bootLeads() {
+  setLeadFilters({ ...loadLeadListPreferences(), search: '' });
   bindLeadFilters();
   bindLeadActions();
   renderLeads();

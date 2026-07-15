@@ -16,7 +16,8 @@ export const v4State = {
   leadFilters: {
     status: 'active',
     source: 'Все',
-    search: ''
+    search: '',
+    sort: 'created_desc'
   },
   currentLead: null,
   currentLeadBusy: false,
@@ -71,7 +72,8 @@ export function resetAuthState() {
     leadFilters: {
       status: 'active',
       source: 'Все',
-      search: ''
+      search: '',
+      sort: 'created_desc'
     },
     currentLead: null,
     currentLeadBusy: false,

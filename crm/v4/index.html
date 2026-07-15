@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>РА Лидер — CRM v4</title>
 <meta name="theme-color" content="#0f172a">
-<link rel="stylesheet" href="assets/v4/styles.css?v=20260614-1">
+<link rel="stylesheet" href="assets/v4/styles.css?v=20260715-lead-filters-1">
 <link rel="stylesheet" href="assets/v4/needs.css?v=20260528-1">
 <link rel="stylesheet" href="assets/v4/calculations.css?v=20260528-1">
 <link rel="stylesheet" href="assets/v4/calculations-saved-tools.css?v=20260621-1">
@@ -143,6 +143,18 @@ html,body{max-width:100%;overflow-x:hidden!important}.v4-layout-tabs{position:st
         <label>Поиск
           <input id="leadSearch" type="search" placeholder="Имя, телефон, услуга, комментарий">
         </label>
+        <label>Сортировка
+          <select id="leadSort">
+            <option value="created_desc">Сначала новые</option>
+            <option value="created_asc">Сначала старые</option>
+            <option value="next_contact_asc">Ближайший контакт</option>
+            <option value="status_asc">По статусу</option>
+          </select>
+        </label>
+      </div>
+      <div class="v4-filter-state-row">
+        <div id="leadActiveFilters" class="v4-muted" aria-live="polite">Активны стандартные фильтры: заявки в работе, сначала новые.</div>
+        <button id="resetLeadFiltersBtn" type="button">Сбросить фильтры</button>
       </div>
       <div id="leadsCounter" class="v4-muted">Заявки еще не загружены</div>
       <div id="leadsList" class="v4-leads-list">
@@ -165,7 +177,7 @@ html,body{max-width:100%;overflow-x:hidden!important}.v4-layout-tabs{position:st
 <script type="module" src="assets/v4/auth.js?v=20260628-access-label-1"></script>
 <script type="module" src="assets/v4/auth-session-reset-v1.js?v=20260624-contour-1"></script>
 <script type="module" src="assets/v4/crm-diagnostics-v1.js?v=20260621-1"></script>
-<script type="module" src="assets/v4/leads.js?v=20260528-2"></script>
+<script type="module" src="assets/v4/leads.js?v=20260715-filter-state-1"></script>
 <script type="module" src="assets/v4/lead-analytics-badges-v1.js?v=20260709-1"></script>
 <script type="module" src="assets/v4/followups.js?v=20260622-1"></script>
 <script type="module" src="assets/v4/lead-create.js?v=20260621-1"></script>
