@@ -5,3 +5,6 @@ verify_jwt = true
 
 [functions.leader-crm-design]
 verify_jwt = true
+
+[functions.leader-crm-calculations]
+verify_jwt = true
