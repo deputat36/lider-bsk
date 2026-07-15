@@ -1,3 +1,4 @@
+import './crm-empty-state-enhancer-v1.js';
 import { applyV4TabButtonVisibility, canOpenV4Tab, firstAllowedV4Tab } from './role-tab-permissions-v1.js';
 import { CRM_NAVIGATION_TABS, crmNavigationUrl, normalizeCrmNavigationTab, readCrmNavigationTab } from './crm-navigation-route-v1.js';
 
