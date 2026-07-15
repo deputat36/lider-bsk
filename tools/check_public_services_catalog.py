@@ -47,7 +47,7 @@ def main() -> None:
         'Продвижение и онлайн-оформление',
         'Не нашли точное название услуги?',
         'data-leader-lead-form',
-        'assets/public-lead-form.js?v=5',
+        'assets/public-lead-form.js?v=23',
         '"@type":"CollectionPage"',
         '"@type":"ItemList"',
         'privacy.html',

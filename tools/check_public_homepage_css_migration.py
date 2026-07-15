@@ -46,7 +46,7 @@ def main() -> None:
         raise SystemExit(f'Homepage must not contain inline style blocks, found {parser.style_count}')
 
     expected_scripts = [
-        'assets/public-lead-form.js?v=5',
+        'assets/public-lead-form.js?v=23',
         'assets/packages-link.js?v=1',
     ]
     if parser.scripts != expected_scripts:
@@ -76,13 +76,14 @@ def main() -> None:
     for marker in (
         'assets/public-lead-form.css?v=3',
         'assets/public-lead-form.js?v=4',
+        'assets/public-lead-form.js?v=5',
         '<style>',
         '</style>',
     ):
         if marker in page:
             raise SystemExit(f'Stale homepage migration marker remains: {marker}')
 
-    print('Homepage CSS extraction and form v5 contract is valid.')
+    print('Homepage CSS extraction and form v23 contract is valid.')
 
 
 if __name__ == '__main__':

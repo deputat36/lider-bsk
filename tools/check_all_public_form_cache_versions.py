@@ -5,6 +5,14 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 MIN_VERSION = 5
+CORE_VERSION = 23
+CORE_PAGES = {
+    'index.html',
+    'request.html',
+    'uslugi.html',
+    'prices.html',
+    'kontakty.html',
+}
 
 
 class ScriptParser(HTMLParser):
@@ -44,6 +52,10 @@ def main() -> None:
             errors.append(f'{path.name}: cache version must be numeric: {src}')
             continue
         version = int(raw_version)
+        if path.name in CORE_PAGES and version != CORE_VERSION:
+            errors.append(
+                f'{path.name}: core page must use v={CORE_VERSION}, found v={version}'
+            )
         pages.append((path.name, version))
         if version < MIN_VERSION:
             errors.append(f'{path.name}: stale cache version v={version}; minimum is v={MIN_VERSION}')
@@ -58,7 +70,8 @@ def main() -> None:
     versions = sorted({version for _, version in pages})
     print(
         f'Validated {len(pages)} public form pages; '
-        f'cache versions in use: {", ".join("v=" + str(version) for version in versions)}.'
+        f'cache versions in use: {", ".join("v=" + str(version) for version in versions)}; '
+        f'core pages pinned to v={CORE_VERSION}.'
     )
 
 
