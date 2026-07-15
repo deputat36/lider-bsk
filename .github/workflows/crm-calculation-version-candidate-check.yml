@@ -1,0 +1,52 @@
+name: CRM calculation version candidate check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/functions/leader-crm-calculations/**'
+      - 'supabase/staging-migrations/20260715_02_calculation_version_harness.sql'
+      - 'supabase/staging-tests/20260715_calculation_version_acceptance.sql'
+      - 'supabase/config.toml'
+      - 'contracts/supabase-environments-v1.json'
+      - 'contracts/calculation-create-version-server-contract-v1.json'
+      - 'tools/check_crm_calculation_version_candidate.py'
+      - 'docs/SUPABASE_STAGING_CALCULATION_VERSION_CANDIDATE_2026-07-15.md'
+      - '.github/workflows/crm-calculation-version-candidate-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/leader-crm-calculations/**'
+      - 'supabase/staging-migrations/20260715_02_calculation_version_harness.sql'
+      - 'supabase/staging-tests/20260715_calculation_version_acceptance.sql'
+      - 'supabase/config.toml'
+      - 'contracts/supabase-environments-v1.json'
+      - 'contracts/calculation-create-version-server-contract-v1.json'
+      - 'tools/check_crm_calculation_version_candidate.py'
+      - 'docs/SUPABASE_STAGING_CALCULATION_VERSION_CANDIDATE_2026-07-15.md'
+      - '.github/workflows/crm-calculation-version-candidate-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-calculation-version-candidate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Type-check calculation Edge Function
+        run: deno check supabase/functions/leader-crm-calculations/index.ts
+
+      - name: Run calculation contract behavior tests
+        run: deno test supabase/functions/leader-crm-calculations/contract_test.ts
+
+      - name: Compile source checker
+        run: python3 -m py_compile tools/check_crm_calculation_version_candidate.py
+
+      - name: Validate staging boundary, RPC-only writes and atomic contract
+        run: python3 tools/check_crm_calculation_version_candidate.py
