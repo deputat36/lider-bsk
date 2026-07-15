@@ -46,7 +46,7 @@ for marker in [
     'aria-label',
     'Нажмите «Очистить» ещё раз в течение 4 секунд',
     'stopImmediatePropagation',
-    'data-label',
+    'cell.dataset.label',
     'Автоматическая цена',
     'Ручная цена',
 ]:
