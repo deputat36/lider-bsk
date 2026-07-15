@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CACHE_CHECK = ROOT / 'tools/check_public_lead_form_cache_v5_partial.py'
 SITEMAP = ROOT / 'sitemap.xml'
 BASE_URL = 'https://www.lider-bsk.ru/'
+CORE_SCRIPT = 'assets/public-lead-form.js?v=23'
 V5_SCRIPT = 'assets/public-lead-form.js?v=5'
 FORBIDDEN_MARKERS = (
     '/crm/',
@@ -22,17 +23,17 @@ FORBIDDEN_MARKERS = (
 )
 
 
-def load_v5_pages() -> tuple[str, ...]:
+def load_page_group(name: str) -> tuple[str, ...]:
     tree = ast.parse(CACHE_CHECK.read_text(encoding='utf-8'), filename=str(CACHE_CHECK))
     for node in tree.body:
         if isinstance(node, ast.Assign):
             for target in node.targets:
-                if isinstance(target, ast.Name) and target.id == 'V5_PAGES':
+                if isinstance(target, ast.Name) and target.id == name:
                     value = ast.literal_eval(node.value)
                     if not isinstance(value, tuple) or not all(isinstance(item, str) for item in value):
-                        raise SystemExit('V5_PAGES must be a tuple of page names')
+                        raise SystemExit(f'{name} must be a tuple of page names')
                     return value
-    raise SystemExit('V5_PAGES not found in cache coverage checker')
+    raise SystemExit(f'{name} not found in cache coverage checker')
 
 
 class PageContractParser(HTMLParser):
@@ -89,11 +90,16 @@ class PageContractParser(HTMLParser):
 
 
 def main() -> None:
-    pages = load_v5_pages()
+    core_pages = load_page_group('CORE_PAGES')
+    v5_pages = load_page_group('V5_PAGES')
+    expected_scripts = {
+        **{name: CORE_SCRIPT for name in core_pages},
+        **{name: V5_SCRIPT for name in v5_pages},
+    }
     sitemap = SITEMAP.read_text(encoding='utf-8')
     errors: list[str] = []
 
-    for name in pages:
+    for name, expected_script in expected_scripts.items():
         path = ROOT / name
         if not path.is_file():
             errors.append(f'{name}: file is missing')
@@ -124,8 +130,10 @@ def main() -> None:
             errors.append(f'{name}: exactly one h1 is required')
         if parser.form_mount_count != 1:
             errors.append(f'{name}: exactly one public lead form mount is required')
-        if text.count(V5_SCRIPT) != 1:
-            errors.append(f'{name}: exactly one {V5_SCRIPT} reference is required')
+        if text.count(expected_script) != 1:
+            errors.append(f'{name}: exactly one {expected_script} reference is required')
+        if text.count('assets/public-lead-form.js') != 1:
+            errors.append(f'{name}: public lead form script must be connected exactly once')
         if sitemap.count(f'<loc>{expected_url}</loc>') != 1:
             errors.append(f'{name}: sitemap must contain canonical exactly once')
 
@@ -137,7 +145,10 @@ def main() -> None:
         print('\n'.join(errors))
         sys.exit(1)
 
-    print(f'Public v5 landing SEO and contour contract is valid for {len(pages)} pages.')
+    print(
+        'Public landing SEO and contour contract is valid for '
+        f'{len(core_pages)} core v23 pages and {len(v5_pages)} v5 pages.'
+    )
 
 
 if __name__ == '__main__':
