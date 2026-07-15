@@ -10,10 +10,12 @@ errors = []
 
 for forbidden in ['calculations-standard.js?', 'calculations-advanced.js?']:
     if forbidden in html: errors.append('Duplicate calculator remains connected: ' + forbidden)
-for marker in ['calculations.js?v=20260715-need-prefill-2', 'calculations-unified.css?v=20260715-1']:
+for marker in ['calculations.js?v=20260715-parity-1', 'calculations-unified.css?v=20260715-parity-1']:
     if marker not in html: errors.append('Missing unified calculation asset: ' + marker)
 for marker in ['Наценка к себестоимости', 'data-calc-markup="auto"', 'Своя наценка', 'Ручные цены позиций не изменяются', 'repriceAutomaticItems']:
     if marker not in calc: errors.append('Missing pricing UX marker: ' + marker)
+for marker in ['calcHemmingCost', 'calcGrommetCost', 'calcNeedPlotterCut', 'calcMountFilmCost', 'calcNeedSheetPrint', 'calcNeedSheetLamination', 'calcNeedSheetCut', 'ПВХ вспененный 20 мм', 'data-calc-row-field="contractor_price"', 'data-action="auto-calc-item"']:
+    if marker not in calc: errors.append('Missing restored calculation setting: ' + marker)
 for marker in ['marginPercentFromMarkup', 'price_source', 'manual', 'markupPercentForSubtotal']:
     if marker not in model: errors.append('Missing pricing model marker: ' + marker)
 for forbidden in [".from('", '.insert(', '.update(', '.delete(', 'supabase/functions', 'supabase/migrations']:

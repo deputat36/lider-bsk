@@ -11,6 +11,7 @@ const ITEM_FIELDS = 'id,calculation_id,lead_id,catalog_id,category,item_type,nam
 const CATALOG = [
   { category: 'Широкоформатная печать', name: 'Баннер 340/440 — стандарт', unit: 'м²', price: 350 },
   { category: 'Широкоформатная печать', name: 'Баннер 340/440 — устойчивая печать', unit: 'м²', price: 450 },
+  { category: 'Широкоформатная печать', name: 'Баннер 510 — плотный', unit: 'м²', price: 520 },
   { category: 'Широкоформатная печать', name: 'Самоклеящаяся пленка (мат/гл/прозр.)', unit: 'м²', price: 550 },
   { category: 'Широкоформатная печать', name: 'Перфорированная пленка (OWV)', unit: 'м²', price: 750 },
   { category: 'Услуги по баннерам', name: 'Установка люверсов', unit: 'шт', price: 15 },
@@ -22,6 +23,7 @@ const CATALOG = [
   { category: 'Пленка и листовые материалы', name: 'ПВХ вспененный 6 мм', unit: 'м²', price: 2650 },
   { category: 'Пленка и листовые материалы', name: 'ПВХ вспененный 8 мм', unit: 'м²', price: 3800 },
   { category: 'Пленка и листовые материалы', name: 'ПВХ вспененный 10 мм', unit: 'м²', price: 4400 },
+  { category: 'Пленка и листовые материалы', name: 'ПВХ вспененный 20 мм', unit: 'м²', price: 7600 },
   { category: 'Пленка и листовые материалы', name: 'Железо (листовой металл)', unit: 'м²', price: 1500 },
   { category: 'Пленка и листовые материалы', name: 'Самоклеящаяся мономерная пленка', unit: 'м²', price: 700 },
   { category: 'Пленка и листовые материалы', name: 'Монтажная пленка', unit: 'м²', price: 300 },
@@ -257,6 +259,12 @@ function renderModeFields(mode = 'banner') {
         <label>Шаг люверсов, м
           <input id="calcGrommetStep" type="number" min="0.1" step="0.05" value="0.3">
         </label>
+        <label>Проклейка, ₽/м
+          <input id="calcHemmingCost" type="number" min="0" step="1" value="30">
+        </label>
+        <label>Люверс, ₽/шт
+          <input id="calcGrommetCost" type="number" min="0" step="1" value="15">
+        </label>
       </div>
       <div class="v4-option-row">
         <label><input id="calcNeedHemming" type="checkbox"> Проклейка по периметру</label>
@@ -282,6 +290,11 @@ function renderModeFields(mode = 'banner') {
       </div>
       <div class="v4-option-row">
         <label><input id="calcNeedMountFilm" type="checkbox"> Добавить монтажную плёнку</label>
+        <label><input id="calcNeedPlotterCut" type="checkbox"> Плоттерная резка и выборка</label>
+      </div>
+      <div class="v4-form-grid v4-dependent-costs">
+        <label>Монтажная плёнка, ₽/м²<input id="calcMountFilmCost" type="number" min="0" step="1" value="300"></label>
+        <label>Резка и выборка, ₽/м²<input id="calcPlotterCutCost" type="number" min="0" step="1" value="250"></label>
       </div>
     `;
   }
@@ -300,6 +313,16 @@ function renderModeFields(mode = 'banner') {
         <label>Количество, шт
           <input id="calcQty" type="number" min="1" step="1" value="1">
         </label>
+      </div>
+      <div class="v4-option-row">
+        <label><input id="calcNeedSheetPrint" type="checkbox"> Печать на плёнке</label>
+        <label><input id="calcNeedSheetLamination" type="checkbox"> Накатка / ламинация</label>
+        <label><input id="calcNeedSheetCut" type="checkbox"> Резка деталей</label>
+      </div>
+      <div class="v4-form-grid v4-dependent-costs">
+        <label>Плёнка для печати<select id="calcSheetPrintMaterial">${catalogOptions((item) => item.name.includes('Самоклеящаяся'), 'Самоклеящаяся пленка (мат/гл/прозр.)')}</select></label>
+        <label>Накатка / ламинация, ₽/м²<input id="calcSheetLaminationCost" type="number" min="0" step="1" value="300"></label>
+        <label>Резка, ₽/шт<input id="calcSheetCutCost" type="number" min="0" step="1" value="50"></label>
       </div>
     `;
   }
@@ -322,7 +345,7 @@ function renderModeFields(mode = 'banner') {
     return `
       <div class="v4-form-grid">
         <label>Тип услуги
-          <select id="calcServiceName"><option>Дизайн</option><option>Монтаж</option><option>Доставка</option><option>Выезд / замер</option><option>Другое</option></select>
+          <select id="calcServiceName"><option>Дизайн</option><option>Монтаж</option><option>Доставка</option><option>Выезд / замер</option><option>Срочность</option><option>Другое</option></select>
         </label>
         <label>Себестоимость / подрядчик, ₽
           <input id="calcServiceCost" type="number" min="0" step="1" value="0">
@@ -392,12 +415,12 @@ function currentModeItems() {
     }));
     if (checked('calcNeedHemming') && per > 0) {
       const hem = catalogByName('Проклейка баннера по краю');
-      rows.push(makeRawItem({ category: hem.category, itemType: 'Доп. услуга', name: 'Проклейка баннера по периметру', unit: hem.unit, qty: per, contractorPrice: hem.price, comment: `Периметр всего: ${per.toFixed(2)} м`, data: { calculation_mode: 'banner_hemming' } }));
+      rows.push(makeRawItem({ category: hem.category, itemType: 'Доп. услуга', name: 'Проклейка баннера по периметру', unit: hem.unit, qty: per, contractorPrice: num('calcHemmingCost'), comment: `Периметр всего: ${per.toFixed(2)} м`, data: { calculation_mode: 'banner_hemming' } }));
     }
     if (checked('calcNeedGrommets') && per > 0) {
       const grommet = catalogByName('Установка люверсов');
       const count = Math.ceil(per / step);
-      rows.push(makeRawItem({ category: grommet.category, itemType: 'Доп. услуга', name: `Люверсы по периметру, шаг ${step} м`, unit: grommet.unit, qty: count, contractorPrice: grommet.price, comment: `Расчёт: ${per.toFixed(2)} м / ${step} м = ${count} шт`, data: { calculation_mode: 'banner_grommets', step } }));
+      rows.push(makeRawItem({ category: grommet.category, itemType: 'Доп. услуга', name: `Люверсы по периметру, шаг ${step} м`, unit: grommet.unit, qty: count, contractorPrice: num('calcGrommetCost'), comment: `Расчёт: ${per.toFixed(2)} м / ${step} м = ${count} шт`, data: { calculation_mode: 'banner_grommets', step } }));
     }
     return applyAutoPrice(rows);
   }
@@ -408,8 +431,9 @@ function currentModeItems() {
     rows.push(makeRawItem({ category: material.category, itemType: 'Плёнка', name: `${material.name} · ${num('calcWidth')}×${num('calcHeight')} м · ${num('calcQty') || 1} шт`, unit: material.unit, qty: units, contractorPrice: material.price, comment: `Площадь: ${units.toFixed(2)} м²`, data: { calculation_mode: 'film', width: num('calcWidth'), height: num('calcHeight'), pieces: num('calcQty') || 1 } }));
     if (checked('calcNeedMountFilm')) {
       const mount = catalogByName('Монтажная пленка');
-      rows.push(makeRawItem({ category: mount.category, itemType: 'Доп. материал', name: 'Монтажная плёнка', unit: mount.unit, qty: units, contractorPrice: mount.price, comment: `Площадь: ${units.toFixed(2)} м²`, data: { calculation_mode: 'mount_film' } }));
+      rows.push(makeRawItem({ category: mount.category, itemType: 'Доп. материал', name: 'Монтажная плёнка', unit: mount.unit, qty: units, contractorPrice: num('calcMountFilmCost'), comment: `Площадь: ${units.toFixed(2)} м²`, data: { calculation_mode: 'mount_film' } }));
     }
+    if (checked('calcNeedPlotterCut')) rows.push(makeRawItem({ category: 'Обработка плёнки', itemType: 'Доп. услуга', name: 'Плоттерная резка и выборка', unit: 'м²', qty: units, contractorPrice: num('calcPlotterCutCost'), comment: `Площадь: ${units.toFixed(2)} м²`, data: { calculation_mode: 'plotter_cut' } }));
     return applyAutoPrice(rows);
   }
   if (mode === 'sheet') {
@@ -417,6 +441,12 @@ function currentModeItems() {
     const units = area();
     if (units <= 0) return [];
     rows.push(makeRawItem({ category: material.category, itemType: 'Листовой материал', name: `${material.name} · ${num('calcWidth')}×${num('calcHeight')} м · ${num('calcQty') || 1} шт`, unit: material.unit, qty: units, contractorPrice: material.price, comment: `Площадь: ${units.toFixed(2)} м²`, data: { calculation_mode: 'sheet', width: num('calcWidth'), height: num('calcHeight'), pieces: num('calcQty') || 1 } }));
+    if (checked('calcNeedSheetPrint')) {
+      const film = catalogByName(val('calcSheetPrintMaterial')) || catalogByName('Самоклеящаяся пленка (мат/гл/прозр.)');
+      rows.push(makeRawItem({ category: film.category, itemType: 'Печать', name: `Печать: ${film.name}`, unit: 'м²', qty: units, contractorPrice: film.price, comment: `Площадь: ${units.toFixed(2)} м²`, data: { calculation_mode: 'sheet_print' } }));
+    }
+    if (checked('calcNeedSheetLamination')) rows.push(makeRawItem({ category: 'Обработка листа', itemType: 'Доп. услуга', name: 'Накатка / ламинация', unit: 'м²', qty: units, contractorPrice: num('calcSheetLaminationCost'), data: { calculation_mode: 'sheet_lamination' } }));
+    if (checked('calcNeedSheetCut')) rows.push(makeRawItem({ category: 'Обработка листа', itemType: 'Доп. услуга', name: 'Резка деталей', unit: 'шт', qty: num('calcQty') || 1, contractorPrice: num('calcSheetCutCost'), data: { calculation_mode: 'sheet_cut' } }));
     return applyAutoPrice(rows);
   }
   if (mode === 'photo') {
@@ -475,9 +505,9 @@ function renderDraftItems() {
     <tr>
       <td>${esc(item.name)}${item.comment ? `<small>${esc(item.comment)}</small>` : ''}</td>
       <td>${esc(item.unit)}</td>
-      <td>${Number(item.qty).toLocaleString('ru-RU')}</td>
-      <td>${money(item.contractor_price)}</td>
-      <td>${money(item.client_price)}</td>
+      <td><input class="v4-calc-row-input" data-calc-row-field="qty" data-index="${index}" type="number" min="0" step="0.01" value="${item.qty}"></td>
+      <td><input class="v4-calc-row-input" data-calc-row-field="contractor_price" data-index="${index}" type="number" min="0" step="1" value="${item.contractor_price}"></td>
+      <td><div class="v4-calc-row-price"><input class="v4-calc-row-input" data-calc-row-field="client_price" data-index="${index}" type="number" min="0" step="1" value="${item.client_price}"><button type="button" data-action="auto-calc-item" data-index="${index}" title="Вернуть автоматическую цену" ${item.data?.price_source === 'manual' ? '' : 'disabled'}>Авто</button></div></td>
       <td>${money(item.client_sum)}</td>
       <td><button type="button" data-action="remove-calc-item" data-index="${index}">×</button></td>
     </tr>
@@ -836,8 +866,28 @@ function bindCalculationEvents() {
       draftItems.splice(Number(remove.dataset.index), 1);
       renderDraftItems();
     }
+    const autoPrice = event.target.closest('button[data-action="auto-calc-item"]');
+    if (autoPrice) {
+      const index = Number(autoPrice.dataset.index);
+      if (draftItems[index]) draftItems[index].data = { ...(draftItems[index].data || {}), price_source: 'auto' };
+      refreshDraftPricing();
+    }
   });
   byId('leadCardSection')?.addEventListener('change', (event) => {
+    const rowInput = event.target.closest('[data-calc-row-field]');
+    if (rowInput) {
+      const index = Number(rowInput.dataset.index);
+      const field = rowInput.dataset.calcRowField;
+      if (draftItems[index] && ['qty', 'contractor_price', 'client_price'].includes(field)) {
+        draftItems[index][field] = Math.max(0, parseNum(rowInput.value));
+        if (field === 'client_price') draftItems[index].data = { ...(draftItems[index].data || {}), price_source: 'manual' };
+        if (field === 'contractor_price' && draftItems[index].data?.price_source !== 'manual') {
+          draftItems = repriceAutomaticItems(draftItems, { ...calcSettings(), mediumLimit: calcSettings().medLimit });
+        }
+        renderDraftItems();
+      }
+      return;
+    }
     if (event.target.closest('#calcSmartMode')) setCalcMode(event.target.value);
     if (event.target.closest('#calculationsBox')) renderSmartPreview();
   });
