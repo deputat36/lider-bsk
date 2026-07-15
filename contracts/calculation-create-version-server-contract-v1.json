@@ -1,40 +1,49 @@
 {
-  "contract_version": "1.0.0",
-  "status": "source_only_candidate",
+  "contract_version": "1.1.0",
+  "status": "staging_deployed_production_gated",
   "action": "calculation.create_version",
   "purpose": "Create a new immutable calculation version without overwriting the source calculation or its items.",
+  "environment": {
+    "staging_project_ref": "otulfnouybahfnsycxqn",
+    "production_project_ref": "ofewxuqfjhamgerwzull",
+    "staging_deployed": true,
+    "production_deployed": false
+  },
   "transport": {
     "edge_function": "leader-crm-calculations",
+    "staging_version": 1,
     "verify_jwt": true,
     "browser_calls_rpc_directly": false,
-    "service_role_server_only": true
+    "service_role_server_only": true,
+    "production_ui_enabled": false
   },
   "authorization": {
     "profile_table": "public.leader_user_profiles",
     "profile_must_be_active": true,
-    "permission": "calculation.write",
+    "permission": "calculations.write",
+    "canonical_registry": "crm/v4/assets/v4/action-permissions-v1.js",
     "allowed_roles": ["owner", "admin", "manager"],
     "unknown_role": "deny",
     "actor_source": "verified_jwt",
     "client_actor_fields": "ignored_and_overwritten"
   },
   "request": {
-    "required": ["source_calculation_id", "idempotency_key", "expected_source_updated_at", "items"],
-    "optional": ["title", "need_id", "public_comment", "internal_comment"],
-    "items_required_fields": ["category", "item_type", "name", "unit", "qty", "contractor_price", "client_price", "comment", "data", "sort_order"],
+    "envelope_required": ["action", "request_id", "expected_updated_at", "payload"],
+    "payload_required": ["source_calculation_id", "idempotency_key", "items"],
+    "payload_optional": ["title", "need_id", "public_comment", "internal_comment"],
+    "items_allowed_fields": ["catalog_id", "category", "item_type", "name", "unit", "qty", "contractor_price", "client_price", "comment", "data", "sort_order"],
     "idempotency_key_max_length": 160,
     "items_max_count": 200
   },
   "source_rules": {
     "load_source_for_update": true,
-    "source_lead_must_match_route": true,
     "expected_updated_at_required": true,
     "source_calculation_update": "forbidden",
     "source_items_update": "forbidden",
     "source_delete": "forbidden",
     "preserve_commercial_offer_link": true,
     "preserve_order_link": true,
-    "duplicate_existing_version_numbers": "block_rollout_and_require_audited_remediation"
+    "duplicate_existing_version_numbers": "block_and_require_audited_remediation"
   },
   "new_version_rules": {
     "status": "Черновик",
@@ -56,7 +65,7 @@
     "advisory_lock_key": "calculation.create_version + lead_id",
     "source_row_lock": "FOR UPDATE",
     "version_scan_inside_lock": true,
-    "future_unique_index": "unique (lead_id, version_number) after duplicate remediation"
+    "unique_index": "unique (lead_id, version_number)"
   },
   "idempotency": {
     "receipt_table": "leader_private.leader_command_receipts",
@@ -74,25 +83,36 @@
     "client_side_compensating_delete": false
   },
   "response": {
-    "success_status": 201,
+    "created_status": 201,
+    "replay_status": 200,
     "fields": ["calculation", "items", "source_calculation_id", "idempotent_replay"],
-    "calculation_fields": ["id", "lead_id", "need_id", "client_id", "title", "status", "version_number", "client_total", "contractor_cost", "profit", "margin_percent", "warning_level", "warnings", "public_comment", "internal_comment", "created_at", "updated_at"]
+    "calculation_fields": ["id", "lead_id", "need_id", "client_id", "title", "status", "version_number", "client_total", "contractor_cost", "profit", "margin_percent", "warning_level", "warnings", "public_comment", "internal_comment", "created_at", "updated_at"],
+    "item_fields": ["id", "catalog_id", "category", "item_type", "name", "unit", "qty", "contractor_price", "contractor_sum", "markup_percent", "client_price", "client_sum", "profit", "margin_percent", "comment", "data", "sort_order", "created_at", "updated_at"]
   },
   "errors": {
-    "400": ["invalid_payload", "empty_items", "invalid_item", "invalid_totals"],
+    "400": ["invalid_payload", "unknown_action", "empty_items", "invalid_item", "invalid_totals"],
     "401": ["missing_or_invalid_jwt"],
     "403": ["inactive_profile", "forbidden"],
     "404": ["source_calculation_not_found"],
     "409": ["source_changed", "idempotency_conflict", "version_conflict", "duplicate_version_inventory"],
     "500": ["calculation_version_create_failed"]
   },
-  "rollout_gates": [
+  "staging_evidence": {
+    "database_acceptance_passed": true,
+    "safe_response_acceptance_passed": true,
+    "security_warn_error": 0,
+    "performance_warn_error": 0,
+    "authenticated_http_e2e_passed": false,
+    "auth_gate_reason": "temporary staging Auth user is not available"
+  },
+  "remaining_gates": [
+    "staging browser transport remains source-only until authenticated HTTP E2E",
+    "temporary staging Auth user and active test profile",
+    "authenticated create replay conflict forbidden inactive cleanup E2E",
     "production duplicate inventory reviewed and remediated with explicit approval",
-    "staging migration applied with explicit approval",
-    "staging concurrency and idempotency tests pass",
-    "security and performance advisors reviewed",
-    "Edge deployment approved",
-    "production migration and deployment separately approved"
+    "production-specific migration and rollback plan",
+    "production Edge deployment separately approved",
+    "production CRM action separately enabled"
   ],
   "rollback": {
     "app_first": true,
