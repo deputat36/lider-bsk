@@ -12,6 +12,7 @@ on:
       - 'docs/CRM_ORDERS_RESTRICT_GENERIC_ROLES_2026-07-16.md'
       - 'docs/CRM_LEADS_RESTRICT_GENERIC_ROLES_2026-07-16.md'
       - 'docs/CRM_LEADS_ACTION_PERMISSION_REGISTRY_2026-07-16.md'
+      - 'docs/CRM_OFFER_ORDER_SAFE_RESPONSE_PROJECTION_2026-07-16.md'
       - 'tools/check_crm_server_action_rbac_spec.py'
       - 'tools/check_crm_edge_empty_update_guard.py'
       - 'tools/check_crm_orders_canonical_role_guard.py'
@@ -19,9 +20,12 @@ on:
       - 'tools/check_crm_orders_restrict_generic_roles.py'
       - 'tools/check_crm_leads_restrict_generic_roles.py'
       - 'tools/check_crm_leads_action_permissions.py'
+      - 'tools/check_crm_offer_order_safe_projection.py'
       - 'crm/v4/assets/v4/action-permissions-v1.js'
+      - 'crm/v4/assets/v4/offer-order-create-v1.js'
       - 'supabase/functions/leader-crm-leads/index.ts'
       - 'supabase/functions/leader-crm-orders/index.ts'
+      - 'supabase/migrations/20260626_06_leader_order_from_offer_rpc.sql'
       - '.github/workflows/crm-server-action-rbac-check.yml'
   pull_request:
     branches: [main]
@@ -33,6 +37,7 @@ on:
       - 'docs/CRM_ORDERS_RESTRICT_GENERIC_ROLES_2026-07-16.md'
       - 'docs/CRM_LEADS_RESTRICT_GENERIC_ROLES_2026-07-16.md'
       - 'docs/CRM_LEADS_ACTION_PERMISSION_REGISTRY_2026-07-16.md'
+      - 'docs/CRM_OFFER_ORDER_SAFE_RESPONSE_PROJECTION_2026-07-16.md'
       - 'tools/check_crm_server_action_rbac_spec.py'
       - 'tools/check_crm_edge_empty_update_guard.py'
       - 'tools/check_crm_orders_canonical_role_guard.py'
@@ -40,9 +45,12 @@ on:
       - 'tools/check_crm_orders_restrict_generic_roles.py'
       - 'tools/check_crm_leads_restrict_generic_roles.py'
       - 'tools/check_crm_leads_action_permissions.py'
+      - 'tools/check_crm_offer_order_safe_projection.py'
       - 'crm/v4/assets/v4/action-permissions-v1.js'
+      - 'crm/v4/assets/v4/offer-order-create-v1.js'
       - 'supabase/functions/leader-crm-leads/index.ts'
       - 'supabase/functions/leader-crm-orders/index.ts'
+      - 'supabase/migrations/20260626_06_leader_order_from_offer_rpc.sql'
       - '.github/workflows/crm-server-action-rbac-check.yml'
 
 jobs:
@@ -69,3 +77,4 @@ jobs:
           python3 tools/check_crm_orders_restrict_generic_roles.py
           python3 tools/check_crm_leads_restrict_generic_roles.py
           python3 tools/check_crm_leads_action_permissions.py
+          python3 tools/check_crm_offer_order_safe_projection.py
