@@ -86,13 +86,13 @@ require('validator', [
     'source_calculation_id_manifest_mismatch',
     'logout_not_confirmed',
     'secret_like_material:',
+    "'service_role'",
     'evidence_path_required',
     'manifest_path_required',
 ])
 forbid('validator', [
     PRODUCTION,
     'SUPABASE_SERVICE_ROLE_KEY',
-    'service_role',
     '/auth/v1/',
     '/functions/v1/',
     '.insert(',
