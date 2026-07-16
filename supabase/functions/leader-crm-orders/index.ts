@@ -51,12 +51,21 @@ const orderFields = 'id,order_number,created_at,project_name,client_name,client_
 
 const ROLE_MATRIX_VERSION = '20260630-edge-role-matrix-1'
 
+const CANONICAL_ROLES = new Set([
+  'owner',
+  'admin',
+  'manager',
+  'accountant',
+  'designer',
+  'installer',
+  'contractor',
+])
+
 const ORDER_ACTIONS_BY_ROLE: Record<string, Set<string>> = {
   owner: new Set(['*']),
   admin: new Set(['*']),
   manager: new Set(['list', 'update:any']),
   designer: new Set(['list', 'update:layout_status', 'update:layout_comment']),
-  production: new Set(['list', 'update:production_status', 'update:layout_comment']),
   installer: new Set(['list']),
 }
 
@@ -65,7 +74,9 @@ function role(profile: Record<string, unknown> | null | undefined) {
 }
 
 function canOrderAction(profile: Record<string, unknown> | null | undefined, permission: string) {
-  const permissions = ORDER_ACTIONS_BY_ROLE[role(profile)]
+  const currentRole = role(profile)
+  if (!CANONICAL_ROLES.has(currentRole)) return false
+  const permissions = ORDER_ACTIONS_BY_ROLE[currentRole]
   return Boolean(permissions?.has('*') || permissions?.has(permission) || permissions?.has('update:any'))
 }
 
