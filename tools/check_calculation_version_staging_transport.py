@@ -126,8 +126,8 @@ except json.JSONDecodeError as exc:
     transport_contract = {}
     server_contract = {}
 
-if transport_contract.get('status') != 'source_wired_staging_runtime_gated':
-    errors.append('transport contract must reflect source wiring and runtime gate')
+if transport_contract.get('status') != 'source_wired_staging_runtime_gated_production_locked':
+    errors.append('transport contract must reflect staging runtime gate and production lock')
 environment = transport_contract.get('environment', {})
 if environment.get('allowed_project_ref') != STAGING:
     errors.append('transport contract staging ref drifted')
@@ -139,6 +139,8 @@ if environment.get('production_project_ref') != PRODUCTION:
     errors.append('transport contract production ref drifted')
 if environment.get('production_enabled') is not False:
     errors.append('transport contract must keep production disabled')
+if environment.get('production_route') != 'production_locked':
+    errors.append('transport contract must keep production route locked')
 if transport_contract.get('authorization', {}).get('permission') != 'calculations.write':
     errors.append('transport contract permission drifted')
 if transport_contract.get('authorization', {}).get('canonical_registry') != 'crm/v4/assets/v4/action-permissions-v1.js':
@@ -148,6 +150,10 @@ if transport_meta.get('editor_source_wired') is not True:
     errors.append('transport contract must record editor source wiring')
 if transport_meta.get('production_ui_wired') is not False:
     errors.append('transport contract must keep production UI wiring disabled')
+if transport_meta.get('production_browser_direct_write') is not False:
+    errors.append('transport contract must forbid production browser direct writes')
+if transport_meta.get('production_compensating_delete') is not False:
+    errors.append('transport contract must forbid production compensating delete')
 if transport_meta.get('staging_runtime_config_present') is not False:
     errors.append('transport contract must keep staging runtime config absent')
 boundaries = transport_contract.get('boundaries', {})
@@ -157,6 +163,8 @@ if boundaries.get('staging_runtime_activation_requires_auth_e2e') is not True:
     errors.append('transport contract must retain Auth E2E gate for runtime activation')
 if boundaries.get('production_rollout_requires_explicit_approval') is not True:
     errors.append('transport contract must retain explicit production approval')
+if boundaries.get('legacy_browser_write_may_return') is not False:
+    errors.append('transport contract must forbid restoration of legacy browser writes')
 
 if server_contract.get('status') != 'staging_deployed_production_gated':
     errors.append('server contract status must reflect staging deployment and production gate')
@@ -204,10 +212,12 @@ require('runbook', [
     'HTTP 200',
     'HTTP 409',
     'HTTP 403',
-    'production `calculations.js`',
+    'Основной `calculations.js`',
     'staging Edge v3',
     'Source wiring',
     'Runtime activation',
+    '`production_locked`',
+    'Browser INSERT/DELETE и compensating rollback уже удалены',
 ])
 require('workflow', [
     'node --check crm/v4/assets/v4/calculation-version-staging-transport-v1.js',
@@ -236,4 +246,4 @@ if errors:
         print(f'- {error}', file=sys.stderr)
     raise SystemExit(1)
 
-print('Calculation staging transport is source-wired, exact-hostname locked and runtime-gated before Auth E2E.')
+print('Calculation staging transport is exact-hostname locked, production-locked and runtime-gated before Auth E2E.')
