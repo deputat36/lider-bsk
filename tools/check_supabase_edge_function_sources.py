@@ -35,6 +35,10 @@ REQUIRED_MARKERS = {
         "SUPABASE_SERVICE_ROLE_KEY",
         "access_denied",
         "no_update_fields",
+        "CANONICAL_ROLES",
+        "GENERIC_LEADS_ROLES",
+        "canUseGenericLeads",
+        "if (!canUseGenericLeads(checked.profile)) return forbidden(action, checked.profile)",
     ],
     "leader-crm-orders": [
         "leader_user_profiles",
