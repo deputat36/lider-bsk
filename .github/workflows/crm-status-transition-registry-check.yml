@@ -15,12 +15,14 @@ on:
       - 'crm/v4/assets/v4/order-status-ui-model-v1.js'
       - 'crm/v4/assets/v4/orders.js'
       - 'crm/v4/assets/v4/orders-fast-loader-v1.js'
+      - 'crm/v4/assets/v4/order-list-preferences-v1.js'
       - 'crm/v4/assets/v4/order-control-v2.js'
       - 'crm/v4/assets/v4/order-card-v1.js'
       - 'crm/v4/assets/v4/payment-status-ui-model-v1.js'
       - 'crm/v4/assets/v4/payment-record-status-model-v1.js'
       - 'crm/v4/assets/v4/finance-control-v2.js'
       - 'crm/v4/assets/v4/finance-plan-actual-model-v1.js'
+      - 'crm/v4/assets/v4/management-attention-model-v1.js'
       - 'crm/v4/assets/v4/production-status-ui-model-v1.js'
       - 'crm/v4/assets/v4/production-job-card-v2.js'
       - 'crm/v4/assets/v4/installation-status-ui-model-v1.js'
@@ -34,6 +36,7 @@ on:
       - 'docs/CRM_ORDER_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md'
       - 'docs/CRM_PAYMENT_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-15.md'
       - 'docs/CRM_PAYMENT_RECORD_STATUS_REGISTRY_MANUAL_TEST_2026-07-15.md'
+      - 'docs/CRM_ORDER_PAYMENT_STATUS_REGISTRY_ADOPTION_2026-07-16.md'
       - 'docs/CRM_PRODUCTION_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md'
       - 'docs/CRM_INSTALLATION_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md'
       - 'docs/CRM_PRODUCTION_BOARD_STATUS_REGISTRY_MANUAL_TEST_2026-07-12.md'
@@ -53,6 +56,8 @@ on:
       - 'tools/test_crm_payment_status_ui.mjs'
       - 'tools/test_crm_payment_record_status.mjs'
       - 'tools/test_finance_plan_actual.mjs'
+      - 'tools/test_order_list_preferences.mjs'
+      - 'tools/test_management_attention_queue.mjs'
       - 'tools/test_crm_production_status_ui.mjs'
       - 'tools/test_crm_installation_status_ui.mjs'
       - 'tools/test_crm_production_board_status_model.mjs'
@@ -71,12 +76,14 @@ on:
       - 'crm/v4/assets/v4/order-status-ui-model-v1.js'
       - 'crm/v4/assets/v4/orders.js'
       - 'crm/v4/assets/v4/orders-fast-loader-v1.js'
+      - 'crm/v4/assets/v4/order-list-preferences-v1.js'
       - 'crm/v4/assets/v4/order-control-v2.js'
       - 'crm/v4/assets/v4/order-card-v1.js'
       - 'crm/v4/assets/v4/payment-status-ui-model-v1.js'
       - 'crm/v4/assets/v4/payment-record-status-model-v1.js'
       - 'crm/v4/assets/v4/finance-control-v2.js'
       - 'crm/v4/assets/v4/finance-plan-actual-model-v1.js'
+      - 'crm/v4/assets/v4/management-attention-model-v1.js'
       - 'crm/v4/assets/v4/production-status-ui-model-v1.js'
       - 'crm/v4/assets/v4/production-job-card-v2.js'
       - 'crm/v4/assets/v4/installation-status-ui-model-v1.js'
@@ -90,6 +97,7 @@ on:
       - 'docs/CRM_ORDER_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md'
       - 'docs/CRM_PAYMENT_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-15.md'
       - 'docs/CRM_PAYMENT_RECORD_STATUS_REGISTRY_MANUAL_TEST_2026-07-15.md'
+      - 'docs/CRM_ORDER_PAYMENT_STATUS_REGISTRY_ADOPTION_2026-07-16.md'
       - 'docs/CRM_PRODUCTION_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md'
       - 'docs/CRM_INSTALLATION_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md'
       - 'docs/CRM_PRODUCTION_BOARD_STATUS_REGISTRY_MANUAL_TEST_2026-07-12.md'
@@ -109,6 +117,8 @@ on:
       - 'tools/test_crm_payment_status_ui.mjs'
       - 'tools/test_crm_payment_record_status.mjs'
       - 'tools/test_finance_plan_actual.mjs'
+      - 'tools/test_order_list_preferences.mjs'
+      - 'tools/test_management_attention_queue.mjs'
       - 'tools/test_crm_production_status_ui.mjs'
       - 'tools/test_crm_installation_status_ui.mjs'
       - 'tools/test_crm_production_board_status_model.mjs'
@@ -147,12 +157,14 @@ jobs:
           node --check crm/v4/assets/v4/order-status-ui-model-v1.js
           node --check crm/v4/assets/v4/orders.js
           node --check crm/v4/assets/v4/orders-fast-loader-v1.js
+          node --check crm/v4/assets/v4/order-list-preferences-v1.js
           node --check crm/v4/assets/v4/order-control-v2.js
           node --check crm/v4/assets/v4/order-card-v1.js
           node --check crm/v4/assets/v4/payment-status-ui-model-v1.js
           node --check crm/v4/assets/v4/payment-record-status-model-v1.js
           node --check crm/v4/assets/v4/finance-control-v2.js
           node --check crm/v4/assets/v4/finance-plan-actual-model-v1.js
+          node --check crm/v4/assets/v4/management-attention-model-v1.js
           node --check crm/v4/assets/v4/production-status-ui-model-v1.js
           node --check crm/v4/assets/v4/production-job-card-v2.js
           node --check crm/v4/assets/v4/installation-status-ui-model-v1.js
@@ -166,6 +178,8 @@ jobs:
           node --check tools/test_crm_payment_status_ui.mjs
           node --check tools/test_crm_payment_record_status.mjs
           node --check tools/test_finance_plan_actual.mjs
+          node --check tools/test_order_list_preferences.mjs
+          node --check tools/test_management_attention_queue.mjs
           node --check tools/test_crm_production_status_ui.mjs
           node --check tools/test_crm_installation_status_ui.mjs
           node --check tools/test_crm_production_board_status_model.mjs
@@ -176,6 +190,8 @@ jobs:
           node tools/test_crm_payment_status_ui.mjs
           node tools/test_crm_payment_record_status.mjs
           node tools/test_finance_plan_actual.mjs
+          node tools/test_order_list_preferences.mjs
+          node tools/test_management_attention_queue.mjs
           node tools/test_crm_production_status_ui.mjs
           node tools/test_crm_installation_status_ui.mjs
           node tools/test_crm_production_board_status_model.mjs
