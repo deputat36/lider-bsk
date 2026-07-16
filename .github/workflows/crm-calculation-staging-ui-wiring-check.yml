@@ -67,9 +67,14 @@ jobs:
           python3 -m py_compile tools/check_calculation_edit_as_new_version.py
           python3 -m py_compile tools/check_crm_v4_backend_write_inventory.py
 
-      - name: Validate exact staging routing and legacy isolation
-        run: |
-          python3 tools/check_calculation_version_staging_ui_wiring.py
-          python3 tools/check_calculation_version_staging_transport.py
-          python3 tools/check_calculation_edit_as_new_version.py
-          python3 tools/check_crm_v4_backend_write_inventory.py
+      - name: Validate exact staging UI routing
+        run: python3 tools/check_calculation_version_staging_ui_wiring.py
+
+      - name: Validate staging transport contract
+        run: python3 tools/check_calculation_version_staging_transport.py
+
+      - name: Validate edit-as-version workflow
+        run: python3 tools/check_calculation_edit_as_new_version.py
+
+      - name: Validate backend write inventory
+        run: python3 tools/check_crm_v4_backend_write_inventory.py
