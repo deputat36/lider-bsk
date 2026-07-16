@@ -15,11 +15,14 @@ on:
       - 'supabase/config.toml'
       - 'tools/test_calculation_version_staging_transport.mjs'
       - 'tools/check_calculation_version_staging_transport.py'
+      - 'tools/create-calculation-version-staging-fixture-bundle.mjs'
       - 'tools/run_calculation_version_staging_auth_e2e.mjs'
+      - 'tools/run_calculation_version_staging_auth_e2e.ps1'
       - 'tools/test_calculation_version_staging_auth_e2e_runner.mjs'
       - 'tools/check_calculation_version_staging_auth_e2e_runner.py'
       - 'docs/CRM_CALCULATION_VERSION_STAGING_TRANSPORT_RUNBOOK_2026-07-15.md'
       - 'docs/CRM_CALCULATION_VERSION_STAGING_AUTH_E2E_RUNNER_2026-07-15.md'
+      - 'docs/CRM_CALCULATION_VERSION_STAGING_MANIFEST_RUNNER_2026-07-16.md'
       - '.github/workflows/crm-calculation-version-staging-transport-check.yml'
   push:
     branches: [main]
@@ -35,11 +38,14 @@ on:
       - 'supabase/config.toml'
       - 'tools/test_calculation_version_staging_transport.mjs'
       - 'tools/check_calculation_version_staging_transport.py'
+      - 'tools/create-calculation-version-staging-fixture-bundle.mjs'
       - 'tools/run_calculation_version_staging_auth_e2e.mjs'
+      - 'tools/run_calculation_version_staging_auth_e2e.ps1'
       - 'tools/test_calculation_version_staging_auth_e2e_runner.mjs'
       - 'tools/check_calculation_version_staging_auth_e2e_runner.py'
       - 'docs/CRM_CALCULATION_VERSION_STAGING_TRANSPORT_RUNBOOK_2026-07-15.md'
       - 'docs/CRM_CALCULATION_VERSION_STAGING_AUTH_E2E_RUNNER_2026-07-15.md'
+      - 'docs/CRM_CALCULATION_VERSION_STAGING_MANIFEST_RUNNER_2026-07-16.md'
       - '.github/workflows/crm-calculation-version-staging-transport-check.yml'
 
 permissions:
@@ -62,6 +68,12 @@ jobs:
 
       - name: Test authenticated E2E runner offline
         run: node tools/test_calculation_version_staging_auth_e2e_runner.mjs
+
+      - name: PowerShell launcher syntax
+        shell: pwsh
+        run: |
+          $source = Get-Content -Raw tools/run_calculation_version_staging_auth_e2e.ps1
+          $null = [scriptblock]::Create($source)
 
       - uses: denoland/setup-deno@v2
         with:
