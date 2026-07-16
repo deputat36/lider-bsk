@@ -99,6 +99,25 @@ export function calculationVersionDraftTitle(source = {}, nextVersion = 1) {
   return `${base} — правки v${positiveVersion(nextVersion) || 1}`;
 }
 
+export function rebaseCalculationVersionDraftTitle(draft = {}, source = {}, nextVersion = 1) {
+  const previousAutoTitle = cleanText(draft.autoTitle);
+  const currentTitle = cleanText(draft.title);
+  const autoTitle = calculationVersionDraftTitle(source, nextVersion);
+  const customized = Boolean(currentTitle && previousAutoTitle && currentTitle !== previousAutoTitle);
+  return Object.freeze({
+    title: customized ? currentTitle : autoTitle,
+    autoTitle,
+    customized,
+    transportTitle: customized ? currentTitle : null
+  });
+}
+
+export function calculationVersionTransportTitle(draft = {}) {
+  const currentTitle = cleanText(draft.title);
+  const autoTitle = cleanText(draft.autoTitle);
+  return currentTitle && currentTitle !== autoTitle ? currentTitle : null;
+}
+
 export function copyCalculationItemsForVersion(items = []) {
   return (Array.isArray(items) ? items : []).map((item, index) => ({
     catalog_id: cleanText(item?.catalog_id) || null,
@@ -180,17 +199,44 @@ export function calculationVersionTotals(items = []) {
 }
 
 export function createCalculationVersionDraft(source = {}, items = [], calculations = []) {
-  const nextVersion = nextCalculationVersion(calculations);
-  return {
+  const draft = {
     sourceCalculationId: cleanText(source.id),
     sourceVersion: positiveVersion(source.version_number) || 1,
+    sourceTitle: cleanText(source.title, 'Расчёт'),
     leadId: cleanText(source.lead_id),
     clientId: cleanText(source.client_id) || null,
     needId: cleanText(source.need_id) || null,
-    title: calculationVersionDraftTitle(source, nextVersion),
     publicComment: cleanText(source.public_comment),
     internalComment: `Создано как новая версия расчёта v${positiveVersion(source.version_number) || 1}. Исходный расчёт сохранён без изменений.`,
-    nextVersion,
+    nextVersion: nextCalculationVersion(calculations),
     items: copyCalculationItemsForVersion(items)
   };
+  let customTitle = '';
+  let customized = false;
+  Object.defineProperties(draft, {
+    autoTitle: {
+      enumerable: true,
+      get() {
+        return calculationVersionDraftTitle({ title: draft.sourceTitle }, draft.nextVersion);
+      }
+    },
+    title: {
+      enumerable: true,
+      get() {
+        return customized ? customTitle : draft.autoTitle;
+      },
+      set(value) {
+        const nextTitle = cleanText(value);
+        customized = Boolean(nextTitle && nextTitle !== draft.autoTitle);
+        customTitle = nextTitle;
+      }
+    },
+    titleCustomized: {
+      enumerable: true,
+      get() {
+        return customized;
+      }
+    }
+  });
+  return draft;
 }

@@ -7,13 +7,16 @@ on:
       - 'crm/v4/assets/v4/action-permissions-v1.js'
       - 'crm/v4/assets/v4/calculation-version-integrity-model-v1.js'
       - 'crm/v4/assets/v4/calculation-version-edit-model-v1.js'
+      - 'crm/v4/assets/v4/calculation-version-save-route-v1.js'
       - 'crm/v4/assets/v4/calculation-version-editor-v1.js'
       - 'crm/v4/assets/v4/calculation-version-editor-v1.css'
       - 'tools/test_calculation_version_edit_model.mjs'
+      - 'tools/test_calculation_version_save_route.mjs'
       - 'tools/check_calculation_edit_as_new_version.py'
       - 'tools/check_crm_v4_backend_write_inventory.py'
       - 'docs/CRM_V4_BACKEND_WRITE_INVENTORY_ADDENDUM_2026-07-10.md'
       - 'docs/CRM_CALCULATION_EDIT_AS_NEW_VERSION_2026-07-16.md'
+      - 'docs/CRM_CALCULATION_VERSION_TITLE_INTENT_2026-07-16.md'
       - '.github/workflows/crm-calculation-edit-version-check.yml'
   push:
     branches: [main]
@@ -21,13 +24,16 @@ on:
       - 'crm/v4/assets/v4/action-permissions-v1.js'
       - 'crm/v4/assets/v4/calculation-version-integrity-model-v1.js'
       - 'crm/v4/assets/v4/calculation-version-edit-model-v1.js'
+      - 'crm/v4/assets/v4/calculation-version-save-route-v1.js'
       - 'crm/v4/assets/v4/calculation-version-editor-v1.js'
       - 'crm/v4/assets/v4/calculation-version-editor-v1.css'
       - 'tools/test_calculation_version_edit_model.mjs'
+      - 'tools/test_calculation_version_save_route.mjs'
       - 'tools/check_calculation_edit_as_new_version.py'
       - 'tools/check_crm_v4_backend_write_inventory.py'
       - 'docs/CRM_V4_BACKEND_WRITE_INVENTORY_ADDENDUM_2026-07-10.md'
       - 'docs/CRM_CALCULATION_EDIT_AS_NEW_VERSION_2026-07-16.md'
+      - 'docs/CRM_CALCULATION_VERSION_TITLE_INTENT_2026-07-16.md'
       - '.github/workflows/crm-calculation-edit-version-check.yml'
 
 permissions:
@@ -40,10 +46,14 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check version model syntax
         run: node --check crm/v4/assets/v4/calculation-version-edit-model-v1.js
+      - name: Check save route syntax
+        run: node --check crm/v4/assets/v4/calculation-version-save-route-v1.js
       - name: Check version editor syntax
         run: node --check crm/v4/assets/v4/calculation-version-editor-v1.js
       - name: Test version edit model
         run: node tools/test_calculation_version_edit_model.mjs
+      - name: Test save route title intent
+        run: node tools/test_calculation_version_save_route.mjs
       - name: Compile source checker
         run: |
           python3 -m py_compile tools/check_calculation_edit_as_new_version.py

@@ -51,10 +51,13 @@ export function buildCalculationVersionTransportDraft(draft = {}) {
   if (!idempotencyKey || idempotencyKey.length > 160) throw new Error('idempotency_key_invalid');
   const items = Array.isArray(source.items) ? source.items : [];
   if (!items.length || items.length > 200) throw new Error('items_invalid');
+  const currentTitle = text(source.title);
+  const autoTitle = text(source.autoTitle);
+  const transportTitle = currentTitle && currentTitle !== autoTitle ? currentTitle : null;
 
   return Object.freeze({
     idempotency_key: idempotencyKey,
-    title: text(source.title) || null,
+    title: transportTitle,
     need_id: text(source.needId) || null,
     public_comment: text(source.publicComment) || null,
     internal_comment: text(source.internalComment) || null,

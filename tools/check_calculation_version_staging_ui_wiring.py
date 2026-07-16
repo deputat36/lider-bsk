@@ -44,7 +44,7 @@ require('config', [
 ])
 
 require('bootstrap', [
-    "import('./calculation-version-editor-v1.js?v=20260716-legacy-preflight-1')",
+    "import('./calculation-version-editor-v1.js?v=20260716-title-rebase-1')",
     'CRM_V4_ACTIONS.CALCULATIONS_WRITE',
 ])
 
@@ -56,6 +56,8 @@ require('route', [
     'browserDirectWrite: true',
     'createCalculationVersionIdempotencyKey',
     'buildCalculationVersionTransportDraft',
+    'const autoTitle = text(source.autoTitle)',
+    'currentTitle && currentTitle !== autoTitle ? currentTitle : null',
     'calculation-version:',
 ])
 
@@ -143,6 +145,7 @@ else:
     legacy_body = legacy_match.group('body')
     for required in [
         'freshLegacyVersionPreflight',
+        "versionDraft.nextVersion = nextVersion",
         ".from('leader_lead_calculations')",
         '.insert(calcPayload)',
         ".from('leader_lead_calculation_items')",
@@ -168,6 +171,8 @@ require('route_test', [
     "mode, 'production_legacy'",
     'otulfnouybahfnsycxqn.example.com',
     'createCalculationVersionIdempotencyKey',
+    'automatic title must be server-derived in staging',
+    'Согласованный вариант для клиента',
     'server-row-id-must-not-pass',
     'must not enter transport payload',
     'Calculation version save route tests passed.',
@@ -218,4 +223,4 @@ if errors:
     print('\n'.join(errors), file=sys.stderr)
     raise SystemExit(1)
 
-print('Calculation version editor uses atomic Edge/RPC only on the exact staging hostname and fresh preflight on production legacy.')
+print('Calculation version editor uses atomic Edge/RPC on exact staging, server-derived automatic titles and fresh production preflight.')

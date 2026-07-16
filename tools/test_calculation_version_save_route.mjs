@@ -43,10 +43,11 @@ assert.throws(
   /secure_request_id_unavailable/
 );
 
-{
-  const draft = buildCalculationVersionTransportDraft({
+function baseDraft(overrides = {}) {
+  return {
     idempotencyKey: `calculation-version:${SOURCE_ID}:${RANDOM_ID}`,
-    title: 'Версия 2',
+    title: 'Баннер — правки v2',
+    autoTitle: 'Баннер — правки v2',
     needId: null,
     publicComment: 'Для клиента',
     internalComment: 'Внутренний комментарий',
@@ -69,10 +70,14 @@ assert.throws(
       comment: 'Тест',
       data: { calculation_mode: 'banner' },
       sort_order: 1
-    }]
-  });
+    }],
+    ...overrides
+  };
+}
 
-  assert.equal(draft.title, 'Версия 2');
+{
+  const draft = buildCalculationVersionTransportDraft(baseDraft());
+  assert.equal(draft.title, null, 'automatic title must be server-derived in staging');
   assert.equal(draft.items.length, 1);
   assert.deepEqual(Object.keys(draft.items[0]).sort(), [
     'catalog_id',
@@ -90,6 +95,21 @@ assert.throws(
   for (const forbidden of ['id', 'calculation_id', 'lead_id', 'contractor_sum', 'client_sum', 'profit', 'margin_percent']) {
     assert.equal(forbidden in draft.items[0], false, `${forbidden} must not enter transport payload`);
   }
+}
+
+{
+  const draft = buildCalculationVersionTransportDraft(baseDraft({
+    title: 'Согласованный вариант для клиента'
+  }));
+  assert.equal(draft.title, 'Согласованный вариант для клиента');
+}
+
+{
+  const draft = buildCalculationVersionTransportDraft(baseDraft({
+    title: '',
+    autoTitle: 'Баннер — правки v3'
+  }));
+  assert.equal(draft.title, null);
 }
 
 console.log('Calculation version save route tests passed.');
