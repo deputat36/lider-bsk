@@ -82,7 +82,7 @@ Shared guardrails:
 
 Target classification:
 
-- server action: `calculation.create_version`;
+- future server action: `calculation.create_version`;
 - target transport: JWT-protected `leader-crm-calculations` Edge Function and atomic RPC;
 - optimistic concurrency uses the source `updated_at` value;
 - source wiring is present but current production config keeps it fail closed;
