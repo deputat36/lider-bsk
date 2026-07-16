@@ -1,6 +1,6 @@
 {
-  "contract_version": "1.0.0",
-  "status": "source_only_staging_transport",
+  "contract_version": "1.1.0",
+  "status": "source_wired_staging_runtime_gated",
   "action": "calculation.create_version",
   "environment": {
     "allowed_project_ref": "otulfnouybahfnsycxqn",
@@ -10,13 +10,16 @@
   },
   "transport": {
     "module": "crm/v4/assets/v4/calculation-version-staging-transport-v1.js",
+    "editor_module": "crm/v4/assets/v4/calculation-version-editor-v1.js",
     "edge_function": "leader-crm-calculations",
     "verify_jwt": true,
     "uses_current_supabase_session": true,
     "direct_table_write": false,
     "direct_rpc": false,
     "service_role_in_browser": false,
-    "production_ui_wired": false
+    "editor_source_wired": true,
+    "production_ui_wired": false,
+    "staging_runtime_config_present": false
   },
   "authorization": {
     "permission": "calculations.write",
@@ -44,9 +47,10 @@
   },
   "boundaries": {
     "calculations_js_unchanged": true,
-    "existing_save_button_unchanged": true,
+    "existing_calculation_builder_save_button_unchanged": true,
     "production_config_unchanged": true,
-    "staging_auth_e2e_required_before_ui_wiring": true,
+    "source_ui_wiring_allowed_without_auth_e2e": true,
+    "staging_runtime_activation_requires_auth_e2e": true,
     "production_rollout_requires_explicit_approval": true
   }
 }
