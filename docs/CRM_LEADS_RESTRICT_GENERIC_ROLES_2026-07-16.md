@@ -4,11 +4,13 @@
 
 ## Изменение
 
-Source функции `leader-crm-leads` теперь разрешает бизнес-действия только ролям `owner/admin/manager`.
+Source функции `leader-crm-leads` разрешает широкий набор бизнес-действий только ролям `owner/admin/manager`.
 
 Канонический список ролей остаётся полным: owner, admin, manager, accountant, designer, installer, contractor.
 
-Остальные канонические роли и неизвестные значения получают `403 forbidden` до обработки заявок, клиентов и заказов.
+Для accountant действует единственное узкое исключение: `list_orders` с permission `orders.read` и отдельной финансовой проекцией. Accountant не добавлен в широкий allowlist и не получает dashboard, лиды, клиентов или действия создания заказа.
+
+Designer, installer, contractor и неизвестные значения получают `403 forbidden` до обработки заявок, клиентов и заказов.
 
 ## `ensure_profile`
 
@@ -19,7 +21,8 @@ Source функции `leader-crm-leads` теперь разрешает биз�
 `tools/check_crm_leads_restrict_generic_roles.py` проверяет:
 
 - точный список семи канонических ролей;
-- allowlist `owner/admin/manager`;
+- широкий allowlist `owner/admin/manager`;
+- единственное accountant-исключение `list_orders`;
 - порядок `ensure_profile → checkUser → role guard → action dispatch`;
 - сохранение `is_active=false` для нового профиля;
 - отказ restricted-ролям до бизнес-действий;
@@ -29,4 +32,4 @@ Source функции `leader-crm-leads` теперь разрешает биз�
 
 Source-only. Production Supabase не изменяется.
 
-Live функция остаётся `leader-crm-leads v12`. Edge deployment, SQL, RLS, Auth, grants и данные не меняются. Следующие отдельные этапы: action-level permissions, минимальные role-specific projections и безопасный accountant contract.
+Live функция остаётся `leader-crm-leads v12`. Edge deployment, SQL, RLS, Auth, grants и данные не меняются. Следующие отдельные этапы: staging role tests, generic `leader-crm-orders` accountant update contract и production approval.

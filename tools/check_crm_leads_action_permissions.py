@@ -62,6 +62,7 @@ def main() -> int:
         "owner: new Set(['*'])",
         "admin: new Set(['*'])",
         "manager: new Set(Object.values(ACTION_PERMISSION))",
+        "accountant: new Set(['orders.read'])",
         "function canRunGenericAction(profile:",
         "const permissions = ROLE_PERMISSIONS[profileRole(profile)]",
         "permissions?.has('*') || permissions?.has(permission)",
@@ -73,7 +74,7 @@ def main() -> int:
         require(source, marker, "source")
 
     checked_error = source.index("if (checked.error) return checked.error")
-    role_guard = source.index("if (!canUseGenericLeads(checked.profile))")
+    role_guard = source.index("if (!canUseGenericLeads(checked.profile, action))")
     permission_lookup = source.index("const permission = ACTION_PERMISSION[action]")
     unknown_guard = source.index("if (!permission) return json(400, { error: 'unknown_action' })")
     permission_guard = source.index("if (!canRunGenericAction(checked.profile, permission))")
@@ -89,6 +90,8 @@ def main() -> int:
         "ACTION_PERMISSION",
         "dashboard → leads.read",
         "create_order_from_offer → orders.create",
+        "accountant",
+        "orders.read",
         "fail closed",
         "leader-crm-leads v12",
         "Production Supabase не изменяется",

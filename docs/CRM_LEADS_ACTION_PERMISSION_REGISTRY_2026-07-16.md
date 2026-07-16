@@ -17,9 +17,9 @@ Mapping:
 - create_order → orders.create;
 - create_order_from_offer → orders.create.
 
-`owner` и `admin` используют wildcard. `manager` получает только значения из текущего registry.
+`owner` и `admin` используют wildcard. `manager` получает значения текущего registry. `accountant` получает только `orders.read`, которое можно использовать исключительно через narrow action `list_orders` и role-specific financial projection.
 
-После active-profile и office-role gate функция:
+После active-profile и role/action gate функция:
 
 1. находит permission по action;
 2. возвращает `unknown_action`, если mapping отсутствует;
@@ -37,12 +37,15 @@ Mapping:
 - точный action → permission mapping;
 - соответствие mapping реальным dispatch-командам;
 - наличие permission keys в browser registry;
-- owner/admin/manager role contract;
+- owner/admin/manager contract;
+- accountant → только orders.read;
 - порядок guards до бизнес-вызовов;
 - наличие раннего и финального `unknown_action`.
+
+Role-specific SELECT fields для manager и accountant отдельно контролирует `tools/check_crm_leads_order_list_projections.py`.
 
 ## Граница
 
 Source-only. Production Supabase не изменяется.
 
-Live функция остаётся `leader-crm-leads v12`. Deploy, SQL, RLS, Auth, grants и данные не меняются. Отдельными этапами остаются role-specific response projections, staging role tests и production approval.
+Live функция остаётся `leader-crm-leads v12`. Deploy, SQL, RLS, Auth, grants и данные не меняются. Отдельными этапами остаются staging role tests, generic `leader-crm-orders` accountant write contract и production approval.

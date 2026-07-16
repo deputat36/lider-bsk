@@ -71,6 +71,13 @@ const leadFields = 'id,created_at,name,phone,source,service,message,status,lead_
 const clientFields = 'id,owner_id,name,phone,source,comment,created_at,updated_at'
 const orderFields = 'id,order_number,created_at,project_name,client_name,client_phone,status,payment_status,deadline,client_total,contractor_cost,profit,balance,source,layout_status,production_status,lead_id,client_id'
 
+const ORDER_LIST_FIELDS_BY_ROLE: Record<string, string> = {
+  owner: orderFields,
+  admin: orderFields,
+  manager: 'id,order_number,created_at,updated_at,project_name,client_name,client_phone,status,deadline,source,layout_status,production_status,installation_status,priority,current_stage,next_action,progress_percent',
+  accountant: 'id,order_number,created_at,updated_at,project_name,status,payment_status,deadline,client_total,contractor_cost,prepayment,balance',
+}
+
 const CANONICAL_ROLES = new Set([
   'owner',
   'admin',
@@ -85,6 +92,10 @@ const GENERIC_LEADS_ROLES = new Set([
   'owner',
   'admin',
   'manager',
+])
+
+const ACCOUNTANT_GENERIC_ACTIONS = new Set([
+  'list_orders',
 ])
 
 const ACTION_PERMISSION: Record<string, string> = {
@@ -102,20 +113,28 @@ const ROLE_PERMISSIONS: Record<string, Set<string>> = {
   owner: new Set(['*']),
   admin: new Set(['*']),
   manager: new Set(Object.values(ACTION_PERMISSION)),
+  accountant: new Set(['orders.read']),
 }
 
 function profileRole(profile: Record<string, unknown> | null | undefined) {
   return cleanText(profile?.role, 80).toLowerCase()
 }
 
-function canUseGenericLeads(profile: Record<string, unknown> | null | undefined) {
+function canUseGenericLeads(profile: Record<string, unknown> | null | undefined, action = '') {
   const currentRole = profileRole(profile)
-  return CANONICAL_ROLES.has(currentRole) && GENERIC_LEADS_ROLES.has(currentRole)
+  return CANONICAL_ROLES.has(currentRole) && (
+    GENERIC_LEADS_ROLES.has(currentRole)
+    || (currentRole === 'accountant' && ACCOUNTANT_GENERIC_ACTIONS.has(action))
+  )
 }
 
 function canRunGenericAction(profile: Record<string, unknown> | null | undefined, permission: string) {
   const permissions = ROLE_PERMISSIONS[profileRole(profile)]
   return Boolean(permission && (permissions?.has('*') || permissions?.has(permission)))
+}
+
+function orderListFields(profile: Record<string, unknown> | null | undefined) {
+  return ORDER_LIST_FIELDS_BY_ROLE[profileRole(profile)] || ''
 }
 
 function forbidden(action: string, profile: Record<string, unknown> | null | undefined) {
@@ -230,8 +249,10 @@ async function listLeads(supabaseUrl: string, serviceRole: string, body: Record<
   return json(200, { ok: true, leads: await leadsRes.json() })
 }
 
-async function listOrders(supabaseUrl: string, serviceRole: string) {
-  const res = await rest(supabaseUrl, serviceRole, '/rest/v1/leader_orders?select=' + encodeURIComponent(orderFields) + '&order=created_at.desc&limit=80')
+async function listOrders(supabaseUrl: string, serviceRole: string, profile: Record<string, unknown> | null | undefined) {
+  const fields = orderListFields(profile)
+  if (!fields) return forbidden('list_orders', profile)
+  const res = await rest(supabaseUrl, serviceRole, '/rest/v1/leader_orders?select=' + encodeURIComponent(fields) + '&order=created_at.desc&limit=80')
   if (!res.ok) return json(500, { error: 'orders_read_failed', details: await res.text() })
   return json(200, { ok: true, orders: await res.json() })
 }
@@ -347,7 +368,7 @@ Deno.serve(async (req: Request) => {
   if (action === 'ensure_profile') return await ensureProfile(req, supabaseUrl, anonKey, serviceRole)
   const checked = await checkUser(req, supabaseUrl, anonKey, serviceRole)
   if (checked.error) return checked.error
-  if (!canUseGenericLeads(checked.profile)) return forbidden(action, checked.profile)
+  if (!canUseGenericLeads(checked.profile, action)) return forbidden(action, checked.profile)
   const permission = ACTION_PERMISSION[action]
   if (!permission) return json(400, { error: 'unknown_action' })
   if (!canRunGenericAction(checked.profile, permission)) return forbidden(action, checked.profile)
@@ -355,7 +376,7 @@ Deno.serve(async (req: Request) => {
   const actorEmail = cleanText(checked.user.email || checked.profile?.email, 200)
   if (action === 'dashboard') return await dashboard(supabaseUrl, serviceRole)
   if (action === 'list') return await listLeads(supabaseUrl, serviceRole, body)
-  if (action === 'list_orders') return await listOrders(supabaseUrl, serviceRole)
+  if (action === 'list_orders') return await listOrders(supabaseUrl, serviceRole, checked.profile)
   if (action === 'create') return await createLead(supabaseUrl, serviceRole, body)
   if (action === 'update') return await updateLead(supabaseUrl, serviceRole, body)
   if (action === 'ensure_client') return await ensureClientResponse(supabaseUrl, serviceRole, ownerId, body)
