@@ -1,3 +1,4 @@
+import { paymentNeedsAttention } from './payment-status-ui-model-v1.js';
 import { statusDefinition } from './status-transitions-v1.js';
 
 function time(value) {
@@ -13,8 +14,8 @@ function active(domain, status, fallback) {
 
 function paymentOpen(order = {}) {
   const data = order?.data && typeof order.data === 'object' ? order.data : {};
-  const value = String(order.payment_status || data.payment_status || data.paymentStatus || '').trim().toLowerCase();
-  return !value || value.includes('не') || value.includes('част') || value.includes('долг') || value.includes('ожид');
+  const value = order.payment_status || data.payment_status || data.paymentStatus || '';
+  return paymentNeedsAttention(value);
 }
 
 function candidate(base, priority, reason, nextAction, tone = 'warn') {
