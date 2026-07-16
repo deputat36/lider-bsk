@@ -1,8 +1,21 @@
 import { supabaseClient } from './supabase-client.js';
+import { V4_CONFIG } from './config.js';
 import { timeout, friendlyError } from './api.js';
 import { v4State } from './state.js';
 import { byId, setStatus, toast } from './ui.js';
 import { loadCalculations, renderCalculations } from './calculations.js';
+import {
+  CRM_V4_ACTIONS,
+  canPerformV4Action
+} from './action-permissions-v1.js';
+import {
+  invokeStagingCalculationVersion
+} from './calculation-version-staging-transport-v1.js';
+import {
+  buildCalculationVersionTransportDraft,
+  calculationVersionPersistenceRoute,
+  createCalculationVersionIdempotencyKey
+} from './calculation-version-save-route-v1.js';
 import {
   calculationVersionItem,
   calculationVersionTotals,
@@ -37,6 +50,15 @@ function number(value) {
 
 function money(value) {
   return `${Math.round(Number(value || 0)).toLocaleString('ru-RU')} ₽`;
+}
+
+function persistenceRoute() {
+  return calculationVersionPersistenceRoute(V4_CONFIG.supabaseUrl);
+}
+
+function sourceCalculation() {
+  if (!versionDraft?.sourceCalculationId) return null;
+  return (v4State.calculations || []).find((calculation) => calculation.id === versionDraft.sourceCalculationId) || null;
 }
 
 function ensureStyles() {
@@ -198,6 +220,7 @@ function renderVersionEditor() {
   }
 
   const totals = calculationVersionTotals(versionDraft.items);
+  const route = persistenceRoute();
   host.innerHTML = `
     <section id="calculationVersionEditor" class="v4-subcard v4-version-editor" aria-labelledby="calculationVersionEditorTitle">
       <div class="v4-subcard-head">
@@ -211,6 +234,10 @@ function renderVersionEditor() {
       <div class="v4-version-source-note" role="note">
         <b>Что делать:</b>
         <span>измените позиции, количество, себестоимость или цену клиенту и сохраните новую версию в этой же заявке.</span>
+      </div>
+      <div class="v4-version-source-note" role="status" data-version-persistence="${esc(route.mode)}">
+        <b>${esc(route.title)}:</b>
+        <span>${esc(route.description)}</span>
       </div>
       <div class="v4-form-grid v4-version-main-fields">
         <label>Название новой версии<input data-version-field="title" value="${esc(versionDraft.title)}"></label>
@@ -231,7 +258,7 @@ function renderVersionEditor() {
       </div>
       <div class="v4-version-warnings" data-version-warnings>${totals.warnings.length ? esc(totals.warnings.join(', ')) : 'Расчёт готов к сохранению.'}</div>
       <div class="v4-form-actions">
-        <button type="button" class="v4-primary" data-version-save ${totals.canSave && !saveBusy ? '' : 'disabled'}>${saveBusy ? 'Сохраняю...' : `Сохранить новую версию v${versionDraft.nextVersion}`}</button>
+        <button type="button" class="v4-primary" data-version-save ${totals.canSave && !saveBusy ? '' : 'disabled'}>${saveBusy ? 'Сохраняю...' : `${esc(route.buttonPrefix)} v${versionDraft.nextVersion}`}</button>
         <button type="button" data-version-close>Отменить правки</button>
       </div>
     </section>`;
@@ -299,6 +326,10 @@ async function startVersionDraft(calculationId) {
     const items = await fetchCalculationItems(calculationId);
     if (!items.length) throw new Error('В исходном расчёте нет позиций для копирования');
     versionDraft = createCalculationVersionDraft(source, items, v4State.calculations || []);
+    versionDraft.sourceUpdatedAt = source.updated_at;
+    if (persistenceRoute().mode === 'staging_edge') {
+      versionDraft.idempotencyKey = createCalculationVersionIdempotencyKey(source.id);
+    }
     renderVersionEditor();
     byId('calculationVersionEditor')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     document.querySelector('[data-version-field="title"]')?.focus();
@@ -313,7 +344,7 @@ async function startVersionDraft(calculationId) {
   }
 }
 
-async function rollbackCalculation(calculationId) {
+async function rollbackLegacyCalculation(calculationId) {
   if (!calculationId) return;
   const response = await timeout(
     supabaseClient.from('leader_lead_calculations').delete().eq('id', calculationId),
@@ -336,25 +367,45 @@ async function freshNextVersion(leadId) {
   return nextCalculationVersion(response.data || []);
 }
 
-async function saveVersionDraft() {
-  if (!versionDraft || saveBusy) return;
-  const leadId = v4State.route.leadId;
-  if (!leadId || versionDraft.leadId !== leadId) {
-    toast('Заявка изменилась. Откройте расчёт заново.');
-    return;
-  }
-  const totals = calculationVersionTotals(versionDraft.items);
-  if (!totals.canSave) {
-    toast('Проверьте количество, цену клиенту и прибыль');
-    updateEditorComputed();
-    return;
-  }
+async function refreshSavedCalculations(leadId) {
+  await loadCalculations(leadId);
+  document.querySelector('#savedCalculationsSnapshot [data-v2-calc-refresh]')?.click();
+  return true;
+}
 
-  saveBusy = true;
+async function saveVersionDraftThroughStaging(leadId) {
+  const source = sourceCalculation();
+  if (!source || source.lead_id !== leadId) throw new Error('Исходный расчёт изменился. Откройте его заново.');
+  if (!versionDraft.idempotencyKey) {
+    versionDraft.idempotencyKey = createCalculationVersionIdempotencyKey(source.id);
+  }
+  const transportDraft = buildCalculationVersionTransportDraft(versionDraft);
+  const result = await invokeStagingCalculationVersion({
+    client: supabaseClient,
+    supabaseUrl: V4_CONFIG.supabaseUrl,
+    canWrite: canPerformV4Action(CRM_V4_ACTIONS.CALCULATIONS_WRITE),
+    sourceCalculation: source,
+    draft: transportDraft,
+    expectedUpdatedAt: versionDraft.sourceUpdatedAt || source.updated_at,
+    readAfterSuccess: () => refreshSavedCalculations(leadId)
+  });
+  if (!result.ok) throw new Error(result.message);
+
+  const savedVersion = Number(result.calculation?.version_number || versionDraft.nextVersion || 0) || versionDraft.nextVersion;
+  versionDraft = null;
   renderVersionEditor();
+  setStatus(
+    result.replay
+      ? `Безопасный повтор вернул существующую тестовую версию v${savedVersion} без дубликата.`
+      : `Тестовая версия v${savedVersion} сохранена атомарно в staging. Старый расчёт не изменён.`,
+    'good'
+  );
+  toast(result.message);
+}
+
+async function saveVersionDraftLegacy(leadId, totals) {
   let createdCalculationId = null;
   try {
-    setStatus('Сохраняю новую версию расчёта...', 'warn');
     const nextVersion = await freshNextVersion(leadId);
     versionDraft.nextVersion = nextVersion;
     const calcPayload = {
@@ -406,18 +457,48 @@ async function saveVersionDraft() {
 
     versionDraft = null;
     renderVersionEditor();
-    await loadCalculations(leadId);
-    document.querySelector('#savedCalculationsSnapshot [data-v2-calc-refresh]')?.click();
+    await refreshSavedCalculations(leadId);
     setStatus(`Новая версия v${nextVersion} сохранена в этой же заявке. Старый расчёт не изменён.`, 'good');
     toast(`Сохранена новая версия v${nextVersion}`);
   } catch (error) {
     if (createdCalculationId) {
       try {
-        await rollbackCalculation(createdCalculationId);
+        await rollbackLegacyCalculation(createdCalculationId);
       } catch (rollbackError) {
         console.error('CRM calculation version rollback failed:', rollbackError);
       }
     }
+    throw error;
+  }
+}
+
+async function saveVersionDraft() {
+  if (!versionDraft || saveBusy) return;
+  const leadId = v4State.route.leadId;
+  if (!leadId || versionDraft.leadId !== leadId) {
+    toast('Заявка изменилась. Откройте расчёт заново.');
+    return;
+  }
+  const totals = calculationVersionTotals(versionDraft.items);
+  if (!totals.canSave) {
+    toast('Проверьте количество, цену клиенту и прибыль');
+    updateEditorComputed();
+    return;
+  }
+
+  const route = persistenceRoute();
+  saveBusy = true;
+  renderVersionEditor();
+  try {
+    setStatus(
+      route.mode === 'staging_edge'
+        ? 'Сохраняю тестовую версию атомарно через staging...'
+        : 'Сохраняю новую версию расчёта...',
+      'warn'
+    );
+    if (route.mode === 'staging_edge') await saveVersionDraftThroughStaging(leadId);
+    else await saveVersionDraftLegacy(leadId, totals);
+  } catch (error) {
     const message = friendlyError(error);
     setStatus(`Ошибка сохранения новой версии: ${message}`, 'error');
     toast(message);
