@@ -10,9 +10,12 @@ PRODUCTION = 'ofewxuqfjhamgerwzull'
 
 FILES = {
     'runner': ROOT / 'tools/run_calculation_version_staging_auth_e2e.mjs',
+    'launcher': ROOT / 'tools/run_calculation_version_staging_auth_e2e.ps1',
+    'fixture': ROOT / 'tools/create-calculation-version-staging-fixture-bundle.mjs',
     'test': ROOT / 'tools/test_calculation_version_staging_auth_e2e_runner.mjs',
     'transport': ROOT / 'crm/v4/assets/v4/calculation-version-staging-transport-v1.js',
     'doc': ROOT / 'docs/CRM_CALCULATION_VERSION_STAGING_AUTH_E2E_RUNNER_2026-07-15.md',
+    'manifest_doc': ROOT / 'docs/CRM_CALCULATION_VERSION_STAGING_MANIFEST_RUNNER_2026-07-16.md',
     'workflow': ROOT / '.github/workflows/crm-calculation-version-staging-transport-check.yml',
 }
 
@@ -42,6 +45,9 @@ def forbid(name: str, markers: list[str] | tuple[str, ...]) -> None:
 require('runner', [
     'buildStagingCalculationVersionCommand',
     'isStagingCalculationEnvironment',
+    'readFileSync',
+    'manifestDigest',
+    'validateFixtureManifest',
     "FUNCTION_SLUG = 'leader-crm-calculations'",
     "PERMISSION = 'calculations.write'",
     "new Set(['allowed', 'forbidden', 'inactive'])",
@@ -49,8 +55,16 @@ require('runner', [
     'LIDER_STAGING_PUBLISHABLE_KEY',
     'LIDER_STAGING_EMAIL',
     'LIDER_STAGING_PASSWORD',
+    'LIDER_STAGING_FIXTURE_MANIFEST_PATH',
     'LIDER_STAGING_SOURCE_CALCULATION_ID',
     'LIDER_STAGING_EXPECTED_UPDATED_AT',
+    'readFixtureManifest',
+    'manifestBoundValue',
+    'fixture_manifest_read_failed',
+    'fixture_manifest_invalid',
+    'fixture_manifest_mismatch',
+    'fixtureManifestId',
+    'fixtureManifestDigest',
     '/auth/v1/token?grant_type=password',
     '/functions/v1/${FUNCTION_SLUG}',
     '/auth/v1/logout',
@@ -103,10 +117,57 @@ forbid('runner', [
     'console.log(response.body',
 ])
 
+require('fixture', [
+    f"STAGING_PROJECT_REF = '{STAGING}'",
+    'createFixtureManifest',
+    'validateFixtureManifest',
+    'manifestDigest',
+    'production_enabled: false',
+    'auth_user_created_or_deleted_by_sql: false',
+])
+forbid('fixture', [
+    PRODUCTION,
+    'LIDER_STAGING_PASSWORD',
+    'LIDER_STAGING_EMAIL',
+    'LIDER_STAGING_PUBLISHABLE_KEY',
+    'insert into auth.users',
+    'delete from auth.users',
+])
+
+require('launcher', [
+    "$StagingUrl = 'https://otulfnouybahfnsycxqn.supabase.co'",
+    "[ValidateSet('allowed', 'forbidden', 'inactive')]",
+    "Read-Host 'Staging publishable key' -AsSecureString",
+    "Read-Host 'Temporary staging Auth password' -AsSecureString",
+    'ConvertFrom-SecureValue',
+    'LIDER_STAGING_FIXTURE_MANIFEST_PATH',
+    'LIDER_STAGING_SOURCE_CALCULATION_ID',
+    'LIDER_STAGING_EXPECTED_UPDATED_AT',
+    'node $Runner',
+    'finally',
+    'Remove-Item "Env:$name" -ErrorAction SilentlyContinue',
+    '$publishableKey = $null',
+    '$password = $null',
+])
+forbid('launcher', [
+    PRODUCTION,
+    'sb_secret_',
+    'SUPABASE_SERVICE_ROLE_KEY',
+    'service_role',
+])
+
 require('test', [
     f'https://{STAGING}.supabase.co',
     f'https://{PRODUCTION}.supabase.co',
     '/wrong_environment/',
+    'LIDER_STAGING_FIXTURE_MANIFEST_PATH',
+    'createFixtureManifest',
+    'manifestDigest',
+    'fixtureManifestId',
+    'fixtureManifestDigest',
+    'fixture_manifest_mismatch:LIDER_STAGING_SOURCE_CALCULATION_ID',
+    'fixture_manifest_read_failed',
+    'fixture_manifest_invalid:manifest_expired',
     "command.action, 'calculation.create_version'",
     'source_calculation_id: ids.source',
     'source_calculation_id_mismatch',
@@ -114,7 +175,7 @@ require('test', [
     'item forbidden field leaked',
     'calculation_projection_drift',
     'item_projection_drift',
-    'Authenticated staging E2E runner is environment-locked, payload-minimized and projection-safe.',
+    'Authenticated staging E2E runner is environment-locked, manifest-bound, payload-minimized and projection-safe.',
 ])
 
 require('transport', [
@@ -149,13 +210,31 @@ require('doc', [
     'GitHub Actions не выполняет сетевой E2E и не требует secrets',
 ])
 
+require('manifest_doc', [
+    'LIDER_STAGING_FIXTURE_MANIFEST_PATH',
+    'fixture_manifest_mismatch:<ENV_NAME>',
+    'fixture_manifest_invalid:manifest_expired',
+    'fixture_manifest_read_failed',
+    'tools/run_calculation_version_staging_auth_e2e.ps1',
+    'Read-Host -AsSecureString',
+    'fixtureManifestId',
+    'fixtureManifestDigest',
+    f'`{STAGING}`',
+    f'`{PRODUCTION}`',
+    'Auth user вручную последним',
+    'GitHub Actions выполняет только syntax, offline behavior и source checks',
+])
+
 require('workflow', [
+    "- 'tools/create-calculation-version-staging-fixture-bundle.mjs'",
     "- 'tools/run_calculation_version_staging_auth_e2e.mjs'",
+    "- 'tools/run_calculation_version_staging_auth_e2e.ps1'",
     "- 'tools/test_calculation_version_staging_auth_e2e_runner.mjs'",
     "- 'tools/check_calculation_version_staging_auth_e2e_runner.py'",
-    "- 'docs/CRM_CALCULATION_VERSION_STAGING_AUTH_E2E_RUNNER_2026-07-15.md'",
+    "- 'docs/CRM_CALCULATION_VERSION_STAGING_MANIFEST_RUNNER_2026-07-16.md'",
     'node --check tools/run_calculation_version_staging_auth_e2e.mjs',
     'node tools/test_calculation_version_staging_auth_e2e_runner.mjs',
+    'PowerShell launcher syntax',
     'python3 -m py_compile tools/check_calculation_version_staging_auth_e2e_runner.py',
     'python3 tools/check_calculation_version_staging_auth_e2e_runner.py',
 ])
@@ -170,7 +249,7 @@ for name, source in texts.items():
             errors.append(f'{name}: possible secret material')
 
 for forbidden_prefix in ('nav_', 'parket_', 'broker_'):
-    if forbidden_prefix in texts['runner']:
+    if forbidden_prefix in texts['runner'] or forbidden_prefix in texts['launcher']:
         errors.append(f'runner entered forbidden object scope: {forbidden_prefix}')
 
 if errors:
@@ -179,4 +258,4 @@ if errors:
         print(f'- {error}', file=sys.stderr)
     raise SystemExit(1)
 
-print('Calculation staging authenticated E2E runner is credential-external, environment-locked and offline-testable.')
+print('Calculation staging authenticated E2E runner is credential-external, manifest-bound, environment-locked and offline-testable.')
