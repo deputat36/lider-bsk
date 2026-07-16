@@ -9,10 +9,12 @@ on:
       - 'docs/CRM_EDGE_EMPTY_UPDATE_GUARD_2026-07-15.md'
       - 'docs/CRM_ORDERS_CANONICAL_ROLE_GUARD_2026-07-16.md'
       - 'docs/CRM_ORDERS_MANAGER_FIELD_PERMISSIONS_2026-07-16.md'
+      - 'docs/CRM_ORDERS_RESTRICT_GENERIC_ROLES_2026-07-16.md'
       - 'tools/check_crm_server_action_rbac_spec.py'
       - 'tools/check_crm_edge_empty_update_guard.py'
       - 'tools/check_crm_orders_canonical_role_guard.py'
       - 'tools/check_crm_orders_manager_field_permissions.py'
+      - 'tools/check_crm_orders_restrict_generic_roles.py'
       - 'crm/v4/assets/v4/action-permissions-v1.js'
       - 'supabase/functions/leader-crm-leads/index.ts'
       - 'supabase/functions/leader-crm-orders/index.ts'
@@ -24,10 +26,12 @@ on:
       - 'docs/CRM_EDGE_EMPTY_UPDATE_GUARD_2026-07-15.md'
       - 'docs/CRM_ORDERS_CANONICAL_ROLE_GUARD_2026-07-16.md'
       - 'docs/CRM_ORDERS_MANAGER_FIELD_PERMISSIONS_2026-07-16.md'
+      - 'docs/CRM_ORDERS_RESTRICT_GENERIC_ROLES_2026-07-16.md'
       - 'tools/check_crm_server_action_rbac_spec.py'
       - 'tools/check_crm_edge_empty_update_guard.py'
       - 'tools/check_crm_orders_canonical_role_guard.py'
       - 'tools/check_crm_orders_manager_field_permissions.py'
+      - 'tools/check_crm_orders_restrict_generic_roles.py'
       - 'crm/v4/assets/v4/action-permissions-v1.js'
       - 'supabase/functions/leader-crm-leads/index.ts'
       - 'supabase/functions/leader-crm-orders/index.ts'
@@ -54,3 +58,4 @@ jobs:
           python3 tools/check_crm_edge_empty_update_guard.py
           python3 tools/check_crm_orders_canonical_role_guard.py
           python3 tools/check_crm_orders_manager_field_permissions.py
+          python3 tools/check_crm_orders_restrict_generic_roles.py
