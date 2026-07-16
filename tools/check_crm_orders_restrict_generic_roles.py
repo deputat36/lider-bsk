@@ -9,7 +9,7 @@ DOC = ROOT / 'docs/CRM_ORDERS_RESTRICT_GENERIC_ROLES_2026-07-16.md'
 WORKFLOW = ROOT / '.github/workflows/crm-server-action-rbac-check.yml'
 SNAPSHOT_CHECKER = ROOT / 'tools/check_supabase_edge_function_sources.py'
 
-EXPECTED_MATRIX_ROLES = {'owner', 'admin', 'manager'}
+EXPECTED_MATRIX_ROLES = {'owner', 'admin', 'manager', 'accountant'}
 RESTRICTED_ROLES = {'designer', 'installer', 'contractor'}
 
 errors = []
@@ -59,6 +59,8 @@ for marker in (
     "if (!CANONICAL_ROLES.has(currentRole)) return false",
     "return Boolean(permissions?.has('*') || permissions?.has(permission))",
     "return json(403, { error: 'forbidden'",
+    "accountant: new Set([",
+    "'update:payment_status'",
 ):
     if marker not in orders:
         errors.append(f'Missing fail-closed source marker: {marker}')
@@ -66,8 +68,9 @@ for marker in (
 required_doc_markers = (
     'CRM orders generic endpoint restriction',
     'designer, installer and contractor are recognized roles',
+    'accountant',
+    '`update:payment_status`',
     '`403 forbidden`',
-    'no calls to `leader-crm-orders`',
     'production `leader-crm-orders` remains ACTIVE v2',
     'no Edge Function is deployed',
 )
@@ -84,7 +87,7 @@ for marker in required_workflow_markers:
     if marker not in workflow:
         errors.append(f'Missing workflow marker: {marker}')
 
-for marker in ('ORDER_ACTIONS_BY_ROLE', 'CANONICAL_ROLES.has(currentRole)'):
+for marker in ('ORDER_ACTIONS_BY_ROLE', 'CANONICAL_ROLES.has(currentRole)', 'ORDER_FIELDS_BY_ROLE'):
     if marker not in snapshot_checker:
         errors.append(f'Missing source snapshot marker: {marker}')
 
@@ -92,4 +95,4 @@ if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('Generic CRM orders source is restricted to owner, admin and manager roles.')
+print('Generic CRM orders source allows office roles plus narrow accountant finance access; job roles remain denied.')
