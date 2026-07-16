@@ -72,8 +72,6 @@ const ORDER_ACTIONS_BY_ROLE: Record<string, Set<string>> = {
     'update:layout_comment',
     'update:deadline',
   ]),
-  designer: new Set(['list', 'update:layout_status', 'update:layout_comment']),
-  installer: new Set(['list']),
 }
 
 function role(profile: Record<string, unknown> | null | undefined) {
