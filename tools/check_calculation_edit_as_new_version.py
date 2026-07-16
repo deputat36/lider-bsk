@@ -38,7 +38,7 @@ require('bootstrap', [
     'CRM_V4_ACTIONS.CALCULATIONS_WRITE',
     'canPerformV4Action',
     "document.addEventListener('leader-v4:crm-ready'",
-    "import('./calculation-version-editor-v1.js')",
+    "import('./calculation-version-editor-v1.js?v=20260716-staging-edge-1')",
     'bootCalculationVersionEditor',
 ])
 
@@ -88,7 +88,7 @@ require('editor', [
     '.insert(itemPayloads)',
     'commercial_offer_id: null',
     'order_id: null',
-    'rollbackCalculation',
+    'rollbackLegacyCalculation',
     'Старый расчёт не изменён',
     'calculation-version-editor-v1.css?v=20260716-1',
 ])
