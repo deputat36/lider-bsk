@@ -22,10 +22,74 @@ function cloneData(value) {
   }
 }
 
+function validTimestamp(value) {
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) ? timestamp : null;
+}
+
 export function nextCalculationVersion(calculations = []) {
   const versions = (Array.isArray(calculations) ? calculations : [])
     .map((calculation) => positiveVersion(calculation?.version_number));
   return (versions.length ? Math.max(0, ...versions) : 0) + 1;
+}
+
+export function calculationVersionLegacyPreflight(calculations = [], {
+  sourceCalculationId = '',
+  expectedUpdatedAt = ''
+} = {}) {
+  const rows = Array.isArray(calculations) ? calculations : [];
+  const sourceId = cleanText(sourceCalculationId);
+  const expectedTimestamp = validTimestamp(expectedUpdatedAt);
+  const source = rows.find((calculation) => cleanText(calculation?.id) === sourceId) || null;
+
+  if (!sourceId || !source) {
+    return Object.freeze({
+      ok: false,
+      code: 'source_missing',
+      message: 'Исходный расчёт больше не найден. Обновите список и откройте его заново.',
+      nextVersion: null,
+      duplicateVersions: Object.freeze([])
+    });
+  }
+
+  const actualTimestamp = validTimestamp(source.updated_at);
+  if (expectedTimestamp === null || actualTimestamp === null || actualTimestamp !== expectedTimestamp) {
+    return Object.freeze({
+      ok: false,
+      code: 'source_changed',
+      message: 'Исходный расчёт изменился после открытия. Обновите список и повторите правки.',
+      nextVersion: null,
+      duplicateVersions: Object.freeze([])
+    });
+  }
+
+  const counts = new Map();
+  rows.forEach((calculation) => {
+    const version = positiveVersion(calculation?.version_number);
+    if (version > 0) counts.set(version, (counts.get(version) || 0) + 1);
+  });
+  const duplicateVersions = [...counts.entries()]
+    .filter(([, count]) => count > 1)
+    .map(([version]) => version)
+    .sort((a, b) => a - b);
+
+  if (duplicateVersions.length) {
+    return Object.freeze({
+      ok: false,
+      code: 'duplicate_version_inventory',
+      message: `Найдены повторяющиеся номера версий: ${duplicateVersions.join(', ')}. Новое сохранение заблокировано до проверки истории.`,
+      nextVersion: null,
+      duplicateVersions: Object.freeze(duplicateVersions)
+    });
+  }
+
+  return Object.freeze({
+    ok: true,
+    code: 'ready',
+    message: 'Источник и номера версий проверены.',
+    nextVersion: nextCalculationVersion(rows),
+    duplicateVersions: Object.freeze([])
+  });
 }
 
 export function calculationVersionDraftTitle(source = {}, nextVersion = 1) {

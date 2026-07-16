@@ -38,7 +38,7 @@ require('bootstrap', [
     'CRM_V4_ACTIONS.CALCULATIONS_WRITE',
     'canPerformV4Action',
     "document.addEventListener('leader-v4:crm-ready'",
-    "import('./calculation-version-editor-v1.js?v=20260716-staging-edge-1')",
+    "import('./calculation-version-editor-v1.js?v=20260716-legacy-preflight-1')",
     'bootCalculationVersionEditor',
 ])
 
@@ -51,6 +51,11 @@ require('actions', [
 require('model', [
     'nextCalculationVersion',
     'Math.max(0, ...versions)',
+    'calculationVersionLegacyPreflight',
+    "code: 'source_missing'",
+    "code: 'source_changed'",
+    "code: 'duplicate_version_inventory'",
+    'actualTimestamp !== expectedTimestamp',
     'calculationVersionDraftTitle',
     'copyCalculationItemsForVersion',
     'calculationVersionTotals',
@@ -79,9 +84,13 @@ require('editor', [
     'source.lead_id !== v4State.route.leadId',
     'fetchCalculationItems',
     'createCalculationVersionDraft',
-    'freshNextVersion',
-    ".select('id,version_number')",
-    'nextCalculationVersion(response.data || [])',
+    'calculationVersionLegacyPreflight',
+    'freshLegacyVersionPreflight',
+    ".select('id,version_number,updated_at')",
+    'sourceCalculationId: source.id',
+    'expectedUpdatedAt: source.updated_at',
+    'versionDraft.sourceCalculationId',
+    'versionDraft.sourceUpdatedAt',
     ".from('leader_lead_calculations')",
     '.insert(calcPayload)',
     ".from('leader_lead_calculation_items')",
@@ -117,6 +126,11 @@ require('css', [
 
 require('test', [
     'nextCalculationVersion',
+    'calculationVersionLegacyPreflight',
+    "code, 'ready'",
+    "code, 'duplicate_version_inventory'",
+    "code, 'source_changed'",
+    "code, 'source_missing'",
     'version_number: 3',
     "'Баннер — правки v4'",
     'copyCalculationItemsForVersion',
@@ -145,6 +159,11 @@ require('doc', [
     '`Новый пустой расчёт`',
     '`Изменить / новая версия`',
     '`max(version_number) + 1`',
+    'Fresh preflight production legacy',
+    '`id, version_number, updated_at`',
+    'исходный расчёт изменился после открытия',
+    'повторяющиеся номера версий',
+    'При ошибке preflight INSERT расчёта и позиций не выполняется',
     'старая версия не обновляется и не удаляется',
     'не наследует `commercial_offer_id` и `order_id`',
     'MutationObserver',
@@ -163,4 +182,4 @@ if errors:
     print('\n'.join(errors), file=sys.stderr)
     raise SystemExit(1)
 
-print('Existing calculations can be copied into editable new versions in the same lead without mutating the source.')
+print('Existing calculations use fresh legacy preflight before a new same-lead version is written, without mutating the source.')

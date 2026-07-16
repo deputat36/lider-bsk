@@ -44,7 +44,7 @@ require('config', [
 ])
 
 require('bootstrap', [
-    "import('./calculation-version-editor-v1.js?v=20260716-staging-edge-1')",
+    "import('./calculation-version-editor-v1.js?v=20260716-legacy-preflight-1')",
     'CRM_V4_ACTIONS.CALCULATIONS_WRITE',
 ])
 
@@ -142,6 +142,7 @@ if not legacy_match:
 else:
     legacy_body = legacy_match.group('body')
     for required in [
+        'freshLegacyVersionPreflight',
         ".from('leader_lead_calculations')",
         '.insert(calcPayload)',
         ".from('leader_lead_calculation_items')",
@@ -149,7 +150,7 @@ else:
         'rollbackLegacyCalculation',
     ]:
         if required not in legacy_body:
-            errors.append(f'production legacy branch missing classified write: {required}')
+            errors.append(f'production legacy branch missing classified write/preflight: {required}')
 
 for forbidden in [
     'otulfnouybahfnsycxqn',
@@ -185,6 +186,7 @@ require('edit_doc', [
     'exact staging URL',
     '`staging_edge`',
     '`production_legacy`',
+    'Fresh preflight production legacy',
     'browser INSERT/DELETE не выполняются',
     'production server action не включается',
 ])
@@ -216,4 +218,4 @@ if errors:
     print('\n'.join(errors), file=sys.stderr)
     raise SystemExit(1)
 
-print('Calculation version editor uses atomic Edge/RPC only on the exact staging hostname and keeps production legacy isolated.')
+print('Calculation version editor uses atomic Edge/RPC only on the exact staging hostname and fresh preflight on production legacy.')

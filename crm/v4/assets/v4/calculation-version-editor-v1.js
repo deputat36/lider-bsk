@@ -18,9 +18,9 @@ import {
 } from './calculation-version-save-route-v1.js';
 import {
   calculationVersionItem,
+  calculationVersionLegacyPreflight,
   calculationVersionTotals,
-  createCalculationVersionDraft,
-  nextCalculationVersion
+  createCalculationVersionDraft
 } from './calculation-version-edit-model-v1.js';
 
 const CALC_FIELDS = 'id,lead_id,need_id,client_id,title,status,version_number,client_total,contractor_cost,profit,margin_percent,warning_level,warnings,public_comment,internal_comment,commercial_offer_id,order_id,created_by,updated_by,created_at,updated_at';
@@ -58,7 +58,7 @@ function persistenceRoute() {
 
 function sourceCalculation() {
   if (!versionDraft?.sourceCalculationId) return null;
-  return (v4State.calculations || []).find((calculation) => calculation.id === versionDraft.sourceCalculationId) || null;
+  return (v4State.calculations || []).find((item) => item.id === versionDraft.sourceCalculationId) || null;
 }
 
 function ensureStyles() {
@@ -126,7 +126,7 @@ function enhanceSavedCalculations() {
     button.type = 'button';
     button.dataset.calcNewEmpty = 'true';
     button.textContent = 'Новый пустой расчёт';
-    button.title = 'Перейти к единому конструктору и создать ещё один расчёт в этой заявке.';
+    button.title = 'Перейти к единому конструктору и создать ещё один расчёт в этой же заявке.';
     headerActions.prepend(button);
   }
 }
@@ -320,6 +320,17 @@ async function startVersionDraft(calculationId) {
     toast('Расчёт относится к другой заявке');
     return;
   }
+  if (persistenceRoute().mode === 'production_legacy') {
+    const preflight = calculationVersionLegacyPreflight(v4State.calculations || [], {
+      sourceCalculationId: source.id,
+      expectedUpdatedAt: source.updated_at
+    });
+    if (!preflight.ok) {
+      toast(preflight.message);
+      setStatus(`Новая версия не открыта: ${preflight.message}`, 'error');
+      return;
+    }
+  }
   editorBusy = true;
   renderVersionEditor();
   try {
@@ -354,17 +365,22 @@ async function rollbackLegacyCalculation(calculationId) {
   if (response.error) throw response.error;
 }
 
-async function freshNextVersion(leadId) {
+async function freshLegacyVersionPreflight(leadId, sourceCalculationId, expectedUpdatedAt) {
   const response = await timeout(
     supabaseClient
       .from('leader_lead_calculations')
-      .select('id,version_number')
+      .select('id,version_number,updated_at')
       .eq('lead_id', leadId),
     10000,
-    'Не удалось проверить номер новой версии'
+    'Не удалось проверить источник и номера версий'
   );
   if (response.error) throw response.error;
-  return nextCalculationVersion(response.data || []);
+  const preflight = calculationVersionLegacyPreflight(response.data || [], {
+    sourceCalculationId,
+    expectedUpdatedAt
+  });
+  if (!preflight.ok) throw new Error(preflight.message);
+  return preflight;
 }
 
 async function refreshSavedCalculations(leadId) {
@@ -406,7 +422,12 @@ async function saveVersionDraftThroughStaging(leadId) {
 async function saveVersionDraftLegacy(leadId, totals) {
   let createdCalculationId = null;
   try {
-    const nextVersion = await freshNextVersion(leadId);
+    const preflight = await freshLegacyVersionPreflight(
+      leadId,
+      versionDraft.sourceCalculationId,
+      versionDraft.sourceUpdatedAt
+    );
+    const nextVersion = preflight.nextVersion;
     versionDraft.nextVersion = nextVersion;
     const calcPayload = {
       lead_id: leadId,
@@ -493,7 +514,7 @@ async function saveVersionDraft() {
     setStatus(
       route.mode === 'staging_edge'
         ? 'Сохраняю тестовую версию атомарно через staging...'
-        : 'Сохраняю новую версию расчёта...',
+        : 'Проверяю источник и сохраняю новую версию...',
       'warn'
     );
     if (route.mode === 'staging_edge') await saveVersionDraftThroughStaging(leadId);
