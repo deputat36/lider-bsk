@@ -122,6 +122,47 @@ function forbidden(action: string, profile: Record<string, unknown> | null | und
   return json(403, { error: 'forbidden', action, role: profileRole(profile) })
 }
 
+function record(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null
+}
+
+function projectOfferOrder(value: unknown) {
+  const order = record(value)
+  const id = cleanText(order?.id, 80)
+  if (!id) return null
+  return {
+    id,
+    order_number: order?.order_number ?? null,
+    project_name: cleanText(order?.project_name, 300) || null,
+    status: cleanText(order?.status, 120) || null,
+    deadline: cleanText(order?.deadline, 40) || null,
+    layout_status: cleanText(order?.layout_status, 120) || null,
+    production_status: cleanText(order?.production_status, 120) || null,
+    installation_status: cleanText(order?.installation_status, 120) || null,
+    created_at: cleanText(order?.created_at, 80) || null,
+    updated_at: cleanText(order?.updated_at, 80) || null,
+  }
+}
+
+function projectOfferOrderResult(value: unknown) {
+  const result = record(value)
+  if (!result || result.ok !== true) return null
+  const order = projectOfferOrder(result.order)
+  if (!order) return null
+  const linkErrors = Array.isArray(result.link_errors)
+    ? result.link_errors.map((item) => cleanText(item, 200)).filter(Boolean).slice(0, 10)
+    : []
+  return {
+    ok: true,
+    already_created: result.already_created === true,
+    order,
+    items_created: Math.max(0, Math.trunc(num(result.items_created))),
+    link_errors: linkErrors,
+  }
+}
+
 async function ensureProfile(req: Request, supabaseUrl: string, anonKey: string, serviceRole: string) {
   const userCheck = await getUserFromRequest(req, supabaseUrl, anonKey)
   if (userCheck.error) return userCheck.error
@@ -289,7 +330,9 @@ async function createOrderFromOffer(supabaseUrl: string, serviceRole: string, ow
     body: JSON.stringify({ p_payload: payload }),
   })
   if (!res.ok) return json(500, { error: 'order_from_offer_rpc_failed', details: await res.text() })
-  return json(200, await res.json())
+  const projected = projectOfferOrderResult(await res.json())
+  if (!projected) return json(500, { error: 'order_from_offer_projection_failed' })
+  return json(200, projected)
 }
 
 Deno.serve(async (req: Request) => {
