@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import json
 import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
+STAGING_HOSTNAME = 'otulfnouybahfnsycxqn.supabase.co'
 FILES = {
     'config': ROOT / 'crm/v4/assets/v4/config.js',
     'bootstrap': ROOT / 'crm/v4/assets/v4/calculation-version-integrity-model-v1.js',
     'route': ROOT / 'crm/v4/assets/v4/calculation-version-save-route-v1.js',
     'transport': ROOT / 'crm/v4/assets/v4/calculation-version-staging-transport-v1.js',
+    'transport_contract': ROOT / 'contracts/calculation-version-staging-transport-v1.json',
     'editor': ROOT / 'crm/v4/assets/v4/calculation-version-editor-v1.js',
     'route_test': ROOT / 'tools/test_calculation_version_save_route.mjs',
     'transport_test': ROOT / 'tools/test_calculation_version_staging_transport.mjs',
@@ -69,6 +72,8 @@ for forbidden in [
 
 require('transport', [
     "const STAGING_PROJECT_REF = 'otulfnouybahfnsycxqn'",
+    'const STAGING_HOSTNAME = `${STAGING_PROJECT_REF}.supabase.co`',
+    'hostname === STAGING_HOSTNAME ? STAGING_PROJECT_REF :',
     "const FUNCTION_SLUG = 'leader-crm-calculations'",
     "const ACTION = 'calculation.create_version'",
     "const PERMISSION = 'calculations.write'",
@@ -76,11 +81,22 @@ require('transport', [
     'client.functions.invoke(FUNCTION_SLUG, { body: command })',
     'expected_updated_at',
     'idempotency_key',
+    'hostname: STAGING_HOSTNAME',
 ])
 
 for forbidden in ['.from(', '.insert(', '.update(', '.delete(', '.upsert(', '.rpc(', 'service_role']:
     if forbidden in texts.get('transport', ''):
         errors.append(f'staging transport contains forbidden browser persistence: {forbidden}')
+
+try:
+    transport_contract = json.loads(texts.get('transport_contract', '{}'))
+except json.JSONDecodeError as exc:
+    errors.append(f'Invalid transport contract JSON: {exc}')
+    transport_contract = {}
+if transport_contract.get('environment', {}).get('allowed_hostname') != STAGING_HOSTNAME:
+    errors.append('transport contract exact staging hostname drifted')
+if transport_contract.get('environment', {}).get('wrong_environment') != 'fail_closed_on_non_exact_hostname_before_session_or_invoke':
+    errors.append('transport contract must fail closed on every non-exact hostname')
 
 require('editor', [
     "from './config.js'",
@@ -149,6 +165,7 @@ for forbidden in [
 require('route_test', [
     "mode, 'staging_edge'",
     "mode, 'production_legacy'",
+    'otulfnouybahfnsycxqn.example.com',
     'createCalculationVersionIdempotencyKey',
     'server-row-id-must-not-pass',
     'must not enter transport payload',
@@ -157,9 +174,11 @@ require('route_test', [
 
 require('transport_test', [
     'invokeStagingCalculationVersion',
+    'evil.otulfnouybahfnsycxqn.supabase.co',
+    'must fail closed',
     'production_locked',
     'idempotent_replay',
-    'Calculation staging transport tests passed.',
+    'exact-hostname bound',
 ])
 
 require('edit_doc', [
@@ -197,4 +216,4 @@ if errors:
     print('\n'.join(errors), file=sys.stderr)
     raise SystemExit(1)
 
-print('Calculation version editor uses atomic Edge/RPC only on exact staging and keeps production legacy isolated.')
+print('Calculation version editor uses atomic Edge/RPC only on the exact staging hostname and keeps production legacy isolated.')
