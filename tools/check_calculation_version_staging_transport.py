@@ -212,7 +212,7 @@ require('runbook', [
     'HTTP 200',
     'HTTP 409',
     'HTTP 403',
-    'production `calculations.js`',
+    'Основной `calculations.js`',
     'staging Edge v3',
     'Source wiring',
     'Runtime activation',
