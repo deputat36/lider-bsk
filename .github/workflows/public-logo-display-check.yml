@@ -1,0 +1,37 @@
+name: Public logo display check
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'assets/brand/logo-lider-mark.svg'
+      - 'assets/brand/logo-lider-light.svg'
+      - 'assets/public-lead-form.css'
+      - '*.html'
+      - 'tools/check_public_logo_contract.py'
+      - 'docs/PUBLIC_LOGO_DISPLAY_AUDIT_2026-07-16.md'
+      - '.github/workflows/public-logo-display-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'assets/brand/logo-lider-mark.svg'
+      - 'assets/brand/logo-lider-light.svg'
+      - 'assets/public-lead-form.css'
+      - '*.html'
+      - 'tools/check_public_logo_contract.py'
+      - 'docs/PUBLIC_LOGO_DISPLAY_AUDIT_2026-07-16.md'
+      - '.github/workflows/public-logo-display-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-public-logo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile logo contract checker
+        run: python3 -m py_compile tools/check_public_logo_contract.py
+      - name: Validate public logo contract
+        run: python3 tools/check_public_logo_contract.py
