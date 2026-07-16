@@ -1,0 +1,40 @@
+name: CRM calculation fixture bundle check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/create-calculation-version-staging-fixture-bundle.mjs'
+      - 'tools/test_create_calculation_version_staging_fixture_bundle.mjs'
+      - 'tools/check_calculation_version_staging_fixture_bundle.py'
+      - 'docs/CRM_CALCULATION_VERSION_STAGING_FIXTURE_BUNDLE_2026-07-16.md'
+      - '.github/workflows/crm-calculation-fixture-bundle-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/create-calculation-version-staging-fixture-bundle.mjs'
+      - 'tools/test_create_calculation_version_staging_fixture_bundle.mjs'
+      - 'tools/check_calculation_version_staging_fixture_bundle.py'
+      - 'docs/CRM_CALCULATION_VERSION_STAGING_FIXTURE_BUNDLE_2026-07-16.md'
+      - '.github/workflows/crm-calculation-fixture-bundle-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-calculation-fixture-bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check fixture bundle syntax
+        run: node --check tools/create-calculation-version-staging-fixture-bundle.mjs
+
+      - name: Run fixture bundle behavior tests
+        run: node tools/test_create_calculation_version_staging_fixture_bundle.mjs
+
+      - name: Compile fixture bundle checker
+        run: python3 -m py_compile tools/check_calculation_version_staging_fixture_bundle.py
+
+      - name: Validate production lock, Auth boundary and cleanup order
+        run: python3 tools/check_calculation_version_staging_fixture_bundle.py
