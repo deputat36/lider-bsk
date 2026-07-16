@@ -1,0 +1,40 @@
+name: CRM calculation profile probe bundle check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/create-calculation-version-staging-profile-probe-bundle.mjs'
+      - 'tools/test_create_calculation_version_staging_profile_probe_bundle.mjs'
+      - 'tools/check_calculation_version_staging_profile_probe_bundle.py'
+      - 'docs/CRM_CALCULATION_VERSION_STAGING_PROFILE_PROBES_2026-07-16.md'
+      - '.github/workflows/crm-calculation-profile-probe-bundle-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/create-calculation-version-staging-profile-probe-bundle.mjs'
+      - 'tools/test_create_calculation_version_staging_profile_probe_bundle.mjs'
+      - 'tools/check_calculation_version_staging_profile_probe_bundle.py'
+      - 'docs/CRM_CALCULATION_VERSION_STAGING_PROFILE_PROBES_2026-07-16.md'
+      - '.github/workflows/crm-calculation-profile-probe-bundle-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-calculation-profile-probes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check profile probe generator syntax
+        run: node --check tools/create-calculation-version-staging-profile-probe-bundle.mjs
+
+      - name: Test generated profile transitions
+        run: node tools/test_create_calculation_version_staging_profile_probe_bundle.mjs
+
+      - name: Compile profile probe checker
+        run: python3 -m py_compile tools/check_calculation_version_staging_profile_probe_bundle.py
+
+      - name: Validate manifest binding, profile-only UPDATE and production lock
+        run: python3 tools/check_calculation_version_staging_profile_probe_bundle.py
