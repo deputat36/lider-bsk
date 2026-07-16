@@ -5,10 +5,13 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 FILES = {
     'bootstrap': ROOT / 'crm/v4/assets/v4/calculation-version-integrity-model-v1.js',
+    'actions': ROOT / 'crm/v4/assets/v4/action-permissions-v1.js',
     'model': ROOT / 'crm/v4/assets/v4/calculation-version-edit-model-v1.js',
     'editor': ROOT / 'crm/v4/assets/v4/calculation-version-editor-v1.js',
     'css': ROOT / 'crm/v4/assets/v4/calculation-version-editor-v1.css',
     'test': ROOT / 'tools/test_calculation_version_edit_model.mjs',
+    'inventory_checker': ROOT / 'tools/check_crm_v4_backend_write_inventory.py',
+    'inventory_addendum': ROOT / 'docs/CRM_V4_BACKEND_WRITE_INVENTORY_ADDENDUM_2026-07-10.md',
     'doc': ROOT / 'docs/CRM_CALCULATION_EDIT_AS_NEW_VERSION_2026-07-16.md',
     'workflow': ROOT / '.github/workflows/crm-calculation-edit-version-check.yml',
 }
@@ -31,9 +34,18 @@ def require(name, markers):
 
 
 require('bootstrap', [
+    "from './action-permissions-v1.js'",
+    'CRM_V4_ACTIONS.CALCULATIONS_WRITE',
+    'canPerformV4Action',
+    "document.addEventListener('leader-v4:crm-ready'",
     "import('./calculation-version-editor-v1.js')",
-    'document.readyState',
     'bootCalculationVersionEditor',
+])
+
+require('actions', [
+    "CALCULATIONS_WRITE: 'calculations.write'",
+    'CRM_V4_ACTIONS.CALCULATIONS_WRITE',
+    'export function canPerformV4Action',
 ])
 
 require('model', [
@@ -114,6 +126,20 @@ require('test', [
     'Calculation version edit model tests passed.',
 ])
 
+require('inventory_checker', [
+    "'calculation-version-editor-v1.js'",
+    "'calculations.js'",
+    'Unclassified direct-write CRM files',
+])
+
+require('inventory_addendum', [
+    '### `crm/v4/assets/v4/calculation-version-editor-v1.js`',
+    'canonical permission: `calculations.write`',
+    'future server action: `calculation.create_version`',
+    'source calculation and its items remain unchanged',
+    'temporary direct-write path',
+])
+
 require('doc', [
     'два модуля использовали один DOM-контейнер `calculationsBox`',
     '`Новый пустой расчёт`',
@@ -130,6 +156,7 @@ require('workflow', [
     'node --check crm/v4/assets/v4/calculation-version-editor-v1.js',
     'node tools/test_calculation_version_edit_model.mjs',
     'python3 tools/check_calculation_edit_as_new_version.py',
+    'python3 tools/check_crm_v4_backend_write_inventory.py',
 ])
 
 if errors:
