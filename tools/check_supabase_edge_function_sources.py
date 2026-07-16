@@ -44,6 +44,8 @@ REQUIRED_MARKERS = {
         "SUPABASE_SERVICE_ROLE_KEY",
         "access_denied",
         "ROLE_MATRIX_VERSION = '20260630-edge-role-matrix-1'",
+        "CANONICAL_ROLES",
+        "CANONICAL_ROLES.has(currentRole)",
         "ORDER_ACTIONS_BY_ROLE",
         "canUpdateOrder",
         "matrix: ROLE_MATRIX_VERSION",
