@@ -44,24 +44,28 @@ require('config', [
 ])
 
 require('bootstrap', [
-    "import('./calculation-version-editor-v1.js?v=20260716-title-rebase-1')",
+    "import('./calculation-version-editor-v1.js?v=20260716-production-lock-1')",
     'CRM_V4_ACTIONS.CALCULATIONS_WRITE',
 ])
 
 require('route', [
     "from './calculation-version-staging-transport-v1.js'",
     "mode: 'staging_edge'",
+    'enabled: true',
+    'atomic: true',
     'browserDirectWrite: false',
-    "mode: 'production_legacy'",
-    'browserDirectWrite: true',
+    "mode: 'production_locked'",
+    'enabled: false',
+    "reason: 'production_backend_not_deployed'",
+    'Прямое сохранение из браузера отключено',
     'createCalculationVersionIdempotencyKey',
     'buildCalculationVersionTransportDraft',
-    'const autoTitle = text(source.autoTitle)',
-    'currentTitle && currentTitle !== autoTitle ? currentTitle : null',
     'calculation-version:',
 ])
 
 for forbidden in [
+    "mode: 'production_legacy'",
+    'browserDirectWrite: true',
     'supabaseClient',
     '.from(',
     '.insert(',
@@ -70,7 +74,7 @@ for forbidden in [
     'service_role',
 ]:
     if forbidden in texts.get('route', ''):
-        errors.append(f'route model must remain pure: {forbidden}')
+        errors.append(f'route model contains forbidden legacy/persistence marker: {forbidden}')
 
 require('transport', [
     "const STAGING_PROJECT_REF = 'otulfnouybahfnsycxqn'",
@@ -95,10 +99,16 @@ try:
 except json.JSONDecodeError as exc:
     errors.append(f'Invalid transport contract JSON: {exc}')
     transport_contract = {}
+if transport_contract.get('status') != 'source_wired_staging_runtime_gated_production_locked':
+    errors.append('transport contract status must include production lock')
 if transport_contract.get('environment', {}).get('allowed_hostname') != STAGING_HOSTNAME:
     errors.append('transport contract exact staging hostname drifted')
+if transport_contract.get('environment', {}).get('production_route') != 'production_locked':
+    errors.append('transport contract must record production_locked')
 if transport_contract.get('environment', {}).get('wrong_environment') != 'fail_closed_on_non_exact_hostname_before_session_or_invoke':
     errors.append('transport contract must fail closed on every non-exact hostname')
+if transport_contract.get('transport', {}).get('production_browser_direct_write') is not False:
+    errors.append('transport contract must forbid production browser direct writes')
 
 require('editor', [
     "from './config.js'",
@@ -109,17 +119,16 @@ require('editor', [
     'createCalculationVersionIdempotencyKey',
     'buildCalculationVersionTransportDraft',
     "data-version-persistence=\"${esc(route.mode)}\"",
-    "if (persistenceRoute().mode === 'staging_edge')",
+    "if (!route.enabled || route.mode !== 'staging_edge')",
     'versionDraft.sourceUpdatedAt = source.updated_at',
     'async function saveVersionDraftThroughStaging',
-    'async function saveVersionDraftLegacy',
-    "if (route.mode === 'staging_edge') await saveVersionDraftThroughStaging(leadId)",
-    'else await saveVersionDraftLegacy(leadId, totals)',
     'readAfterSuccess: () => refreshSavedCalculations(leadId)',
+    'Прямое сохранение версии из production-браузера отключено',
+    'Новая версия — недоступно',
 ])
 
 staging_match = re.search(
-    r'async function saveVersionDraftThroughStaging\(leadId\) \{(?P<body>.*?)\n\}\n\nasync function saveVersionDraftLegacy',
+    r'async function saveVersionDraftThroughStaging\(leadId\) \{(?P<body>.*?)\n\}\n\nasync function saveVersionDraft\(',
     texts.get('editor', ''),
     re.S,
 )
@@ -134,28 +143,15 @@ else:
         if required not in staging_body:
             errors.append(f'staging editor branch missing {required}')
 
-legacy_match = re.search(
-    r'async function saveVersionDraftLegacy\(leadId, totals\) \{(?P<body>.*?)\n\}\n\nasync function saveVersionDraft\(',
-    texts.get('editor', ''),
-    re.S,
-)
-if not legacy_match:
-    errors.append('Could not isolate saveVersionDraftLegacy body')
-else:
-    legacy_body = legacy_match.group('body')
-    for required in [
-        'freshLegacyVersionPreflight',
-        "versionDraft.nextVersion = nextVersion",
-        ".from('leader_lead_calculations')",
-        '.insert(calcPayload)',
-        ".from('leader_lead_calculation_items')",
-        '.insert(itemPayloads)',
-        'rollbackLegacyCalculation',
-    ]:
-        if required not in legacy_body:
-            errors.append(f'production legacy branch missing classified write/preflight: {required}')
-
 for forbidden in [
+    '.insert(',
+    '.update(',
+    '.delete(',
+    '.upsert(',
+    'rollbackLegacyCalculation',
+    'saveVersionDraftLegacy',
+    'freshLegacyVersionPreflight',
+    'production_legacy',
     'otulfnouybahfnsycxqn',
     'SUPABASE_SERVICE_ROLE_KEY',
     'service_role',
@@ -164,15 +160,16 @@ for forbidden in [
     'broker_',
 ]:
     if forbidden in texts.get('editor', ''):
-        errors.append(f'editor contains forbidden environment/credential marker: {forbidden}')
+        errors.append(f'editor contains forbidden production write/environment marker: {forbidden}')
 
 require('route_test', [
     "mode, 'staging_edge'",
-    "mode, 'production_legacy'",
+    "mode, 'production_locked'",
+    "enabled, false",
+    "browserDirectWrite, false",
+    'production_backend_not_deployed',
     'otulfnouybahfnsycxqn.example.com',
     'createCalculationVersionIdempotencyKey',
-    'automatic title must be server-derived in staging',
-    'Согласованный вариант для клиента',
     'server-row-id-must-not-pass',
     'must not enter transport payload',
     'Calculation version save route tests passed.',
@@ -190,23 +187,22 @@ require('transport_test', [
 require('edit_doc', [
     'exact staging URL',
     '`staging_edge`',
-    '`production_legacy`',
-    'Fresh preflight production legacy',
-    'browser INSERT/DELETE не выполняются',
+    '`production_locked`',
+    'browser INSERT/DELETE удалены',
     'production server action не включается',
 ])
 
 require('runbook', [
     'подключён к редактору только при exact staging URL',
-    'Production URL продолжает использовать текущий legacy path',
+    'Production URL использует `production_locked`',
     'staging содержит 0 Auth users',
     'authenticated HTTP E2E остаётся непроверенным',
 ])
 
 require('inventory', [
     'staging route: JWT Edge/RPC без browser writes',
-    'production route: temporary direct-write path',
-    'after production cutover legacy-функции и compensating delete должны быть удалены',
+    'production route: fail-closed',
+    'removed from the direct-write inventory',
 ])
 
 require('workflow', [
@@ -223,4 +219,4 @@ if errors:
     print('\n'.join(errors), file=sys.stderr)
     raise SystemExit(1)
 
-print('Calculation version editor uses atomic Edge/RPC on exact staging, server-derived automatic titles and fresh production preflight.')
+print('Calculation version editor persists only through exact staging Edge/RPC and fails closed in production.')

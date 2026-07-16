@@ -9,7 +9,7 @@ function loadCalculationVersionEditor() {
   if (calculationVersionEditorLoaded) return;
   if (!canPerformV4Action(CRM_V4_ACTIONS.CALCULATIONS_WRITE)) return;
   calculationVersionEditorLoaded = true;
-  import('./calculation-version-editor-v1.js?v=20260716-title-rebase-1')
+  import('./calculation-version-editor-v1.js?v=20260716-production-lock-1')
     .then(({ bootCalculationVersionEditor }) => {
       if (document.readyState !== 'loading') bootCalculationVersionEditor();
     })

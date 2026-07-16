@@ -41,7 +41,7 @@ require('bootstrap', [
     'CRM_V4_ACTIONS.CALCULATIONS_WRITE',
     'canPerformV4Action',
     "document.addEventListener('leader-v4:crm-ready'",
-    "import('./calculation-version-editor-v1.js?v=20260716-title-rebase-1')",
+    "import('./calculation-version-editor-v1.js?v=20260716-production-lock-1')",
     'bootCalculationVersionEditor',
 ])
 
@@ -85,9 +85,23 @@ require('route', [
     'const autoTitle = text(source.autoTitle)',
     'currentTitle && currentTitle !== autoTitle ? currentTitle : null',
     'title: transportTitle',
+    "mode: 'staging_edge'",
+    'enabled: true',
+    "mode: 'production_locked'",
+    'enabled: false',
+    'browserDirectWrite: false',
+    "reason: 'production_backend_not_deployed'",
 ])
+for forbidden in ["mode: 'production_legacy'", 'browserDirectWrite: true', '.insert(', '.update(', '.delete(']:
+    if forbidden in texts.get('route', ''):
+        errors.append(f'route contains forbidden production legacy marker: {forbidden}')
 
 require('editor', [
+    "from './config.js'",
+    'CRM_V4_ACTIONS.CALCULATIONS_WRITE',
+    'canPerformV4Action',
+    'invokeStagingCalculationVersion',
+    'calculationVersionPersistenceRoute',
     "import { loadCalculations, renderCalculations } from './calculations.js'",
     'savedCalculationsWorkspace',
     'savedCalculationsSnapshot',
@@ -95,32 +109,32 @@ require('editor', [
     'snapshot.replaceChildren(savedSection)',
     'renderCalculations()',
     'Изменить / новая версия',
+    'Новая версия — недоступно',
+    "button.setAttribute('aria-disabled'",
     'Новый пустой расчёт',
+    "if (!route.enabled || route.mode !== 'staging_edge')",
     'source.lead_id !== v4State.route.leadId',
     'fetchCalculationItems',
     'createCalculationVersionDraft',
-    'calculationVersionLegacyPreflight',
-    'freshLegacyVersionPreflight',
-    ".select('id,version_number,updated_at')",
-    'sourceCalculationId: source.id',
-    'expectedUpdatedAt: source.updated_at',
     'versionDraft.sourceCalculationId',
-    'versionDraft.sourceUpdatedAt',
-    "versionDraft.nextVersion = nextVersion",
-    ".from('leader_lead_calculations')",
-    '.insert(calcPayload)',
-    ".from('leader_lead_calculation_items')",
-    '.insert(itemPayloads)',
-    'commercial_offer_id: null',
-    'order_id: null',
-    'rollbackLegacyCalculation',
-    'Старый расчёт не изменён',
-    'calculation-version-editor-v1.css?v=20260716-1',
+    'versionDraft.sourceUpdatedAt = source.updated_at',
+    'createCalculationVersionIdempotencyKey',
+    'saveVersionDraftThroughStaging',
+    'readAfterSuccess: () => refreshSavedCalculations(leadId)',
+    'Прямое сохранение версии из production-браузера отключено',
+    'calculation-version-editor-v1.css?v=20260716-production-lock-1',
 ])
 
 for forbidden in [
-    "from('leader_lead_calculations').update",
-    "from('leader_lead_calculation_items').update",
+    '.insert(',
+    '.update(',
+    '.delete(',
+    '.upsert(',
+    'rollbackLegacyCalculation',
+    'saveVersionDraftLegacy',
+    'freshLegacyVersionPreflight',
+    'CALC_FIELDS',
+    'production_legacy',
     'SUPABASE_SERVICE_ROLE_KEY',
     'service_role',
     'otulfnouybahfnsycxqn',
@@ -129,11 +143,14 @@ for forbidden in [
     'broker_',
 ]:
     if forbidden in texts.get('editor', ''):
-        errors.append(f'editor contains forbidden mutation/environment marker: {forbidden}')
+        errors.append(f'editor contains forbidden production write/environment marker: {forbidden}')
 
 require('css', [
     '.v4-calculation-version-workspace',
     '.v4-calculation-builder-host .v4-calculations-section>.v4-calculations-list',
+    '.v4-calc-version-start.is-locked',
+    '[aria-disabled="true"]',
+    '.v4-version-source-note.is-locked',
     '.v4-version-editor',
     '.v4-version-edit-grid',
     '.v4-version-totals',
@@ -160,6 +177,10 @@ require('test', [
 ])
 
 require('route_test', [
+    "mode, 'production_locked'",
+    "enabled, false",
+    "browserDirectWrite, false",
+    'production_backend_not_deployed',
     'automatic title must be server-derived in staging',
     'Согласованный вариант для клиента',
     'assert.equal(draft.title, null)',
@@ -167,29 +188,28 @@ require('route_test', [
 ])
 
 require('inventory_checker', [
-    "'calculation-version-editor-v1.js'",
     "'calculations.js'",
     'Unclassified direct-write CRM files',
+    'Inventory expects direct writes that are no longer present',
+    'Calculation version editor must remain free of direct insert/update/delete writes',
 ])
 
 require('inventory_addendum', [
     '### `crm/v4/assets/v4/calculation-version-editor-v1.js`',
     'canonical permission: `calculations.write`',
-    'future server action: `calculation.create_version`',
+    'server action: `calculation.create_version`',
     'source calculation and its items remain unchanged',
-    'temporary direct-write path',
+    'production route: fail-closed',
+    'removed from the direct-write inventory',
 ])
 
 require('doc', [
     'два модуля использовали один DOM-контейнер `calculationsBox`',
     '`Новый пустой расчёт`',
-    '`Изменить / новая версия`',
+    '`Новая версия — недоступно`',
     '`max(version_number) + 1`',
-    'Fresh preflight production legacy',
-    '`id, version_number, updated_at`',
-    'исходный расчёт изменился после открытия',
-    'повторяющиеся номера версий',
-    'При ошибке preflight INSERT расчёта и позиций не выполняется',
+    '`production_locked`',
+    'browser INSERT/DELETE удалены',
     'старая версия не обновляется и не удаляется',
     'не наследует `commercial_offer_id` и `order_id`',
     'MutationObserver',
@@ -220,4 +240,4 @@ if errors:
     print('\n'.join(errors), file=sys.stderr)
     raise SystemExit(1)
 
-print('Calculation versions keep automatic titles aligned with actual version numbers and preserve custom titles.')
+print('Calculation version title intent is preserved; staging Edge/RPC is the only persistence route and production fails closed.')

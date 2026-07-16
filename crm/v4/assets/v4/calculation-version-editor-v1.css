@@ -10,6 +10,13 @@
 .v4-calc-version-start{
   white-space:nowrap;
 }
+.v4-calc-version-start.is-locked,
+.v4-calc-version-start[aria-disabled="true"]{
+  border-color:#cbd5e1;
+  background:#f1f5f9;
+  color:#64748b;
+  cursor:not-allowed;
+}
 .v4-version-editor{
   border-color:#93c5fd;
   box-shadow:0 14px 40px rgba(37,99,235,.10);
@@ -32,6 +39,11 @@
   border-radius:14px;
   background:#eff6ff;
   color:#1e3a8a;
+}
+.v4-version-source-note.is-locked{
+  border-color:#fcd34d;
+  background:#fffbeb;
+  color:#92400e;
 }
 .v4-version-source-note b{
   flex:0 0 auto;

@@ -19,20 +19,24 @@ export function calculationVersionPersistenceRoute(supabaseUrl = '') {
   if (isStagingCalculationEnvironment(supabaseUrl)) {
     return Object.freeze({
       mode: 'staging_edge',
+      enabled: true,
       atomic: true,
       browserDirectWrite: false,
+      reason: '',
       title: 'Тестовый staging',
       description: 'Новая версия будет сохранена атомарно через защищённый сервер. Исходный расчёт не изменится.',
       buttonPrefix: 'Сохранить тестовую версию'
     });
   }
   return Object.freeze({
-    mode: 'production_legacy',
+    mode: 'production_locked',
+    enabled: false,
     atomic: false,
-    browserDirectWrite: true,
-    title: 'Рабочая CRM',
-    description: 'Новая версия будет сохранена в текущей заявке. Исходный расчёт не изменится.',
-    buttonPrefix: 'Сохранить новую версию'
+    browserDirectWrite: false,
+    reason: 'production_backend_not_deployed',
+    title: 'Безопасное сохранение временно отключено',
+    description: 'Создание новой версии будет доступно после отдельного production Edge/RPC rollout. Прямое сохранение из браузера отключено, чтобы не получить неполный или повторяющийся расчёт.',
+    buttonPrefix: 'Сохранение недоступно'
   });
 }
 
