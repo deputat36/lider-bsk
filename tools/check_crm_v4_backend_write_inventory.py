@@ -3,14 +3,14 @@ from pathlib import Path
 import sys
 
 root = Path(__file__).resolve().parents[1]
-doc = root / 'docs/CRM_V4_BACKEND_WRITE_CONTRACT_INVENTORY_2026-07-10.md'
-addendum = root / 'docs/CRM_V4_BACKEND_WRITE_INVENTORY_ADDENDUM_2026-07-10.md'
-actions = root / 'crm/v4/assets/v4/action-permissions-v1.js'
-crm_dir = root / 'crm/v4/assets/v4'
+doc = root / 'docs' / 'CRM_V4_BACKEND_WRITE_CONTRACT_INVENTORY_2026-07-10.md'
+addendum = root / 'docs' / 'CRM_V4_BACKEND_WRITE_INVENTORY_ADDENDUM_2026-07-10.md'
+actions = root / 'crm' / 'v4' / 'assets' / 'v4' / 'action-permissions-v1.js'
+crm_dir = root / 'crm' / 'v4' / 'assets' / 'v4'
 
 errors = []
-
 known_direct_write_files = {
+    'calculation-version-editor-v1.js',
     'calculations-advanced.js',
     'calculations-standard.js',
     'calculations.js',
@@ -64,8 +64,13 @@ else:
     required = [
         '`crm/v4/assets/v4/lead-create.js`',
         '`crm/v4/assets/v4/lead-timeline.js`',
+        '`crm/v4/assets/v4/calculation-version-editor-v1.js`',
         'canonical action: `leads.create`',
         'future dedicated `lead_events.write` key',
+        'canonical permission: `calculations.write`',
+        'future server action: `calculation.create_version`',
+        'source calculation and its items remain unchanged',
+        'temporary direct-write path',
         'Confirmed direct-write file set',
         'Any new CRM v4 JavaScript file containing a direct insert/update/delete must be added to the inventory',
         'no production Supabase change was made',

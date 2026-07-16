@@ -1,3 +1,29 @@
+import {
+  CRM_V4_ACTIONS,
+  canPerformV4Action
+} from './action-permissions-v1.js';
+
+let calculationVersionEditorLoaded = false;
+
+function loadCalculationVersionEditor() {
+  if (calculationVersionEditorLoaded) return;
+  if (!canPerformV4Action(CRM_V4_ACTIONS.CALCULATIONS_WRITE)) return;
+  calculationVersionEditorLoaded = true;
+  import('./calculation-version-editor-v1.js')
+    .then(({ bootCalculationVersionEditor }) => {
+      if (document.readyState !== 'loading') bootCalculationVersionEditor();
+    })
+    .catch((error) => {
+      calculationVersionEditorLoaded = false;
+      console.error('CRM calculation version editor failed to load:', error);
+    });
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('leader-v4:crm-ready', loadCalculationVersionEditor);
+  if (document.readyState !== 'loading') loadCalculationVersionEditor();
+}
+
 function versionNumber(value) {
   const number = Number(value);
   return Number.isInteger(number) && number > 0 ? number : 1;
