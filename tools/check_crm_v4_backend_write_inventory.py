@@ -10,7 +10,6 @@ crm_dir = root / 'crm' / 'v4' / 'assets' / 'v4'
 
 errors = []
 known_direct_write_files = {
-    'calculation-version-editor-v1.js',
     'calculations-advanced.js',
     'calculations-standard.js',
     'calculations.js',
@@ -68,9 +67,10 @@ else:
         'canonical action: `leads.create`',
         'future dedicated `lead_events.write` key',
         'canonical permission: `calculations.write`',
-        'future server action: `calculation.create_version`',
+        'server action: `calculation.create_version`',
+        'production route: fail-closed',
+        'removed from the direct-write inventory',
         'source calculation and its items remain unchanged',
-        'temporary direct-write path',
         'Confirmed direct-write file set',
         'Any new CRM v4 JavaScript file containing a direct insert/update/delete must be added to the inventory',
         'no production Supabase change was made',
@@ -118,8 +118,11 @@ missing_expected = sorted(known_direct_write_files - actual_write_files)
 if missing_expected:
     errors.append('Inventory expects direct writes that are no longer present; update the decision record: ' + ', '.join(missing_expected))
 
+if 'calculation-version-editor-v1.js' in actual_write_files:
+    errors.append('Calculation version editor must remain free of direct insert/update/delete writes')
+
 if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('All CRM v4 direct-write files are classified and the canonical action registry is present.')
+print('All CRM v4 direct-write files are classified; calculation version editor is write-free and canonical actions are present.')
