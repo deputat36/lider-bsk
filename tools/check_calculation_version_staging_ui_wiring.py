@@ -191,7 +191,7 @@ require('edit_doc', [
 
 require('runbook', [
     'подключён к редактору только при exact staging URL',
-    'production URL продолжает использовать текущий legacy path',
+    'Production URL продолжает использовать текущий legacy path',
     'staging содержит 0 Auth users',
     'authenticated HTTP E2E остаётся непроверенным',
 ])
@@ -199,7 +199,7 @@ require('runbook', [
 require('inventory', [
     'staging route: JWT Edge/RPC без browser writes',
     'production route: temporary direct-write path',
-    'после production cutover legacy-функции и compensating delete должны быть удалены',
+    'after production cutover legacy-функции и compensating delete должны быть удалены',
 ])
 
 require('workflow', [
