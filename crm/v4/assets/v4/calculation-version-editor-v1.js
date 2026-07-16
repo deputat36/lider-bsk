@@ -18,14 +18,12 @@ import {
 } from './calculation-version-save-route-v1.js';
 import {
   calculationVersionItem,
-  calculationVersionLegacyPreflight,
   calculationVersionTotals,
   createCalculationVersionDraft
 } from './calculation-version-edit-model-v1.js';
 
-const CALC_FIELDS = 'id,lead_id,need_id,client_id,title,status,version_number,client_total,contractor_cost,profit,margin_percent,warning_level,warnings,public_comment,internal_comment,commercial_offer_id,order_id,created_by,updated_by,created_at,updated_at';
 const ITEM_FIELDS = 'id,calculation_id,lead_id,catalog_id,category,item_type,name,unit,qty,contractor_price,contractor_sum,markup_percent,client_price,client_sum,profit,margin_percent,comment,data,sort_order,created_at,updated_at';
-const STYLE_HREF = 'assets/v4/calculation-version-editor-v1.css?v=20260716-1';
+const STYLE_HREF = 'assets/v4/calculation-version-editor-v1.css?v=20260716-production-lock-1';
 
 let layoutObserver = null;
 let reconcileQueued = false;
@@ -105,6 +103,7 @@ function scheduleReconcile() {
 function enhanceSavedCalculations() {
   const snapshot = savedSnapshotHost();
   if (!snapshot) return;
+  const route = persistenceRoute();
 
   snapshot.querySelectorAll('.v4-saved-calc-card').forEach((card) => {
     const detailsButton = card.querySelector('[data-v2-calc-details]');
@@ -113,10 +112,13 @@ function enhanceSavedCalculations() {
     if (!calculationId || !actions || actions.querySelector('[data-calc-version-source]')) return;
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'v4-primary v4-calc-version-start';
+    button.className = `v4-calc-version-start${route.enabled ? ' v4-primary' : ' is-locked'}`;
     button.dataset.calcVersionSource = calculationId;
-    button.textContent = 'Изменить / новая версия';
-    button.title = 'Скопировать этот расчёт в редактируемую новую версию. Исходный расчёт не изменится.';
+    button.setAttribute('aria-disabled', route.enabled ? 'false' : 'true');
+    button.textContent = route.enabled ? 'Изменить / новая версия' : 'Новая версия — недоступно';
+    button.title = route.enabled
+      ? 'Скопировать этот расчёт в редактируемую новую версию. Исходный расчёт не изменится.'
+      : route.description;
     actions.append(button);
   });
 
@@ -138,8 +140,13 @@ function enhanceBuilder() {
   calculationsBox.classList.add('v4-calculation-builder-host');
   const heading = form.querySelector('.v4-calc-wizard-head h4');
   const copy = form.querySelector('.v4-calc-wizard-head p');
+  const route = persistenceRoute();
   if (heading) heading.textContent = 'Новый расчёт';
-  if (copy) copy.textContent = 'Создайте новый расчёт в этой же заявке или используйте кнопку «Изменить / новая версия» у сохранённого варианта.';
+  if (copy) {
+    copy.textContent = route.enabled
+      ? 'Создайте новый расчёт в этой же заявке или используйте кнопку «Изменить / новая версия» у сохранённого варианта.'
+      : 'Создайте новый расчёт в этой же заявке. Безопасное создание версии из сохранённого варианта временно отключено.';
+  }
 }
 
 function reconcileLayout() {
@@ -235,7 +242,7 @@ function renderVersionEditor() {
         <b>Что делать:</b>
         <span>измените позиции, количество, себестоимость или цену клиенту и сохраните новую версию в этой же заявке.</span>
       </div>
-      <div class="v4-version-source-note" role="status" data-version-persistence="${esc(route.mode)}">
+      <div class="v4-version-source-note${route.enabled ? '' : ' is-locked'}" role="status" data-version-persistence="${esc(route.mode)}">
         <b>${esc(route.title)}:</b>
         <span>${esc(route.description)}</span>
       </div>
@@ -258,7 +265,7 @@ function renderVersionEditor() {
       </div>
       <div class="v4-version-warnings" data-version-warnings>${totals.warnings.length ? esc(totals.warnings.join(', ')) : 'Расчёт готов к сохранению.'}</div>
       <div class="v4-form-actions">
-        <button type="button" class="v4-primary" data-version-save ${totals.canSave && !saveBusy ? '' : 'disabled'}>${saveBusy ? 'Сохраняю...' : `${esc(route.buttonPrefix)} v${versionDraft.nextVersion}`}</button>
+        <button type="button" class="v4-primary" data-version-save ${route.enabled && totals.canSave && !saveBusy ? '' : 'disabled'}>${saveBusy ? 'Сохраняю...' : `${esc(route.buttonPrefix)}${route.enabled ? ` v${versionDraft.nextVersion}` : ''}`}</button>
         <button type="button" data-version-close>Отменить правки</button>
       </div>
     </section>`;
@@ -293,7 +300,7 @@ function updateEditorComputed() {
   const warnings = document.querySelector('[data-version-warnings]');
   if (warnings) warnings.textContent = totals.warnings.length ? totals.warnings.join(', ') : 'Расчёт готов к сохранению.';
   const saveButton = document.querySelector('[data-version-save]');
-  if (saveButton) saveButton.disabled = !totals.canSave || saveBusy;
+  if (saveButton) saveButton.disabled = !persistenceRoute().enabled || !totals.canSave || saveBusy;
 }
 
 async function fetchCalculationItems(calculationId) {
@@ -311,6 +318,13 @@ async function fetchCalculationItems(calculationId) {
 }
 
 async function startVersionDraft(calculationId) {
+  const route = persistenceRoute();
+  if (!route.enabled || route.mode !== 'staging_edge') {
+    setStatus(`Создание новой версии не запущено: ${route.description}`, 'warn');
+    toast('Безопасное создание новой версии временно отключено');
+    return;
+  }
+
   const source = (v4State.calculations || []).find((calculation) => calculation.id === calculationId);
   if (!source) {
     toast('Расчёт не найден. Обновите список.');
@@ -320,17 +334,6 @@ async function startVersionDraft(calculationId) {
     toast('Расчёт относится к другой заявке');
     return;
   }
-  if (persistenceRoute().mode === 'production_legacy') {
-    const preflight = calculationVersionLegacyPreflight(v4State.calculations || [], {
-      sourceCalculationId: source.id,
-      expectedUpdatedAt: source.updated_at
-    });
-    if (!preflight.ok) {
-      toast(preflight.message);
-      setStatus(`Новая версия не открыта: ${preflight.message}`, 'error');
-      return;
-    }
-  }
   editorBusy = true;
   renderVersionEditor();
   try {
@@ -338,9 +341,7 @@ async function startVersionDraft(calculationId) {
     if (!items.length) throw new Error('В исходном расчёте нет позиций для копирования');
     versionDraft = createCalculationVersionDraft(source, items, v4State.calculations || []);
     versionDraft.sourceUpdatedAt = source.updated_at;
-    if (persistenceRoute().mode === 'staging_edge') {
-      versionDraft.idempotencyKey = createCalculationVersionIdempotencyKey(source.id);
-    }
+    versionDraft.idempotencyKey = createCalculationVersionIdempotencyKey(source.id);
     renderVersionEditor();
     byId('calculationVersionEditor')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     document.querySelector('[data-version-field="title"]')?.focus();
@@ -353,34 +354,6 @@ async function startVersionDraft(calculationId) {
     editorBusy = false;
     renderVersionEditor();
   }
-}
-
-async function rollbackLegacyCalculation(calculationId) {
-  if (!calculationId) return;
-  const response = await timeout(
-    supabaseClient.from('leader_lead_calculations').delete().eq('id', calculationId),
-    10000,
-    'Не удалось откатить незавершённую версию'
-  );
-  if (response.error) throw response.error;
-}
-
-async function freshLegacyVersionPreflight(leadId, sourceCalculationId, expectedUpdatedAt) {
-  const response = await timeout(
-    supabaseClient
-      .from('leader_lead_calculations')
-      .select('id,version_number,updated_at')
-      .eq('lead_id', leadId),
-    10000,
-    'Не удалось проверить источник и номера версий'
-  );
-  if (response.error) throw response.error;
-  const preflight = calculationVersionLegacyPreflight(response.data || [], {
-    sourceCalculationId,
-    expectedUpdatedAt
-  });
-  if (!preflight.ok) throw new Error(preflight.message);
-  return preflight;
 }
 
 async function refreshSavedCalculations(leadId) {
@@ -419,82 +392,15 @@ async function saveVersionDraftThroughStaging(leadId) {
   toast(result.message);
 }
 
-async function saveVersionDraftLegacy(leadId, totals) {
-  let createdCalculationId = null;
-  try {
-    const preflight = await freshLegacyVersionPreflight(
-      leadId,
-      versionDraft.sourceCalculationId,
-      versionDraft.sourceUpdatedAt
-    );
-    const nextVersion = preflight.nextVersion;
-    versionDraft.nextVersion = nextVersion;
-    const calcPayload = {
-      lead_id: leadId,
-      need_id: versionDraft.needId || null,
-      client_id: versionDraft.clientId || v4State.currentLead?.converted_client_id || null,
-      title: versionDraft.title || `Расчёт — правки v${nextVersion}`,
-      status: 'Черновик',
-      version_number: nextVersion,
-      client_total: totals.client_total,
-      contractor_cost: totals.contractor_cost,
-      profit: totals.profit,
-      margin_percent: totals.margin_percent,
-      warning_level: totals.warning_level,
-      warnings: totals.warnings,
-      public_comment: versionDraft.publicComment || '',
-      internal_comment: versionDraft.internalComment,
-      commercial_offer_id: null,
-      order_id: null,
-      created_by: v4State.user?.id || null,
-      updated_by: v4State.user?.id || null
-    };
-    const calcResponse = await timeout(
-      supabaseClient
-        .from('leader_lead_calculations')
-        .insert(calcPayload)
-        .select(CALC_FIELDS)
-        .single(),
-      14000,
-      'Новая версия не сохранилась за 14 секунд'
-    );
-    if (calcResponse.error) throw calcResponse.error;
-    const calculation = calcResponse.data;
-    createdCalculationId = calculation.id;
-    const itemPayloads = totals.items.map((item) => ({
-      ...item,
-      calculation_id: calculation.id,
-      lead_id: leadId
-    }));
-    const itemsResponse = await timeout(
-      supabaseClient
-        .from('leader_lead_calculation_items')
-        .insert(itemPayloads)
-        .select('id'),
-      14000,
-      'Позиции новой версии не сохранились за 14 секунд'
-    );
-    if (itemsResponse.error) throw itemsResponse.error;
-
-    versionDraft = null;
-    renderVersionEditor();
-    await refreshSavedCalculations(leadId);
-    setStatus(`Новая версия v${nextVersion} сохранена в этой же заявке. Старый расчёт не изменён.`, 'good');
-    toast(`Сохранена новая версия v${nextVersion}`);
-  } catch (error) {
-    if (createdCalculationId) {
-      try {
-        await rollbackLegacyCalculation(createdCalculationId);
-      } catch (rollbackError) {
-        console.error('CRM calculation version rollback failed:', rollbackError);
-      }
-    }
-    throw error;
-  }
-}
-
 async function saveVersionDraft() {
   if (!versionDraft || saveBusy) return;
+  const route = persistenceRoute();
+  if (!route.enabled || route.mode !== 'staging_edge') {
+    setStatus(`Новая версия не сохранена: ${route.description}`, 'warn');
+    toast('Прямое сохранение версии из production-браузера отключено');
+    return;
+  }
+
   const leadId = v4State.route.leadId;
   if (!leadId || versionDraft.leadId !== leadId) {
     toast('Заявка изменилась. Откройте расчёт заново.');
@@ -507,18 +413,11 @@ async function saveVersionDraft() {
     return;
   }
 
-  const route = persistenceRoute();
   saveBusy = true;
   renderVersionEditor();
   try {
-    setStatus(
-      route.mode === 'staging_edge'
-        ? 'Сохраняю тестовую версию атомарно через staging...'
-        : 'Проверяю источник и сохраняю новую версию...',
-      'warn'
-    );
-    if (route.mode === 'staging_edge') await saveVersionDraftThroughStaging(leadId);
-    else await saveVersionDraftLegacy(leadId, totals);
+    setStatus('Сохраняю тестовую версию атомарно через staging...', 'warn');
+    await saveVersionDraftThroughStaging(leadId);
   } catch (error) {
     const message = friendlyError(error);
     setStatus(`Ошибка сохранения новой версии: ${message}`, 'error');
