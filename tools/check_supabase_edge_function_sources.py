@@ -47,6 +47,8 @@ REQUIRED_MARKERS = {
         "CANONICAL_ROLES",
         "CANONICAL_ROLES.has(currentRole)",
         "ORDER_ACTIONS_BY_ROLE",
+        "update:status",
+        "update:deadline",
         "canUpdateOrder",
         "matrix: ROLE_MATRIX_VERSION",
         "no_update_fields",
