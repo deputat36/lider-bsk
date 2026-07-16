@@ -44,6 +44,10 @@ REQUIRED_MARKERS = {
         "canRunGenericAction",
         "const permission = ACTION_PERMISSION[action]",
         "if (!canRunGenericAction(checked.profile, permission)) return forbidden(action, checked.profile)",
+        "projectOfferOrder",
+        "projectOfferOrderResult",
+        "order_from_offer_projection_failed",
+        "return json(200, projected)",
     ],
     "leader-crm-orders": [
         "leader_user_profiles",
