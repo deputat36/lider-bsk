@@ -1,12 +1,13 @@
 {
-  "contract_version": "1.2.0",
-  "status": "source_wired_staging_runtime_gated",
+  "contract_version": "1.3.0",
+  "status": "source_wired_staging_runtime_gated_production_locked",
   "action": "calculation.create_version",
   "environment": {
     "allowed_project_ref": "otulfnouybahfnsycxqn",
     "allowed_hostname": "otulfnouybahfnsycxqn.supabase.co",
     "production_project_ref": "ofewxuqfjhamgerwzull",
     "production_enabled": false,
+    "production_route": "production_locked",
     "wrong_environment": "fail_closed_on_non_exact_hostname_before_session_or_invoke"
   },
   "transport": {
@@ -20,6 +21,8 @@
     "service_role_in_browser": false,
     "editor_source_wired": true,
     "production_ui_wired": false,
+    "production_browser_direct_write": false,
+    "production_compensating_delete": false,
     "staging_runtime_config_present": false
   },
   "authorization": {
@@ -50,8 +53,10 @@
     "calculations_js_unchanged": true,
     "existing_calculation_builder_save_button_unchanged": true,
     "production_config_unchanged": true,
+    "production_version_action_enabled": false,
     "source_ui_wiring_allowed_without_auth_e2e": true,
     "staging_runtime_activation_requires_auth_e2e": true,
-    "production_rollout_requires_explicit_approval": true
+    "production_rollout_requires_explicit_approval": true,
+    "legacy_browser_write_may_return": false
   }
 }
