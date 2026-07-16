@@ -6,6 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 STAGING = 'otulfnouybahfnsycxqn'
+STAGING_HOSTNAME = f'{STAGING}.supabase.co'
 PRODUCTION = 'ofewxuqfjhamgerwzull'
 ACTIVE_EDGE_VERSION = 3
 ACTIVE_EDGE_HASH = '0df6d23cc6d8b19903babbf711bb1da765111ff1f64eb7f8e970f1bcc9760ee4'
@@ -51,6 +52,8 @@ def forbid(name: str, markers: tuple[str, ...] | list[str]) -> None:
 
 require('transport', [
     STAGING,
+    'const STAGING_HOSTNAME = `${STAGING_PROJECT_REF}.supabase.co`',
+    'hostname === STAGING_HOSTNAME ? STAGING_PROJECT_REF :',
     "FUNCTION_SLUG = 'leader-crm-calculations'",
     "ACTION = 'calculation.create_version'",
     "PERMISSION = 'calculations.write'",
@@ -66,6 +69,7 @@ require('transport', [
     'duplicate_inventory',
     'version_conflict',
     'persistence_failed',
+    'hostname: STAGING_HOSTNAME',
 ])
 forbid('transport', [
     PRODUCTION,
@@ -96,9 +100,9 @@ require('edge_test', [
 ])
 
 if 'calculation-version-staging-transport-v1.js' in texts['calculations']:
-    errors.append('calculations.js must not import or wire staging transport before authenticated E2E')
+    errors.append('calculations.js must not import or wire staging transport')
 if 'calculation-version-staging-transport-v1.js' in texts['index']:
-    errors.append('production CRM index must not load staging transport before authenticated E2E')
+    errors.append('production CRM index must not load staging transport directly')
 require('calculations', [
     "supabaseClient\n        .from('leader_lead_calculations')",
     "if (event.target.closest('#saveCalculationBtn')) saveCalculation()",
@@ -122,20 +126,37 @@ except json.JSONDecodeError as exc:
     transport_contract = {}
     server_contract = {}
 
-if transport_contract.get('environment', {}).get('allowed_project_ref') != STAGING:
+if transport_contract.get('status') != 'source_wired_staging_runtime_gated':
+    errors.append('transport contract must reflect source wiring and runtime gate')
+environment = transport_contract.get('environment', {})
+if environment.get('allowed_project_ref') != STAGING:
     errors.append('transport contract staging ref drifted')
-if transport_contract.get('environment', {}).get('production_project_ref') != PRODUCTION:
+if environment.get('allowed_hostname') != STAGING_HOSTNAME:
+    errors.append('transport contract exact staging hostname drifted')
+if environment.get('wrong_environment') != 'fail_closed_on_non_exact_hostname_before_session_or_invoke':
+    errors.append('transport contract must fail closed on non-exact hostnames')
+if environment.get('production_project_ref') != PRODUCTION:
     errors.append('transport contract production ref drifted')
-if transport_contract.get('environment', {}).get('production_enabled') is not False:
+if environment.get('production_enabled') is not False:
     errors.append('transport contract must keep production disabled')
 if transport_contract.get('authorization', {}).get('permission') != 'calculations.write':
     errors.append('transport contract permission drifted')
 if transport_contract.get('authorization', {}).get('canonical_registry') != 'crm/v4/assets/v4/action-permissions-v1.js':
     errors.append('transport contract canonical registry drifted')
-if transport_contract.get('transport', {}).get('production_ui_wired') is not False:
-    errors.append('transport contract must not claim production UI wiring')
-if transport_contract.get('boundaries', {}).get('staging_auth_e2e_required_before_ui_wiring') is not True:
-    errors.append('transport contract must retain Auth E2E gate')
+transport_meta = transport_contract.get('transport', {})
+if transport_meta.get('editor_source_wired') is not True:
+    errors.append('transport contract must record editor source wiring')
+if transport_meta.get('production_ui_wired') is not False:
+    errors.append('transport contract must keep production UI wiring disabled')
+if transport_meta.get('staging_runtime_config_present') is not False:
+    errors.append('transport contract must keep staging runtime config absent')
+boundaries = transport_contract.get('boundaries', {})
+if boundaries.get('source_ui_wiring_allowed_without_auth_e2e') is not True:
+    errors.append('transport contract must allow fail-closed source wiring')
+if boundaries.get('staging_runtime_activation_requires_auth_e2e') is not True:
+    errors.append('transport contract must retain Auth E2E gate for runtime activation')
+if boundaries.get('production_rollout_requires_explicit_approval') is not True:
+    errors.append('transport contract must retain explicit production approval')
 
 if server_contract.get('status') != 'staging_deployed_production_gated':
     errors.append('server contract status must reflect staging deployment and production gate')
@@ -154,6 +175,9 @@ if server_contract.get('rollback', {}).get('staging_version_2_is_not_a_valid_rol
 
 require('test', [
     "permission, 'calculations.write'",
+    'otulfnouybahfnsycxqn.example.com',
+    'evil.otulfnouybahfnsycxqn.supabase.co',
+    'must fail closed',
     'production_locked',
     'forbidden field leaked',
     'contractor_price_invalid',
@@ -163,7 +187,7 @@ require('test', [
     'stale_source',
     'duplicate_inventory',
     'readAfterSuccess',
-    'production-locked, minimized and replay-safe',
+    'exact-hostname bound',
 ])
 require('runbook', [
     STAGING,
@@ -182,6 +206,8 @@ require('runbook', [
     'HTTP 403',
     'production `calculations.js`',
     'staging Edge v3',
+    'Source wiring',
+    'Runtime activation',
 ])
 require('workflow', [
     'node --check crm/v4/assets/v4/calculation-version-staging-transport-v1.js',
@@ -210,4 +236,4 @@ if errors:
         print(f'- {error}', file=sys.stderr)
     raise SystemExit(1)
 
-print('Calculation staging transport is environment-locked, aligned with active Edge v3 and not wired to production UI.')
+print('Calculation staging transport is source-wired, exact-hostname locked and runtime-gated before Auth E2E.')

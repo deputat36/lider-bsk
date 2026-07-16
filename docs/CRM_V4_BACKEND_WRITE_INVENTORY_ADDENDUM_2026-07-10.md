@@ -40,32 +40,55 @@ Target classification:
 
 ### `crm/v4/assets/v4/calculation-version-editor-v1.js`
 
-Current write:
+Purpose:
 
 - copies a saved calculation into a new editable version inside the same lead;
+- preserves the source calculation, source items and existing КП/order links;
+- saves the new version as `Черновик` without inherited links.
+
+Current dual route:
+
+- staging route: JWT Edge/RPC без browser writes;
+- production route: temporary direct-write path.
+
+Staging route:
+
+- selected only for the exact staging Supabase URL;
+- invokes `leader-crm-calculations` through the current authenticated session;
+- sends canonical action `calculation.create_version`;
+- uses permission `calculations.write`;
+- sends source `updated_at`, a stable idempotency key and a minimized item projection;
+- calculation row, item rows and idempotency receipt commit together;
+- does not contain `.from`, `.insert`, `.update`, `.delete`, `.upsert`, browser RPC or compensating delete;
+- cannot fallback to the production legacy path after an Edge error.
+
+Production legacy route:
+
 - inserts one new row into `leader_lead_calculations`;
 - inserts the copied and edited item snapshot into `leader_lead_calculation_items`;
-- performs a compensating delete of the newly created empty calculation only when item persistence fails.
+- performs a compensating delete of the newly created empty calculation only when item persistence fails;
+- recalculates the next version from a fresh read using `max(version_number) + 1`;
+- remains classified as a direct browser write until production server rollout.
 
-Current guardrails:
+Shared guardrails:
 
 - canonical permission: `calculations.write`;
 - the editor module is loaded only after `leader-v4:crm-ready` and only for an active profile allowed by `canPerformV4Action`;
 - source `lead_id` must equal the currently opened route lead;
 - source calculation and its items remain unchanged;
 - old `commercial_offer_id` and `order_id` links are not copied;
-- the next version is recalculated from a fresh read using `max(version_number) + 1`;
 - the new version is saved as `Черновик`;
-- the direct browser path does not receive a service-role credential.
+- the browser never receives a service-role credential.
 
 Target classification:
 
 - future server action: `calculation.create_version`;
 - target transport: JWT-protected `leader-crm-calculations` Edge Function and atomic RPC;
-- calculation row, item rows and idempotency receipt must commit together;
-- optimistic concurrency must use the source `updated_at` value;
-- the temporary direct-write path remains only until the separately approved production server rollout is complete;
-- after cutover, the editor file must be removed from the direct-write inventory rather than leaving two write transports active.
+- optimistic concurrency uses the source `updated_at` value;
+- source wiring is present but current production config keeps it fail closed;
+- production cutover still requires explicit approval and production backend deployment;
+- after production cutover legacy-функции и compensating delete должны быть удалены;
+- the editor file must then be removed from the direct-write inventory rather than leaving two write transports active.
 
 ## Confirmed direct-write file set
 
@@ -86,6 +109,8 @@ The source checker classifies these CRM v4 files:
 - `offers.js`;
 - `production-job-card-v2.js`;
 - `user-admin-v1.js`.
+
+`calculation-version-editor-v1.js` remains in this list only because the production legacy branch still contains classified browser writes. The staging branch itself is write-free.
 
 Any new CRM v4 JavaScript file containing a direct insert/update/delete must be added to the inventory and assigned a canonical permission/action contract.
 

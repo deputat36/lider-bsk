@@ -1,4 +1,5 @@
 const STAGING_PROJECT_REF = 'otulfnouybahfnsycxqn';
+const STAGING_HOSTNAME = `${STAGING_PROJECT_REF}.supabase.co`;
 const FUNCTION_SLUG = 'leader-crm-calculations';
 const ACTION = 'calculation.create_version';
 const PERMISSION = 'calculations.write';
@@ -28,7 +29,8 @@ function safeData(value) {
 
 export function projectRefFromCalculationSupabaseUrl(value) {
   try {
-    return new URL(value).hostname.split('.')[0] || '';
+    const hostname = new URL(value).hostname.toLowerCase();
+    return hostname === STAGING_HOSTNAME ? STAGING_PROJECT_REF : '';
   } catch (_) {
     return '';
   }
@@ -287,6 +289,7 @@ export async function invokeStagingCalculationVersion({
 
 export const CALCULATION_VERSION_STAGING_TRANSPORT = Object.freeze({
   projectRef: STAGING_PROJECT_REF,
+  hostname: STAGING_HOSTNAME,
   functionSlug: FUNCTION_SLUG,
   action: ACTION,
   permission: PERMISSION,

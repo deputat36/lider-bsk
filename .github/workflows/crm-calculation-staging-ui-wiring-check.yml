@@ -1,0 +1,80 @@
+name: CRM calculation staging UI wiring check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/config.js'
+      - 'crm/v4/assets/v4/calculation-version-integrity-model-v1.js'
+      - 'crm/v4/assets/v4/calculation-version-save-route-v1.js'
+      - 'crm/v4/assets/v4/calculation-version-staging-transport-v1.js'
+      - 'crm/v4/assets/v4/calculation-version-editor-v1.js'
+      - 'contracts/calculation-version-staging-transport-v1.json'
+      - 'tools/test_calculation_version_save_route.mjs'
+      - 'tools/test_calculation_version_staging_transport.mjs'
+      - 'tools/check_calculation_version_staging_ui_wiring.py'
+      - 'tools/check_calculation_version_staging_transport.py'
+      - 'tools/check_calculation_edit_as_new_version.py'
+      - 'tools/check_crm_v4_backend_write_inventory.py'
+      - 'docs/CRM_CALCULATION_EDIT_AS_NEW_VERSION_2026-07-16.md'
+      - 'docs/CRM_CALCULATION_VERSION_STAGING_TRANSPORT_RUNBOOK_2026-07-15.md'
+      - 'docs/CRM_V4_BACKEND_WRITE_INVENTORY_ADDENDUM_2026-07-10.md'
+      - '.github/workflows/crm-calculation-staging-ui-wiring-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/config.js'
+      - 'crm/v4/assets/v4/calculation-version-integrity-model-v1.js'
+      - 'crm/v4/assets/v4/calculation-version-save-route-v1.js'
+      - 'crm/v4/assets/v4/calculation-version-staging-transport-v1.js'
+      - 'crm/v4/assets/v4/calculation-version-editor-v1.js'
+      - 'contracts/calculation-version-staging-transport-v1.json'
+      - 'tools/test_calculation_version_save_route.mjs'
+      - 'tools/test_calculation_version_staging_transport.mjs'
+      - 'tools/check_calculation_version_staging_ui_wiring.py'
+      - 'tools/check_calculation_version_staging_transport.py'
+      - 'tools/check_calculation_edit_as_new_version.py'
+      - 'tools/check_crm_v4_backend_write_inventory.py'
+      - 'docs/CRM_CALCULATION_EDIT_AS_NEW_VERSION_2026-07-16.md'
+      - 'docs/CRM_CALCULATION_VERSION_STAGING_TRANSPORT_RUNBOOK_2026-07-15.md'
+      - 'docs/CRM_V4_BACKEND_WRITE_INVENTORY_ADDENDUM_2026-07-10.md'
+      - '.github/workflows/crm-calculation-staging-ui-wiring-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-staging-ui-wiring:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check route and editor syntax
+        run: |
+          node --check crm/v4/assets/v4/calculation-version-save-route-v1.js
+          node --check crm/v4/assets/v4/calculation-version-staging-transport-v1.js
+          node --check crm/v4/assets/v4/calculation-version-editor-v1.js
+
+      - name: Run route and transport behavior tests
+        run: |
+          node tools/test_calculation_version_save_route.mjs
+          node tools/test_calculation_version_staging_transport.mjs
+
+      - name: Compile source checkers
+        run: |
+          python3 -m py_compile tools/check_calculation_version_staging_ui_wiring.py
+          python3 -m py_compile tools/check_calculation_version_staging_transport.py
+          python3 -m py_compile tools/check_calculation_edit_as_new_version.py
+          python3 -m py_compile tools/check_crm_v4_backend_write_inventory.py
+
+      - name: Validate exact staging UI routing
+        run: python3 tools/check_calculation_version_staging_ui_wiring.py
+
+      - name: Validate staging transport contract
+        run: python3 tools/check_calculation_version_staging_transport.py
+
+      - name: Validate edit-as-version workflow
+        run: python3 tools/check_calculation_edit_as_new_version.py
+
+      - name: Validate backend write inventory
+        run: python3 tools/check_crm_v4_backend_write_inventory.py
