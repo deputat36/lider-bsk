@@ -10,7 +10,13 @@ const queue = buildManagementAttentionQueue({
   ],
   orders: [
     { id: 'order-1', project_name: 'Вывеска', status: 'В производстве', deadline: '2026-07-14T10:00:00Z', payment_status: 'Не оплачено' },
-    { id: 'order-2', project_name: 'Таблички', status: 'Новый', deadline: '2026-07-17T10:00:00Z', payment_status: 'Оплачено' }
+    { id: 'order-2', project_name: 'Таблички', status: 'Новый', deadline: '2026-07-17T10:00:00Z', payment_status: 'Оплачено' },
+    { id: 'order-3', project_name: 'Баннер', status: 'Новый', deadline: '2026-08-01T10:00:00Z', payment_status: 'Предоплата' },
+    { id: 'order-4', project_name: 'Неизвестная оплата', status: 'Новый', deadline: '2026-08-02T10:00:00Z', payment_status: 'Оплата на проверке банка' },
+    { id: 'order-5', project_name: 'Закрытая оплата', status: 'Новый', deadline: '2026-08-03T10:00:00Z', payment_status: 'Оплачено' },
+    { id: 'order-6', project_name: 'Частичная оплата', status: 'Новый', deadline: '2026-08-04T10:00:00Z', payment_status: 'Частично оплачено' },
+    { id: 'order-7', project_name: 'Оплата из data', status: 'Новый', deadline: '2026-08-05T10:00:00Z', data: { paymentStatus: 'Оплачено' } },
+    { id: 'order-8', project_name: 'Долг из data', status: 'Новый', deadline: '2026-08-06T10:00:00Z', data: { payment_status: 'Не оплачено' } }
   ],
   production: [{ id: 'job-1', order_id: 'order-1', title: 'Печать', production_status: 'В производстве', deadline: '2026-07-14T12:00:00Z' }],
   installation: [{ id: 'install-1', order_id: 'order-2', title: 'Монтаж вывески', install_status: 'Запланирован', scheduled_at: '2026-07-16T12:00:00Z' }],
@@ -21,9 +27,15 @@ assert.equal(queue.filter((item) => item.key === 'lead:lead-1').length, 1);
 assert.equal(queue.find((item) => item.key === 'lead:lead-1').reason, 'Нет телефона для связи');
 assert.equal(queue.filter((item) => item.key === 'order:order-1').length, 1);
 assert.equal(queue.find((item) => item.key === 'order:order-1').reason, 'Срок заказа просрочен');
+assert.equal(queue.find((item) => item.key === 'order:order-3').reason, 'Оплата не закрыта');
+assert.equal(queue.find((item) => item.key === 'order:order-4').reason, 'Оплата не закрыта');
+assert.equal(queue.find((item) => item.key === 'order:order-6').reason, 'Оплата не закрыта');
+assert.equal(queue.find((item) => item.key === 'order:order-8').reason, 'Оплата не закрыта');
+assert.equal(queue.some((item) => item.key === 'order:order-5'), false);
+assert.equal(queue.some((item) => item.key === 'order:order-7'), false);
 assert.equal(queue.some((item) => item.key === 'lead:lead-closed'), false);
 assert.equal(queue[0].key, 'lead:lead-1');
-assert.equal(managementUrgentCount(queue), 5);
+assert.equal(managementUrgentCount(queue), 9);
 assert.equal(managementUrgentCount([{ priority: 69 }, { priority: 70 }]), 1);
 
-console.log('Management attention queue prioritizes unique actionable entities.');
+console.log('Management attention queue uses canonical payment attention rules.');
