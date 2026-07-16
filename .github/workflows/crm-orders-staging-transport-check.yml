@@ -1,0 +1,41 @@
+name: CRM orders staging transport check
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/leader-crm-orders/index.ts'
+      - 'supabase/staging-functions/leader-crm-orders/index.ts'
+      - 'supabase/staging-migrations/20260716_01_crm_orders_edge_projection_compat.sql'
+      - 'contracts/crm-orders-staging-deployment-v1.json'
+      - 'tools/run_crm_orders_staging_auth_e2e.mjs'
+      - 'tools/check_crm_orders_staging_deployment.py'
+      - 'docs/SUPABASE_STAGING_CRM_ORDERS_RBAC_2026-07-16.md'
+      - '.github/workflows/crm-orders-staging-transport-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/functions/leader-crm-orders/index.ts'
+      - 'supabase/staging-functions/leader-crm-orders/index.ts'
+      - 'supabase/staging-migrations/20260716_01_crm_orders_edge_projection_compat.sql'
+      - 'contracts/crm-orders-staging-deployment-v1.json'
+      - 'tools/run_crm_orders_staging_auth_e2e.mjs'
+      - 'tools/check_crm_orders_staging_deployment.py'
+      - 'docs/SUPABASE_STAGING_CRM_ORDERS_RBAC_2026-07-16.md'
+      - '.github/workflows/crm-orders-staging-transport-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-staging-transport:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate runner syntax
+        run: node --check tools/run_crm_orders_staging_auth_e2e.mjs
+      - name: Compile source checker
+        run: python3 -m py_compile tools/check_crm_orders_staging_deployment.py
+      - name: Validate staging deployment evidence
+        run: python3 tools/check_crm_orders_staging_deployment.py
