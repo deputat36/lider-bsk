@@ -1,0 +1,61 @@
+{
+  "contract_version": "leader-crm-leads-orders-staging-deployment-v1",
+  "date": "2026-07-16",
+  "repository": "deputat36/lider-bsk",
+  "environment": {
+    "name": "staging",
+    "project_id": "otulfnouybahfnsycxqn",
+    "project_name": "lider-bsk-staging",
+    "production_data_allowed": false
+  },
+  "edge_function": {
+    "slug": "leader-crm-leads-staging",
+    "version": 1,
+    "status": "ACTIVE",
+    "verify_jwt": true,
+    "source_commit": "17524ea9ef08c11b18b385b9469778d5b1084ddb",
+    "source_blob_sha": "259538acebd2966e39de22a61a3023aecd26d6f6",
+    "source_path": "supabase/functions/leader-crm-leads/index.ts",
+    "wrapper_path": "supabase/staging-functions/leader-crm-leads-staging/index.ts",
+    "deployed_sha256": "89934adc7e53b63189b9629875f8a9e8ac2055b1c7663a49d5c0d4e58e48bdcc"
+  },
+  "validation_scope": {
+    "allowed_actions": [
+      "list_orders"
+    ],
+    "negative_actions": [
+      "dashboard_for_accountant"
+    ],
+    "out_of_scope_actions": [
+      "dashboard_for_office_roles",
+      "list",
+      "create",
+      "update",
+      "ensure_client",
+      "create_order",
+      "create_order_from_offer",
+      "ensure_profile"
+    ]
+  },
+  "observed_post_deploy": {
+    "orders": 0,
+    "profiles": 0,
+    "auth_users": 0,
+    "edge_error_logs": 0
+  },
+  "pending_authenticated_e2e": {
+    "reason": "temporary staging Auth users and synthetic order do not exist",
+    "required_scenarios": [
+      "manager_list_orders_projection",
+      "accountant_list_orders_projection",
+      "accountant_dashboard_forbidden",
+      "restricted_list_orders_forbidden",
+      "inactive_profile_forbidden"
+    ]
+  },
+  "production": {
+    "project_id": "ofewxuqfjhamgerwzull",
+    "mutated": false,
+    "edge_versions_unchanged": true
+  }
+}
