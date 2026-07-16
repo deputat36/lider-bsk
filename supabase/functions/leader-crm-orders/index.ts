@@ -64,7 +64,14 @@ const CANONICAL_ROLES = new Set([
 const ORDER_ACTIONS_BY_ROLE: Record<string, Set<string>> = {
   owner: new Set(['*']),
   admin: new Set(['*']),
-  manager: new Set(['list', 'update:any']),
+  manager: new Set([
+    'list',
+    'update:status',
+    'update:layout_status',
+    'update:production_status',
+    'update:layout_comment',
+    'update:deadline',
+  ]),
   designer: new Set(['list', 'update:layout_status', 'update:layout_comment']),
   installer: new Set(['list']),
 }
@@ -77,7 +84,7 @@ function canOrderAction(profile: Record<string, unknown> | null | undefined, per
   const currentRole = role(profile)
   if (!CANONICAL_ROLES.has(currentRole)) return false
   const permissions = ORDER_ACTIONS_BY_ROLE[currentRole]
-  return Boolean(permissions?.has('*') || permissions?.has(permission) || permissions?.has('update:any'))
+  return Boolean(permissions?.has('*') || permissions?.has(permission))
 }
 
 function unauthorized(action: string, profile: Record<string, unknown> | null | undefined) {
@@ -92,7 +99,6 @@ function requestedUpdateFields(body: Record<string, unknown>) {
 function canUpdateOrder(profile: Record<string, unknown> | null | undefined, body: Record<string, unknown>) {
   const fields = requestedUpdateFields(body)
   if (!fields.length) return true
-  if (canOrderAction(profile, 'update:any')) return true
   return fields.every((field) => canOrderAction(profile, `update:${field}`))
 }
 
