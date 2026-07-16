@@ -10,8 +10,14 @@ FILES = {
     'model': ROOT / 'crm/v4/assets/v4/payment-status-ui-model-v1.js',
     'order_model': ROOT / 'crm/v4/assets/v4/order-status-ui-model-v1.js',
     'finance': ROOT / 'crm/v4/assets/v4/finance-control-v2.js',
+    'order_control': ROOT / 'crm/v4/assets/v4/order-control-v2.js',
+    'order_preferences': ROOT / 'crm/v4/assets/v4/order-list-preferences-v1.js',
+    'management_attention': ROOT / 'crm/v4/assets/v4/management-attention-model-v1.js',
     'test': ROOT / 'tools/test_crm_payment_status_ui.mjs',
+    'order_preferences_test': ROOT / 'tools/test_order_list_preferences.mjs',
+    'management_attention_test': ROOT / 'tools/test_management_attention_queue.mjs',
     'manual': ROOT / 'docs/CRM_PAYMENT_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-15.md',
+    'adoption': ROOT / 'docs/CRM_ORDER_PAYMENT_STATUS_REGISTRY_ADOPTION_2026-07-16.md',
     'workflow': ROOT / '.github/workflows/crm-status-transition-registry-check.yml',
 }
 
@@ -58,7 +64,7 @@ require('model', [
     'оставлен в финансовом контроле',
 ])
 
-forbid('model', [
+forbidden_side_effects = [
     'supabaseClient',
     ".from('leader_",
     '.insert(',
@@ -67,7 +73,8 @@ forbid('model', [
     '.upsert(',
     '.rpc(',
     'fetch(',
-])
+]
+forbid('model', forbidden_side_effects)
 
 require('order_model', [
     'isActiveOrderStatus',
@@ -87,11 +94,43 @@ require('finance', [
     "supabaseClient.from('leader_orders').select(FIELDS)",
 ])
 
+require('order_control', [
+    "from './payment-status-ui-model-v1.js'",
+    'paymentNeedsAttention(order.payment_status)',
+    'paymentStatusUiModel(order.payment_status)',
+    'unknownPayment',
+    'Неизвестный статус оплаты',
+    'data-unknown-payment-status',
+    'Registry: ${paymentModel.key}',
+    "supabaseClient.from('leader_orders').select(ORDER_FIELDS)",
+])
+
+require('order_preferences', [
+    "from './payment-status-ui-model-v1.js'",
+    'registryPaymentNeedsAttention(order?.payment_status)',
+    'paymentStatusUiModel(order?.payment_status)',
+    'payment.label',
+    'selectOrderRows',
+])
+
+require('management_attention', [
+    "from './payment-status-ui-model-v1.js'",
+    'paymentNeedsAttention(value)',
+    'data.payment_status',
+    'data.paymentStatus',
+    "'Оплата не закрыта'",
+])
+
+for name in ('finance', 'order_control', 'order_preferences', 'management_attention'):
+    forbid(name, [
+        "text.includes('не')",
+        "text.includes('част')",
+        "text.includes('долг')",
+        "text.includes('ожид')",
+    ])
+
 forbid('finance', [
     "const CLOSED = new Set(",
-    "text.includes('не')",
-    "text.includes('част')",
-    "text.includes('долг')",
     'data-payment-status-update',
     'updatePaymentStatus(',
     ".from('leader_orders').update(",
@@ -100,6 +139,19 @@ forbid('finance', [
     '.upsert(',
     '.rpc(',
 ])
+
+forbid('order_control', [
+    'data-payment-status-update',
+    'updatePaymentStatus(',
+    ".from('leader_orders').update(",
+    '.insert(',
+    '.delete(',
+    '.upsert(',
+    '.rpc(',
+])
+
+for name in ('order_preferences', 'management_attention'):
+    forbid(name, forbidden_side_effects)
 
 require('test', [
     "paymentStatusUiModel('Не оплачено')",
@@ -110,6 +162,26 @@ require('test', [
     "paymentNeedsAttention('Оплачено'), false",
     'unknown.needsAttention, true',
     'CRM payment status UI registry behavior is valid.',
+])
+
+require('order_preferences_test', [
+    "payment_status: 'Оплачено'",
+    "payment_status: 'Частично оплачено'",
+    "payment_status: 'Предоплата'",
+    "payment_status: 'Оплата на проверке банка'",
+    "filter: 'payment'",
+    'paymentNeedsAttention(rows[0]), false',
+    'Order list preferences use canonical payment attention rules.',
+])
+
+require('management_attention_test', [
+    "payment_status: 'Предоплата'",
+    "payment_status: 'Частично оплачено'",
+    "payment_status: 'Оплата на проверке банка'",
+    "data: { paymentStatus: 'Оплачено' }",
+    "data: { payment_status: 'Не оплачено' }",
+    "reason, 'Оплата не закрыта'",
+    'Management attention queue uses canonical payment attention rules.',
 ])
 
 require('manual', [
@@ -124,21 +196,41 @@ require('manual', [
     '#202/#204',
 ])
 
+require('adoption', [
+    'фильтр `Оплата под контролем`',
+    '`management-attention-model-v1.js`',
+    '`Не оплачено`',
+    '`Предоплата`',
+    '`Частично оплачено`',
+    '`Оплачено`',
+    'неизвестная строка',
+    'data-unknown-payment-status',
+    'POST, PATCH, INSERT, UPDATE, DELETE или RPC',
+    'Supabase production не изменён',
+    '#202/#204',
+])
+
 require('workflow', [
     "- 'crm/v4/assets/v4/payment-status-ui-model-v1.js'",
-    "- 'crm/v4/assets/v4/finance-control-v2.js'",
-    "- 'docs/CRM_PAYMENT_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-15.md'",
-    "- 'tools/check_crm_payment_status_ui_registry.py'",
-    "- 'tools/test_crm_payment_status_ui.mjs'",
+    "- 'crm/v4/assets/v4/order-list-preferences-v1.js'",
+    "- 'crm/v4/assets/v4/order-control-v2.js'",
+    "- 'crm/v4/assets/v4/management-attention-model-v1.js'",
+    "- 'docs/CRM_ORDER_PAYMENT_STATUS_REGISTRY_ADOPTION_2026-07-16.md'",
+    "- 'tools/test_order_list_preferences.mjs'",
+    "- 'tools/test_management_attention_queue.mjs'",
     'python3 tools/check_crm_payment_status_ui_registry.py',
     'node --check crm/v4/assets/v4/payment-status-ui-model-v1.js',
-    'node --check crm/v4/assets/v4/finance-control-v2.js',
-    'node tools/test_crm_payment_status_ui.mjs',
+    'node --check crm/v4/assets/v4/order-list-preferences-v1.js',
+    'node --check crm/v4/assets/v4/order-control-v2.js',
+    'node --check crm/v4/assets/v4/management-attention-model-v1.js',
+    'node tools/test_order_list_preferences.mjs',
+    'node tools/test_management_attention_queue.mjs',
 ])
 
 for forbidden_prefix in ('nav_', 'nav-', 'parket-', 'broker-'):
-    if forbidden_prefix in texts['model'] or forbidden_prefix in texts['finance']:
-        errors.append(f'payment status registry adoption entered forbidden scope: {forbidden_prefix}')
+    for name in ('model', 'finance', 'order_control', 'order_preferences', 'management_attention'):
+        if forbidden_prefix in texts[name]:
+            errors.append(f'payment status registry adoption entered forbidden scope: {name} contains {forbidden_prefix}')
 
 if errors:
     print('CRM payment status UI registry checks failed:', file=sys.stderr)
@@ -146,4 +238,4 @@ if errors:
         print(f'- {error}', file=sys.stderr)
     raise SystemExit(1)
 
-print('CRM finance control uses canonical order/payment statuses, preserves unknown values and adds no status write path.')
+print('CRM payment attention uses the canonical registry across finance, order filters, order control and management queues without adding a write path.')
