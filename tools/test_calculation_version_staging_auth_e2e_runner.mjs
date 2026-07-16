@@ -5,6 +5,10 @@ import {
   responseErrorCode,
   validateSafeCalculationResponse
 } from './run_calculation_version_staging_auth_e2e.mjs';
+import {
+  createFixtureManifest,
+  manifestDigest
+} from './create-calculation-version-staging-fixture-bundle.mjs';
 
 const ids = Object.freeze({
   source: '11111111-1111-4111-8111-111111111111',
@@ -33,6 +37,8 @@ const config = readStagingAuthE2EConfig(env);
 assert.equal(config.scenario, 'allowed');
 assert.equal(config.sourceCalculationId, ids.source);
 assert.equal(config.needId, ids.need);
+assert.equal(config.fixtureManifestId, null);
+assert.equal(config.fixtureManifestDigest, null);
 
 assert.throws(
   () => readStagingAuthE2EConfig({ ...env, LIDER_STAGING_SUPABASE_URL: 'https://ofewxuqfjhamgerwzull.supabase.co' }),
@@ -45,6 +51,68 @@ assert.throws(
 assert.throws(
   () => readStagingAuthE2EConfig({ ...env, LIDER_STAGING_PASSWORD: '' }),
   /missing_environment:LIDER_STAGING_PASSWORD/
+);
+
+const manifestNow = Date.parse('2026-07-16T05:00:00.000Z');
+const manifestIds = [
+  '81000000-0000-4000-8000-000000000001',
+  '82000000-0000-4000-8000-000000000002',
+  '83000000-0000-4000-8000-000000000003',
+  '84000000-0000-4000-8000-000000000004',
+  '85000000-0000-4000-8000-000000000005'
+];
+const manifest = createFixtureManifest({
+  authUserId: '89000000-0000-4000-8000-000000000009',
+  now: manifestNow,
+  ttlHours: 12,
+  uuid: () => manifestIds.shift()
+});
+const manifestEnv = {
+  LIDER_STAGING_SUPABASE_URL: env.LIDER_STAGING_SUPABASE_URL,
+  LIDER_STAGING_PUBLISHABLE_KEY: env.LIDER_STAGING_PUBLISHABLE_KEY,
+  LIDER_STAGING_EMAIL: env.LIDER_STAGING_EMAIL,
+  LIDER_STAGING_PASSWORD: env.LIDER_STAGING_PASSWORD,
+  LIDER_STAGING_SCENARIO: 'allowed',
+  LIDER_STAGING_FIXTURE_MANIFEST_PATH: 'fixture-manifest.json'
+};
+const manifestConfig = readStagingAuthE2EConfig(manifestEnv, {
+  now: manifestNow + 1,
+  readFile: () => JSON.stringify(manifest)
+});
+assert.equal(manifestConfig.sourceCalculationId, manifest.fixture_ids.source_calculation_id);
+assert.equal(manifestConfig.needId, manifest.fixture_ids.need_id);
+assert.equal(manifestConfig.expectedUpdatedAt, manifest.source_snapshot.expected_updated_at);
+assert.equal(manifestConfig.idempotencyKey, manifest.command.idempotency_key);
+assert.equal(manifestConfig.title, manifest.command.title);
+assert.equal(manifestConfig.fixtureManifestId, manifest.manifest_id);
+assert.equal(manifestConfig.fixtureManifestDigest, manifestDigest(manifest));
+assert.equal(manifestConfig.fixtureManifestPath, 'fixture-manifest.json');
+
+assert.throws(
+  () => readStagingAuthE2EConfig({
+    ...manifestEnv,
+    LIDER_STAGING_SOURCE_CALCULATION_ID: ids.source
+  }, {
+    now: manifestNow + 1,
+    readFile: () => JSON.stringify(manifest)
+  }),
+  /fixture_manifest_mismatch:LIDER_STAGING_SOURCE_CALCULATION_ID/
+);
+assert.throws(
+  () => readStagingAuthE2EConfig(manifestEnv, {
+    now: manifestNow + 1,
+    readFile: () => { throw new Error('missing'); }
+  }),
+  /fixture_manifest_read_failed/
+);
+const expiredManifest = structuredClone(manifest);
+expiredManifest.expires_at = '2026-07-16T04:59:59.000Z';
+assert.throws(
+  () => readStagingAuthE2EConfig(manifestEnv, {
+    now: manifestNow,
+    readFile: () => JSON.stringify(expiredManifest)
+  }),
+  /fixture_manifest_invalid:manifest_expired/
 );
 
 const command = buildRunnerCommand(config, { requestId: ids.request });
@@ -149,4 +217,4 @@ assert.equal(responseErrorCode({ error: { code: 'source_changed' } }), 'source_c
 assert.equal(responseErrorCode({ error: 'forbidden' }), 'forbidden');
 assert.equal(responseErrorCode(null), 'unknown_error');
 
-console.log('Authenticated staging E2E runner is environment-locked, payload-minimized and projection-safe.');
+console.log('Authenticated staging E2E runner is environment-locked, manifest-bound, payload-minimized and projection-safe.');
