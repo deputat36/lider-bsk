@@ -1,11 +1,16 @@
 #!/usr/bin/env node
 
 import { randomUUID } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import {
   buildStagingCalculationVersionCommand,
   isStagingCalculationEnvironment
 } from '../crm/v4/assets/v4/calculation-version-staging-transport-v1.js';
+import {
+  manifestDigest,
+  validateFixtureManifest
+} from './create-calculation-version-staging-fixture-bundle.mjs';
 
 const FUNCTION_SLUG = 'leader-crm-calculations';
 const PERMISSION = 'calculations.write';
@@ -52,15 +57,50 @@ function required(env, name) {
   return value;
 }
 
-export function readStagingAuthE2EConfig(env = process.env) {
+function readFixtureManifest(env, { now = Date.now(), readFile = readFileSync } = {}) {
+  const fixtureManifestPath = text(env.LIDER_STAGING_FIXTURE_MANIFEST_PATH);
+  if (!fixtureManifestPath) {
+    return Object.freeze({ path: null, manifest: null, digest: null });
+  }
+
+  let manifest;
+  try {
+    manifest = JSON.parse(readFile(fixtureManifestPath, 'utf8'));
+  } catch {
+    throw new Error('fixture_manifest_read_failed');
+  }
+  const checked = validateFixtureManifest(manifest, { now });
+  if (!checked.ok) throw new Error(`fixture_manifest_invalid:${checked.errors.join(',')}`);
+  return Object.freeze({
+    path: fixtureManifestPath,
+    manifest,
+    digest: manifestDigest(manifest)
+  });
+}
+
+function manifestBoundValue(env, name, manifestValue, { requiredValue = true } = {}) {
+  const direct = text(env[name]);
+  const bound = text(manifestValue);
+  if (direct && bound && direct !== bound) throw new Error(`fixture_manifest_mismatch:${name}`);
+  const value = direct || bound;
+  if (requiredValue && !value) throw new Error(`missing_environment:${name}`);
+  return value || null;
+}
+
+export function readStagingAuthE2EConfig(env = process.env, options = {}) {
   const supabaseUrl = required(env, 'LIDER_STAGING_SUPABASE_URL').replace(/\/+$/, '');
   if (!isStagingCalculationEnvironment(supabaseUrl)) throw new Error('wrong_environment');
   if (!/^https:\/\//i.test(supabaseUrl)) throw new Error('https_required');
 
+  const fixture = readFixtureManifest(env, options);
   const scenario = text(env.LIDER_STAGING_SCENARIO || 'allowed').toLowerCase();
   if (!SCENARIOS.has(scenario)) throw new Error('scenario_invalid');
 
-  const expectedUpdatedAt = required(env, 'LIDER_STAGING_EXPECTED_UPDATED_AT');
+  const expectedUpdatedAt = manifestBoundValue(
+    env,
+    'LIDER_STAGING_EXPECTED_UPDATED_AT',
+    fixture.manifest?.source_snapshot?.expected_updated_at
+  );
   if (!Number.isFinite(Date.parse(expectedUpdatedAt))) throw new Error('expected_updated_at_invalid');
 
   return Object.freeze({
@@ -69,15 +109,37 @@ export function readStagingAuthE2EConfig(env = process.env) {
     email: required(env, 'LIDER_STAGING_EMAIL'),
     password: required(env, 'LIDER_STAGING_PASSWORD'),
     scenario,
-    sourceCalculationId: required(env, 'LIDER_STAGING_SOURCE_CALCULATION_ID'),
+    sourceCalculationId: manifestBoundValue(
+      env,
+      'LIDER_STAGING_SOURCE_CALCULATION_ID',
+      fixture.manifest?.fixture_ids?.source_calculation_id
+    ),
     expectedUpdatedAt: new Date(expectedUpdatedAt).toISOString(),
-    needId: text(env.LIDER_STAGING_NEED_ID) || null,
-    idempotencyKey: text(env.LIDER_STAGING_IDEMPOTENCY_KEY) || `auth-e2e:${randomUUID()}`,
-    title: text(env.LIDER_STAGING_TITLE) || 'Authenticated staging E2E version',
+    needId: manifestBoundValue(
+      env,
+      'LIDER_STAGING_NEED_ID',
+      fixture.manifest?.fixture_ids?.need_id,
+      { requiredValue: false }
+    ),
+    idempotencyKey: manifestBoundValue(
+      env,
+      'LIDER_STAGING_IDEMPOTENCY_KEY',
+      fixture.manifest?.command?.idempotency_key,
+      { requiredValue: false }
+    ) || `auth-e2e:${randomUUID()}`,
+    title: manifestBoundValue(
+      env,
+      'LIDER_STAGING_TITLE',
+      fixture.manifest?.command?.title,
+      { requiredValue: false }
+    ) || 'Authenticated staging E2E version',
     itemName: text(env.LIDER_STAGING_ITEM_NAME) || 'Authenticated staging E2E item',
     qty: positiveNumber(env.LIDER_STAGING_QTY, 1),
     contractorPrice: nonNegativeNumber(env.LIDER_STAGING_CONTRACTOR_PRICE, 400),
-    clientPrice: nonNegativeNumber(env.LIDER_STAGING_CLIENT_PRICE, 700)
+    clientPrice: nonNegativeNumber(env.LIDER_STAGING_CLIENT_PRICE, 700),
+    fixtureManifestPath: fixture.path,
+    fixtureManifestId: fixture.manifest?.manifest_id || null,
+    fixtureManifestDigest: fixture.digest
   });
 }
 
@@ -252,13 +314,19 @@ async function runInactive(config, accessToken) {
   return Object.freeze({ scenario: 'inactive', statuses: { inactive: 403 }, cleanupRequired: false });
 }
 
-export async function runStagingAuthE2E(env = process.env) {
-  const config = readStagingAuthE2EConfig(env);
+export async function runStagingAuthE2E(env = process.env, options = {}) {
+  const config = readStagingAuthE2EConfig(env, options);
   const accessToken = await signIn(config);
   try {
-    if (config.scenario === 'allowed') return await runAllowed(config, accessToken);
-    if (config.scenario === 'forbidden') return await runForbidden(config, accessToken);
-    return await runInactive(config, accessToken);
+    let summary;
+    if (config.scenario === 'allowed') summary = await runAllowed(config, accessToken);
+    else if (config.scenario === 'forbidden') summary = await runForbidden(config, accessToken);
+    else summary = await runInactive(config, accessToken);
+    return Object.freeze({
+      ...summary,
+      fixtureManifestId: config.fixtureManifestId,
+      fixtureManifestDigest: config.fixtureManifestDigest
+    });
   } finally {
     await signOut(config, accessToken);
   }
