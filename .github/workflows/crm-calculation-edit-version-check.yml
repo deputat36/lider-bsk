@@ -1,0 +1,44 @@
+name: CRM calculation edit version check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/calculation-version-integrity-model-v1.js'
+      - 'crm/v4/assets/v4/calculation-version-edit-model-v1.js'
+      - 'crm/v4/assets/v4/calculation-version-editor-v1.js'
+      - 'crm/v4/assets/v4/calculation-version-editor-v1.css'
+      - 'tools/test_calculation_version_edit_model.mjs'
+      - 'tools/check_calculation_edit_as_new_version.py'
+      - 'docs/CRM_CALCULATION_EDIT_AS_NEW_VERSION_2026-07-16.md'
+      - '.github/workflows/crm-calculation-edit-version-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/calculation-version-integrity-model-v1.js'
+      - 'crm/v4/assets/v4/calculation-version-edit-model-v1.js'
+      - 'crm/v4/assets/v4/calculation-version-editor-v1.js'
+      - 'crm/v4/assets/v4/calculation-version-editor-v1.css'
+      - 'tools/test_calculation_version_edit_model.mjs'
+      - 'tools/check_calculation_edit_as_new_version.py'
+      - 'docs/CRM_CALCULATION_EDIT_AS_NEW_VERSION_2026-07-16.md'
+      - '.github/workflows/crm-calculation-edit-version-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  calculation-edit-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check version model syntax
+        run: node --check crm/v4/assets/v4/calculation-version-edit-model-v1.js
+      - name: Check version editor syntax
+        run: node --check crm/v4/assets/v4/calculation-version-editor-v1.js
+      - name: Test version edit model
+        run: node tools/test_calculation_version_edit_model.mjs
+      - name: Compile source checker
+        run: python3 -m py_compile tools/check_calculation_edit_as_new_version.py
+      - name: Validate same-lead edit-as-version workflow
+        run: python3 tools/check_calculation_edit_as_new_version.py
