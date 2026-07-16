@@ -112,20 +112,28 @@ assert.ok(cleanup.indexOf('delete from public.leader_leads') < cleanup.indexOf('
 
 const expired = structuredClone(manifest);
 expired.expires_at = '2026-07-15T20:59:59.000Z';
-assert.equal(validateFixtureManifest(expired, { now: NOW }).ok, false);
+const expiredResult = validateFixtureManifest(expired, { now: NOW });
+assert.equal(expiredResult.ok, false);
+assert.ok(expiredResult.errors.includes('manifest_expired'));
 assert.throws(() => buildSeedSql(expired, { now: NOW }), /manifest_expired/);
 
 const wrongProject = structuredClone(manifest);
 wrongProject.project_ref = 'wrong-project';
-assert.equal(validateFixtureManifest(wrongProject, { now: NOW + 1 }).ok, false);
+const wrongProjectResult = validateFixtureManifest(wrongProject, { now: NOW + 1 });
+assert.equal(wrongProjectResult.ok, false);
+assert.ok(wrongProjectResult.errors.includes('project_ref_invalid'));
 
 const identityMismatch = structuredClone(manifest);
 identityMismatch.fixture_ids.profile_user_id = identityMismatch.fixture_ids.lead_id;
-assert.equal(validateFixtureManifest(identityMismatch, { now: NOW + 1 }).ok, false);
+const identityMismatchResult = validateFixtureManifest(identityMismatch, { now: NOW + 1 });
+assert.equal(identityMismatchResult.ok, false);
+assert.ok(identityMismatchResult.errors.includes('profile_auth_identity_mismatch'));
 
 const secretLike = structuredClone(manifest);
 secretLike.password = 'must-not-exist';
-assert.equal(validateFixtureManifest(secretLike, { now: NOW + 1 }).ok, false);
+const secretLikeResult = validateFixtureManifest(secretLike, { now: NOW + 1 });
+assert.equal(secretLikeResult.ok, false);
+assert.ok(secretLikeResult.errors.includes('secret_like_field:password'));
 
 assert.throws(
   () => createFixtureManifest({ authUserId: 'not-a-uuid', now: NOW, uuid: () => crypto.randomUUID() }),
