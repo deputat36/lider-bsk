@@ -10,6 +10,7 @@ on:
       - 'docs/CRM_ORDERS_CANONICAL_ROLE_GUARD_2026-07-16.md'
       - 'docs/CRM_ORDERS_MANAGER_FIELD_PERMISSIONS_2026-07-16.md'
       - 'docs/CRM_ORDERS_RESTRICT_GENERIC_ROLES_2026-07-16.md'
+      - 'docs/CRM_ORDERS_ACCOUNTANT_PROJECTION_2026-07-16.md'
       - 'docs/CRM_LEADS_RESTRICT_GENERIC_ROLES_2026-07-16.md'
       - 'docs/CRM_LEADS_ACTION_PERMISSION_REGISTRY_2026-07-16.md'
       - 'docs/CRM_OFFER_ORDER_SAFE_RESPONSE_PROJECTION_2026-07-16.md'
@@ -19,6 +20,7 @@ on:
       - 'tools/check_crm_orders_canonical_role_guard.py'
       - 'tools/check_crm_orders_manager_field_permissions.py'
       - 'tools/check_crm_orders_restrict_generic_roles.py'
+      - 'tools/check_crm_orders_accountant_projection.py'
       - 'tools/check_crm_leads_restrict_generic_roles.py'
       - 'tools/check_crm_leads_action_permissions.py'
       - 'tools/check_crm_offer_order_safe_projection.py'
@@ -37,6 +39,7 @@ on:
       - 'docs/CRM_ORDERS_CANONICAL_ROLE_GUARD_2026-07-16.md'
       - 'docs/CRM_ORDERS_MANAGER_FIELD_PERMISSIONS_2026-07-16.md'
       - 'docs/CRM_ORDERS_RESTRICT_GENERIC_ROLES_2026-07-16.md'
+      - 'docs/CRM_ORDERS_ACCOUNTANT_PROJECTION_2026-07-16.md'
       - 'docs/CRM_LEADS_RESTRICT_GENERIC_ROLES_2026-07-16.md'
       - 'docs/CRM_LEADS_ACTION_PERMISSION_REGISTRY_2026-07-16.md'
       - 'docs/CRM_OFFER_ORDER_SAFE_RESPONSE_PROJECTION_2026-07-16.md'
@@ -46,6 +49,7 @@ on:
       - 'tools/check_crm_orders_canonical_role_guard.py'
       - 'tools/check_crm_orders_manager_field_permissions.py'
       - 'tools/check_crm_orders_restrict_generic_roles.py'
+      - 'tools/check_crm_orders_accountant_projection.py'
       - 'tools/check_crm_leads_restrict_generic_roles.py'
       - 'tools/check_crm_leads_action_permissions.py'
       - 'tools/check_crm_offer_order_safe_projection.py'
@@ -79,6 +83,7 @@ jobs:
           python3 tools/check_crm_orders_canonical_role_guard.py
           python3 tools/check_crm_orders_manager_field_permissions.py
           python3 tools/check_crm_orders_restrict_generic_roles.py
+          python3 tools/check_crm_orders_accountant_projection.py
           python3 tools/check_crm_leads_restrict_generic_roles.py
           python3 tools/check_crm_leads_action_permissions.py
           python3 tools/check_crm_offer_order_safe_projection.py
