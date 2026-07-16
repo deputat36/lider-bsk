@@ -1,0 +1,53 @@
+{
+  "contract_version": "leader-crm-orders-staging-deployment-v1",
+  "date": "2026-07-16",
+  "repository": "deputat36/lider-bsk",
+  "environment": {
+    "name": "staging",
+    "project_id": "otulfnouybahfnsycxqn",
+    "project_name": "lider-bsk-staging",
+    "production_data_allowed": false
+  },
+  "migration": {
+    "applied_name": "staging_orders_edge_projection_compat_20260716",
+    "repository_path": "supabase/staging-migrations/20260716_01_crm_orders_edge_projection_compat.sql",
+    "compatibility_columns": 7
+  },
+  "edge_function": {
+    "slug": "leader-crm-orders",
+    "version": 1,
+    "status": "ACTIVE",
+    "verify_jwt": true,
+    "source_commit": "4dafa2723c1018574572d9a91441cf382ac25b34",
+    "source_blob_sha": "ed37560c0ac920e3d1b460fdf7247c12902f9c82",
+    "source_path": "supabase/functions/leader-crm-orders/index.ts",
+    "wrapper_path": "supabase/staging-functions/leader-crm-orders/index.ts",
+    "deployed_sha256": "597b692c4ced7904b627fdb9949d8b394f835d4c529b56f506149358fd6ea1f3"
+  },
+  "observed_post_deploy": {
+    "orders": 0,
+    "profiles": 0,
+    "auth_users": 0,
+    "edge_error_logs": 0,
+    "security_advisor_new_errors": 0,
+    "performance_advisor_new_errors": 0
+  },
+  "pending_authenticated_e2e": {
+    "reason": "temporary staging Auth users do not exist",
+    "required_scenarios": [
+      "manager_list_projection",
+      "manager_allowed_update",
+      "manager_finance_update_forbidden",
+      "accountant_list_projection",
+      "accountant_payment_update",
+      "accountant_mixed_update_forbidden",
+      "restricted_role_list_forbidden",
+      "inactive_profile_forbidden"
+    ]
+  },
+  "production": {
+    "project_id": "ofewxuqfjhamgerwzull",
+    "mutated": false,
+    "edge_versions_unchanged": true
+  }
+}
