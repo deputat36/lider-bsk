@@ -49,7 +49,14 @@ async function checkUser(req: Request, url: string, anon: string, serviceRole: s
 
 const orderFields = 'id,order_number,created_at,project_name,client_name,client_phone,status,payment_status,deadline,client_total,profit,balance,source,layout_status,layout_comment,production_status,lead_id,client_id'
 
-const ROLE_MATRIX_VERSION = '20260630-edge-role-matrix-1'
+const ORDER_FIELDS_BY_ROLE: Record<string, string> = {
+  owner: orderFields,
+  admin: orderFields,
+  manager: 'id,order_number,created_at,updated_at,project_name,client_name,client_phone,status,deadline,source,layout_status,production_status,installation_status,priority,current_stage,next_action,progress_percent',
+  accountant: 'id,order_number,created_at,updated_at,project_name,status,payment_status,deadline,client_total,contractor_cost,prepayment,balance',
+}
+
+const ROLE_MATRIX_VERSION = '20260716-edge-role-matrix-2'
 
 const CANONICAL_ROLES = new Set([
   'owner',
@@ -72,6 +79,10 @@ const ORDER_ACTIONS_BY_ROLE: Record<string, Set<string>> = {
     'update:layout_comment',
     'update:deadline',
   ]),
+  accountant: new Set([
+    'list',
+    'update:payment_status',
+  ]),
 }
 
 function role(profile: Record<string, unknown> | null | undefined) {
@@ -83,6 +94,10 @@ function canOrderAction(profile: Record<string, unknown> | null | undefined, per
   if (!CANONICAL_ROLES.has(currentRole)) return false
   const permissions = ORDER_ACTIONS_BY_ROLE[currentRole]
   return Boolean(permissions?.has('*') || permissions?.has(permission))
+}
+
+function orderFieldsForRole(profile: Record<string, unknown> | null | undefined) {
+  return ORDER_FIELDS_BY_ROLE[role(profile)] || ''
 }
 
 function unauthorized(action: string, profile: Record<string, unknown> | null | undefined) {
@@ -100,17 +115,19 @@ function canUpdateOrder(profile: Record<string, unknown> | null | undefined, bod
   return fields.every((field) => canOrderAction(profile, `update:${field}`))
 }
 
-async function listOrders(url: string, serviceRole: string) {
+async function listOrders(url: string, serviceRole: string, profile: Record<string, unknown> | null | undefined) {
+  const fields = orderFieldsForRole(profile)
+  if (!fields) return unauthorized('list', profile)
   const res = await rest(
     url,
     serviceRole,
-    '/rest/v1/leader_orders?select=' + encodeURIComponent(orderFields) + '&order=created_at.desc&limit=80',
+    '/rest/v1/leader_orders?select=' + encodeURIComponent(fields) + '&order=created_at.desc&limit=80',
   )
   if (!res.ok) return json(500, { error: 'orders_read_failed', details: await res.text() })
   return json(200, { ok: true, orders: await res.json() })
 }
 
-async function updateOrder(url: string, serviceRole: string, body: Record<string, unknown>) {
+async function updateOrder(url: string, serviceRole: string, profile: Record<string, unknown> | null | undefined, body: Record<string, unknown>) {
   const id = clean(body.id, 80)
   if (!id) return json(400, { error: 'id_required' })
 
@@ -123,7 +140,9 @@ async function updateOrder(url: string, serviceRole: string, body: Record<string
   if ('deadline' in body) patch.deadline = clean(body.deadline, 40) || null
   if (!Object.keys(patch).length) return json(400, { error: 'no_update_fields' })
 
-  const res = await rest(url, serviceRole, '/rest/v1/leader_orders?id=eq.' + encodeURIComponent(id) + '&select=' + encodeURIComponent(orderFields), {
+  const fields = orderFieldsForRole(profile)
+  if (!fields) return unauthorized('update', profile)
+  const res = await rest(url, serviceRole, '/rest/v1/leader_orders?id=eq.' + encodeURIComponent(id) + '&select=' + encodeURIComponent(fields), {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
     body: JSON.stringify(patch),
@@ -152,12 +171,12 @@ Deno.serve(async (req: Request) => {
 
   if (action === 'list') {
     if (!canOrderAction(checked.profile, 'list')) return unauthorized(action, checked.profile)
-    return await listOrders(url, serviceRole)
+    return await listOrders(url, serviceRole, checked.profile)
   }
 
   if (action === 'update') {
     if (!canUpdateOrder(checked.profile, body)) return unauthorized(action, checked.profile)
-    return await updateOrder(url, serviceRole, body)
+    return await updateOrder(url, serviceRole, checked.profile, body)
   }
 
   return json(400, { error: 'unknown_action' })
