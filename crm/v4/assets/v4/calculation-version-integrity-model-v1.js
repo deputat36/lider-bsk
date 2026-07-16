@@ -1,3 +1,9 @@
+if (typeof document !== 'undefined') {
+  import('./calculation-version-editor-v1.js').catch((error) => {
+    console.error('CRM calculation version editor failed to load:', error);
+  });
+}
+
 function versionNumber(value) {
   const number = Number(value);
   return Number.isInteger(number) && number > 0 ? number : 1;
