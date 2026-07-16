@@ -3,7 +3,9 @@ import {
   CALCULATION_VERSION_STAGING_TRANSPORT,
   buildStagingCalculationVersionCommand,
   calculationStagingTransportAvailability,
-  invokeStagingCalculationVersion
+  invokeStagingCalculationVersion,
+  isStagingCalculationEnvironment,
+  projectRefFromCalculationSupabaseUrl
 } from '../crm/v4/assets/v4/calculation-version-staging-transport-v1.js';
 
 const ids = Object.freeze({
@@ -14,7 +16,7 @@ const ids = Object.freeze({
   lead: '55555555-5555-4555-8555-555555555555'
 });
 
-const stagingUrl = `https://${CALCULATION_VERSION_STAGING_TRANSPORT.projectRef}.supabase.co`;
+const stagingUrl = `https://${CALCULATION_VERSION_STAGING_TRANSPORT.hostname}`;
 const productionUrl = 'https://ofewxuqfjhamgerwzull.supabase.co';
 const expectedUpdatedAt = '2026-07-15T12:00:00.000Z';
 const sourceCalculation = { id: ids.source, lead_id: ids.lead, updated_at: expectedUpdatedAt };
@@ -57,6 +59,19 @@ const draft = {
 };
 
 assert.equal(CALCULATION_VERSION_STAGING_TRANSPORT.permission, 'calculations.write');
+assert.equal(CALCULATION_VERSION_STAGING_TRANSPORT.hostname, 'otulfnouybahfnsycxqn.supabase.co');
+assert.equal(projectRefFromCalculationSupabaseUrl(stagingUrl), CALCULATION_VERSION_STAGING_TRANSPORT.projectRef);
+assert.equal(isStagingCalculationEnvironment(stagingUrl), true);
+for (const hostileUrl of [
+  'https://otulfnouybahfnsycxqn.example.com',
+  'https://evil.otulfnouybahfnsycxqn.supabase.co',
+  'https://otulfnouybahfnsycxqn.supabase.co.example.com',
+  productionUrl,
+  'not-a-url'
+]) {
+  assert.equal(isStagingCalculationEnvironment(hostileUrl), false, `${hostileUrl} must fail closed`);
+  assert.equal(projectRefFromCalculationSupabaseUrl(hostileUrl), '');
+}
 
 const production = calculationStagingTransportAvailability({
   supabaseUrl: productionUrl,
@@ -234,4 +249,4 @@ const locked = await invokeStagingCalculationVersion({
 assert.equal(locked.kind, 'wrong_environment');
 assert.equal(lockedClient.calls.length, 0);
 
-console.log('CRM calculation version staging transport is production-locked, minimized and replay-safe.');
+console.log('CRM calculation version staging transport is production-locked, exact-hostname bound, minimized and replay-safe.');
