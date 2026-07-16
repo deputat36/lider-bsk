@@ -6,36 +6,38 @@ Related: #202, #204.
 
 ## Purpose
 
-The generic orders endpoint returns broad order data and uses a service-role request. Designer, installer and contractor should work through job-specific design, production and installation tables/endpoints with smaller projections.
+The generic orders endpoint uses service-role requests. Designer, installer and contractor should work through job-specific design, production and installation tables/endpoints with smaller projections.
 
-The previous source candidate still allowed:
-
-- designer: generic list plus layout updates;
-- installer: generic list.
-
-Contractor was already denied because it had no matrix entry.
+The previous source candidate still allowed designer generic list/layout updates and installer generic list. Those paths remain removed.
 
 ## Source result
 
-`ORDER_ACTIONS_BY_ROLE` now contains only:
+`ORDER_ACTIONS_BY_ROLE` contains:
 
-- owner;
-- admin;
-- manager.
+- owner — wildcard;
+- admin — wildcard;
+- manager — list plus the established non-finance update whitelist;
+- accountant — list plus only `update:payment_status`.
 
 The canonical role registry still contains all seven CRM roles. Therefore designer, installer and contractor are recognized roles but receive no permission through this generic endpoint and fail closed with `403 forbidden` before any order read or write.
 
+Accountant is not a production/job role. Its generic access is limited to finance work and a separate response projection without client phone, design, production or installation data.
+
 Manager keeps the explicit non-finance field whitelist introduced in #345. Owner/admin wildcard behavior is unchanged.
 
-## Read-only evidence
+## Role-specific responses
 
-The returned production Edge logs for the previous 24-hour window contained no calls to `leader-crm-orders`. This package does not change a currently observed live caller path.
+List and update responses use `ORDER_FIELDS_BY_ROLE`:
+
+- manager receives client and operational fields without payment, cost, profit, prepayment or balance;
+- accountant receives payment and financial totals without client contacts, internal comments or job data;
+- owner/admin retain the existing administrative fields.
+
+Projection selection and validation happen before service-role GET/PATCH.
 
 ## Deliberately not included
 
 - job-specific design/production/installation endpoint changes;
-- role-specific generic list projections;
-- accountant finance projection;
 - browser UI changes;
 - staging role tests;
 - production deployment.
