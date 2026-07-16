@@ -1,3 +1,5 @@
+import { paymentNeedsAttention as registryPaymentNeedsAttention, paymentStatusUiModel } from './payment-status-ui-model-v1.js';
+
 export const ORDER_LIST_PREFERENCES_KEY = 'leader_crm_v4_order_list_preferences_v1';
 const FILTERS = new Set(['active', 'all', 'overdue', 'payment', 'design']);
 const SORTS = new Set(['created_desc', 'deadline_asc', 'amount_desc', 'status_asc']);
@@ -29,14 +31,14 @@ export function resetOrderListPreferences(storage = globalThis.localStorage) {
 }
 
 export function paymentNeedsAttention(order) {
-  const text = String(order?.payment_status || '').toLowerCase();
-  return !text || text.includes('не') || text.includes('част') || text.includes('долг') || text.includes('ожид');
+  return registryPaymentNeedsAttention(order?.payment_status);
 }
 
 export function orderMatchesSearch(order, search) {
   const query = String(search || '').trim().toLowerCase();
   if (!query) return true;
-  return [order?.order_number, order?.project_name, order?.client_name, order?.client_phone, order?.status, order?.payment_status]
+  const payment = paymentStatusUiModel(order?.payment_status);
+  return [order?.order_number, order?.project_name, order?.client_name, order?.client_phone, order?.status, order?.payment_status, payment.label]
     .join(' ').toLowerCase().includes(query);
 }
 
