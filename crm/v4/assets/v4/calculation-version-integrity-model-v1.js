@@ -1,7 +1,11 @@
 if (typeof document !== 'undefined') {
-  import('./calculation-version-editor-v1.js').catch((error) => {
-    console.error('CRM calculation version editor failed to load:', error);
-  });
+  import('./calculation-version-editor-v1.js')
+    .then(({ bootCalculationVersionEditor }) => {
+      if (document.readyState !== 'loading') bootCalculationVersionEditor();
+    })
+    .catch((error) => {
+      console.error('CRM calculation version editor failed to load:', error);
+    });
 }
 
 function versionNumber(value) {
