@@ -3,12 +3,15 @@ param(
     [string]$FixtureManifestPath = 'artifacts/calculation-version-staging-fixture/fixture-manifest.json',
 
     [ValidateSet('allowed', 'forbidden', 'inactive')]
-    [string]$Scenario = 'allowed'
+    [string]$Scenario = 'allowed',
+
+    [string]$EvidencePath = ''
 )
 
 $ErrorActionPreference = 'Stop'
 $StagingUrl = 'https://otulfnouybahfnsycxqn.supabase.co'
 $Runner = 'tools/run_calculation_version_staging_auth_e2e.mjs'
+$Validator = 'tools/validate-calculation-version-staging-auth-e2e-evidence.mjs'
 
 function ConvertFrom-SecureValue {
     param([Security.SecureString]$Value)
@@ -26,6 +29,10 @@ if (-not (Test-Path -LiteralPath $FixtureManifestPath)) {
 }
 
 $resolvedManifest = (Resolve-Path -LiteralPath $FixtureManifestPath).Path
+if (-not $EvidencePath) {
+    $EvidencePath = "artifacts/calculation-version-staging-auth-e2e-$Scenario-evidence.json"
+}
+
 $publishableKeySecure = Read-Host 'Staging publishable key' -AsSecureString
 $email = Read-Host 'Temporary staging Auth email'
 $passwordSecure = Read-Host 'Temporary staging Auth password' -AsSecureString
@@ -39,6 +46,7 @@ $managedVariables = @(
     'LIDER_STAGING_PASSWORD',
     'LIDER_STAGING_SCENARIO',
     'LIDER_STAGING_FIXTURE_MANIFEST_PATH',
+    'LIDER_STAGING_EVIDENCE_PATH',
     'LIDER_STAGING_SOURCE_CALCULATION_ID',
     'LIDER_STAGING_EXPECTED_UPDATED_AT',
     'LIDER_STAGING_NEED_ID',
@@ -57,10 +65,16 @@ try {
     $env:LIDER_STAGING_PASSWORD = $password
     $env:LIDER_STAGING_SCENARIO = $Scenario
     $env:LIDER_STAGING_FIXTURE_MANIFEST_PATH = $resolvedManifest
+    $env:LIDER_STAGING_EVIDENCE_PATH = $EvidencePath
 
     node $Runner
     if ($LASTEXITCODE -ne 0) {
         throw "Authenticated staging calculation E2E failed with exit code $LASTEXITCODE"
+    }
+
+    node $Validator "--evidence=$EvidencePath" "--manifest=$resolvedManifest"
+    if ($LASTEXITCODE -ne 0) {
+        throw "Authenticated staging calculation evidence validation failed with exit code $LASTEXITCODE"
     }
 }
 finally {
