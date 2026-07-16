@@ -6,6 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 STAGING = 'otulfnouybahfnsycxqn'
+STAGING_HOSTNAME = f'{STAGING}.supabase.co'
 PRODUCTION = 'ofewxuqfjhamgerwzull'
 ACTIVE_EDGE_VERSION = 3
 ACTIVE_EDGE_HASH = '0df6d23cc6d8b19903babbf711bb1da765111ff1f64eb7f8e970f1bcc9760ee4'
@@ -51,6 +52,8 @@ def forbid(name: str, markers: tuple[str, ...] | list[str]) -> None:
 
 require('transport', [
     STAGING,
+    'const STAGING_HOSTNAME = `${STAGING_PROJECT_REF}.supabase.co`',
+    'hostname === STAGING_HOSTNAME ? STAGING_PROJECT_REF :',
     "FUNCTION_SLUG = 'leader-crm-calculations'",
     "ACTION = 'calculation.create_version'",
     "PERMISSION = 'calculations.write'",
@@ -66,6 +69,7 @@ require('transport', [
     'duplicate_inventory',
     'version_conflict',
     'persistence_failed',
+    'hostname: STAGING_HOSTNAME',
 ])
 forbid('transport', [
     PRODUCTION,
@@ -124,11 +128,16 @@ except json.JSONDecodeError as exc:
 
 if transport_contract.get('status') != 'source_wired_staging_runtime_gated':
     errors.append('transport contract must reflect source wiring and runtime gate')
-if transport_contract.get('environment', {}).get('allowed_project_ref') != STAGING:
+environment = transport_contract.get('environment', {})
+if environment.get('allowed_project_ref') != STAGING:
     errors.append('transport contract staging ref drifted')
-if transport_contract.get('environment', {}).get('production_project_ref') != PRODUCTION:
+if environment.get('allowed_hostname') != STAGING_HOSTNAME:
+    errors.append('transport contract exact staging hostname drifted')
+if environment.get('wrong_environment') != 'fail_closed_on_non_exact_hostname_before_session_or_invoke':
+    errors.append('transport contract must fail closed on non-exact hostnames')
+if environment.get('production_project_ref') != PRODUCTION:
     errors.append('transport contract production ref drifted')
-if transport_contract.get('environment', {}).get('production_enabled') is not False:
+if environment.get('production_enabled') is not False:
     errors.append('transport contract must keep production disabled')
 if transport_contract.get('authorization', {}).get('permission') != 'calculations.write':
     errors.append('transport contract permission drifted')
@@ -166,6 +175,9 @@ if server_contract.get('rollback', {}).get('staging_version_2_is_not_a_valid_rol
 
 require('test', [
     "permission, 'calculations.write'",
+    'otulfnouybahfnsycxqn.example.com',
+    'evil.otulfnouybahfnsycxqn.supabase.co',
+    'must fail closed',
     'production_locked',
     'forbidden field leaked',
     'contractor_price_invalid',
@@ -175,7 +187,7 @@ require('test', [
     'stale_source',
     'duplicate_inventory',
     'readAfterSuccess',
-    'production-locked, minimized and replay-safe',
+    'exact-hostname bound',
 ])
 require('runbook', [
     STAGING,
@@ -224,4 +236,4 @@ if errors:
         print(f'- {error}', file=sys.stderr)
     raise SystemExit(1)
 
-print('Calculation staging transport is source-wired, environment-locked and runtime-gated before Auth E2E.')
+print('Calculation staging transport is source-wired, exact-hostname locked and runtime-gated before Auth E2E.')
