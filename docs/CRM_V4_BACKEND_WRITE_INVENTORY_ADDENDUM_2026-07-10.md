@@ -38,10 +38,40 @@ Target classification:
 - event creation should be part of the same transaction as a status/next-contact transition when those fields change;
 - free-standing comments may remain a narrow direct insert only under role-scoped RLS.
 
+### `crm/v4/assets/v4/calculation-version-editor-v1.js`
+
+Current write:
+
+- copies a saved calculation into a new editable version inside the same lead;
+- inserts one new row into `leader_lead_calculations`;
+- inserts the copied and edited item snapshot into `leader_lead_calculation_items`;
+- performs a compensating delete of the newly created empty calculation only when item persistence fails.
+
+Current guardrails:
+
+- canonical permission: `calculations.write`;
+- the editor module is loaded only after `leader-v4:crm-ready` and only for an active profile allowed by `canPerformV4Action`;
+- source `lead_id` must equal the currently opened route lead;
+- source calculation and its items remain unchanged;
+- old `commercial_offer_id` and `order_id` links are not copied;
+- the next version is recalculated from a fresh read using `max(version_number) + 1`;
+- the new version is saved as `Черновик`;
+- the direct browser path does not receive a service-role credential.
+
+Target classification:
+
+- future server action: `calculation.create_version`;
+- target transport: JWT-protected `leader-crm-calculations` Edge Function and atomic RPC;
+- calculation row, item rows and idempotency receipt must commit together;
+- optimistic concurrency must use the source `updated_at` value;
+- the temporary direct-write path remains only until the separately approved production server rollout is complete;
+- after cutover, the editor file must be removed from the direct-write inventory rather than leaving two write transports active.
+
 ## Confirmed direct-write file set
 
 The source checker classifies these CRM v4 files:
 
+- `calculation-version-editor-v1.js`;
 - `calculations-advanced.js`;
 - `calculations-standard.js`;
 - `calculations.js`;
