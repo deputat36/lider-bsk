@@ -64,11 +64,16 @@ Staging route:
 
 Production legacy route:
 
-- inserts one new row into `leader_lead_calculations`;
+- performs a fresh SELECT of `id, version_number, updated_at` immediately before writes;
+- blocks saving when the source row disappeared or its `updated_at` changed;
+- blocks saving when duplicate version numbers already exist for the lead;
+- computes the next version from the fresh inventory using `max(version_number) + 1`;
+- inserts one new row into `leader_lead_calculations` only after successful preflight;
 - inserts the copied and edited item snapshot into `leader_lead_calculation_items`;
 - performs a compensating delete of the newly created empty calculation only when item persistence fails;
-- recalculates the next version from a fresh read using `max(version_number) + 1`;
 - remains classified as a direct browser write until production server rollout.
+
+The fresh browser preflight reduces accidental conflicts but cannot provide a transaction or unique-index guarantee. It is not a substitute for the future server action.
 
 Shared guardrails:
 
