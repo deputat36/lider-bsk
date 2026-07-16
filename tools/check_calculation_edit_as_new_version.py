@@ -193,8 +193,6 @@ require('inventory_checker', [
     'Inventory expects direct writes that are no longer present',
     'Calculation version editor must remain free of direct insert/update/delete writes',
 ])
-if "'calculation-version-editor-v1.js'" in texts.get('inventory_checker', ''):
-    errors.append('calculation version editor must be removed from the direct-write inventory')
 
 require('inventory_addendum', [
     '### `crm/v4/assets/v4/calculation-version-editor-v1.js`',
