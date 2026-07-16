@@ -44,62 +44,56 @@ Purpose:
 
 - copies a saved calculation into a new editable version inside the same lead;
 - preserves the source calculation, source items and existing КП/order links;
-- saves the new version as `Черновик` without inherited links.
+- prepares a new `Черновик` without inherited links.
 
-Current dual route:
+Current routes:
 
 - staging route: JWT Edge/RPC без browser writes;
-- production route: temporary direct-write path.
+- production route: fail-closed.
 
 Staging route:
 
 - selected only for the exact staging Supabase URL;
 - invokes `leader-crm-calculations` through the current authenticated session;
 - sends canonical action `calculation.create_version`;
-- uses permission `calculations.write`;
+- uses canonical permission `calculations.write`;
 - sends source `updated_at`, a stable idempotency key and a minimized item projection;
 - calculation row, item rows and idempotency receipt commit together;
-- does not contain `.from`, `.insert`, `.update`, `.delete`, `.upsert`, browser RPC or compensating delete;
-- cannot fallback to the production legacy path after an Edge error.
+- does not contain browser INSERT, UPDATE, DELETE, UPSERT, direct RPC or compensating delete;
+- cannot fallback to any production write path after an Edge error.
 
-Production legacy route:
+Production route:
 
-- performs a fresh SELECT of `id, version_number, updated_at` immediately before writes;
-- blocks saving when the source row disappeared or its `updated_at` changed;
-- blocks saving when duplicate version numbers already exist for the lead;
-- computes the next version from the fresh inventory using `max(version_number) + 1`;
-- inserts one new row into `leader_lead_calculations` only after successful preflight;
-- inserts the copied and edited item snapshot into `leader_lead_calculation_items`;
-- performs a compensating delete of the newly created empty calculation only when item persistence fails;
-- remains classified as a direct browser write until production server rollout.
-
-The fresh browser preflight reduces accidental conflicts but cannot provide a transaction or unique-index guarantee. It is not a substitute for the future server action.
+- resolves to `production_locked`;
+- the action is shown as `Новая версия — недоступно`;
+- the button carries `aria-disabled=true` and a clear explanation;
+- browser INSERT/DELETE are removed;
+- no calculation row or item row is created;
+- no compensating delete is attempted;
+- production remains locked until the server action is separately deployed and approved.
 
 Shared guardrails:
 
 - canonical permission: `calculations.write`;
+- server action: `calculation.create_version`;
 - the editor module is loaded only after `leader-v4:crm-ready` and only for an active profile allowed by `canPerformV4Action`;
 - source `lead_id` must equal the currently opened route lead;
 - source calculation and its items remain unchanged;
 - old `commercial_offer_id` and `order_id` links are not copied;
-- the new version is saved as `Черновик`;
-- the browser never receives a service-role credential.
+- the browser never receives a service-role credential;
+- production config does not activate staging transport.
 
-Target classification:
+Current classification:
 
-- future server action: `calculation.create_version`;
-- target transport: JWT-protected `leader-crm-calculations` Edge Function and atomic RPC;
-- optimistic concurrency uses the source `updated_at` value;
-- source wiring is present but current production config keeps it fail closed;
-- production cutover still requires explicit approval and production backend deployment;
-- after production cutover legacy-функции и compensating delete должны быть удалены;
-- the editor file must then be removed from the direct-write inventory rather than leaving two write transports active.
+- the editor is removed from the direct-write inventory;
+- the retained fresh-preflight model is pure and performs no persistence;
+- production cutover still requires explicit approval, production RPC/index and Edge deployment;
+- after production rollout the same Edge/RPC action may be enabled by an explicit route change, without restoring browser writes.
 
 ## Confirmed direct-write file set
 
 The source checker classifies these CRM v4 files:
 
-- `calculation-version-editor-v1.js`;
 - `calculations-advanced.js`;
 - `calculations-standard.js`;
 - `calculations.js`;
@@ -115,13 +109,14 @@ The source checker classifies these CRM v4 files:
 - `production-job-card-v2.js`;
 - `user-admin-v1.js`.
 
-`calculation-version-editor-v1.js` remains in this list only because the production legacy branch still contains classified browser writes. The staging branch itself is write-free.
+`calculation-version-editor-v1.js` is intentionally absent because it now contains only read operations and the exact staging Edge invocation.
 
 Any new CRM v4 JavaScript file containing a direct insert/update/delete must be added to the inventory and assigned a canonical permission/action contract.
 
 ## Guardrails
 
 - no production Supabase change was made;
-- no direct write was removed before a tested replacement exists;
+- no staging Supabase change was made by the production-lock change;
+- normal creation in the existing unified calculator remains outside this lock and is unchanged;
 - no `nav_*` object was inspected or changed for this inventory;
 - UI action guards remain defense-in-depth only.
