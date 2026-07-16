@@ -39,6 +39,11 @@ REQUIRED_MARKERS = {
         "GENERIC_LEADS_ROLES",
         "canUseGenericLeads",
         "if (!canUseGenericLeads(checked.profile)) return forbidden(action, checked.profile)",
+        "ACTION_PERMISSION",
+        "ROLE_PERMISSIONS",
+        "canRunGenericAction",
+        "const permission = ACTION_PERMISSION[action]",
+        "if (!canRunGenericAction(checked.profile, permission)) return forbidden(action, checked.profile)",
     ],
     "leader-crm-orders": [
         "leader_user_profiles",

@@ -87,6 +87,23 @@ const GENERIC_LEADS_ROLES = new Set([
   'manager',
 ])
 
+const ACTION_PERMISSION: Record<string, string> = {
+  dashboard: 'leads.read',
+  list: 'leads.read',
+  list_orders: 'orders.read',
+  create: 'leads.create',
+  update: 'leads.update',
+  ensure_client: 'clients.write',
+  create_order: 'orders.create',
+  create_order_from_offer: 'orders.create',
+}
+
+const ROLE_PERMISSIONS: Record<string, Set<string>> = {
+  owner: new Set(['*']),
+  admin: new Set(['*']),
+  manager: new Set(Object.values(ACTION_PERMISSION)),
+}
+
 function profileRole(profile: Record<string, unknown> | null | undefined) {
   return cleanText(profile?.role, 80).toLowerCase()
 }
@@ -94,6 +111,11 @@ function profileRole(profile: Record<string, unknown> | null | undefined) {
 function canUseGenericLeads(profile: Record<string, unknown> | null | undefined) {
   const currentRole = profileRole(profile)
   return CANONICAL_ROLES.has(currentRole) && GENERIC_LEADS_ROLES.has(currentRole)
+}
+
+function canRunGenericAction(profile: Record<string, unknown> | null | undefined, permission: string) {
+  const permissions = ROLE_PERMISSIONS[profileRole(profile)]
+  return Boolean(permission && (permissions?.has('*') || permissions?.has(permission)))
 }
 
 function forbidden(action: string, profile: Record<string, unknown> | null | undefined) {
@@ -283,6 +305,9 @@ Deno.serve(async (req: Request) => {
   const checked = await checkUser(req, supabaseUrl, anonKey, serviceRole)
   if (checked.error) return checked.error
   if (!canUseGenericLeads(checked.profile)) return forbidden(action, checked.profile)
+  const permission = ACTION_PERMISSION[action]
+  if (!permission) return json(400, { error: 'unknown_action' })
+  if (!canRunGenericAction(checked.profile, permission)) return forbidden(action, checked.profile)
   const ownerId = checked.user.id as string
   const actorEmail = cleanText(checked.user.email || checked.profile?.email, 200)
   if (action === 'dashboard') return await dashboard(supabaseUrl, serviceRole)
