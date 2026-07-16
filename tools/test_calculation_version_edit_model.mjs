@@ -4,9 +4,11 @@ import {
   calculationVersionItem,
   calculationVersionLegacyPreflight,
   calculationVersionTotals,
+  calculationVersionTransportTitle,
   copyCalculationItemsForVersion,
   createCalculationVersionDraft,
-  nextCalculationVersion
+  nextCalculationVersion,
+  rebaseCalculationVersionDraftTitle
 } from '../crm/v4/assets/v4/calculation-version-edit-model-v1.js';
 
 assert.equal(nextCalculationVersion([]), 1);
@@ -63,6 +65,26 @@ assert.equal(
   calculationVersionDraftTitle({ title: 'Вывеска — правки v3' }, 5),
   'Вывеска — правки v5'
 );
+
+const autoRebase = rebaseCalculationVersionDraftTitle(
+  { title: 'Баннер — правки v3', autoTitle: 'Баннер — правки v3' },
+  { title: 'Баннер' },
+  4
+);
+assert.equal(autoRebase.title, 'Баннер — правки v4');
+assert.equal(autoRebase.customized, false);
+assert.equal(autoRebase.transportTitle, null);
+
+const customRebase = rebaseCalculationVersionDraftTitle(
+  { title: 'Согласованный вариант для клиента', autoTitle: 'Баннер — правки v3' },
+  { title: 'Баннер' },
+  4
+);
+assert.equal(customRebase.title, 'Согласованный вариант для клиента');
+assert.equal(customRebase.customized, true);
+assert.equal(customRebase.transportTitle, 'Согласованный вариант для клиента');
+assert.equal(calculationVersionTransportTitle({ title: 'Баннер — правки v3', autoTitle: 'Баннер — правки v3' }), null);
+assert.equal(calculationVersionTransportTitle({ title: 'Мой вариант', autoTitle: 'Баннер — правки v3' }), 'Мой вариант');
 
 const sourceItems = [{
   id: 'item-1',
@@ -128,7 +150,24 @@ assert.equal(draft.nextVersion, 3);
 assert.equal(draft.leadId, 'lead-1');
 assert.equal(draft.needId, 'need-1');
 assert.equal(draft.title, 'Баннер — правки v3');
+assert.equal(draft.autoTitle, 'Баннер — правки v3');
+assert.equal(draft.titleCustomized, false);
 assert.equal(draft.items.length, 1);
 assert.match(draft.internalComment, /Исходный расчёт сохранён без изменений/);
+
+draft.nextVersion = 4;
+assert.equal(draft.title, 'Баннер — правки v4');
+assert.equal(draft.autoTitle, 'Баннер — правки v4');
+assert.equal(draft.titleCustomized, false);
+
+draft.title = 'Индивидуальное название';
+assert.equal(draft.titleCustomized, true);
+draft.nextVersion = 5;
+assert.equal(draft.title, 'Индивидуальное название');
+assert.equal(draft.autoTitle, 'Баннер — правки v5');
+
+draft.title = '';
+assert.equal(draft.titleCustomized, false);
+assert.equal(draft.title, 'Баннер — правки v5');
 
 console.log('Calculation version edit model tests passed.');
