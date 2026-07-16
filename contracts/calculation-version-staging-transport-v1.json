@@ -1,12 +1,13 @@
 {
-  "contract_version": "1.1.0",
+  "contract_version": "1.2.0",
   "status": "source_wired_staging_runtime_gated",
   "action": "calculation.create_version",
   "environment": {
     "allowed_project_ref": "otulfnouybahfnsycxqn",
+    "allowed_hostname": "otulfnouybahfnsycxqn.supabase.co",
     "production_project_ref": "ofewxuqfjhamgerwzull",
     "production_enabled": false,
-    "wrong_environment": "fail_closed_before_session_or_invoke"
+    "wrong_environment": "fail_closed_on_non_exact_hostname_before_session_or_invoke"
   },
   "transport": {
     "module": "crm/v4/assets/v4/calculation-version-staging-transport-v1.js",
