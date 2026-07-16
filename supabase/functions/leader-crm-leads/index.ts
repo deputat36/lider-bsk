@@ -71,6 +71,35 @@ const leadFields = 'id,created_at,name,phone,source,service,message,status,lead_
 const clientFields = 'id,owner_id,name,phone,source,comment,created_at,updated_at'
 const orderFields = 'id,order_number,created_at,project_name,client_name,client_phone,status,payment_status,deadline,client_total,contractor_cost,profit,balance,source,layout_status,production_status,lead_id,client_id'
 
+const CANONICAL_ROLES = new Set([
+  'owner',
+  'admin',
+  'manager',
+  'accountant',
+  'designer',
+  'installer',
+  'contractor',
+])
+
+const GENERIC_LEADS_ROLES = new Set([
+  'owner',
+  'admin',
+  'manager',
+])
+
+function profileRole(profile: Record<string, unknown> | null | undefined) {
+  return cleanText(profile?.role, 80).toLowerCase()
+}
+
+function canUseGenericLeads(profile: Record<string, unknown> | null | undefined) {
+  const currentRole = profileRole(profile)
+  return CANONICAL_ROLES.has(currentRole) && GENERIC_LEADS_ROLES.has(currentRole)
+}
+
+function forbidden(action: string, profile: Record<string, unknown> | null | undefined) {
+  return json(403, { error: 'forbidden', action, role: profileRole(profile) })
+}
+
 async function ensureProfile(req: Request, supabaseUrl: string, anonKey: string, serviceRole: string) {
   const userCheck = await getUserFromRequest(req, supabaseUrl, anonKey)
   if (userCheck.error) return userCheck.error
@@ -253,6 +282,7 @@ Deno.serve(async (req: Request) => {
   if (action === 'ensure_profile') return await ensureProfile(req, supabaseUrl, anonKey, serviceRole)
   const checked = await checkUser(req, supabaseUrl, anonKey, serviceRole)
   if (checked.error) return checked.error
+  if (!canUseGenericLeads(checked.profile)) return forbidden(action, checked.profile)
   const ownerId = checked.user.id as string
   const actorEmail = cleanText(checked.user.email || checked.profile?.email, 200)
   if (action === 'dashboard') return await dashboard(supabaseUrl, serviceRole)
