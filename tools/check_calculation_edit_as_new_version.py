@@ -38,7 +38,7 @@ require('bootstrap', [
     'CRM_V4_ACTIONS.CALCULATIONS_WRITE',
     'canPerformV4Action',
     "document.addEventListener('leader-v4:crm-ready'",
-    "import('./calculation-version-editor-v1.js?v=20260716-staging-edge-1')",
+    "import('./calculation-version-editor-v1.js?v=20260716-legacy-preflight-1')",
     'bootCalculationVersionEditor',
 ])
 
@@ -91,9 +91,9 @@ require('editor', [
     'expectedUpdatedAt: source.updated_at',
     'versionDraft.sourceCalculationId',
     'versionDraft.sourceUpdatedAt',
-    '.from(\'leader_lead_calculations\')',
+    ".from('leader_lead_calculations')",
     '.insert(calcPayload)',
-    '.from(\'leader_lead_calculation_items\')',
+    ".from('leader_lead_calculation_items')",
     '.insert(itemPayloads)',
     'commercial_offer_id: null',
     'order_id: null',
