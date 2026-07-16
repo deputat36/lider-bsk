@@ -206,8 +206,8 @@ require('runbook', [
     'HTTP 403',
     'production `calculations.js`',
     'staging Edge v3',
-    'source wiring',
-    'runtime activation',
+    'Source wiring',
+    'Runtime activation',
 ])
 require('workflow', [
     'node --check crm/v4/assets/v4/calculation-version-staging-transport-v1.js',
