@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {
   calculationVersionDraftTitle,
   calculationVersionItem,
+  calculationVersionLegacyPreflight,
   calculationVersionTotals,
   copyCalculationItemsForVersion,
   createCalculationVersionDraft,
@@ -11,6 +12,48 @@ import {
 assert.equal(nextCalculationVersion([]), 1);
 assert.equal(nextCalculationVersion([{ version_number: 1 }, { version_number: 3 }, { version_number: 1 }]), 4);
 assert.equal(nextCalculationVersion([{ version_number: null }, { version_number: 'bad' }]), 1);
+
+const sourceUpdatedAt = '2026-07-16T12:00:00.000Z';
+const cleanInventory = [
+  { id: 'calc-1', version_number: 1, updated_at: sourceUpdatedAt },
+  { id: 'calc-2', version_number: 3, updated_at: '2026-07-16T12:05:00.000Z' }
+];
+const ready = calculationVersionLegacyPreflight(cleanInventory, {
+  sourceCalculationId: 'calc-1',
+  expectedUpdatedAt: sourceUpdatedAt
+});
+assert.equal(ready.ok, true);
+assert.equal(ready.code, 'ready');
+assert.equal(ready.nextVersion, 4);
+
+const duplicate = calculationVersionLegacyPreflight([
+  { id: 'calc-1', version_number: 1, updated_at: sourceUpdatedAt },
+  { id: 'calc-2', version_number: 1, updated_at: '2026-07-16T12:05:00.000Z' }
+], {
+  sourceCalculationId: 'calc-1',
+  expectedUpdatedAt: sourceUpdatedAt
+});
+assert.equal(duplicate.ok, false);
+assert.equal(duplicate.code, 'duplicate_version_inventory');
+assert.deepEqual(duplicate.duplicateVersions, [1]);
+assert.match(duplicate.message, /заблокировано/i);
+
+const stale = calculationVersionLegacyPreflight([
+  { id: 'calc-1', version_number: 1, updated_at: '2026-07-16T12:00:01.000Z' }
+], {
+  sourceCalculationId: 'calc-1',
+  expectedUpdatedAt: sourceUpdatedAt
+});
+assert.equal(stale.ok, false);
+assert.equal(stale.code, 'source_changed');
+assert.match(stale.message, /изменился/i);
+
+const missing = calculationVersionLegacyPreflight(cleanInventory, {
+  sourceCalculationId: 'calc-missing',
+  expectedUpdatedAt: sourceUpdatedAt
+});
+assert.equal(missing.ok, false);
+assert.equal(missing.code, 'source_missing');
 
 assert.equal(
   calculationVersionDraftTitle({ title: 'Баннер — версия 2' }, 4),
