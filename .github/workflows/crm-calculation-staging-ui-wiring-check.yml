@@ -68,34 +68,13 @@ jobs:
           python3 -m py_compile tools/check_crm_v4_backend_write_inventory.py
 
       - name: Validate exact staging UI routing
-        id: ui_checker
-        continue-on-error: true
-        run: |
-          mkdir -p artifacts
-          python3 tools/check_calculation_version_staging_ui_wiring.py > artifacts/ui-wiring-check.log 2>&1
+        run: python3 tools/check_calculation_version_staging_ui_wiring.py
 
       - name: Validate staging transport contract
-        id: transport_checker
-        continue-on-error: true
-        run: |
-          mkdir -p artifacts
-          python3 tools/check_calculation_version_staging_transport.py > artifacts/transport-check.log 2>&1
+        run: python3 tools/check_calculation_version_staging_transport.py
 
       - name: Validate edit-as-version workflow
         run: python3 tools/check_calculation_edit_as_new_version.py
 
       - name: Validate backend write inventory
         run: python3 tools/check_crm_v4_backend_write_inventory.py
-
-      - name: Upload temporary checker diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: calculation-staging-ui-checker-diagnostics
-          path: artifacts/*.log
-          if-no-files-found: error
-          retention-days: 1
-
-      - name: Fail on checker diagnostics
-        if: steps.ui_checker.outcome == 'failure' || steps.transport_checker.outcome == 'failure'
-        run: exit 1
