@@ -2,6 +2,8 @@
 
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
+import { mkdir, writeFile } from 'node:fs/promises';
+import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
   buildStagingCalculationVersionCommand,
@@ -11,6 +13,11 @@ import {
   manifestDigest,
   validateFixtureManifest
 } from './create-calculation-version-staging-fixture-bundle.mjs';
+
+export const STAGING_PROJECT_REF = 'otulfnouybahfnsycxqn';
+export const AUTH_E2E_RUNNER_VERSION = 'leader-calculation-version-staging-auth-e2e-runner-v2';
+export const AUTH_E2E_EVIDENCE_VERSION = 'leader-calculation-version-staging-auth-e2e-evidence-v1';
+export const DEFAULT_EVIDENCE_PATH = 'artifacts/calculation-version-staging-auth-e2e-evidence.json';
 
 const FUNCTION_SLUG = 'leader-crm-calculations';
 const PERMISSION = 'calculations.write';
@@ -245,15 +252,19 @@ async function invoke(config, accessToken, command) {
 
 async function signOut(config, accessToken) {
   try {
-    await fetch(`${config.supabaseUrl}/auth/v1/logout`, {
+    const response = await fetchJson(`${config.supabaseUrl}/auth/v1/logout`, {
       method: 'POST',
       headers: {
         apikey: config.publishableKey,
         Authorization: `Bearer ${accessToken}`
       }
     });
+    return Object.freeze({
+      status: response.status,
+      passed: response.status === 200 || response.status === 204
+    });
   } catch (_) {
-    // Best effort only. The runner never prints or persists the token.
+    return Object.freeze({ status: 0, passed: false });
   }
 }
 
@@ -297,6 +308,7 @@ async function runAllowed(config, accessToken) {
     sourceCalculationId: created.body.source_calculation_id,
     createdCalculationId: created.body.calculation.id,
     requestId: command.request_id,
+    safeProjectionValidated: true,
     cleanupRequired: true
   });
 }
@@ -305,31 +317,94 @@ async function runForbidden(config, accessToken) {
   const response = await invoke(config, accessToken, buildRunnerCommand(config));
   expectResponse('forbidden', response, 403, 'forbidden');
   if (text(response.body?.permission) !== PERMISSION) throw new Error('forbidden_permission_drift');
-  return Object.freeze({ scenario: 'forbidden', statuses: { forbidden: 403 }, cleanupRequired: false });
+  return Object.freeze({
+    scenario: 'forbidden',
+    statuses: { forbidden: 403 },
+    safeProjectionValidated: false,
+    cleanupRequired: false
+  });
 }
 
 async function runInactive(config, accessToken) {
   const response = await invoke(config, accessToken, buildRunnerCommand(config));
   expectResponse('inactive', response, 403, 'inactive_profile');
-  return Object.freeze({ scenario: 'inactive', statuses: { inactive: 403 }, cleanupRequired: false });
+  return Object.freeze({
+    scenario: 'inactive',
+    statuses: { inactive: 403 },
+    safeProjectionValidated: false,
+    cleanupRequired: false
+  });
+}
+
+export function buildAuthE2EEvidence(summary, { startedAt, finishedAt } = {}) {
+  const started = new Date(startedAt || Date.now());
+  const finished = new Date(finishedAt || Date.now());
+  if (!Number.isFinite(started.getTime()) || !Number.isFinite(finished.getTime()) || finished < started) {
+    throw new Error('evidence_timestamp_invalid');
+  }
+  if (!summary?.fixtureManifestId || !summary?.fixtureManifestDigest) {
+    throw new Error('evidence_requires_fixture_manifest');
+  }
+  if (!summary?.logout?.passed || ![200, 204].includes(Number(summary.logout.status))) {
+    throw new Error('evidence_requires_successful_logout');
+  }
+
+  return Object.freeze({
+    evidence_version: AUTH_E2E_EVIDENCE_VERSION,
+    runner_version: AUTH_E2E_RUNNER_VERSION,
+    project_ref: STAGING_PROJECT_REF,
+    production_enabled: false,
+    network_e2e: true,
+    scenario: summary.scenario,
+    passed: true,
+    started_at: started.toISOString(),
+    finished_at: finished.toISOString(),
+    fixture_manifest: {
+      id: summary.fixtureManifestId,
+      digest_sha256: summary.fixtureManifestDigest
+    },
+    statuses: summary.statuses,
+    source_calculation_id: summary.sourceCalculationId || null,
+    created_calculation_id: summary.createdCalculationId || null,
+    request_id: summary.requestId || null,
+    safe_projection_validated: summary.safeProjectionValidated === true,
+    cleanup_required: summary.cleanupRequired === true,
+    logout: {
+      status: Number(summary.logout.status),
+      passed: true
+    }
+  });
+}
+
+export async function writeAuthE2EEvidence(filePath, evidence) {
+  const target = path.resolve(filePath || DEFAULT_EVIDENCE_PATH);
+  await mkdir(path.dirname(target), { recursive: true });
+  await writeFile(target, `${JSON.stringify(evidence, null, 2)}\n`, {
+    encoding: 'utf8',
+    mode: 0o600
+  });
+  return target;
 }
 
 export async function runStagingAuthE2E(env = process.env, options = {}) {
   const config = readStagingAuthE2EConfig(env, options);
   const accessToken = await signIn(config);
+  let summary;
+  let logout;
   try {
-    let summary;
     if (config.scenario === 'allowed') summary = await runAllowed(config, accessToken);
     else if (config.scenario === 'forbidden') summary = await runForbidden(config, accessToken);
     else summary = await runInactive(config, accessToken);
-    return Object.freeze({
-      ...summary,
-      fixtureManifestId: config.fixtureManifestId,
-      fixtureManifestDigest: config.fixtureManifestDigest
-    });
   } finally {
-    await signOut(config, accessToken);
+    logout = await signOut(config, accessToken);
   }
+  if (!logout.passed) throw new Error(`auth_logout_failed:${logout.status}`);
+  return Object.freeze({
+    ...summary,
+    logout,
+    fixtureManifestId: config.fixtureManifestId,
+    fixtureManifestDigest: config.fixtureManifestDigest
+  });
 }
 
 function safeFailure(error) {
@@ -338,13 +413,31 @@ function safeFailure(error) {
 }
 
 const isEntrypoint = process.argv[1]
-  ? import.meta.url === pathToFileURL(process.argv[1]).href
+  ? import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href
   : false;
 
 if (isEntrypoint) {
+  const startedAt = new Date().toISOString();
   runStagingAuthE2E()
-    .then((summary) => {
-      console.log(JSON.stringify({ ok: true, ...summary }, null, 2));
+    .then(async (summary) => {
+      const evidencePath = text(process.env.LIDER_STAGING_EVIDENCE_PATH);
+      let evidenceOutput = null;
+      let evidenceVersion = null;
+      if (evidencePath) {
+        const evidence = buildAuthE2EEvidence(summary, {
+          startedAt,
+          finishedAt: new Date().toISOString()
+        });
+        evidenceOutput = await writeAuthE2EEvidence(evidencePath, evidence);
+        evidenceVersion = evidence.evidence_version;
+      }
+      console.log(JSON.stringify({
+        ok: true,
+        runner_version: AUTH_E2E_RUNNER_VERSION,
+        ...summary,
+        evidence_version: evidenceVersion,
+        evidence_output: evidenceOutput
+      }, null, 2));
     })
     .catch((error) => {
       console.error(JSON.stringify({ ok: false, error: safeFailure(error) }, null, 2));
