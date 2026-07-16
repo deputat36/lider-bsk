@@ -1,0 +1,56 @@
+name: CRM calculation version staging evidence check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/run_calculation_version_staging_auth_e2e.mjs'
+      - 'tools/run_calculation_version_staging_auth_e2e.ps1'
+      - 'tools/validate-calculation-version-staging-auth-e2e-evidence.mjs'
+      - 'tools/create-calculation-version-staging-post-cleanup-snapshot.mjs'
+      - 'tools/test_calculation_version_staging_auth_e2e_evidence.mjs'
+      - 'tools/check_calculation_version_staging_auth_e2e_evidence.py'
+      - 'docs/CRM_CALCULATION_VERSION_STAGING_EVIDENCE_AND_CLEANUP_2026-07-16.md'
+      - '.github/workflows/crm-calculation-version-staging-evidence-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/run_calculation_version_staging_auth_e2e.mjs'
+      - 'tools/run_calculation_version_staging_auth_e2e.ps1'
+      - 'tools/validate-calculation-version-staging-auth-e2e-evidence.mjs'
+      - 'tools/create-calculation-version-staging-post-cleanup-snapshot.mjs'
+      - 'tools/test_calculation_version_staging_auth_e2e_evidence.mjs'
+      - 'tools/check_calculation_version_staging_auth_e2e_evidence.py'
+      - 'docs/CRM_CALCULATION_VERSION_STAGING_EVIDENCE_AND_CLEANUP_2026-07-16.md'
+      - '.github/workflows/crm-calculation-version-staging-evidence-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-calculation-staging-evidence:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check evidence tooling syntax
+        run: |
+          node --check tools/run_calculation_version_staging_auth_e2e.mjs
+          node --check tools/validate-calculation-version-staging-auth-e2e-evidence.mjs
+          node --check tools/create-calculation-version-staging-post-cleanup-snapshot.mjs
+          node --check tools/test_calculation_version_staging_auth_e2e_evidence.mjs
+
+      - name: Test evidence validator and cleanup snapshot offline
+        run: node tools/test_calculation_version_staging_auth_e2e_evidence.mjs
+
+      - name: PowerShell evidence launcher syntax
+        shell: pwsh
+        run: |
+          $source = Get-Content -Raw tools/run_calculation_version_staging_auth_e2e.ps1
+          $null = [scriptblock]::Create($source)
+
+      - name: Compile evidence source checker
+        run: python3 -m py_compile tools/check_calculation_version_staging_auth_e2e_evidence.py
+
+      - name: Validate privacy, manifest binding and production lock
+        run: python3 tools/check_calculation_version_staging_auth_e2e_evidence.py
