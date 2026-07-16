@@ -11,6 +11,7 @@ const RANDOM_ID = '22222222-2222-4222-8222-222222222222';
 {
   const route = calculationVersionPersistenceRoute('https://otulfnouybahfnsycxqn.supabase.co');
   assert.equal(route.mode, 'staging_edge');
+  assert.equal(route.enabled, true);
   assert.equal(route.atomic, true);
   assert.equal(route.browserDirectWrite, false);
   assert.match(route.description, /атомарно/i);
@@ -18,14 +19,19 @@ const RANDOM_ID = '22222222-2222-4222-8222-222222222222';
 
 {
   const route = calculationVersionPersistenceRoute('https://ofewxuqfjhamgerwzull.supabase.co');
-  assert.equal(route.mode, 'production_legacy');
+  assert.equal(route.mode, 'production_locked');
+  assert.equal(route.enabled, false);
   assert.equal(route.atomic, false);
-  assert.equal(route.browserDirectWrite, true);
+  assert.equal(route.browserDirectWrite, false);
+  assert.equal(route.reason, 'production_backend_not_deployed');
+  assert.match(route.description, /прямое сохранение.*отключено/i);
 }
 
 {
   const route = calculationVersionPersistenceRoute('https://otulfnouybahfnsycxqn.example.com');
-  assert.equal(route.mode, 'production_legacy');
+  assert.equal(route.mode, 'production_locked');
+  assert.equal(route.enabled, false);
+  assert.equal(route.browserDirectWrite, false);
 }
 
 {
