@@ -34,6 +34,8 @@ on:
       - 'tools/check_crm_v4_role_tab_matrix.py'
       - 'tools/check_crm_v4_production_role_data_minimization.py'
       - 'tools/check_crm_operational_quality_panel.py'
+      - 'tools/check_crm_lead_first_contact.py'
+      - 'tools/test_crm_lead_first_contact.mjs'
       - 'tools/check_management_workload_dashboard.py'
       - 'tools/test_management_workload.mjs'
       - 'tools/check_need_readiness_warning.py'
@@ -65,6 +67,8 @@ on:
       - 'crm/v4/assets/v4/crm-v4-expanded-menu-v1.js'
       - 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
       - 'crm/v4/assets/v4/lead-operational-quality-v1.js'
+      - 'crm/v4/assets/v4/lead-first-contact-model-v1.js'
+      - 'crm/v4/assets/v4/lead-first-contact-v1.css'
       - 'crm/v4/assets/v4/management-workload-model-v1.js'
       - 'crm/v4/assets/v4/management-workload-panel-v1.js'
       - 'crm/v4/assets/v4/need-readiness-model-v1.js'
@@ -127,6 +131,8 @@ on:
       - 'tools/check_crm_v4_role_tab_matrix.py'
       - 'tools/check_crm_v4_production_role_data_minimization.py'
       - 'tools/check_crm_operational_quality_panel.py'
+      - 'tools/check_crm_lead_first_contact.py'
+      - 'tools/test_crm_lead_first_contact.mjs'
       - 'tools/check_management_workload_dashboard.py'
       - 'tools/test_management_workload.mjs'
       - 'tools/check_need_readiness_warning.py'
@@ -158,6 +164,8 @@ on:
       - 'crm/v4/assets/v4/crm-v4-expanded-menu-v1.js'
       - 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
       - 'crm/v4/assets/v4/lead-operational-quality-v1.js'
+      - 'crm/v4/assets/v4/lead-first-contact-model-v1.js'
+      - 'crm/v4/assets/v4/lead-first-contact-v1.css'
       - 'crm/v4/assets/v4/management-workload-model-v1.js'
       - 'crm/v4/assets/v4/management-workload-panel-v1.js'
       - 'crm/v4/assets/v4/need-readiness-model-v1.js'
@@ -204,6 +212,7 @@ jobs:
           python3 tools/check_crm_v4_role_tab_matrix.py
           python3 tools/check_crm_v4_production_role_data_minimization.py
           python3 tools/check_crm_operational_quality_panel.py
+          python3 tools/check_crm_lead_first_contact.py
           python3 tools/check_management_workload_dashboard.py
           python3 tools/check_need_readiness_warning.py
           python3 tools/check_finance_plan_actual.py
@@ -229,6 +238,8 @@ jobs:
           node --check crm/v4/assets/v4/crm-v4-expanded-menu-v1.js
           node --check crm/v4/assets/v4/lead-analytics-badges-v1.js
           node --check crm/v4/assets/v4/lead-operational-quality-v1.js
+          node --check crm/v4/assets/v4/lead-first-contact-model-v1.js
+          node tools/test_crm_lead_first_contact.mjs
           node --check crm/v4/assets/v4/management-workload-model-v1.js
           node --check crm/v4/assets/v4/management-workload-panel-v1.js
           node --check tools/test_management_workload.mjs

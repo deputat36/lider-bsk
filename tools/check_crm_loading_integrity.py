@@ -41,7 +41,7 @@ required = {
     'needs': ['needsLoadSequence', 'v4State.route.leadId !== leadId'],
     'offers': ['offersLoadSequence', 'v4State.route.leadId !== leadId'],
     'html': [
-        'lead-card.js?v=20260717-load-integrity-1',
+        'lead-card.js?v=20260717-first-contact-1',
         'needs.js?v=20260717-load-integrity-1',
         'calculations-saved-tools-v2.js?v=20260717-load-integrity-1',
         'calculations.js?v=20260717-load-integrity-1',
