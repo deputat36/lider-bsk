@@ -59,13 +59,14 @@ checks = {
         'leadPrimaryAction',
         'leadPrimaryActionHost',
         'data-lead-primary-action',
+        'data-v2-calc-create-offer',
         'Другие действия и изменение этапа',
         'leadNextContactDetails',
         'data-action="open-create-need"',
         'Источник обращения и дополнительные сведения',
     ],
     html: [
-        'lead-card.js?v=20260717-primary-action-1',
+        'lead-card.js?v=20260717-primary-action-2',
         'styles.css?v=20260717-primary-action-1',
     ],
     test: [

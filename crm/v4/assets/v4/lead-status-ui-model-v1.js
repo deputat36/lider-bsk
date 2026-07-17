@@ -130,7 +130,7 @@ export function leadPrimaryAction(lead = {}, context = {}) {
     return primaryAction('open_need', 'Зафиксировать потребность', 'Заполните только то, что влияет на цену, срок, дизайн или монтаж.');
   }
   if (model.key === 'estimate_ready') {
-    return primaryAction('scroll', 'Сформировать КП', 'Расчёт готов. Проверьте клиентские суммы и подготовьте предложение.', { targetId: 'offersBox' });
+    return primaryAction('start_offer', 'Сформировать КП', 'Расчёт готов. Откройте форму КП из свободной сохранённой версии.', { targetId: 'calculationsBox' });
   }
   if (model.key === 'offer_sent' || model.key === 'waiting') {
     if (contactMissingOrOverdue) {

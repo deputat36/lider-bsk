@@ -3,7 +3,7 @@ import { timeout, friendlyError } from './api.js';
 import { v4State, setState } from './state.js';
 import { byId, setStatus, toast } from './ui.js';
 import { clearLeadUrl } from './router.js';
-import { leadPrimaryAction } from './lead-status-ui-model-v1.js?v=20260717-primary-action-1';
+import { leadPrimaryAction } from './lead-status-ui-model-v1.js?v=20260717-primary-action-2';
 
 const FULL_LEAD_FIELDS = 'id,name,phone,source,message,page_url,status,payload,created_at,updated_at,service,contact_preference,city,budget,utm_source,utm_medium,utm_campaign,utm_content,utm_term,assigned_to,converted_order_id,converted_client_id,last_contact_at,next_contact_at,converted_at,reject_reason,lead_quality,estimated_amount';
 const QUICK_STATUSES = ['В работе', 'Уточнение деталей', 'Расчёт подготовлен', 'КП отправлено', 'Ждём ответ', 'Нужно пересчитать', 'Согласовано', 'Отказ', 'Спам'];
@@ -308,6 +308,16 @@ function handlePrimaryAction(button) {
   if (action === 'open_need') {
     document.querySelector('#leadCardSection [data-action="open-create-need"]')?.click();
     byId('needFormBox')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
+  if (action === 'start_offer') {
+    const calculationOfferButton = document.querySelector('#calculationsBox [data-v2-calc-create-offer]');
+    if (calculationOfferButton) {
+      calculationOfferButton.click();
+    } else {
+      byId('calculationsBox')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      toast('Проверьте свободный расчёт с ненулевой суммой клиенту');
+    }
     return;
   }
   if (action === 'focus_contact') {

@@ -70,6 +70,8 @@ assert.deepEqual(leadPrimaryAction({ status: 'Новая' }, { now }), {
 assert.equal(leadPrimaryAction({ status: 'В работе' }, { needCount: 0, now }).type, 'open_need');
 assert.equal(leadPrimaryAction({ status: 'В работе' }, { needCount: 1, now }).targetId, 'calculationsBox');
 assert.equal(leadPrimaryAction({ status: 'Расчёт подготовлен' }, { now }).label, 'Сформировать КП');
+assert.equal(leadPrimaryAction({ status: 'Расчёт подготовлен' }, { now }).type, 'start_offer');
+assert.equal(leadPrimaryAction({ status: 'Расчёт подготовлен' }, { now }).targetId, 'calculationsBox');
 assert.equal(leadPrimaryAction({ status: 'Ждём ответ' }, { now }).type, 'focus_contact');
 assert.equal(leadPrimaryAction({ status: 'Ждём ответ', next_contact_at: '2026-07-18T10:00:00Z' }, { now }).type, 'other_actions');
 assert.equal(leadPrimaryAction({ status: 'Нужно пересчитать' }, { now }).label, 'Пересчитать заказ');
