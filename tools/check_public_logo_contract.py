@@ -59,7 +59,8 @@ def main() -> int:
     require(css, "width:250px!important;height:66px!important;flex:0 0 250px!important", "css desktop")
     require(css, "width:225px!important;height:60px!important;flex-basis:225px!important", "css laptop")
     require(css, "width:184px!important;height:49px!important;flex-basis:184px!important", "css mobile")
-    require(css, "clip:rect(0,0,0,0)!important", "css accessible fallback text")
+    require(css, "clip:rect(0,0,0,0)!important", "css accessible div fallback")
+    require(css, ".header .brand,.header .brand *{font-size:0!important;color:transparent!important", "css text-node fallback")
     if css.rfind("leader-public-logo-v2") <= css.rfind("leader-public-logo-v1"):
         raise AssertionError("css: official logo override must follow the superseded approximation")
 
