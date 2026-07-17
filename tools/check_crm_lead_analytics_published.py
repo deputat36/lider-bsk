@@ -28,7 +28,7 @@ USER_AGENT = "lider-bsk-published-smoke/1.1"
 
 INDEX_MARKERS = (
     "<title>РА Лидер — CRM v4</title>",
-    'assets/v4/leads.js?v=20260715-filter-state-1',
+    'assets/v4/leads.js?v=',
     'assets/v4/lead-analytics-badges-v1.js?v=20260709-1',
     'id="leadSearch"',
     'id="leadsList"',
@@ -58,7 +58,7 @@ TARGETS = (
     ),
     Target(
         "lead list module",
-        f"{CANONICAL_BASE_URL}assets/v4/leads.js?v=20260715-filter-state-1",
+        f"{CANONICAL_BASE_URL}assets/v4/leads.js?v=20260717-module-singleton-1",
         "javascript",
         (
             "import { leadAnalyticsSearchText } from './lead-analytics-normalization.js';",

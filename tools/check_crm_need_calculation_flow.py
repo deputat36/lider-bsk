@@ -15,7 +15,7 @@ for marker in ['TYPE_MODE', 'numericNeedValue', "'Баннер': 'banner'", "'П
     if marker not in model: errors.append('Missing need mapping marker: ' + marker)
 for forbidden in [".from('", '.insert(', '.update(', '.delete(']:
     if forbidden in model: errors.append('Prefill model must be browser-only: ' + forbidden)
-if 'needs.js?v=20260717-load-integrity-1' not in html or 'needs-brief.css?v=20260715-1' not in html or 'calculations.js?v=20260717-load-integrity-1' not in html: errors.append('Missing need brief cache marker')
+if 'needs.js?v=20260717-load-integrity-1' not in html or 'needs-brief.css?v=20260715-1' not in html or 'calculations.js?v=20260717-module-singleton-1' not in html: errors.append('Missing need brief cache marker')
 if errors:
     print('\n'.join(errors)); sys.exit(1)
 print('CRM need brief and calculation prefill contract is valid.')
