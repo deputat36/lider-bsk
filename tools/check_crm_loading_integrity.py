@@ -1,4 +1,6 @@
 from pathlib import Path
+import json
+import re
 import sys
 
 root = Path(__file__).resolve().parents[1]
@@ -8,6 +10,8 @@ files = {
     'calc': root / 'crm/v4/assets/v4/calculations.js',
     'needs': root / 'crm/v4/assets/v4/needs.js',
     'offers': root / 'crm/v4/assets/v4/offers.js',
+    'router': root / 'crm/v4/assets/v4/router.js',
+    'leads': root / 'crm/v4/assets/v4/leads.js',
     'html': root / 'crm/v4/index.html',
 }
 errors = []
@@ -40,11 +44,16 @@ required = {
     ],
     'needs': ['needsLoadSequence', 'v4State.route.leadId !== leadId'],
     'offers': ['offersLoadSequence', 'v4State.route.leadId !== leadId'],
+    'router': ['window.LeaderV4RouterBooted'],
+    'leads': ['window.LeaderV4LeadsBooted'],
     'html': [
         'lead-card.js?v=20260717-first-contact-1',
         'needs.js?v=20260717-load-integrity-1',
         'calculations-saved-tools-v2.js?v=20260717-load-integrity-1',
-        'calculations.js?v=20260717-load-integrity-1',
+        'router.js?v=20260717-module-singleton-1',
+        'leads.js?v=20260717-module-singleton-1',
+        'calculations.js?v=20260717-module-singleton-1',
+        'site-cache-note-v1.js?v=20260717-module-singleton-1',
         'offers.js?v=20260717-load-integrity-1',
     ],
 }
@@ -64,6 +73,31 @@ if "return byId('calculationsBox')" in saved:
 card = texts.get('card', '')
 if card.find('id="savedCalculationsBox"') > card.find('id="calculationsBox"'):
     errors.append('Saved calculations must render before the unified calculation constructor')
+
+calculations = texts.get('calc', '')
+if 'window.LeaderV4CalculationsBooted' not in calculations:
+    errors.append('Calculation event bindings must be protected by a global singleton guard')
+
+html = texts.get('html', '')
+match = re.search(r'<script type="importmap">\s*(\{.*?\})\s*</script>', html, re.S)
+if not match:
+    errors.append('Missing CRM module singleton import map')
+else:
+    try:
+        imports = json.loads(match.group(1)).get('imports', {})
+    except json.JSONDecodeError as error:
+        errors.append(f'CRM module singleton import map is invalid JSON: {error}')
+        imports = {}
+    expected_singletons = {
+        './assets/v4/router.js': './assets/v4/router.js?v=20260717-module-singleton-1',
+        './assets/v4/leads.js': './assets/v4/leads.js?v=20260717-module-singleton-1',
+        './assets/v4/calculations.js': './assets/v4/calculations.js?v=20260717-module-singleton-1',
+        './assets/v4/site-cache-note-v1.js': './assets/v4/site-cache-note-v1.js?v=20260717-module-singleton-1',
+        './assets/v4/site-cache-note-v1.js?v=20260621-1': './assets/v4/site-cache-note-v1.js?v=20260717-module-singleton-1',
+    }
+    for source, target in expected_singletons.items():
+        if imports.get(source) != target:
+            errors.append(f'CRM module singleton mapping mismatch: {source} -> {imports.get(source)!r}')
 
 if errors:
     print('\n'.join(errors))
