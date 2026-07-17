@@ -11,6 +11,7 @@ on:
       - 'crm/v4/assets/v4/offers.css'
       - 'tools/test_calculation_offer_next_action.mjs'
       - 'tools/check_crm_calculation_offer_next_action.py'
+      - 'tools/check_calculation_version_integrity.py'
       - 'docs/CRM_CALCULATION_OFFER_NEXT_ACTION_MANUAL_TEST_2026-07-17.md'
       - 'docs/CRM_PRODUCT_SIMPLICITY_AND_EXCEPTION_MODEL.md'
       - 'docs/STATUS.md'
@@ -26,6 +27,7 @@ on:
       - 'crm/v4/assets/v4/offers.css'
       - 'tools/test_calculation_offer_next_action.mjs'
       - 'tools/check_crm_calculation_offer_next_action.py'
+      - 'tools/check_calculation_version_integrity.py'
       - 'docs/CRM_CALCULATION_OFFER_NEXT_ACTION_MANUAL_TEST_2026-07-17.md'
       - 'docs/CRM_PRODUCT_SIMPLICITY_AND_EXCEPTION_MODEL.md'
       - 'docs/STATUS.md'
@@ -47,5 +49,6 @@ jobs:
           node --check tools/test_calculation_offer_next_action.mjs
           node tools/test_calculation_offer_next_action.mjs
           python3 tools/check_crm_calculation_offer_next_action.py
+          python3 tools/check_calculation_version_integrity.py
           python3 tools/check_need_readiness_warning.py
           python3 tools/check_crm_offer_status_ui_registry.py
