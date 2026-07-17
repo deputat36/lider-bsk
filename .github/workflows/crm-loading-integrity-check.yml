@@ -9,6 +9,8 @@ on:
       - 'crm/v4/assets/v4/calculations.js'
       - 'crm/v4/assets/v4/calculations-saved-tools-v2.js'
       - 'crm/v4/assets/v4/offers.js'
+      - 'crm/v4/assets/v4/router.js'
+      - 'crm/v4/assets/v4/leads.js'
       - 'tools/check_crm_loading_integrity.py'
       - '.github/workflows/crm-loading-integrity-check.yml'
   push:
@@ -20,6 +22,8 @@ on:
       - 'crm/v4/assets/v4/calculations.js'
       - 'crm/v4/assets/v4/calculations-saved-tools-v2.js'
       - 'crm/v4/assets/v4/offers.js'
+      - 'crm/v4/assets/v4/router.js'
+      - 'crm/v4/assets/v4/leads.js'
       - 'tools/check_crm_loading_integrity.py'
       - '.github/workflows/crm-loading-integrity-check.yml'
 
@@ -39,5 +43,7 @@ jobs:
           node --check crm/v4/assets/v4/calculations.js
           node --check crm/v4/assets/v4/calculations-saved-tools-v2.js
           node --check crm/v4/assets/v4/offers.js
+          node --check crm/v4/assets/v4/router.js
+          node --check crm/v4/assets/v4/leads.js
       - name: Check loading ownership and stale response guards
         run: python3 tools/check_crm_loading_integrity.py
