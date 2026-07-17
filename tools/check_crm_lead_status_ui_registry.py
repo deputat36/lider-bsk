@@ -66,7 +66,7 @@ checks = {
         'Источник обращения и дополнительные сведения',
     ],
     html: [
-        'lead-card.js?v=20260717-load-integrity-1',
+        'lead-card.js?v=20260717-first-contact-1',
         'styles.css?v=20260717-primary-action-1',
     ],
     test: [

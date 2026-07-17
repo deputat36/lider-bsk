@@ -4,6 +4,7 @@ import { v4State, setState } from './state.js';
 import { byId, setStatus, toast } from './ui.js';
 import { clearLeadUrl } from './router.js';
 import { leadPrimaryAction } from './lead-status-ui-model-v1.js?v=20260717-primary-action-2';
+import { buildFirstContactDraft, buildFirstContactQuestions } from './lead-first-contact-model-v1.js?v=20260717-1';
 
 const FULL_LEAD_FIELDS = 'id,name,phone,source,message,page_url,status,payload,created_at,updated_at,service,contact_preference,city,budget,utm_source,utm_medium,utm_campaign,utm_content,utm_term,assigned_to,converted_order_id,converted_client_id,last_contact_at,next_contact_at,converted_at,reject_reason,lead_quality,estimated_amount';
 const QUICK_STATUSES = ['В работе', 'Уточнение деталей', 'Расчёт подготовлен', 'КП отправлено', 'Ждём ответ', 'Нужно пересчитать', 'Согласовано', 'Отказ', 'Спам'];
@@ -92,6 +93,8 @@ function renderLeadDetails(lead) {
   const nextContactValue = formatInputDateTime(lead.next_contact_at);
   const contactState = nextContactState(lead);
   const contactOpen = currentPrimaryAction(lead).type === 'focus_contact' ? ' open' : '';
+  const firstContactOpen = lead.last_contact_at ? '' : ' open';
+  const firstContactDraft = buildFirstContactDraft(lead);
   return `
     <div class="v4-lead-card-view">
       <div class="v4-card-view-head">
@@ -109,6 +112,17 @@ function renderLeadDetails(lead) {
 
       <section class="v4-subcard v4-action-panel">
         <div id="leadPrimaryActionHost" class="v4-primary-action" aria-live="polite">${primaryActionMarkup(lead)}</div>
+        <details id="leadFirstContactDetails" class="v4-first-contact-box"${firstContactOpen}>
+          <summary>Быстрый первый ответ</summary>
+          <p class="v4-first-contact-intro">Готовый текст можно поправить перед копированием. Он учитывает услугу и не обещает неподтверждённую цену или срок.</p>
+          <textarea id="leadFirstContactDraft" class="v4-first-contact-draft" rows="9" aria-label="Черновик первого сообщения клиенту">${esc(firstContactDraft)}</textarea>
+          <div class="v4-first-contact-actions">
+            <button type="button" class="v4-primary" data-lead-first-contact-copy="message">Скопировать сообщение</button>
+            <button type="button" data-lead-first-contact-copy="questions">Скопировать только вопросы</button>
+            <span id="leadFirstContactStatus" class="v4-first-contact-status" aria-live="polite"></span>
+          </div>
+          <p class="v4-first-contact-note">Отправка сообщения не отмечается автоматически. После фактического контакта назначьте следующий шаг ниже.</p>
+        </details>
         <details id="leadOtherActions" class="v4-secondary-actions">
           <summary>Другие действия и изменение этапа</summary>
           <p>Используйте их, если стандартный следующий шаг не подходит.</p>
@@ -304,6 +318,48 @@ function revealAndFocus(details, focusTarget = null) {
   if (focusTarget) setTimeout(() => focusTarget.focus(), 250);
 }
 
+async function writeClipboard(value) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+  const fallback = document.createElement('textarea');
+  fallback.value = value;
+  fallback.setAttribute('readonly', '');
+  fallback.style.position = 'fixed';
+  fallback.style.opacity = '0';
+  document.body.appendChild(fallback);
+  fallback.select();
+  const copied = document.execCommand('copy');
+  fallback.remove();
+  if (!copied) throw new Error('copy_failed');
+}
+
+async function handleFirstContactCopy(kind, button) {
+  const draft = byId('leadFirstContactDraft');
+  const status = byId('leadFirstContactStatus');
+  const value = kind === 'questions'
+    ? buildFirstContactQuestions(v4State.currentLead || {})
+    : String(draft?.value || '').trim();
+  if (!value) {
+    if (status) status.textContent = 'Текст пуст — добавьте сообщение.';
+    return;
+  }
+  if (button) button.disabled = true;
+  try {
+    await writeClipboard(value);
+    const message = kind === 'questions' ? 'Вопросы скопированы.' : 'Сообщение скопировано.';
+    if (status) status.textContent = message;
+    toast(message);
+  } catch (_) {
+    if (status) status.textContent = 'Не удалось скопировать автоматически. Выделите текст вручную.';
+    draft?.focus();
+    draft?.select();
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
 function handlePrimaryAction(button) {
   const action = button.dataset.leadPrimaryAction || '';
   if (action === 'transition') {
@@ -349,7 +405,9 @@ function bindLeadCardEvents() {
     const statusButton = event.target.closest('[data-lead-status]');
     if (statusButton) { handleStatus(statusButton.dataset.leadStatus, statusButton); return; }
     const contactButton = event.target.closest('[data-next-contact]');
-    if (contactButton) { handleNextContact(contactButton.dataset.nextContact, contactButton); }
+    if (contactButton) { handleNextContact(contactButton.dataset.nextContact, contactButton); return; }
+    const firstContactButton = event.target.closest('[data-lead-first-contact-copy]');
+    if (firstContactButton) handleFirstContactCopy(firstContactButton.dataset.leadFirstContactCopy, firstContactButton);
   });
   document.addEventListener('leader-v4:route-change', (event) => {
     const id = event.detail?.leadId || null;

@@ -1,0 +1,43 @@
+name: CRM lead first-contact check
+
+on:
+  pull_request:
+    paths:
+      - 'crm/v4/index.html'
+      - 'crm/v4/assets/v4/lead-card.js'
+      - 'crm/v4/assets/v4/lead-first-contact-model-v1.js'
+      - 'crm/v4/assets/v4/lead-first-contact-v1.css'
+      - 'tools/test_crm_lead_first_contact.mjs'
+      - 'tools/check_crm_lead_first_contact.py'
+      - 'docs/CRM_LEAD_FIRST_CONTACT_MANUAL_TEST_2026-07-17.md'
+      - '.github/workflows/crm-lead-first-contact-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'crm/v4/index.html'
+      - 'crm/v4/assets/v4/lead-card.js'
+      - 'crm/v4/assets/v4/lead-first-contact-model-v1.js'
+      - 'crm/v4/assets/v4/lead-first-contact-v1.css'
+      - 'tools/test_crm_lead_first_contact.mjs'
+      - 'tools/check_crm_lead_first_contact.py'
+      - 'docs/CRM_LEAD_FIRST_CONTACT_MANUAL_TEST_2026-07-17.md'
+      - '.github/workflows/crm-lead-first-contact-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  first-contact:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check JavaScript syntax
+        run: |
+          node --check crm/v4/assets/v4/lead-first-contact-model-v1.js
+          node --check crm/v4/assets/v4/lead-card.js
+          node --check tools/test_crm_lead_first_contact.mjs
+      - name: Test message templates
+        run: node tools/test_crm_lead_first_contact.mjs
+      - name: Check source contract
+        run: python3 tools/check_crm_lead_first_contact.py

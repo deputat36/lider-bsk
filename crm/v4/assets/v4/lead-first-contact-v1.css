@@ -1,0 +1,38 @@
+.v4-first-contact-box{
+  border:1px solid #fed7aa;
+  border-radius:14px;
+  background:#fffaf5;
+  padding:11px 12px;
+}
+.v4-first-contact-box>summary{
+  cursor:pointer;
+  font-weight:900;
+  color:#9a3412;
+}
+.v4-first-contact-box[open]>summary{margin-bottom:10px}
+.v4-first-contact-intro{margin:0 0 10px!important;color:#475569!important}
+.v4-first-contact-draft{
+  width:100%;
+  min-height:230px;
+  resize:vertical;
+  border:1px solid #fdba74;
+  border-radius:14px;
+  padding:12px 13px;
+  background:#fff;
+  color:#1f2937;
+  font:inherit;
+  line-height:1.5;
+}
+.v4-first-contact-draft:focus{
+  outline:3px solid rgba(255,106,0,.18);
+  border-color:var(--primary);
+}
+.v4-first-contact-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+.v4-first-contact-actions button{min-height:42px}
+.v4-first-contact-status{color:#166534;font-weight:800}
+.v4-first-contact-note{margin:10px 0 0!important;color:#64748b!important;font-size:13px}
+@media(max-width:560px){
+  .v4-first-contact-actions{display:grid;grid-template-columns:1fr}
+  .v4-first-contact-actions button{width:100%}
+  .v4-first-contact-draft{min-height:300px}
+}
