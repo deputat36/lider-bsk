@@ -10,6 +10,9 @@ on:
       - 'crm/v4/assets/v4/lead-status-ui-model-v1.js'
       - 'crm/v4/assets/v4/lead-status-ui-registry-v1.js'
       - 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
+      - 'crm/v4/assets/v4/lead-card.js'
+      - 'crm/v4/assets/v4/styles.css'
+      - 'crm/v4/index.html'
       - 'crm/v4/assets/v4/offer-status-ui-model-v1.js'
       - 'crm/v4/assets/v4/offers.js'
       - 'crm/v4/assets/v4/order-status-ui-model-v1.js'
@@ -66,6 +69,9 @@ on:
       - 'crm/v4/assets/v4/lead-status-ui-model-v1.js'
       - 'crm/v4/assets/v4/lead-status-ui-registry-v1.js'
       - 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
+      - 'crm/v4/assets/v4/lead-card.js'
+      - 'crm/v4/assets/v4/styles.css'
+      - 'crm/v4/index.html'
       - 'crm/v4/assets/v4/offer-status-ui-model-v1.js'
       - 'crm/v4/assets/v4/offers.js'
       - 'crm/v4/assets/v4/order-status-ui-model-v1.js'
@@ -142,6 +148,7 @@ jobs:
           node --check crm/v4/assets/v4/lead-operational-quality-v1.js
           node --check crm/v4/assets/v4/lead-status-ui-model-v1.js
           node --check crm/v4/assets/v4/lead-status-ui-registry-v1.js
+          node --check crm/v4/assets/v4/lead-card.js
           node --check crm/v4/assets/v4/offer-status-ui-model-v1.js
           node --check crm/v4/assets/v4/offers.js
           node --check crm/v4/assets/v4/order-status-ui-model-v1.js

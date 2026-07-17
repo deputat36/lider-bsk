@@ -44,6 +44,8 @@ checks = {
         'LeaderV4NeedReadinessV1Booted',
         'requestAnimationFrame',
         'scrollIntoView',
+        "[data-action=\"open-create-need\"]",
+        "document.getElementById('needFormBox')",
     ],
     loader: [
         "import('./need-readiness-panel-v1.js?v=20260713-readiness-1')",

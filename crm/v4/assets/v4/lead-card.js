@@ -3,6 +3,7 @@ import { timeout, friendlyError } from './api.js';
 import { v4State, setState } from './state.js';
 import { byId, setStatus, toast } from './ui.js';
 import { clearLeadUrl } from './router.js';
+import { leadPrimaryAction } from './lead-status-ui-model-v1.js?v=20260717-primary-action-1';
 
 const FULL_LEAD_FIELDS = 'id,name,phone,source,message,page_url,status,payload,created_at,updated_at,service,contact_preference,city,budget,utm_source,utm_medium,utm_campaign,utm_content,utm_term,assigned_to,converted_order_id,converted_client_id,last_contact_at,next_contact_at,converted_at,reject_reason,lead_quality,estimated_amount';
 const QUICK_STATUSES = ['В работе', 'Уточнение деталей', 'Расчёт подготовлен', 'КП отправлено', 'Ждём ответ', 'Нужно пересчитать', 'Согласовано', 'Отказ', 'Спам'];
@@ -37,27 +38,6 @@ function phoneHref(phone) {
   return cleaned ? `tel:${cleaned}` : '';
 }
 
-function payloadRows(payload) {
-  if (!payload || typeof payload !== 'object') return '';
-  return Object.entries(payload)
-    .slice(0, 12)
-    .map(([key, value]) => `<div><dt>${esc(key)}</dt><dd>${esc(typeof value === 'object' ? JSON.stringify(value) : value)}</dd></div>`)
-    .join('');
-}
-
-function statusHint(lead) {
-  const status = lead.status || 'Новая';
-  if (lead.converted_order_id || status === 'Создан заказ') return 'Заказ уже создан. Дальше контролируйте производство, оплату и выдачу результата.';
-  if (status === 'Новая') return 'Начните с звонка или сообщения в MAX, уточните задачу и переведите заявку в работу.';
-  if (status === 'В работе') return 'Зафиксируйте потребность клиента и подготовьте расчёт.';
-  if (status === 'Уточнение деталей') return 'Заполните размеры, материал, сроки, монтаж и всё, что влияет на цену.';
-  if (status === 'КП отправлено') return 'Поставьте следующий контакт и вернитесь к клиенту, если он не ответит.';
-  if (status === 'Ждём ответ') return 'Не оставляйте заявку без даты следующего контакта.';
-  if (status === 'Согласовано') return 'Откройте карточку согласованного КП и создайте заказ из него.';
-  if (['Отказ', 'Спам'].includes(status)) return 'Заявка закрыта. При необходимости верните её в работу одной кнопкой.';
-  return 'Следуйте цепочке: потребность → расчёт → КП → согласование → заказ.';
-}
-
 function quickStatusButtons(lead) {
   const current = lead.status || 'Новая';
   return QUICK_STATUSES.map((status) => {
@@ -65,6 +45,29 @@ function quickStatusButtons(lead) {
     const danger = DANGER_STATUSES.has(status) ? ' is-danger' : '';
     return `<button type="button" class="v4-chip-button${active}${danger}" data-lead-status="${esc(status)}">${esc(status)}</button>`;
   }).join('');
+}
+
+function currentPrimaryAction(lead) {
+  const activeNeeds = (v4State.leadNeeds || []).filter((need) => need.lead_id === lead.id && need.status !== 'Архив');
+  return leadPrimaryAction(lead, { needCount: activeNeeds.length });
+}
+
+function primaryActionMarkup(lead) {
+  const action = currentPrimaryAction(lead);
+  const attributes = [
+    `data-lead-primary-action="${esc(action.type)}"`,
+    action.targetId ? `data-target-id="${esc(action.targetId)}"` : '',
+    action.targetStatus ? `data-lead-status="${esc(action.targetStatus)}"` : ''
+  ].filter(Boolean).join(' ');
+  const control = action.type === 'none'
+    ? `<span class="v4-primary-action-complete">${esc(action.label)}</span>`
+    : `<button type="button" class="v4-primary" ${attributes}>${esc(action.label)}</button>`;
+  return `<div><h3>Что сделать сейчас</h3><p>${esc(action.hint)}</p></div>${control}`;
+}
+
+function renderPrimaryAction(lead = v4State.currentLead) {
+  const host = byId('leadPrimaryActionHost');
+  if (host && lead) host.innerHTML = primaryActionMarkup(lead);
 }
 
 function nextContactState(lead) {
@@ -85,9 +88,9 @@ function nextContactDate(kind) {
 
 function renderLeadDetails(lead) {
   const phone = phoneHref(lead.phone);
-  const payloadHtml = payloadRows(lead.payload);
   const nextContactValue = formatInputDateTime(lead.next_contact_at);
   const contactState = nextContactState(lead);
+  const contactOpen = currentPrimaryAction(lead).type === 'focus_contact' ? ' open' : '';
   return `
     <div class="v4-lead-card-view">
       <div class="v4-card-view-head">
@@ -98,25 +101,25 @@ function renderLeadDetails(lead) {
         </div>
         <div class="v4-card-view-actions">
           <button id="backToLeadsBtn" type="button">Назад к списку</button>
-          <button id="refreshLeadBtn" type="button" class="v4-primary">Обновить</button>
+          <button id="refreshLeadBtn" type="button">Обновить</button>
           ${phone ? `<a href="${esc(phone)}">Позвонить</a>` : ''}
         </div>
       </div>
 
       <section class="v4-subcard v4-action-panel">
-        <div>
-          <h3>Что сделать сейчас</h3>
-          <p>${esc(statusHint(lead))}</p>
-        </div>
-        <div class="v4-quick-actions" aria-label="Быстрая смена статуса">${quickStatusButtons(lead)}</div>
-        <div class="v4-next-contact-box">
-          <div class="v4-next-contact-head">
+        <div id="leadPrimaryActionHost" class="v4-primary-action" aria-live="polite">${primaryActionMarkup(lead)}</div>
+        <details id="leadOtherActions" class="v4-secondary-actions">
+          <summary>Другие действия и изменение этапа</summary>
+          <p>Используйте их, если стандартный следующий шаг не подходит.</p>
+          <div class="v4-quick-actions" aria-label="Дополнительная смена статуса">${quickStatusButtons(lead)}</div>
+        </details>
+        <details id="leadNextContactDetails" class="v4-next-contact-box"${contactOpen}>
+          <summary class="v4-next-contact-head">
             <div>
               <h4>Следующий контакт</h4>
               <p class="v4-next-contact-state ${contactState.className}">${esc(contactState.text)} · ${formatDate(lead.next_contact_at)}</p>
             </div>
-            <button type="button" data-next-contact="clear">Очистить дату</button>
-          </div>
+          </summary>
           <div class="v4-next-contact-row">
             <label>Дата и время
               <input id="leadNextContactInput" type="datetime-local" value="${esc(nextContactValue)}">
@@ -126,18 +129,15 @@ function renderLeadDetails(lead) {
             <button type="button" data-next-contact="tomorrow">Завтра 10:00</button>
             <button type="button" data-next-contact="plus3d">Через 3 дня</button>
             <button type="button" data-next-contact="plus7d">Через неделю</button>
+            <button type="button" data-next-contact="clear">Очистить дату</button>
           </div>
-        </div>
+        </details>
       </section>
 
       <div class="v4-detail-grid">
         <div><dt>Статус</dt><dd>${esc(lead.status || 'Новая')}</dd></div>
         <div><dt>Телефон</dt><dd>${esc(lead.phone || '—')}</dd></div>
-        <div><dt>Источник</dt><dd>${esc(lead.source || '—')}</dd></div>
-        <div><dt>Связь</dt><dd>${esc(lead.contact_preference || 'MAX / телефон')}</dd></div>
-        <div><dt>Город</dt><dd>${esc(lead.city || '—')}</dd></div>
         <div><dt>Бюджет</dt><dd>${money(lead.budget || lead.estimated_amount)}</dd></div>
-        <div><dt>Качество</dt><dd>${esc(lead.lead_quality || '—')}</dd></div>
         <div><dt>Дата заявки</dt><dd>${formatDate(lead.created_at)}</dd></div>
         <div><dt>Следующий контакт</dt><dd>${formatDate(lead.next_contact_at)}</dd></div>
       </div>
@@ -159,17 +159,19 @@ function renderLeadDetails(lead) {
       <section id="calculationsBox" class="v4-calculations-host"><div class="v4-empty">Расчёты загрузятся после открытия карточки.</div></section>
       <section id="offersBox" class="v4-offers-host"><div class="v4-empty">Коммерческие предложения загрузятся после открытия карточки.</div></section>
 
-      <section class="v4-subcard">
-        <h3>Ссылки и источник</h3>
+      <details class="v4-subcard v4-source-details">
+        <summary>Источник обращения и дополнительные сведения</summary>
         <dl class="v4-detail-grid">
+          <div><dt>Источник</dt><dd>${esc(lead.source || '—')}</dd></div>
+          <div><dt>Предпочтительная связь</dt><dd>${esc(lead.contact_preference || 'MAX / телефон')}</dd></div>
+          <div><dt>Город</dt><dd>${esc(lead.city || '—')}</dd></div>
+          <div><dt>Качество</dt><dd>${esc(lead.lead_quality || '—')}</dd></div>
           <div><dt>Страница</dt><dd>${lead.page_url ? `<a href="${esc(lead.page_url)}" target="_blank" rel="noopener">Открыть</a>` : '—'}</dd></div>
           <div><dt>UTM source</dt><dd>${esc(lead.utm_source || '—')}</dd></div>
           <div><dt>UTM medium</dt><dd>${esc(lead.utm_medium || '—')}</dd></div>
           <div><dt>UTM campaign</dt><dd>${esc(lead.utm_campaign || '—')}</dd></div>
         </dl>
-      </section>
-
-      ${payloadHtml ? `<section class="v4-subcard"><h3>Технические данные формы</h3><dl class="v4-detail-grid">${payloadHtml}</dl></section>` : ''}
+      </details>
     </div>
   `;
 }
@@ -291,10 +293,44 @@ async function handleNextContact(kind, button) {
   }
 }
 
+function revealAndFocus(details, focusTarget = null) {
+  if (details) details.open = true;
+  details?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  if (focusTarget) setTimeout(() => focusTarget.focus(), 250);
+}
+
+function handlePrimaryAction(button) {
+  const action = button.dataset.leadPrimaryAction || '';
+  if (action === 'transition') {
+    handleStatus(button.dataset.leadStatus, button);
+    return;
+  }
+  if (action === 'open_need') {
+    document.querySelector('#leadCardSection [data-action="open-create-need"]')?.click();
+    byId('needFormBox')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
+  if (action === 'focus_contact') {
+    revealAndFocus(byId('leadNextContactDetails'), byId('leadNextContactInput'));
+    return;
+  }
+  if (action === 'other_actions') {
+    revealAndFocus(byId('leadOtherActions'));
+    return;
+  }
+  if (action === 'open_orders') {
+    document.querySelector('[data-v4-tab-button="orders"]')?.click();
+    return;
+  }
+  byId(button.dataset.targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 function bindLeadCardEvents() {
   byId('leadCardSection')?.addEventListener('click', (event) => {
     if (event.target.closest('#backToLeadsBtn')) { showLeadList(true); return; }
     if (event.target.closest('#refreshLeadBtn')) { loadLead(v4State.route.leadId); return; }
+    const primaryButton = event.target.closest('[data-lead-primary-action]');
+    if (primaryButton) { handlePrimaryAction(primaryButton); return; }
     const statusButton = event.target.closest('[data-lead-status]');
     if (statusButton) { handleStatus(statusButton.dataset.leadStatus, statusButton); return; }
     const contactButton = event.target.closest('[data-next-contact]');
@@ -308,6 +344,7 @@ function bindLeadCardEvents() {
   document.addEventListener('leader-v4:crm-ready', () => {
     if (v4State.route.leadId) loadLead(v4State.route.leadId);
   });
+  document.addEventListener('leader-v4:needs-loaded', () => renderPrimaryAction());
 }
 
 function bootLeadCard() {

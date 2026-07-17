@@ -6,6 +6,8 @@ root = Path(__file__).resolve().parents[1]
 model = root / 'crm/v4/assets/v4/lead-status-ui-model-v1.js'
 adapter = root / 'crm/v4/assets/v4/lead-status-ui-registry-v1.js'
 entry = root / 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
+card = root / 'crm/v4/assets/v4/lead-card.js'
+html = root / 'crm/v4/index.html'
 test = root / 'tools/test_crm_lead_status_ui.mjs'
 manual = root / 'docs/CRM_LEAD_STATUS_UI_REGISTRY_MANUAL_TEST_2026-07-11.md'
 
@@ -21,6 +23,12 @@ checks = {
         'leadStatusFilterOptions',
         'leadStatusUiModel',
         'canLeadStatusTransition',
+        'leadPrimaryAction',
+        'Принять заявку',
+        'Зафиксировать потребность',
+        'Сформировать КП',
+        'Назначить следующий контакт',
+        'Создать заказ',
         'Неизвестный статус:',
         'сохранён без изменения',
         "statusDefinition('lead', raw)",
@@ -47,6 +55,19 @@ checks = {
     entry: [
         "import './lead-status-ui-registry-v1.js';",
     ],
+    card: [
+        'leadPrimaryAction',
+        'leadPrimaryActionHost',
+        'data-lead-primary-action',
+        'Другие действия и изменение этапа',
+        'leadNextContactDetails',
+        'data-action="open-create-need"',
+        'Источник обращения и дополнительные сведения',
+    ],
+    html: [
+        'lead-card.js?v=20260717-primary-action-1',
+        'styles.css?v=20260717-primary-action-1',
+    ],
     test: [
         "unknownLeadStatuses([{ status: unknown }, { status: unknown }])",
         'Неизвестный статус: ${unknown}',
@@ -55,6 +76,10 @@ checks = {
         "leadStatusUiModel('Создан заказ')",
         "canLeadStatusTransition('Новая', 'Создан заказ'), false",
         "canLeadStatusTransition(unknown, 'В работе'), false",
+        "leadPrimaryAction({ status: 'Новая' }, { now })",
+        "leadPrimaryAction({ status: 'В работе' }, { needCount: 1, now })",
+        "leadPrimaryAction({ status: 'Ждём ответ' }, { now })",
+        "leadPrimaryAction({ status: 'Создан заказ', converted_order_id: 'o1' }, { now })",
         'CRM lead status UI registry behavior is valid.',
     ],
     manual: [
@@ -104,6 +129,12 @@ if adapter.exists():
     text = adapter.read_text(encoding='utf-8')
     if 'data-lead-status="Создан заказ"' in text:
         errors.append('Adapter must not hardcode a direct Создан заказ transition button')
+
+if card.exists():
+    text = card.read_text(encoding='utf-8')
+    for marker in ['Технические данные формы', 'class="v4-primary">Обновить']:
+        if marker in text:
+            errors.append(f'Lead card must keep technical or secondary actions out of the primary path: {marker}')
 
 if errors:
     print('\n'.join(errors))
