@@ -56,17 +56,22 @@ function testNormalization() {
     ['VK', '', 'ВКонтакте'],
     ['ВКонтакте', '', 'ВКонтакте'],
     ['Одноклассники', '', 'Одноклассники'],
+    ['Telegram', '', 'Telegram'],
     ['MAX', '', 'MAX'],
+    ['QR', '', 'QR-код'],
+    ['Яндекс', '', 'Поиск'],
     ['Вручную', '', 'Ручной ввод'],
     ['Звонок', '', 'Ручной ввод'],
     ['Офис', '', 'Ручной ввод'],
     ['Рекомендация', '', 'Ручной ввод'],
-    ['Email', '', 'Другое'],
+    ['Email', '', 'Email'],
     ['', '', 'Не указано'],
   ];
   for (const [source, pageUrl, expected] of sourceCases) {
     assert.equal(normalizeLeadSourceCategory(source, pageUrl), expected, `source category for ${source || pageUrl || '(empty)'}`);
   }
+  assert.equal(normalizeLeadSourceCategory('Сайт', '/banner/', 'vk'), 'ВКонтакте', 'UTM source must win over intake mechanism');
+  assert.equal(normalizeLeadSourceCategory('VK', 'https://www.lider-bsk.ru/banner/'), 'ВКонтакте', 'explicit source must win over fallback page host');
 
   assertJsonEqual(
     deriveLeadAnalytics({ service: 'Баннер', source: 'VK' }),
