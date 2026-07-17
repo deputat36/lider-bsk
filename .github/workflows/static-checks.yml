@@ -212,7 +212,7 @@ jobs:
           grep -q 'production-job-card-v2.js' "$index"
           grep -q 'installation-job-card-v2.js' "$index"
           grep -q 'site-cache-note-v1.js' "$index"
-          grep -q 'site-cache-note-v1.js?v=20260627-access-route-1' "$index"
+          grep -q 'site-cache-note-v1.js?v=20260717-module-singleton-1' "$index"
 
       - name: Validate CRM browser assets do not expose secrets
         shell: bash
