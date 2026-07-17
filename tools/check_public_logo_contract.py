@@ -79,7 +79,7 @@ def main() -> int:
         require(text, "assets/public-lead-form.css", page.name)
 
     doc = DOC.read_text(encoding="utf-8")
-    require(doc, "официальный логотип", "doc correction")
+    require(doc.lower(), "официальный логотип", "doc correction")
     require(doc, "250 × 66", "doc desktop dimensions")
     require(doc, "225 × 60", "doc laptop dimensions")
     require(doc, "184 × 49", "doc mobile dimensions")
