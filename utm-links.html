@@ -6,14 +6,27 @@
   <title>Рекламные ссылки с UTM-метками — РА Лидер</title>
   <meta name="robots" content="noindex, nofollow">
   <meta name="description" content="Внутренняя страница РА Лидер с готовыми ссылками для рекламы, ВК, Одноклассников, QR-кодов, визиток и объявлений.">
-  <link rel="stylesheet" href="assets/public-utm-links.css?v=1">
+  <link rel="stylesheet" href="assets/public-utm-links.css?v=2">
 </head>
 <body>
 <header class="hero"><div class="wrap"><a class="back" href="/">← На главную</a><h1>Готовые рекламные ссылки</h1><p>Внутренняя страница для РА «Лидер». Используйте эти ссылки в постах, объявлениях, QR-кодах, визитках и сообщениях, чтобы было видно, откуда пришла заявка.</p></div></header>
 <main>
 <section class="section"><div class="wrap"><div class="note">Страница закрыта от индексации через meta robots. Её можно использовать как рабочую шпаргалку для администратора и рекламных публикаций.</div><p id="copy-status" class="copy-status" role="status" aria-live="polite" aria-atomic="true"></p></div></section>
 
-<section class="section soft"><div class="wrap"><h2>Основные ссылки</h2><div class="grid">
+<section class="section soft"><div class="wrap"><div class="builder" aria-labelledby="builder-title">
+  <div><h2 id="builder-title">Собрать ссылку для публикации</h2><p class="builder-intro">Выберите страницу и бесплатный канал. Метки добавятся автоматически, а русское название кампании превратится в единый латинский формат.</p></div>
+  <div class="builder-fields">
+    <label class="field"><span>Куда вести клиента</span><select id="builder-target"></select></label>
+    <label class="field"><span>Где размещаем</span><select id="builder-channel"></select></label>
+    <label class="field"><span>Кампания</span><input id="builder-campaign" type="text" maxlength="80" autocomplete="off" placeholder="Например: баннеры июль"></label>
+    <label class="field"><span>Публикация или место</span><input id="builder-content" type="text" maxlength="80" autocomplete="off" placeholder="Например: пост 1"></label>
+  </div>
+  <div class="builder-result"><span>Готовая ссылка</span><a id="builder-result" class="generated-link" href="https://www.lider-bsk.ru/" target="_blank" rel="noopener">https://www.lider-bsk.ru/</a></div>
+  <div class="builder-actions"><button id="builder-copy" type="button" class="btn" aria-describedby="builder-status">Скопировать</button><a id="builder-open" class="btn btn-dark" href="https://www.lider-bsk.ru/" target="_blank" rel="noopener">Проверить страницу</a></div>
+  <p id="builder-status" class="builder-status" role="status" aria-live="polite" aria-atomic="true"></p>
+</div></div></section>
+
+<section class="section"><div class="wrap"><h2>Основные ссылки</h2><div class="grid">
   <article class="card"><h3>ВК — пост в группе</h3><p>Для рекламных постов ВКонтакте.</p><a class="linkbox" href="https://www.lider-bsk.ru/?utm_source=vk&amp;utm_medium=social&amp;utm_campaign=main_post&amp;utm_content=group_post">https://www.lider-bsk.ru/?utm_source=vk&amp;utm_medium=social&amp;utm_campaign=main_post&amp;utm_content=group_post</a><button type="button" class="btn" data-copy="https://www.lider-bsk.ru/?utm_source=vk&amp;utm_medium=social&amp;utm_campaign=main_post&amp;utm_content=group_post" aria-describedby="copy-status">Скопировать</button></article>
   <article class="card"><h3>ВК — личное сообщение</h3><p>Для отправки клиентам в переписке.</p><a class="linkbox" href="https://www.lider-bsk.ru/?utm_source=vk&amp;utm_medium=message&amp;utm_campaign=direct_message&amp;utm_content=personal">https://www.lider-bsk.ru/?utm_source=vk&amp;utm_medium=message&amp;utm_campaign=direct_message&amp;utm_content=personal</a><button type="button" class="btn" data-copy="https://www.lider-bsk.ru/?utm_source=vk&amp;utm_medium=message&amp;utm_campaign=direct_message&amp;utm_content=personal" aria-describedby="copy-status">Скопировать</button></article>
   <article class="card"><h3>Одноклассники</h3><p>Для публикаций и сообщений в Одноклассниках.</p><a class="linkbox" href="https://www.lider-bsk.ru/?utm_source=ok&amp;utm_medium=social&amp;utm_campaign=main_post&amp;utm_content=group_post">https://www.lider-bsk.ru/?utm_source=ok&amp;utm_medium=social&amp;utm_campaign=main_post&amp;utm_content=group_post</a><button type="button" class="btn" data-copy="https://www.lider-bsk.ru/?utm_source=ok&amp;utm_medium=social&amp;utm_campaign=main_post&amp;utm_content=group_post" aria-describedby="copy-status">Скопировать</button></article>
@@ -33,6 +46,6 @@
 
 <section class="section soft"><div class="wrap"><h2>Как читать UTM-метки</h2><div class="grid"><div class="card"><h3>utm_source</h3><p>Источник: vk, ok, max, print, classified.</p></div><div class="card"><h3>utm_medium</h3><p>Тип размещения: social, message, qr, listing.</p></div><div class="card"><h3>utm_campaign</h3><p>Кампания или направление: banners, design, maps, business_card.</p></div><div class="card"><h3>utm_content</h3><p>Уточнение: group_post, personal, service_link, qr_code.</p></div></div></div></section>
 </main>
-<script src="assets/public-utm-links.js?v=1"></script>
+<script type="module" src="assets/public-utm-links.js?v=2"></script>
 </body>
 </html>
