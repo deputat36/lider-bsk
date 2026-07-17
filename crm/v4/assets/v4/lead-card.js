@@ -147,10 +147,13 @@ function renderLeadDetails(lead) {
       <section class="v4-subcard v4-needs-section">
         <div class="v4-subcard-head">
           <div><h3>Потребности клиента</h3><p>Зафиксируйте, что именно нужно клиенту: размеры, материал, сроки, монтаж, дизайн и особые условия.</p></div>
-          <span id="needsCounter" class="v4-muted">Потребностей: 0</span>
+          <div class="v4-needs-head-actions">
+            <span id="needsCounter" class="v4-muted">Потребностей: 0</span>
+            <button type="button" data-action="open-create-need">Добавить ещё одну позицию</button>
+          </div>
         </div>
         <div id="needsList" class="v4-needs-list"><div class="v4-empty">Потребности пока не загружены.</div></div>
-        <div class="v4-need-form-card"><h4>Добавить потребность</h4><div id="needFormBox"></div></div>
+        <div id="needFormBox"></div>
       </section>
 
       <section id="calculationsBox" class="v4-calculations-host"><div class="v4-empty">Расчёты загрузятся после открытия карточки.</div></section>

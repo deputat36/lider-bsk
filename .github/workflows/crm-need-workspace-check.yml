@@ -1,0 +1,50 @@
+name: CRM need workspace check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'crm/v4/index.html'
+      - 'crm/v4/assets/v4/lead-card.js'
+      - 'crm/v4/assets/v4/needs.js'
+      - 'crm/v4/assets/v4/needs.css'
+      - 'crm/v4/assets/v4/need-workspace-model-v1.js'
+      - 'tools/test_need_workspace_model.mjs'
+      - 'tools/check_crm_need_workspace.py'
+      - 'docs/CRM_PRODUCT_SIMPLICITY_AND_EXCEPTION_MODEL.md'
+      - 'docs/CRM_NEED_WORKSPACE_MANUAL_TEST_2026-07-17.md'
+      - 'docs/STATUS.md'
+      - 'docs/DECISIONS.md'
+      - '.github/workflows/crm-need-workspace-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'crm/v4/index.html'
+      - 'crm/v4/assets/v4/lead-card.js'
+      - 'crm/v4/assets/v4/needs.js'
+      - 'crm/v4/assets/v4/needs.css'
+      - 'crm/v4/assets/v4/need-workspace-model-v1.js'
+      - 'tools/test_need_workspace_model.mjs'
+      - 'tools/check_crm_need_workspace.py'
+      - 'docs/CRM_PRODUCT_SIMPLICITY_AND_EXCEPTION_MODEL.md'
+      - 'docs/CRM_NEED_WORKSPACE_MANUAL_TEST_2026-07-17.md'
+      - 'docs/STATUS.md'
+      - 'docs/DECISIONS.md'
+      - '.github/workflows/crm-need-workspace-check.yml'
+
+jobs:
+  need-workspace-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate need workspace behavior and source contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check crm/v4/assets/v4/need-workspace-model-v1.js
+          node --check crm/v4/assets/v4/needs.js
+          node --check crm/v4/assets/v4/lead-card.js
+          node --check tools/test_need_workspace_model.mjs
+          node tools/test_need_workspace_model.mjs
+          python3 tools/check_crm_need_workspace.py
+          python3 tools/check_crm_need_calculation_flow.py
