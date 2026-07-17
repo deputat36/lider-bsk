@@ -15,7 +15,7 @@ errors = []
 for forbidden in ['calculations-standard.js?', 'calculations-advanced.js?']:
     if forbidden in html: errors.append('Duplicate calculator remains connected: ' + forbidden)
 for marker in [
-    'calculations.js?v=20260717-load-integrity-1',
+    'calculations.js?v=20260717-module-singleton-1',
     'calculations-unified.css?v=20260715-draft-review-1',
     'calculation-draft-review-v1.js?v=20260715-1',
 ]:
