@@ -1,13 +1,42 @@
+import {
+  CAMPAIGN_CHANNELS,
+  CAMPAIGN_TARGETS,
+  buildCampaignUrl,
+  currentCampaignTag,
+} from './public-campaign-link-model.js?v=1';
+
 (()=>{
   'use strict';
 
   const DEFAULT_LABEL='Скопировать';
   const COPIED_LABEL='Скопировано';
   const status=document.getElementById('copy-status');
+  const builderStatus=document.getElementById('builder-status');
+  const builderTarget=document.getElementById('builder-target');
+  const builderChannel=document.getElementById('builder-channel');
+  const builderCampaign=document.getElementById('builder-campaign');
+  const builderContent=document.getElementById('builder-content');
+  const builderResult=document.getElementById('builder-result');
+  const builderCopy=document.getElementById('builder-copy');
+  const builderOpen=document.getElementById('builder-open');
   const resetTimers=new WeakMap();
 
   function setStatus(message){
     if(status)status.textContent=message;
+  }
+
+  function setBuilderStatus(message){
+    if(builderStatus)builderStatus.textContent=message;
+  }
+
+  function fillSelect(select, items){
+    if(!select)return;
+    select.replaceChildren(...items.map((item)=>{
+      const option=document.createElement('option');
+      option.value=item.id;
+      option.textContent=item.label;
+      return option;
+    }));
   }
 
   function linkContext(button){
@@ -45,6 +74,33 @@
     resetTimers.set(button,timer);
   }
 
+  function selectedChannel(){
+    return CAMPAIGN_CHANNELS.find((item)=>item.id===builderChannel?.value)||CAMPAIGN_CHANNELS[0];
+  }
+
+  function renderBuilder(){
+    if(!builderResult)return '';
+    const value=buildCampaignUrl({
+      targetId:builderTarget?.value,
+      channelId:builderChannel?.value,
+      campaign:builderCampaign?.value,
+      content:builderContent?.value,
+    });
+    builderResult.href=value;
+    builderResult.textContent=value;
+    if(builderOpen)builderOpen.href=value;
+    return value;
+  }
+
+  function bootBuilder(){
+    if(!builderTarget||!builderChannel||!builderCampaign||!builderContent)return;
+    fillSelect(builderTarget,CAMPAIGN_TARGETS);
+    fillSelect(builderChannel,CAMPAIGN_CHANNELS);
+    builderCampaign.value=currentCampaignTag();
+    builderContent.value=selectedChannel().content;
+    renderBuilder();
+  }
+
   document.addEventListener('click',async(event)=>{
     const button=event.target.closest('button[data-copy]');
     if(!button)return;
@@ -70,4 +126,31 @@
       button.disabled=false;
     }
   });
+
+  builderTarget?.addEventListener('change',renderBuilder);
+  builderCampaign?.addEventListener('input',renderBuilder);
+  builderContent?.addEventListener('input',renderBuilder);
+  builderChannel?.addEventListener('change',()=>{
+    builderContent.value=selectedChannel().content;
+    renderBuilder();
+  });
+  builderCopy?.addEventListener('click',async()=>{
+    const value=renderBuilder();
+    builderCopy.disabled=true;
+    try{
+      await copyText(value);
+      builderCopy.textContent=COPIED_LABEL;
+      builderCopy.dataset.copyState='success';
+      setBuilderStatus('Ссылка скопирована. Вставьте её в публикацию, сообщение или QR-код.');
+      scheduleReset(builderCopy);
+    }catch(error){
+      builderCopy.textContent=DEFAULT_LABEL;
+      builderCopy.removeAttribute('data-copy-state');
+      setBuilderStatus('Не удалось скопировать автоматически. Выделите готовую ссылку и скопируйте её вручную.');
+    }finally{
+      builderCopy.disabled=false;
+    }
+  });
+
+  bootBuilder();
 })();

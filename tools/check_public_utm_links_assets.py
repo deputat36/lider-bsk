@@ -10,6 +10,8 @@ ROOT = Path(__file__).resolve().parents[1]
 PAGE = ROOT / "utm-links.html"
 CSS = ROOT / "assets" / "public-utm-links.css"
 JS = ROOT / "assets" / "public-utm-links.js"
+MODEL = ROOT / "assets" / "public-campaign-link-model.js"
+BEHAVIOR_TEST = ROOT / "tools" / "test_public_campaign_link_builder.mjs"
 SITEMAP = ROOT / "sitemap.xml"
 EXPECTED_HOST = "www.lider-bsk.ru"
 EXPECTED_UTM_KEYS = {"utm_source", "utm_medium", "utm_campaign", "utm_content"}
@@ -95,7 +97,7 @@ def validate_tracked_url(value: str, errors: list[str]) -> None:
 
 def main() -> int:
     errors: list[str] = []
-    for path in (PAGE, CSS, JS, SITEMAP):
+    for path in (PAGE, CSS, JS, MODEL, BEHAVIOR_TEST, SITEMAP):
         if not path.is_file():
             errors.append(f"Missing required file: {path.relative_to(ROOT)}")
     if errors:
@@ -105,6 +107,8 @@ def main() -> int:
     page = PAGE.read_text(encoding="utf-8")
     css = CSS.read_text(encoding="utf-8")
     js = JS.read_text(encoding="utf-8")
+    model = MODEL.read_text(encoding="utf-8")
+    behavior_test = BEHAVIOR_TEST.read_text(encoding="utf-8")
     sitemap = SITEMAP.read_text(encoding="utf-8")
     parser = UTMPageParser()
     parser.feed(page)
@@ -117,9 +121,9 @@ def main() -> int:
         errors.append("utm-links.html must not contain inline style blocks")
     if parser.inline_script_count:
         errors.append("utm-links.html must not contain executable inline scripts")
-    if parser.stylesheets != ["assets/public-utm-links.css?v=1"]:
+    if parser.stylesheets != ["assets/public-utm-links.css?v=2"]:
         errors.append(f"Unexpected UTM page stylesheets: {parser.stylesheets}")
-    if parser.script_sources != ["assets/public-utm-links.js?v=1"]:
+    if parser.script_sources != ["assets/public-utm-links.js?v=2"]:
         errors.append(f"Unexpected UTM page scripts: {parser.script_sources}")
     if parser.copy_status_count != 1:
         errors.append(f"utm-links.html must contain one accessible copy status, found {parser.copy_status_count}")
@@ -140,8 +144,24 @@ def main() -> int:
         errors.append("Internal noindex UTM page must not be present in sitemap.xml")
 
     for marker in (
+        'id="builder-target"',
+        'id="builder-channel"',
+        'id="builder-campaign"',
+        'id="builder-content"',
+        'id="builder-result"',
+        'id="builder-copy"',
+        'id="builder-status"',
+        'Собрать ссылку для публикации',
+    ):
+        if marker not in page:
+            errors.append(f"utm-links.html is missing campaign builder marker: {marker}")
+
+    for marker in (
         ":root{--dark:#111827",
         ".copy-status{",
+        ".builder-fields{",
+        ".generated-link{",
+        ".builder-status{",
         ".btn[disabled]",
         ".linkbox:focus-visible",
         "@media(max-width:820px)",
@@ -158,6 +178,10 @@ def main() -> int:
         "button.dataset.copyState='success'",
         "setStatus(`Скопировано: ${linkContext(button)}.`)",
         "Не удалось скопировать ссылку автоматически",
+        "buildCampaignUrl({",
+        "currentCampaignTag()",
+        "builderCopy?.addEventListener('click'",
+        "Ссылка скопирована. Вставьте её в публикацию, сообщение или QR-код.",
     ):
         if marker not in js:
             errors.append(f"public-utm-links.js is missing marker: {marker}")
@@ -165,11 +189,38 @@ def main() -> int:
         if marker in js:
             errors.append(f"public-utm-links.js must not contain {marker!r}")
 
+    for marker in (
+        "https://www.lider-bsk.ru",
+        "CAMPAIGN_TARGETS",
+        "CAMPAIGN_CHANNELS",
+        "normalizeUtmToken",
+        "currentCampaignTag",
+        "buildCampaignUrl",
+        "telegram",
+        "yandex_maps",
+        "two_gis",
+    ):
+        if marker not in model:
+            errors.append(f"public-campaign-link-model.js is missing marker: {marker}")
+    for marker in ("fetch(", "supabase", "localStorage", "sessionStorage", "document.", "window."):
+        if marker in model:
+            errors.append(f"public-campaign-link-model.js must remain pure and offline: {marker!r}")
+
+    for marker in (
+        "CAMPAIGN_TARGETS.length, 10",
+        "CAMPAIGN_CHANNELS.length, 9",
+        "bannery_iyul_2026",
+        "qrRequest.pathname, '/request.html'",
+        "Public campaign link builder is deterministic",
+    ):
+        if marker not in behavior_test:
+            errors.append(f"campaign link behavior test is missing marker: {marker}")
+
     if errors:
         print("\n".join(errors))
         return 1
 
-    print("Internal UTM links assets and 12 tracked-link contracts are valid.")
+    print("Internal UTM links, 12 presets and the offline campaign builder contracts are valid.")
     return 0
 
 

@@ -1,6 +1,6 @@
 # Internal UTM links assets — 2026-07-15
 
-Status: completed in source.
+Status: completed in source; extended by the 2026-07-17 campaign builder.
 
 Related trackers: #138, #142.
 
@@ -10,8 +10,9 @@ The internal noindex page `utm-links.html` was migrated away from executable inl
 
 Added:
 
-- `assets/public-utm-links.css?v=1`;
-- `assets/public-utm-links.js?v=1`;
+- `assets/public-utm-links.css?v=2`;
+- `assets/public-utm-links.js?v=2`;
+- pure model `assets/public-campaign-link-model.js?v=1`;
 - `tools/check_public_utm_links_assets.py`;
 - `.github/workflows/public-utm-links-assets-check.yml`.
 
@@ -38,7 +39,7 @@ All 12 tracked links now have:
 - a local textarea fallback when Clipboard API access is unavailable;
 - a manual-copy message when automatic copying fails.
 
-The helper does not use network requests, storage, Supabase or analytics.
+The helper does not use network requests, storage, Supabase or analytics. The 12 fixed links remain available; the newer builder is documented in `docs/PUBLIC_CAMPAIGN_LINK_BUILDER_2026-07-17.md`.
 
 ## Contract
 
