@@ -99,13 +99,39 @@
   padding:16px;
 }
 .v4-offer-form h4{
-  margin:0 0 12px;
+  margin:0;
+}
+.v4-offer-form-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:16px;
+  margin-bottom:12px;
+}
+.v4-offer-form-head>div{
+  display:grid;
+  gap:3px;
+}
+.v4-offer-form-head span{
+  color:#166534;
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+.v4-offer-form-head p{
+  max-width:420px;
+  margin:0;
+  color:#475569;
 }
 @media(max-width:850px){
   .v4-offer-card,.v4-offer-preview{
     grid-template-columns:1fr;
   }
   .v4-offer-title-row{
+    flex-direction:column;
+  }
+  .v4-offer-form-head{
     flex-direction:column;
   }
 }

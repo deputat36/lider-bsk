@@ -2,7 +2,12 @@ import { supabaseClient } from './supabase-client.js';
 import { timeout, friendlyError } from './api.js';
 import { v4State, setState, subscribeState } from './state.js';
 import { byId, setStatus, toast } from './ui.js';
-import { CRM_V4_ACTIONS, requireV4Action } from './action-permissions-v1.js';
+import { CRM_V4_ACTIONS, canPerformV4Action, requireV4Action } from './action-permissions-v1.js';
+import {
+  offerCalculationAvailability,
+  offerEligibleCalculations,
+  preferredOfferCalculationId
+} from './calculation-offer-next-action-model-v1.js';
 import {
   calculationStatusForOfferStatus,
   leadStatusForOfferStatus,
@@ -21,6 +26,7 @@ const NEED_FIELDS = 'id,lead_id,title,need_type,description,structured_data,dead
 let activeOfferId = null;
 let createBusy = false;
 let previousCalculations = null;
+let selectedCalculationId = '';
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
@@ -42,9 +48,11 @@ function validUntilDefault() {
 }
 
 function calculationOptions(selected = '') {
-  const calculations = v4State.calculations || [];
-  if (!calculations.length) return '<option value="">Сначала сохраните расчёт</option>';
-  return ['<option value="">Выберите расчёт</option>', ...calculations.map((calc) => `<option value="${esc(calc.id)}" ${calc.id === selected ? 'selected' : ''}>${esc(calc.title || 'Расчёт')} — ${money(calc.client_total)}</option>`)].join('');
+  const calculations = offerEligibleCalculations(v4State.calculations || [], v4State.offers || []);
+  if (!calculations.length) return '<option value="">Нет свободного расчёта</option>';
+  const resolved = preferredOfferCalculationId(calculations, selected);
+  const placeholder = resolved ? '' : '<option value="">Выберите расчёт</option>';
+  return [placeholder, ...calculations.map((calc) => `<option value="${esc(calc.id)}" ${calc.id === resolved ? 'selected' : ''}>v${Number(calc.version_number || 1)} · ${esc(calc.title || 'Расчёт')} — ${money(calc.client_total)}</option>`)].join('');
 }
 
 function needDescription(need) {
@@ -156,19 +164,34 @@ function renderOfferCard(offer) {
 }
 
 function renderCreateForm() {
-  return `<div class="v4-offer-form"><h4>Сформировать КП из расчёта</h4><div class="v4-form-grid"><label>Расчёт<select id="offerCalculationId">${calculationOptions()}</select></label><label>Название КП<input id="offerTitle" placeholder="Например: КП на изготовление баннера"></label><label>Действует до<input id="offerValidUntil" type="date" value="${validUntilDefault()}"></label><label class="wide">Дополнительные условия для клиента<textarea id="offerExtraComment" rows="2" placeholder="Предоплата, доставка, сроки, особенности монтажа"></textarea></label></div><div class="v4-form-actions"><button id="createOfferBtn" type="button" class="v4-primary" ${v4State.calculations.length ? '' : 'disabled'}>Сформировать КП</button></div><p class="v4-muted">В клиентском тексте не показываются себестоимость, прибыль, маржа и цены подрядчиков.</p></div>`;
+  if (!canPerformV4Action(CRM_V4_ACTIONS.OFFERS_WRITE)) return '<div class="v4-empty">У вашей роли нет права формировать КП.</div>';
+  if (v4State.offersError) return '<div class="v4-empty is-error">Новое КП недоступно, пока не проверен список существующих предложений.</div>';
+  const availability = offerCalculationAvailability(v4State.calculations || [], v4State.offers || []);
+  if (!availability.available) return `<div class="v4-empty">${esc(availability.message)}</div>`;
+  const selected = preferredOfferCalculationId(v4State.calculations || [], selectedCalculationId, v4State.offers || []);
+  return `<div id="offerCreateForm" class="v4-offer-form"><div class="v4-offer-form-head"><div><span>Следующее действие</span><h4>Сформировать КП из расчёта</h4></div><p>${esc(availability.message)}</p></div><div class="v4-form-grid"><label>Расчёт<select id="offerCalculationId">${calculationOptions(selected)}</select></label><label>Название КП<input id="offerTitle" placeholder="Например: КП на изготовление баннера"></label><label>Действует до<input id="offerValidUntil" type="date" value="${validUntilDefault()}"></label><label class="wide">Дополнительные условия для клиента<textarea id="offerExtraComment" rows="2" placeholder="Предоплата, доставка, сроки, особенности монтажа"></textarea></label></div><div class="v4-form-actions"><button id="createOfferBtn" type="button" class="v4-primary" ${selected && !createBusy ? '' : 'disabled'}>${createBusy ? 'Формирую КП...' : 'Сформировать КП'}</button></div><p class="v4-muted">В клиентском тексте не показываются себестоимость, прибыль, маржа и цены подрядчиков.</p></div>`;
 }
 
 export function renderOffers() {
   const box = byId('offersBox');
   if (!box) return;
   if (!v4State.route.leadId) { box.innerHTML = ''; return; }
+  if (!canPerformV4Action(CRM_V4_ACTIONS.OFFERS_READ)) {
+    box.innerHTML = '<section class="v4-subcard"><div class="v4-empty">У вашей роли нет доступа к коммерческим предложениям.</div></section>';
+    return;
+  }
   if (v4State.offersBusy) { box.innerHTML = '<div class="v4-empty">Загружаю коммерческие предложения...</div>'; return; }
+  selectedCalculationId = preferredOfferCalculationId(v4State.calculations || [], selectedCalculationId, v4State.offers || []);
   const offers = v4State.offers || [];
   box.innerHTML = `<section class="v4-subcard v4-offers-section"><div class="v4-subcard-head"><div><h3>Коммерческие предложения</h3><p>КП формируется только из сохранённого расчёта. При отправке, согласовании или отклонении статус заявки обновится автоматически.</p></div><span class="v4-muted">КП: ${offers.length}</span></div><div class="v4-offers-list">${v4State.offersError ? `<div class="v4-empty is-error">${esc(v4State.offersError)}</div>` : offers.length ? offers.map(renderOfferCard).join('') : '<div class="v4-empty">Коммерческих предложений пока нет.</div>'}</div>${renderCreateForm()}</section>`;
 }
 
 export async function loadOffers(leadId = v4State.route.leadId) {
+  if (!canPerformV4Action(CRM_V4_ACTIONS.OFFERS_READ)) {
+    setState({ offers: [], offersBusy: false, offersError: null });
+    renderOffers();
+    return [];
+  }
   if (!leadId || !v4State.crmReady) {
     setState({ offers: [], offersBusy: false, offersError: null });
     renderOffers();
@@ -257,8 +280,14 @@ async function writeOfferEvent({ offerId, leadId, calculationId, eventType, newS
 
 async function createOffer() {
   if (createBusy) return;
+  if (!requireV4Action(CRM_V4_ACTIONS.OFFERS_WRITE)) { toast('У вашей роли нет права формировать КП'); return; }
   const calculationId = byId('offerCalculationId')?.value || '';
   if (!calculationId) { toast('Выберите сохранённый расчёт'); return; }
+  const eligible = offerEligibleCalculations(v4State.calculations || [], v4State.offers || []);
+  if (!eligible.some((calculation) => calculation.id === calculationId)) {
+    toast('Для этого расчёта КП уже создано или не указана сумма клиенту');
+    return;
+  }
   createBusy = true;
   const button = byId('createOfferBtn');
   if (button) button.disabled = true;
@@ -298,6 +327,10 @@ async function createOffer() {
     );
     if (response.error) throw response.error;
     const offer = response.data;
+    if (!(v4State.offers || []).some((item) => item.id === offer.id)) {
+      setState({ offers: [offer, ...(v4State.offers || [])] });
+      renderOffers();
+    }
 
     const calcUpdate = await supabaseClient
       .from('leader_lead_calculations')
@@ -319,8 +352,9 @@ async function createOffer() {
     });
 
     activeOfferId = offer.id;
+    selectedCalculationId = '';
     setState({
-      offers: [offer, ...(v4State.offers || [])],
+      offers: (v4State.offers || []).some((item) => item.id === offer.id) ? v4State.offers : [offer, ...(v4State.offers || [])],
       calculations: (v4State.calculations || []).map((calc) => calc.id === calculation.id ? { ...calc, ...calcUpdate.data } : calc),
       currentLead: updatedLead ? { ...(v4State.currentLead || {}), ...updatedLead } : v4State.currentLead,
       leads: updatedLead ? (v4State.leads || []).map((lead) => lead.id === updatedLead.id ? { ...lead, ...updatedLead } : lead) : v4State.leads
@@ -334,7 +368,7 @@ async function createOffer() {
   } finally {
     createBusy = false;
     const currentButton = byId('createOfferBtn');
-    if (currentButton) currentButton.disabled = !v4State.calculations.length;
+    if (currentButton) currentButton.disabled = !(byId('offerCalculationId')?.value || '');
   }
 }
 
@@ -428,9 +462,36 @@ function bindOfferEvents() {
     }
   });
 
+  byId('leadCardSection')?.addEventListener('change', (event) => {
+    if (event.target?.id !== 'offerCalculationId') return;
+    selectedCalculationId = event.target.value || '';
+    const button = byId('createOfferBtn');
+    if (button) button.disabled = !selectedCalculationId || createBusy;
+    const calculation = (v4State.calculations || []).find((item) => item.id === selectedCalculationId);
+    const title = byId('offerTitle');
+    if (calculation && title && !title.value.trim()) title.value = `КП: ${calculation.title || 'Расчёт'}`;
+  });
+
+  document.addEventListener('leader-v4:create-offer-from-calculation', (event) => {
+    if (!requireV4Action(CRM_V4_ACTIONS.OFFERS_WRITE)) { toast('У вашей роли нет права формировать КП'); return; }
+    const calculationId = event.detail?.calculationId || '';
+    const eligible = offerEligibleCalculations(v4State.calculations || [], v4State.offers || []);
+    if (!eligible.some((calculation) => calculation.id === calculationId)) {
+      toast('Для этого расчёта КП уже создано или не указана сумма клиенту');
+      return;
+    }
+    selectedCalculationId = calculationId;
+    renderOffers();
+    requestAnimationFrame(() => {
+      byId('offerCreateForm')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+      byId('offerTitle')?.focus();
+    });
+  });
+
   document.addEventListener('leader-v4:lead-card-rendered', () => renderOffers());
   document.addEventListener('leader-v4:route-change', (event) => {
     activeOfferId = null;
+    selectedCalculationId = '';
     const id = event.detail?.leadId || null;
     if (id) loadOffers(id);
     else { setState({ offers: [], offersBusy: false, offersError: null }); renderOffers(); }

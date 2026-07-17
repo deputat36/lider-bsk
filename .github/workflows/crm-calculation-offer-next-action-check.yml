@@ -1,0 +1,57 @@
+name: CRM calculation to offer next action check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'crm/v4/index.html'
+      - 'crm/v4/assets/v4/calculations-saved-tools-v2.js'
+      - 'crm/v4/assets/v4/calculation-offer-next-action-model-v1.js'
+      - 'crm/v4/assets/v4/offers.js'
+      - 'crm/v4/assets/v4/offers.css'
+      - 'tools/test_calculation_offer_next_action.mjs'
+      - 'tools/check_crm_calculation_offer_next_action.py'
+      - 'tools/check_calculation_version_integrity.py'
+      - 'tools/check_calc_v2.py'
+      - 'docs/CRM_CALCULATION_OFFER_NEXT_ACTION_MANUAL_TEST_2026-07-17.md'
+      - 'docs/CRM_PRODUCT_SIMPLICITY_AND_EXCEPTION_MODEL.md'
+      - 'docs/STATUS.md'
+      - 'docs/DECISIONS.md'
+      - '.github/workflows/crm-calculation-offer-next-action-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'crm/v4/index.html'
+      - 'crm/v4/assets/v4/calculations-saved-tools-v2.js'
+      - 'crm/v4/assets/v4/calculation-offer-next-action-model-v1.js'
+      - 'crm/v4/assets/v4/offers.js'
+      - 'crm/v4/assets/v4/offers.css'
+      - 'tools/test_calculation_offer_next_action.mjs'
+      - 'tools/check_crm_calculation_offer_next_action.py'
+      - 'tools/check_calculation_version_integrity.py'
+      - 'tools/check_calc_v2.py'
+      - 'docs/CRM_CALCULATION_OFFER_NEXT_ACTION_MANUAL_TEST_2026-07-17.md'
+      - 'docs/CRM_PRODUCT_SIMPLICITY_AND_EXCEPTION_MODEL.md'
+      - 'docs/STATUS.md'
+      - 'docs/DECISIONS.md'
+      - '.github/workflows/crm-calculation-offer-next-action-check.yml'
+
+jobs:
+  calculation-offer-next-action:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate calculation to offer next action
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check crm/v4/assets/v4/calculation-offer-next-action-model-v1.js
+          node --check crm/v4/assets/v4/calculations-saved-tools-v2.js
+          node --check crm/v4/assets/v4/offers.js
+          node --check tools/test_calculation_offer_next_action.mjs
+          node tools/test_calculation_offer_next_action.mjs
+          python3 tools/check_crm_calculation_offer_next_action.py
+          python3 tools/check_calculation_version_integrity.py
+          python3 tools/check_calc_v2.py
+          python3 tools/check_need_readiness_warning.py
+          python3 tools/check_crm_offer_status_ui_registry.py
