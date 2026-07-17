@@ -343,6 +343,8 @@ function bindLeadActions() {
 }
 
 export function bootLeads() {
+  if (window.LeaderV4LeadsBooted) return;
+  window.LeaderV4LeadsBooted = true;
   setLeadFilters({ ...loadLeadListPreferences(), search: '' });
   bindLeadFilters();
   bindLeadActions();
