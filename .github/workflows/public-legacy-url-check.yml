@@ -13,6 +13,8 @@ on:
       - 'nakleyki-plotternaya-rezka-borisoglebsk.html'
       - 'sitemap.xml'
       - 'tools/check_public_legacy_redirects.py'
+      - 'docs/PUBLIC_LEGACY_REDIRECT_ATTRIBUTION_2026-07-17.md'
+      - 'docs/STATUS.md'
       - '.github/workflows/public-legacy-url-check.yml'
   pull_request:
     branches: [main]
@@ -25,6 +27,8 @@ on:
       - 'nakleyki-plotternaya-rezka-borisoglebsk.html'
       - 'sitemap.xml'
       - 'tools/check_public_legacy_redirects.py'
+      - 'docs/PUBLIC_LEGACY_REDIRECT_ATTRIBUTION_2026-07-17.md'
+      - 'docs/STATUS.md'
       - '.github/workflows/public-legacy-url-check.yml'
 
 jobs:

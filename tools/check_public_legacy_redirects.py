@@ -83,8 +83,16 @@ def main() -> None:
             errors.append(f'{source_name}: meta refresh must point to {target_path}')
         if parser.links.count(target_path) != 1:
             errors.append(f'{source_name}: fallback link must point to {target_path} exactly once')
-        if f"window.location.replace('{target_path}')" not in text:
-            errors.append(f'{source_name}: JavaScript redirect must use location.replace')
+        attribution_safe_redirect = (
+            f"window.location.replace('{target_path}'"
+            "+window.location.search+window.location.hash)"
+        )
+        if attribution_safe_redirect not in text:
+            errors.append(
+                f'{source_name}: JavaScript redirect must preserve query parameters and hash through location.replace'
+            )
+        if f"window.location.replace('{target_path}')" in text:
+            errors.append(f'{source_name}: JavaScript redirect must not drop campaign parameters')
         if parser.h1_count != 1:
             errors.append(f'{source_name}: exactly one h1 is required')
         if f'rel="canonical" href="{target_url}"' not in target_text:

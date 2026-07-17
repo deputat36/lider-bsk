@@ -19,6 +19,16 @@
 Операционный checkpoint Codex: `docs/CODEX_OPERATING_STATUS_2026-06-28.md`.
 Supabase baseline РА «Лидер»: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-28.md`.
 
+## Атрибуция старых точек входа
+
+Обновление 2026-07-17:
+
+- редиректы `/banner/`, `/signs/` и `/auto-stickers/` сохраняют query string и hash;
+- UTM, `scenario` и `service` больше не теряются при переходе на актуальную коммерческую страницу;
+- цели редиректов остаются фиксированными same-origin путями;
+- canonical, `noindex, follow`, meta refresh, fallback-ссылки и отсутствие старых URL в sitemap сохранены;
+- публичная форма и Supabase не изменялись.
+
 ## Ссылки для бесплатных публикаций
 
 Обновление 2026-07-17:
