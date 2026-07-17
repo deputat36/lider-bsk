@@ -79,12 +79,13 @@ def main() -> int:
         require(text, "assets/public-lead-form.css", page.name)
 
     doc = DOC.read_text(encoding="utf-8")
-    require(doc.lower(), "официальный логотип", "doc correction")
+    doc_lower = doc.lower()
+    require(doc_lower, "официальный логотип", "doc correction")
     require(doc, "250 × 66", "doc desktop dimensions")
     require(doc, "225 × 60", "doc laptop dimensions")
     require(doc, "184 × 49", "doc mobile dimensions")
     require(doc, "logo-lider-header.svg", "doc asset")
-    require(doc, "предыдущая аппроксимация", "doc superseded asset")
+    require(doc_lower, "предыдущая аппроксимация", "doc superseded asset")
 
     workflow = WORKFLOW.read_text(encoding="utf-8")
     require(workflow, "python3 tools/check_public_logo_contract.py", "workflow")
