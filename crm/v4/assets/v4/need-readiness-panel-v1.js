@@ -144,7 +144,13 @@ function runAction(button) {
   const target = needId ? needCard(needId) : null;
   const fallback = document.querySelector('.v4-needs-section');
   highlight(target || fallback);
-  if (!target && action === 'open_need_form') document.getElementById('needTitle')?.focus();
+  if (!target && action === 'open_need_form') {
+    document.querySelector('#leadCardSection [data-action="open-create-need"]')?.click();
+    setTimeout(() => {
+      highlight(document.getElementById('needFormBox') || fallback);
+      document.getElementById('needTitle')?.focus();
+    }, 0);
+  }
 }
 
 function observeLeadCard() {

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {
   canLeadStatusTransition,
+  leadPrimaryAction,
   leadStatusFilterOptions,
   leadStatusUiModel,
   rawLeadStatus,
@@ -57,5 +58,24 @@ assert.equal(canLeadStatusTransition('Новая', 'В работе'), true);
 assert.equal(canLeadStatusTransition('Новая', 'Создан заказ'), false);
 assert.equal(canLeadStatusTransition('Создан заказ', 'В работе'), false);
 assert.equal(canLeadStatusTransition(unknown, 'В работе'), false);
+
+const now = Date.parse('2026-07-17T12:00:00Z');
+assert.deepEqual(leadPrimaryAction({ status: 'Новая' }, { now }), {
+  type: 'transition',
+  label: 'Принять заявку',
+  hint: 'После принятия зафиксируйте задачу клиента коротким брифом.',
+  targetId: '',
+  targetStatus: 'В работе'
+});
+assert.equal(leadPrimaryAction({ status: 'В работе' }, { needCount: 0, now }).type, 'open_need');
+assert.equal(leadPrimaryAction({ status: 'В работе' }, { needCount: 1, now }).targetId, 'calculationsBox');
+assert.equal(leadPrimaryAction({ status: 'Расчёт подготовлен' }, { now }).label, 'Сформировать КП');
+assert.equal(leadPrimaryAction({ status: 'Ждём ответ' }, { now }).type, 'focus_contact');
+assert.equal(leadPrimaryAction({ status: 'Ждём ответ', next_contact_at: '2026-07-18T10:00:00Z' }, { now }).type, 'other_actions');
+assert.equal(leadPrimaryAction({ status: 'Нужно пересчитать' }, { now }).label, 'Пересчитать заказ');
+assert.equal(leadPrimaryAction({ status: 'Согласовано' }, { now }).label, 'Создать заказ');
+assert.equal(leadPrimaryAction({ status: 'Отказ' }, { now }).type, 'none');
+assert.equal(leadPrimaryAction({ status: 'Создан заказ', converted_order_id: 'o1' }, { now }).type, 'open_orders');
+assert.equal(leadPrimaryAction({ status: unknown }, { now }).type, 'other_actions');
 
 console.log('CRM lead status UI registry behavior is valid.');
