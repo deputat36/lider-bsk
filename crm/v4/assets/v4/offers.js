@@ -25,6 +25,7 @@ const NEED_FIELDS = 'id,lead_id,title,need_type,description,structured_data,dead
 
 let activeOfferId = null;
 let createBusy = false;
+let offersLoadSequence = 0;
 let previousCalculations = null;
 let selectedCalculationId = '';
 
@@ -197,6 +198,7 @@ export async function loadOffers(leadId = v4State.route.leadId) {
     renderOffers();
     return [];
   }
+  const requestSequence = ++offersLoadSequence;
   setState({ offersBusy: true, offersError: null });
   renderOffers();
   try {
@@ -211,10 +213,12 @@ export async function loadOffers(leadId = v4State.route.leadId) {
       'Коммерческие предложения не загрузились за 12 секунд'
     );
     if (response.error) throw response.error;
+    if (requestSequence !== offersLoadSequence || v4State.route.leadId !== leadId) return [];
     setState({ offers: response.data || [], offersBusy: false, offersError: null });
     renderOffers();
     return response.data || [];
   } catch (error) {
+    if (requestSequence !== offersLoadSequence || v4State.route.leadId !== leadId) return [];
     const message = friendlyError(error);
     setState({ offers: [], offersBusy: false, offersError: message });
     renderOffers();

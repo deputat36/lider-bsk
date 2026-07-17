@@ -1,0 +1,43 @@
+name: CRM loading integrity check
+
+on:
+  pull_request:
+    paths:
+      - 'crm/v4/index.html'
+      - 'crm/v4/assets/v4/lead-card.js'
+      - 'crm/v4/assets/v4/needs.js'
+      - 'crm/v4/assets/v4/calculations.js'
+      - 'crm/v4/assets/v4/calculations-saved-tools-v2.js'
+      - 'crm/v4/assets/v4/offers.js'
+      - 'tools/check_crm_loading_integrity.py'
+      - '.github/workflows/crm-loading-integrity-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'crm/v4/index.html'
+      - 'crm/v4/assets/v4/lead-card.js'
+      - 'crm/v4/assets/v4/needs.js'
+      - 'crm/v4/assets/v4/calculations.js'
+      - 'crm/v4/assets/v4/calculations-saved-tools-v2.js'
+      - 'crm/v4/assets/v4/offers.js'
+      - 'tools/check_crm_loading_integrity.py'
+      - '.github/workflows/crm-loading-integrity-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  loading-integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check JavaScript syntax
+        run: |
+          node --check crm/v4/assets/v4/lead-card.js
+          node --check crm/v4/assets/v4/needs.js
+          node --check crm/v4/assets/v4/calculations.js
+          node --check crm/v4/assets/v4/calculations-saved-tools-v2.js
+          node --check crm/v4/assets/v4/offers.js
+      - name: Check loading ownership and stale response guards
+        run: python3 tools/check_crm_loading_integrity.py

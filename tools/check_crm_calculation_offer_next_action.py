@@ -50,8 +50,8 @@ for marker in [
 
 for marker in [
     'offers.css?v=20260717-next-action-1',
-    'calculations-saved-tools-v2.js?v=20260717-offer-next-1',
-    'offers.js?v=20260717-next-action-1',
+    'calculations-saved-tools-v2.js?v=20260717-load-integrity-1',
+    'offers.js?v=20260717-load-integrity-1',
 ]:
     if marker not in html:
         errors.append('Missing calculation-offer cache marker: ' + marker)

@@ -44,6 +44,7 @@ const MODES = [
 ];
 
 let draftItems = [];
+const calculationLoads = new Map();
 let saveBusy = false;
 
 function esc(value) {
@@ -699,7 +700,7 @@ export function renderCalculations() {
   renderDraftItems();
 }
 
-export async function loadCalculations(leadId = v4State.route.leadId) {
+async function doLoadCalculations(leadId) {
   if (!leadId || !v4State.crmReady) {
     setState({ calculations: [], calculationsBusy: false, calculationsError: null });
     renderCalculations();
@@ -718,16 +719,28 @@ export async function loadCalculations(leadId = v4State.route.leadId) {
       'Расчёты не загрузились за 12 секунд'
     );
     if (response.error) throw response.error;
+    if (v4State.route.leadId !== leadId) return [];
     setState({ calculations: response.data || [], calculationsBusy: false, calculationsError: null });
     renderCalculations();
     return response.data || [];
   } catch (error) {
     const message = friendlyError(error);
+    if (v4State.route.leadId !== leadId) return [];
     setState({ calculations: [], calculationsBusy: false, calculationsError: message });
     renderCalculations();
     setStatus(`Ошибка расчётов: ${message}`, 'error');
     return [];
   }
+}
+
+export function loadCalculations(leadId = v4State.route.leadId) {
+  const key = leadId || '';
+  if (calculationLoads.has(key)) return calculationLoads.get(key);
+  const request = doLoadCalculations(leadId).finally(() => {
+    if (calculationLoads.get(key) === request) calculationLoads.delete(key);
+  });
+  calculationLoads.set(key, request);
+  return request;
 }
 
 function addSmartItems() {
@@ -961,6 +974,9 @@ function bindCalculationEvents() {
     if (event.detail?.leadId === v4State.route.leadId) refreshNeedSelect();
   });
   document.addEventListener('leader-v4:calculate-need', (event) => applyNeedToCalculation(event.detail?.need || {}));
+  document.addEventListener('leader-v4:refresh-calculations', () => {
+    if (v4State.route.leadId) loadCalculations(v4State.route.leadId);
+  });
   document.addEventListener('leader-v4:route-change', (event) => {
     const id = event.detail?.leadId || null;
     draftItems = [];

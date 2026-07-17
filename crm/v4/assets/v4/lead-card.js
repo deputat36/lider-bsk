@@ -8,6 +8,7 @@ import { leadPrimaryAction } from './lead-status-ui-model-v1.js?v=20260717-prima
 const FULL_LEAD_FIELDS = 'id,name,phone,source,message,page_url,status,payload,created_at,updated_at,service,contact_preference,city,budget,utm_source,utm_medium,utm_campaign,utm_content,utm_term,assigned_to,converted_order_id,converted_client_id,last_contact_at,next_contact_at,converted_at,reject_reason,lead_quality,estimated_amount';
 const QUICK_STATUSES = ['В работе', 'Уточнение деталей', 'Расчёт подготовлен', 'КП отправлено', 'Ждём ответ', 'Нужно пересчитать', 'Согласовано', 'Отказ', 'Спам'];
 const DANGER_STATUSES = new Set(['Отказ', 'Спам']);
+let leadLoadSequence = 0;
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
@@ -156,7 +157,8 @@ function renderLeadDetails(lead) {
         <div id="needFormBox"></div>
       </section>
 
-      <section id="calculationsBox" class="v4-calculations-host"><div class="v4-empty">Расчёты загрузятся после открытия карточки.</div></section>
+      <section id="savedCalculationsBox" class="v4-calculations-host"><div class="v4-empty">Сохранённые расчёты загрузятся после открытия карточки.</div></section>
+      <section id="calculationsBox" class="v4-calculations-host"><div class="v4-empty">Конструктор расчёта загрузится после открытия карточки.</div></section>
       <section id="offersBox" class="v4-offers-host"><div class="v4-empty">Коммерческие предложения загрузятся после открытия карточки.</div></section>
 
       <details class="v4-subcard v4-source-details">
@@ -215,6 +217,7 @@ function renderLead(lead) {
 
 async function loadLead(id) {
   if (!id || !v4State.crmReady) return;
+  const requestSequence = ++leadLoadSequence;
   setState({ currentLeadBusy: true, currentLeadError: null });
   renderLoading();
   try {
@@ -224,10 +227,12 @@ async function loadLead(id) {
       'Карточка заявки не загрузилась за 16 секунд'
     );
     if (response.error) throw response.error;
+    if (requestSequence !== leadLoadSequence || v4State.route.leadId !== id) return;
     setState({ currentLead: response.data, currentLeadBusy: false, currentLeadError: null });
     renderLead(response.data);
     setStatus('Карточка заявки загружена', 'good');
   } catch (error) {
+    if (requestSequence !== leadLoadSequence || v4State.route.leadId !== id) return;
     const message = friendlyError(error);
     setState({ currentLead: null, currentLeadBusy: false, currentLeadError: message });
     renderError(message);
@@ -311,11 +316,11 @@ function handlePrimaryAction(button) {
     return;
   }
   if (action === 'start_offer') {
-    const calculationOfferButton = document.querySelector('#calculationsBox [data-v2-calc-create-offer]');
+    const calculationOfferButton = document.querySelector('#savedCalculationsBox [data-v2-calc-create-offer]');
     if (calculationOfferButton) {
       calculationOfferButton.click();
     } else {
-      byId('calculationsBox')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      byId('savedCalculationsBox')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       toast('Проверьте свободный расчёт с ненулевой суммой клиенту');
     }
     return;

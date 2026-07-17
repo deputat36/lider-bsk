@@ -58,8 +58,8 @@ for marker in ['.v4-need-workspace-summary', '.v4-need-form-head', '.v4-needs-he
 
 for marker in [
     'needs.css?v=20260717-workspace-1',
-    'lead-card.js?v=20260717-primary-action-2',
-    'needs.js?v=20260717-workspace-1',
+    'lead-card.js?v=20260717-load-integrity-1',
+    'needs.js?v=20260717-load-integrity-1',
 ]:
     if marker not in html:
         errors.append('Missing cache marker: ' + marker)
