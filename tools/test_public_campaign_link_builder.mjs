@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {
   CAMPAIGN_CHANNELS,
   CAMPAIGN_TARGETS,
+  buildCampaignPost,
   buildCampaignUrl,
   currentCampaignTag,
   normalizeUtmToken,
@@ -46,4 +47,33 @@ assert.equal(safeFallback.pathname, '/');
 assert.equal(safeFallback.searchParams.get('utm_source'), 'vk');
 assert.equal(safeFallback.searchParams.get('utm_medium'), 'social');
 
-console.log('Public campaign link builder is deterministic: fixed site targets, channel presets, transliteration and safe fallbacks are valid.');
+const publicPost = buildCampaignPost({
+  targetId: 'banners', channelId: 'vk_group', campaign: 'Баннеры июль', content: 'Пост 1',
+});
+assert.match(publicPost, /^Баннеры в Борисоглебске/);
+assert.match(publicPost, /Для расчёта достаточно сообщить размер/);
+assert.match(publicPost, /utm_source=vk/);
+assert.match(publicPost, /utm_campaign=bannery_iyul/);
+assert.doesNotMatch(publicPost, /undefined|null/);
+
+const directMessage = buildCampaignPost({ targetId: 'signs', channelId: 'max' });
+assert.match(directMessage, /^Здравствуйте!/);
+assert.match(directMessage, /utm_source=max/);
+assert.match(directMessage, /utm_medium=messenger/);
+
+const qrText = buildCampaignPost({ targetId: 'stickers', channelId: 'qr' });
+assert.match(qrText, /Сканируйте QR-код/);
+assert.match(qrText, /utm_medium=qr/);
+assert.doesNotMatch(qrText, /цена|гарант|за \d/iu);
+
+CAMPAIGN_TARGETS.forEach((target) => {
+  CAMPAIGN_CHANNELS.forEach((channel) => {
+    const post = buildCampaignPost({ targetId: target.id, channelId: channel.id });
+    assert.ok(post.length >= 140 && post.length <= 900, `${target.id}/${channel.id} has an unexpected length`);
+    assert.match(post, /^.+\n\n/u);
+    assert.match(post, /https:\/\/www\.lider-bsk\.ru\//);
+    assert.doesNotMatch(post, /undefined|null/);
+  });
+});
+
+console.log('Public campaign builder is deterministic: tracked links and channel-specific post copy are safe for every preset combination.');

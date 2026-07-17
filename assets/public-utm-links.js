@@ -1,9 +1,10 @@
 import {
   CAMPAIGN_CHANNELS,
   CAMPAIGN_TARGETS,
+  buildCampaignPost,
   buildCampaignUrl,
   currentCampaignTag,
-} from './public-campaign-link-model.js?v=1';
+} from './public-campaign-link-model.js?v=2';
 
 (()=>{
   'use strict';
@@ -18,6 +19,8 @@ import {
   const builderContent=document.getElementById('builder-content');
   const builderResult=document.getElementById('builder-result');
   const builderCopy=document.getElementById('builder-copy');
+  const builderPost=document.getElementById('builder-post');
+  const builderCopyPost=document.getElementById('builder-copy-post');
   const builderOpen=document.getElementById('builder-open');
   const resetTimers=new WeakMap();
 
@@ -63,11 +66,11 @@ import {
     if(!copied)throw new Error('copy_failed');
   }
 
-  function scheduleReset(button){
+  function scheduleReset(button,label=DEFAULT_LABEL){
     const current=resetTimers.get(button);
     if(current)window.clearTimeout(current);
     const timer=window.setTimeout(()=>{
-      button.textContent=DEFAULT_LABEL;
+      button.textContent=label;
       button.removeAttribute('data-copy-state');
       resetTimers.delete(button);
     },1400);
@@ -79,17 +82,20 @@ import {
   }
 
   function renderBuilder(){
-    if(!builderResult)return '';
-    const value=buildCampaignUrl({
+    if(!builderResult)return {url:'',post:''};
+    const params={
       targetId:builderTarget?.value,
       channelId:builderChannel?.value,
       campaign:builderCampaign?.value,
       content:builderContent?.value,
-    });
-    builderResult.href=value;
-    builderResult.textContent=value;
-    if(builderOpen)builderOpen.href=value;
-    return value;
+    };
+    const url=buildCampaignUrl(params);
+    const post=buildCampaignPost(params);
+    builderResult.href=url;
+    builderResult.textContent=url;
+    if(builderPost)builderPost.value=post;
+    if(builderOpen)builderOpen.href=url;
+    return {url,post};
   }
 
   function bootBuilder(){
@@ -135,20 +141,37 @@ import {
     renderBuilder();
   });
   builderCopy?.addEventListener('click',async()=>{
-    const value=renderBuilder();
+    const value=renderBuilder().url;
     builderCopy.disabled=true;
     try{
       await copyText(value);
       builderCopy.textContent=COPIED_LABEL;
       builderCopy.dataset.copyState='success';
       setBuilderStatus('Ссылка скопирована. Вставьте её в публикацию, сообщение или QR-код.');
-      scheduleReset(builderCopy);
+      scheduleReset(builderCopy,'Скопировать ссылку');
     }catch(error){
-      builderCopy.textContent=DEFAULT_LABEL;
+      builderCopy.textContent='Скопировать ссылку';
       builderCopy.removeAttribute('data-copy-state');
       setBuilderStatus('Не удалось скопировать автоматически. Выделите готовую ссылку и скопируйте её вручную.');
     }finally{
       builderCopy.disabled=false;
+    }
+  });
+  builderCopyPost?.addEventListener('click',async()=>{
+    const value=renderBuilder().post;
+    builderCopyPost.disabled=true;
+    try{
+      await copyText(value);
+      builderCopyPost.textContent='Пост скопирован';
+      builderCopyPost.dataset.copyState='success';
+      setBuilderStatus('Готовый текст со ссылкой скопирован. Его можно вставить в выбранный канал и при необходимости дополнить фотографией.');
+      scheduleReset(builderCopyPost,'Скопировать пост');
+    }catch(error){
+      builderCopyPost.textContent='Скопировать пост';
+      builderCopyPost.removeAttribute('data-copy-state');
+      setBuilderStatus('Не удалось скопировать автоматически. Выделите готовый пост и скопируйте его вручную.');
+    }finally{
+      builderCopyPost.disabled=false;
     }
   });
 

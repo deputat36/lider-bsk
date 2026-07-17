@@ -13,6 +13,7 @@ on:
       - 'tools/test_public_campaign_link_builder.mjs'
       - 'docs/PUBLIC_UTM_LINKS_ASSETS_2026-07-15.md'
       - 'docs/PUBLIC_CAMPAIGN_LINK_BUILDER_2026-07-17.md'
+      - 'docs/PUBLIC_CAMPAIGN_POST_BUILDER_2026-07-17.md'
       - 'docs/STATUS.md'
       - '.github/workflows/public-utm-links-assets-check.yml'
   pull_request:
@@ -27,6 +28,7 @@ on:
       - 'tools/test_public_campaign_link_builder.mjs'
       - 'docs/PUBLIC_UTM_LINKS_ASSETS_2026-07-15.md'
       - 'docs/PUBLIC_CAMPAIGN_LINK_BUILDER_2026-07-17.md'
+      - 'docs/PUBLIC_CAMPAIGN_POST_BUILDER_2026-07-17.md'
       - 'docs/STATUS.md'
       - '.github/workflows/public-utm-links-assets-check.yml'
 

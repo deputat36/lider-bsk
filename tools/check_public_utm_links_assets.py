@@ -121,9 +121,9 @@ def main() -> int:
         errors.append("utm-links.html must not contain inline style blocks")
     if parser.inline_script_count:
         errors.append("utm-links.html must not contain executable inline scripts")
-    if parser.stylesheets != ["assets/public-utm-links.css?v=2"]:
+    if parser.stylesheets != ["assets/public-utm-links.css?v=3"]:
         errors.append(f"Unexpected UTM page stylesheets: {parser.stylesheets}")
-    if parser.script_sources != ["assets/public-utm-links.js?v=2"]:
+    if parser.script_sources != ["assets/public-utm-links.js?v=3"]:
         errors.append(f"Unexpected UTM page scripts: {parser.script_sources}")
     if parser.copy_status_count != 1:
         errors.append(f"utm-links.html must contain one accessible copy status, found {parser.copy_status_count}")
@@ -150,8 +150,12 @@ def main() -> int:
         'id="builder-content"',
         'id="builder-result"',
         'id="builder-copy"',
+        'id="builder-post"',
+        'id="builder-copy-post"',
         'id="builder-status"',
         'Собрать ссылку для публикации',
+        'Готовый текст для выбранного канала',
+        'не обещает цену или срок',
     ):
         if marker not in page:
             errors.append(f"utm-links.html is missing campaign builder marker: {marker}")
@@ -161,6 +165,7 @@ def main() -> int:
         ".copy-status{",
         ".builder-fields{",
         ".generated-link{",
+        ".post-preview textarea{",
         ".builder-status{",
         ".btn[disabled]",
         ".linkbox:focus-visible",
@@ -178,10 +183,13 @@ def main() -> int:
         "button.dataset.copyState='success'",
         "setStatus(`Скопировано: ${linkContext(button)}.`)",
         "Не удалось скопировать ссылку автоматически",
-        "buildCampaignUrl({",
+        "buildCampaignUrl(params)",
         "currentCampaignTag()",
         "builderCopy?.addEventListener('click'",
+        "builderCopyPost?.addEventListener('click'",
+        "buildCampaignPost(params)",
         "Ссылка скопирована. Вставьте её в публикацию, сообщение или QR-код.",
+        "Готовый текст со ссылкой скопирован.",
     ):
         if marker not in js:
             errors.append(f"public-utm-links.js is missing marker: {marker}")
@@ -196,9 +204,14 @@ def main() -> int:
         "normalizeUtmToken",
         "currentCampaignTag",
         "buildCampaignUrl",
+        "buildCampaignPost",
         "telegram",
         "yandex_maps",
         "two_gis",
+        "channel.format === 'message'",
+        "channel.format === 'qr'",
+        "channel.format === 'listing'",
+        "channel.format === 'profile'",
     ):
         if marker not in model:
             errors.append(f"public-campaign-link-model.js is missing marker: {marker}")
@@ -211,7 +224,10 @@ def main() -> int:
         "CAMPAIGN_CHANNELS.length, 9",
         "bannery_iyul_2026",
         "qrRequest.pathname, '/request.html'",
-        "Public campaign link builder is deterministic",
+        "const publicPost = buildCampaignPost",
+        "CAMPAIGN_TARGETS.forEach",
+        "CAMPAIGN_CHANNELS.forEach",
+        "Public campaign builder is deterministic",
     ):
         if marker not in behavior_test:
             errors.append(f"campaign link behavior test is missing marker: {marker}")
@@ -220,7 +236,7 @@ def main() -> int:
         print("\n".join(errors))
         return 1
 
-    print("Internal UTM links, 12 presets and the offline campaign builder contracts are valid.")
+    print("Internal UTM links, 12 presets and the offline link/post builder contracts are valid.")
     return 0
 
 

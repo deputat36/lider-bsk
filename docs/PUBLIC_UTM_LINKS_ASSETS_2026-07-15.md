@@ -10,9 +10,9 @@ The internal noindex page `utm-links.html` was migrated away from executable inl
 
 Added:
 
-- `assets/public-utm-links.css?v=2`;
-- `assets/public-utm-links.js?v=2`;
-- pure model `assets/public-campaign-link-model.js?v=1`;
+- `assets/public-utm-links.css?v=3`;
+- `assets/public-utm-links.js?v=3`;
+- pure model `assets/public-campaign-link-model.js?v=2`;
 - `tools/check_public_utm_links_assets.py`;
 - `.github/workflows/public-utm-links-assets-check.yml`.
 
@@ -39,7 +39,7 @@ All 12 tracked links now have:
 - a local textarea fallback when Clipboard API access is unavailable;
 - a manual-copy message when automatic copying fails.
 
-The helper does not use network requests, storage, Supabase or analytics. The 12 fixed links remain available; the newer builder is documented in `docs/PUBLIC_CAMPAIGN_LINK_BUILDER_2026-07-17.md`.
+The helper does not use network requests, storage, Supabase or analytics. The 12 fixed links remain available; the newer link and post builders are documented in `docs/PUBLIC_CAMPAIGN_LINK_BUILDER_2026-07-17.md` and `docs/PUBLIC_CAMPAIGN_POST_BUILDER_2026-07-17.md`.
 
 ## Contract
 
