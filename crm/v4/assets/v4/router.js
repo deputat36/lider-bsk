@@ -30,6 +30,8 @@ export function openLeadRoute(id) {
 }
 
 export function bootRouter() {
+  if (window.LeaderV4RouterBooted) return;
+  window.LeaderV4RouterBooted = true;
   const leadId = getLeadIdFromUrl();
   setRoute({ leadId });
   window.addEventListener('popstate', () => {
