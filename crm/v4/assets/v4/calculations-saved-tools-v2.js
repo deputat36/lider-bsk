@@ -1,7 +1,9 @@
 import { supabaseClient } from './supabase-client.js';
 import { timeout, friendlyError } from './api.js';
-import { v4State, setState } from './state.js';
+import { v4State, setState, subscribeState } from './state.js';
 import { byId, setStatus, toast } from './ui.js';
+import { CRM_V4_ACTIONS, canPerformV4Action } from './action-permissions-v1.js';
+import { calculationOfferNextAction } from './calculation-offer-next-action-model-v1.js';
 import {
   savedCalculationDetailsCopy,
   savedCalculationItemReview,
@@ -24,6 +26,7 @@ let selectedItems = [];
 let detailsBusy = false;
 let detailsError = '';
 let renderTimer = null;
+let previousOffers = null;
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
@@ -105,6 +108,10 @@ function renderVersionBadges(versionState) {
 function renderCalc(calc, audit) {
   const active = calc.id === selectedId;
   const versionState = calculationVersionState(calc, audit);
+  const nextAction = calculationOfferNextAction(calc, v4State.offers || []);
+  const offerAction = nextAction.enabled && canPerformV4Action(CRM_V4_ACTIONS.OFFERS_WRITE)
+    ? `<button type="button" class="v4-primary" data-v2-calc-create-offer="${esc(calc.id)}">${esc(nextAction.label)}</button>`
+    : '';
   return `
     <article class="v4-saved-calc-card${active ? ' is-active' : ''}${calcClass(calc, versionState)}" data-version-state="${esc(versionState.tone)}">
       <div>
@@ -119,6 +126,7 @@ function renderCalc(calc, audit) {
         </div>
       </div>
       <div class="v4-saved-calc-actions">
+        ${offerAction}
         <button type="button" data-v2-calc-details="${esc(calc.id)}" aria-expanded="${active ? 'true' : 'false'}" aria-controls="savedCalculationDetails">${active ? 'Обновить состав' : 'Показать состав'}</button>
       </div>
     </article>`;
@@ -252,6 +260,12 @@ async function loadItems(id) {
 }
 
 function bind() {
+  previousOffers = v4State.offers;
+  subscribeState((state) => {
+    if (state.offers === previousOffers) return;
+    previousOffers = state.offers;
+    scheduleRender();
+  });
   document.addEventListener('leader-v4:lead-card-rendered', () => {
     render();
     loadCalculations(false);
@@ -267,6 +281,13 @@ function bind() {
   });
   document.addEventListener('leader-v4:crm-ready', () => loadCalculations(false));
   document.addEventListener('click', async (event) => {
+    const createOffer = event.target.closest?.('[data-v2-calc-create-offer]');
+    if (createOffer) {
+      document.dispatchEvent(new CustomEvent('leader-v4:create-offer-from-calculation', {
+        detail: { calculationId: createOffer.dataset.v2CalcCreateOffer }
+      }));
+      return;
+    }
     const details = event.target.closest?.('[data-v2-calc-details]');
     if (details) {
       await loadItems(details.dataset.v2CalcDetails);
