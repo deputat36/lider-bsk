@@ -24,6 +24,7 @@ function bootSiteCacheNote() {
   import('./public-lead-request-id-v1.js?v=20260710-request-id-1').catch(() => {});
   import('./crm-training-scenario-v1.js?v=20260712-training-3').catch(() => {});
   import('./management-workload-panel-v1.js?v=20260712-workload-1').catch(() => {});
+  import('./lead-attribution-funnel-panel-v1.js?v=20260717-attribution-1').catch(() => {});
   import('./need-readiness-panel-v1.js?v=20260713-readiness-1').catch(() => {});
   import('./finance-plan-actual-panel-v1.js?v=20260713-finance-1').catch(() => {});
   import('./design-task-draft-preview-v1.js?v=20260714-design-staging-1').catch(() => {});

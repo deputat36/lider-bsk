@@ -1,0 +1,47 @@
+name: CRM lead attribution funnel check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/lead-analytics-normalization.js'
+      - 'crm/v4/assets/v4/lead-attribution-funnel-model-v1.js'
+      - 'crm/v4/assets/v4/lead-attribution-funnel-panel-v1.js'
+      - 'crm/v4/assets/v4/leads.js'
+      - 'crm/v4/assets/v4/site-cache-note-v1.js'
+      - 'tools/test_lead_attribution_funnel.mjs'
+      - 'tools/check_lead_attribution_funnel.py'
+      - 'docs/CRM_LEAD_ATTRIBUTION_FUNNEL_MANUAL_TEST_2026-07-17.md'
+      - 'docs/STATUS.md'
+      - '.github/workflows/crm-lead-attribution-funnel-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/lead-analytics-normalization.js'
+      - 'crm/v4/assets/v4/lead-attribution-funnel-model-v1.js'
+      - 'crm/v4/assets/v4/lead-attribution-funnel-panel-v1.js'
+      - 'crm/v4/assets/v4/leads.js'
+      - 'crm/v4/assets/v4/site-cache-note-v1.js'
+      - 'tools/test_lead_attribution_funnel.mjs'
+      - 'tools/check_lead_attribution_funnel.py'
+      - 'docs/CRM_LEAD_ATTRIBUTION_FUNNEL_MANUAL_TEST_2026-07-17.md'
+      - 'docs/STATUS.md'
+      - '.github/workflows/crm-lead-attribution-funnel-check.yml'
+
+jobs:
+  lead-attribution-funnel:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate read-only attribution contracts
+        run: |
+          set -euo pipefail
+          python3 tools/check_lead_attribution_funnel.py
+          node --check crm/v4/assets/v4/lead-analytics-normalization.js
+          node --check crm/v4/assets/v4/lead-attribution-funnel-model-v1.js
+          node --check crm/v4/assets/v4/lead-attribution-funnel-panel-v1.js
+          node --check crm/v4/assets/v4/leads.js
+          node --check crm/v4/assets/v4/site-cache-note-v1.js
+          node --check tools/test_lead_attribution_funnel.mjs
+          node tools/test_lead_attribution_funnel.mjs
+          node tools/test_crm_lead_analytics_runtime.mjs

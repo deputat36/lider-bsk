@@ -6,7 +6,7 @@ import { openLeadRoute } from './router.js';
 import { leadAnalyticsSearchText } from './lead-analytics-normalization.js';
 import { describeLeadFilters, loadLeadListPreferences, resetLeadListPreferences, saveLeadListPreferences, sortLeadRows } from './lead-list-preferences-v1.js';
 
-const LEAD_LIST_FIELDS = 'id,created_at,name,phone,source,service,message,status,next_contact_at,page_url,budget,estimated_amount,city,converted_order_id,converted_client_id';
+const LEAD_LIST_FIELDS = 'id,created_at,name,phone,source,service,message,status,next_contact_at,page_url,source_page_path,request_id,utm_source,utm_medium,utm_campaign,budget,estimated_amount,city,converted_order_id,converted_client_id';
 const CLOSED_STATUSES = ['Спам', 'Создан заказ', 'Отказ', 'Не отвечает', 'Дорого', 'Передумал'];
 const ACTIVE_HIDDEN_STATUSES = new Set(CLOSED_STATUSES);
 const ARCHIVE_STATUSES = new Set(CLOSED_STATUSES);
