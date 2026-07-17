@@ -5,6 +5,7 @@ on:
   push:
     branches: [main]
     paths:
+      - 'assets/brand/logo-lider-header.svg'
       - 'assets/brand/logo-lider-mark.svg'
       - 'assets/brand/logo-lider-light.svg'
       - 'assets/public-lead-form.css'
@@ -15,6 +16,7 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - 'assets/brand/logo-lider-header.svg'
       - 'assets/brand/logo-lider-mark.svg'
       - 'assets/brand/logo-lider-light.svg'
       - 'assets/public-lead-form.css'
