@@ -992,6 +992,8 @@ function bindCalculationEvents() {
 }
 
 export function bootCalculations() {
+  if (window.LeaderV4CalculationsBooted) return;
+  window.LeaderV4CalculationsBooted = true;
   bindCalculationEvents();
   renderCalculations();
   if (v4State.crmReady && v4State.route.leadId) loadCalculations(v4State.route.leadId);
