@@ -57,7 +57,7 @@ for marker in [
 
 for marker in [
     'calculation-version-integrity-v1.css?v=20260715-1',
-    'calculations-saved-tools-v2.js?v=20260717-offer-next-1',
+    'calculations-saved-tools-v2.js?v=20260717-load-integrity-1',
 ]:
     if marker not in texts.get('html', ''):
         errors.append('Missing version asset marker: ' + marker)

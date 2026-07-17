@@ -15,6 +15,7 @@ const NEED_FIELDS = 'id,lead_id,client_id,need_type,title,description,structured
 const NEED_TYPES = ['Баннер', 'Вывеска', 'Пленка / наклейки', 'Полиграфия', 'Табличка', 'Дизайн', 'Монтаж', 'Интернет-реклама', 'Другое'];
 
 let saveBusy = false;
+let needsLoadSequence = 0;
 let workspace = {
   leadId: null,
   mode: 'create',
@@ -228,6 +229,7 @@ export async function loadNeeds(leadId = v4State.route.leadId) {
     emitNeedsLoaded(leadId);
     return [];
   }
+  const requestSequence = ++needsLoadSequence;
   if (workspace.leadId !== leadId) resetWorkspace(leadId, 'loading');
   setState({ leadNeedsBusy: true, leadNeedsError: null });
   renderNeeds();
@@ -243,6 +245,7 @@ export async function loadNeeds(leadId = v4State.route.leadId) {
       'Потребности не загрузились за 12 секунд'
     );
     if (response.error) throw response.error;
+    if (requestSequence !== needsLoadSequence || v4State.route.leadId !== leadId) return [];
     const needs = response.data || [];
     settleWorkspaceAfterLoad(leadId, needs);
     setState({ leadNeeds: needs, leadNeedsBusy: false, leadNeedsError: null });
@@ -250,6 +253,7 @@ export async function loadNeeds(leadId = v4State.route.leadId) {
     emitNeedsLoaded(leadId);
     return needs;
   } catch (error) {
+    if (requestSequence !== needsLoadSequence || v4State.route.leadId !== leadId) return [];
     const message = friendlyError(error);
     settleWorkspaceAfterLoad(leadId, []);
     setState({ leadNeeds: [], leadNeedsBusy: false, leadNeedsError: message });

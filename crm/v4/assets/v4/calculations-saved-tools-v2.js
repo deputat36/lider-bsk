@@ -1,6 +1,6 @@
 import { supabaseClient } from './supabase-client.js';
 import { timeout, friendlyError } from './api.js';
-import { v4State, setState, subscribeState } from './state.js';
+import { v4State, subscribeState } from './state.js';
 import { byId, setStatus, toast } from './ui.js';
 import { CRM_V4_ACTIONS, canPerformV4Action } from './action-permissions-v1.js';
 import { calculationOfferNextAction } from './calculation-offer-next-action-model-v1.js';
@@ -15,18 +15,18 @@ import {
   calculationVersionState
 } from './calculation-version-integrity-model-v1.js';
 
-const CALC_FIELDS = 'id,lead_id,need_id,client_id,title,status,version_number,client_total,contractor_cost,profit,margin_percent,warning_level,warnings,public_comment,internal_comment,commercial_offer_id,order_id,created_by,updated_by,created_at,updated_at';
 const ITEM_FIELDS = 'id,calculation_id,lead_id,catalog_id,category,item_type,name,unit,qty,contractor_price,contractor_sum,markup_percent,client_price,client_sum,profit,margin_percent,comment,data,sort_order,created_at,updated_at';
 
 let lastLeadId = null;
-let loadedLeadId = null;
-let loadingLeadId = null;
 let selectedId = null;
 let selectedItems = [];
 let detailsBusy = false;
 let detailsError = '';
 let renderTimer = null;
 let previousOffers = null;
+let previousCalculations = null;
+let previousCalculationsBusy = null;
+let previousCalculationsError = null;
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
@@ -42,7 +42,7 @@ function dateRu(value) {
 }
 
 function host() {
-  return byId('calculationsBox');
+  return byId('savedCalculationsBox');
 }
 
 function resetIfLeadChanged() {
@@ -53,40 +53,6 @@ function resetIfLeadChanged() {
   selectedItems = [];
   detailsBusy = false;
   detailsError = '';
-}
-
-async function loadCalculations(force = false) {
-  const leadId = v4State.route.leadId || null;
-  if (!leadId || !v4State.crmReady) return;
-  if (!force && loadingLeadId === leadId) return;
-  if (!force && loadedLeadId === leadId && Array.isArray(v4State.calculations) && !v4State.calculationsBusy) {
-    scheduleRender();
-    return;
-  }
-
-  loadingLeadId = leadId;
-  setState({ calculationsBusy: true, calculationsError: '' });
-  try {
-    const response = await timeout(
-      supabaseClient
-        .from('leader_lead_calculations')
-        .select(CALC_FIELDS)
-        .eq('lead_id', leadId)
-        .order('created_at', { ascending: false }),
-      12000,
-      'Расчёты не загрузились за 12 секунд'
-    );
-    if (response.error) throw response.error;
-    if (v4State.route.leadId !== leadId) return;
-    loadedLeadId = leadId;
-    setState({ calculations: response.data || [], calculationsBusy: false, calculationsError: '' });
-  } catch (error) {
-    loadedLeadId = null;
-    setState({ calculations: [], calculationsBusy: false, calculationsError: friendlyError(error) });
-  } finally {
-    if (loadingLeadId === leadId) loadingLeadId = null;
-    scheduleRender();
-  }
 }
 
 function calcClass(calc, versionState) {
@@ -261,25 +227,31 @@ async function loadItems(id) {
 
 function bind() {
   previousOffers = v4State.offers;
+  previousCalculations = v4State.calculations;
+  previousCalculationsBusy = v4State.calculationsBusy;
+  previousCalculationsError = v4State.calculationsError;
   subscribeState((state) => {
-    if (state.offers === previousOffers) return;
+    if (
+      state.offers === previousOffers
+      && state.calculations === previousCalculations
+      && state.calculationsBusy === previousCalculationsBusy
+      && state.calculationsError === previousCalculationsError
+    ) return;
     previousOffers = state.offers;
+    previousCalculations = state.calculations;
+    previousCalculationsBusy = state.calculationsBusy;
+    previousCalculationsError = state.calculationsError;
     scheduleRender();
   });
-  document.addEventListener('leader-v4:lead-card-rendered', () => {
-    render();
-    loadCalculations(false);
-  });
+  document.addEventListener('leader-v4:lead-card-rendered', render);
   document.addEventListener('leader-v4:route-change', () => {
-    loadedLeadId = null;
     lastLeadId = null;
     selectedId = null;
     selectedItems = [];
     detailsError = '';
     render();
-    setTimeout(() => loadCalculations(true), 80);
   });
-  document.addEventListener('leader-v4:crm-ready', () => loadCalculations(false));
+  document.addEventListener('leader-v4:crm-ready', scheduleRender);
   document.addEventListener('click', async (event) => {
     const createOffer = event.target.closest?.('[data-v2-calc-create-offer]');
     if (createOffer) {
@@ -302,7 +274,7 @@ function bind() {
     }
     if (event.target.closest?.('[data-v2-calc-refresh]')) {
       toast('Обновляю расчёты');
-      await loadCalculations(true);
+      document.dispatchEvent(new CustomEvent('leader-v4:refresh-calculations'));
     }
   });
 }

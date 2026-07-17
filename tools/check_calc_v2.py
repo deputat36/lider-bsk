@@ -46,7 +46,7 @@ checks = {
     index: [
         'calculation-contractor-quote-v1.js?v=20260701-shell-1',
         'calculations-saved-tools.css?v=20260715-review-1',
-        'calculations-saved-tools-v2.js?v=20260717-offer-next-1',
+        'calculations-saved-tools-v2.js?v=20260717-load-integrity-1',
     ],
     saved_model: [
         'savedCalculationPositionLabel',
