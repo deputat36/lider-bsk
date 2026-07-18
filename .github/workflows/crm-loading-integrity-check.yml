@@ -11,6 +11,10 @@ on:
       - 'crm/v4/assets/v4/offers.js'
       - 'crm/v4/assets/v4/router.js'
       - 'crm/v4/assets/v4/leads.js'
+      - 'crm/v4/assets/v4/lead-operational-quality-v1.js'
+      - 'crm/v4/assets/v4/lead-attribution-funnel-panel-v1.js'
+      - 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
+      - 'crm/v4/assets/v4/site-cache-note-v1.js'
       - 'tools/check_crm_loading_integrity.py'
       - '.github/workflows/crm-loading-integrity-check.yml'
   push:
@@ -24,6 +28,10 @@ on:
       - 'crm/v4/assets/v4/offers.js'
       - 'crm/v4/assets/v4/router.js'
       - 'crm/v4/assets/v4/leads.js'
+      - 'crm/v4/assets/v4/lead-operational-quality-v1.js'
+      - 'crm/v4/assets/v4/lead-attribution-funnel-panel-v1.js'
+      - 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
+      - 'crm/v4/assets/v4/site-cache-note-v1.js'
       - 'tools/check_crm_loading_integrity.py'
       - '.github/workflows/crm-loading-integrity-check.yml'
 
@@ -45,5 +53,9 @@ jobs:
           node --check crm/v4/assets/v4/offers.js
           node --check crm/v4/assets/v4/router.js
           node --check crm/v4/assets/v4/leads.js
+          node --check crm/v4/assets/v4/lead-operational-quality-v1.js
+          node --check crm/v4/assets/v4/lead-attribution-funnel-panel-v1.js
+          node --check crm/v4/assets/v4/lead-analytics-badges-v1.js
+          node --check crm/v4/assets/v4/site-cache-note-v1.js
       - name: Check loading ownership and stale response guards
         run: python3 tools/check_crm_loading_integrity.py
