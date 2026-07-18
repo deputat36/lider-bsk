@@ -18,8 +18,6 @@ CORE_PAGES = (
 
 V5_PAGES = (
     'kak-prohodit-zakaz.html',
-    'bannery-borisoglebsk.html',
-    'pechat-bannerov-borisoglebsk.html',
     'banner-dlya-magazina-borisoglebsk.html',
     'oformlenie-vhoda-borisoglebsk.html',
     'nakleyki-na-vitrinu-borisoglebsk.html',

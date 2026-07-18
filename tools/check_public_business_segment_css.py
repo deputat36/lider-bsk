@@ -11,7 +11,7 @@ PAGES = {
         'h1': 'Реклама для магазина в Борисоглебске',
         'cta': 'Рассчитать рекламу для магазина',
         'form_css': 'assets/public-lead-form.css?v=15',
-        'form_js': 'assets/public-lead-form.js?v=15',
+        'form_js': 'assets/public-lead-form.js?v=27',
         'cards': 14,
     },
     'reklama-dlya-kafe-borisoglebsk.html': {
