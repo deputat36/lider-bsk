@@ -5,9 +5,15 @@ import { byId, setStatus, toast } from './ui.js';
 import { openLeadRoute } from './router.js';
 
 const LEAD_FIELDS = 'id,created_at,name,phone,source,service,message,status,lead_quality,estimated_amount,next_contact_at,page_url,budget,city,converted_order_id,converted_client_id';
+const CLIENT_FIELDS = 'id,name,phone,source';
+const CLIENT_LIMIT = 200;
 
 let formReady = false;
 let busy = false;
+let clientPickerReady = false;
+let clientsLoading = false;
+let clientsLoaded = false;
+const clientsById = new Map();
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
@@ -32,6 +38,95 @@ function defaultNextContactValue() {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+function setClientHint(message, tone = '') {
+  const hint = byId('manualLeadClientHint');
+  if (!hint) return;
+  hint.textContent = message;
+  hint.dataset.tone = tone;
+}
+
+function clientOptionLabel(client) {
+  const name = String(client?.name || '').trim() || 'Без имени';
+  const phone = String(client?.phone || '').trim();
+  return phone ? `${name} · ${phone}` : `${name} · телефон не указан`;
+}
+
+function renderClientOptions(clients) {
+  const select = byId('manualLeadExistingClient');
+  if (!select) return;
+  const selected = select.value;
+  clientsById.clear();
+  (clients || []).forEach((client) => {
+    if (client?.id) clientsById.set(String(client.id), client);
+  });
+  const options = [...clientsById.values()]
+    .map((client) => `<option value="${esc(client.id)}">${esc(clientOptionLabel(client))}</option>`)
+    .join('');
+  select.innerHTML = `<option value="">Новый клиент / не выбирать из списка</option>${options}`;
+  select.disabled = false;
+  if (selected && clientsById.has(selected)) select.value = selected;
+  setClientHint(
+    clientsById.size
+      ? 'Выберите постоянного клиента — имя и телефон подставятся, а заявка сохранит связь с его карточкой.'
+      : 'Список клиентов пока пуст. Заполните данные новой заявки вручную.'
+  );
+}
+
+async function loadExistingClients(force = false) {
+  if (!v4State.crmReady || clientsLoading || (clientsLoaded && !force)) return;
+  clientsLoading = true;
+  const select = byId('manualLeadExistingClient');
+  const refresh = byId('refreshManualLeadClientsBtn');
+  if (select) select.disabled = true;
+  if (refresh) refresh.disabled = true;
+  setClientHint('Загружаю список клиентов...');
+  try {
+    const response = await timeout(
+      supabaseClient
+        .from('leader_clients')
+        .select(CLIENT_FIELDS)
+        .order('name', { ascending: true })
+        .limit(CLIENT_LIMIT),
+      12000,
+      'Список клиентов не загрузился за 12 секунд'
+    );
+    if (response.error) throw response.error;
+    renderClientOptions(response.data || []);
+    clientsLoaded = true;
+  } catch (error) {
+    if (select) select.disabled = !clientsLoaded;
+    setClientHint(`Не удалось загрузить клиентов: ${friendlyError(error)}. Заявку можно заполнить вручную.`, 'error');
+  } finally {
+    clientsLoading = false;
+    if (refresh) refresh.disabled = false;
+  }
+}
+
+function applyExistingClient(clientId) {
+  const id = String(clientId || '').trim();
+  if (!id) {
+    setClientHint('Новый клиент: заполните имя, телефон и источник вручную.');
+    return;
+  }
+  const client = clientsById.get(id);
+  if (!client) {
+    setClientHint('Выбранный клиент больше не найден. Обновите список или заполните заявку вручную.', 'error');
+    return;
+  }
+  const name = byId('manualLeadName');
+  const phone = byId('manualLeadPhone');
+  const source = byId('manualLeadSource');
+  if (name) name.value = String(client.name || '').trim();
+  if (phone) phone.value = String(client.phone || '').trim();
+  if (source) source.value = 'Повторный клиент';
+  setClientHint(
+    client.phone
+      ? 'Клиент выбран. Проверьте телефон и укажите, что ему нужно сейчас.'
+      : 'Клиент выбран, но телефон не заполнен. Добавьте контакт или пояснение в комментарии.',
+    client.phone ? 'good' : 'warn'
+  );
+}
+
 function leadPayload() {
   const name = byId('manualLeadName')?.value?.trim() || '';
   const phone = byId('manualLeadPhone')?.value?.trim() || '';
@@ -43,6 +138,7 @@ function leadPayload() {
   const leadQuality = byId('manualLeadQuality')?.value || 'Не оценена';
   const nextContactAt = localDateTimeToIso(byId('manualLeadNextContact')?.value || '');
   const message = byId('manualLeadMessage')?.value?.trim() || '';
+  const existingClientId = byId('manualLeadExistingClient')?.value?.trim() || '';
 
   if (!name && !phone) throw new Error('Укажите имя или телефон клиента');
   if (!phone && !message) throw new Error('Без телефона добавьте хотя бы комментарий, откуда заявка и что нужно клиенту');
@@ -58,6 +154,7 @@ function leadPayload() {
     estimated_amount: budget || 0,
     lead_quality: leadQuality,
     next_contact_at: nextContactAt,
+    converted_client_id: existingClientId || null,
     message,
     status: 'Новая',
     page_url: 'CRM v4 / ручное создание',
@@ -65,13 +162,14 @@ function leadPayload() {
       created_from: 'crm_v4_manual',
       created_by: v4State.user?.id || null,
       created_by_email: v4State.user?.email || null,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      existing_client_id: existingClientId || null
     }
   };
 }
 
 function resetForm() {
-  ['manualLeadName', 'manualLeadPhone', 'manualLeadService', 'manualLeadCity', 'manualLeadBudget', 'manualLeadMessage'].forEach((id) => {
+  ['manualLeadName', 'manualLeadPhone', 'manualLeadService', 'manualLeadBudget', 'manualLeadMessage'].forEach((id) => {
     const element = byId(id);
     if (element) element.value = '';
   });
@@ -79,6 +177,9 @@ function resetForm() {
   if (byId('manualLeadContact')) byId('manualLeadContact').value = 'MAX';
   if (byId('manualLeadQuality')) byId('manualLeadQuality').value = 'Не оценена';
   if (byId('manualLeadNextContact')) byId('manualLeadNextContact').value = defaultNextContactValue();
+  if (byId('manualLeadCity')) byId('manualLeadCity').value = 'Борисоглебск';
+  if (byId('manualLeadExistingClient')) byId('manualLeadExistingClient').value = '';
+  setClientHint('Новый клиент: заполните имя, телефон и источник вручную.');
 }
 
 function renderForm() {
@@ -88,6 +189,15 @@ function renderForm() {
     <details id="manualLeadBox" class="v4-manual-lead-box">
       <summary>Добавить заявку вручную</summary>
       <form id="manualLeadForm" class="v4-manual-lead-form">
+        <div class="v4-existing-client-picker">
+          <label>Постоянный клиент <span>(необязательно)</span>
+            <select id="manualLeadExistingClient" disabled>
+              <option value="">Список загрузится после открытия формы</option>
+            </select>
+          </label>
+          <button id="refreshManualLeadClientsBtn" type="button">Обновить список</button>
+          <small id="manualLeadClientHint">Можно выбрать клиента из базы или заполнить новую заявку вручную.</small>
+        </div>
         <div class="v4-form-grid">
           <label>Имя клиента
             <input id="manualLeadName" placeholder="Например: Иван">
@@ -150,6 +260,16 @@ function renderForm() {
   else section.insertAdjacentHTML('afterbegin', html);
 }
 
+function bindClientPicker() {
+  if (clientPickerReady) return;
+  const details = byId('manualLeadBox');
+  if (!details) return;
+  clientPickerReady = true;
+  details.addEventListener('toggle', async () => {
+    if (details.open) await loadExistingClients(false);
+  });
+}
+
 async function createLead() {
   if (busy) return;
   busy = true;
@@ -190,12 +310,18 @@ function bindForm() {
   });
   document.addEventListener('click', (event) => {
     if (event.target?.id === 'resetManualLeadBtn') resetForm();
+    if (event.target?.id === 'refreshManualLeadClientsBtn') loadExistingClients(true);
+  });
+  document.addEventListener('change', (event) => {
+    if (event.target?.id === 'manualLeadExistingClient') applyExistingClient(event.target.value);
   });
 }
 
 function bootManualLead() {
   renderForm();
   bindForm();
+  bindClientPicker();
+  if (byId('manualLeadBox')?.open) loadExistingClients(false);
 }
 
 document.addEventListener('DOMContentLoaded', bootManualLead);
