@@ -1,0 +1,66 @@
+name: Public priority form cache v27 check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'bannery-borisoglebsk.html'
+      - 'pechat-bannerov-borisoglebsk.html'
+      - 'vyveski-borisoglebsk.html'
+      - 'tablichki-borisoglebsk.html'
+      - 'nakleyki-plotternaya-rezka-borisoglebsk.html'
+      - 'pechat-na-plenke-borisoglebsk.html'
+      - 'reklama-dlya-magazina-borisoglebsk.html'
+      - 'assets/public-lead-form.js'
+      - 'assets/public-campaign-link-model.js'
+      - 'tools/check_public_priority_form_cache_v27.py'
+      - 'tools/check_public_simple_service_css.py'
+      - 'tools/check_public_pechat_bannerov_migration.py'
+      - 'tools/check_public_landing_first_page_migration.py'
+      - 'tools/check_public_business_segment_css.py'
+      - 'tools/check_public_lead_form_cache_v5_partial.py'
+      - 'tools/check_public_v5_landing_seo_contract.py'
+      - 'docs/PUBLIC_PRIORITY_FORM_CACHE_V27_2026-07-18.md'
+      - 'docs/STATUS.md'
+      - '.github/workflows/public-priority-form-cache-v27-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'bannery-borisoglebsk.html'
+      - 'pechat-bannerov-borisoglebsk.html'
+      - 'vyveski-borisoglebsk.html'
+      - 'tablichki-borisoglebsk.html'
+      - 'nakleyki-plotternaya-rezka-borisoglebsk.html'
+      - 'pechat-na-plenke-borisoglebsk.html'
+      - 'reklama-dlya-magazina-borisoglebsk.html'
+      - 'assets/public-lead-form.js'
+      - 'assets/public-campaign-link-model.js'
+      - 'tools/check_public_priority_form_cache_v27.py'
+      - 'tools/check_public_simple_service_css.py'
+      - 'tools/check_public_pechat_bannerov_migration.py'
+      - 'tools/check_public_landing_first_page_migration.py'
+      - 'tools/check_public_business_segment_css.py'
+      - 'tools/check_public_lead_form_cache_v5_partial.py'
+      - 'tools/check_public_v5_landing_seo_contract.py'
+      - 'docs/PUBLIC_PRIORITY_FORM_CACHE_V27_2026-07-18.md'
+      - 'docs/STATUS.md'
+      - '.github/workflows/public-priority-form-cache-v27-check.yml'
+
+jobs:
+  validate-priority-form-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate priority commercial form cache and existing page contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/check_public_priority_form_cache_v27.py
+          python3 tools/check_all_public_form_cache_versions.py
+          python3 tools/check_public_simple_service_css.py
+          python3 tools/check_public_pechat_bannerov_migration.py
+          python3 tools/check_public_landing_first_page_migration.py
+          python3 tools/check_public_business_segment_css.py
+          python3 tools/check_public_lead_form_cache_v5_partial.py
+          python3 tools/check_public_v5_landing_seo_contract.py
+          git diff --check
