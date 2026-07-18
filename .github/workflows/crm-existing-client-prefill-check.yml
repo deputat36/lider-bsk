@@ -1,0 +1,36 @@
+name: CRM existing client prefill check
+
+on:
+  pull_request:
+    paths:
+      - 'crm/v4/index.html'
+      - 'crm/v4/assets/v4/lead-create.js'
+      - 'crm/v4/assets/v4/lead-create.css'
+      - 'tools/check_crm_existing_client_prefill.py'
+      - 'tools/test_crm_existing_client_prefill.mjs'
+      - '.github/workflows/crm-existing-client-prefill-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'crm/v4/index.html'
+      - 'crm/v4/assets/v4/lead-create.js'
+      - 'crm/v4/assets/v4/lead-create.css'
+      - 'tools/check_crm_existing_client_prefill.py'
+      - 'tools/test_crm_existing_client_prefill.mjs'
+      - '.github/workflows/crm-existing-client-prefill-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  existing-client-prefill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check source contracts
+        run: |
+          node --check crm/v4/assets/v4/lead-create.js
+          python3 tools/check_crm_existing_client_prefill.py
+      - name: Run existing-client behavior test
+        run: node tools/test_crm_existing_client_prefill.mjs
