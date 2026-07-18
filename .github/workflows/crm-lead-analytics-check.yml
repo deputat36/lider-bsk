@@ -67,7 +67,7 @@ jobs:
           node --check crm/v4/assets/v4/lead-analytics-badges-v1.js
           node --check crm/v4/assets/v4/lead-analytics-summary-v1.js
           node --check tools/test_crm_lead_analytics_runtime.mjs
-          grep -q 'lead-analytics-badges-v1.js?v=20260709-1' crm/v4/index.html
+          grep -q 'lead-analytics-badges-v1.js?v=20260718-deferred-1' crm/v4/index.html
 
       - name: Run lead analytics runtime harness
         shell: bash
