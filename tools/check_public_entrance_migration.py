@@ -68,7 +68,7 @@ def main() -> None:
         '"@type":"Service"',
         'id="leader-lead-form" data-leader-lead-form',
         'data-service="Вывеска / наружная реклама"',
-        'assets/public-lead-form.js?v=5',
+        'assets/public-lead-form.js?v=28',
         'номер обращения — его можно использовать для быстрой проверки',
         'privacy.html',
         'Как проходит заказ',

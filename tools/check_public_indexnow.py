@@ -31,8 +31,8 @@ def main() -> None:
         if not key_file.is_file() or key_file.read_text(encoding='utf-8').strip() != key:
             errors.append('Root IndexNow key file is missing or does not match the declared key')
 
-    if len(paths) != 7 or len(set(paths)) != len(paths):
-        errors.append('IndexNow URL list must contain seven unique priority page paths')
+    if len(paths) != 6 or len(set(paths)) != len(paths):
+        errors.append('IndexNow URL list must contain six unique updated page paths')
 
     sitemap_root = ET.parse(SITEMAP).getroot()
     namespace = {'sm': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
