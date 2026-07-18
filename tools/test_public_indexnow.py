@@ -32,8 +32,8 @@ class PublicIndexNowTest(unittest.TestCase):
     def test_payload_is_canonical_and_scoped(self) -> None:
         value = public_indexnow.payload()
         self.assertEqual(value['host'], 'www.lider-bsk.ru')
-        self.assertEqual(len(value['urlList']), 7)
-        self.assertEqual(len(set(value['urlList'])), 7)
+        self.assertEqual(len(value['urlList']), 6)
+        self.assertEqual(len(set(value['urlList'])), 6)
         self.assertTrue(all(url.startswith('https://www.lider-bsk.ru/') for url in value['urlList']))
         self.assertTrue(all('?' not in url and '#' not in url for url in value['urlList']))
 

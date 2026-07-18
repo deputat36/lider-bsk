@@ -6,7 +6,6 @@ ROOT = Path(__file__).resolve().parents[1]
 CSS_PATH = ROOT / 'assets' / 'public-campaign-landing.css'
 FORM_CSS = 'assets/public-lead-form.css?v=4'
 SHARED_CSS = 'assets/public-campaign-landing.css?v=1'
-FORM_JS = 'assets/public-lead-form.js?v=5'
 
 PAGES = {
     'reklamnye-posty-vk-borisoglebsk.html': {
@@ -21,6 +20,7 @@ PAGES = {
         ),
         'data_service': 'Соцсети и контент',
         'price_cards': 3,
+        'form_js': 'assets/public-lead-form.js?v=5',
     },
     'reklama-otkrytiya-magazina-borisoglebsk.html': {
         'body_class': 'page-store-opening',
@@ -34,6 +34,7 @@ PAGES = {
         ),
         'data_service': 'Комплексная реклама',
         'price_cards': 0,
+        'form_js': 'assets/public-lead-form.js?v=28',
     },
 }
 
@@ -64,7 +65,7 @@ for page_name, expected in PAGES.items():
     ):
         raise SystemExit(f'{page_name}: executable inline script is not allowed')
 
-    for marker in (FORM_CSS, SHARED_CSS, FORM_JS):
+    for marker in (FORM_CSS, SHARED_CSS, expected['form_js']):
         if html.count(marker) != 1:
             raise SystemExit(f'{page_name}: expected exactly one {marker}')
     if html.index(FORM_CSS) > html.index(SHARED_CSS):

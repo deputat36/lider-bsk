@@ -11,6 +11,7 @@ CACHE_CHECK = ROOT / 'tools/check_public_lead_form_cache_v5_partial.py'
 SITEMAP = ROOT / 'sitemap.xml'
 BASE_URL = 'https://www.lider-bsk.ru/'
 CORE_SCRIPT = 'assets/public-lead-form.js?v=23'
+V28_SCRIPT = 'assets/public-lead-form.js?v=28'
 V5_SCRIPT = 'assets/public-lead-form.js?v=5'
 FORBIDDEN_MARKERS = (
     '/crm/',
@@ -92,9 +93,11 @@ class PageContractParser(HTMLParser):
 def main() -> None:
     core_pages = load_page_group('CORE_PAGES')
     v5_pages = load_page_group('V5_PAGES')
+    v28_pages = load_page_group('V28_PAGES')
     expected_scripts = {
         **{name: CORE_SCRIPT for name in core_pages},
         **{name: V5_SCRIPT for name in v5_pages},
+        **{name: V28_SCRIPT for name in v28_pages},
     }
     sitemap = SITEMAP.read_text(encoding='utf-8')
     errors: list[str] = []
@@ -147,7 +150,8 @@ def main() -> None:
 
     print(
         'Public landing SEO and contour contract is valid for '
-        f'{len(core_pages)} core v23 pages and {len(v5_pages)} v5 pages.'
+        f'{len(core_pages)} core v23 pages, {len(v5_pages)} v5 pages and '
+        f'{len(v28_pages)} related commercial v28 pages.'
     )
 
 

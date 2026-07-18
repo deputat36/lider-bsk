@@ -103,6 +103,11 @@ PRIORITY_FORM_PAGES = {
     'nakleyki-plotternaya-rezka-borisoglebsk.html',
 }
 
+FORM_SCRIPT_OVERRIDES = {
+    **{name: 'assets/public-lead-form.js?v=27' for name in PRIORITY_FORM_PAGES},
+    'outdoor-advertising-borisoglebsk.html': 'assets/public-lead-form.js?v=28',
+}
+
 css = CSS.read_text(encoding='utf-8')
 if len(css) < 1950:
     raise SystemExit(f'Shared simple service CSS is unexpectedly small: {len(css)} bytes')
@@ -144,11 +149,7 @@ for page_name, expected in PAGES.items():
 
     form_css = 'assets/public-lead-form.css?v=4'
     shared_css = expected['shared_css']
-    form_js = (
-        'assets/public-lead-form.js?v=27'
-        if page_name in PRIORITY_FORM_PAGES
-        else 'assets/public-lead-form.js?v=5'
-    )
+    form_js = FORM_SCRIPT_OVERRIDES.get(page_name, 'assets/public-lead-form.js?v=5')
     for marker in (form_css, shared_css, form_js):
         if html.count(marker) != 1:
             raise SystemExit(f'{page_name}: expected exactly one {marker}')
