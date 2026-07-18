@@ -7,6 +7,8 @@ import { buildLeadAttributionFunnel } from './lead-attribution-funnel-model-v1.j
 const PANEL_ID = 'leadAttributionFunnelV1';
 const STYLE_ID = 'leadAttributionFunnelV1Styles';
 const CACHE_MS = 60000;
+const DEFERRED_ATTRIBUTION_DELAY_MS = 2200;
+const RETURN_TO_LEADS_DELAY_MS = 500;
 const CALCULATION_FIELDS = 'id,lead_id';
 const OFFER_FIELDS = 'id,lead_id';
 const ORDER_FIELDS = 'id,lead_id,client_total';
@@ -15,6 +17,8 @@ let busy = false;
 let loadedAt = 0;
 let snapshot = null;
 let errorText = '';
+let deferredAttributionTimer = 0;
+let deferredAttributionIdle = 0;
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>\"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[char]));
@@ -118,6 +122,38 @@ async function load(force = false) {
   }
 }
 
+function leadsTabActive() {
+  return document.body?.dataset?.v4Tab === 'leads';
+}
+
+function cancelScheduledAttribution() {
+  if (deferredAttributionTimer) window.clearTimeout(deferredAttributionTimer);
+  if (deferredAttributionIdle && typeof window.cancelIdleCallback === 'function') {
+    window.cancelIdleCallback(deferredAttributionIdle);
+  }
+  deferredAttributionTimer = 0;
+  deferredAttributionIdle = 0;
+}
+
+function scheduleAttribution(force = false, delayMs = DEFERRED_ATTRIBUTION_DELAY_MS) {
+  cancelScheduledAttribution();
+  if (!v4State.crmReady || !v4State.leadsLoaded) return;
+
+  deferredAttributionTimer = window.setTimeout(() => {
+    deferredAttributionTimer = 0;
+    const run = () => {
+      deferredAttributionIdle = 0;
+      if (!leadsTabActive() || !v4State.crmReady || !v4State.leadsLoaded) return;
+      load(force);
+    };
+    if (typeof window.requestIdleCallback === 'function') {
+      deferredAttributionIdle = window.requestIdleCallback(run, { timeout: 1800 });
+    } else {
+      run();
+    }
+  }, delayMs);
+}
+
 function applyFilter(value) {
   const query = String(value || '').trim();
   if (!query) return;
@@ -130,11 +166,18 @@ function applyFilter(value) {
 function boot() {
   ensurePanel();
   render();
-  document.addEventListener('leader-v4:leads-loaded', () => load(true));
-  document.addEventListener('leader-v4:crm-ready', () => { if (v4State.leadsLoaded) load(false); });
+  document.addEventListener('leader-v4:leads-loaded', () => scheduleAttribution(true));
+  document.addEventListener('leader-v4:crm-ready', () => {
+    if (v4State.leadsLoaded) scheduleAttribution(false);
+  });
+  document.addEventListener('leader-v4:tab-opened', (event) => {
+    if (event.detail?.tab === 'leads') scheduleAttribution(false, RETURN_TO_LEADS_DELAY_MS);
+    else cancelScheduledAttribution();
+  });
   document.addEventListener('click', (event) => {
     if (event.target.closest?.('[data-lead-attribution-refresh]')) {
       event.preventDefault();
+      cancelScheduledAttribution();
       load(true);
       return;
     }
@@ -144,7 +187,7 @@ function boot() {
       applyFilter(filter.dataset.leadAttributionFilter);
     }
   });
-  if (v4State.crmReady && v4State.leadsLoaded) load(false);
+  if (v4State.crmReady && v4State.leadsLoaded) scheduleAttribution(false);
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
