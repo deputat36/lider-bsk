@@ -5,11 +5,17 @@ on:
     branches: [main]
     paths:
       - 'sitemap.xml'
+      - 'tools/check_public_sitemap_freshness.py'
+      - 'docs/PUBLIC_SITEMAP_FRESHNESS_2026-07-18.md'
+      - 'docs/STATUS.md'
       - '.github/workflows/public-sitemap-seo-check.yml'
   pull_request:
     branches: [main]
     paths:
       - 'sitemap.xml'
+      - 'tools/check_public_sitemap_freshness.py'
+      - 'docs/PUBLIC_SITEMAP_FRESHNESS_2026-07-18.md'
+      - 'docs/STATUS.md'
       - '.github/workflows/public-sitemap-seo-check.yml'
 
 jobs:
@@ -54,3 +60,5 @@ jobs:
           if len(urls) < 20:
               raise SystemExit('sitemap.xml unexpectedly has too few public URLs')
           PY
+          python3 tools/check_public_sitemap_freshness.py
+          git diff --check
