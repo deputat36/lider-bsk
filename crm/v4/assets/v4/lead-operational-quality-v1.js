@@ -8,6 +8,8 @@ const PANEL_ID = 'leadOperationalQualityV1';
 const QUEUE_HOST_ID = 'leadOperationalQueueV1';
 const STYLE_ID = 'leadOperationalQualityV1Styles';
 const CACHE_MS = 60000;
+const DEFERRED_QUALITY_DELAY_MS = 900;
+const RETURN_TO_LEADS_DELAY_MS = 300;
 const LEAD_FIELDS = 'id,status,assigned_to,next_contact_at,created_at,service,source';
 const NEED_FIELDS = 'id,lead_id,completeness_score,status,created_at,updated_at';
 
@@ -23,6 +25,8 @@ let loadedAt = 0;
 let snapshot = null;
 let errorText = '';
 let activeQueue = '';
+let deferredQualityTimer = 0;
+let deferredQualityIdle = 0;
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>\"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[m]));
@@ -215,6 +219,38 @@ async function loadQuality(force = false) {
   }
 }
 
+function leadsTabActive() {
+  return document.body?.dataset?.v4Tab === 'leads';
+}
+
+function cancelScheduledQuality() {
+  if (deferredQualityTimer) window.clearTimeout(deferredQualityTimer);
+  if (deferredQualityIdle && typeof window.cancelIdleCallback === 'function') {
+    window.cancelIdleCallback(deferredQualityIdle);
+  }
+  deferredQualityTimer = 0;
+  deferredQualityIdle = 0;
+}
+
+function scheduleQuality(force = false, delayMs = DEFERRED_QUALITY_DELAY_MS) {
+  cancelScheduledQuality();
+  if (!v4State.crmReady || !v4State.leadsLoaded || !canOpenV4Tab('leads')) return;
+
+  deferredQualityTimer = window.setTimeout(() => {
+    deferredQualityTimer = 0;
+    const run = () => {
+      deferredQualityIdle = 0;
+      if (!leadsTabActive() || !v4State.crmReady || !v4State.leadsLoaded) return;
+      loadQuality(force);
+    };
+    if (typeof window.requestIdleCallback === 'function') {
+      deferredQualityIdle = window.requestIdleCallback(run, { timeout: 1500 });
+    } else {
+      run();
+    }
+  }, delayMs);
+}
+
 function openQueueLead(leadId) {
   if (!leadId) return;
   closeQueue();
@@ -225,15 +261,19 @@ function openQueueLead(leadId) {
 function boot() {
   renderPanel();
   subscribeState(() => renderPanel());
-  document.addEventListener('leader-v4:crm-ready', () => loadQuality(true));
-  document.addEventListener('leader-v4:leads-loaded', () => loadQuality(false));
+  document.addEventListener('leader-v4:crm-ready', () => {
+    if (v4State.leadsLoaded) scheduleQuality(false);
+  });
+  document.addEventListener('leader-v4:leads-loaded', () => scheduleQuality(false));
   document.addEventListener('leader-v4:tab-opened', (event) => {
-    if (event.detail?.tab === 'leads') loadQuality(false);
+    if (event.detail?.tab === 'leads') scheduleQuality(false, RETURN_TO_LEADS_DELAY_MS);
+    else cancelScheduledQuality();
   });
   document.addEventListener('click', (event) => {
     const refresh = event.target.closest?.('[data-quality-refresh]');
     if (refresh) {
       event.preventDefault();
+      cancelScheduledQuality();
       loadQuality(true);
       return;
     }
@@ -257,6 +297,7 @@ function boot() {
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && activeQueue) closeQueue();
   });
+  if (v4State.crmReady && v4State.leadsLoaded) scheduleQuality(false);
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);

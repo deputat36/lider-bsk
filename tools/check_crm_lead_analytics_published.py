@@ -29,7 +29,7 @@ USER_AGENT = "lider-bsk-published-smoke/1.1"
 INDEX_MARKERS = (
     "<title>РА Лидер — CRM v4</title>",
     'assets/v4/leads.js?v=',
-    'assets/v4/lead-analytics-badges-v1.js?v=20260709-1',
+    'assets/v4/lead-analytics-badges-v1.js?v=',
     'id="leadSearch"',
     'id="leadsList"',
 )
@@ -69,7 +69,7 @@ TARGETS = (
     ),
     Target(
         "analytics badges module",
-        f"{CANONICAL_BASE_URL}assets/v4/lead-analytics-badges-v1.js?v=20260709-1",
+        f"{CANONICAL_BASE_URL}assets/v4/lead-analytics-badges-v1.js?v=20260718-deferred-1",
         "javascript",
         (
             "import './lead-analytics-summary-v1.js';",

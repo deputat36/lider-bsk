@@ -12,6 +12,8 @@ files = {
     'offers': root / 'crm/v4/assets/v4/offers.js',
     'router': root / 'crm/v4/assets/v4/router.js',
     'leads': root / 'crm/v4/assets/v4/leads.js',
+    'quality': root / 'crm/v4/assets/v4/lead-operational-quality-v1.js',
+    'attribution': root / 'crm/v4/assets/v4/lead-attribution-funnel-panel-v1.js',
     'html': root / 'crm/v4/index.html',
 }
 errors = []
@@ -46,6 +48,16 @@ required = {
     'offers': ['offersLoadSequence', 'v4State.route.leadId !== leadId'],
     'router': ['window.LeaderV4RouterBooted'],
     'leads': ['window.LeaderV4LeadsBooted'],
+    'quality': [
+        'const DEFERRED_QUALITY_DELAY_MS = 900',
+        'function scheduleQuality(',
+        'window.requestIdleCallback(run, { timeout: 1500 })',
+    ],
+    'attribution': [
+        'const DEFERRED_ATTRIBUTION_DELAY_MS = 2200',
+        'function scheduleAttribution(',
+        'window.requestIdleCallback(run, { timeout: 1800 })',
+    ],
     'html': [
         'lead-card.js?v=20260717-first-contact-1',
         'needs.js?v=20260717-load-integrity-1',
@@ -53,7 +65,7 @@ required = {
         'router.js?v=20260717-module-singleton-1',
         'leads.js?v=20260717-module-singleton-1',
         'calculations.js?v=20260717-module-singleton-1',
-        'site-cache-note-v1.js?v=20260717-module-singleton-1',
+        'site-cache-note-v1.js?v=20260718-deferred-1',
         'offers.js?v=20260717-load-integrity-1',
     ],
 }
@@ -92,8 +104,8 @@ else:
         './assets/v4/router.js': './assets/v4/router.js?v=20260717-module-singleton-1',
         './assets/v4/leads.js': './assets/v4/leads.js?v=20260717-module-singleton-1',
         './assets/v4/calculations.js': './assets/v4/calculations.js?v=20260717-module-singleton-1',
-        './assets/v4/site-cache-note-v1.js': './assets/v4/site-cache-note-v1.js?v=20260717-module-singleton-1',
-        './assets/v4/site-cache-note-v1.js?v=20260621-1': './assets/v4/site-cache-note-v1.js?v=20260717-module-singleton-1',
+        './assets/v4/site-cache-note-v1.js': './assets/v4/site-cache-note-v1.js?v=20260718-deferred-1',
+        './assets/v4/site-cache-note-v1.js?v=20260621-1': './assets/v4/site-cache-note-v1.js?v=20260718-deferred-1',
     }
     for source, target in expected_singletons.items():
         if imports.get(source) != target:

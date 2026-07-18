@@ -23,10 +23,14 @@ checks = {
         'Что приносит заказы', 'Заявка → расчёт → КП → заказ',
         'По нормализованным источникам', 'По страницам и точкам входа',
         'request_id', 'data-lead-attribution-filter', 'data-lead-attribution-refresh',
+        'const DEFERRED_ATTRIBUTION_DELAY_MS = 2200',
+        'function scheduleAttribution(',
+        'window.requestIdleCallback(run, { timeout: 1800 })',
+        "document.body?.dataset?.v4Tab === 'leads'",
     ],
     normalization: ['normalizeLeadLandingPage', 'utmSource', 'Telegram', 'QR-код', 'Поиск', 'Email'],
     leads: ['source_page_path,request_id,utm_source,utm_medium,utm_campaign'],
-    loader: ["import('./lead-attribution-funnel-panel-v1.js?v=20260717-attribution-1')"],
+    loader: ["import('./lead-attribution-funnel-panel-v1.js?v=20260718-deferred-1')"],
     test: ['UTM priority', 'plannedRevenue, 60000', 'Lead attribution funnel behavior is valid'],
     manual: ['13 обращений', '5 связаны с заказом', 'Read-only', 'Network', 'Production boundary'],
     status: ['Воронка заказов по источникам и страницам'],
@@ -53,6 +57,12 @@ for path in [model, panel, normalization]:
 
 if panel.exists():
     text = panel.read_text(encoding='utf-8')
+    for immediate_load in [
+        "document.addEventListener('leader-v4:leads-loaded', () => load(true))",
+        'if (v4State.crmReady && v4State.leadsLoaded) load(false)',
+    ]:
+        if immediate_load in text:
+            errors.append(f'Attribution panel must defer noncritical startup load: {immediate_load}')
     for forbidden_field in ['client_name', 'client_phone', 'phone,', 'message,', 'internal_comment', 'contractor_cost', 'profit,']:
         if forbidden_field in text:
             errors.append(f'Attribution panel must not request personal, comment or margin fields: {forbidden_field}')

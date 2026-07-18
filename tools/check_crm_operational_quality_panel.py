@@ -16,6 +16,10 @@ checks = {
         "import { statusDefinition } from './status-transitions-v1.js';",
         "import { openLeadRoute } from './router.js';",
         'const CACHE_MS = 60000',
+        'const DEFERRED_QUALITY_DELAY_MS = 900',
+        'function scheduleQuality(',
+        'window.requestIdleCallback(run, { timeout: 1500 })',
+        "document.body?.dataset?.v4Tab === 'leads'",
         "const LEAD_FIELDS = 'id,status,assigned_to,next_contact_at,created_at,service,source'",
         "const NEED_FIELDS = 'id,lead_id,completeness_score,status,created_at,updated_at'",
         "statusDefinition('lead', lead?.status || 'Новая')",
@@ -43,7 +47,7 @@ checks = {
         'data-quality-refresh',
     ],
     badges: [
-        "import './lead-operational-quality-v1.js';",
+        "import './lead-operational-quality-v1.js?v=20260718-deferred-1';",
     ],
     manual: [
         'active leads without assignee: 7',
@@ -92,6 +96,7 @@ if panel.exists():
         'internal_comment',
         'client_phone',
         'message,email',
+        "document.addEventListener('leader-v4:crm-ready', () => loadQuality(true))",
     ]
     for marker in forbidden:
         if marker in text:
