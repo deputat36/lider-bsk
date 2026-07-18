@@ -1,0 +1,66 @@
+name: Public IndexNow notify
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '93997a8ea7f1013d09703e47ac5ece584a3b0fcaf26738f8.txt'
+      - 'bannery-borisoglebsk.html'
+      - 'pechat-bannerov-borisoglebsk.html'
+      - 'vyveski-borisoglebsk.html'
+      - 'tablichki-borisoglebsk.html'
+      - 'nakleyki-plotternaya-rezka-borisoglebsk.html'
+      - 'pechat-na-plenke-borisoglebsk.html'
+      - 'reklama-dlya-magazina-borisoglebsk.html'
+      - 'sitemap.xml'
+      - 'tools/public-indexnow-urls.txt'
+      - 'tools/public_indexnow.py'
+      - 'tools/check_public_indexnow.py'
+      - 'tools/test_public_indexnow.py'
+      - 'docs/PUBLIC_INDEXNOW_2026-07-18.md'
+      - 'docs/STATUS.md'
+      - '.github/workflows/public-indexnow-notify.yml'
+  push:
+    branches: [main]
+    paths:
+      - '93997a8ea7f1013d09703e47ac5ece584a3b0fcaf26738f8.txt'
+      - 'bannery-borisoglebsk.html'
+      - 'pechat-bannerov-borisoglebsk.html'
+      - 'vyveski-borisoglebsk.html'
+      - 'tablichki-borisoglebsk.html'
+      - 'nakleyki-plotternaya-rezka-borisoglebsk.html'
+      - 'pechat-na-plenke-borisoglebsk.html'
+      - 'reklama-dlya-magazina-borisoglebsk.html'
+      - 'sitemap.xml'
+      - 'tools/public-indexnow-urls.txt'
+      - 'tools/public_indexnow.py'
+      - 'tools/check_public_indexnow.py'
+      - 'tools/test_public_indexnow.py'
+      - 'docs/PUBLIC_INDEXNOW_2026-07-18.md'
+      - 'docs/STATUS.md'
+      - '.github/workflows/public-indexnow-notify.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-indexnow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate IndexNow key, URL scope and dry payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/check_public_indexnow.py
+          python3 tools/test_public_indexnow.py
+          git diff --check
+
+  notify-indexnow:
+    if: github.event_name == 'push'
+    needs: validate-indexnow
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Notify Yandex about the seven updated URLs
+        run: python3 tools/public_indexnow.py --submit
