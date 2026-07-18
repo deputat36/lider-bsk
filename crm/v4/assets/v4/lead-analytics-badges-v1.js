@@ -1,5 +1,5 @@
 import './lead-analytics-summary-v1.js';
-import './lead-operational-quality-v1.js';
+import './lead-operational-quality-v1.js?v=20260718-deferred-1';
 import './lead-status-ui-registry-v1.js';
 import './order-operational-quality-v1.js';
 import { v4State } from './state.js';
