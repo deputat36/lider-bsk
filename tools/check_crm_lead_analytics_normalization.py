@@ -102,7 +102,7 @@ if not index.exists():
     errors.append('Missing CRM v4 index')
 else:
     text = index.read_text(encoding='utf-8')
-    if 'lead-analytics-badges-v1.js?v=20260709-1' not in text:
+    if 'lead-analytics-badges-v1.js?v=20260718-deferred-1' not in text:
         errors.append('CRM index does not load lead analytics badges module')
 
 if not plan.exists():
