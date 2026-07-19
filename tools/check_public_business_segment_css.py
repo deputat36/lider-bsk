@@ -44,21 +44,26 @@ PAGES = {
 }
 
 css = CSS.read_text(encoding='utf-8')
-if len(css) < 3000:
-    raise SystemExit(f'Business segment CSS is unexpectedly small: {len(css)} bytes')
+if len(css) < 6500:
+    raise SystemExit(f'Business segment design CSS is unexpectedly small: {len(css)} bytes')
 
 for marker in (
+    'business segment pages — design system v2',
     'body{--hero-copy-max:980px;--lead-copy-max:920px',
     'body.page-business-shop{--hero-copy-max:940px;--lead-copy-max:900px}',
-    '.hero p{font-size:20px;color:rgba(255,255,255,.82);max-width:var(--hero-copy-max)}',
-    '.lead{font-size:18px;color:var(--muted);max-width:var(--lead-copy-max)}',
-    '.grid{display:grid;grid-template-columns:repeat(3,1fr)',
-    '.steps{display:grid;grid-template-columns:repeat(4,1fr)',
-    '.cta{background:linear-gradient(135deg,#111827,#020617)',
-    '@media(max-width:900px){.grid,.grid2,.steps,.cta{grid-template-columns:1fr}',
+    '.hero{position:relative;overflow:hidden;isolation:isolate;background:linear-gradient(145deg,#090a0c,#1b1e22 68%,#0e1013)',
+    '.hero p{font-size:clamp(18px,2vw,22px);color:rgba(255,255,255,.78);max-width:var(--hero-copy-max)}',
+    '.lead{font-size:17px;color:var(--muted);max-width:var(--lead-copy-max)',
+    '.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))',
+    '.card:before{content:""',
+    '.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))',
+    '.cta{position:relative;overflow:hidden;background:linear-gradient(145deg,#090a0c,#1b1e22)',
+    '@media(max-width:900px)',
+    '@media(max-width:560px)',
+    '@media(prefers-reduced-motion:reduce)',
 ):
     if marker not in css:
-        raise SystemExit(f'Missing CSS contract marker: {marker}')
+        raise SystemExit(f'Missing CSS design v2 contract marker: {marker}')
 
 for page_name, expected in PAGES.items():
     html = (ROOT / page_name).read_text(encoding='utf-8')
@@ -100,4 +105,4 @@ for page_name, expected in PAGES.items():
     if '"@type":"Service"' not in html:
         raise SystemExit(f'{page_name}: Service JSON-LD missing')
 
-print('Shared business segment CSS contract is valid for four pages and 62 cards.')
+print('Shared business segment design v2 contract is valid for four pages and 62 cards.')
