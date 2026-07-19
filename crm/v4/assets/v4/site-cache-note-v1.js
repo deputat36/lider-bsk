@@ -1,11 +1,21 @@
 const CRM_ACCESS_ROUTE_VERSION = '20260712-training-3';
 
+function ensureDesignV2DynamicCss() {
+  if (document.getElementById('leaderDesignV2DynamicCss')) return;
+  const link = document.createElement('link');
+  link.id = 'leaderDesignV2DynamicCss';
+  link.rel = 'stylesheet';
+  link.href = 'assets/v4/design-v2-dynamic.css?v=20260719-1';
+  document.head.appendChild(link);
+}
+
 function bootSiteCacheNote() {
+  ensureDesignV2DynamicCss();
   if (document.getElementById('siteCacheNoteV1')) return;
   const note = document.createElement('div');
   note.id = 'siteCacheNoteV1';
-  note.style.cssText = 'position:fixed;left:14px;bottom:14px;z-index:9999;max-width:360px;background:#0f172a;color:#fff;border-radius:16px;padding:12px 14px;font:13px/1.4 Arial,sans-serif;box-shadow:0 16px 44px rgba(15,23,42,.24);display:none';
-  note.innerHTML = `<b style="display:block;margin-bottom:4px">Подсказка проверки</b>Если на сайте или в CRM виден старый вид, нажмите Ctrl + F5. Это обновит кеш CSS/JS.<br><span style="display:block;margin-top:6px;color:#bfdbfe">CRM build: ${CRM_ACCESS_ROUTE_VERSION}</span>`;
+  note.style.cssText = 'position:fixed;left:14px;bottom:14px;z-index:9999;max-width:360px;background:linear-gradient(145deg,#090a0c,#1b1e22);color:#fff;border:1px solid rgba(255,106,0,.34);border-radius:18px;padding:13px 15px;font:13px/1.45 Montserrat,Arial,sans-serif;box-shadow:0 20px 56px rgba(0,0,0,.32);display:none';
+  note.innerHTML = `<b style="display:block;margin-bottom:4px">Подсказка проверки</b>Если на сайте или в CRM виден старый вид, нажмите Ctrl + F5. Это обновит кеш CSS/JS.<br><span style="display:block;margin-top:6px;color:#ffb47f">CRM build: ${CRM_ACCESS_ROUTE_VERSION}</span>`;
   document.body.appendChild(note);
   const key = `leader-cache-note-seen-${CRM_ACCESS_ROUTE_VERSION}`;
   if (!localStorage.getItem(key)) {
