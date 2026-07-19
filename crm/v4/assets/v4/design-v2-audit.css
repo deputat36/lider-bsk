@@ -1,0 +1,48 @@
+/* РА «Лидер» — аудит публичных заявок и трассировка request_id, design v2. */
+.v4-audit-head h2{color:#18191b!important;letter-spacing:-.04em!important}
+.v4-audit-actions button,.v4-audit-copy,.v4-audit-trace{
+  border-color:#e3e5e8!important;
+  background:#fff!important;
+  color:#30343a!important;
+  border-radius:999px!important;
+}
+.v4-audit-actions button:hover,.v4-audit-copy:hover,.v4-audit-trace:hover{border-color:#ff6a00!important;background:#fff2e8!important;color:#9a3412!important}
+.v4-audit-copy,.v4-audit-trace{color:#9a3412!important}
+.v4-audit-trace{border-color:#fed7aa!important;background:#fff2e8!important}
+.v4-audit-actions .is-active{background:#ff6a00!important;border-color:#ff6a00!important;color:#fff!important;box-shadow:0 8px 18px rgba(255,106,0,.2)!important}
+.v4-audit-search{color:#475467!important}.v4-audit-search input{border-color:#e3e5e8!important;border-radius:13px!important;color:#18191b!important}
+.v4-audit-search input:focus{outline:3px solid rgba(255,106,0,.16)!important;border-color:#ff6a00!important}
+.v4-audit-stat{border-color:#e3e5e8!important;border-radius:17px!important;box-shadow:0 7px 20px rgba(20,20,20,.04)!important}
+.v4-audit-stat span{color:#68717c!important;font-size:11px!important;letter-spacing:.05em!important}.v4-audit-stat b{color:#18191b!important}
+.v4-audit-card{border-color:#e3e5e8!important;border-radius:17px!important;box-shadow:0 7px 20px rgba(20,20,20,.035)!important}
+.v4-audit-card h3{color:#18191b!important}.v4-audit-card small{color:#68717c!important}
+.v4-audit-card.is-good{border-color:#bbf7d0!important;background:#f0fdf4!important}.v4-audit-card.is-warn{border-color:#fed7aa!important;background:#fff7ed!important}.v4-audit-card.is-danger{border-color:#fecaca!important;background:#fff7f7!important}
+.v4-audit-badge{background:#e6e8eb!important;color:#30343a!important}.v4-audit-badge.is-good{background:#dcfce7!important;color:#166534!important}.v4-audit-badge.is-warn{background:#fff2e8!important;color:#9a3412!important}.v4-audit-badge.is-danger{background:#fee2e2!important;color:#991b1b!important}
+.v4-audit-payload summary{color:#475467!important}.v4-audit-payload pre{background:#090a0c!important;color:#f5f6f7!important;border-radius:13px!important}
+
+#publicLeadAuditHelperV1{
+  border-color:#fed7aa!important;
+  background:linear-gradient(135deg,#fff2e8,#fff)!important;
+  color:#71320a!important;
+  border-radius:17px!important;
+  font-family:Montserrat,Arial,sans-serif!important;
+  box-shadow:0 8px 24px rgba(255,106,0,.07)!important;
+}
+#publicLeadAuditHelperV1 a{color:#9a3412!important;font-weight:900!important}
+#publicLeadTraceInputV1{border-color:#fed7aa!important;border-radius:12px!important}
+#publicLeadTraceInputV1:focus{outline:3px solid rgba(255,106,0,.16)!important;border-color:#ff6a00!important}
+#publicLeadTraceFormV1 button{
+  border-color:#ff6a00!important;
+  background:linear-gradient(135deg,#ff6a00,#ff8126)!important;
+  color:#fff!important;
+  box-shadow:0 9px 20px rgba(255,106,0,.22)!important;
+}
+#publicLeadTraceResultV1{border-color:#fed7aa!important;background:#fff!important;color:#71320a!important;border-radius:13px!important}
+#publicLeadTraceResultV1 [data-public-trace-open-lead]{border-color:#ff6a00!important;background:#ff6a00!important;color:#fff!important}
+#publicLeadTraceResultV1 [data-public-lead-trace-status] > span[style*="color:#1e3a8a"]{color:#9a3412!important}
+.v4-public-trace-badge{background:#e6e8eb!important;color:#30343a!important}.v4-public-trace-badge.is-good{background:#dcfce7!important;color:#166534!important}.v4-public-trace-badge.is-warn{background:#fff2e8!important;color:#9a3412!important}.v4-public-trace-badge.is-danger{background:#fee2e2!important;color:#991b1b!important}
+
+@media(max-width:640px){
+  .v4-audit-actions button,.v4-audit-copy,.v4-audit-trace{width:100%!important}
+  #publicLeadTraceFormV1 button{width:100%!important}
+}
