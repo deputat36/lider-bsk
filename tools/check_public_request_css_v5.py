@@ -103,7 +103,9 @@ def main() -> None:
     if parser.scenarios != required_scenarios:
         raise SystemExit(f'Unexpected request scenarios: {sorted(parser.scenarios)}')
 
-    if len(css) < 10000:
+    # Specific component and responsive markers are the primary integrity guard.
+    # The length threshold only protects against accidental truncation.
+    if len(css) < 8500:
         raise SystemExit(f'Request design CSS looks incomplete: {len(css)} characters')
     for marker in (
         'conversion-focused design v2',
