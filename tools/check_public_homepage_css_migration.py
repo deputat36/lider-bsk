@@ -35,7 +35,8 @@ def main() -> None:
     parser = Parser()
     parser.feed(page)
 
-    # Preserve the original cascade: form CSS was before the homepage inline CSS.
+    # Form CSS must stay before homepage CSS so page-specific rules can refine
+    # the shell without changing the public lead form contract.
     expected_stylesheets = [
         'assets/public-lead-form.css?v=4',
         'assets/public-homepage.css?v=1',
@@ -52,27 +53,35 @@ def main() -> None:
     if parser.scripts != expected_scripts:
         raise SystemExit(f'Unexpected homepage script order: {parser.scripts}')
 
-    if len(css) < 8000:
-        raise SystemExit(f'Homepage CSS looks incomplete: {len(css)} characters')
+    if len(css) < 12000:
+        raise SystemExit(f'Homepage design CSS looks incomplete: {len(css)} characters')
 
+    # Design-system v2 foundations and all layout-critical surfaces.
     for marker in (
-        'Extracted from index.html without visual changes',
-        ':root{--black:#1a1a1a',
+        'публичная главная страница, дизайн v2',
+        '--orange:#ff6a00',
+        '--black-deep:#090a0c',
+        '--radius-lg:38px',
         '.mark{position:relative',
-        '.header__in{min-height:78px',
+        '.header{',
+        '.hero{',
         '.hero__facts{display:grid',
+        '.hero-card{',
+        '.grid3{display:grid',
         '.strip{display:grid',
         '.packages{display:grid',
         '.steps{display:grid',
-        '.cta{position:relative',
+        '.cta{',
         '.faq{display:grid',
         '.contacts{display:grid',
-        '.mobile-cta',
-        '@media(max-width:1060px)',
+        '.mobile-cta{display:none',
+        '@media(max-width:1100px)',
         '@media(max-width:720px)',
+        '@media(prefers-reduced-motion:reduce)',
     ):
         require(css, marker, 'assets/public-homepage.css')
 
+    # Public lead form and source-copy contracts remain unchanged.
     for marker in (
         'assets/public-lead-form.css?v=3',
         'assets/public-lead-form.js?v=4',
@@ -83,7 +92,7 @@ def main() -> None:
         if marker in page:
             raise SystemExit(f'Stale homepage migration marker remains: {marker}')
 
-    print('Homepage CSS extraction and form v23 contract is valid.')
+    print('Homepage design v2 and public form v23 contracts are valid.')
 
 
 if __name__ == '__main__':
