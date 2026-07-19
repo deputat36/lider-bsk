@@ -3,7 +3,8 @@ const CRM_ACCESS_ROUTE_VERSION = '20260712-training-3';
 function ensureDesignV2DynamicCss() {
   const stylesheets = [
     ['leaderDesignV2DynamicCss', 'assets/v4/design-v2-dynamic.css?v=20260719-2'],
-    ['leaderDesignV2ModalsCss', 'assets/v4/design-v2-modals.css?v=20260719-1']
+    ['leaderDesignV2ModalsCss', 'assets/v4/design-v2-modals.css?v=20260719-1'],
+    ['leaderDesignV2AuditCss', 'assets/v4/design-v2-audit.css?v=20260719-1']
   ];
   stylesheets.forEach(([id, href]) => {
     if (document.getElementById(id)) return;
