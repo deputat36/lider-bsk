@@ -1,96 +1,75 @@
+/* РА «Лидер» — ручное создание обращения, design v2. */
 .v4-manual-lead-box{
-  border:1px solid #bfdbfe;
-  border-radius:18px;
-  background:linear-gradient(135deg,#eff6ff 0%,#fff 78%);
-  padding:12px;
+  border:1px solid #fed7aa;
+  border-radius:20px;
+  background:linear-gradient(135deg,#fff2e8 0%,#fff 78%);
+  padding:14px;
   margin:14px 0;
+  box-shadow:0 10px 28px rgba(255,106,0,.07);
 }
 .v4-manual-lead-box summary{
   cursor:pointer;
   font-weight:900;
-  color:#1d4ed8;
+  color:#9a3412;
   list-style:none;
+  text-transform:uppercase;
+  letter-spacing:-.01em;
 }
-.v4-manual-lead-box summary::-webkit-details-marker{
-  display:none;
-}
+.v4-manual-lead-box summary::-webkit-details-marker{display:none}
 .v4-manual-lead-box summary::after{
   content:'▼';
   float:right;
   font-size:12px;
-  color:#64748b;
+  color:#ff6a00;
 }
-.v4-manual-lead-box[open] summary::after{
-  content:'▲';
-}
-.v4-manual-lead-form{
-  display:grid;
-  gap:12px;
-  margin-top:12px;
-}
+.v4-manual-lead-box[open] summary::after{content:'▲'}
+.v4-manual-lead-form{display:grid;gap:12px;margin-top:12px}
 .v4-existing-client-picker{
   display:grid;
   grid-template-columns:minmax(0,1fr) auto;
   align-items:end;
   gap:8px 10px;
-  border:1px solid #bfdbfe;
-  border-radius:14px;
-  background:#eff6ff;
-  padding:10px;
+  border:1px solid #fed7aa;
+  border-radius:16px;
+  background:#fff7ed;
+  padding:11px;
 }
-.v4-existing-client-picker label span{
-  color:#64748b;
-  font-size:12px;
-}
+.v4-existing-client-picker label span{color:#68717c;font-size:12px}
 .v4-existing-client-picker button{
   min-height:42px;
-  border:1px solid #93c5fd;
-  border-radius:12px;
+  border:1px solid #fed7aa;
+  border-radius:999px;
   background:#fff;
-  color:#1d4ed8;
-  padding:9px 12px;
+  color:#9a3412;
+  padding:9px 13px;
   font-weight:900;
   cursor:pointer;
+  transition:background .15s ease,border-color .15s ease,transform .15s ease;
 }
-.v4-existing-client-picker button:disabled{
-  cursor:wait;
-  opacity:.65;
-}
-.v4-existing-client-picker small{
-  grid-column:1/-1;
-  color:#475569;
-  font-weight:700;
-}
+.v4-existing-client-picker button:hover{border-color:#ff6a00;background:#fff2e8;transform:translateY(-1px)}
+.v4-existing-client-picker button:disabled{cursor:wait;opacity:.65;transform:none}
+.v4-existing-client-picker small{grid-column:1/-1;color:#475467;font-weight:700}
 .v4-existing-client-picker small[data-tone="good"]{color:#166534}
-.v4-existing-client-picker small[data-tone="warn"]{color:#92400e}
+.v4-existing-client-picker small[data-tone="warn"]{color:#9a3412}
 .v4-existing-client-picker small[data-tone="error"]{color:#991b1b}
-.v4-manual-lead-form label{
-  font-weight:900;
-  color:#334155;
-}
+.v4-manual-lead-form label{font-weight:900;color:#30343a}
 .v4-manual-lead-form input,
 .v4-manual-lead-form select,
 .v4-manual-lead-form textarea{
   width:100%;
-  border:1px solid var(--line,#cbd5e1);
-  border-radius:12px;
+  border:1px solid var(--line,#e3e5e8);
+  border-radius:14px;
   background:#fff;
   padding:10px 11px;
   font:inherit;
   margin-top:5px;
 }
-.v4-manual-lead-comment{
-  display:block;
-}
+.v4-manual-lead-form input:focus,
+.v4-manual-lead-form select:focus,
+.v4-manual-lead-form textarea:focus{outline:3px solid rgba(255,106,0,.16);border-color:#ff6a00}
+.v4-manual-lead-comment{display:block}
 @media(max-width:640px){
-  .v4-manual-lead-box{
-    border-radius:14px;
-    padding:10px;
-  }
-  .v4-existing-client-picker{
-    grid-template-columns:1fr;
-  }
-  .v4-existing-client-picker button{
-    width:100%;
-  }
+  .v4-manual-lead-box{border-radius:17px;padding:11px}
+  .v4-existing-client-picker{grid-template-columns:1fr}
+  .v4-existing-client-picker button{width:100%}
 }
