@@ -4,6 +4,57 @@
  * override late module-local style tags without changing module logic.
  */
 
+/* Management dashboard */
+.v4-mgmt-grid{gap:12px!important;margin:16px 0!important}
+.v4-mgmt-stat{
+  border-color:#e3e5e8!important;
+  background:#fff!important;
+  border-radius:18px!important;
+  padding:15px!important;
+  box-shadow:0 8px 24px rgba(20,20,20,.05)!important;
+}
+.v4-mgmt-stat span{color:#68717c!important;text-transform:uppercase!important;letter-spacing:.05em!important;font-size:11px!important}
+.v4-mgmt-stat b{color:#18191b!important;font-size:25px!important}
+.v4-mgmt-stat.is-main{border-color:#fed7aa!important;background:linear-gradient(135deg,#fff2e8,#fff)!important}
+.v4-mgmt-stat.is-danger{border-color:#fecaca!important;background:#fff7f7!important}
+.v4-mgmt-stat.is-warn{border-color:#fed7aa!important;background:#fff7ed!important}
+.v4-mgmt-stat.is-good{border-color:#bbf7d0!important;background:#f0fdf4!important}
+.v4-mgmt-actions{gap:8px!important;margin:14px 0!important}
+.v4-mgmt-actions button,.v4-mgmt-item button{
+  border-color:#fed7aa!important;
+  background:#fff!important;
+  color:#9a3412!important;
+  border-radius:999px!important;
+}
+.v4-mgmt-actions button:hover,.v4-mgmt-item button:hover{border-color:#ff6a00!important;background:#fff2e8!important}
+.v4-mgmt-actions .v4-primary{
+  background:linear-gradient(135deg,#ff6a00,#ff8126)!important;
+  border-color:#ff6a00!important;
+  color:#fff!important;
+  box-shadow:0 10px 24px rgba(255,106,0,.24)!important;
+}
+.v4-mgmt-warnings{border-color:#fed7aa!important;background:#fff7ed!important;color:#9a3412!important;border-radius:15px!important}
+.v4-mgmt-columns{gap:16px!important}
+.v4-mgmt-column{border-color:#e3e5e8!important;background:#fff!important;border-radius:20px!important;padding:16px!important;box-shadow:0 8px 24px rgba(20,20,20,.04)!important}
+.v4-mgmt-column h3{color:#18191b!important;letter-spacing:-.025em!important}
+.v4-mgmt-list{gap:10px!important}
+.v4-mgmt-item{border-color:#e3e5e8!important;background:#f7f8f9!important;border-radius:16px!important;padding:12px!important}
+.v4-mgmt-item:hover{border-color:#ffd0ad!important;background:#fff!important;box-shadow:0 10px 24px rgba(255,106,0,.08)!important}
+.v4-mgmt-item.is-danger{border-color:#fecaca!important;background:#fff7f7!important}
+.v4-mgmt-item.is-warn{border-color:#fed7aa!important;background:#fff7ed!important}
+.v4-mgmt-item h4{color:#18191b!important}
+.v4-mgmt-item small{color:#68717c!important}
+.v4-mgmt-attention{border-color:#fed7aa!important;background:linear-gradient(135deg,#fff7ed,#fff)!important;border-radius:20px!important;padding:16px!important;box-shadow:0 10px 28px rgba(255,106,0,.08)!important}
+.v4-mgmt-attention h3{color:#18191b!important;letter-spacing:-.025em!important}
+.v4-mgmt-attention>p{color:#9a3412!important}
+.v4-mgmt-attention-item{border-color:#fed7aa!important;background:#fff!important;border-radius:16px!important;padding:11px!important}
+.v4-mgmt-attention-item:before{background:#ff6a00!important;color:#fff!important;box-shadow:0 8px 18px rgba(255,106,0,.2)!important}
+.v4-mgmt-attention-item.is-danger{border-color:#fecaca!important;background:#fff7f7!important}
+.v4-mgmt-attention-copy span{color:#9a3412!important}
+.v4-mgmt-attention-copy small{color:#68717c!important}
+.v4-mgmt-attention-item button{border-color:#fed7aa!important;background:#fff2e8!important;color:#9a3412!important;border-radius:12px!important}
+.v4-mgmt-attention-item button:hover{border-color:#ff6a00!important;background:#ff6a00!important;color:#fff!important}
+
 /* Management workload and SLA */
 .v4-workload-panel{
   border-color:#fed7aa!important;
@@ -82,6 +133,7 @@
 .v4-need-card.is-readiness-target,.v4-needs-section.is-readiness-target,.v4-calculations-host.is-readiness-target{outline-color:#ff6a00!important}
 
 @media(max-width:640px){
-  .v4-workload-panel,.lead-attribution-funnel{padding:13px!important;border-radius:18px!important}
+  .v4-workload-panel,.lead-attribution-funnel,.v4-mgmt-attention{padding:13px!important;border-radius:18px!important}
   .v4-workload-modal{border-radius:20px!important;padding:13px!important}
+  .v4-mgmt-actions button,.v4-mgmt-item button{width:100%!important}
 }
