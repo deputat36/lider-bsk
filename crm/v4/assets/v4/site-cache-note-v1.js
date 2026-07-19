@@ -1,12 +1,18 @@
 const CRM_ACCESS_ROUTE_VERSION = '20260712-training-3';
 
 function ensureDesignV2DynamicCss() {
-  if (document.getElementById('leaderDesignV2DynamicCss')) return;
-  const link = document.createElement('link');
-  link.id = 'leaderDesignV2DynamicCss';
-  link.rel = 'stylesheet';
-  link.href = 'assets/v4/design-v2-dynamic.css?v=20260719-1';
-  document.head.appendChild(link);
+  const stylesheets = [
+    ['leaderDesignV2DynamicCss', 'assets/v4/design-v2-dynamic.css?v=20260719-2'],
+    ['leaderDesignV2ModalsCss', 'assets/v4/design-v2-modals.css?v=20260719-1']
+  ];
+  stylesheets.forEach(([id, href]) => {
+    if (document.getElementById(id)) return;
+    const link = document.createElement('link');
+    link.id = id;
+    link.rel = 'stylesheet';
+    link.href = href;
+    document.head.appendChild(link);
+  });
 }
 
 function bootSiteCacheNote() {
