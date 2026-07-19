@@ -103,24 +103,27 @@ def main() -> None:
     if parser.scenarios != required_scenarios:
         raise SystemExit(f'Unexpected request scenarios: {sorted(parser.scenarios)}')
 
-    # The extracted source is 5536 characters. Keep a small truncation guard while
-    # validating the important selectors and responsive breakpoints independently.
-    if len(css) < 5200:
-        raise SystemExit(f'Request CSS looks incomplete: {len(css)} characters')
+    if len(css) < 10000:
+        raise SystemExit(f'Request design CSS looks incomplete: {len(css)} characters')
     for marker in (
-        'Extracted without visual changes',
-        ':root{--black:#1a1a1a',
-        '.header__inner{min-height:76px',
+        'conversion-focused design v2',
+        ':root{',
+        '--orange:#ff6a00',
+        '--radius-lg:36px',
+        '.header__inner{min-height:80px',
         '.hero__grid{display:grid',
+        '.hero .leader-lead-widget{',
         '.scenario-grid{display:grid',
+        '.scenario-card{',
         '.info-grid{display:grid',
         '.after-submit{background:#fff}',
-        '@media(max-width:900px)',
+        '@media(max-width:980px)',
         '@media(max-width:560px)',
+        '@media(prefers-reduced-motion:reduce)',
     ):
         require(css, marker, 'assets/public-request.css')
 
-    print('Request page CSS, source copy and form v23 contract is valid.')
+    print('Request page design v2, source copy and form v23 contract is valid.')
 
 
 if __name__ == '__main__':
