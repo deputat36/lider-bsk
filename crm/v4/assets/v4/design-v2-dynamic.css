@@ -1,0 +1,87 @@
+/*
+ * РА «Лидер» — dynamic CRM panels adapter, design v2.
+ * Loaded by site-cache-note-v1.js. Important declarations intentionally
+ * override late module-local style tags without changing module logic.
+ */
+
+/* Management workload and SLA */
+.v4-workload-panel{
+  border-color:#fed7aa!important;
+  background:linear-gradient(135deg,#fff9f5 0%,#fff 78%)!important;
+  border-radius:22px!important;
+  padding:17px!important;
+  gap:14px!important;
+  box-shadow:0 12px 34px rgba(255,106,0,.08)!important;
+}
+.v4-workload-head h3,.v4-workload-modal-head h3{color:#18191b!important;letter-spacing:-.025em!important}
+.v4-workload-head p,.v4-workload-modal-head p{color:#68717c!important}
+.v4-workload-head button,.v4-workload-row button,.v4-workload-modal button{
+  border-color:#fed7aa!important;
+  background:#fff!important;
+  color:#9a3412!important;
+  border-radius:13px!important;
+}
+.v4-workload-head button:hover,.v4-workload-row button:hover,.v4-workload-modal button:hover{
+  background:#fff2e8!important;
+  border-color:#ff6a00!important;
+}
+.v4-workload-stat{
+  border-color:#e3e5e8!important;
+  border-radius:17px!important;
+  box-shadow:0 7px 20px rgba(20,20,20,.04)!important;
+}
+.v4-workload-stat span,.v4-workload-person small,.v4-workload-metric span{color:#68717c!important}
+.v4-workload-stat b{color:#18191b!important}
+.v4-workload-row{
+  border-color:#e3e5e8!important;
+  border-radius:17px!important;
+  box-shadow:0 7px 20px rgba(20,20,20,.04)!important;
+}
+.v4-workload-row:hover{border-color:#ffd0ad!important;box-shadow:0 12px 28px rgba(255,106,0,.09)!important}
+.v4-workload-row.is-danger,.v4-workload-stat.is-danger{border-color:#fecaca!important;background:#fff7f7!important}
+.v4-workload-note{border-color:#fed7aa!important;background:#fff7ed!important;color:#9a3412!important;border-radius:14px!important}
+.v4-workload-modal-backdrop{background:rgba(9,10,12,.76)!important;backdrop-filter:blur(8px)!important}
+.v4-workload-modal{border-color:#fed7aa!important;border-radius:26px!important;box-shadow:0 32px 96px rgba(0,0,0,.42)!important}
+.v4-workload-modal-head{border-color:#e3e5e8!important}
+.v4-workload-lead{border-color:#e3e5e8!important;background:#f7f8f9!important;border-radius:17px!important}
+.v4-workload-empty{border-color:#c9cdd2!important;background:#f7f8f9!important;color:#68717c!important}
+
+/* Attribution funnel */
+.lead-attribution-funnel{
+  border-color:#fed7aa!important;
+  background:linear-gradient(180deg,#fff9f5 0%,#fff 100%)!important;
+  border-radius:22px!important;
+  padding:17px!important;
+  gap:14px!important;
+  box-shadow:0 12px 34px rgba(255,106,0,.08)!important;
+}
+.lead-attribution-head h3{color:#18191b!important;letter-spacing:-.025em!important}
+.lead-attribution-head p,.lead-attribution-note{color:#68717c!important}
+.lead-attribution-head button,.lead-attribution-filter{
+  border-color:#fed7aa!important;
+  background:#fff!important;
+  color:#9a3412!important;
+  border-radius:13px!important;
+}
+.lead-attribution-head button:hover,.lead-attribution-filter:hover{border-color:#ff6a00!important;background:#fff2e8!important}
+.lead-attribution-stat{border-color:#e3e5e8!important;border-radius:17px!important;box-shadow:0 7px 20px rgba(20,20,20,.04)!important}
+.lead-attribution-stat span{color:#68717c!important}
+.lead-attribution-stat b{color:#18191b!important}
+.lead-attribution-coverage{border-color:#fed7aa!important;background:#fff7ed!important;color:#9a3412!important;border-radius:15px!important}
+.lead-attribution-table-wrap{border-color:#e3e5e8!important;border-radius:17px!important}
+.lead-attribution-table th{background:#f5f6f7!important;color:#30343a!important}
+.lead-attribution-table th,.lead-attribution-table td{border-color:#e3e5e8!important}
+
+/* Calculation / offer readiness */
+.v4-need-readiness{border-color:#e3e5e8!important;background:#f7f8f9!important;border-radius:17px!important}
+.v4-need-readiness.is-neutral{border-color:#fed7aa!important;background:#fff7ed!important}
+.v4-need-readiness h5{color:#18191b!important}
+.v4-need-readiness p,.v4-need-readiness-note{color:#68717c!important}
+.v4-need-readiness-actions button{border-color:#fed7aa!important;color:#9a3412!important;border-radius:12px!important}
+.v4-need-readiness-actions button:hover{border-color:#ff6a00!important;background:#fff2e8!important}
+.v4-need-card.is-readiness-target,.v4-needs-section.is-readiness-target,.v4-calculations-host.is-readiness-target{outline-color:#ff6a00!important}
+
+@media(max-width:640px){
+  .v4-workload-panel,.lead-attribution-funnel{padding:13px!important;border-radius:18px!important}
+  .v4-workload-modal{border-radius:20px!important;padding:13px!important}
+}
