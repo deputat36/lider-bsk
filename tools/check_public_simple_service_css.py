@@ -109,30 +109,34 @@ FORM_SCRIPT_OVERRIDES = {
 }
 
 css = CSS.read_text(encoding='utf-8')
-if len(css) < 1950:
-    raise SystemExit(f'Shared simple service CSS is unexpectedly small: {len(css)} bytes')
+if len(css) < 5000:
+    raise SystemExit(f'Shared simple service design CSS is unexpectedly small: {len(css)} bytes')
 
 for marker in (
-    'body.page-social-content{--hero-start:#0b1020;--hero-end:#1f2937}',
-    'body.page-design-service{--hero-start:#080b14;--hero-end:#111827}',
-    'body.page-brand-identity{--hero-start:#080b14;--hero-end:#111827}',
-    'body.page-maps-listing{--hero-start:#0b1020;--hero-end:#1f2937}',
-    'body.page-banner-service{--hero-start:#0b1020;--hero-end:#1f2937}',
-    'body.page-signage-service{--hero-start:#0b1020;--hero-end:#1f2937}',
-    'body.page-shop-sign-service{--hero-start:#080b14;--hero-end:#111827}',
-    'body.page-film-print-service{--hero-start:#080b14;--hero-end:#111827}',
-    'body.page-window-branding{--hero-start:#080b14;--hero-end:#111827}',
-    'body.page-outdoor-overview{--hero-start:#080b14;--hero-end:#111827}',
-    'body.page-plotter-stickers{--hero-start:#07111f;--hero-end:#111827}',
+    'shared service pages — design system v2',
+    'body.page-social-content{--hero-start:#090a0c;--hero-end:#20242a}',
+    'body.page-design-service{--hero-start:#090a0c;--hero-end:#1b1e22}',
+    'body.page-brand-identity{--hero-start:#090a0c;--hero-end:#20242a}',
+    'body.page-maps-listing{--hero-start:#090a0c;--hero-end:#1b1e22}',
+    'body.page-banner-service{--hero-start:#090a0c;--hero-end:#20242a}',
+    'body.page-signage-service{--hero-start:#090a0c;--hero-end:#1b1e22}',
+    'body.page-shop-sign-service{--hero-start:#090a0c;--hero-end:#20242a}',
+    'body.page-film-print-service{--hero-start:#090a0c;--hero-end:#1b1e22}',
+    'body.page-window-branding{--hero-start:#090a0c;--hero-end:#20242a}',
+    'body.page-outdoor-overview{--hero-start:#090a0c;--hero-end:#1b1e22}',
+    'body.page-plotter-stickers{--hero-start:#090a0c;--hero-end:#20242a}',
     'body.page-outdoor-overview .hero p{max-width:860px}',
-    'body.page-outdoor-overview .back{color:#667085}',
-    '.hero{background:linear-gradient(135deg,var(--hero-start),var(--hero-end))',
-    '.grid{display:grid;grid-template-columns:repeat(3,1fr)',
-    '.cta{background:#111827;color:#fff',
-    '@media(max-width:860px){.grid,.cta{grid-template-columns:1fr}}',
+    'body.page-outdoor-overview .back{color:rgba(255,255,255,.74)}',
+    '.hero{position:relative;overflow:hidden;isolation:isolate;background:linear-gradient(135deg,var(--hero-start),var(--hero-end))',
+    '.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))',
+    '.card:before{content:""',
+    '.cta{position:relative;overflow:hidden;background:linear-gradient(145deg,#090a0c,#1b1e22)',
+    '@media(max-width:860px)',
+    '@media(max-width:560px)',
+    '@media(prefers-reduced-motion:reduce)',
 ):
     if marker not in css:
-        raise SystemExit(f'Missing CSS contract marker: {marker}')
+        raise SystemExit(f'Missing CSS design v2 contract marker: {marker}')
 
 for page_name, expected in PAGES.items():
     page = ROOT / page_name
@@ -173,4 +177,4 @@ for page_name, expected in PAGES.items():
     if 'href="tel:+79802457471"' not in html:
         raise SystemExit(f'{page_name}: phone link missing')
 
-print('Shared simple service CSS contract is valid for eleven pages.')
+print('Shared simple service design v2 contract is valid for eleven pages.')
