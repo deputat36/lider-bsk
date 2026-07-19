@@ -1,7 +1,7 @@
 # Дизайн-система РА «Лидер» v1
 
 Дата: 2026-07-19  
-Статус: рабочая ветка сайта и CRM, PR на визуальную проверку  
+Статус: рабочая ветка сайта и CRM, draft PR на визуальную проверку  
 Figma: https://www.figma.com/design/QCLweEDrvGps3ys2YMiPDm  
 GitHub PR: https://github.com/deputat36/lider-bsk/pull/383
 
@@ -77,7 +77,7 @@ GitHub PR: https://github.com/deputat36/lider-bsk/pull/383
 - карточка: 22–28 px;
 - крупный рекламный блок: 30–40 px;
 - кнопка: pill / `999px`;
-- рабочая сетка сайта: 1160–1220 px;
+- рабочая сетка сайта: 1080–1220 px;
 - рабочая сетка CRM: до 1320 px.
 
 ## Тени
@@ -97,15 +97,18 @@ GitHub PR: https://github.com/deputat36/lider-bsk/pull/383
 5. Hero
 6. Scenario card
 7. Service card
-8. Fact card
-9. Package card
-10. Process step
-11. CTA with lead form
-12. FAQ item
-13. Mobile fixed actions
-14. Document card
-15. Recovery route
-16. Footer
+8. Business segment card
+9. Fact card
+10. Package card
+11. Process step
+12. CTA with lead form
+13. FAQ item
+14. Price factor card
+15. Contact card
+16. Mobile fixed actions
+17. Document card
+18. Recovery route
+19. Footer
 
 ### CRM
 
@@ -153,8 +156,12 @@ GitHub PR: https://github.com/deputat36/lider-bsk/pull/383
 - Homepage desktop
 - Homepage mobile
 - Services catalog
-- Service detail
+- Service detail template
+- Business segment template
 - Portfolio / examples
+- Prices
+- Contacts
+- FAQ
 - Public request form
 - Commercial landing template
 - 404 recovery
@@ -181,11 +188,17 @@ GitHub PR: https://github.com/deputat36/lider-bsk/pull/383
 
 - `assets/public-homepage.css` — главная страница;
 - `assets/public-request.css` — отдельная страница заявки и форма как главное действие;
+- `assets/public-services.css` — каталог услуг;
+- `assets/public-prices.css` — цены и ориентиры расчёта;
+- `assets/public-contacts.css` — контакты;
+- `assets/public-faq.css` — FAQ;
 - `assets/public-landing.css` — общий слой коммерческих страниц;
 - `assets/public-examples.css` — примеры работ и кейсы;
 - `assets/public-utility-pages.css` — 404 и политика конфиденциальности;
-- обновлены тесты CSS главной и страницы заявки под осознанный редизайн;
-- HTML, тексты форм, SEO-метаданные, сценарии, номера версий JavaScript и endpoint не менялись.
+- `assets/public-simple-service.css` — общий дизайн 11 ключевых страниц услуг: баннеры, вывески, таблички, плёнка, витрины, наружная реклама, наклейки, дизайн, фирменный стиль, соцсети и карты;
+- `assets/public-business-segment.css` — общий дизайн 4 отраслевых страниц: магазин, кафе/доставка, салон/мастер и сервис/мастерская;
+- обновлены тесты визуальных слоёв так, чтобы они защищали новые компоненты и прежние бизнес-контракты;
+- HTML, тексты форм, SEO-метаданные, canonical, JSON-LD, сценарии, номера версий JavaScript и endpoint не менялись.
 
 ### CRM
 
@@ -204,7 +217,8 @@ GitHub PR: https://github.com/deputat36/lider-bsk/pull/383
 ## Проверки
 
 - изменения выполняются в draft PR №383;
-- основные статические, CRM, SEO, resource-integrity и Supabase-контракты проходят;
+- статические, CRM, SEO, resource-integrity, формы и Supabase-контракты запускаются на каждом коммите;
+- отдельные проверки защищают главную, заявку, каталог, цены, контакты, FAQ, 11 страниц услуг, 4 отраслевые страницы, коммерческие лендинги, примеры и служебные страницы;
 - при изменении визуальных слоёв старые тесты не удаляются: они обновляются так, чтобы защищать функциональные контракты и новые ключевые компоненты;
 - merge запрещён до завершения CI и визуальной проверки.
 
@@ -214,8 +228,9 @@ GitHub PR: https://github.com/deputat36/lider-bsk/pull/383
 
 ## Следующая итерация
 
-1. Завершить все проверки draft PR.
-2. Собрать в Figma Foundations и компоненты после восстановления лимита.
-3. Нарисовать в Figma главную, страницу заявки и CRM-дашборд по уже внедрённому коду.
-4. Проверить мобильные экраны и клавиатурный фокус.
-5. Распространить систему на оставшиеся каталоги услуг, цены, контакты и портфолио.
+1. Дождаться полностью зелёного CI текущего draft PR.
+2. Провести визуальную проверку desktop/mobile перед merge.
+3. Собрать в Figma Foundations и компоненты после восстановления лимита.
+4. Нарисовать в Figma главную, страницу заявки, шаблоны услуг и CRM-дашборд по уже внедрённому коду.
+5. Проверить мобильные экраны, клавиатурный фокус и контрастность.
+6. После визуального подтверждения распространить систему на оставшиеся специальные кампании и вспомогательные страницы.
