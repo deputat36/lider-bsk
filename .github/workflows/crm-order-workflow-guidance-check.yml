@@ -31,7 +31,21 @@ jobs:
           node --check crm/v4/assets/v4/order-card-v1.js
           node --check tools/test_order_workflow_guidance.mjs
       - name: Run guidance unit tests
-        run: node tools/test_order_workflow_guidance.mjs
+        shell: bash
+        run: |
+          set +e
+          node tools/test_order_workflow_guidance.mjs > order-guidance-test-output.txt 2>&1
+          status=$?
+          cat order-guidance-test-output.txt
+          exit $status
+      - name: Upload unit-test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: order-guidance-test-output
+          path: order-guidance-test-output.txt
+          if-no-files-found: error
+          retention-days: 3
       - name: Validate source contract
         run: python3 tools/check_crm_order_workflow_guidance.py
       - name: Run order regressions
