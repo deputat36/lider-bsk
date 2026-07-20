@@ -1,0 +1,23 @@
+name: Public lead health view check
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20260720203000_leader_public_lead_health_view_v1.sql'
+      - 'tools/check_public_lead_health_view.py'
+      - '.github/workflows/public-lead-health-view-check.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'supabase/migrations/20260720203000_leader_public_lead_health_view_v1.sql'
+      - 'tools/check_public_lead_health_view.py'
+      - '.github/workflows/public-lead-health-view-check.yml'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate public lead health view contract
+        run: python3 tools/check_public_lead_health_view.py
