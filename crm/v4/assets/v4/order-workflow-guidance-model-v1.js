@@ -26,7 +26,23 @@ function layoutApproved(order = {}) {
   const value = text(order.layout_status || order.data?.layout_status || order.data?.layoutStatus);
   if (!value) return false;
   if (value.includes('не требуется')) return true;
-  return value.includes('соглас') || value.includes('утверж') || value === 'готов' || value.includes('готовый макет');
+
+  const incompleteMarkers = [
+    'на согласовании',
+    'согласование',
+    'правк',
+    'в работе',
+    'нужен',
+    'нет макета',
+    'не готов',
+    'ожид'
+  ];
+  if (incompleteMarkers.some((marker) => value.includes(marker))) return false;
+
+  return value.includes('согласован')
+    || value.includes('утвержд')
+    || value === 'готов'
+    || value.includes('готовый макет');
 }
 
 function paymentSettled(order = {}) {
