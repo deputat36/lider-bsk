@@ -2,10 +2,16 @@ import { supabaseClient } from './supabase-client.js';
 import { friendlyError } from './api.js';
 import { setStatus, toast } from './ui.js';
 import { openLeadRoute } from './router.js';
-import { buildManagementAttentionQueue, managementUrgentCount } from './management-attention-model-v1.js';
+import {
+  buildManagementAttentionQueue,
+  buildManagementWorkSummary,
+  managementUrgentCount
+} from './management-attention-model-v1.js';
 
-const LEAD_FIELDS = 'id,created_at,name,phone,source,service,status,next_contact_at,budget,estimated_amount,page_url,city';
-const ORDER_FIELDS = 'id,order_number,project_name,status,deadline,client_name,client_phone,client_total,contractor_cost,profit,payment_status,created_at,layout_status,data';
+const LEAD_FIELDS = 'id,created_at,name,phone,source,service,status,next_contact_at,budget,estimated_amount,page_url,city,assigned_to,converted_order_id';
+const NEED_FIELDS = 'id,lead_id,status,completeness_score,created_at,updated_at';
+const CALC_FIELDS = 'id,lead_id,need_id,status,is_current_revision,commercial_offer_id,order_id,created_at,updated_at';
+const ORDER_FIELDS = 'id,order_number,project_name,status,deadline,client_name,client_phone,client_total,contractor_cost,profit,payment_status,created_at,layout_status,production_status,data';
 const PRODUCTION_FIELDS = 'id,order_id,title,production_status,layout_status,priority,deadline,contractor_cost,client_total,file_url,created_at,updated_at';
 const INSTALL_FIELDS = 'id,order_id,title,install_status,priority,installer_name,address,scheduled_at,created_at,updated_at';
 const OFFER_FIELDS = 'id,lead_id,calculation_id,title,status,total_sum,valid_until,order_id,created_at';
@@ -15,12 +21,12 @@ const CLOSED_ORDERS = new Set(['Готово', 'Выдано', 'Закрыт', '
 const DONE_PRODUCTION = new Set(['Готово', 'Выдано', 'Отменено', 'Отменён', 'Закрыт']);
 const DONE_INSTALL = new Set(['Выполнен', 'Закрыт', 'Отменён', 'Отменено']);
 
-let data = { leads: [], orders: [], production: [], installation: [], offers: [] };
+let data = { leads: [], needs: [], calculations: [], orders: [], production: [], installation: [], offers: [] };
 let sourceErrors = [];
 let busy = false;
 let loaded = false;
 
-function esc(value) { return String(value ?? '').replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m])); }
+function esc(value) { return String(value ?? '').replace(/[&<>\"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[m])); }
 function money(value) { const n = Number(value || 0); return n ? `${Math.round(n).toLocaleString('ru-RU')} ₽` : '—'; }
 function dateRu(value) { if (!value) return '—'; try { return new Date(value).toLocaleDateString('ru-RU'); } catch (_) { return String(value); } }
 function dateTimeRu(value) { if (!value) return '—'; try { return new Date(value).toLocaleString('ru-RU'); } catch (_) { return String(value); } }
@@ -47,16 +53,21 @@ function overdueProduction(job) { const d = daysUntil(job.deadline); return open
 function overdueInstall(job) { const d = daysUntil(job.scheduled_at); return openInstall(job) && d !== null && d < 0; }
 function soonProduction(job) { const d = daysUntil(job.deadline); return openProduction(job) && d !== null && d >= 0 && d <= 3; }
 function soonInstall(job) { const d = daysUntil(job.scheduled_at); return openInstall(job) && d !== null && d >= 0 && d <= 3; }
-function openOffer(offer) { return !['Согласовано', 'Отклонено', 'Отменено', 'Создан заказ'].includes(offer.status || ''); }
-function expiredOffer(offer) { if (!offer.valid_until || !openOffer(offer)) return false; const t = new Date(offer.valid_until).getTime(); return Number.isFinite(t) && t < todayStart(); }
+function openOffer(offer) { return !offer.order_id && !['Согласовано', 'Отклонено', 'Аннулировано', 'Истёк срок', 'Истек срок'].includes(offer.status || ''); }
+function expiredOffer(offer) { if (!offer.valid_until || !openOffer(offer)) return false; const t = new Date(`${offer.valid_until}T23:59:59.999Z`).getTime(); return Number.isFinite(t) && t < Date.now(); }
 
 function ensureStyles() {
   if (document.getElementById('managementDashboardV3Styles')) return;
   const style = document.createElement('style');
   style.id = 'managementDashboardV3Styles';
-  style.textContent = `.v4-mgmt-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:14px 0}.v4-mgmt-stat{border:1px solid #e2e8f0;background:#fff;border-radius:16px;padding:14px;box-shadow:0 8px 22px rgba(15,23,42,.05)}.v4-mgmt-stat span{display:block;color:#64748b;font-size:13px;font-weight:800}.v4-mgmt-stat b{font-size:24px;line-height:1.15}.v4-mgmt-stat.is-danger{border-color:#fecaca;background:#fff7f7}.v4-mgmt-stat.is-warn{border-color:#fde68a;background:#fffdf3}.v4-mgmt-stat.is-good{border-color:#bbf7d0;background:#f0fdf4}.v4-mgmt-stat.is-main{border-color:#bfdbfe;background:#eff6ff}.v4-mgmt-actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.v4-mgmt-actions button{border:1px solid #cbd5e1;background:#fff;border-radius:999px;padding:9px 12px;font-weight:900}.v4-mgmt-actions .v4-primary{background:#1d4ed8;border-color:#1d4ed8;color:#fff}.v4-mgmt-warnings{border:1px solid #fde68a;background:#fffdf3;color:#92400e;border-radius:14px;padding:10px;margin:12px 0;font-weight:800}.v4-mgmt-columns{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}.v4-mgmt-column{border:1px solid #e2e8f0;background:#fff;border-radius:16px;padding:14px}.v4-mgmt-column h3{margin:0 0 10px}.v4-mgmt-list{display:grid;gap:10px}.v4-mgmt-item{border:1px solid #e2e8f0;background:#f8fafc;border-radius:14px;padding:11px;display:grid;gap:6px}.v4-mgmt-item.is-danger{border-color:#fecaca;background:#fff7f7}.v4-mgmt-item.is-warn{border-color:#fde68a;background:#fffdf3}.v4-mgmt-item-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.v4-mgmt-item h4{margin:0;font-size:15px}.v4-mgmt-item small{color:#64748b}.v4-mgmt-item button{justify-self:start;border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;border-radius:12px;padding:8px 10px;font-weight:900}@media(max-width:640px){.v4-mgmt-actions button,.v4-mgmt-item button{width:100%}}`;
-  const attentionCss = '.v4-mgmt-attention{border:1px solid #fdba74;background:#fffaf5;border-radius:18px;padding:14px;margin:14px 0}.v4-mgmt-attention h3{margin:0}.v4-mgmt-attention>p{margin:5px 0 12px;color:#7c2d12}.v4-mgmt-attention-list{display:grid;gap:8px;padding:0;margin:0;list-style:none;counter-reset:attention}.v4-mgmt-attention-item{counter-increment:attention;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid #fed7aa;background:#fff;border-radius:14px;padding:10px}.v4-mgmt-attention-item:before{content:counter(attention);display:grid;place-items:center;width:28px;height:28px;border-radius:999px;background:#ffedd5;color:#9a3412;font-weight:900}.v4-mgmt-attention-item.is-danger{border-color:#fecaca;background:#fff7f7}.v4-mgmt-attention-copy b,.v4-mgmt-attention-copy span,.v4-mgmt-attention-copy small{display:block}.v4-mgmt-attention-copy span{margin-top:3px;font-weight:900;color:#9a3412}.v4-mgmt-attention-copy small{margin-top:3px;color:#64748b}.v4-mgmt-attention-item button{border:1px solid #fdba74;background:#fff7ed;color:#9a3412;border-radius:12px;padding:8px 10px;font-weight:900}@media(max-width:640px){.v4-mgmt-attention-item{grid-template-columns:auto minmax(0,1fr)}.v4-mgmt-attention-item button{grid-column:1/-1;width:100%}}';
-  style.textContent = attentionCss + style.textContent;
+  style.textContent = `
+    .v4-today-summary{display:grid;grid-template-columns:repeat(5,minmax(130px,1fr));gap:10px;margin:14px 0}.v4-today-card{border:1px solid #dbeafe;background:#f8fafc;border-radius:16px;padding:13px;min-width:0}.v4-today-card span{display:block;color:#64748b;font-size:12px;font-weight:900;text-transform:uppercase}.v4-today-card b{display:block;margin-top:5px;font-size:28px;line-height:1}.v4-today-card small{display:block;margin-top:7px;color:#64748b;line-height:1.35}.v4-today-card.is-danger{border-color:#fecaca;background:#fff7f7}.v4-today-card.is-warn{border-color:#fde68a;background:#fffdf3}.v4-today-card.is-good{border-color:#bbf7d0;background:#f0fdf4}
+    .v4-mgmt-attention{border:1px solid #bfdbfe;background:#eff6ff;border-radius:18px;padding:14px;margin:14px 0}.v4-mgmt-attention h3{margin:0}.v4-mgmt-attention>p{margin:5px 0 12px;color:#334155}.v4-mgmt-attention-list{display:grid;gap:8px;padding:0;margin:0;list-style:none;counter-reset:attention}.v4-mgmt-attention-item{counter-increment:attention;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid #bfdbfe;background:#fff;border-radius:14px;padding:10px}.v4-mgmt-attention-item:before{content:counter(attention);display:grid;place-items:center;width:28px;height:28px;border-radius:999px;background:#dbeafe;color:#1d4ed8;font-weight:900}.v4-mgmt-attention-item.is-danger{border-color:#fecaca;background:#fff7f7}.v4-mgmt-attention-copy b,.v4-mgmt-attention-copy span,.v4-mgmt-attention-copy small{display:block}.v4-mgmt-attention-copy span{margin-top:3px;font-weight:900;color:#9a3412}.v4-mgmt-attention-copy small{margin-top:3px;color:#64748b}.v4-mgmt-attention-item button{border:1px solid #1d4ed8;background:#1d4ed8;color:#fff;border-radius:12px;padding:9px 11px;font-weight:900}
+    .v4-mgmt-queue-note{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:10px;color:#64748b;font-size:13px}.v4-mgmt-details{border:1px solid #e2e8f0;border-radius:16px;background:#fff;margin-top:14px}.v4-mgmt-details>summary{cursor:pointer;padding:14px;font-weight:900;color:#334155}.v4-mgmt-details[open]>summary{border-bottom:1px solid #e2e8f0}.v4-mgmt-details-body{padding:14px}
+    .v4-mgmt-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:14px 0}.v4-mgmt-stat{border:1px solid #e2e8f0;background:#fff;border-radius:16px;padding:14px;box-shadow:0 8px 22px rgba(15,23,42,.05)}.v4-mgmt-stat span{display:block;color:#64748b;font-size:13px;font-weight:800}.v4-mgmt-stat b{font-size:24px;line-height:1.15}.v4-mgmt-stat.is-danger{border-color:#fecaca;background:#fff7f7}.v4-mgmt-stat.is-warn{border-color:#fde68a;background:#fffdf3}.v4-mgmt-stat.is-good{border-color:#bbf7d0;background:#f0fdf4}.v4-mgmt-stat.is-main{border-color:#bfdbfe;background:#eff6ff}.v4-mgmt-actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.v4-mgmt-actions button{border:1px solid #cbd5e1;background:#fff;border-radius:999px;padding:9px 12px;font-weight:900}.v4-mgmt-actions .v4-primary{background:#1d4ed8;border-color:#1d4ed8;color:#fff}.v4-mgmt-warnings{border:1px solid #fde68a;background:#fffdf3;color:#92400e;border-radius:14px;padding:10px;margin:12px 0;font-weight:800}.v4-mgmt-columns{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}.v4-mgmt-column{border:1px solid #e2e8f0;background:#fff;border-radius:16px;padding:14px}.v4-mgmt-column h3{margin:0 0 10px}.v4-mgmt-list{display:grid;gap:10px}.v4-mgmt-item{border:1px solid #e2e8f0;background:#f8fafc;border-radius:14px;padding:11px;display:grid;gap:6px}.v4-mgmt-item.is-danger{border-color:#fecaca;background:#fff7f7}.v4-mgmt-item.is-warn{border-color:#fde68a;background:#fffdf3}.v4-mgmt-item-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.v4-mgmt-item h4{margin:0;font-size:15px}.v4-mgmt-item small{color:#64748b}.v4-mgmt-item button{justify-self:start;border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;border-radius:12px;padding:8px 10px;font-weight:900}
+    @media(max-width:900px){.v4-today-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.v4-today-card:first-child{grid-column:1/-1}}
+    @media(max-width:640px){.v4-today-summary{grid-template-columns:1fr}.v4-today-card:first-child{grid-column:auto}.v4-mgmt-attention-item{grid-template-columns:auto minmax(0,1fr)}.v4-mgmt-attention-item button{grid-column:1/-1;width:100%}.v4-mgmt-queue-note{display:grid}.v4-mgmt-actions button,.v4-mgmt-item button{width:100%}.v4-mgmt-columns{grid-template-columns:1fr}}
+  `;
   document.head.appendChild(style);
 }
 
@@ -70,7 +81,7 @@ function ensureSection() {
   section.className = 'v4-card v4-managed-section';
   section.dataset.v4ManagedSection = 'management_dashboard';
   section.hidden = true;
-  section.innerHTML = '<div class="v4-section-head"><div><h2>Управленческий дашборд</h2><p>Сводка по заявкам, заказам, КП, производству, монтажу и финансам.</p></div><button type="button" class="v4-primary" data-management-dashboard-refresh>Обновить дашборд</button></div><div id="managementDashboardContent"><div class="v4-empty">Дашборд загрузится при открытии.</div></div>';
+  section.innerHTML = '<div class="v4-section-head"><div><p class="v4-kicker">Рабочий стол</p><h2>Сегодня</h2><p>Выполняйте действия сверху вниз. Одна заявка или заказ показывается только один раз — с самым важным следующим шагом.</p></div><button type="button" class="v4-primary" data-management-dashboard-refresh>Обновить</button></div><div id="managementDashboardContent"><div class="v4-empty">Рабочий стол загрузится при открытии.</div></div>';
   const first = document.querySelector('#crmWorkspace > .v4-card');
   if (first) first.insertAdjacentElement('afterend', section);
   else workspace().prepend(section);
@@ -82,7 +93,7 @@ function ensureNav() {
   const button = document.createElement('button');
   button.type = 'button';
   button.dataset.v4TabButton = 'management_dashboard';
-  button.textContent = 'Дашборд';
+  button.textContent = 'Сегодня';
   const leads = nav.querySelector('[data-v4-tab-button="leads"]');
   if (leads) leads.insertAdjacentElement('beforebegin', button);
   else nav.appendChild(button);
@@ -93,40 +104,44 @@ function hideBaseSections() {
   if (next) next.style.display = 'none';
 }
 function stat(label, value, type = '') { return `<div class="v4-mgmt-stat ${type}"><span>${esc(label)}</span><b>${esc(value)}</b></div>`; }
-function top(list, mapper) { return list.slice(0, 6).map(mapper).join('') || '<div class="v4-empty">Нет элементов в этой группе.</div>'; }
+function todayCard(label, value, note, type = '') { return `<article class="v4-today-card ${type}"><span>${esc(label)}</span><b>${esc(value)}</b><small>${esc(note)}</small></article>`; }
+function top(items, mapper) { return items.slice(0, 6).map(mapper).join('') || '<div class="v4-empty">Нет элементов в этой группе.</div>'; }
 function leadItem(lead, note = '', type = '') { return `<article class="v4-mgmt-item ${type}"><div class="v4-mgmt-item-head"><h4>${esc(lead.name || 'Без имени')}</h4><small>${esc(lead.status || 'Новая')}</small></div><small>${esc(lead.service || 'Услуга не указана')} · ${esc(lead.source || 'Источник не указан')}</small><small>Телефон: ${esc(lead.phone || '—')} · Следующий контакт: ${dateTimeRu(lead.next_contact_at)}</small>${note ? `<small>${esc(note)}</small>` : ''}<button type="button" data-management-open-lead="${esc(lead.id)}">Открыть заявку</button></article>`; }
 function orderTitle(order) { return `№${order.order_number || String(order.id || '').slice(0, 8)} — ${order.project_name || 'Заказ'}`; }
 function orderItem(order, note = '', type = '') { const margin = marginPercent(order); return `<article class="v4-mgmt-item ${type}"><div class="v4-mgmt-item-head"><h4>${esc(orderTitle(order))}</h4><small>${esc(order.status || 'Новый')}</small></div><small>${esc(order.client_name || 'Клиент не указан')} · ${esc(order.client_phone || 'телефон не указан')}</small><small>Срок: ${dateRu(order.deadline)} · Оплата: ${esc(paymentText(order) || 'не указана')}</small><small>Сумма: ${money(clientTotal(order))} · Прибыль: ${money(profitTotal(order))}${margin !== null ? ` · Маржа: ${margin}%` : ''}</small>${note ? `<small>${esc(note)}</small>` : ''}<button type="button" data-open-order="${esc(order.id)}">Открыть заказ</button></article>`; }
 function jobItem(job, type, note = '') { const status = type === 'production' ? job.production_status : job.install_status; const date = type === 'production' ? job.deadline : job.scheduled_at; return `<article class="v4-mgmt-item is-warn"><div class="v4-mgmt-item-head"><h4>${esc(job.title || (type === 'production' ? 'Производство' : 'Монтаж'))}</h4><small>${esc(status || '—')}</small></div><small>${type === 'production' ? 'Срок производства' : 'Монтаж'}: ${dateRu(date)}</small>${type === 'installation' ? `<small>Адрес: ${esc(job.address || '—')}</small>` : ''}${note ? `<small>${esc(note)}</small>` : ''}<button type="button" data-open-order="${esc(job.order_id)}">Открыть заказ</button></article>`; }
 function offerItem(offer, note = '', type = '') { return `<article class="v4-mgmt-item ${type}"><div class="v4-mgmt-item-head"><h4>${esc(offer.title || 'Коммерческое предложение')}</h4><small>${esc(offer.status || 'Черновик')}</small></div><small>Сумма: ${money(offer.total_sum)} · Действует до: ${dateRu(offer.valid_until)}</small>${note ? `<small>${esc(note)}</small>` : ''}${offer.lead_id ? `<button type="button" data-management-open-lead="${esc(offer.lead_id)}">Открыть заявку</button>` : ''}</article>`; }
+function categoryLabel(category) {
+  return ({ contact: 'Контакт с клиентом', new: 'Новая заявка', calculation: 'Потребность и расчёт', offer: 'Коммерческое предложение', problem: 'Проблема или разрыв данных', order: 'Заказ', assignment: 'Ответственный' })[category] || 'Рабочая задача';
+}
 function attentionItem(item) {
   const action = item.leadId
     ? `<button type="button" data-management-open-lead="${esc(item.leadId)}">${esc(item.nextAction)}</button>`
     : item.orderId
       ? `<button type="button" data-open-order="${esc(item.orderId)}">${esc(item.nextAction)}</button>`
       : '<button type="button" data-management-tab="order_control">Открыть контроль</button>';
-  return `<li class="v4-mgmt-attention-item ${item.tone === 'danger' ? 'is-danger' : ''}"><div class="v4-mgmt-attention-copy"><b>${esc(item.label)}</b><span>${esc(item.reason)}</span><small>Показано наиболее важное действие по этому объекту</small></div>${action}</li>`;
+  return `<li class="v4-mgmt-attention-item ${item.tone === 'danger' ? 'is-danger' : ''}"><div class="v4-mgmt-attention-copy"><b>${esc(item.label)}</b><span>${esc(item.reason)}</span><small>${esc(categoryLabel(item.category))}</small></div>${action}</li>`;
 }
 function attentionPanel(queue) {
-  const items = queue.slice(0, 8);
-  if (!items.length) return '<section class="v4-mgmt-attention"><h3>Что сделать сейчас</h3><p>Срочных действий по доступным данным нет.</p><div class="v4-empty">Рабочие очереди пусты или ближайшие действия уже запланированы.</div></section>';
-  return `<section class="v4-mgmt-attention" aria-labelledby="managementAttentionTitle"><h3 id="managementAttentionTitle">Что сделать сейчас</h3><p>Уникальные объекты отсортированы по риску. Одна заявка или заказ показывается один раз — с наиболее важным следующим действием.</p><ol class="v4-mgmt-attention-list">${items.map(attentionItem).join('')}</ol></section>`;
+  const items = queue.slice(0, 12);
+  if (!items.length) return '<section class="v4-mgmt-attention"><h3>Рабочая очередь</h3><p>Обязательных действий по доступным данным нет.</p><div class="v4-empty">Новые заявки, контакты, расчёты, КП и проблемные заказы сейчас не требуют внимания.</div></section>';
+  return `<section class="v4-mgmt-attention" aria-labelledby="managementAttentionTitle"><h3 id="managementAttentionTitle">Рабочая очередь</h3><p>Начните с первого пункта. После выполнения обновите экран — следующий приоритет поднимется наверх.</p><ol class="v4-mgmt-attention-list">${items.map(attentionItem).join('')}</ol><div class="v4-mgmt-queue-note"><span>Показано ${items.length} из ${queue.length} действий.</span><span>Один клиент или заказ не дублируется.</span></div></section>`;
 }
 function calc() {
   const activeLeads = data.leads.filter(activeLead);
   const activeOrders = data.orders.filter(activeOrder);
-  const activeTotal = activeOrders.reduce((s, o) => s + clientTotal(o), 0);
-  const activeProfit = activeOrders.reduce((s, o) => s + profitTotal(o), 0);
+  const activeTotal = activeOrders.reduce((sum, order) => sum + clientTotal(order), 0);
+  const activeProfit = activeOrders.reduce((sum, order) => sum + profitTotal(order), 0);
   return {
     activeLeads,
-    newLeads: activeLeads.filter((l) => (l.status || 'Новая') === 'Новая'),
-    noPhone: activeLeads.filter((l) => !String(l.phone || '').trim()),
-    noNext: activeLeads.filter((l) => !l.next_contact_at),
+    newLeads: activeLeads.filter((lead) => (lead.status || 'Новая') === 'Новая'),
+    noPhone: activeLeads.filter((lead) => !String(lead.phone || '').trim()),
+    noNext: activeLeads.filter((lead) => !lead.next_contact_at),
     leadOverdue: activeLeads.filter(leadContactOverdue),
     leadToday: activeLeads.filter(leadContactToday),
     activeOrders,
-    orderOverdue: activeOrders.filter((o) => { const d = daysUntil(o.deadline); return d !== null && d < 0; }),
-    orderSoon: activeOrders.filter((o) => { const d = daysUntil(o.deadline); return d !== null && d >= 0 && d <= 3; }),
+    orderOverdue: activeOrders.filter((order) => { const days = daysUntil(order.deadline); return days !== null && days < 0; }),
+    orderSoon: activeOrders.filter((order) => { const days = daysUntil(order.deadline); return days !== null && days >= 0 && days <= 3; }),
     unpaidOrders: activeOrders.filter(unpaid),
     noCostOrders: activeOrders.filter(noCost),
     lowMarginOrders: activeOrders.filter(lowMargin),
@@ -143,53 +158,70 @@ function calc() {
     expiredOffers: data.offers.filter(expiredOffer)
   };
 }
+function detailedAnalytics(c, queue) {
+  return `<details class="v4-mgmt-details"><summary>Подробная аналитика и все разделы</summary><div class="v4-mgmt-details-body"><p class="v4-muted">Этот блок нужен для контроля и анализа. Для ежедневной работы достаточно очереди выше.</p><div class="v4-mgmt-grid">${stat('Требуют внимания', managementUrgentCount(queue), managementUrgentCount(queue) ? 'is-danger' : 'is-good')}${stat('Активные заявки', c.activeLeads.length, 'is-main')}${stat('Новые заявки', c.newLeads.length, c.newLeads.length ? 'is-good' : '')}${stat('Без телефона', c.noPhone.length, c.noPhone.length ? 'is-danger' : '')}${stat('Контакты сегодня', c.leadToday.length, c.leadToday.length ? 'is-good' : '')}${stat('Активные заказы', c.activeOrders.length, 'is-main')}${stat('Просрочены заказы', c.orderOverdue.length, c.orderOverdue.length ? 'is-danger' : '')}${stat('Срок 1–3 дня', c.orderSoon.length, c.orderSoon.length ? 'is-warn' : '')}${stat('Не оплачено / частично', c.unpaidOrders.length, c.unpaidOrders.length ? 'is-danger' : '')}${stat('Активная сумма', money(c.activeTotal), 'is-main')}${stat('Потенц. прибыль', money(c.activeProfit), c.activeProfit > 0 ? 'is-good' : 'is-warn')}${stat('Средняя маржа', `${c.activeMargin}%`, c.activeMargin < 25 && c.activeTotal ? 'is-danger' : 'is-good')}${stat('Производство открыто', c.openProduction.length)}${stat('Монтаж открыт', c.openInstall.length)}${stat('Проср. произв./монтаж', c.overdueProduction.length + c.overdueInstall.length, c.overdueProduction.length + c.overdueInstall.length ? 'is-danger' : '')}${stat('Открытые КП', c.openOffers.length)}</div><div class="v4-mgmt-actions"><button type="button" class="v4-primary" data-management-tab="leads">Все заявки</button><button type="button" data-management-tab="contact_control">Контроль контактов</button><button type="button" data-management-tab="order_control">Контроль заказов</button><button type="button" data-management-tab="production">Производство</button><button type="button" data-management-tab="finance_control">Финансы</button></div><div class="v4-mgmt-columns"><section class="v4-mgmt-column"><h3>Срочно по заявкам</h3><div class="v4-mgmt-list">${top([...c.noPhone, ...c.leadOverdue, ...c.noNext], (lead) => leadItem(lead, !lead.phone ? 'Нет телефона' : leadContactOverdue(lead) ? 'Просрочен следующий контакт' : 'Не назначен следующий контакт', !lead.phone || leadContactOverdue(lead) ? 'is-danger' : 'is-warn'))}</div></section><section class="v4-mgmt-column"><h3>Срочно по заказам</h3><div class="v4-mgmt-list">${top([...c.orderOverdue, ...c.orderSoon, ...c.unpaidOrders], (order) => orderItem(order, daysUntil(order.deadline) < 0 ? 'Срок заказа просрочен' : unpaid(order) ? 'Оплата требует контроля' : 'Ближайший срок', daysUntil(order.deadline) < 0 || unpaid(order) ? 'is-danger' : 'is-warn'))}</div></section><section class="v4-mgmt-column"><h3>Производство и монтаж</h3><div class="v4-mgmt-list">${top([...c.overdueProduction, ...c.overdueInstall, ...c.soonProduction, ...c.soonInstall], (job) => job.production_status ? jobItem(job, 'production', overdueProduction(job) ? 'Производство просрочено' : 'Ближайший срок производства') : jobItem(job, 'installation', overdueInstall(job) ? 'Монтаж просрочен' : 'Ближайший монтаж'))}</div></section><section class="v4-mgmt-column"><h3>Финансовые риски</h3><div class="v4-mgmt-list">${top([...c.unpaidOrders, ...c.noCostOrders, ...c.lowMarginOrders], (order) => orderItem(order, unpaid(order) ? 'Оплата не закрыта' : noCost(order) ? 'Нет себестоимости' : 'Низкая маржа', 'is-danger'))}</div></section><section class="v4-mgmt-column"><h3>КП под контролем</h3><div class="v4-mgmt-list">${top([...c.expiredOffers, ...c.openOffers], (offer) => offerItem(offer, expiredOffer(offer) ? 'Срок действия КП истёк' : 'КП открыто, нужен контроль ответа', expiredOffer(offer) ? 'is-danger' : 'is-warn'))}</div></section><section class="v4-mgmt-column"><h3>Новые заявки</h3><div class="v4-mgmt-list">${top(c.newLeads, (lead) => leadItem(lead, 'Новая заявка', 'is-warn'))}</div></section></div></div></details>`;
+}
 function render() {
   ensureSection();
   const content = document.getElementById('managementDashboardContent');
   if (!content) return;
-  if (busy) { content.innerHTML = '<div class="v4-empty">Загружаю управленческий дашборд...</div>'; return; }
-  if (!loaded) { content.innerHTML = '<div class="v4-empty">Нажмите «Обновить дашборд» или откройте раздел ещё раз.</div>'; return; }
+  if (busy) { content.innerHTML = '<div class="v4-empty">Загружаю рабочий стол...</div>'; return; }
+  if (!loaded) { content.innerHTML = '<div class="v4-empty">Нажмите «Обновить» или откройте раздел ещё раз.</div>'; return; }
   const c = calc();
-  const attention = buildManagementAttentionQueue(data);
-  const urgent = managementUrgentCount(attention);
-  let warnings = sourceErrors.length ? `<div class="v4-mgmt-warnings">Часть данных не загрузилась: ${sourceErrors.map(esc).join('; ')}. Остальные блоки показаны.</div>` : '';
-  warnings += attentionPanel(attention);
-  content.innerHTML = `${warnings}<div class="v4-mgmt-grid">${stat('Срочных рисков', urgent, urgent ? 'is-danger' : 'is-good')}${stat('Активные заявки', c.activeLeads.length, 'is-main')}${stat('Новые заявки', c.newLeads.length, c.newLeads.length ? 'is-good' : '')}${stat('Без телефона', c.noPhone.length, c.noPhone.length ? 'is-danger' : '')}${stat('Контакты сегодня', c.leadToday.length, c.leadToday.length ? 'is-good' : '')}${stat('Активные заказы', c.activeOrders.length, 'is-main')}${stat('Просрочены заказы', c.orderOverdue.length, c.orderOverdue.length ? 'is-danger' : '')}${stat('Срок 1-3 дня', c.orderSoon.length, c.orderSoon.length ? 'is-warn' : '')}${stat('Не оплачено / частично', c.unpaidOrders.length, c.unpaidOrders.length ? 'is-danger' : '')}${stat('Активная сумма', money(c.activeTotal), 'is-main')}${stat('Потенц. прибыль', money(c.activeProfit), c.activeProfit > 0 ? 'is-good' : 'is-warn')}${stat('Средняя маржа', `${c.activeMargin}%`, c.activeMargin < 25 && c.activeTotal ? 'is-danger' : 'is-good')}${stat('Производство открыто', c.openProduction.length)}${stat('Монтаж открыт', c.openInstall.length)}${stat('Проср. произв./монтаж', c.overdueProduction.length + c.overdueInstall.length, c.overdueProduction.length + c.overdueInstall.length ? 'is-danger' : '')}${stat('Открытые КП', c.openOffers.length)}</div><div class="v4-mgmt-actions"><button type="button" class="v4-primary" data-management-dashboard-refresh>Обновить</button><button type="button" data-management-tab="leads">Заявки</button><button type="button" data-management-tab="contact_control">Контроль контактов</button><button type="button" data-management-tab="order_control">Контроль заказов</button><button type="button" data-management-tab="production">Производство</button><button type="button" data-management-tab="finance_control">Финансы</button></div><div class="v4-mgmt-columns"><section class="v4-mgmt-column"><h3>Срочно по заявкам</h3><div class="v4-mgmt-list">${top([...c.noPhone, ...c.leadOverdue, ...c.noNext], (lead) => leadItem(lead, !lead.phone ? 'Нет телефона' : leadContactOverdue(lead) ? 'Просрочен следующий контакт' : 'Не назначен следующий контакт', !lead.phone || leadContactOverdue(lead) ? 'is-danger' : 'is-warn'))}</div></section><section class="v4-mgmt-column"><h3>Срочно по заказам</h3><div class="v4-mgmt-list">${top([...c.orderOverdue, ...c.orderSoon, ...c.unpaidOrders], (order) => orderItem(order, daysUntil(order.deadline) < 0 ? 'Срок заказа просрочен' : unpaid(order) ? 'Оплата требует контроля' : 'Ближайший срок', daysUntil(order.deadline) < 0 || unpaid(order) ? 'is-danger' : 'is-warn'))}</div></section><section class="v4-mgmt-column"><h3>Производство и монтаж</h3><div class="v4-mgmt-list">${top([...c.overdueProduction, ...c.overdueInstall, ...c.soonProduction, ...c.soonInstall], (job) => job.production_status ? jobItem(job, 'production', overdueProduction(job) ? 'Производство просрочено' : 'Ближайший срок производства') : jobItem(job, 'installation', overdueInstall(job) ? 'Монтаж просрочен' : 'Ближайший монтаж'))}</div></section><section class="v4-mgmt-column"><h3>Финансовые риски</h3><div class="v4-mgmt-list">${top([...c.unpaidOrders, ...c.noCostOrders, ...c.lowMarginOrders], (order) => orderItem(order, unpaid(order) ? 'Оплата не закрыта' : noCost(order) ? 'Нет себестоимости' : 'Низкая маржа', 'is-danger'))}</div></section><section class="v4-mgmt-column"><h3>КП под контролем</h3><div class="v4-mgmt-list">${top([...c.expiredOffers, ...c.openOffers], (offer) => offerItem(offer, expiredOffer(offer) ? 'Срок действия КП истёк' : 'КП открыто, нужен контроль ответа', expiredOffer(offer) ? 'is-danger' : 'is-warn'))}</div></section><section class="v4-mgmt-column"><h3>Новые заявки</h3><div class="v4-mgmt-list">${top(c.newLeads, (lead) => leadItem(lead, 'Новая заявка', 'is-warn'))}</div></section></div>`;
+  const queue = buildManagementAttentionQueue(data);
+  const summary = buildManagementWorkSummary(data, queue);
+  const warning = sourceErrors.length ? `<div class="v4-mgmt-warnings">Часть данных не загрузилась: ${sourceErrors.map(esc).join('; ')}. Очередь построена по доступным данным.</div>` : '';
+  const summaryHtml = `<div class="v4-today-summary">${todayCard('Срочно сегодня', summary.urgent, 'Начните с первых пунктов очереди', summary.urgent ? 'is-danger' : 'is-good')}${todayCard('Новые заявки', summary.newLeads, 'Нужно принять и квалифицировать', summary.newLeads ? 'is-warn' : '')}${todayCard('Потребности и расчёты', summary.calculations, 'Не хватает брифа, расчёта или КП', summary.calculations ? 'is-warn' : '')}${todayCard('КП ждут действия', summary.offers, 'Черновики и отправленные предложения', summary.offers ? 'is-warn' : '')}${todayCard('Проблемные заказы', summary.problemOrders, 'Просрочки, оплата и потерянные связи', summary.problemOrders ? 'is-danger' : 'is-good')}</div>`;
+  content.innerHTML = `${warning}${summaryHtml}${attentionPanel(queue)}${detailedAnalytics(c, queue)}`;
 }
 async function safeQuery(label, query) {
-  try { const r = await query; if (r.error) throw r.error; return r.data || []; }
-  catch (error) { sourceErrors.push(`${label} - ${friendlyError(error)}`); return []; }
+  try { const response = await query; if (response.error) throw response.error; return response.data || []; }
+  catch (error) { sourceErrors.push(`${label} — ${friendlyError(error)}`); return []; }
 }
 async function loadData(force = false) {
   if (busy) return;
   if (loaded && !force) { render(); return; }
-  busy = true; sourceErrors = []; render();
+  busy = true;
+  sourceErrors = [];
+  render();
   try {
-    setStatus('Загружаю управленческий дашборд...', 'warn');
-    const [leads, orders, production, installation, offers] = await Promise.all([
+    setStatus('Загружаю рабочий стол...', 'warn');
+    const [leads, needs, calculations, orders, production, installation, offers] = await Promise.all([
       safeQuery('Заявки', supabaseClient.from('leader_leads').select(LEAD_FIELDS).order('created_at', { ascending: false }).limit(120)),
+      safeQuery('Потребности', supabaseClient.from('leader_lead_needs').select(NEED_FIELDS).order('updated_at', { ascending: false }).limit(240)),
+      safeQuery('Расчёты', supabaseClient.from('leader_lead_calculations').select(CALC_FIELDS).order('updated_at', { ascending: false }).limit(240)),
       safeQuery('Заказы', supabaseClient.from('leader_orders').select(ORDER_FIELDS).order('created_at', { ascending: false }).limit(120)),
       safeQuery('Производство', supabaseClient.from('leader_production_jobs').select(PRODUCTION_FIELDS).order('deadline', { ascending: true }).limit(100)),
       safeQuery('Монтаж', supabaseClient.from('leader_installation_jobs').select(INSTALL_FIELDS).order('scheduled_at', { ascending: true }).limit(100)),
       safeQuery('КП', supabaseClient.from('leader_commercial_offers').select(OFFER_FIELDS).order('created_at', { ascending: false }).limit(100))
     ]);
-    data = { leads, orders, production, installation, offers };
+    data = { leads, needs, calculations, orders, production, installation, offers };
     loaded = true;
-    setStatus(sourceErrors.length ? 'Дашборд загружен частично' : 'Управленческий дашборд загружен', sourceErrors.length ? 'warn' : 'good');
+    setStatus(sourceErrors.length ? 'Рабочий стол загружен частично' : 'Рабочий стол «Сегодня» загружен', sourceErrors.length ? 'warn' : 'good');
   } catch (error) {
-    sourceErrors.push(friendlyError(error)); loaded = true; toast(friendlyError(error)); setStatus('Дашборд загружен частично', 'warn');
-  } finally { busy = false; render(); }
+    sourceErrors.push(friendlyError(error));
+    loaded = true;
+    toast(friendlyError(error));
+    setStatus('Рабочий стол загружен частично', 'warn');
+  } finally {
+    busy = false;
+    render();
+  }
 }
 function showDashboard() {
-  ensureSection(); ensureNav(); document.body.dataset.v4Tab = 'management_dashboard';
+  ensureSection();
+  ensureNav();
+  document.body.dataset.v4Tab = 'management_dashboard';
   document.querySelectorAll('[data-v4-tab-button]').forEach((button) => button.classList.toggle('is-active', button.dataset.v4TabButton === 'management_dashboard'));
   hideBaseSections();
   document.querySelectorAll('[data-v4-managed-section]').forEach((section) => { section.hidden = section.dataset.v4ManagedSection !== 'management_dashboard'; });
-  loadData(false); window.scrollTo({ top: 0, behavior: 'smooth' });
+  loadData(false);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
   document.dispatchEvent(new CustomEvent('leader-v4:tab-opened', { detail: { tab: 'management_dashboard' } }));
 }
 function boot() {
-  ensureSection(); ensureNav();
+  ensureSection();
+  ensureNav();
   document.addEventListener('leader-v4:crm-ready', () => { setTimeout(ensureNav, 300); if (document.body.dataset.v4Tab === 'management_dashboard') loadData(false); });
   document.addEventListener('leader-v4:tab-opened', (event) => { setTimeout(ensureNav, 150); if (event.detail?.tab === 'management_dashboard' || document.body.dataset.v4Tab === 'management_dashboard') loadData(false); });
   document.addEventListener('click', (event) => {
