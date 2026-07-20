@@ -25,15 +25,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate order workflow guidance
-        shell: bash
+      - name: Check JavaScript syntax
         run: |
-          set -euo pipefail
           node --check crm/v4/assets/v4/order-workflow-guidance-model-v1.js
           node --check crm/v4/assets/v4/order-card-v1.js
           node --check tools/test_order_workflow_guidance.mjs
-          node tools/test_order_workflow_guidance.mjs
-          python3 tools/check_crm_order_workflow_guidance.py
+      - name: Run guidance unit tests
+        run: node tools/test_order_workflow_guidance.mjs
+      - name: Validate source contract
+        run: python3 tools/check_crm_order_workflow_guidance.py
+      - name: Run order regressions
+        run: |
           python3 tools/check_crm_order_status_ui_registry.py
           python3 tools/check_finance_plan_actual.py
           python3 tools/check_crm_order_completion_act.py
