@@ -2,6 +2,7 @@ import { supabaseClient } from './supabase-client.js';
 import { timeout, friendlyError } from './api.js';
 import { v4State, subscribeState } from './state.js';
 import { byId, setStatus, toast } from './ui.js';
+import './lead-exception-assistant-v1.js?v=20260720-1';
 
 const LEAD_EVENT_FIELDS = 'id,lead_id,event_type,old_status,new_status,body,created_by,created_by_email,created_at';
 const OFFER_EVENT_FIELDS = 'id,offer_id,lead_id,calculation_id,event_type,old_status,new_status,comment,created_by,created_by_email,created_at';
@@ -17,7 +18,7 @@ let saveBusy = false;
 let renderTimer = null;
 
 function esc(value) {
-  return String(value ?? '').replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
+  return String(value ?? '').replace(/[&<>\"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[m]));
 }
 
 function formatDateTime(value) {
