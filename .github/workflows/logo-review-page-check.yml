@@ -1,0 +1,26 @@
+name: Logo review page check
+
+on:
+  pull_request:
+    paths:
+      - 'logo-review.html'
+      - 'assets/brand/logo-lider-header.svg'
+      - 'tools/check_logo_review_page.py'
+      - '.github/workflows/logo-review-page-check.yml'
+  push:
+    branches:
+      - main
+      - design/ra-lider-site-crm-v1
+    paths:
+      - 'logo-review.html'
+      - 'assets/brand/logo-lider-header.svg'
+      - 'tools/check_logo_review_page.py'
+      - '.github/workflows/logo-review-page-check.yml'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate isolated logo review page
+        run: python3 tools/check_logo_review_page.py
