@@ -43,7 +43,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: order-guidance-test-output
-          path: order-guidance-test-output.txt
+          path: |
+            order-guidance-test-output.txt
+            crm/v4/assets/v4/order-workflow-guidance-model-v1.js
           if-no-files-found: error
           retention-days: 3
       - name: Validate source contract
