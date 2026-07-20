@@ -77,7 +77,17 @@ assert.equal(leadPrimaryAction({ status: 'Ждём ответ', next_contact_at:
 assert.equal(leadPrimaryAction({ status: 'Нужно пересчитать' }, { now }).label, 'Пересчитать заказ');
 assert.equal(leadPrimaryAction({ status: 'Согласовано' }, { now }).label, 'Создать заказ');
 assert.equal(leadPrimaryAction({ status: 'Отказ' }, { now }).type, 'none');
-assert.equal(leadPrimaryAction({ status: 'Создан заказ', converted_order_id: 'o1' }, { now }).type, 'open_orders');
+
+const linkedOrderAction = leadPrimaryAction({ status: 'Создан заказ', converted_order_id: 'o1' }, { now });
+assert.equal(linkedOrderAction.type, 'open_orders');
+assert.equal(linkedOrderAction.label, 'Открыть заказ');
+
+const missingOrderLinkAction = leadPrimaryAction({ status: 'Создан заказ', converted_order_id: null }, { now });
+assert.equal(missingOrderLinkAction.type, 'review_order_link');
+assert.equal(missingOrderLinkAction.label, 'Проверить связь заказа');
+assert.equal(missingOrderLinkAction.targetId, 'ordersBox');
+assert.match(missingOrderLinkAction.hint, /связанная запись не найдена/i);
+
 assert.equal(leadPrimaryAction({ status: unknown }, { now }).type, 'other_actions');
 
 console.log('CRM lead status UI registry behavior is valid.');
