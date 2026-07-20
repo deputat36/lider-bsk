@@ -41,6 +41,22 @@ const layout = buildOrderPrimaryAction({
 assert.equal(layout.key, 'approve_layout');
 assert.equal(layout.target, 'lead');
 
+const layoutProcess = buildOrderPrimaryAction({
+  order: { ...baseOrder, layout_status: 'Согласование макета' },
+  statusModel: status('layout_review'),
+  expenses,
+  now: NOW
+});
+assert.equal(layoutProcess.key, 'approve_layout');
+
+const layoutApproved = buildOrderPrimaryAction({
+  order: { ...baseOrder, layout_status: 'Макет согласован' },
+  statusModel: status('layout_review'),
+  expenses,
+  now: NOW
+});
+assert.equal(layoutApproved.key, 'start_production');
+
 const unpaid = buildOrderPrimaryAction({
   order: { ...baseOrder, payment_status: 'Не оплачено', balance: 12000 },
   statusModel: status('new'),
