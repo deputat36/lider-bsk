@@ -3,6 +3,7 @@ import {
   CRM_NAVIGATION_TABS,
   crmNavigationUrl,
   normalizeCrmNavigationTab,
+  readCrmLeadRoute,
   readCrmNavigationTab
 } from '../crm/v4/assets/v4/crm-navigation-route-v1.js';
 
@@ -18,6 +19,13 @@ assert.equal(readCrmNavigationTab('https://example.test/crm/v4/?tab=finance_cont
 assert.equal(readCrmNavigationTab('https://example.test/crm/v4/#production'), 'production');
 assert.equal(readCrmNavigationTab('https://example.test/crm/v4/?tab=unknown#orders'), 'orders');
 
+const leadId = '2cfb5455-5a81-4e0d-9838-ae1600af409a';
+assert.equal(readCrmLeadRoute(`https://example.test/crm/v4/?lead=${leadId}`), leadId);
+assert.equal(readCrmLeadRoute(`https://example.test/crm/v4/?id=${leadId}`), leadId);
+assert.equal(readCrmLeadRoute(`https://example.test/crm/v4/?tab=management_dashboard&lead=${leadId}`), leadId);
+assert.equal(readCrmLeadRoute('https://example.test/crm/v4/?lead=not-a-uuid'), '');
+assert.equal(readCrmLeadRoute('https://example.test/crm/v4/?id='), '');
+
 assert.equal(
   crmNavigationUrl('https://example.test/crm/v4/?lead=abc&id=old&utm_source=crm#orders', 'production'),
   '/crm/v4/?utm_source=crm&tab=production'
@@ -31,4 +39,4 @@ assert.equal(
   '/crm/v4/?tab=finance_control#help'
 );
 
-console.log('CRM navigation URL behavior is valid.');
+console.log('CRM navigation URL and direct lead-route behavior are valid.');

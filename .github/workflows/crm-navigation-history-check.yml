@@ -5,10 +5,13 @@ on:
     branches: [main]
     paths:
       - 'crm/v4/index.html'
+      - 'crm/v4/assets/v4/router.js'
       - 'crm/v4/assets/v4/crm-v4-tabs-lite.js'
       - 'crm/v4/assets/v4/crm-v4-expanded-menu-v1.js'
       - 'crm/v4/assets/v4/crm-navigation-route-v1.js'
+      - 'crm/v4/assets/v4/role-tab-permissions-v1.js'
       - 'tools/test_crm_navigation_route.mjs'
+      - 'tools/test_crm_role_landing.mjs'
       - 'tools/check_crm_navigation_history.py'
       - 'docs/CRM_V4_NAVIGATION_HISTORY_2026-07-14.md'
       - 'docs/STATUS.md'
@@ -17,10 +20,13 @@ on:
     branches: [main]
     paths:
       - 'crm/v4/index.html'
+      - 'crm/v4/assets/v4/router.js'
       - 'crm/v4/assets/v4/crm-v4-tabs-lite.js'
       - 'crm/v4/assets/v4/crm-v4-expanded-menu-v1.js'
       - 'crm/v4/assets/v4/crm-navigation-route-v1.js'
+      - 'crm/v4/assets/v4/role-tab-permissions-v1.js'
       - 'tools/test_crm_navigation_route.mjs'
+      - 'tools/test_crm_role_landing.mjs'
       - 'tools/check_crm_navigation_history.py'
       - 'docs/CRM_V4_NAVIGATION_HISTORY_2026-07-14.md'
       - 'docs/STATUS.md'
@@ -31,12 +37,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate navigation URL and browser history behavior
+      - name: Validate navigation URL, role landing and browser history
         run: |
           set -euo pipefail
           node --check crm/v4/assets/v4/crm-navigation-route-v1.js
+          node --check crm/v4/assets/v4/router.js
           node --check crm/v4/assets/v4/crm-v4-tabs-lite.js
           node --check crm/v4/assets/v4/crm-v4-expanded-menu-v1.js
           node --check tools/test_crm_navigation_route.mjs
+          node --check tools/test_crm_role_landing.mjs
           node tools/test_crm_navigation_route.mjs
+          node tools/test_crm_role_landing.mjs
           python3 tools/check_crm_navigation_history.py

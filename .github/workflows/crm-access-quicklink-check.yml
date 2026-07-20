@@ -28,7 +28,7 @@ jobs:
           test -f "$quick"
           grep -Fq 'Доступ и роли' "$index"
           grep -Fq 'data-v4-tab-button="user_admin"' "$index"
-          grep -Fq 'crm-v4-tabs-lite.js?v=20260714-navigation-history-1' "$index"
+          grep -Fq 'crm-v4-tabs-lite.js?v=20260720-role-landing-1' "$index"
           grep -Fq 'crm-v4-expanded-menu-v1.js?v=20260714-navigation-history-1' "$index"
           grep -Fq 'auth.js?v=20260628-access-label-1' "$index"
           grep -Fq "import './user-admin-v1.js?v=20260628-access-label-1';" "$auth"

@@ -1,6 +1,12 @@
 import './crm-empty-state-enhancer-v1.js';
 import { applyV4TabButtonVisibility, canOpenV4Tab, firstAllowedV4Tab } from './role-tab-permissions-v1.js';
-import { CRM_NAVIGATION_TABS, crmNavigationUrl, normalizeCrmNavigationTab, readCrmNavigationTab } from './crm-navigation-route-v1.js';
+import {
+  CRM_NAVIGATION_TABS,
+  crmNavigationUrl,
+  normalizeCrmNavigationTab,
+  readCrmLeadRoute,
+  readCrmNavigationTab
+} from './crm-navigation-route-v1.js';
 
 const MANAGED_TABS = new Set(['management_dashboard', 'orders', 'order_control', 'finance_control', 'production', 'public_lead_audit', 'contact_control', 'user_admin']);
 const SETTABLE_TABS = new Set([...MANAGED_TABS, 'leads', 'card']);
@@ -37,6 +43,11 @@ function readInitialTab() {
   return normalizeTab(readCrmNavigationTab(window.location.href), ROUTABLE_TABS);
 }
 
+function requestedInitialTab() {
+  if (readCrmLeadRoute(window.location.href) && canOpenV4Tab('card')) return 'card';
+  return readInitialTab() || firstAllowedV4Tab();
+}
+
 function syncTabUrl(tab, historyMode) {
   const normalized = normalizeCrmNavigationTab(tab);
   if (!normalized || historyMode === 'none') return;
@@ -48,6 +59,7 @@ function syncTabUrl(tab, historyMode) {
 }
 
 function hideAllWorkSections() {
+  hideElement('crmQuickStart');
   hideElement('leadsSection');
   hideElement('leadCardSection');
   hideNextCard();
@@ -84,6 +96,7 @@ function setActiveTab(tab, options = {}) {
 
   if (activeTab === 'leads') {
     document.querySelectorAll('[data-v4-managed-section]').forEach((section) => { section.hidden = true; });
+    showElement('crmQuickStart');
     showElement('leadsSection');
     const card = showElement('leadCardSection');
     if (card) card.classList.add('hidden');
@@ -92,6 +105,7 @@ function setActiveTab(tab, options = {}) {
 
   if (activeTab === 'card') {
     document.querySelectorAll('[data-v4-managed-section]').forEach((section) => { section.hidden = true; });
+    hideElement('crmQuickStart');
     hideElement('leadsSection');
     const card = showElement('leadCardSection');
     if (card) card.classList.remove('hidden');
@@ -99,6 +113,7 @@ function setActiveTab(tab, options = {}) {
   }
 
   if (MANAGED_TABS.has(activeTab)) {
+    hideElement('crmQuickStart');
     hideElement('leadsSection');
     hideElement('leadCardSection');
     hideNextCard();
@@ -139,12 +154,11 @@ function bootTabsLite() {
 
   document.addEventListener('leader-v4:crm-ready', () => {
     applyV4TabButtonVisibility(document);
-    const current = normalizeTab(document.body?.dataset?.v4Tab);
-    setActiveTab(current || readInitialTab() || firstAllowedV4Tab(), { historyMode: 'replace' });
+    setActiveTab(requestedInitialTab(), { historyMode: 'replace' });
   });
 
   window.addEventListener('popstate', () => {
-    setActiveTab(readInitialTab() || firstAllowedV4Tab(), { historyMode: 'none' });
+    setActiveTab(requestedInitialTab(), { historyMode: 'none' });
   });
 
   const initialTab = readInitialTab();

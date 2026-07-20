@@ -1,10 +1,5 @@
+import { readCrmLeadRoute } from './crm-navigation-route-v1.js';
 import { setRoute } from './state.js';
-
-function getLeadIdFromUrl() {
-  const params = new URLSearchParams(window.location.search);
-  const value = params.get('lead') || params.get('id') || '';
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value) ? value : null;
-}
 
 export function currentLeadUrl(id) {
   const url = new URL(window.location.href);
@@ -32,10 +27,10 @@ export function openLeadRoute(id) {
 export function bootRouter() {
   if (window.LeaderV4RouterBooted) return;
   window.LeaderV4RouterBooted = true;
-  const leadId = getLeadIdFromUrl();
+  const leadId = readCrmLeadRoute(window.location.href) || null;
   setRoute({ leadId });
   window.addEventListener('popstate', () => {
-    const nextLeadId = getLeadIdFromUrl();
+    const nextLeadId = readCrmLeadRoute(window.location.href) || null;
     setRoute({ leadId: nextLeadId });
     document.dispatchEvent(new CustomEvent('leader-v4:route-change', { detail: { leadId: nextLeadId } }));
   });
