@@ -106,8 +106,17 @@ function primaryAction(type, label, hint, options = {}) {
 }
 
 export function leadPrimaryAction(lead = {}, context = {}) {
-  if (lead.converted_order_id || rawLeadStatus(lead.status) === 'Создан заказ') {
-    return primaryAction('open_orders', 'Открыть заказ', 'Заказ уже создан. Проверьте исполнение, оплату и ближайший срок.');
+  if (lead.converted_order_id) {
+    return primaryAction('open_orders', 'Открыть заказ', 'Связанный заказ найден. Проверьте исполнение, оплату и ближайший срок.');
+  }
+
+  if (rawLeadStatus(lead.status) === 'Создан заказ') {
+    return primaryAction(
+      'review_order_link',
+      'Проверить связь заказа',
+      'Статус говорит, что заказ создан, но связанная запись не найдена. Проверьте КП, расчёт и историю перед созданием нового заказа.',
+      { targetId: 'ordersBox' }
+    );
   }
 
   const model = leadStatusUiModel(lead.status);
