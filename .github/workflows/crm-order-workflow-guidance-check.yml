@@ -1,0 +1,57 @@
+name: CRM order workflow guidance check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/order-workflow-guidance-model-v1.js'
+      - 'crm/v4/assets/v4/order-card-v1.js'
+      - 'tools/test_order_workflow_guidance.mjs'
+      - 'tools/check_crm_order_workflow_guidance.py'
+      - 'docs/CRM_ORDER_WORKFLOW_GUIDANCE_MANUAL_TEST_2026-07-20.md'
+      - '.github/workflows/crm-order-workflow-guidance-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/order-workflow-guidance-model-v1.js'
+      - 'crm/v4/assets/v4/order-card-v1.js'
+      - 'tools/test_order_workflow_guidance.mjs'
+      - 'tools/check_crm_order_workflow_guidance.py'
+      - 'docs/CRM_ORDER_WORKFLOW_GUIDANCE_MANUAL_TEST_2026-07-20.md'
+      - '.github/workflows/crm-order-workflow-guidance-check.yml'
+
+jobs:
+  order-workflow-guidance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check JavaScript syntax
+        run: |
+          node --check crm/v4/assets/v4/order-workflow-guidance-model-v1.js
+          node --check crm/v4/assets/v4/order-card-v1.js
+          node --check tools/test_order_workflow_guidance.mjs
+      - name: Run guidance unit tests
+        shell: bash
+        run: |
+          set +e
+          node tools/test_order_workflow_guidance.mjs > order-guidance-test-output.txt 2>&1
+          status=$?
+          cat order-guidance-test-output.txt
+          exit $status
+      - name: Upload unit-test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: order-guidance-test-output
+          path: |
+            order-guidance-test-output.txt
+            crm/v4/assets/v4/order-workflow-guidance-model-v1.js
+          if-no-files-found: error
+          retention-days: 3
+      - name: Validate source contract
+        run: python3 tools/check_crm_order_workflow_guidance.py
+      - name: Run order regressions
+        run: |
+          python3 tools/check_crm_order_status_ui_registry.py
+          python3 tools/check_finance_plan_actual.py
+          python3 tools/check_crm_order_completion_act.py
