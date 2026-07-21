@@ -3,13 +3,15 @@ import { timeout, friendlyError } from './api.js';
 import { v4State, setState } from './state.js';
 import { byId, setStatus, toast } from './ui.js';
 import { clearLeadUrl } from './router.js';
-import { leadPrimaryAction } from './lead-status-ui-model-v1.js?v=20260717-primary-action-2';
+import { leadPrimaryAction } from './lead-status-ui-model-v1.js?v=20260721-assignment-1';
 import { buildFirstContactDraft, buildFirstContactQuestions } from './lead-first-contact-model-v1.js?v=20260717-1';
+import { buildLeadSelfAssignment, leadResponsibilityState } from './lead-assignment-model-v1.js';
 
 const FULL_LEAD_FIELDS = 'id,name,phone,source,message,page_url,status,payload,created_at,updated_at,service,contact_preference,city,budget,utm_source,utm_medium,utm_campaign,utm_content,utm_term,assigned_to,converted_order_id,converted_client_id,last_contact_at,next_contact_at,converted_at,reject_reason,lead_quality,estimated_amount';
 const QUICK_STATUSES = ['В работе', 'Уточнение деталей', 'Расчёт подготовлен', 'КП отправлено', 'Ждём ответ', 'Нужно пересчитать', 'Согласовано', 'Отказ', 'Спам'];
 const DANGER_STATUSES = new Set(['Отказ', 'Спам']);
 let leadLoadSequence = 0;
+let leadAssignmentBusy = false;
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
@@ -40,6 +42,14 @@ function phoneHref(phone) {
   return cleaned ? `tel:${cleaned}` : '';
 }
 
+function assignmentContext() {
+  return {
+    currentUserId: v4State.user?.id || '',
+    currentUserRole: v4State.profile?.role || '',
+    actorLabel: v4State.profile?.full_name || v4State.user?.email || ''
+  };
+}
+
 function quickStatusButtons(lead) {
   const current = lead.status || 'Новая';
   return QUICK_STATUSES.map((status) => {
@@ -51,7 +61,11 @@ function quickStatusButtons(lead) {
 
 function currentPrimaryAction(lead) {
   const activeNeeds = (v4State.leadNeeds || []).filter((need) => need.lead_id === lead.id && need.status !== 'Архив');
-  return leadPrimaryAction(lead, { needCount: activeNeeds.length });
+  return leadPrimaryAction(lead, {
+    needCount: activeNeeds.length,
+    currentUserId: v4State.user?.id || '',
+    currentUserRole: v4State.profile?.role || ''
+  });
 }
 
 function primaryActionMarkup(lead) {
@@ -92,6 +106,7 @@ function renderLeadDetails(lead) {
   const phone = phoneHref(lead.phone);
   const nextContactValue = formatInputDateTime(lead.next_contact_at);
   const contactState = nextContactState(lead);
+  const responsibility = leadResponsibilityState(lead, assignmentContext());
   const contactOpen = currentPrimaryAction(lead).type === 'focus_contact' ? ' open' : '';
   const firstContactOpen = lead.last_contact_at ? '' : ' open';
   const firstContactDraft = buildFirstContactDraft(lead);
@@ -151,6 +166,7 @@ function renderLeadDetails(lead) {
 
       <div class="v4-detail-grid">
         <div><dt>Статус</dt><dd>${esc(lead.status || 'Новая')}</dd></div>
+        <div><dt>Ответственный</dt><dd data-lead-responsibility="${esc(responsibility.key)}">${esc(responsibility.label)}</dd></div>
         <div><dt>Телефон</dt><dd>${esc(lead.phone || '—')}</dd></div>
         <div><dt>Бюджет</dt><dd>${money(lead.budget || lead.estimated_amount)}</dd></div>
         <div><dt>Дата заявки</dt><dd>${formatDate(lead.created_at)}</dd></div>
@@ -256,7 +272,7 @@ async function loadLead(id) {
 
 async function updateCurrentLead(patch) {
   const id = v4State.currentLead?.id || v4State.route.leadId;
-  if (!id) return;
+  if (!id) return null;
   const response = await timeout(
     supabaseClient
       .from('leader_leads')
@@ -273,6 +289,7 @@ async function updateCurrentLead(patch) {
     leads: (v4State.leads || []).map((lead) => (lead.id === id ? { ...lead, ...response.data } : lead))
   });
   renderLead(response.data);
+  return response.data;
 }
 
 async function handleStatus(status, button) {
@@ -287,6 +304,44 @@ async function handleStatus(status, button) {
     setStatus(`Ошибка статуса: ${friendlyError(error)}`, 'error');
   } finally {
     if (button) button.disabled = false;
+  }
+}
+
+async function handleTakeLead(button) {
+  if (leadAssignmentBusy) return;
+  const assignment = buildLeadSelfAssignment(v4State.currentLead || {}, assignmentContext());
+  if (!assignment) {
+    toast('Заявка уже назначена или ваша роль не позволяет взять её на себя');
+    return;
+  }
+
+  leadAssignmentBusy = true;
+  if (button) button.disabled = true;
+  setStatus('Назначаю вас ответственным...', 'warn');
+  try {
+    await updateCurrentLead(assignment.patch);
+    const addEvent = window.leaderAddLeadEvent;
+    if (typeof addEvent !== 'function') throw new Error('История заявки ещё загружается');
+    try {
+      await addEvent({
+        leadId: assignment.leadId,
+        eventType: assignment.event.eventType,
+        oldStatus: assignment.event.oldStatus,
+        newStatus: assignment.event.newStatus,
+        body: assignment.event.body
+      });
+      toast('Заявка назначена вам');
+      setStatus('Вы назначены ответственным', 'good');
+    } catch (historyError) {
+      toast('Ответственный сохранён, но запись истории требует проверки');
+      setStatus(`Ответственный сохранён. История: ${friendlyError(historyError)}`, 'warn');
+    }
+  } catch (error) {
+    toast(friendlyError(error));
+    setStatus(`Ошибка назначения: ${friendlyError(error)}`, 'error');
+  } finally {
+    leadAssignmentBusy = false;
+    if (button?.isConnected) button.disabled = false;
   }
 }
 
@@ -362,6 +417,10 @@ async function handleFirstContactCopy(kind, button) {
 
 function handlePrimaryAction(button) {
   const action = button.dataset.leadPrimaryAction || '';
+  if (action === 'assign_self') {
+    handleTakeLead(button);
+    return;
+  }
   if (action === 'transition') {
     handleStatus(button.dataset.leadStatus, button);
     return;
