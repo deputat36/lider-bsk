@@ -30,3 +30,30 @@ jobs:
         run: python3 tools/check_crm_brand_foundations_v2.py
       - name: Validate isolated CRM brand preview
         run: python3 tools/check_crm_brand_preview.py
+      - name: Capture desktop and mobile preview
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8000 --directory . >/tmp/crm-brand-preview-server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:8000/crm/v4/brand-preview.html >/dev/null; then
+              break
+            fi
+            sleep 0.5
+          done
+          curl -fsS http://127.0.0.1:8000/crm/v4/brand-preview.html >/dev/null
+          chrome="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          test -n "$chrome"
+          mkdir -p artifacts/crm-brand-preview
+          "$chrome" --headless --disable-gpu --no-sandbox --hide-scrollbars --window-size=1440,1800 --screenshot=artifacts/crm-brand-preview/desktop-1440.png http://127.0.0.1:8000/crm/v4/brand-preview.html
+          "$chrome" --headless --disable-gpu --no-sandbox --hide-scrollbars --force-device-scale-factor=1 --window-size=390,2200 --screenshot=artifacts/crm-brand-preview/mobile-390.png http://127.0.0.1:8000/crm/v4/brand-preview.html
+          test -s artifacts/crm-brand-preview/desktop-1440.png
+          test -s artifacts/crm-brand-preview/mobile-390.png
+      - name: Upload visual review artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: crm-brand-preview
+          path: artifacts/crm-brand-preview/*.png
+          if-no-files-found: error
+          retention-days: 7
