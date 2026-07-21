@@ -1,11 +1,12 @@
 import { supabaseClient } from './supabase-client.js';
 import { timeout, friendlyError } from './api.js';
-import { v4State, subscribeState } from './state.js';
+import { v4State, setState, subscribeState } from './state.js';
 import { byId, setStatus, toast } from './ui.js';
-import './lead-exception-assistant-v1.js?v=20260720-1';
+import './lead-exception-assistant-v1.js?v=20260721-one-action-1';
 
 const LEAD_EVENT_FIELDS = 'id,lead_id,event_type,old_status,new_status,body,created_by,created_by_email,created_at';
 const OFFER_EVENT_FIELDS = 'id,offer_id,lead_id,calculation_id,event_type,old_status,new_status,comment,created_by,created_by_email,created_at';
+const LEAD_EXCEPTION_UPDATE_FIELDS = 'id,status,next_contact_at,updated_at';
 
 let currentLeadId = null;
 let loadedLeadId = null;
@@ -160,6 +161,36 @@ export async function addLeadTimelineEvent({ leadId, eventType = 'Коммент
   return response.data;
 }
 
+export async function updateLeadForException({ leadId, patch = {} } = {}) {
+  const targetLeadId = String(leadId || v4State.currentLead?.id || v4State.route.leadId || '').trim();
+  if (!targetLeadId) throw new Error('Заявка не выбрана');
+  if (v4State.currentLead?.id && v4State.currentLead.id !== targetLeadId) throw new Error('Открыта другая заявка. Обновите карточку и повторите действие.');
+
+  const status = String(patch?.status || '').trim();
+  const nextContactAt = patch?.next_contact_at || null;
+  if (!status) throw new Error('Новый статус не определён');
+
+  const response = await timeout(
+    supabaseClient
+      .from('leader_leads')
+      .update({ status, next_contact_at: nextContactAt, updated_at: new Date().toISOString() })
+      .eq('id', targetLeadId)
+      .select(LEAD_EXCEPTION_UPDATE_FIELDS)
+      .single(),
+    16000,
+    'Изменения заявки не сохранились за 16 секунд'
+  );
+  if (response.error) throw response.error;
+
+  const savedLead = response.data;
+  setState({
+    currentLead: v4State.currentLead?.id === savedLead.id ? { ...v4State.currentLead, ...savedLead } : v4State.currentLead,
+    leads: (v4State.leads || []).map((lead) => (lead.id === savedLead.id ? { ...lead, ...savedLead } : lead))
+  });
+  document.dispatchEvent(new CustomEvent('leader-v4:route-change', { detail: { leadId: savedLead.id } }));
+  return savedLead;
+}
+
 async function saveForm() {
   if (saveBusy) return;
   const type = byId('leadTimelineType')?.value || 'Комментарий';
@@ -227,3 +258,4 @@ function bindEvents() {
 bindEvents();
 scheduleRender();
 window.leaderAddLeadEvent = addLeadTimelineEvent;
+window.leaderUpdateLeadForException = updateLeadForException;
