@@ -47,7 +47,7 @@ required = {
     ],
     'html': [
         'lead-first-contact-v1.css?v=20260717-1',
-        'lead-card.js?v=20260717-first-contact-1',
+        'lead-card.js?v=20260721-assignment-1',
     ],
     'test': [
         "firstContactGreeting('ООО Ромашка')",

@@ -46,7 +46,17 @@ export function sortLeadRows(rows, sort = DEFAULTS.sort) {
 export function describeLeadFilters(filters = {}) {
   const normalized = normalizeLeadListPreferences(filters);
   const labels = [];
-  if (normalized.status !== DEFAULTS.status) labels.push(`статус: ${normalized.status === 'Все' ? 'все' : normalized.status}`);
+  if (normalized.status !== DEFAULTS.status) {
+    const statusLabels = {
+      Все: 'все',
+      unassigned: 'без ответственного',
+      no_phone: 'без телефона',
+      no_next_contact: 'без следующего контакта',
+      site: 'заявки с сайта',
+      archive: 'архив / завершённые'
+    };
+    labels.push(`статус: ${statusLabels[normalized.status] || normalized.status}`);
+  }
   if (normalized.source !== DEFAULTS.source) labels.push(`источник: ${normalized.source}`);
   if (String(filters.search || '').trim()) labels.push(`поиск: «${String(filters.search).trim()}»`);
   if (normalized.sort !== DEFAULTS.sort) {

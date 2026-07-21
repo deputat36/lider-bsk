@@ -16,7 +16,9 @@ errors = []
 checks = {
     model: [
         "from './status-transitions-v1.js'",
+        "from './lead-assignment-model-v1.js'",
         'LEAD_QUICK_FILTERS',
+        "value: 'unassigned'",
         'rawLeadStatus',
         'leadStatusDefinitions',
         'unknownLeadStatuses',
@@ -25,6 +27,9 @@ checks = {
         'canLeadStatusTransition',
         'leadPrimaryAction',
         'Принять заявку',
+        'Взять заявку в работу',
+        "'assign_self'",
+        'Заявка у другого сотрудника',
         'Зафиксировать потребность',
         'Сформировать КП',
         'Назначить следующий контакт',
@@ -70,7 +75,7 @@ checks = {
         'Источник обращения и дополнительные сведения',
     ],
     html: [
-        'lead-card.js?v=20260717-first-contact-1',
+        'lead-card.js?v=20260721-assignment-1',
         'styles.css?v=20260717-primary-action-1',
     ],
     test: [

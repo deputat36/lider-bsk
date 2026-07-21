@@ -4,9 +4,11 @@ import {
   statusDefinition,
   statusDomain
 } from './status-transitions-v1.js';
+import { leadResponsibilityState } from './lead-assignment-model-v1.js';
 
 export const LEAD_QUICK_FILTERS = Object.freeze([
   Object.freeze({ value: 'active', label: 'Активные в работе' }),
+  Object.freeze({ value: 'unassigned', label: 'Без ответственного' }),
   Object.freeze({ value: 'no_phone', label: 'Без телефона' }),
   Object.freeze({ value: 'no_next_contact', label: 'Без следующего контакта' }),
   Object.freeze({ value: 'site', label: 'Заявки с сайта' }),
@@ -116,6 +118,25 @@ export function leadPrimaryAction(lead = {}, context = {}) {
       'Проверить связь заказа',
       'Статус говорит, что заказ создан, но связанная запись не найдена. Проверьте КП, расчёт и историю перед созданием нового заказа.',
       { targetId: 'ordersBox' }
+    );
+  }
+
+  const responsibility = leadResponsibilityState(lead, {
+    currentUserId: context.currentUserId,
+    currentUserRole: context.currentUserRole
+  });
+  if (responsibility.key === 'unassigned' && responsibility.canTake) {
+    return primaryAction(
+      'assign_self',
+      'Взять заявку в работу',
+      'Назначьте себя ответственным. Новая заявка одновременно перейдёт в статус «В работе».'
+    );
+  }
+  if (responsibility.key === 'other' && String(context.currentUserId || '').trim()) {
+    return primaryAction(
+      'none',
+      'Заявка у другого сотрудника',
+      'Не меняйте её рабочий этап без согласованной передачи ответственности.'
     );
   }
 

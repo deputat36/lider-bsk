@@ -5,14 +5,16 @@ import { byId, setStatus, toast } from './ui.js';
 import { openLeadRoute } from './router.js';
 import { leadAnalyticsSearchText } from './lead-analytics-normalization.js';
 import { describeLeadFilters, loadLeadListPreferences, resetLeadListPreferences, saveLeadListPreferences, sortLeadRows } from './lead-list-preferences-v1.js';
+import { buildLeadSelfAssignment, leadResponsibilityState, leadTakeButtonModel } from './lead-assignment-model-v1.js';
 
-const LEAD_LIST_FIELDS = 'id,created_at,name,phone,source,service,message,status,next_contact_at,page_url,source_page_path,request_id,utm_source,utm_medium,utm_campaign,budget,estimated_amount,city,converted_order_id,converted_client_id';
+const LEAD_LIST_FIELDS = 'id,created_at,name,phone,source,service,message,status,next_contact_at,page_url,source_page_path,request_id,utm_source,utm_medium,utm_campaign,budget,estimated_amount,city,assigned_to,converted_order_id,converted_client_id';
 const CLOSED_STATUSES = ['Спам', 'Создан заказ', 'Отказ', 'Не отвечает', 'Дорого', 'Передумал'];
 const ACTIVE_HIDDEN_STATUSES = new Set(CLOSED_STATUSES);
 const ARCHIVE_STATUSES = new Set(CLOSED_STATUSES);
 const STATUSES = ['Все', 'Новая', 'В работе', 'Уточнение деталей', 'Расчёт подготовлен', 'КП отправлено', 'Ждём ответ', 'Нужно пересчитать', 'Согласовано', 'Создан заказ', 'Отказ', 'Не отвечает', 'Дорого', 'Передумал', 'Спам'];
 const QUICK_FILTERS = [
   ['active', 'Активные в работе'],
+  ['unassigned', 'Без ответственного'],
   ['no_phone', 'Без телефона'],
   ['no_next_contact', 'Без следующего контакта'],
   ['site', 'Заявки с сайта'],
@@ -20,6 +22,7 @@ const QUICK_FILTERS = [
 ];
 
 let leadsLoadPromise = null;
+const leadAssignmentBusy = new Set();
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
@@ -38,6 +41,14 @@ function money(value) {
 function phoneHref(phone) {
   const cleaned = String(phone || '').replace(/[^\d+]/g, '');
   return cleaned ? `tel:${cleaned}` : '';
+}
+
+function assignmentContext() {
+  return {
+    currentUserId: v4State.user?.id || '',
+    currentUserRole: v4State.profile?.role || '',
+    actorLabel: v4State.profile?.full_name || v4State.user?.email || ''
+  };
 }
 
 function isSiteLead(lead) {
@@ -67,10 +78,11 @@ function filteredLeads() {
     const leadStatus = lead.status || 'Новая';
     if (status === 'active' && !isActiveLead(lead)) return false;
     if (status === 'archive' && !ARCHIVE_STATUSES.has(leadStatus)) return false;
+    if (status === 'unassigned' && (lead.assigned_to || !isActiveLead(lead))) return false;
     if (status === 'no_phone' && (String(lead.phone || '').trim() || !isActiveLead(lead))) return false;
     if (status === 'no_next_contact' && (lead.next_contact_at || !isActiveLead(lead))) return false;
     if (status === 'site' && !isSiteLead(lead)) return false;
-    if (!['active', 'archive', 'no_phone', 'no_next_contact', 'site', 'Все'].includes(status) && leadStatus !== status) return false;
+    if (!['active', 'archive', 'unassigned', 'no_phone', 'no_next_contact', 'site', 'Все'].includes(status) && leadStatus !== status) return false;
     if (source !== 'Все' && (lead.source || 'Не указан') !== source) return false;
     if (query && !leadHaystack(lead).includes(query)) return false;
     return true;
@@ -105,6 +117,7 @@ function renderStats() {
   setText('v4StatNewLeads', leads.filter((lead) => (lead.status || 'Новая') === 'Новая').length);
   setText('v4StatWorkLeads', leads.filter((lead) => (lead.status || '') === 'В работе').length);
   setText('v4StatWaitingLeads', leads.filter((lead) => ['Ждём ответ', 'КП отправлено', 'Уточнение деталей'].includes(lead.status || '')).length);
+  setText('v4StatUnassignedLeads', active.filter((lead) => !lead.assigned_to).length);
   setText('v4StatNoPhoneLeads', active.filter((lead) => !String(lead.phone || '').trim()).length);
   setText('v4StatNoNextContactLeads', active.filter((lead) => !lead.next_contact_at).length);
 }
@@ -140,15 +153,15 @@ function statusClass(status) {
 
 function ensureLeadStatsExtras() {
   const stats = document.querySelector('.v4-lead-stats');
-  if (!stats || document.getElementById('v4StatNoPhoneLeads')) return;
-  stats.insertAdjacentHTML('beforeend', '<div><span>Без телефона</span><b id="v4StatNoPhoneLeads">0</b></div><div><span>Без контакта</span><b id="v4StatNoNextContactLeads">0</b></div>');
+  if (!stats || document.getElementById('v4StatUnassignedLeads')) return;
+  stats.insertAdjacentHTML('beforeend', '<div><span>Без ответственного</span><b id="v4StatUnassignedLeads">0</b></div><div><span>Без телефона</span><b id="v4StatNoPhoneLeads">0</b></div><div><span>Без контакта</span><b id="v4StatNoNextContactLeads">0</b></div>');
 }
 
 function ensureInlineStyles() {
   if (document.getElementById('leadsV4InlineHintsStyles')) return;
   const style = document.createElement('style');
   style.id = 'leadsV4InlineHintsStyles';
-  style.textContent = `.v4-lead-inline-hints{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 0}.v4-lead-inline-hint{display:inline-flex;border-radius:999px;padding:5px 8px;font-size:12px;font-weight:900;border:1px solid #cbd5e1;background:#f8fafc;color:#334155}.v4-lead-inline-hint.is-site{background:#dbeafe;border-color:#93c5fd;color:#1d4ed8}.v4-lead-inline-hint.is-danger{background:#fee2e2;border-color:#fecaca;color:#991b1b}.v4-lead-inline-hint.is-warn{background:#fef3c7;border-color:#fcd34d;color:#92400e}.v4-lead-warning-note{margin-top:8px;border:1px solid #fecaca;background:#fff1f2;color:#991b1b;border-radius:12px;padding:8px;font-weight:800}`;
+  style.textContent = `.v4-lead-inline-hints{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 0}.v4-lead-inline-hint{display:inline-flex;border-radius:999px;padding:5px 8px;font-size:12px;font-weight:900;border:1px solid #cbd5e1;background:#f8fafc;color:#334155}.v4-lead-inline-hint.is-site{background:#dbeafe;border-color:#93c5fd;color:#1d4ed8}.v4-lead-inline-hint.is-danger{background:#fee2e2;border-color:#fecaca;color:#991b1b}.v4-lead-inline-hint.is-warn{background:#fef3c7;border-color:#fcd34d;color:#92400e}.v4-lead-inline-hint.is-good{background:#dcfce7;border-color:#86efac;color:#166534}.v4-lead-warning-note{margin-top:8px;border:1px solid #fecaca;background:#fff1f2;color:#991b1b;border-radius:12px;padding:8px;font-weight:800}`;
   document.head.appendChild(style);
 }
 
@@ -157,8 +170,12 @@ function renderLeadCard(lead) {
   const noPhone = !String(lead.phone || '').trim();
   const noNextContact = !lead.next_contact_at && isActiveLead(lead);
   const siteLead = isSiteLead(lead);
+  const responsibility = leadResponsibilityState(lead, assignmentContext());
+  const takeButton = leadTakeButtonModel(lead, assignmentContext());
+  const responsibilityClass = responsibility.key === 'mine' ? 'is-good' : responsibility.key === 'unassigned' ? 'is-warn' : '';
   const hints = [
     siteLead ? '<span class="v4-lead-inline-hint is-site">Сайт</span>' : '',
+    `<span class="v4-lead-inline-hint ${responsibilityClass}">${esc(responsibility.label)}</span>`,
     noPhone ? '<span class="v4-lead-inline-hint is-danger">Нет телефона</span>' : '',
     noNextContact ? '<span class="v4-lead-inline-hint is-warn">Нет следующего контакта</span>' : ''
   ].filter(Boolean).join('');
@@ -175,7 +192,7 @@ function renderLeadCard(lead) {
       <div class="v4-lead-actions">
         ${phone ? `<a href="${esc(phone)}">Позвонить</a>` : ''}
         <button type="button" data-action="open">Открыть</button>
-        <button type="button" data-action="work">В работу</button>
+        ${takeButton.visible ? `<button type="button" class="v4-primary" data-action="${esc(takeButton.action)}">${esc(takeButton.label)}</button>` : ''}
       </div>
     </article>`;
 }
@@ -257,24 +274,38 @@ export async function loadLeads({ silent = false, force = false } = {}) {
   return leadsLoadPromise;
 }
 
-async function updateLeadStatus(id, status) {
+async function updateLead(id, patch, options = {}) {
+  let query = supabaseClient
+    .from('leader_leads')
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (options.requireUnassigned === true) query = query.is('assigned_to', null);
   const response = await timeout(
-    supabaseClient
-      .from('leader_leads')
-      .update({ status, updated_at: new Date().toISOString() })
-      .eq('id', id)
-      .select(LEAD_LIST_FIELDS)
-      .single(),
+    query.select(LEAD_LIST_FIELDS).maybeSingle(),
     16000,
-    'Статус не обновился за 16 секунд'
+    'Заявка не обновилась за 16 секунд'
   );
   if (response.error) throw response.error;
+  if (!response.data) throw new Error('Заявку уже взял другой сотрудник. Обновите список.');
   const updated = response.data;
   setState({
     leads: (v4State.leads || []).map((lead) => (lead.id === id ? { ...lead, ...updated } : lead)),
     currentLead: v4State.currentLead?.id === id ? { ...v4State.currentLead, ...updated } : v4State.currentLead
   });
   renderLeads();
+  return updated;
+}
+
+async function addAssignmentHistory(assignment) {
+  const addEvent = window.leaderAddLeadEvent;
+  if (typeof addEvent !== 'function') throw new Error('История заявки ещё загружается');
+  return addEvent({
+    leadId: assignment.leadId,
+    eventType: assignment.event.eventType,
+    oldStatus: assignment.event.oldStatus,
+    newStatus: assignment.event.newStatus,
+    body: assignment.event.body
+  });
 }
 
 function bindLeadFilters() {
@@ -323,17 +354,64 @@ function bindLeadActions() {
       if (typeof window.v4SetTab === 'function') window.v4SetTab('card');
       return;
     }
+
+    const lead = (v4State.leads || []).find((item) => item.id === id);
+    if (!lead) return;
+    if (leadAssignmentBusy.has(id)) return;
+
+    if (action === 'take') {
+      const assignment = buildLeadSelfAssignment(lead, assignmentContext());
+      if (!assignment) {
+        toast('Заявка уже назначена или ваша роль не позволяет взять её на себя');
+        renderLeads();
+        return;
+      }
+      leadAssignmentBusy.add(id);
+      button.disabled = true;
+      setStatus('Назначаю вас ответственным...', 'warn');
+      try {
+        await updateLead(id, assignment.patch, { requireUnassigned: true });
+        try {
+          await addAssignmentHistory(assignment);
+          toast('Заявка назначена вам');
+          setStatus('Вы назначены ответственным', 'good');
+        } catch (historyError) {
+          toast('Ответственный сохранён, но запись истории требует проверки');
+          setStatus(`Ответственный сохранён. История: ${friendlyError(historyError)}`, 'warn');
+        }
+        openLeadRoute(id);
+        if (typeof window.v4SetTab === 'function') window.v4SetTab('card');
+      } catch (error) {
+        toast(friendlyError(error));
+        setStatus(`Ошибка назначения: ${friendlyError(error)}`, 'error');
+      } finally {
+        leadAssignmentBusy.delete(id);
+        if (button.isConnected) button.disabled = false;
+      }
+      return;
+    }
+
     if (action === 'work') {
+      const responsibility = leadResponsibilityState(lead, assignmentContext());
+      if (responsibility.key !== 'mine') {
+        toast('Сначала назначьте себя ответственным');
+        renderLeads();
+        return;
+      }
+      leadAssignmentBusy.add(id);
       button.disabled = true;
       try {
-        await updateLeadStatus(id, 'В работе');
+        await updateLead(id, { status: 'В работе' });
         toast('Заявка переведена в работу');
         setStatus('Заявка переведена в работу', 'good');
+        openLeadRoute(id);
+        if (typeof window.v4SetTab === 'function') window.v4SetTab('card');
       } catch (error) {
         toast(friendlyError(error));
         setStatus(`Ошибка статуса: ${friendlyError(error)}`, 'error');
       } finally {
-        button.disabled = false;
+        leadAssignmentBusy.delete(id);
+        if (button.isConnected) button.disabled = false;
       }
     }
   });

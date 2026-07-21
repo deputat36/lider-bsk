@@ -59,11 +59,11 @@ required = {
         'window.requestIdleCallback(run, { timeout: 1800 })',
     ],
     'html': [
-        'lead-card.js?v=20260717-first-contact-1',
+        'lead-card.js?v=20260721-assignment-1',
         'needs.js?v=20260717-load-integrity-1',
         'calculations-saved-tools-v2.js?v=20260717-load-integrity-1',
         'router.js?v=20260717-module-singleton-1',
-        'leads.js?v=20260717-module-singleton-1',
+        'leads.js?v=20260721-assignment-1',
         'calculations.js?v=20260717-module-singleton-1',
         'site-cache-note-v1.js?v=20260718-deferred-1',
         'offers.js?v=20260717-load-integrity-1',
@@ -102,7 +102,7 @@ else:
         imports = {}
     expected_singletons = {
         './assets/v4/router.js': './assets/v4/router.js?v=20260717-module-singleton-1',
-        './assets/v4/leads.js': './assets/v4/leads.js?v=20260717-module-singleton-1',
+        './assets/v4/leads.js': './assets/v4/leads.js?v=20260721-assignment-1',
         './assets/v4/calculations.js': './assets/v4/calculations.js?v=20260717-module-singleton-1',
         './assets/v4/site-cache-note-v1.js': './assets/v4/site-cache-note-v1.js?v=20260718-deferred-1',
         './assets/v4/site-cache-note-v1.js?v=20260621-1': './assets/v4/site-cache-note-v1.js?v=20260718-deferred-1',
