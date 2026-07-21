@@ -1,4 +1,4 @@
-# Staging calculations Edge v5
+# leader-crm-calculations v5 on staging
 
 Дата фиксации: 21 июля 2026 года.
 
