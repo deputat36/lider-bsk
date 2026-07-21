@@ -1,6 +1,6 @@
 {
   "contract": "crm-staging-installation-schema",
-  "version": 4,
+  "version": 5,
   "source_audit_date": "2026-07-21",
   "repository": "deputat36/lider-bsk",
   "staging_project_ref": "otulfnouybahfnsycxqn",
@@ -9,7 +9,7 @@
   "canonical_schema_source": "supabase/staging-migrations/20260721_05_installation_schema_install.sql",
   "acceptance_source": "supabase/staging-tests/20260721_installation_schema_acceptance.sql",
   "staging_deployment": {
-    "state": "deployed_active_with_one_missing_index",
+    "state": "deployed_active_schema_aligned",
     "command_migration": {
       "version": "20260721191810",
       "name": "staging_installation_job_update_rpc_20260721",
@@ -20,10 +20,15 @@
       "name": "staging_installation_command_compat_20260721",
       "source": "supabase/staging-migrations/20260721_07_installation_command_compat.sql"
     },
+    "index_reconcile_migration": {
+      "version": "20260721200142",
+      "name": "staging_installation_schema_indexes_reconcile_20260721",
+      "source": "supabase/staging-migrations/20260721_09_installation_schema_indexes_reconcile.sql"
+    },
     "tables_present": true,
     "order_columns_present": true,
     "foreign_keys_aligned_with_production": true,
-    "events_order_index_present": true,
+    "covering_indexes_aligned_with_production": true,
     "fixture_rows": {
       "leader_installation_jobs": 0,
       "leader_installation_job_items": 0,
@@ -110,26 +115,20 @@
       "installation_completed_at",
       "installer_name",
       "installer_phone"
-    ],
-    "existing_order_columns": [
-      "installation_status",
-      "current_stage",
-      "updated_at",
-      "stage_updated_at"
     ]
   },
   "deployed_staging_schema_drift": {
-    "reconciliation_required": true,
+    "reconciliation_required": false,
     "foreign_keys": [],
+    "missing_covering_indexes": [],
     "foreign_keys_aligned_with_production": true,
-    "missing_covering_indexes": [
-      "leader_installation_job_items_order_id_idx"
-    ],
+    "covering_indexes_aligned_with_production": true,
     "present_covering_indexes": [
+      "leader_installation_job_items_order_id_idx",
       "leader_installation_events_order_id_idx"
     ],
-    "remaining_index_candidate": "supabase/staging-migrations/20260721_08_installation_items_order_index_candidate.sql",
-    "remaining_index_rollback": "supabase/staging-rollbacks/20260721_08_installation_items_order_index_rollback.sql",
+    "historical_candidate": "supabase/staging-migrations/20260721_08_installation_items_order_index_candidate.sql",
+    "historical_candidate_rollback": "supabase/staging-rollbacks/20260721_08_installation_items_order_index_rollback.sql",
     "current_cycle_ddl_applied": false
   },
   "staging_access_model": {
@@ -185,15 +184,7 @@
       "Выполнен",
       "Не требуется",
       "Отменён"
-    ],
-    "legacy_aliases": {
-      "Нужно назначить": "Не назначен",
-      "Проблема": "Перенесён",
-      "Перенесен": "Перенесён",
-      "Завершён": "Выполнен",
-      "Завершен": "Выполнен",
-      "Отменен": "Отменён"
-    }
+    ]
   },
   "acceptance_guards": {
     "exact_staging_environment": true,
@@ -206,7 +197,7 @@
     "service_role_grants_checked": true
   },
   "not_in_scope": [
-    "remaining staging index DDL",
+    "user JWT smoke",
     "frontend switch",
     "production migration",
     "production data",
