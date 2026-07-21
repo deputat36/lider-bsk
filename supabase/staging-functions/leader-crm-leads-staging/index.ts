@@ -1,3 +1,12 @@
 // STAGING ONLY.
-// The deployed probe imports the reviewed generic CRM leads source and is used only for list_orders validation.
-import "https://raw.githubusercontent.com/deputat36/lider-bsk/17524ea9ef08c11b18b385b9469778d5b1084ddb/supabase/functions/leader-crm-leads/index.ts";
+// Canonical database action gate in front of the preserved leads implementation.
+import { leadsActionPlan } from '../_shared/crm-canonical-action-map-v1.js'
+import { runCanonicalEdgeWrapper } from '../_shared/canonical-edge-wrapper-v1.js'
+
+Deno.serve((req: Request) => runCanonicalEdgeWrapper(req, {
+  implementationSlug: 'leader-crm-leads-staging-impl',
+  plan: (body: Record<string, unknown>, url: URL) => leadsActionPlan(
+    body,
+    url.searchParams.get('action') || '',
+  ),
+}))
