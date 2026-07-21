@@ -1,0 +1,41 @@
+name: CRM staging action RBAC check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'contracts/crm-v4-role-action-matrix-v1.json'
+      - 'crm/v4/assets/v4/action-permissions-v1.js'
+      - 'supabase/staging-migrations/20260721_01_canonical_action_rbac.sql'
+      - 'supabase/staging-migrations/20260721_02_role_action_matrix_policy.sql'
+      - 'supabase/staging-tests/20260721_canonical_action_rbac.sql'
+      - 'tools/test_crm_role_action_matrix.mjs'
+      - 'tools/check_crm_staging_action_rbac.py'
+      - 'docs/SUPABASE_STAGING_CANONICAL_ACTION_RBAC_2026-07-21.md'
+      - '.github/workflows/crm-staging-action-rbac-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'contracts/crm-v4-role-action-matrix-v1.json'
+      - 'crm/v4/assets/v4/action-permissions-v1.js'
+      - 'supabase/staging-migrations/20260721_01_canonical_action_rbac.sql'
+      - 'supabase/staging-migrations/20260721_02_role_action_matrix_policy.sql'
+      - 'supabase/staging-tests/20260721_canonical_action_rbac.sql'
+      - 'tools/test_crm_role_action_matrix.mjs'
+      - 'tools/check_crm_staging_action_rbac.py'
+      - 'docs/SUPABASE_STAGING_CANONICAL_ACTION_RBAC_2026-07-21.md'
+      - '.github/workflows/crm-staging-action-rbac-check.yml'
+
+jobs:
+  canonical-action-rbac:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: JavaScript syntax
+        run: |
+          node --check crm/v4/assets/v4/action-permissions-v1.js
+          node --check tools/test_crm_role_action_matrix.mjs
+      - name: Browser and JSON matrix parity
+        run: node tools/test_crm_role_action_matrix.mjs
+      - name: Staging source and production-boundary contract
+        run: python3 tools/check_crm_staging_action_rbac.py
