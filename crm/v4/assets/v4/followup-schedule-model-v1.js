@@ -14,6 +14,7 @@ function clean(value) {
 }
 
 function validDate(value) {
+  if (value === null || value === undefined || value === '') return null;
   const date = value instanceof Date ? new Date(value.getTime()) : new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
 }
