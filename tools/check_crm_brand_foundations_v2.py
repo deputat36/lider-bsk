@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Проверяет безопасное подключение фирменного визуального слоя CRM v2."""
 
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -58,6 +59,9 @@ def main() -> None:
     for old_blue in ("#1d4ed8", "#2563eb", "#075985"):
         forbid(brand.lower(), old_blue, "старый синий основной акцент")
 
+    # Документационные CSS-комментарии могут честно упоминать Supabase.
+    # Проверяем только исполняемую часть файла.
+    executable_css = re.sub(r"/\*.*?\*/", "", brand, flags=re.S).lower()
     for write_marker in (
         "fetch(",
         ".from(",
@@ -66,7 +70,7 @@ def main() -> None:
         ".delete(",
         "supabase",
     ):
-        forbid(brand.lower(), write_marker, "сетевой или data-write маркер в CSS")
+        forbid(executable_css, write_marker, "сетевой или data-write маркер в CSS")
 
     print("CRM brand foundations v2 check: OK")
 
