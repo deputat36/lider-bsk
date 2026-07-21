@@ -97,7 +97,7 @@ Wrapper:
 1. проверяет payload shape и actor UUID;
 2. допускает только action `design_task.create_from_order`;
 3. проверяет canonical `design.write`;
-4. при отказе возвращает `forbidden` до business reads;
+4. при отказе возвращает код forbidden до business reads;
 5. только после разрешения вызывает существующую реализацию.
 
 Обе функции доступны только service_role. Browser roles не получили EXECUTE.
