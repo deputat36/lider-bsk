@@ -5,7 +5,9 @@ on:
     paths:
       - 'crm/v4/assets/v4/brand-foundations-v2.css'
       - 'crm/v4/assets/v4/ui-polish.css'
+      - 'crm/v4/brand-preview.html'
       - 'tools/check_crm_brand_foundations_v2.py'
+      - 'tools/check_crm_brand_preview.py'
       - '.github/workflows/crm-brand-foundations-v2-check.yml'
   push:
     branches:
@@ -14,7 +16,9 @@ on:
     paths:
       - 'crm/v4/assets/v4/brand-foundations-v2.css'
       - 'crm/v4/assets/v4/ui-polish.css'
+      - 'crm/v4/brand-preview.html'
       - 'tools/check_crm_brand_foundations_v2.py'
+      - 'tools/check_crm_brand_preview.py'
       - '.github/workflows/crm-brand-foundations-v2-check.yml'
 
 jobs:
@@ -24,3 +28,5 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate CRM brand foundations v2
         run: python3 tools/check_crm_brand_foundations_v2.py
+      - name: Validate isolated CRM brand preview
+        run: python3 tools/check_crm_brand_preview.py
