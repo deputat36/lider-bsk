@@ -95,11 +95,11 @@ export async function runCanonicalEdgeWrapper(req, options) {
   if (!supabaseUrl || !anonKey || !serviceRole) return json(500, { error: 'server_not_configured', gate: CRM_EDGE_ACTION_GATE_VERSION })
 
   const body = await parseBody(req)
-  const plan = options.plan(body, new URL(req.url))
-  if (!plan?.known) return json(400, { error: 'unknown_action', action: clean(plan?.action, 80), gate: CRM_EDGE_ACTION_GATE_VERSION })
-
   const auth = await authenticatedUser(req, supabaseUrl, anonKey)
   if (auth.error) return auth.error
+
+  const plan = options.plan(body, new URL(req.url))
+  if (!plan?.known) return json(400, { error: 'unknown_action', action: clean(plan?.action, 80), gate: CRM_EDGE_ACTION_GATE_VERSION })
 
   if (!plan.bootstrap) {
     for (const permission of plan.permissions || []) {
