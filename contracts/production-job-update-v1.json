@@ -1,6 +1,6 @@
 {
   "contract_version": "leader-production-job-update-v1",
-  "status": "staging_database_deployed_edge_pending_production_locked",
+  "status": "staging_deployed_production_locked",
   "action": "production_job.update",
   "permission": "production.write",
   "detail_for": "contracts/crm-v4-backend-command-contract-v1.json",
@@ -8,14 +8,14 @@
     "staging_project_ref": "otulfnouybahfnsycxqn",
     "production_project_ref": "ofewxuqfjhamgerwzull",
     "staging_database_deployed": true,
-    "staging_edge_deployed": false,
+    "staging_edge_deployed": true,
     "production_deployed": false
   },
   "transport": {
     "edge_function": "leader-crm-production",
     "verify_jwt": true,
-    "staging_version": null,
-    "staging_deployment_hash": null,
+    "staging_version": 1,
+    "staging_deployment_hash": "f378dc44bae1c4dd5627d2c0068f28b1c3cebe9d5e9b3e18ac01d55d59af060d",
     "browser_direct_write": false,
     "production_ui_enabled": false
   },
@@ -152,6 +152,7 @@
     "migration_name": "staging_production_job_update_rpc_20260721",
     "sql_acceptance_passed": true,
     "synthetic_cleanup_zero": true,
+    "edge_logs_empty_after_deploy": true,
     "authenticated_http_e2e_passed": false,
     "auth_gate_reason": "temporary staging Auth user was not created"
   },
