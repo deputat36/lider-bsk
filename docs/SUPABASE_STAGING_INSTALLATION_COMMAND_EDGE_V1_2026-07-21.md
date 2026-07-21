@@ -1,4 +1,4 @@
-# Staging installation command Edge v1
+# Staging installation command Edge v2
 
 Дата фиксации: 21 июля 2026 года.
 
@@ -6,7 +6,7 @@
 
 Зафиксировать уже работающий staging transport для атомарного обновления монтажного задания и устранить deployment drift между Supabase и GitHub.
 
-В рамках этой синхронизации новый Edge deploy и новый migration apply не выполнялись. Deployment был обнаружен read-only postflight после объединения schema preparation. Production не изменялся.
+В рамках этой синхронизации новый Edge deploy и новый migration apply не выполнялись. Deployment был обнаружен read-only postflight. Production не изменялся.
 
 ## Фактический staging deployment
 
@@ -25,7 +25,9 @@ Database:
 
 - migration version: `20260721191810`;
 - migration name: `staging_installation_job_update_rpc_20260721`;
-- RPC: `public.leader_update_installation_job_rpc(jsonb)`.
+- RPC: `public.leader_update_installation_job_rpc(jsonb)`;
+- schema contract: version `3`;
+- schema reconciliation: требуется.
 
 ## Команда
 
@@ -125,7 +127,7 @@ Legacy aliases нормализуются server-side. Неизвестный т
 - `anon EXECUTE=false`;
 - `authenticated EXECUTE=false`.
 
-Три installation-таблицы:
+Четыре installation-таблицы:
 
 - RLS enabled;
 - browser policies отсутствуют;
@@ -145,6 +147,7 @@ Legacy aliases нормализуются server-side. Неизвестный т
 Read-only postflight подтвердил:
 
 - installation jobs: `0`;
+- installation job items: `0`;
 - installation events: `0`;
 - installation comments: `0`;
 - command receipts: `0`;
@@ -152,7 +155,30 @@ Read-only postflight подтвердил:
 - новых security ERROR/WARN нет;
 - INFO `rls_enabled_no_policy` соответствует закрытому service-role-only harness.
 
-Performance Advisor отдельно выявил отсутствующие покрывающие индексы у некоторых installation FK. Это не меняет корректность команды и вынесено в отдельную задачу; DDL в этом PR не выполняется.
+## Schema readiness
+
+Edge source, RPC source, canonical authorization и атомарная команда готовы.
+
+Schema reconciliation ещё не завершён:
+
+- `leader_installation_jobs.order_id` в staging использует `ON DELETE CASCADE`, production baseline — `SET NULL`;
+- `leader_installation_job_items.order_id` использует `CASCADE`, production — `SET NULL`;
+- `leader_installation_events.order_id` использует `CASCADE`, production — `SET NULL`;
+- отсутствует `leader_installation_job_items_order_id_idx`;
+- отсутствует `leader_installation_events_order_id_idx`.
+
+Performance Advisor подтверждает два отсутствующих FK-индекса. DDL в этом PR не выполняется.
+
+Readiness:
+
+- Edge source synced: да;
+- RPC source synced: да;
+- authorization ready: да;
+- atomic command ready: да;
+- schema reconciliation ready: нет;
+- user-JWT smoke completed: нет;
+- frontend switch ready: нет;
+- production ready: нет.
 
 ## GitHub source
 
@@ -185,7 +211,7 @@ Workflow:
 2. linked order;
 3. installation event.
 
-Frontend switch не выполнен. Следующий staging-only этап — заменить эту последовательность одним вызовом `leader-crm-installation` и проверить UI rollback/concurrency/idempotency.
+Frontend switch не выполнен. Переключение запрещено до schema reconciliation и user-JWT smoke.
 
 ## Production boundary
 
