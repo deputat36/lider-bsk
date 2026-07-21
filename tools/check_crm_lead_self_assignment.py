@@ -11,6 +11,7 @@ preferences = root / 'crm/v4/assets/v4/lead-list-preferences-v1.js'
 html = root / 'crm/v4/index.html'
 test = root / 'tools/test_crm_lead_assignment.mjs'
 manual = root / 'docs/CRM_LEAD_SELF_ASSIGNMENT_MANUAL_TEST_2026-07-21.md'
+staging_report = root / 'docs/CRM_LEAD_SELF_ASSIGNMENT_STAGING_2026-07-21.md'
 staging_sql_path = root / 'supabase/staging/20260721054500_staging_lead_assignment_core.sql'
 production_sql_path = root / 'supabase/migrations/20260721054500_staging_lead_assignment_core.sql'
 
@@ -84,6 +85,18 @@ checks = {
         'массовое назначение существующих 13 заявок',
         'Mobile',
     ],
+    staging_report: [
+        'staging_lead_assignment_core_20260721',
+        'первый условный запрос',
+        'второй конкурентный запрос',
+        'вернул ноль строк',
+        'first_assignment_preserved = true',
+        'synthetic_rows = 0',
+        'anon_can_read_assignment = false',
+        'authenticated_can_read_assignment = false',
+        'service_role_can_read_assignment = true',
+        'Production Supabase',
+    ],
 }
 
 for path, markers in checks.items():
@@ -92,7 +105,7 @@ for path, markers in checks.items():
         continue
     text = path.read_text(encoding='utf-8')
     for marker in markers:
-        if marker not in text:
+        if marker.lower() not in text.lower():
             errors.append(f'Missing lead self-assignment marker in {path.relative_to(root)}: {marker}')
 
 if model.exists():
