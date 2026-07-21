@@ -6,6 +6,8 @@ on:
     paths:
       - 'crm/v4/assets/v4/followup-schedule-model-v1.js'
       - 'crm/v4/assets/v4/followups.js'
+      - 'crm/v4/assets/v4/followups.css'
+      - 'crm/v4/assets/v4/lead-assignment-model-v1.js'
       - 'crm/v4/assets/v4/leads.js'
       - 'crm/v4/assets/v4/lead-status-ui-model-v1.js'
       - 'crm/v4/assets/v4/lead-status-ui-registry-v1.js'
@@ -19,12 +21,16 @@ on:
       - 'tools/check_crm_lead_self_assignment.py'
       - 'docs/CRM_SAFE_FOLLOWUP_POSTPONE_MANUAL_TEST_2026-07-21.md'
       - 'docs/CRM_SAFE_FOLLOWUP_POSTPONE_STAGING_2026-07-21.md'
+      - 'docs/CRM_FOLLOWUP_OWNERSHIP_MANUAL_TEST_2026-07-21.md'
+      - 'docs/CRM_FOLLOWUP_OWNERSHIP_STAGING_2026-07-21.md'
       - '.github/workflows/crm-safe-followup-postpone-check.yml'
   pull_request:
     branches: [main]
     paths:
       - 'crm/v4/assets/v4/followup-schedule-model-v1.js'
       - 'crm/v4/assets/v4/followups.js'
+      - 'crm/v4/assets/v4/followups.css'
+      - 'crm/v4/assets/v4/lead-assignment-model-v1.js'
       - 'crm/v4/assets/v4/leads.js'
       - 'crm/v4/assets/v4/lead-status-ui-model-v1.js'
       - 'crm/v4/assets/v4/lead-status-ui-registry-v1.js'
@@ -38,6 +44,8 @@ on:
       - 'tools/check_crm_lead_self_assignment.py'
       - 'docs/CRM_SAFE_FOLLOWUP_POSTPONE_MANUAL_TEST_2026-07-21.md'
       - 'docs/CRM_SAFE_FOLLOWUP_POSTPONE_STAGING_2026-07-21.md'
+      - 'docs/CRM_FOLLOWUP_OWNERSHIP_MANUAL_TEST_2026-07-21.md'
+      - 'docs/CRM_FOLLOWUP_OWNERSHIP_STAGING_2026-07-21.md'
       - '.github/workflows/crm-safe-followup-postpone-check.yml'
 
 jobs:
@@ -54,10 +62,11 @@ jobs:
           node --check crm/v4/assets/v4/lead-status-ui-registry-v1.js
           node --check crm/v4/assets/v4/lead-analytics-badges-v1.js
           node --check crm/v4/assets/v4/lead-list-preferences-v1.js
+          node --check crm/v4/assets/v4/lead-assignment-model-v1.js
           node --check tools/test_crm_followup_schedule.mjs
       - name: Pure model tests
         run: node tools/test_crm_followup_schedule.mjs
-      - name: Safe followup source contract
+      - name: Followup ownership and safe postpone source contract
         run: python3 tools/check_crm_safe_followup_postpone.py
       - name: Loading integrity contract
         run: python3 tools/check_crm_loading_integrity.py
