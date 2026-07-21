@@ -1,0 +1,28 @@
+name: Logo source archive check
+
+on:
+  pull_request:
+    paths:
+      - 'assets/brand/source/logo-lider-original-20260621.svg'
+      - 'assets/brand/logo-lider-header.svg'
+      - 'docs/LOGO_SOURCE_RECOVERY_2026-07-21.md'
+      - 'tools/check_logo_source_archive.py'
+      - '.github/workflows/logo-source-archive-check.yml'
+  push:
+    branches:
+      - main
+      - chore/recover-original-logo-source
+    paths:
+      - 'assets/brand/source/logo-lider-original-20260621.svg'
+      - 'assets/brand/logo-lider-header.svg'
+      - 'docs/LOGO_SOURCE_RECOVERY_2026-07-21.md'
+      - 'tools/check_logo_source_archive.py'
+      - '.github/workflows/logo-source-archive-check.yml'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate archived logo source boundary
+        run: python3 tools/check_logo_source_archive.py
