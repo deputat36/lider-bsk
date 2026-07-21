@@ -1,12 +1,14 @@
 {
   "contract": "crm-staging-production-command-edge",
-  "version": 1,
+  "version": 2,
   "project_ref": "otulfnouybahfnsycxqn",
   "environment": "staging",
   "edge": {
     "slug": "leader-crm-production",
-    "deployment_state": "source_only_not_deployed",
-    "verify_jwt_required": true,
+    "deployment_state": "deployed_active_production_locked",
+    "version": 2,
+    "sha256": "c6b0e1e4081c20872e3fdbdd80bc55b00aecdc063e7656f4a263e8a7f34638aa",
+    "verify_jwt": true,
     "action": "production_job.update",
     "permissions": [
       "production.write"
@@ -16,6 +18,12 @@
     },
     "business_rpc": "leader_update_production_job_rpc",
     "permission_rpc": "leader_actor_has_crm_action_rpc"
+  },
+  "database": {
+    "migration_version": "20260721141942",
+    "migration_name": "staging_production_job_update_rpc_20260721",
+    "acceptance_passed": true,
+    "synthetic_cleanup_zero": true
   },
   "rpc_baseline": {
     "identity": "leader_update_production_job_rpc(jsonb)",
@@ -46,5 +54,8 @@
   "optimistic_concurrency_required": true,
   "browser_role_parameter": false,
   "frontend_switch": "not_performed",
+  "authenticated_http_e2e": "not_performed_no_temporary_auth_user",
+  "rollback_edge_version": 1,
+  "rollback_edge_sha256": "f378dc44bae1c4dd5627d2c0068f28b1c3cebe9d5e9b3e18ac01d55d59af060d",
   "production_deployment": "not_performed_requires_explicit_approval"
 }

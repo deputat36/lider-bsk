@@ -3,20 +3,28 @@ name: CRM staging production command Edge check
 on:
   pull_request:
     paths:
+      - 'supabase/staging-migrations/20260721_04_production_job_update_rpc.sql'
+      - 'supabase/staging-tests/20260721_production_job_update_acceptance.sql'
       - 'supabase/staging-functions/leader-crm-production/**'
       - 'contracts/crm-staging-production-command-edge-v1.json'
+      - 'contracts/production-job-update-v1.json'
       - 'docs/SUPABASE_STAGING_PRODUCTION_COMMAND_EDGE_V1_2026-07-21.md'
       - 'tools/check_crm_staging_production_command_edge.py'
       - 'crm/v4/assets/v4/production-job-card-v2.js'
+      - 'crm/v4/assets/v4/status-transitions-v1.js'
       - '.github/workflows/crm-staging-production-command-edge-check.yml'
   push:
     branches: [main]
     paths:
+      - 'supabase/staging-migrations/20260721_04_production_job_update_rpc.sql'
+      - 'supabase/staging-tests/20260721_production_job_update_acceptance.sql'
       - 'supabase/staging-functions/leader-crm-production/**'
       - 'contracts/crm-staging-production-command-edge-v1.json'
+      - 'contracts/production-job-update-v1.json'
       - 'docs/SUPABASE_STAGING_PRODUCTION_COMMAND_EDGE_V1_2026-07-21.md'
       - 'tools/check_crm_staging_production_command_edge.py'
       - 'crm/v4/assets/v4/production-job-card-v2.js'
+      - 'crm/v4/assets/v4/status-transitions-v1.js'
       - '.github/workflows/crm-staging-production-command-edge-check.yml'
 
 permissions:
@@ -25,10 +33,17 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
-      - name: Compile checker
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check deployed Edge source
+        run: deno check supabase/staging-functions/leader-crm-production/index.ts
+      - name: Test request and conditional permissions contract
+        run: deno test supabase/staging-functions/leader-crm-production/contract_test.ts
+      - name: Compile deployment checker
         run: python3 -m py_compile tools/check_crm_staging_production_command_edge.py
-      - name: Validate source-only production command contract
+      - name: Validate database, Edge, acceptance and production boundary
         run: python3 tools/check_crm_staging_production_command_edge.py

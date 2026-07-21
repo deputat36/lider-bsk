@@ -1,68 +1,65 @@
-# Staging Production command Edge v1
+# Staging Production command Edge v2
 
 Дата фиксации: 21 июля 2026 года.
 
-## Цель
+## Назначение
 
-Подготовить source-only Edge transport для атомарной команды `production_job.update`, не меняя staging deployment, production Supabase и рабочие данные.
-
-Сейчас frontend `production-job-card-v2.js` выполняет три последовательные браузерные операции:
+Команда `production_job.update` заменяет три потенциально расходящихся browser write одной транзакцией:
 
 1. UPDATE `leader_production_jobs`;
 2. UPDATE связанного `leader_orders`;
-3. INSERT `leader_production_events`.
+3. INSERT `leader_production_events`;
+4. INSERT idempotency receipt.
 
-Ошибка между шагами может оставить частично обновлённое состояние.
+Рабочий frontend пока не переключён. Новая серверная цепочка развёрнута и проверена только в staging.
 
-## Найденный staging RPC
+## Фактический deployment
 
-В staging уже существует:
+Проект: `otulfnouybahfnsycxqn`.
 
-`public.leader_update_production_job_rpc(jsonb)`
+Database:
 
-Фактический baseline:
-
-- project ref: `otulfnouybahfnsycxqn`;
+- migration version: `20260721141942`;
+- name: `staging_production_job_update_rpc_20260721`;
+- RPC: `public.leader_update_production_job_rpc(jsonb)`;
 - SECURITY INVOKER;
 - `search_path=''`;
 - размер определения: 15485 байт;
-- MD5 определения: `53380fb1798f4e4ab25c7d9b98ae2562`;
-- EXECUTE для `service_role`: разрешено;
-- EXECUTE для `authenticated`: запрещено;
-- EXECUTE для `anon`: запрещено.
+- MD5: `53380fb1798f4e4ab25c7d9b98ae2562`;
+- EXECUTE: только `service_role`.
 
-RPC в одной транзакции обновляет:
+Edge:
 
-- `leader_production_jobs`;
-- связанный `leader_orders`;
-- `leader_production_events`;
-- `leader_private.leader_command_receipts`.
+- slug: `leader-crm-production`;
+- version: `2`;
+- status: ACTIVE;
+- `verify_jwt=true`;
+- SHA-256: `c6b0e1e4081c20872e3fdbdd80bc55b00aecdc063e7656f4a263e8a7f34638aa`.
 
-Он проверяет `expected_updated_at`, `idempotency_key`, допустимость перехода статуса и server-side права.
+Предыдущая staging Edge v1 сохранена как rollback evidence:
 
-## Source-only Edge candidate
+- SHA-256: `f378dc44bae1c4dd5627d2c0068f28b1c3cebe9d5e9b3e18ac01d55d59af060d`.
 
-Файлы:
+## Порядок обработки
 
-- `supabase/staging-functions/leader-crm-production/index.ts`;
-- `supabase/staging-functions/leader-crm-production/contract.ts`.
+1. exact staging environment guard;
+2. платформенный `verify_jwt=true`;
+3. Auth user verification через `/auth/v1/user`;
+4. строгая валидация envelope, payload и patch;
+5. canonical `production.write`;
+6. дополнительный canonical `orders.update` для `internal_comment`;
+7. transactional `leader_update_production_job_rpc`;
+8. privacy-safe response.
 
-Предлагаемый slug:
+Permission checks выполняются на Edge для быстрого отказа и повторно внутри RPC. Browser-supplied role и actor ID не используются.
 
-`leader-crm-production`
+## Роли и поля
 
-Новый deploy в этом PR не выполняется.
+`production.write` разрешён owner, admin, manager, designer и contractor.
 
-Порядок обработки:
+`internal_comment` дополнительно требует `orders.update`, поэтому доступен только owner, admin и manager.
 
-1. точный staging environment guard;
-2. JWT-проверка через `/auth/v1/user`;
-3. строгая валидация envelope и patch;
-4. canonical `production.write`;
-5. дополнительный `orders.update`, если изменяется `internal_comment`;
-6. вызов `leader_update_production_job_rpc` через admin key.
-
-Browser-supplied role не используется.
+Accountant, installer, inactive profile и unknown role блокируются.
 
 ## Контракт запроса
 
@@ -89,43 +86,85 @@ Browser-supplied role не используется.
 }
 ```
 
-Server-owned timestamps и audit-поля браузером не передаются.
+Server-owned timestamps, связи, audit fields, стоимость и суммы отклоняются до RPC.
 
-## Что пока не выполнено
+## Atomicity и concurrency
 
-- Edge Function не развёрнута;
-- frontend не переключён с прямых записей;
-- staging Auth smoke с реальным user JWT не выполнялся;
-- installation command не создавалась, потому что в текущем staging отсутствуют таблицы монтажа;
-- production rollout не выполнялся.
+RPC:
 
-## Следующий rollout gate
+- блокирует job и связанный order `FOR UPDATE`;
+- сравнивает `expected_updated_at`;
+- использует advisory locks для idempotency key и request ID;
+- валидирует transition по canonical production registry;
+- назначает `sent_to_contractor_at`, `ready_at`, `issued_at` сервером;
+- обновляет job и order;
+- создаёт event и receipt в одной транзакции.
 
-1. Развернуть `leader-crm-production` только на staging с `verify_jwt=true`.
-2. Проверить owner/admin/manager и отрицательные роли.
-3. Выполнить идемпотентный replay и stale `expected_updated_at` тест.
-4. Убедиться, что транзакционный rollback не оставляет fixtures.
-5. Переключить только staging frontend на Edge transport.
-6. После успешной визуальной и бизнес-проверки подготовить отдельный production approval и rollback.
+Принудительный trigger failure на INSERT события подтвердил rollback job, order, event и receipt.
+
+## Acceptance
+
+`supabase/staging-tests/20260721_production_job_update_acceptance.sql` успешно проверил:
+
+- manager success;
+- contractor success для обычного production comment;
+- contractor deny для `internal_comment`;
+- accountant, installer, inactive и unknown deny;
+- job/order/event synchronization;
+- safe response;
+- exact replay без дублей;
+- changed payload conflict;
+- stale source conflict;
+- invalid transition;
+- forced event failure и полный rollback.
+
+После `ROLLBACK` synthetic profiles, orders, jobs, events и receipts равны `0`.
+
+## Safe response
+
+Ответ не содержит:
+
+- `internal_comment`;
+- `contractor_cost`;
+- `client_total`;
+- `owner_id`;
+- `created_by`;
+- `created_by_email`.
 
 ## Автоматическая защита
 
-Machine-readable контракт:
+Machine-readable contracts:
 
-`contracts/crm-staging-production-command-edge-v1.json`
+- `contracts/crm-staging-production-command-edge-v1.json`;
+- `contracts/production-job-update-v1.json`.
 
-Checker:
+Checks:
 
-`tools/check_crm_staging_production_command_edge.py`
+- Deno type-check;
+- Deno contract tests;
+- RPC fingerprint и grants;
+- source execution order;
+- status registry parity;
+- acceptance/cleanup markers;
+- отсутствие staging command в production migrations;
+- неизменность frontend baseline.
 
-Workflow:
+## Оставшийся gate
 
-`.github/workflows/crm-staging-production-command-edge-check.yml`
+Authenticated HTTP E2E пока не выполнен: временный staging Auth user не создавался.
 
-Checker фиксирует RPC fingerprint, grants, порядок environment → JWT → validation → permissions → RPC, отсутствие browser role, source-only статус и текущий frontend drift.
+Frontend остаётся на текущем browser path. Staging transport и production rollout нельзя включать до отдельного authenticated role smoke test.
 
 ## Production boundary
 
 Production project `ofewxuqfjhamgerwzull` не изменён.
 
-Не выполнялись DDL/DML, Edge deploy, RLS/grants, Auth, Storage, secrets или изменение рабочих заявок, заказов и производственных заданий.
+Не выполнялись:
+
+- production Edge deploy;
+- production migration/RPC;
+- production RLS/grants/functions changes;
+- Auth/Storage/secrets changes;
+- изменение рабочих заказов, заданий и событий.
+
+Production rollout требует отдельного explicit approval и production-specific rollback plan.

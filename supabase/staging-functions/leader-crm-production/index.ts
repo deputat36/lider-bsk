@@ -7,6 +7,8 @@ import {
   STAGING_PROJECT_REF,
   asObject,
   cleanText,
+  isJwtApiKey,
+  preferredEnvironmentKey,
   projectRefFromUrl,
   rpcStatus,
   validateProductionRequest,
@@ -25,38 +27,16 @@ function json(status: number, body: unknown) {
   return new Response(JSON.stringify(body), { status, headers: corsHeaders })
 }
 
-function preferredEnvironmentKey(primary: unknown, keySet: unknown): string {
-  const direct = cleanText(primary, 3000)
-  if (direct) return direct
-  try {
-    const parsed = JSON.parse(String(keySet || ''))
-    return cleanText(asObject(parsed)?.default, 3000)
-  } catch {
-    return ''
-  }
-}
-
-function isJwtApiKey(value: string): boolean {
-  return value.split('.').length === 3
-}
-
 async function adminFetch(
   supabaseUrl: string,
   adminKey: string,
   path: string,
   init: RequestInit = {},
 ) {
-  const authorization = isJwtApiKey(adminKey)
-    ? { Authorization: `Bearer ${adminKey}` }
-    : {}
-  return await fetch(supabaseUrl + path, {
-    ...init,
-    headers: {
-      apikey: adminKey,
-      ...authorization,
-      ...(init.headers || {}),
-    },
-  })
+  const headers = new Headers(init.headers || {})
+  headers.set('apikey', adminKey)
+  if (isJwtApiKey(adminKey)) headers.set('Authorization', `Bearer ${adminKey}`)
+  return await fetch(supabaseUrl + path, { ...init, headers })
 }
 
 async function authenticatedUser(req: Request, supabaseUrl: string, publicKey: string) {
@@ -65,10 +45,7 @@ async function authenticatedUser(req: Request, supabaseUrl: string, publicKey: s
   if (!token) return { error: json(401, { error: 'missing_or_invalid_jwt' }) }
 
   const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
-    headers: {
-      apikey: publicKey,
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { apikey: publicKey, Authorization: `Bearer ${token}` },
   })
   if (!response.ok) return { error: json(401, { error: 'missing_or_invalid_jwt' }) }
 
@@ -171,7 +148,7 @@ Deno.serve(async (req: Request) => {
   try {
     input = await req.json()
   } catch {
-    return json(400, { error: 'invalid_payload' })
+    return json(400, { error: 'validation_error' })
   }
 
   const validation = validateProductionRequest(input)
@@ -230,8 +207,7 @@ Deno.serve(async (req: Request) => {
     })
   }
 
-  const rpcResult = await rpcResponse.json()
-  const result = asObject(rpcResult)
+  const result = asObject(await rpcResponse.json())
   if (!result) {
     return json(500, {
       ok: false,
@@ -244,5 +220,5 @@ Deno.serve(async (req: Request) => {
     return json(safe.status, safe.body)
   }
 
-  return json(result.idempotent_replay === true ? 200 : 200, result)
+  return json(result.idempotent_replay === true ? 200 : 201, result)
 })
