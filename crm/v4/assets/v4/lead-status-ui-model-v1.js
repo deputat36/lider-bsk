@@ -132,6 +132,13 @@ export function leadPrimaryAction(lead = {}, context = {}) {
       'Назначьте себя ответственным. Новая заявка одновременно перейдёт в статус «В работе».'
     );
   }
+  if (responsibility.key === 'other' && String(context.currentUserId || '').trim()) {
+    return primaryAction(
+      'none',
+      'Заявка у другого сотрудника',
+      'Не меняйте её рабочий этап без согласованной передачи ответственности.'
+    );
+  }
 
   const model = leadStatusUiModel(lead.status);
   if (!model.known) {
