@@ -4,12 +4,6 @@ export const CALCULATION_PERMISSION = 'calculations.write'
 export const STAGING_PROJECT_REF = 'otulfnouybahfnsycxqn'
 export const MAX_CALCULATION_ITEMS = 200
 
-export const CALCULATION_WRITE_ROLES = Object.freeze(new Set([
-  'owner',
-  'admin',
-  'manager',
-]))
-
 const REQUEST_FIELDS = Object.freeze(new Set([
   'action',
   'request_id',
@@ -64,14 +58,6 @@ export function asObject(value: unknown): JsonObject | null {
 
 export function cleanText(value: unknown, max = 1000): string {
   return String(value ?? '').trim().slice(0, max)
-}
-
-export function normalizeRole(value: unknown): string {
-  return cleanText(value, 80).toLowerCase()
-}
-
-export function canWriteCalculation(role: unknown): boolean {
-  return CALCULATION_WRITE_ROLES.has(normalizeRole(role))
 }
 
 export function projectRefFromUrl(value: string): string {
