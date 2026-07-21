@@ -1,0 +1,46 @@
+name: CRM production job update staging check
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/staging-migrations/20260721_04_production_job_update_rpc.sql'
+      - 'supabase/staging-tests/20260721_production_job_update_acceptance.sql'
+      - 'supabase/staging-functions/leader-crm-production/**'
+      - 'contracts/production-job-update-v1.json'
+      - 'contracts/crm-v4-backend-command-contract-v1.json'
+      - 'crm/v4/assets/v4/status-transitions-v1.js'
+      - 'crm/v4/assets/v4/production-job-card-v2.js'
+      - 'docs/SUPABASE_STAGING_PRODUCTION_JOB_UPDATE_2026-07-21.md'
+      - 'tools/check_crm_production_job_update_staging.py'
+      - '.github/workflows/crm-production-job-update-staging-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/staging-migrations/20260721_04_production_job_update_rpc.sql'
+      - 'supabase/staging-tests/20260721_production_job_update_acceptance.sql'
+      - 'supabase/staging-functions/leader-crm-production/**'
+      - 'contracts/production-job-update-v1.json'
+      - 'contracts/crm-v4-backend-command-contract-v1.json'
+      - 'crm/v4/assets/v4/status-transitions-v1.js'
+      - 'crm/v4/assets/v4/production-job-card-v2.js'
+      - 'docs/SUPABASE_STAGING_PRODUCTION_JOB_UPDATE_2026-07-21.md'
+      - 'tools/check_crm_production_job_update_staging.py'
+      - '.github/workflows/crm-production-job-update-staging-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  production-job-update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check Edge source
+        run: deno check supabase/staging-functions/leader-crm-production/index.ts
+      - name: Test request contract
+        run: deno test supabase/staging-functions/leader-crm-production/contract_test.ts
+      - name: Validate database, Edge, evidence and production boundary
+        run: python3 tools/check_crm_production_job_update_staging.py
