@@ -91,7 +91,7 @@ assert.equal(ownedPlan.responsibilityKey, 'mine');
 assert.equal(ownedPlan.patch.status, 'КП отправлено');
 assert.equal(buildOwnedFollowupPostponePlan(unassigned, 'tomorrow', manager, now), null);
 assert.equal(buildOwnedFollowupPostponePlan(other, 'tomorrow', manager, now), null);
-assert.equal(buildOwnedFollowupPostponePlan(mine, 'tomorrow', designer, now), null, 'same user id remains owner regardless role');
+assert.ok(buildOwnedFollowupPostponePlan(mine, 'tomorrow', designer, now), 'current assignee may postpone regardless of role label');
 
 const closedModel = followupResponsibilityModel({ ...mine, status: 'Отказ' }, manager);
 assert.equal(closedModel.key, 'closed');
