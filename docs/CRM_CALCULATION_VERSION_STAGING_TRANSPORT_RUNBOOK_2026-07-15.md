@@ -1,91 +1,70 @@
-# Staging transport новой версии расчёта — 2026-07-15
+# Staging transport новой версии расчёта
+
+Первичная версия: 15 июля 2026 года. Актуализация: 21 июля 2026 года.
 
 ## Назначение
 
-Модуль `calculation-version-staging-transport-v1.js` подготавливает безопасный browser-вызов команды `calculation.create_version` через JWT-защищённую staging Edge Function.
+Модуль `calculation-version-staging-transport-v1.js` подготавливает безопасный browser-вызов `calculation.create_version` через JWT-защищённую staging Edge Function.
 
 Transport подключён к редактору только при exact staging URL. Production URL использует `production_locked`: редактор не выполняет browser write и не вызывает staging Edge Function.
 
-Основной `calculations.js` не импортирует staging transport и не меняет своё сохранение.
+Основной `calculations.js` не импортирует staging transport и не меняет существующее production-сохранение.
 
-## Окружения
-
-Staging:
+## Staging
 
 - project ref: `otulfnouybahfnsycxqn`;
+- exact hostname: `otulfnouybahfnsycxqn.supabase.co`;
 - Edge Function: `leader-crm-calculations`;
-- active version: `3`;
-- deployment hash: `0df6d23cc6d8b19903babbf711bb1da765111ff1f64eb7f8e970f1bcc9760ee4`;
+- active version: `5`;
+- deployment hash: `4cd0bde123d6f6c052e0c5337ca01f17a0f76edfb5adf2eed1975e25e39357a4`;
 - status: `ACTIVE`;
 - `verify_jwt=true`;
-- canonical permission label: `calculations.write`.
+- canonical permission: `calculations.write`.
 
-Production:
+## Production lock
 
-- project ref: `ofewxuqfjhamgerwzull`;
-- `leader-crm-calculations` отсутствует;
+- production project: `ofewxuqfjhamgerwzull`;
 - `V4_CONFIG.supabaseUrl` указывает на production;
 - route: `production_locked`;
 - `enabled=false`;
 - `browserDirectWrite=false`;
-- production server action и production Edge не включены.
+- production Edge и production action не включены.
 
-## Canonical permission
+## Canonical authorization
 
-Единый UI permission key:
+Edge больше не содержит локальный список ролей и не читает `leader_user_profiles` напрямую для принятия решения.
 
-`calculations.write`
+Порядок:
 
-Источник:
+1. exact staging environment guard;
+2. `verify_jwt=true`;
+3. Auth user verification;
+4. строгая валидация command envelope;
+5. service-role-only `public.leader_actor_has_crm_action_rpc`;
+6. permission `calculations.write`;
+7. transactional `leader_create_calculation_version_rpc`.
 
-`CRM_V4_ACTIONS.CALCULATIONS_WRITE` в `action-permissions-v1.js`.
-
-Разрешённые роли:
-
-- owner;
-- admin;
-- manager.
-
-Accountant, designer, installer, contractor, inactive и unknown должны fail closed.
-
-Авторизация Edge выполняется по активному профилю и allowlist ролей. GitHub source и staging Edge v3 синхронизированы с `calculations.write`.
-
-## Superseded v2
-
-Staging deployment v2 был создан после синхронизации permission label, но при ручной упаковке deploy payload в bundle попала опечатка `normalizeRole(value)` вместо `normalizeRole(role)`.
-
-Post-deploy проверка обнаружила дефект немедленно. v2 сразу заменён v3.
-
-v2:
-
-- не подключался к browser UI;
-- не использовался authenticated пользователем;
-- не имеет Edge logs за доступный период;
-- не создал profiles, calculations, items или receipts;
-- не является допустимой rollback-версией.
+Активные owner/admin/manager разрешены canonical SQL-матрицей. Accountant, designer, installer, contractor, inactive и unknown блокируются.
 
 ## Source wiring
 
-Редактор новой версии использует `calculationVersionPersistenceRoute(V4_CONFIG.supabaseUrl)`.
+Редактор использует `calculationVersionPersistenceRoute(V4_CONFIG.supabaseUrl)`.
 
 Маршруты:
 
 - `staging_edge` — только exact hostname `otulfnouybahfnsycxqn.supabase.co`;
 - `production_locked` — production URL и любой другой URL.
 
-Source wiring fail closed:
+Fail-closed правила:
 
-- staging ref не хранится в редакторе;
 - production config не меняется;
 - production route не получает сессию и не вызывает `functions.invoke`;
 - production route не выполняет `.insert`, `.update`, `.delete` или `.upsert`;
-- staging branch не содержит table write, browser RPC или compensating delete;
-- ошибка Edge не может переключить приложение на иной write transport;
-- кнопка production имеет `aria-disabled=true` и текст `Новая версия — недоступно`.
+- staging transport не использует table write, browser RPC или compensating delete;
+- ошибка Edge не включает альтернативный write transport;
+- production-кнопка имеет `aria-disabled=true` и текст `Новая версия — недоступно`.
 
-Runtime activation staging UI всё ещё требует authenticated E2E и отдельного staging config/session.
-
-## Минимальный command envelope
+## Command envelope
 
 Browser отправляет только:
 
@@ -94,7 +73,7 @@ Browser отправляет только:
 - `expected_updated_at`;
 - `payload`.
 
-Payload содержит только:
+Payload:
 
 - `source_calculation_id`;
 - `idempotency_key`;
@@ -104,7 +83,7 @@ Payload содержит только:
 - `internal_comment`;
 - `items`.
 
-Каждая позиция содержит только:
+Позиция:
 
 - `catalog_id`;
 - `category`;
@@ -118,109 +97,56 @@ Payload содержит только:
 - `data`;
 - `sort_order`.
 
-Не передаются:
-
-- ID исходной строки;
-- actor ID;
-- lead ID внутри позиции;
-- calculation ID внутри позиции;
-- version number;
-- status;
-- КП/order links;
-- client/contractor totals;
-- profit;
-- markup;
-- margin;
-- warning level;
-- created_by/updated_by.
-
-Все итоги, номер и автоматический заголовок версии вычисляются сервером.
+Не передаются actor ID, lead ID внутри позиции, calculation ID внутри позиции, version number, status, связи КП/заказа, totals, profit, markup, margin и audit fields.
 
 ## Browser flow staging
 
-1. Редактор подтверждает exact staging hostname.
-2. Проверяется UI permission `calculations.write`.
-3. Берётся source calculation с `id` и `updated_at`.
-4. При открытии черновика создаётся стабильный idempotency key.
-5. Из строк редактора строится минимальная transport projection.
-6. Автоматический title передаётся как `null`, пользовательский — явно.
-7. Получается текущая JWT-сессия через `client.auth.getSession()`.
-8. Вызывается только `client.functions.invoke('leader-crm-calculations', { body: command })`.
-9. При HTTP 201 показывается новая тестовая версия.
-10. При HTTP 200 и `idempotent_replay=true` показывается безопасный повтор без дубликата.
-11. При успехе список расчётов перечитывается через read callback.
-12. При ошибке черновик и idempotency key остаются для безопасного повтора.
+1. Проверяется exact staging hostname.
+2. UI проверяет `calculations.write` для отображения действия.
+3. Загружается source calculation с `updated_at`.
+4. Создаётся стабильный idempotency key.
+5. Строится минимальная projection.
+6. Получается JWT-сессия через `client.auth.getSession()`.
+7. Вызывается `client.functions.invoke('leader-crm-calculations', { body: command })`.
+8. HTTP 201 означает новую версию.
+9. HTTP 200 + `idempotent_replay=true` означает безопасный повтор.
+10. При успехе список перечитывается; при ошибке draft сохраняется для повтора.
 
-Transport не использует:
+Transport не использует `.from(...)`, browser INSERT/UPDATE/DELETE/UPSERT, browser RPC, service role или compensating DELETE.
 
-- `.from(...)`;
-- browser INSERT/UPDATE/DELETE/UPSERT;
-- browser RPC;
-- service role;
-- compensating DELETE.
+## Ожидаемые ответы
 
-## Browser flow production
+- 201 — новая версия;
+- 200 — exact replay;
+- 400 — invalid payload/items/totals;
+- 401 — JWT отсутствует или недействителен;
+- 403 — canonical permission denied;
+- 404 — source отсутствует;
+- 409 — source/idempotency/version conflict;
+- 500 — permission transport или persistence unavailable.
 
-1. Route возвращает `production_locked`.
-2. Сохранённые версии показывают кнопку `Новая версия — недоступно`.
-3. Нажатие выводит понятную причину блокировки.
-4. Исходные строки не загружаются для редактирования.
-5. Табличные write-запросы и Edge-вызов не выполняются.
-6. Действие `Новый пустой расчёт` остаётся доступным в существующем едином конструкторе.
+## Rollback
 
-## Ожидаемые staging результаты
+- v4 — предпочтительный быстрый rollback: canonical runtime gate уже работал, но contract bundle содержал неиспользуемый legacy helper.
+- v3 — исторический валидированный rollback с локальным role guard.
+- v2 — запрещённый rollback из-за packaging typo.
 
-- `HTTP 201` — новая версия создана;
-- `HTTP 200` — exact replay;
-- `HTTP 400` — invalid payload/items/totals;
-- `HTTP 401` — JWT отсутствует или недействителен;
-- `HTTP 403` — inactive profile или запрещённая роль;
-- `HTTP 404` — source calculation отсутствует;
-- `HTTP 409 source_changed` — источник изменился после чтения;
-- `HTTP 409 idempotency_conflict` — тот же ключ использован с другим payload;
-- `HTTP 409 duplicate_version_inventory` — у заявки есть дубли номеров;
-- `HTTP 409 version_conflict` — параллельная операция заняла номер;
-- `HTTP 500` — безопасная общая ошибка persistence.
+Rollback не требует удаления бизнес-данных или изменения database schema.
 
-## Authenticated positive E2E
+## Authenticated E2E
 
-На момент обновления staging содержит 0 Auth users. Подключённый Supabase connector не предоставляет безопасные create/delete Auth user operations.
+На момент проверки staging содержит 0 Auth users. Тестовых пользователей и паролей автоматически не создавали.
 
-Нельзя:
-
-- вставлять строку напрямую в `auth.users`;
-- передавать пароль, access token или refresh token в GitHub;
-- использовать production Auth user;
-- считать unit-тест transport полноценным HTTP E2E.
-
-Поэтому authenticated HTTP E2E остаётся непроверенным.
-
-Для E2E владелец вручную создаёт временного пользователя только в staging Dashboard. Затем:
-
-1. создать active `leader_user_profiles` row для роли manager;
-2. создать synthetic lead/need/source calculation только в staging;
-3. открыть CRM со staging config и войти тестовым пользователем;
-4. подтвердить подпись `Тестовый staging`;
-5. вызвать transport и подтвердить HTTP 201;
-6. повторить exact command и подтвердить HTTP 200 + replay;
-7. изменить payload с тем же key и подтвердить HTTP 409;
-8. изменить role на accountant и подтвердить HTTP 403 с `permission=calculations.write`;
-9. вернуть manager, сделать profile inactive и подтвердить HTTP 403;
-10. проверить safe response Network payload;
-11. проверить Edge logs и receipt correlation;
-12. удалить fixtures, profile, sessions и временного Auth user;
-13. подтвердить нулевые staging counters.
+authenticated HTTP E2E остаётся непроверенным. Для него владелец создаёт временного пользователя только в staging, выполняются create/replay/conflict/forbidden/inactive сценарии, после чего удаляются fixtures, profile, sessions и Auth user.
 
 ## Production boundary
 
-До отдельного решения владельца запрещены:
+Запрещены без отдельного approval:
 
 - замена `production_locked` на Edge route;
 - production migration/RPC/index;
 - production Edge deployment;
-- исправление исторического дубля production;
-- автоматическое удаление или перенумерование расчётов.
+- исправление production data;
+- возврат browser INSERT/DELETE или compensating rollback.
 
-Browser INSERT/DELETE и compensating rollback уже удалены из редактора версий. Их нельзя возвращать как временный fallback.
-
-Следующий gate — создать временного synthetic Auth user только в staging, выполнить authenticated browser E2E через source-wired editor, затем очистить все fixtures.
+Следующий gate — отдельный authenticated staging smoke test, затем production rollout plan с rollback и явным решением владельца.

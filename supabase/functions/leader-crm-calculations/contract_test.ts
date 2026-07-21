@@ -3,7 +3,6 @@ import {
   CALCULATION_PERMISSION,
   MAX_CALCULATION_ITEMS,
   STAGING_PROJECT_REF,
-  canWriteCalculation,
   projectRefFromUrl,
   rpcStatus,
   validateCalculationRequest,
@@ -55,15 +54,6 @@ Deno.test('staging URL resolves exact project ref', () => {
 
 Deno.test('canonical permission matches CRM action registry', () => {
   assert(CALCULATION_PERMISSION === 'calculations.write', 'permission drifted from CRM_V4_ACTIONS.CALCULATIONS_WRITE')
-})
-
-Deno.test('canonical calculation-write roles are allowed', () => {
-  for (const role of ['owner', 'admin', 'manager']) {
-    assert(canWriteCalculation(role), `${role} must be allowed`)
-  }
-  for (const role of ['designer', 'accountant', 'installer', 'contractor', 'production', '', 'unknown']) {
-    assert(!canWriteCalculation(role), `${role} must be denied`)
-  }
 })
 
 Deno.test('valid request is minimized and server totals are absent', () => {

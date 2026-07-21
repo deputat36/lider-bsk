@@ -1,17 +1,17 @@
-# Supabase staging offers Edge v4
+# Supabase staging offers Edge v5
 
 ## Назначение
 
-Этот документ фиксирует фактически развёрнутую staging-версию Edge Function для атомарного создания коммерческого предложения из сохранённого расчёта.
+Документ фиксирует текущую staging Edge Function для атомарного создания коммерческого предложения из сохранённого расчёта. Имя файла сохранено как исторический стабильный путь CI.
 
 Проект:
 
 - environment: `staging`;
 - project ref: `otulfnouybahfnsycxqn`;
-- function: `leader-crm-offers v4`;
+- function: `leader-crm-offers v5`;
 - status: `ACTIVE`;
 - `verify_jwt=true`;
-- deployed SHA-256: `25b2ff8b11ede3351f95c8f29315b5e43230e5cea153526f75039dc8ff99455e`.
+- deployed SHA-256: `b20ffa860121826b265bc01bda3757277573a2e87a2604c0c4764bf4add627a7`.
 
 ## Контракт действия
 
@@ -30,6 +30,17 @@
 
 Роль из browser payload не принимается. Unknown action, лишние поля, отсутствующие idempotency/concurrency данные и недопустимые даты отклоняются до бизнес-записи.
 
+## Изменение v5
+
+Runtime-логика прав и бизнес-RPC не менялась. `adminFetch` переведён на стандартный `Headers`:
+
+- заголовки имеют однозначный тип для Deno;
+- legacy JWT service key получает `Authorization: Bearer ...`;
+- modern secret key используется как `apikey` без ошибочного JWT-предположения;
+- входные headers безопасно сохраняются через `new Headers(init.headers || {})`.
+
+Эта правка позволила включить строгий `deno check` для фактически развёрнутого offer source.
+
 ## Данные и устойчивость
 
 Запрос обязан содержать:
@@ -46,29 +57,29 @@
 
 ## Источник истины
 
-В репозитории сохранены точные файлы текущего deployment:
-
 - `supabase/staging-functions/leader-crm-offers/index.ts`;
 - `supabase/staging-functions/leader-crm-offers/contract.ts`;
-- `contracts/crm-staging-offers-edge-deployment-v1.json`.
+- `supabase/staging-functions/leader-crm-offers/contract_test.ts`;
+- `contracts/crm-staging-offers-edge-deployment-v1.json`;
+- `contracts/crm-staging-calc-offer-canonical-permissions-v1.json`.
 
-Checker контролирует action/permission, порядок JWT → validation → permission → RPC, закрытый payload, deployed version/hash и отсутствие staging-артефактов в production migrations.
+Checker контролирует action/permission, порядок JWT → validation → permission → RPC, закрытый payload, typed Headers, deployed version/hash и отсутствие staging-артефактов в production migrations.
 
-## Проверка после синхронизации
+## Проверка после deployment
 
-Management API повторно показал:
+Management API показал:
 
-- `leader-crm-offers v4` ACTIVE;
+- `leader-crm-offers v5` ACTIVE;
 - `verify_jwt=true`;
-- SHA начинается с `25b2ff8b`;
+- SHA начинается с `b20ffa86`;
 - функция использует canonical `offers.write`;
 - browser-supplied role отсутствует.
 
-Новый deployment в этом изменении не выполнялся: репозиторий синхронизирован с уже работающей staging-версией.
-
 ## Rollback
 
-Rollback выполняется повторным развёртыванием предыдущего проверенного source/version под slug `leader-crm-offers`. Перед откатом нужно сохранить текущий v4 source и повторно проверить `verify_jwt`, project guard и grants вызываемых RPC.
+Version 4 с SHA `25b2ff8b11ede3351f95c8f29315b5e43230e5cea153526f75039dc8ff99455e` остаётся валидным rollback. Он использует ту же canonical authorization и business RPC; отличие только в способе построения admin headers.
+
+Rollback не требует DDL, изменения grants или очистки бизнес-данных.
 
 ## Production boundary
 

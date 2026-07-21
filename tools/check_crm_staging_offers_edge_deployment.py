@@ -9,6 +9,7 @@ paths = {
     'deployment': root / 'contracts/crm-staging-offers-edge-deployment-v1.json',
     'source': root / 'supabase/staging-functions/leader-crm-offers/index.ts',
     'contract': root / 'supabase/staging-functions/leader-crm-offers/contract.ts',
+    'test': root / 'supabase/staging-functions/leader-crm-offers/contract_test.ts',
     'doc': root / 'docs/SUPABASE_STAGING_OFFERS_EDGE_V4_2026-07-21.md',
     'workflow': root / '.github/workflows/crm-staging-offers-edge-check.yml',
 }
@@ -26,6 +27,7 @@ matrix = json.loads(paths['matrix'].read_text(encoding='utf-8'))
 deployment = json.loads(paths['deployment'].read_text(encoding='utf-8'))
 source = paths['source'].read_text(encoding='utf-8')
 contract = paths['contract'].read_text(encoding='utf-8')
+test = paths['test'].read_text(encoding='utf-8')
 doc = paths['doc'].read_text(encoding='utf-8')
 workflow = paths['workflow'].read_text(encoding='utf-8')
 
@@ -39,14 +41,19 @@ if deployment.get('production_deployment') != 'not_performed_requires_explicit_a
 function = deployment.get('function', {})
 expected = {
     'slug': 'leader-crm-offers',
-    'version': 4,
+    'version': 5,
     'status': 'ACTIVE',
     'verify_jwt': True,
-    'sha256': '25b2ff8b11ede3351f95c8f29315b5e43230e5cea153526f75039dc8ff99455e',
+    'sha256': 'b20ffa860121826b265bc01bda3757277573a2e87a2604c0c4764bf4add627a7',
 }
 for key, value in expected.items():
     if function.get(key) != value:
         errors.append(f'Deployed offers {key} drift: {function.get(key)!r}')
+if deployment.get('typed_headers') is not True:
+    errors.append('Offers deployment must record typed Headers')
+previous = deployment.get('previous_version', {})
+if previous.get('version') != 4 or previous.get('valid_rollback') is not True:
+    errors.append('Offers v4 rollback evidence drift')
 
 if deployment.get('action') != 'offer.create_from_calculation':
     errors.append('Canonical offer action drift')
@@ -81,6 +88,9 @@ source_markers = [
     "'/rest/v1/rpc/leader_create_offer_from_calculation_rpc'",
     'idempotent_replay === true ? 200 : 201',
     "error: 'permission_check_failed'",
+    'const headers = new Headers(init.headers || {})',
+    "headers.set('apikey', adminKey)",
+    "headers.set('Authorization', `Bearer ${adminKey}`)",
 ]
 for marker in source_markers:
     if marker not in source:
@@ -96,9 +106,9 @@ positions = {
 if not (0 <= positions['environment'] < positions['auth'] < positions['validation'] < positions['permission'] < positions['rpc']):
     errors.append(f'Offers execution order is unsafe: {positions}')
 
-for forbidden in ('body.role', 'input.role', 'payload.role', 'p_role'):
-    if forbidden in source:
-        errors.append(f'Offers Edge must not trust browser role: {forbidden}')
+for forbidden in ('body.role', 'input.role', 'payload.role', 'p_role', 'OFFER_WRITE_ROLES', 'canWriteOffer', 'leader_user_profiles?user_id='):
+    if forbidden in source or forbidden in contract:
+        errors.append(f'Offers Edge must not use local/browser role authorization: {forbidden}')
 
 contract_markers = [
     "OFFER_ACTION = 'offer.create_from_calculation'",
@@ -117,9 +127,18 @@ for marker in contract_markers:
         errors.append(f'Missing offers contract marker: {marker}')
 
 for marker in (
-    'leader-crm-offers v4',
+    'offer permission and staging ref are canonical',
+    'browser actor and server fields are rejected',
+    'unknown action and response statuses are stable',
+):
+    if marker not in test:
+        errors.append(f'Missing offers unit-test marker: {marker}')
+
+for marker in (
+    'leader-crm-offers v5',
     'offers.write',
-    '25b2ff8b',
+    'b20ffa86',
+    'typed',
     'Production boundary',
     'production Edge deploy',
     'rollback',
@@ -147,4 +166,4 @@ if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('CRM staging offers Edge v4 source, canonical permission and deployment contract are synchronized.')
+print('CRM staging offers Edge v5 source, typed headers, canonical permission and deployment contract are synchronized.')
