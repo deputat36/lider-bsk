@@ -15,6 +15,7 @@ begin
   end if;
 
   if to_regclass('public.leader_installation_jobs') is null
+     or to_regclass('public.leader_installation_job_items') is null
      or to_regclass('public.leader_installation_events') is null
      or to_regclass('public.leader_installation_comments') is null then
     raise exception 'installation_schema_missing';
@@ -27,16 +28,17 @@ declare
   v_order_id uuid := gen_random_uuid();
   v_production_job_id uuid := gen_random_uuid();
   v_installation_job_id uuid := gen_random_uuid();
+  v_item_id uuid := gen_random_uuid();
   v_event_id uuid := gen_random_uuid();
   v_comment_id uuid := gen_random_uuid();
 begin
   insert into public.leader_orders (
     id, project_name, installation_status, installation_address,
-    installation_scheduled_at, installer_name, installer_phone,
-    current_stage, stage_updated_at
+    installation_scheduled_at, installation_completed_at,
+    installer_name, installer_phone, current_stage, stage_updated_at
   ) values (
     v_order_id, 'STAGING installation schema acceptance', 'Запланирован',
-    'STAGING address', clock_timestamp() + interval '1 day',
+    'STAGING address', clock_timestamp() + interval '1 day', null,
     'STAGING installer', '+70000000000', 'Монтаж: Запланирован', clock_timestamp()
   );
 
@@ -57,6 +59,15 @@ begin
     'STAGING installer', '+70000000000', 'STAGING address',
     clock_timestamp() + interval '1 day', 'Synthetic task', 'Synthetic tools',
     'Synthetic comment', 'https://example.invalid/before', 'https://example.invalid/after'
+  );
+
+  insert into public.leader_installation_job_items (
+    id, job_id, order_id, name, unit, qty, width, height,
+    installer_price, client_price, comment
+  ) values (
+    v_item_id, v_installation_job_id, v_order_id,
+    'Synthetic installation item', 'шт', 1, 100, 200,
+    500, 800, 'Synthetic item comment'
   );
 
   insert into public.leader_installation_events (
@@ -82,6 +93,10 @@ begin
     raise exception 'installation_job_insert_failed';
   end if;
 
+  if (select count(*) from public.leader_installation_job_items where job_id = v_installation_job_id) <> 1 then
+    raise exception 'installation_item_insert_failed';
+  end if;
+
   if (select count(*) from public.leader_installation_events where job_id = v_installation_job_id) <> 1 then
     raise exception 'installation_event_insert_failed';
   end if;
@@ -92,13 +107,15 @@ begin
 
   if has_table_privilege('anon', 'public.leader_installation_jobs', 'SELECT')
      or has_table_privilege('authenticated', 'public.leader_installation_jobs', 'SELECT')
-     or has_table_privilege('authenticated', 'public.leader_installation_jobs', 'UPDATE') then
+     or has_table_privilege('authenticated', 'public.leader_installation_jobs', 'UPDATE')
+     or has_table_privilege('authenticated', 'public.leader_installation_job_items', 'SELECT') then
     raise exception 'browser_table_privilege_must_be_closed';
   end if;
 
   if not has_table_privilege('service_role', 'public.leader_installation_jobs', 'SELECT')
      or not has_table_privilege('service_role', 'public.leader_installation_jobs', 'INSERT')
      or not has_table_privilege('service_role', 'public.leader_installation_jobs', 'UPDATE')
+     or not has_table_privilege('service_role', 'public.leader_installation_job_items', 'INSERT')
      or not has_table_privilege('service_role', 'public.leader_installation_events', 'INSERT')
      or not has_table_privilege('service_role', 'public.leader_installation_comments', 'INSERT') then
     raise exception 'service_role_table_privilege_missing';
@@ -106,7 +123,8 @@ begin
 
   delete from public.leader_installation_jobs where id = v_installation_job_id;
 
-  if exists (select 1 from public.leader_installation_events where job_id = v_installation_job_id)
+  if exists (select 1 from public.leader_installation_job_items where job_id = v_installation_job_id)
+     or exists (select 1 from public.leader_installation_events where job_id = v_installation_job_id)
      or exists (select 1 from public.leader_installation_comments where job_id = v_installation_job_id) then
     raise exception 'installation_child_cascade_failed';
   end if;

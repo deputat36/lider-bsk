@@ -1,12 +1,12 @@
-# Staging installation schema v1
+# Staging installation schema v3
 
-Дата аудита и подготовки: 21 июля 2026 года.
+Дата аудита и синхронизации: 21 июля 2026 года.
 
 ## Назначение
 
-Подготовить production-compatible синтетическую схему монтажа в отдельном staging-проекте, прежде чем создавать атомарную команду `installation_job.update`.
+Зафиксировать полный production-compatible контур монтажа из четырёх таблиц, фактически развёрнутую staging-команду `installation_job.update` и известные расхождения схемы.
 
-Production проект исследован только read-only. Миграция из этого PR не применялась. Production не изменялся.
+Production проект исследован только read-only. В рамках текущей синхронизации новые миграции и Edge Functions не применялись: staging deployment уже существовал до фиксации evidence в GitHub. Production не изменялся.
 
 ## Контуры
 
@@ -14,71 +14,143 @@ Production проект исследован только read-only. Мигра�
 - production read-only baseline: `ofewxuqfjhamgerwzull`;
 - repository: `deputat36/lider-bsk`.
 
-## Найденный staging gap
+## Production baseline
 
-До миграции в staging отсутствуют:
+Read-only аудит подтвердил четыре таблицы:
 
-- `leader_installation_jobs`;
-- `leader_installation_events`;
-- `leader_installation_comments`.
+- `leader_installation_jobs`: 30 полей;
+- `leader_installation_job_items`: 12 полей;
+- `leader_installation_events`: 9 полей;
+- `leader_installation_comments`: 7 полей.
 
-В `leader_orders` отсутствуют:
+Production FK:
+
+- jobs → order: `ON DELETE SET NULL`;
+- jobs → production job: `ON DELETE SET NULL`;
+- items → job: `ON DELETE CASCADE`;
+- items → order: `ON DELETE SET NULL`;
+- events → job: `ON DELETE CASCADE`;
+- events → order: `ON DELETE SET NULL`;
+- comments → job: `ON DELETE CASCADE`.
+
+Production содержит девять прикладных индексов, включая покрывающие индексы для всех FK.
+
+Связанный заказ содержит:
+
+- `installation_status`;
+- `installation_address`;
+- `installation_scheduled_at`;
+- `installation_completed_at`;
+- `installer_name`;
+- `installer_phone`;
+- `current_stage`;
+- `updated_at`;
+- `stage_updated_at`.
+
+Специальных installation-триггеров и installation-RPC в production нет.
+
+## Исторический staging gap
+
+До deployment в staging отсутствовали все четыре installation-таблицы и пять дополнительных полей заказа:
 
 - `installation_address`;
 - `installation_scheduled_at`;
+- `installation_completed_at`;
 - `installer_name`;
 - `installer_phone`.
 
-Поля `installation_status`, `current_stage`, `updated_at` и `stage_updated_at` уже существуют.
+## Текущее staging-состояние
 
-## Production baseline
+Read-only postflight подтвердил:
 
-Read-only аудит подтвердил:
+- все четыре installation-таблицы существуют;
+- все монтажные поля заказа существуют;
+- jobs/items/events/comments: по `0` строк;
+- receipts для `installation_job.update`: `0`;
+- RLS включён;
+- browser policies отсутствуют;
+- `public`, `anon`, `authenticated` не имеют table privileges;
+- `service_role` имеет минимальные права.
 
-- `leader_installation_jobs`: 30 полей;
-- `leader_installation_events`: 9 полей;
-- `leader_installation_comments`: 7 полей;
-- 7 прикладных индексов плюс первичные ключи;
-- FK job → order с `ON DELETE SET NULL`;
-- FK job → production job с `ON DELETE SET NULL`;
-- FK event/comment → installation job с `ON DELETE CASCADE`;
-- специальных installation-триггеров нет;
-- специальных installation-RPC в production нет.
+Журнал миграций содержит:
 
-Production RLS допускает активных authenticated-пользователей. В staging этот доступ намеренно не копируется: синтетический контур остаётся service-role-only до появления JWT-first Edge и атомарного RPC.
+- version: `20260721191810`;
+- name: `staging_installation_job_update_rpc_20260721`.
 
-## Миграция
+## Известный deployed schema drift
+
+Фактически развёрнутый staging не полностью совпадает с production baseline.
+
+Три FK используют `ON DELETE CASCADE` вместо production `ON DELETE SET NULL`:
+
+- `leader_installation_jobs.order_id`;
+- `leader_installation_job_items.order_id`;
+- `leader_installation_events.order_id`.
+
+Отсутствуют два покрывающих индекса:
+
+- `leader_installation_job_items_order_id_idx`;
+- `leader_installation_events_order_id_idx`.
+
+Performance Advisor подтверждает оба отсутствующих FK-индекса. Это INFO-level performance drift, а не подтверждённая утечка данных.
+
+Reconciliation требуется, но в текущем цикле DDL не выполнялся. Изменять FK и индексы следует отдельной staging-миграцией с preflight, rollback и проверкой отсутствия fixture-данных.
+
+## Canonical schema source
 
 `supabase/staging-migrations/20260721_05_installation_schema_install.sql`
 
-Миграция:
+Canonical source:
 
 1. Проверяет точный `leader_staging.environment_guard`.
-2. Проверяет наличие orders, production jobs и user profiles.
-3. Добавляет четыре недостающих поля заказа.
-4. Создаёт три installation-таблицы по production-compatible структуре.
-5. Создаёт FK и индексы.
+2. Добавляет пять полей заказа, включая `installation_completed_at`.
+3. Создаёт jobs, job items, events и comments.
+4. Использует production-семантику `order_id ON DELETE SET NULL`.
+5. Создаёт все девять production-compatible индексов.
 6. Включает RLS.
-7. Отзывает все table privileges у `public`, `anon`, `authenticated`.
+7. Закрывает table privileges для `public`, `anon`, `authenticated`.
 8. Даёт минимальные права только `service_role`.
 
-Миграция не создаёт browser policies.
+Этот source является целевым clean-staging baseline. Он не означает, что drift уже исправлен в действующей базе.
 
-## Acceptance
+## Schema acceptance
 
 `supabase/staging-tests/20260721_installation_schema_acceptance.sql`
 
-Тест:
+Rollback-safe тест создаёт synthetic:
 
-- начинается с `BEGIN`;
-- повторно проверяет environment guard;
-- создаёт только синтетические order, production job, installation job, event и comment;
-- проверяет связи и каскадное удаление дочерних строк;
-- проверяет закрытые browser grants;
-- проверяет минимальные service-role grants;
-- всегда заканчивается `ROLLBACK`.
+- order;
+- production job;
+- installation job;
+- installation job item;
+- installation event;
+- installation comment.
 
-После теста не должны оставаться fixture-данные.
+Тест проверяет FK, каскад job → children, browser grants и service-role grants, затем всегда выполняет `ROLLBACK`.
+
+## Атомарная команда
+
+В staging развёрнуты:
+
+- `public.leader_update_installation_job_rpc(jsonb)`;
+- четыре helper-функции в `leader_private`;
+- JWT-first Edge `leader-crm-installation v1`.
+
+RPC:
+
+- SECURITY INVOKER;
+- `search_path=''`;
+- доступен только `service_role`;
+- повторно проверяет `installation.write`;
+- использует `request_id`, `idempotency_key`, `expected_updated_at`;
+- блокирует job и linked order;
+- атомарно обновляет job, order, event и receipt;
+- синхронизирует `installation_completed_at`;
+- возвращает safe response.
+
+Deployment evidence:
+
+`contracts/crm-staging-installation-command-edge-v1.json`
 
 ## Статусы
 
@@ -86,7 +158,7 @@ Production RLS допускает активных authenticated-пользов�
 
 `crm/v4/assets/v4/status-transitions-v1.js`
 
-Canonical installation statuses:
+Canonical statuses:
 
 - `Не назначен`;
 - `Запланирован`;
@@ -96,54 +168,54 @@ Canonical installation statuses:
 - `Не требуется`;
 - `Отменён`.
 
-Production default `Нужно назначить` сохраняется как legacy alias для `Не назначен`.
+`Нужно назначить` сохраняется как legacy alias для `Не назначен`.
 
 ## Автоматическая проверка
 
-Контракт:
+Schema contract:
 
 `contracts/crm-staging-installation-schema-v1.json`
 
-Checker:
+Schema checker:
 
 `tools/check_crm_staging_installation_schema.py`
 
-Workflow:
+Schema workflow:
 
 `.github/workflows/crm-staging-installation-schema-check.yml`
 
 CI проверяет:
 
-- exact staging guard;
-- production-compatible columns, FK и indexes;
-- RLS и закрытые browser grants;
+- полный набор из четырёх таблиц;
+- production-compatible FK/index target;
+- `installation_completed_at`;
+- deployed drift inventory;
+- нулевые fixture counts;
 - service-role-only access;
 - rollback-safe acceptance;
-- совпадение со статусным registry;
-- отсутствие секретов;
-- отсутствие `leader_update_installation_job_rpc`, Edge deploy и frontend switch в этом этапе.
+- RPC fingerprints;
+- статусный registry;
+- production boundary.
 
-## Следующий этап
+## Следующие этапы
 
-После отдельного разрешения на staging-изменение:
-
-1. применить миграцию только к `otulfnouybahfnsycxqn`;
-2. выполнить acceptance и postflight;
-3. убедиться, что fixture rows = 0;
-4. проверить security/performance advisors;
-5. только затем проектировать `leader_update_installation_job_rpc`;
-6. после RPC создать JWT-first `leader-crm-installation` Edge;
-7. отдельно переключить staging frontend.
+1. Зафиксировать Edge/RPC deployment evidence в `main`.
+2. Создать отдельную staging reconciliation migration для трёх FK и двух индексов.
+3. Выполнить preflight: installation rows и receipts должны быть `0` либо иметь подтверждённый migration plan.
+4. Выполнить rollback-safe postflight и advisors.
+5. Провести user-JWT smoke.
+6. Переключить staging frontend на одну Edge-команду.
+7. Production rollout согласовывать отдельно.
 
 ## Граница
 
-В этом этапе не выполняются:
+В текущей синхронизации не выполняются:
 
-- Supabase migration apply;
-- DDL/DML в staging или production;
-- `leader_update_installation_job_rpc`;
-- installation Edge deploy;
+- новый migration apply;
+- новый Edge deploy;
+- staging schema reconciliation DDL;
 - frontend switch;
+- production migration или Edge deploy;
 - production RLS/grants;
 - Auth, Storage или secrets;
 - изменения `nav_*`;

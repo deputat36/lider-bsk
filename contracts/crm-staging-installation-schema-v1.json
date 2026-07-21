@@ -1,13 +1,27 @@
 {
   "contract": "crm-staging-installation-schema",
-  "version": 1,
+  "version": 3,
   "source_audit_date": "2026-07-21",
   "repository": "deputat36/lider-bsk",
   "staging_project_ref": "otulfnouybahfnsycxqn",
   "production_project_ref_read_only": "ofewxuqfjhamgerwzull",
   "environment": "staging",
-  "migration": "supabase/staging-migrations/20260721_05_installation_schema_install.sql",
-  "acceptance": "supabase/staging-tests/20260721_installation_schema_acceptance.sql",
+  "canonical_schema_source": "supabase/staging-migrations/20260721_05_installation_schema_install.sql",
+  "acceptance_source": "supabase/staging-tests/20260721_installation_schema_acceptance.sql",
+  "staging_deployment": {
+    "state": "deployed_active_with_schema_drift",
+    "migration_version": "20260721191810",
+    "migration_name": "staging_installation_job_update_rpc_20260721",
+    "tables_present": true,
+    "order_columns_present": true,
+    "fixture_rows": {
+      "leader_installation_jobs": 0,
+      "leader_installation_job_items": 0,
+      "leader_installation_events": 0,
+      "leader_installation_comments": 0
+    },
+    "installation_command_receipts": 0
+  },
   "production_baseline": {
     "tables": {
       "leader_installation_jobs": {
@@ -22,6 +36,18 @@
           "leader_installation_jobs_production_job_id_idx",
           "leader_installation_jobs_scheduled_at_idx",
           "leader_installation_jobs_status_idx"
+        ]
+      },
+      "leader_installation_job_items": {
+        "columns": 12,
+        "primary_key": "id",
+        "foreign_keys": {
+          "job_id": "leader_installation_jobs(id) ON DELETE CASCADE",
+          "order_id": "leader_orders(id) ON DELETE SET NULL"
+        },
+        "indexes": [
+          "leader_installation_items_job_idx",
+          "leader_installation_job_items_order_id_idx"
         ]
       },
       "leader_installation_events": {
@@ -51,6 +77,7 @@
       "installation_status",
       "installation_address",
       "installation_scheduled_at",
+      "installation_completed_at",
       "installer_name",
       "installer_phone",
       "current_stage",
@@ -58,17 +85,19 @@
       "stage_updated_at"
     ],
     "triggers": [],
-    "installation_functions": []
+    "production_installation_functions": []
   },
-  "staging_gap_before_migration": {
+  "historical_staging_gap_before_deployment": {
     "missing_tables": [
       "leader_installation_jobs",
+      "leader_installation_job_items",
       "leader_installation_events",
       "leader_installation_comments"
     ],
     "missing_order_columns": [
       "installation_address",
       "installation_scheduled_at",
+      "installation_completed_at",
       "installer_name",
       "installer_phone"
     ],
@@ -79,6 +108,39 @@
       "stage_updated_at"
     ]
   },
+  "deployed_staging_schema_drift": {
+    "reconciliation_required": true,
+    "foreign_keys": [
+      {
+        "table": "leader_installation_jobs",
+        "column": "order_id",
+        "deployed": "ON DELETE CASCADE",
+        "production_baseline": "ON DELETE SET NULL"
+      },
+      {
+        "table": "leader_installation_job_items",
+        "column": "order_id",
+        "deployed": "ON DELETE CASCADE",
+        "production_baseline": "ON DELETE SET NULL"
+      },
+      {
+        "table": "leader_installation_events",
+        "column": "order_id",
+        "deployed": "ON DELETE CASCADE",
+        "production_baseline": "ON DELETE SET NULL"
+      }
+    ],
+    "missing_covering_indexes": [
+      "leader_installation_job_items_order_id_idx",
+      "leader_installation_events_order_id_idx"
+    ],
+    "deployed_alternative_indexes": [
+      "leader_installation_job_items_job_id_idx",
+      "leader_installation_events_job_id_created_idx",
+      "leader_installation_comments_job_id_created_idx"
+    ],
+    "current_cycle_ddl_applied": false
+  },
   "staging_access_model": {
     "rls_enabled": true,
     "browser_policies": false,
@@ -87,8 +149,38 @@
     "authenticated_privileges": false,
     "service_role": {
       "leader_installation_jobs": ["SELECT", "INSERT", "UPDATE"],
+      "leader_installation_job_items": ["SELECT", "INSERT"],
       "leader_installation_events": ["SELECT", "INSERT"],
       "leader_installation_comments": ["SELECT", "INSERT"]
+    }
+  },
+  "staging_functions": {
+    "leader_installation_command_error": {
+      "md5": "d263ee000b817642f549016be44d80de",
+      "bytes": 365,
+      "service_role_only": true
+    },
+    "leader_installation_status_key": {
+      "md5": "12243bd5d50a49a8bf7e281d715bba03",
+      "bytes": 894,
+      "service_role_only": true
+    },
+    "leader_installation_status_label": {
+      "md5": "3a1082636d166768f2b3334d76e1743d",
+      "bytes": 555,
+      "service_role_only": true
+    },
+    "leader_installation_transition_allowed": {
+      "md5": "2463ec1b87fa4cf46a04590ac7e97d60",
+      "bytes": 600,
+      "service_role_only": true
+    },
+    "leader_update_installation_job_rpc": {
+      "md5": "0ed4669197dac1f2695e763d0eec54e1",
+      "bytes": 19061,
+      "service_role_only": true,
+      "security_invoker": true,
+      "empty_search_path": true
     }
   },
   "status_registry": {
@@ -118,12 +210,12 @@
     "transaction_rollback": true,
     "foreign_keys_checked": true,
     "cascade_checked": true,
+    "job_items_checked": true,
     "browser_grants_closed": true,
     "service_role_grants_checked": true
   },
   "not_in_scope": [
-    "leader_update_installation_job_rpc",
-    "installation Edge deploy",
+    "staging schema reconciliation DDL",
     "frontend switch",
     "production migration",
     "production data",

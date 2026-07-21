@@ -26,6 +26,7 @@ $guard$;
 alter table public.leader_orders
   add column if not exists installation_address text,
   add column if not exists installation_scheduled_at timestamptz,
+  add column if not exists installation_completed_at timestamptz,
   add column if not exists installer_name text,
   add column if not exists installer_phone text;
 
@@ -66,6 +67,25 @@ create table if not exists public.leader_installation_jobs (
     foreign key (production_job_id) references public.leader_production_jobs(id) on delete set null
 );
 
+create table if not exists public.leader_installation_job_items (
+  id uuid primary key default gen_random_uuid(),
+  job_id uuid not null,
+  order_id uuid,
+  name text not null,
+  unit text default 'шт',
+  qty numeric not null default 1,
+  width numeric,
+  height numeric,
+  installer_price numeric not null default 0,
+  client_price numeric not null default 0,
+  comment text,
+  created_at timestamptz not null default now(),
+  constraint leader_installation_job_items_job_id_fkey
+    foreign key (job_id) references public.leader_installation_jobs(id) on delete cascade,
+  constraint leader_installation_job_items_order_id_fkey
+    foreign key (order_id) references public.leader_orders(id) on delete set null
+);
+
 create table if not exists public.leader_installation_events (
   id uuid primary key default gen_random_uuid(),
   job_id uuid not null,
@@ -102,6 +122,10 @@ create index if not exists leader_installation_jobs_scheduled_at_idx
   on public.leader_installation_jobs (scheduled_at);
 create index if not exists leader_installation_jobs_status_idx
   on public.leader_installation_jobs (install_status);
+create index if not exists leader_installation_items_job_idx
+  on public.leader_installation_job_items (job_id);
+create index if not exists leader_installation_job_items_order_id_idx
+  on public.leader_installation_job_items (order_id);
 create index if not exists leader_installation_events_job_idx
   on public.leader_installation_events (job_id);
 create index if not exists leader_installation_events_order_id_idx
@@ -110,13 +134,16 @@ create index if not exists leader_installation_comments_job_idx
   on public.leader_installation_comments (job_id);
 
 alter table public.leader_installation_jobs enable row level security;
+alter table public.leader_installation_job_items enable row level security;
 alter table public.leader_installation_events enable row level security;
 alter table public.leader_installation_comments enable row level security;
 
 revoke all on table public.leader_installation_jobs from public, anon, authenticated;
+revoke all on table public.leader_installation_job_items from public, anon, authenticated;
 revoke all on table public.leader_installation_events from public, anon, authenticated;
 revoke all on table public.leader_installation_comments from public, anon, authenticated;
 
 grant select, insert, update on table public.leader_installation_jobs to service_role;
+grant select, insert on table public.leader_installation_job_items to service_role;
 grant select, insert on table public.leader_installation_events to service_role;
 grant select, insert on table public.leader_installation_comments to service_role;

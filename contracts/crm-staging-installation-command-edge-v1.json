@@ -1,0 +1,161 @@
+{
+  "contract": "crm-staging-installation-command-edge",
+  "version": 2,
+  "captured_at": "2026-07-21",
+  "repository": "deputat36/lider-bsk",
+  "project_ref": "otulfnouybahfnsycxqn",
+  "environment": "staging",
+  "edge": {
+    "slug": "leader-crm-installation",
+    "version": 1,
+    "status": "ACTIVE",
+    "verify_jwt": true,
+    "sha256": "4be533387e91a4d91a025a8c7c0ea9516563a4cba7e236c270cdd23097cb6bdc",
+    "contract_version": "leader-crm-installation-edge-v1",
+    "source": [
+      "supabase/staging-functions/leader-crm-installation/index.ts",
+      "supabase/staging-functions/leader-crm-installation/contract.ts"
+    ]
+  },
+  "database": {
+    "migration_version": "20260721191810",
+    "migration_name": "staging_installation_job_update_rpc_20260721",
+    "reproducible_source": "supabase/staging-migrations/20260721_06_installation_job_update_rpc.sql",
+    "schema_source": "supabase/staging-migrations/20260721_05_installation_schema_install.sql",
+    "schema_contract_version": 3,
+    "schema_reconciliation_required": true
+  },
+  "command": {
+    "action": "installation_job.update",
+    "permission": "installation.write",
+    "permission_rpc": "leader_actor_has_crm_action_rpc",
+    "business_rpc": "leader_update_installation_job_rpc",
+    "execution_order": [
+      "validate_environment",
+      "authenticate_user",
+      "validate_request",
+      "check_canonical_permission",
+      "execute_transactional_rpc"
+    ],
+    "browser_role_parameter": false,
+    "request_id_required": true,
+    "idempotency_key_required": true,
+    "expected_updated_at_required": true,
+    "payload_max_bytes": 65536,
+    "patch_allowed_fields": [
+      "title",
+      "install_status",
+      "installer_name",
+      "installer_phone",
+      "address",
+      "scheduled_at",
+      "before_photo_url",
+      "after_photo_url",
+      "technical_task",
+      "tools_required",
+      "installer_comment"
+    ]
+  },
+  "atomicity": {
+    "installation_job_update": true,
+    "linked_order_update": true,
+    "installation_event_insert": true,
+    "receipt_insert_and_complete": true,
+    "job_row_lock": true,
+    "order_row_lock": true,
+    "idempotency_advisory_lock": true,
+    "request_id_advisory_lock": true,
+    "installation_completed_at_sync": true
+  },
+  "authorization": {
+    "actor_source": "verified_jwt",
+    "edge_checks_canonical_permission": true,
+    "rpc_rechecks_permission": true,
+    "public_execute": false,
+    "anon_execute": false,
+    "authenticated_execute": false,
+    "service_role_execute": true
+  },
+  "rpc_fingerprints": {
+    "leader_installation_command_error": {
+      "schema": "leader_private",
+      "md5": "d263ee000b817642f549016be44d80de",
+      "bytes": 365
+    },
+    "leader_installation_status_key": {
+      "schema": "leader_private",
+      "md5": "12243bd5d50a49a8bf7e281d715bba03",
+      "bytes": 894
+    },
+    "leader_installation_status_label": {
+      "schema": "leader_private",
+      "md5": "3a1082636d166768f2b3334d76e1743d",
+      "bytes": 555
+    },
+    "leader_installation_transition_allowed": {
+      "schema": "leader_private",
+      "md5": "2463ec1b87fa4cf46a04590ac7e97d60",
+      "bytes": 600
+    },
+    "leader_update_installation_job_rpc": {
+      "schema": "public",
+      "md5": "0ed4669197dac1f2695e763d0eec54e1",
+      "bytes": 19061,
+      "security_invoker": true,
+      "empty_search_path": true
+    }
+  },
+  "staging_postflight": {
+    "installation_jobs": 0,
+    "installation_job_items": 0,
+    "installation_events": 0,
+    "installation_comments": 0,
+    "command_receipts": 0,
+    "edge_logs_empty": true,
+    "browser_table_access": false,
+    "browser_rpc_execute": false,
+    "service_role_only": true,
+    "security_advisors_new_error_or_warn": false,
+    "info_rls_no_policy_expected_closed_harness": true,
+    "missing_covering_indexes": [
+      "leader_installation_job_items_order_id_idx",
+      "leader_installation_events_order_id_idx"
+    ],
+    "foreign_key_semantics_drift": [
+      "leader_installation_jobs.order_id",
+      "leader_installation_job_items.order_id",
+      "leader_installation_events.order_id"
+    ]
+  },
+  "readiness": {
+    "edge_source_synced": true,
+    "rpc_source_synced": true,
+    "authorization_ready": true,
+    "atomic_command_ready": true,
+    "schema_reconciliation_ready": false,
+    "user_jwt_smoke_completed": false,
+    "frontend_switch_ready": false,
+    "production_ready": false
+  },
+  "frontend": {
+    "switch_performed": false,
+    "current_file": "crm/v4/assets/v4/installation-job-card-v2.js",
+    "current_write_path": "three_direct_browser_writes",
+    "target_write_path": "single_leader-crm-installation_edge_command"
+  },
+  "current_cycle": {
+    "new_database_migration_applied": false,
+    "new_edge_deploy_performed": false,
+    "schema_reconciliation_ddl_applied": false,
+    "working_data_changed": false,
+    "source_and_evidence_sync_only": true
+  },
+  "production_boundary": {
+    "production_project_ref": "ofewxuqfjhamgerwzull",
+    "production_migration": false,
+    "production_edge_deploy": false,
+    "production_frontend_switch": false,
+    "production_data_changed": false,
+    "explicit_approval_required": true
+  }
+}
