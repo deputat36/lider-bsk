@@ -1,0 +1,46 @@
+name: CRM staging calculation and offer canonical permissions check
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/leader-crm-calculations/**'
+      - 'supabase/staging-functions/leader-crm-offers/**'
+      - 'contracts/crm-staging-calc-offer-canonical-permissions-v1.json'
+      - 'contracts/calculation-create-version-server-contract-v1.json'
+      - 'docs/SUPABASE_STAGING_CALCULATION_OFFER_CANONICAL_PERMISSIONS_2026-07-21.md'
+      - 'tools/check_crm_staging_calc_offer_canonical_permissions.py'
+      - '.github/workflows/crm-staging-calc-offer-canonical-permissions-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/leader-crm-calculations/**'
+      - 'supabase/staging-functions/leader-crm-offers/**'
+      - 'contracts/crm-staging-calc-offer-canonical-permissions-v1.json'
+      - 'contracts/calculation-create-version-server-contract-v1.json'
+      - 'docs/SUPABASE_STAGING_CALCULATION_OFFER_CANONICAL_PERMISSIONS_2026-07-21.md'
+      - 'tools/check_crm_staging_calc_offer_canonical_permissions.py'
+      - '.github/workflows/crm-staging-calc-offer-canonical-permissions-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  canonical-permissions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Calculation source and contract
+        run: |
+          deno check supabase/functions/leader-crm-calculations/index.ts
+          deno test supabase/functions/leader-crm-calculations/contract_test.ts
+      - name: Offer source and contract
+        run: |
+          deno check supabase/staging-functions/leader-crm-offers/index.ts
+          deno test supabase/staging-functions/leader-crm-offers/contract_test.ts
+      - name: Canonical permission and deployment contract
+        run: |
+          python3 -m py_compile tools/check_crm_staging_calc_offer_canonical_permissions.py
+          python3 tools/check_crm_staging_calc_offer_canonical_permissions.py
