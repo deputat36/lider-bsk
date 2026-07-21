@@ -4,7 +4,9 @@ on:
   pull_request:
     paths:
       - 'supabase/staging-migrations/20260721_05_installation_schema_install.sql'
+      - 'supabase/staging-migrations/20260721_06_installation_job_update_rpc.sql'
       - 'supabase/staging-tests/20260721_installation_schema_acceptance.sql'
+      - 'supabase/staging-functions/leader-crm-installation/**'
       - 'contracts/crm-staging-installation-schema-v1.json'
       - 'docs/SUPABASE_STAGING_INSTALLATION_SCHEMA_V1_2026-07-21.md'
       - 'tools/check_crm_staging_installation_schema.py'
@@ -14,7 +16,9 @@ on:
     branches: [main]
     paths:
       - 'supabase/staging-migrations/20260721_05_installation_schema_install.sql'
+      - 'supabase/staging-migrations/20260721_06_installation_job_update_rpc.sql'
       - 'supabase/staging-tests/20260721_installation_schema_acceptance.sql'
+      - 'supabase/staging-functions/leader-crm-installation/**'
       - 'contracts/crm-staging-installation-schema-v1.json'
       - 'docs/SUPABASE_STAGING_INSTALLATION_SCHEMA_V1_2026-07-21.md'
       - 'tools/check_crm_staging_installation_schema.py'
@@ -27,10 +31,10 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 7
     steps:
       - uses: actions/checkout@v4
       - name: Compile checker
         run: python3 -m py_compile tools/check_crm_staging_installation_schema.py
-      - name: Validate staging installation schema contract
+      - name: Validate staging installation schema and deployed prerequisites
         run: python3 tools/check_crm_staging_installation_schema.py
