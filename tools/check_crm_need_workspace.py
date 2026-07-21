@@ -11,6 +11,9 @@ html = (root / 'crm/v4/index.html').read_text(encoding='utf-8')
 product = (root / 'docs/CRM_PRODUCT_SIMPLICITY_AND_EXCEPTION_MODEL.md').read_text(encoding='utf-8')
 test = (root / 'tools/test_need_workspace_model.mjs').read_text(encoding='utf-8')
 manual = (root / 'docs/CRM_NEED_DUPLICATE_REVIEW_MANUAL_TEST_2026-07-21.md').read_text(encoding='utf-8')
+staging_report_path = root / 'docs/CRM_NEED_DUPLICATE_REVIEW_STAGING_2026-07-21.md'
+staging_sql_path = root / 'supabase/staging/20260721102500_staging_need_duplicate_dependency_compat.sql'
+production_sql_path = root / 'supabase/migrations/20260721102500_staging_need_duplicate_dependency_compat.sql'
 
 errors = []
 
@@ -122,6 +125,39 @@ for marker in [
     if marker not in manual:
         errors.append('Missing duplicate manual-test marker: ' + marker)
 
+if not staging_report_path.exists():
+    errors.append('Missing staging duplicate-review report')
+else:
+    staging_report = staging_report_path.read_text(encoding='utf-8')
+    for marker in [
+        'staging_need_duplicate_dependency_compat',
+        'три полностью одинаковые активные потребности',
+        'calculation_count = 1',
+        'запись с расчётом должна быть выбрана основной',
+        'lead_rows = 0',
+        'need_rows = 0',
+        'calculation_rows = 0',
+        'Production DDL/DML',
+        'Новых критических предупреждений не появилось',
+    ]:
+        if marker.lower() not in staging_report.lower():
+            errors.append('Missing staging duplicate-review marker: ' + marker)
+
+if not staging_sql_path.exists():
+    errors.append('Missing staging-only need duplicate compatibility SQL')
+else:
+    staging_sql = staging_sql_path.read_text(encoding='utf-8')
+    for marker in [
+        'Staging-only',
+        'Never apply this file to production',
+        'add column if not exists is_current_revision boolean not null default true',
+    ]:
+        if marker.lower() not in staging_sql.lower():
+            errors.append('Missing staging duplicate compatibility marker: ' + marker)
+
+if production_sql_path.exists():
+    errors.append('Staging need duplicate compatibility SQL must never exist under supabase/migrations')
+
 for marker in [
     '## Основной маршрут',
     '## Обязательные данные',
@@ -141,4 +177,4 @@ if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('CRM need workspace, duplicate review and dependency-safe archive contract are valid.')
+print('CRM need workspace, duplicate review, staging evidence and dependency-safe archive contract are valid.')
