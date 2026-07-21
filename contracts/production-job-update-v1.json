@@ -1,0 +1,174 @@
+{
+  "contract_version": "leader-production-job-update-v1",
+  "status": "staging_deployed_production_locked",
+  "action": "production_job.update",
+  "permission": "production.write",
+  "detail_for": "contracts/crm-v4-backend-command-contract-v1.json",
+  "environment": {
+    "staging_project_ref": "otulfnouybahfnsycxqn",
+    "production_project_ref": "ofewxuqfjhamgerwzull",
+    "staging_database_deployed": true,
+    "staging_edge_deployed": true,
+    "production_deployed": false
+  },
+  "transport": {
+    "edge_function": "leader-crm-production",
+    "verify_jwt": true,
+    "staging_version": 2,
+    "staging_deployment_hash": "c6b0e1e4081c20872e3fdbdd80bc55b00aecdc063e7656f4a263e8a7f34638aa",
+    "browser_direct_write": false,
+    "production_ui_enabled": false
+  },
+  "authorization": {
+    "actor_source": "verified_jwt",
+    "canonical_permission_rpc": "public.leader_actor_has_crm_action_rpc",
+    "rpc_rechecks_permission": true,
+    "browser_role_parameter": false,
+    "primary_permission": "production.write",
+    "internal_comment_additional_permission": "orders.update",
+    "production_write_roles": ["owner", "admin", "manager", "designer", "contractor"],
+    "internal_comment_roles": ["owner", "admin", "manager"],
+    "denied_roles": ["accountant", "installer"],
+    "inactive_profile": "deny",
+    "unknown_role": "deny"
+  },
+  "request": {
+    "envelope_required": ["action", "request_id", "expected_updated_at", "payload"],
+    "payload_required": ["job_id", "idempotency_key", "patch"],
+    "patch_allowed_fields": [
+      "title",
+      "production_status",
+      "layout_status",
+      "priority",
+      "deadline",
+      "file_url",
+      "technical_task",
+      "contractor_comment",
+      "internal_comment"
+    ],
+    "server_owned_fields_forbidden": [
+      "owner_id",
+      "order_id",
+      "created_by",
+      "updated_at",
+      "sent_to_contractor_at",
+      "ready_at",
+      "issued_at",
+      "contractor_cost",
+      "client_total"
+    ],
+    "idempotency_key_max_length": 160,
+    "payload_max_bytes": 65536
+  },
+  "status_registry": {
+    "domain": "production",
+    "source": "crm/v4/assets/v4/status-transitions-v1.js",
+    "aliases": {
+      "Передано в производство": "В очереди",
+      "В работе": "В производстве",
+      "Проблема": "Приостановлено"
+    },
+    "server_timestamp_fields": {
+      "В очереди": "sent_to_contractor_at",
+      "В производстве": "sent_to_contractor_at",
+      "Готово": "ready_at",
+      "Выдано": "issued_at"
+    },
+    "unknown_current_status": "preserve_only",
+    "unknown_target_status": "reject",
+    "terminal_transition": "reject"
+  },
+  "atomicity": {
+    "transaction_required": true,
+    "job_update": true,
+    "linked_order_update": true,
+    "production_event_insert": true,
+    "receipt_insert": true,
+    "all_or_nothing": true,
+    "forced_event_failure_acceptance": true,
+    "browser_compensating_delete": false
+  },
+  "concurrency": {
+    "expected_updated_at_required": true,
+    "job_row_lock": "FOR UPDATE",
+    "linked_order_row_lock": "FOR UPDATE",
+    "idempotency_advisory_lock": true,
+    "request_id_advisory_lock": true
+  },
+  "idempotency": {
+    "receipt_table": "leader_private.leader_command_receipts",
+    "same_key_same_hash": "return_original_success",
+    "same_key_different_hash": "conflict",
+    "same_request_different_key": "duplicate_request",
+    "failed_command_receipt": "not_persisted"
+  },
+  "safe_response": {
+    "top_level_fields": ["ok", "request_id", "entity", "order", "events", "idempotent_replay"],
+    "entity_fields": [
+      "id",
+      "order_id",
+      "title",
+      "production_status",
+      "layout_status",
+      "priority",
+      "deadline",
+      "sent_to_contractor_at",
+      "ready_at",
+      "issued_at",
+      "file_url",
+      "technical_task",
+      "contractor_comment",
+      "updated_at"
+    ],
+    "order_fields": [
+      "id",
+      "production_status",
+      "layout_status",
+      "layout_link",
+      "current_stage",
+      "updated_at",
+      "stage_updated_at"
+    ],
+    "event_fields": ["id", "event_type", "old_status", "new_status", "body", "created_at"],
+    "forbidden_response_fields": [
+      "internal_comment",
+      "contractor_cost",
+      "client_total",
+      "created_by",
+      "created_by_email",
+      "owner_id"
+    ]
+  },
+  "errors": {
+    "400": ["validation_error", "unknown_action"],
+    "401": ["missing_or_invalid_jwt"],
+    "403": ["forbidden"],
+    "404": ["not_found"],
+    "409": ["conflict", "invalid_transition", "duplicate_request"],
+    "500": ["permission_check_failed", "persistence_failed"]
+  },
+  "staging_evidence": {
+    "migration_version": "20260721141942",
+    "migration_name": "staging_production_job_update_rpc_20260721",
+    "sql_acceptance_passed": true,
+    "synthetic_cleanup_zero": true,
+    "edge_logs_empty_after_deploy": true,
+    "authenticated_http_e2e_passed": false,
+    "auth_gate_reason": "temporary staging Auth user was not created"
+  },
+  "rollback": {
+    "application_first": true,
+    "disable_browser_action": true,
+    "edge_previous_version": 1,
+    "edge_previous_version_hash": "f378dc44bae1c4dd5627d2c0068f28b1c3cebe9d5e9b3e18ac01d55d59af060d",
+    "database_objects_may_remain_closed": true,
+    "business_data_cleanup_required": false
+  },
+  "production_boundary": {
+    "production_edge_deploy": false,
+    "production_migration": false,
+    "production_rpc": false,
+    "production_ui_wiring": false,
+    "explicit_approval_required": true
+  }
+}
