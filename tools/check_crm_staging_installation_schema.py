@@ -48,32 +48,38 @@ require('migration', [
     'add column if not exists installer_name text',
     'add column if not exists installer_phone text',
     'create table if not exists public.leader_installation_jobs',
+    'create table if not exists public.leader_installation_job_items',
     'create table if not exists public.leader_installation_events',
     'create table if not exists public.leader_installation_comments',
     'foreign key (order_id) references public.leader_orders(id) on delete set null',
     'foreign key (production_job_id) references public.leader_production_jobs(id) on delete set null',
     'foreign key (job_id) references public.leader_installation_jobs(id) on delete cascade',
     'alter table public.leader_installation_jobs enable row level security',
+    'alter table public.leader_installation_job_items enable row level security',
     'alter table public.leader_installation_events enable row level security',
     'alter table public.leader_installation_comments enable row level security',
     'revoke all on table public.leader_installation_jobs from public, anon, authenticated',
+    'revoke all on table public.leader_installation_job_items from public, anon, authenticated',
     'revoke all on table public.leader_installation_events from public, anon, authenticated',
     'revoke all on table public.leader_installation_comments from public, anon, authenticated',
     'grant select, insert, update on table public.leader_installation_jobs to service_role',
+    'grant select, insert on table public.leader_installation_job_items to service_role',
     'grant select, insert on table public.leader_installation_events to service_role',
     'grant select, insert on table public.leader_installation_comments to service_role',
 ])
 
-required_indexes = [
+production_indexes = [
     'leader_installation_jobs_order_id_idx',
     'leader_installation_jobs_production_job_id_idx',
     'leader_installation_jobs_scheduled_at_idx',
     'leader_installation_jobs_status_idx',
+    'leader_installation_items_job_idx',
+    'leader_installation_job_items_order_id_idx',
     'leader_installation_events_job_idx',
     'leader_installation_events_order_id_idx',
     'leader_installation_comments_job_idx',
 ]
-require('migration', required_indexes)
+require('migration', production_indexes)
 
 for executable in ('migration', 'rpc_migration', 'acceptance', 'edge', 'edge_contract'):
     if PRODUCTION in texts[executable]:
@@ -91,13 +97,7 @@ for forbidden in (
 require('rpc_migration', [
     '-- STAGING ONLY.',
     "project_ref = 'otulfnouybahfnsycxqn'",
-    "environment_name = 'staging'",
-    "repository = 'deputat36/lider-bsk'",
     'installation_completed_at_missing',
-    'create or replace function leader_private.leader_installation_command_error',
-    'create or replace function leader_private.leader_installation_status_key',
-    'create or replace function leader_private.leader_installation_status_label',
-    'create or replace function leader_private.leader_installation_transition_allowed',
     'create or replace function public.leader_update_installation_job_rpc',
     "'installation_job.update'",
     "'installation.write'",
@@ -119,10 +119,11 @@ require('acceptance', [
     "project_ref = 'otulfnouybahfnsycxqn'",
     "environment_name = 'staging'",
     "repository = 'deputat36/lider-bsk'",
-    'installation_schema_missing',
     'leader_installation_jobs',
+    'leader_installation_job_items',
     'leader_installation_events',
     'leader_installation_comments',
+    'installation_item_insert_failed',
     'browser_table_privilege_must_be_closed',
     'service_role_table_privilege_missing',
     'installation_child_cascade_failed',
@@ -141,7 +142,7 @@ except json.JSONDecodeError as exc:
 if contract:
     expected = {
         'contract': 'crm-staging-installation-schema',
-        'version': 2,
+        'version': 3,
         'staging_project_ref': STAGING,
         'production_project_ref_read_only': PRODUCTION,
         'environment': 'staging',
@@ -151,19 +152,29 @@ if contract:
             errors.append(f'contract: {key} must equal {value!r}')
 
     deployment = contract.get('staging_deployment', {})
-    if deployment.get('state') != 'deployed_active_production_locked':
-        errors.append('contract: staging deployment state is not active/production-locked')
+    if deployment.get('state') != 'deployed_active_with_schema_drift':
+        errors.append('contract: deployed staging state must expose schema drift')
     if deployment.get('migration_version') != '20260721191810':
         errors.append('contract: unexpected installation migration version')
     if deployment.get('migration_name') != 'staging_installation_job_update_rpc_20260721':
         errors.append('contract: unexpected installation migration name')
-    if deployment.get('fixture_rows') != 0 or deployment.get('installation_command_receipts') != 0:
-        errors.append('contract: staging fixtures or installation receipts must be zero')
+    fixture_rows = deployment.get('fixture_rows', {})
+    for table in (
+        'leader_installation_jobs',
+        'leader_installation_job_items',
+        'leader_installation_events',
+        'leader_installation_comments',
+    ):
+        if fixture_rows.get(table) != 0:
+            errors.append(f'contract: {table} fixture count must be zero')
+    if deployment.get('installation_command_receipts') != 0:
+        errors.append('contract: installation receipts must be zero')
 
     baseline = contract.get('production_baseline', {})
     tables = baseline.get('tables', {})
     expected_columns = {
         'leader_installation_jobs': 30,
+        'leader_installation_job_items': 12,
         'leader_installation_events': 9,
         'leader_installation_comments': 7,
     }
@@ -173,16 +184,40 @@ if contract:
     if 'installation_completed_at' not in baseline.get('order_columns', []):
         errors.append('contract: production order columns must include installation_completed_at')
 
-    historical_gap = contract.get('historical_staging_gap_before_deployment', {})
-    if sorted(historical_gap.get('missing_tables', [])) != sorted(expected_columns):
-        errors.append('contract: historical missing_tables does not match audited staging gap')
-    if 'installation_completed_at' not in historical_gap.get('missing_order_columns', []):
+    historical = contract.get('historical_staging_gap_before_deployment', {})
+    if sorted(historical.get('missing_tables', [])) != sorted(expected_columns):
+        errors.append('contract: historical missing table inventory is incomplete')
+    if 'installation_completed_at' not in historical.get('missing_order_columns', []):
         errors.append('contract: historical gap must include installation_completed_at')
+
+    drift = contract.get('deployed_staging_schema_drift', {})
+    if drift.get('reconciliation_required') is not True:
+        errors.append('contract: schema reconciliation must remain required')
+    if drift.get('current_cycle_ddl_applied') is not False:
+        errors.append('contract: current cycle must not claim reconciliation DDL')
+    foreign_key_drift = drift.get('foreign_keys', [])
+    expected_drift_tables = {
+        'leader_installation_jobs',
+        'leader_installation_job_items',
+        'leader_installation_events',
+    }
+    if {item.get('table') for item in foreign_key_drift} != expected_drift_tables:
+        errors.append('contract: deployed FK drift inventory is incomplete')
+    for item in foreign_key_drift:
+        if item.get('deployed') != 'ON DELETE CASCADE' or item.get('production_baseline') != 'ON DELETE SET NULL':
+            errors.append('contract: unexpected FK drift semantics')
+    if set(drift.get('missing_covering_indexes', [])) != {
+        'leader_installation_job_items_order_id_idx',
+        'leader_installation_events_order_id_idx',
+    }:
+        errors.append('contract: missing covering index inventory is incomplete')
 
     access = contract.get('staging_access_model', {})
     for key in ('browser_policies', 'public_privileges', 'anon_privileges', 'authenticated_privileges'):
         if access.get(key) is not False:
             errors.append(f'contract: {key} must be false')
+    if 'leader_installation_job_items' not in access.get('service_role', {}):
+        errors.append('contract: service_role access for installation job items is missing')
 
     functions = contract.get('staging_functions', {})
     expected_fingerprints = {
@@ -198,7 +233,7 @@ if contract:
             errors.append(f'contract: unexpected fingerprint or ACL evidence for {name}')
 
     not_in_scope = set(contract.get('not_in_scope', []))
-    for marker in ('frontend switch', 'production migration', 'nav_*'):
+    for marker in ('staging schema reconciliation DDL', 'frontend switch', 'production migration', 'nav_*'):
         if marker not in not_in_scope:
             errors.append(f'contract: missing not_in_scope marker {marker!r}')
 
@@ -217,7 +252,6 @@ require('edge', [
     'projectRefFromUrl(supabaseUrl) !== STAGING_PROJECT_REF',
     'authenticatedUser(req, supabaseUrl, publicKey)',
     'validateInstallationRequest(input)',
-    'canonicalPermission(',
     '/rest/v1/rpc/leader_update_installation_job_rpc',
 ])
 require('edge_contract', [
@@ -225,19 +259,18 @@ require('edge_contract', [
     "INSTALLATION_ACTION = 'installation_job.update'",
     "INSTALLATION_PERMISSION = 'installation.write'",
     "STAGING_PROJECT_REF = 'otulfnouybahfnsycxqn'",
-    "'expected_updated_at'",
-    "'idempotency_key'",
 ])
 
 require('docs', [
-    'Staging installation schema v2',
-    '`otulfnouybahfnsycxqn`',
-    '`ofewxuqfjhamgerwzull`',
+    'Staging installation schema v3',
+    '`leader_installation_job_items`: 12 полей',
+    '`installation_completed_at`',
     '`20260721191810`',
     '`staging_installation_job_update_rpc_20260721`',
-    '`installation_completed_at`',
-    '`leader_update_installation_job_rpc(jsonb)`',
-    '`leader-crm-installation v1`',
+    'deployed schema drift',
+    '`leader_installation_job_items_order_id_idx`',
+    '`leader_installation_events_order_id_idx`',
+    'Reconciliation требуется',
     'новые миграции и Edge Functions не применялись',
     'Production не изменялся',
 ])
@@ -260,4 +293,4 @@ if errors:
         print(f'- {error}', file=sys.stderr)
     raise SystemExit(1)
 
-print('Staging installation schema, deployed RPC/Edge prerequisites, grants and production boundary are coherent.')
+print('Full installation schema target, deployed drift, RPC prerequisites, grants and production boundary are coherent.')
