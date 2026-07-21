@@ -3,13 +3,15 @@ import { timeout, friendlyError } from './api.js';
 import { v4State, setState, subscribeState } from './state.js';
 import { byId, setStatus, toast } from './ui.js';
 import { openLeadRoute } from './router.js';
+import { buildLeadSelfAssignment } from './lead-assignment-model-v1.js';
 import {
-  buildFollowupPostponePlan,
+  buildOwnedFollowupPostponePlan,
+  followupResponsibilityModel,
   isFollowupClosedStatus,
   isOverdueFollowupLead
 } from './followup-schedule-model-v1.js';
 
-const LEAD_FIELDS = 'id,created_at,name,phone,source,service,message,status,lead_quality,estimated_amount,next_contact_at,page_url,budget,city,converted_order_id,converted_client_id';
+const LEAD_FIELDS = 'id,created_at,name,phone,source,service,message,status,lead_quality,estimated_amount,next_contact_at,page_url,budget,city,assigned_to,converted_order_id,converted_client_id';
 let renderTimer = null;
 let busyId = null;
 
@@ -29,6 +31,14 @@ function formatDate(value) {
 function money(value) {
   const number = Number(value || 0);
   return number ? `${Math.round(number).toLocaleString('ru-RU')} ₽` : '—';
+}
+
+function assignmentContext() {
+  return {
+    currentUserId: v4State.user?.id || '',
+    currentUserRole: v4State.profile?.role || '',
+    actorLabel: v4State.profile?.full_name || v4State.user?.email || ''
+  };
 }
 
 function endOfToday() {
@@ -61,39 +71,59 @@ function missingNextContactLeads() {
     .slice(0, 5);
 }
 
-function renderDueItem(lead) {
-  const overdue = isOverdueFollowupLead(lead);
+function responsibilityBadge(model) {
+  return `<span class="v4-followup-responsibility ${esc(model.className)}" title="${esc(model.explanation)}">${esc(model.label)}</span>`;
+}
+
+function actionButtons(lead, responsibility, { allowPostpone = false } = {}) {
   const disabled = busyId === lead.id ? 'disabled' : '';
   return `
-    <article class="v4-followup-item ${overdue ? 'is-overdue' : ''}">
+    <button type="button" data-followup-open="${esc(lead.id)}">Открыть</button>
+    ${responsibility.canTake ? `<button type="button" class="v4-primary" data-followup-take="${esc(lead.id)}" ${disabled}>Взять в работу</button>` : ''}
+    ${allowPostpone && responsibility.canPostpone ? `<button type="button" data-followup-postpone="plus1h" data-followup-id="${esc(lead.id)}" ${disabled}>+1 час</button><button type="button" data-followup-postpone="tomorrow" data-followup-id="${esc(lead.id)}" ${disabled}>Завтра 10:00</button>` : ''}
+  `;
+}
+
+function renderDueItem(lead) {
+  const overdue = isOverdueFollowupLead(lead);
+  const responsibility = followupResponsibilityModel(lead, assignmentContext());
+  return `
+    <article class="v4-followup-item ${overdue ? 'is-overdue' : ''}" data-followup-responsibility="${esc(responsibility.key)}">
       <div>
         <div class="v4-followup-title">
           <h4>${esc(lead.name || 'Без имени')}</h4>
           <span>${overdue ? 'Просрочено' : 'Сегодня'}</span>
         </div>
         <div class="v4-followup-meta">
+          ${responsibilityBadge(responsibility)}
           <span><b>Контакт:</b> ${formatDate(lead.next_contact_at)}</span>
           <span><b>Телефон:</b> ${esc(lead.phone || '—')}</span>
           <span><b>Статус:</b> ${esc(lead.status || 'Новая')}</span>
           <span><b>Услуга:</b> ${esc(lead.service || '—')}</span>
           <span><b>Бюджет:</b> ${money(lead.budget || lead.estimated_amount)}</span>
         </div>
+        ${responsibility.canPostpone ? '' : `<div class="v4-followup-ownership-note ${esc(responsibility.className)}">${esc(responsibility.explanation)}</div>`}
       </div>
       <div class="v4-followup-actions">
-        <button type="button" data-followup-open="${esc(lead.id)}">Открыть</button>
-        <button type="button" data-followup-postpone="plus1h" data-followup-id="${esc(lead.id)}" ${disabled}>+1 час</button>
-        <button type="button" data-followup-postpone="tomorrow" data-followup-id="${esc(lead.id)}" ${disabled}>Завтра 10:00</button>
+        ${actionButtons(lead, responsibility, { allowPostpone: true })}
       </div>
     </article>
   `;
 }
 
 function renderMissingItem(lead) {
+  const responsibility = followupResponsibilityModel(lead, assignmentContext());
   return `
-    <button type="button" class="v4-followup-missing" data-followup-open="${esc(lead.id)}">
-      <b>${esc(lead.name || 'Без имени')}</b>
-      <span>${esc(lead.status || 'Новая')} · ${esc(lead.service || 'Услуга не указана')}</span>
-    </button>
+    <article class="v4-followup-missing" data-followup-responsibility="${esc(responsibility.key)}">
+      <div class="v4-followup-missing-main">
+        <b>${esc(lead.name || 'Без имени')}</b>
+        <span>${esc(lead.status || 'Новая')} · ${esc(lead.service || 'Услуга не указана')}</span>
+        ${responsibilityBadge(responsibility)}
+      </div>
+      <div class="v4-followup-actions">
+        ${actionButtons(lead, responsibility)}
+      </div>
+    </article>
   `;
 }
 
@@ -128,7 +158,7 @@ function render() {
       <div class="v4-subcard-head">
         <div>
           <h3>Кому связаться сегодня</h3>
-          <p>Здесь заявки с сегодняшним или просроченным следующим контактом. Перенос даты не меняет текущий этап заявки.</p>
+          <p>Переносить контакт может только ответственный сотрудник. Неназначенную заявку сначала возьмите в работу.</p>
         </div>
         <span class="v4-muted">Сегодня/просрочено: ${due.length}${overdueCount ? ` · просрочено: ${overdueCount}` : ''}</span>
       </div>
@@ -143,10 +173,27 @@ function scheduleRender() {
   renderTimer = setTimeout(render, 60);
 }
 
-async function addFollowupHistory(plan) {
+function updateLeadState(id, updated) {
+  setState({
+    leads: (v4State.leads || []).map((item) => (item.id === id ? { ...item, ...updated } : item)),
+    currentLead: v4State.currentLead?.id === id ? { ...v4State.currentLead, ...updated } : v4State.currentLead
+  });
+}
+
+async function addLeadHistory(event) {
   const addEvent = window.leaderAddLeadEvent;
   if (typeof addEvent !== 'function') throw new Error('История заявки ещё загружается');
   return addEvent({
+    leadId: event.leadId,
+    eventType: event.eventType,
+    oldStatus: event.oldStatus,
+    newStatus: event.newStatus,
+    body: event.body
+  });
+}
+
+async function addFollowupHistory(plan) {
+  return addLeadHistory({
     leadId: plan.leadId,
     eventType: plan.event.eventType,
     oldStatus: plan.event.oldStatus,
@@ -155,12 +202,76 @@ async function addFollowupHistory(plan) {
   });
 }
 
+async function addAssignmentHistory(assignment) {
+  return addLeadHistory({
+    leadId: assignment.leadId,
+    eventType: assignment.event.eventType,
+    oldStatus: assignment.event.oldStatus,
+    newStatus: assignment.event.newStatus,
+    body: assignment.event.body
+  });
+}
+
+function openLeadCard(id) {
+  openLeadRoute(id);
+  if (typeof window.v4SetTab === 'function') window.v4SetTab('card');
+}
+
+async function takeLead(id) {
+  if (busyId) return;
+  const lead = (v4State.leads || []).find((item) => item.id === id);
+  const assignment = buildLeadSelfAssignment(lead || {}, assignmentContext());
+  if (!assignment) {
+    toast('Заявку уже взял другой сотрудник или ваша роль не может принять её');
+    scheduleRender();
+    return;
+  }
+
+  busyId = id;
+  render();
+  try {
+    setStatus('Назначаю вас ответственным...', 'warn');
+    const response = await timeout(
+      supabaseClient
+        .from('leader_leads')
+        .update({ ...assignment.patch, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .is('assigned_to', null)
+        .select(LEAD_FIELDS)
+        .maybeSingle(),
+      12000,
+      'Заявка не назначилась за 12 секунд'
+    );
+    if (response.error) throw response.error;
+    if (!response.data) throw new Error('Заявку уже взял другой сотрудник. Обновите очередь.');
+    updateLeadState(id, response.data);
+    try {
+      await addAssignmentHistory(assignment);
+      toast('Заявка назначена вам');
+      setStatus('Вы назначены ответственным. Теперь можно назначить или перенести контакт.', 'good');
+    } catch (historyError) {
+      toast('Ответственный сохранён, но запись истории требует проверки');
+      setStatus(`Ответственный сохранён. История: ${friendlyError(historyError)}`, 'warn');
+    }
+    openLeadCard(id);
+  } catch (error) {
+    toast(friendlyError(error));
+    setStatus(`Ошибка назначения: ${friendlyError(error)}`, 'error');
+  } finally {
+    busyId = null;
+    render();
+  }
+}
+
 async function postponeLead(id, kind) {
   if (busyId) return;
   const lead = (v4State.leads || []).find((item) => item.id === id);
-  const plan = buildFollowupPostponePlan(lead || {}, kind);
+  const context = assignmentContext();
+  const responsibility = followupResponsibilityModel(lead || {}, context);
+  const plan = buildOwnedFollowupPostponePlan(lead || {}, kind, context);
   if (!plan) {
-    toast('Эту заявку нельзя перенести из текущего состояния');
+    toast(responsibility.explanation || 'Эту заявку нельзя перенести из текущего состояния');
+    setStatus(responsibility.explanation || 'Перенос контакта недоступен', 'warn');
     return;
   }
 
@@ -173,17 +284,15 @@ async function postponeLead(id, kind) {
         .from('leader_leads')
         .update({ ...plan.patch, updated_at: new Date().toISOString() })
         .eq('id', id)
+        .eq('assigned_to', context.currentUserId)
         .select(LEAD_FIELDS)
-        .single(),
+        .maybeSingle(),
       12000,
       'Следующий контакт не обновился за 12 секунд'
     );
     if (response.error) throw response.error;
-    const updated = response.data;
-    setState({
-      leads: (v4State.leads || []).map((item) => (item.id === id ? { ...item, ...updated } : item)),
-      currentLead: v4State.currentLead?.id === id ? { ...v4State.currentLead, ...updated } : v4State.currentLead
-    });
+    if (!response.data) throw new Error('Ответственный изменился. Обновите очередь перед переносом контакта.');
+    updateLeadState(id, response.data);
     try {
       await addFollowupHistory(plan);
       toast('Следующий контакт перенесён');
@@ -203,9 +312,14 @@ async function postponeLead(id, kind) {
 
 function bindEvents() {
   document.addEventListener('click', async (event) => {
+    const takeButton = event.target.closest('[data-followup-take]');
+    if (takeButton) {
+      await takeLead(takeButton.dataset.followupTake);
+      return;
+    }
     const openButton = event.target.closest('[data-followup-open]');
     if (openButton) {
-      openLeadRoute(openButton.dataset.followupOpen);
+      openLeadCard(openButton.dataset.followupOpen);
       return;
     }
     const postponeButton = event.target.closest('[data-followup-postpone]');

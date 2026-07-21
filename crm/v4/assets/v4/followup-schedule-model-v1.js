@@ -1,3 +1,5 @@
+import { leadResponsibilityState } from './lead-assignment-model-v1.js';
+
 export const FOLLOWUP_CLOSED_STATUSES = Object.freeze([
   'Спам',
   'Создан заказ',
@@ -47,6 +49,67 @@ export function isOverdueFollowupLead(lead = {}, now = new Date()) {
   return due.getTime() < current.getTime();
 }
 
+export function followupResponsibilityModel(lead = {}, context = {}) {
+  if (isFollowupClosedStatus(lead.status)) {
+    return Object.freeze({
+      key: 'closed',
+      label: 'Заявка завершена',
+      className: 'is-neutral',
+      canPostpone: false,
+      canTake: false,
+      canOpen: true,
+      explanation: 'Завершённая заявка не входит в рабочую очередь контактов.'
+    });
+  }
+
+  const responsibility = leadResponsibilityState(lead, context);
+  if (responsibility.key === 'mine') {
+    return Object.freeze({
+      key: 'mine',
+      label: 'Ответственный: вы',
+      className: 'is-good',
+      canPostpone: true,
+      canTake: false,
+      canOpen: true,
+      explanation: 'Можно перенести контакт: заявка закреплена за вами.'
+    });
+  }
+
+  if (responsibility.key === 'unassigned' && responsibility.canTake) {
+    return Object.freeze({
+      key: 'unassigned',
+      label: 'Без ответственного',
+      className: 'is-warn',
+      canPostpone: false,
+      canTake: true,
+      canOpen: true,
+      explanation: 'Сначала возьмите заявку в работу, затем назначайте или переносите контакт.'
+    });
+  }
+
+  if (responsibility.key === 'unassigned') {
+    return Object.freeze({
+      key: 'unavailable',
+      label: 'Без ответственного',
+      className: 'is-warn',
+      canPostpone: false,
+      canTake: false,
+      canOpen: true,
+      explanation: 'Ваша роль не может назначить себя ответственной за заявку.'
+    });
+  }
+
+  return Object.freeze({
+    key: 'other',
+    label: 'У другого сотрудника',
+    className: 'is-neutral',
+    canPostpone: false,
+    canTake: false,
+    canOpen: true,
+    explanation: 'Перенос контакта доступен только текущему ответственному.'
+  });
+}
+
 export function buildFollowupPostponePlan(lead = {}, kind, now = new Date()) {
   const leadId = clean(lead.id);
   const previousStatus = clean(lead.status) || 'Новая';
@@ -75,5 +138,17 @@ export function buildFollowupPostponePlan(lead = {}, kind, now = new Date()) {
       newStatus: nextStatus,
       body: `Следующий контакт перенесён: ${previousLabel} → ${nextLabel}. Этап заявки: ${previousStatus}${nextStatus !== previousStatus ? ` → ${nextStatus}` : ' — без изменения'}.`
     })
+  });
+}
+
+export function buildOwnedFollowupPostponePlan(lead = {}, kind, context = {}, now = new Date()) {
+  const responsibility = followupResponsibilityModel(lead, context);
+  if (!responsibility.canPostpone) return null;
+  const plan = buildFollowupPostponePlan(lead, kind, now);
+  if (!plan) return null;
+  return Object.freeze({
+    ...plan,
+    assignedTo: clean(lead.assigned_to),
+    responsibilityKey: responsibility.key
   });
 }

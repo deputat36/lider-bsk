@@ -5,6 +5,8 @@ import sys
 root = Path(__file__).resolve().parents[1]
 model = root / 'crm/v4/assets/v4/followup-schedule-model-v1.js'
 followups = root / 'crm/v4/assets/v4/followups.js'
+styles = root / 'crm/v4/assets/v4/followups.css'
+assignment_model = root / 'crm/v4/assets/v4/lead-assignment-model-v1.js'
 leads = root / 'crm/v4/assets/v4/leads.js'
 status_model = root / 'crm/v4/assets/v4/lead-status-ui-model-v1.js'
 status_registry = root / 'crm/v4/assets/v4/lead-status-ui-registry-v1.js'
@@ -14,30 +16,68 @@ html = root / 'crm/v4/index.html'
 test = root / 'tools/test_crm_followup_schedule.mjs'
 manual = root / 'docs/CRM_SAFE_FOLLOWUP_POSTPONE_MANUAL_TEST_2026-07-21.md'
 staging = root / 'docs/CRM_SAFE_FOLLOWUP_POSTPONE_STAGING_2026-07-21.md'
+ownership_manual = root / 'docs/CRM_FOLLOWUP_OWNERSHIP_MANUAL_TEST_2026-07-21.md'
+ownership_staging = root / 'docs/CRM_FOLLOWUP_OWNERSHIP_STAGING_2026-07-21.md'
 
 errors = []
 
 checks = {
     model: [
+        "from './lead-assignment-model-v1.js'",
         'FOLLOWUP_CLOSED_STATUSES',
         'isFollowupClosedStatus',
         'followupDate',
         'isOverdueFollowupLead',
+        'followupResponsibilityModel',
         'buildFollowupPostponePlan',
+        'buildOwnedFollowupPostponePlan',
+        "key: 'unassigned'",
+        "key: 'mine'",
+        "key: 'other'",
+        "key: 'unavailable'",
+        'canPostpone: true',
+        'canTake: true',
         "previousStatus === 'Новая' ? 'Ждём ответ' : previousStatus",
         'Этап заявки:',
         '— без изменения',
+        'У другого сотрудника',
+        'Перенос контакта доступен только текущему ответственному',
+    ],
+    assignment_model: [
+        'buildLeadSelfAssignment',
+        'leadResponsibilityState',
+        "previousStatus === 'Новая' ? 'В работе' : previousStatus",
     ],
     followups: [
+        "from './lead-assignment-model-v1.js'",
         "from './followup-schedule-model-v1.js'",
-        'isFollowupClosedStatus',
-        'isOverdueFollowupLead',
-        'buildFollowupPostponePlan',
-        'if (busyId) return',
-        '.update({ ...plan.patch',
+        'assigned_to,converted_order_id',
+        'assignmentContext',
+        'followupResponsibilityModel',
+        'buildOwnedFollowupPostponePlan',
+        'buildLeadSelfAssignment',
+        'data-followup-responsibility',
+        'data-followup-take',
+        'Взять в работу',
+        ".is('assigned_to', null)",
+        ".eq('assigned_to', context.currentUserId)",
+        '.maybeSingle()',
+        'Заявку уже взял другой сотрудник. Обновите очередь.',
+        'Ответственный изменился. Обновите очередь перед переносом контакта.',
+        'addAssignmentHistory',
         'addFollowupHistory',
+        'Ответственный сохранён, но запись истории требует проверки',
         'Дата сохранена, но запись истории требует проверки',
-        'Перенос даты не меняет текущий этап заявки',
+        'Переносить контакт может только ответственный сотрудник',
+        'if (busyId) return',
+    ],
+    styles: [
+        '.v4-followup-responsibility',
+        '.v4-followup-responsibility.is-good',
+        '.v4-followup-responsibility.is-warn',
+        '.v4-followup-ownership-note',
+        '[data-followup-responsibility="other"]',
+        '@media(max-width:520px)',
     ],
     leads: [
         "from './followup-schedule-model-v1.js'",
@@ -63,14 +103,19 @@ checks = {
     html: [
         'leads.js?v=20260721-followup-1',
         'lead-analytics-badges-v1.js?v=20260721-followup-1',
-        'followups.js?v=20260721-safe-postpone-1',
+        'followups.css?v=20260721-ownership-1',
+        'followups.js?v=20260721-ownership-1',
     ],
     test: [
-        'CRM safe followup schedule model is valid.',
+        'CRM followup ownership and safe schedule model are valid.',
         "offerPlan.patch.status, 'КП отправлено'",
         "recalcPlan.patch.status, 'Нужно пересчитать'",
         'Pure model must not mutate the lead',
-        "buildFollowupPostponePlan({ id: 'closed', status: 'Отказ'",
+        "unassignedManager.key, 'unassigned'",
+        "unassignedDesigner.key, 'unavailable'",
+        "mineModel.key, 'mine'",
+        "otherModel.key, 'other'",
+        'buildOwnedFollowupPostponePlan',
     ],
     manual: [
         'Сохранение этапа',
@@ -90,6 +135,26 @@ checks = {
         'КП отправлено',
         'production-схема не нужна',
     ],
+    ownership_manual: [
+        '8 реально рабочих заявок',
+        'все 8 без ответственного',
+        'Конкурентный захват',
+        'Моя заявка',
+        'Чужая заявка',
+        'Роль без права самоназначения',
+        'assigned_to = текущий user id',
+        'Mobile 360–430 px',
+        'Production Supabase не изменять',
+    ],
+    ownership_staging: [
+        'first_assignment_succeeded = true',
+        'second_assignment_rows = 0',
+        'wrong_owner_postpone_rows = 0',
+        'stage_preserved = true',
+        'synthetic_rows = 0',
+        'КП отправлено',
+        'Production данные',
+    ],
 }
 
 for path, markers in checks.items():
@@ -101,11 +166,13 @@ for path, markers in checks.items():
         if marker.lower() not in text.lower():
             errors.append(f'Missing safe followup marker in {path.relative_to(root)}: {marker}')
 
-if model.exists():
-    text = model.read_text(encoding='utf-8')
+for pure_path in (model, assignment_model):
+    if not pure_path.exists():
+        continue
+    text = pure_path.read_text(encoding='utf-8')
     for forbidden in ['supabaseClient', ".from('", '.insert(', '.update(', '.delete(', '.upsert(', '.rpc(', 'fetch(', 'localStorage']:
         if forbidden in text:
-            errors.append(f'Followup schedule model must remain pure: {forbidden}')
+            errors.append(f'Followup ownership model must remain pure: {pure_path.relative_to(root)} contains {forbidden}')
 
 if followups.exists():
     text = followups.read_text(encoding='utf-8')
@@ -113,18 +180,27 @@ if followups.exists():
         "status: 'Ждём ответ'",
         'function nextDate(',
         "const CLOSED_STATUSES =",
+        '.delete(',
     ]:
         if forbidden in text:
-            errors.append(f'Followup UI must use the pure plan instead of legacy hardcoding: {forbidden}')
+            errors.append(f'Followup UI must use pure plans and non-destructive writes: {forbidden}')
     if ".from('leader_leads')" not in text or '.update(' not in text:
         errors.append('Existing classified followups.js must remain the write owner')
+    assignment_update = text.find('.update({ ...assignment.patch')
+    unassigned_guard = text.find(".is('assigned_to', null)", assignment_update)
+    postpone_update = text.find('.update({ ...plan.patch')
+    owner_guard = text.find(".eq('assigned_to', context.currentUserId)", postpone_update)
+    if assignment_update < 0 or unassigned_guard < assignment_update:
+        errors.append('Self-assignment update must be followed by assigned_to IS NULL compare-and-set')
+    if postpone_update < 0 or owner_guard < postpone_update:
+        errors.append('Followup postpone update must be followed by current-owner compare-and-set')
 
-production_candidates = list((root / 'supabase/migrations').glob('*followup*postpone*.sql'))
+production_candidates = list((root / 'supabase/migrations').glob('*followup*postpone*.sql')) + list((root / 'supabase/migrations').glob('*followup*ownership*.sql'))
 if production_candidates:
-    errors.append('Safe followup source change must not add a production migration: ' + ', '.join(path.name for path in production_candidates))
+    errors.append('Followup source change must not add a production migration: ' + ', '.join(path.name for path in production_candidates))
 
 if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('CRM safe followup postpone contract is valid.')
+print('CRM followup ownership, safe postpone, staging evidence and conditional write contract are valid.')
