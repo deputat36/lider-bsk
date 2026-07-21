@@ -49,8 +49,7 @@ Performance Advisor больше не показывает missing-FK-index пр
 - RLS включён;
 - browser policies отсутствуют;
 - `public`, `anon`, `authenticated` table privileges отсутствуют;
-- `service_role` имеет минимальные права;
-- production не изменялся.
+- `service_role` имеет минимальные права.
 
 ## Команда
 
@@ -91,3 +90,5 @@ Frontend switch остаётся заблокированным до user-JWT sm
 ## Граница
 
 В текущем цикле не выполнялись migration apply, Edge deploy, frontend switch, изменения рабочих данных, production RLS/grants, Auth, Storage, secrets и `nav_*`.
+
+Production не изменялся.
