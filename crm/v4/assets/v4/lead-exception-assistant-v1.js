@@ -1,4 +1,9 @@
-import { LEAD_EXCEPTION_SCENARIOS, buildLeadExceptionPlan } from './lead-exception-scenarios-v1.js';
+import {
+  LEAD_EXCEPTION_SCENARIOS,
+  buildLeadExceptionPlan,
+  leadExceptionContactDate
+} from './lead-exception-scenarios-v1.js';
+import './lead-exception-apply-v2.js';
 
 const GLOBAL_FLAG = '__leaderLeadExceptionAssistantV1';
 const STYLE_ID = 'leader-lead-exception-assistant-v1-style';
@@ -6,6 +11,10 @@ const HOST_ID = 'leadExceptionAssistant';
 const SELECT_ID = 'leadExceptionScenarioSelect';
 const PREVIEW_ID = 'leadExceptionPreview';
 const RESULT_ID = 'leadExceptionPrepareResult';
+
+let selectedKey = '';
+let activeLeadId = '';
+let applyState = { phase: 'idle', message: '', application: null };
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>\"]/g, (symbol) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[symbol]));
@@ -30,23 +39,19 @@ function ensureStyles() {
     .v4-lead-exception-comment{margin:0;padding:11px;border-left:4px solid #f59e0b;background:#fff7ed;color:#374151}
     .v4-lead-exception-consequence{margin:0;color:#7c2d12}
     .v4-lead-exception-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .v4-lead-exception-actions button{font-weight:900}
     .v4-lead-exception-result{font-weight:800;color:#92400e}
+    .v4-lead-exception-result.is-good{color:#166534}
+    .v4-lead-exception-result.is-error{color:#b91c1c}
+    .v4-lead-exception-result.is-partial{color:#9a3412}
     .v4-chip-button.is-recommended{outline:4px solid rgba(245,158,11,.24);border-color:#f59e0b!important;background:#fffbeb!important;color:#92400e!important}
-    @media(max-width:680px){.v4-lead-exception-preview dl{grid-template-columns:1fr}.v4-lead-exception-actions .v4-primary{width:100%}}
+    @media(max-width:680px){.v4-lead-exception-preview dl{grid-template-columns:1fr}.v4-lead-exception-actions{display:grid}.v4-lead-exception-actions button{width:100%}}
   `;
   document.head.appendChild(style);
 }
 
 function pad(value) {
   return String(value).padStart(2, '0');
-}
-
-function nextContactDate(rule, now = new Date()) {
-  if (!rule) return null;
-  const date = new Date(now.getTime());
-  date.setDate(date.getDate() + Number(rule.days || 0));
-  date.setHours(Number(rule.hour || 10), Number(rule.minute || 0), 0, 0);
-  return date;
 }
 
 function localInputValue(date) {
@@ -74,13 +79,15 @@ function assistantMarkup() {
   return `
     <summary>Ситуация изменилась</summary>
     <div class="v4-lead-exception-body">
-      <p>Помощник подготовит существующие поля карточки, но ничего не сохранит без вашего решения.</p>
+      <p>Проверьте предлагаемые изменения. CRM сохранит статус, следующий контакт и запись истории только после нажатия одной кнопки.</p>
       <label>Что произошло
         <select id="${SELECT_ID}">${optionsMarkup()}</select>
       </label>
       <div id="${PREVIEW_ID}" class="v4-lead-exception-preview is-empty">Выберите ситуацию, чтобы увидеть рекомендуемые действия и последствия.</div>
       <div class="v4-lead-exception-actions">
-        <button type="button" class="v4-primary" data-lead-exception-prepare disabled>Подготовить действия</button>
+        <button type="button" class="v4-primary" data-lead-exception-apply disabled>Применить изменения</button>
+        <button type="button" data-lead-exception-prepare disabled>Подготовить вручную</button>
+        <button type="button" data-lead-exception-retry-history hidden>Повторить запись в истории</button>
         <span id="${RESULT_ID}" class="v4-lead-exception-result" aria-live="polite"></span>
       </div>
     </div>`;
@@ -102,31 +109,64 @@ function ensureHost() {
 }
 
 function selectedPlan() {
-  return buildLeadExceptionPlan(document.getElementById(SELECT_ID)?.value || '');
+  return buildLeadExceptionPlan(selectedKey || document.getElementById(SELECT_ID)?.value || '');
+}
+
+function stateBusy() {
+  return ['applying', 'retrying'].includes(applyState.phase);
+}
+
+function renderActionState(plan) {
+  const applyButton = document.querySelector('[data-lead-exception-apply]');
+  const manualButton = document.querySelector('[data-lead-exception-prepare]');
+  const retryButton = document.querySelector('[data-lead-exception-retry-history]');
+  const result = document.getElementById(RESULT_ID);
+  const busy = stateBusy();
+
+  if (applyButton) {
+    applyButton.disabled = !plan || busy || ['success', 'partial'].includes(applyState.phase);
+    applyButton.textContent = applyState.phase === 'applying'
+      ? 'Сохраняю...'
+      : applyState.phase === 'success'
+        ? 'Изменения применены'
+        : 'Применить изменения';
+  }
+  if (manualButton) manualButton.disabled = !plan || busy;
+  if (retryButton) {
+    retryButton.hidden = applyState.phase !== 'partial';
+    retryButton.disabled = busy;
+    retryButton.textContent = applyState.phase === 'retrying' ? 'Повторяю запись...' : 'Повторить запись в истории';
+  }
+  if (result) {
+    result.textContent = applyState.message || '';
+    result.className = `v4-lead-exception-result${applyState.phase === 'success' ? ' is-good' : applyState.phase === 'partial' ? ' is-partial' : applyState.phase === 'error' ? ' is-error' : ''}`;
+  }
 }
 
 function renderPreview() {
+  const host = ensureHost();
   const preview = document.getElementById(PREVIEW_ID);
-  const button = document.querySelector('[data-lead-exception-prepare]');
-  const result = document.getElementById(RESULT_ID);
-  if (!preview || !button) return;
-  if (result) result.textContent = '';
+  const select = document.getElementById(SELECT_ID);
+  if (!host || !preview) return;
+  if (select && select.value !== selectedKey) select.value = selectedKey;
   const plan = selectedPlan();
-  button.disabled = !plan;
   if (!plan) {
     preview.className = 'v4-lead-exception-preview is-empty';
     preview.textContent = 'Выберите ситуацию, чтобы увидеть рекомендуемые действия и последствия.';
+    renderActionState(null);
     return;
   }
-  const contactDate = nextContactDate(plan.nextContact);
+  const contactDate = leadExceptionContactDate(plan.nextContact);
   preview.className = 'v4-lead-exception-preview';
   preview.innerHTML = `
     <dl>
-      <div><dt>Рекомендуемый статус</dt><dd>${esc(plan.status)}</dd></div>
+      <div><dt>Новый статус</dt><dd>${esc(plan.status)}</dd></div>
       <div><dt>Следующий контакт</dt><dd>${esc(formatDate(contactDate))}</dd></div>
     </dl>
     <p class="v4-lead-exception-comment">${esc(plan.comment)}</p>
-    <p class="v4-lead-exception-consequence"><b>Что важно:</b> ${esc(plan.consequence)}</p>`;
+    <p class="v4-lead-exception-consequence"><b>Что важно:</b> ${esc(plan.consequence)}</p>
+    <p class="v4-lead-exception-consequence">${esc(plan.saveNotice)}</p>`;
+  renderActionState(plan);
 }
 
 function clearRecommendedStatus() {
@@ -148,7 +188,7 @@ function recommendStatus(plan) {
 }
 
 function prepareNextContact(plan) {
-  const date = nextContactDate(plan.nextContact);
+  const date = leadExceptionContactDate(plan.nextContact);
   const input = document.getElementById('leadNextContactInput');
   const details = document.getElementById('leadNextContactDetails');
   if (!date || !input) return;
@@ -173,26 +213,70 @@ function prepareTimeline(plan, attempt = 0) {
 
 function prepareActions() {
   const plan = selectedPlan();
-  if (!plan) return;
+  if (!plan || stateBusy()) return;
   recommendStatus(plan);
   prepareNextContact(plan);
   prepareTimeline(plan);
-  const result = document.getElementById(RESULT_ID);
-  if (result) result.textContent = `${plan.saveNotice} Сохраните статус, дату контакта и запись в истории.`;
+  applyState = { phase: 'idle', message: 'Поля подготовлены. Сохраните статус, дату и комментарий обычными кнопками CRM.', application: null };
   document.dispatchEvent(new CustomEvent('leader-v4:lead-exception-prepared', { detail: { plan } }));
+  renderPreview();
   document.getElementById('leadOtherActions')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function requestApply() {
+  const plan = selectedPlan();
+  if (!plan || stateBusy()) return;
+  applyState = { phase: 'applying', message: 'Сохраняю статус, следующий контакт и историю...', application: null };
+  renderPreview();
+  document.dispatchEvent(new CustomEvent('leader-v4:lead-exception-apply-requested', { detail: { scenarioKey: plan.key } }));
+}
+
+function requestHistoryRetry() {
+  if (stateBusy() || !applyState.application) return;
+  applyState = { ...applyState, phase: 'retrying', message: 'Проверяю историю и повторяю только недостающую запись...' };
+  renderPreview();
+  document.dispatchEvent(new CustomEvent('leader-v4:lead-exception-history-retry-requested', { detail: { application: applyState.application } }));
+}
+
+function resetForLead(leadId) {
+  const id = String(leadId || '');
+  if (id === activeLeadId) return;
+  activeLeadId = id;
+  selectedKey = '';
+  applyState = { phase: 'idle', message: '', application: null };
+  clearRecommendedStatus();
 }
 
 function bindEvents() {
   document.addEventListener('change', (event) => {
-    if (event.target?.id === SELECT_ID) renderPreview();
+    if (event.target?.id !== SELECT_ID) return;
+    selectedKey = event.target.value || '';
+    applyState = { phase: 'idle', message: '', application: null };
+    clearRecommendedStatus();
+    renderPreview();
   });
   document.addEventListener('click', (event) => {
-    if (event.target?.closest('[data-lead-exception-prepare]')) prepareActions();
+    if (event.target?.closest('[data-lead-exception-apply]')) { requestApply(); return; }
+    if (event.target?.closest('[data-lead-exception-prepare]')) { prepareActions(); return; }
+    if (event.target?.closest('[data-lead-exception-retry-history]')) requestHistoryRetry();
   });
-  document.addEventListener('leader-v4:lead-card-rendered', () => {
+  document.addEventListener('leader-v4:lead-exception-apply-state', (event) => {
+    const detail = event.detail || {};
+    if (detail.scenarioKey && selectedKey && detail.scenarioKey !== selectedKey) return;
+    applyState = {
+      phase: detail.phase || 'idle',
+      message: detail.message || '',
+      application: detail.application || applyState.application || null
+    };
+    renderPreview();
+  });
+  document.addEventListener('leader-v4:lead-card-rendered', (event) => {
+    resetForLead(event.detail?.lead?.id || event.detail?.leadId || '');
     ensureHost();
     renderPreview();
+  });
+  document.addEventListener('leader-v4:route-change', (event) => {
+    if (!event.detail?.leadId) resetForLead('');
   });
 }
 

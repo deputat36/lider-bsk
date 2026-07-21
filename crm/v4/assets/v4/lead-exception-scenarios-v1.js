@@ -71,6 +71,15 @@ export function leadExceptionScenario(key) {
   return SCENARIO_BY_KEY[String(key || '')] || null;
 }
 
+export function leadExceptionContactDate(rule, now = new Date()) {
+  if (!rule) return null;
+  const source = now instanceof Date ? new Date(now.getTime()) : new Date(now);
+  if (!Number.isFinite(source.getTime())) return null;
+  source.setDate(source.getDate() + Number(rule.days || 0));
+  source.setHours(Number(rule.hour || 10), Number(rule.minute || 0), 0, 0);
+  return source;
+}
+
 export function buildLeadExceptionPlan(key) {
   const item = leadExceptionScenario(key);
   if (!item) return null;
@@ -82,6 +91,54 @@ export function buildLeadExceptionPlan(key) {
     comment: item.comment,
     nextContact: item.nextContact,
     consequence: item.consequence,
-    saveNotice: 'Данные ещё не сохранены. Проверьте подготовленные поля и сохраните их обычными кнопками CRM.'
+    saveNotice: 'Изменения ещё не сохранены. Кнопка применит статус, следующий контакт и запись истории одним действием.'
+  });
+}
+
+export function buildLeadExceptionApplication(key, lead = {}, now = new Date()) {
+  const plan = buildLeadExceptionPlan(key);
+  const leadId = String(lead?.id || '').trim();
+  if (!plan || !leadId) return null;
+  const contactDate = leadExceptionContactDate(plan.nextContact, now);
+  const oldStatus = String(lead?.status || 'Новая').trim() || 'Новая';
+  return Object.freeze({
+    scenarioKey: plan.key,
+    label: plan.label,
+    leadId,
+    leadPatch: Object.freeze({
+      status: plan.status,
+      next_contact_at: contactDate ? contactDate.toISOString() : null
+    }),
+    timelineEvent: Object.freeze({
+      eventType: plan.eventType,
+      body: plan.comment,
+      oldStatus,
+      newStatus: plan.status
+    }),
+    consequence: plan.consequence
+  });
+}
+
+export function leadExceptionApplyOutcome({ leadSaved = false, eventSaved = false, deduplicated = false } = {}) {
+  if (leadSaved && eventSaved) {
+    return Object.freeze({
+      phase: 'success',
+      retryHistory: false,
+      message: deduplicated
+        ? 'Изменения применены. Такая запись истории уже существовала и не была продублирована.'
+        : 'Изменения применены: статус, следующий контакт и история обновлены.'
+    });
+  }
+  if (leadSaved) {
+    return Object.freeze({
+      phase: 'partial',
+      retryHistory: true,
+      message: 'Статус и следующий контакт сохранены, но запись истории не подтверждена. Повторите только запись в истории.'
+    });
+  }
+  return Object.freeze({
+    phase: 'error',
+    retryHistory: false,
+    message: 'Изменения не сохранены. Проверьте соединение и повторите действие.'
   });
 }

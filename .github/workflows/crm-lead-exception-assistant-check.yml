@@ -6,20 +6,26 @@ on:
     paths:
       - 'crm/v4/assets/v4/lead-exception-scenarios-v1.js'
       - 'crm/v4/assets/v4/lead-exception-assistant-v1.js'
+      - 'crm/v4/assets/v4/lead-exception-apply-v2.js'
       - 'crm/v4/assets/v4/lead-timeline.js'
       - 'tools/test_lead_exception_scenarios.mjs'
       - 'tools/check_crm_lead_exception_assistant.py'
       - 'docs/CRM_LEAD_EXCEPTION_ASSISTANT_MANUAL_TEST_2026-07-20.md'
+      - 'docs/CRM_LEAD_EXCEPTION_ONE_ACTION_STAGING_2026-07-21.md'
+      - 'supabase/staging/20260721051000_staging_lead_exception_core.sql'
       - '.github/workflows/crm-lead-exception-assistant-check.yml'
   pull_request:
     branches: [main]
     paths:
       - 'crm/v4/assets/v4/lead-exception-scenarios-v1.js'
       - 'crm/v4/assets/v4/lead-exception-assistant-v1.js'
+      - 'crm/v4/assets/v4/lead-exception-apply-v2.js'
       - 'crm/v4/assets/v4/lead-timeline.js'
       - 'tools/test_lead_exception_scenarios.mjs'
       - 'tools/check_crm_lead_exception_assistant.py'
       - 'docs/CRM_LEAD_EXCEPTION_ASSISTANT_MANUAL_TEST_2026-07-20.md'
+      - 'docs/CRM_LEAD_EXCEPTION_ONE_ACTION_STAGING_2026-07-21.md'
+      - 'supabase/staging/20260721051000_staging_lead_exception_core.sql'
       - '.github/workflows/crm-lead-exception-assistant-check.yml'
 
 jobs:
@@ -33,6 +39,7 @@ jobs:
           set -euo pipefail
           node --check crm/v4/assets/v4/lead-exception-scenarios-v1.js
           node --check crm/v4/assets/v4/lead-exception-assistant-v1.js
+          node --check crm/v4/assets/v4/lead-exception-apply-v2.js
           node --check crm/v4/assets/v4/lead-timeline.js
           node --check tools/test_lead_exception_scenarios.mjs
           node tools/test_lead_exception_scenarios.mjs
