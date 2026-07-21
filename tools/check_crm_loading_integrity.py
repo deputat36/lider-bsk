@@ -60,7 +60,7 @@ required = {
     ],
     'html': [
         'lead-card.js?v=20260721-assignment-1',
-        'needs.js?v=20260717-load-integrity-1',
+        'needs.js?v=20260721-duplicates-1',
         'calculations-saved-tools-v2.js?v=20260717-load-integrity-1',
         'router.js?v=20260717-module-singleton-1',
         'leads.js?v=20260721-followup-1',
