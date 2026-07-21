@@ -10,11 +10,14 @@ PRODUCTION = 'ofewxuqfjhamgerwzull'
 
 FILES = {
     'migration': ROOT / 'supabase/staging-migrations/20260721_05_installation_schema_install.sql',
+    'rpc_migration': ROOT / 'supabase/staging-migrations/20260721_06_installation_job_update_rpc.sql',
     'acceptance': ROOT / 'supabase/staging-tests/20260721_installation_schema_acceptance.sql',
     'contract': ROOT / 'contracts/crm-staging-installation-schema-v1.json',
     'docs': ROOT / 'docs/SUPABASE_STAGING_INSTALLATION_SCHEMA_V1_2026-07-21.md',
     'workflow': ROOT / '.github/workflows/crm-staging-installation-schema-check.yml',
     'status_registry': ROOT / 'crm/v4/assets/v4/status-transitions-v1.js',
+    'edge': ROOT / 'supabase/staging-functions/leader-crm-installation/index.ts',
+    'edge_contract': ROOT / 'supabase/staging-functions/leader-crm-installation/contract.ts',
 }
 
 errors = []
@@ -41,6 +44,7 @@ require('migration', [
     "raise exception 'staging_environment_guard_failed'",
     'add column if not exists installation_address text',
     'add column if not exists installation_scheduled_at timestamptz',
+    'add column if not exists installation_completed_at timestamptz',
     'add column if not exists installer_name text',
     'add column if not exists installer_phone text',
     'create table if not exists public.leader_installation_jobs',
@@ -71,18 +75,44 @@ required_indexes = [
 ]
 require('migration', required_indexes)
 
-if PRODUCTION in texts['migration'] or PRODUCTION in texts['acceptance']:
-    errors.append('staging executable SQL must not contain production project ref')
+for executable in ('migration', 'rpc_migration', 'acceptance', 'edge', 'edge_contract'):
+    if PRODUCTION in texts[executable]:
+        errors.append(f'{executable}: production ref must not appear in staging executable source')
 
 lowered_migration = texts['migration'].lower()
 for forbidden in (
     'grant select on table public.leader_installation_jobs to authenticated',
     'grant update on table public.leader_installation_jobs to authenticated',
     'create policy',
-    'leader_update_installation_job_rpc',
 ):
     if forbidden in lowered_migration:
         errors.append(f'migration: forbidden scope expansion {forbidden!r}')
+
+require('rpc_migration', [
+    '-- STAGING ONLY.',
+    "project_ref = 'otulfnouybahfnsycxqn'",
+    "environment_name = 'staging'",
+    "repository = 'deputat36/lider-bsk'",
+    'installation_completed_at_missing',
+    'create or replace function leader_private.leader_installation_command_error',
+    'create or replace function leader_private.leader_installation_status_key',
+    'create or replace function leader_private.leader_installation_status_label',
+    'create or replace function leader_private.leader_installation_transition_allowed',
+    'create or replace function public.leader_update_installation_job_rpc',
+    "'installation_job.update'",
+    "'installation.write'",
+    'for update',
+    'pg_advisory_xact_lock',
+    'installation_completed_at = v_completed_at',
+    'insert into public.leader_installation_events',
+    'insert into leader_private.leader_command_receipts',
+    'update leader_private.leader_command_receipts',
+    'security invoker',
+    "set search_path = ''",
+    'revoke execute on function public.leader_update_installation_job_rpc(jsonb)',
+    'grant execute on function public.leader_update_installation_job_rpc(jsonb)',
+    'to service_role',
+])
 
 require('acceptance', [
     'begin;',
@@ -111,7 +141,7 @@ except json.JSONDecodeError as exc:
 if contract:
     expected = {
         'contract': 'crm-staging-installation-schema',
-        'version': 1,
+        'version': 2,
         'staging_project_ref': STAGING,
         'production_project_ref_read_only': PRODUCTION,
         'environment': 'staging',
@@ -120,27 +150,55 @@ if contract:
         if contract.get(key) != value:
             errors.append(f'contract: {key} must equal {value!r}')
 
-    baseline = contract.get('production_baseline', {}).get('tables', {})
+    deployment = contract.get('staging_deployment', {})
+    if deployment.get('state') != 'deployed_active_production_locked':
+        errors.append('contract: staging deployment state is not active/production-locked')
+    if deployment.get('migration_version') != '20260721191810':
+        errors.append('contract: unexpected installation migration version')
+    if deployment.get('migration_name') != 'staging_installation_job_update_rpc_20260721':
+        errors.append('contract: unexpected installation migration name')
+    if deployment.get('fixture_rows') != 0 or deployment.get('installation_command_receipts') != 0:
+        errors.append('contract: staging fixtures or installation receipts must be zero')
+
+    baseline = contract.get('production_baseline', {})
+    tables = baseline.get('tables', {})
     expected_columns = {
         'leader_installation_jobs': 30,
         'leader_installation_events': 9,
         'leader_installation_comments': 7,
     }
     for table, count in expected_columns.items():
-        if baseline.get(table, {}).get('columns') != count:
+        if tables.get(table, {}).get('columns') != count:
             errors.append(f'contract: {table} column count must equal {count}')
+    if 'installation_completed_at' not in baseline.get('order_columns', []):
+        errors.append('contract: production order columns must include installation_completed_at')
 
-    gap = contract.get('staging_gap_before_migration', {})
-    if sorted(gap.get('missing_tables', [])) != sorted(expected_columns):
-        errors.append('contract: missing_tables does not match audited staging gap')
+    historical_gap = contract.get('historical_staging_gap_before_deployment', {})
+    if sorted(historical_gap.get('missing_tables', [])) != sorted(expected_columns):
+        errors.append('contract: historical missing_tables does not match audited staging gap')
+    if 'installation_completed_at' not in historical_gap.get('missing_order_columns', []):
+        errors.append('contract: historical gap must include installation_completed_at')
 
     access = contract.get('staging_access_model', {})
     for key in ('browser_policies', 'public_privileges', 'anon_privileges', 'authenticated_privileges'):
         if access.get(key) is not False:
             errors.append(f'contract: {key} must be false')
 
+    functions = contract.get('staging_functions', {})
+    expected_fingerprints = {
+        'leader_installation_command_error': ('d263ee000b817642f549016be44d80de', 365),
+        'leader_installation_status_key': ('12243bd5d50a49a8bf7e281d715bba03', 894),
+        'leader_installation_status_label': ('3a1082636d166768f2b3334d76e1743d', 555),
+        'leader_installation_transition_allowed': ('2463ec1b87fa4cf46a04590ac7e97d60', 600),
+        'leader_update_installation_job_rpc': ('0ed4669197dac1f2695e763d0eec54e1', 19061),
+    }
+    for name, (md5, size) in expected_fingerprints.items():
+        item = functions.get(name, {})
+        if item.get('md5') != md5 or item.get('bytes') != size or item.get('service_role_only') is not True:
+            errors.append(f'contract: unexpected fingerprint or ACL evidence for {name}')
+
     not_in_scope = set(contract.get('not_in_scope', []))
-    for marker in ('leader_update_installation_job_rpc', 'installation Edge deploy', 'frontend switch', 'production migration', 'nav_*'):
+    for marker in ('frontend switch', 'production migration', 'nav_*'):
         if marker not in not_in_scope:
             errors.append(f'contract: missing not_in_scope marker {marker!r}')
 
@@ -155,15 +213,33 @@ require('status_registry', [
     "label: 'Отменён'",
 ])
 
+require('edge', [
+    'projectRefFromUrl(supabaseUrl) !== STAGING_PROJECT_REF',
+    'authenticatedUser(req, supabaseUrl, publicKey)',
+    'validateInstallationRequest(input)',
+    'canonicalPermission(',
+    '/rest/v1/rpc/leader_update_installation_job_rpc',
+])
+require('edge_contract', [
+    "INSTALLATION_EDGE_CONTRACT_VERSION = 'leader-crm-installation-edge-v1'",
+    "INSTALLATION_ACTION = 'installation_job.update'",
+    "INSTALLATION_PERMISSION = 'installation.write'",
+    "STAGING_PROJECT_REF = 'otulfnouybahfnsycxqn'",
+    "'expected_updated_at'",
+    "'idempotency_key'",
+])
+
 require('docs', [
-    'Staging installation schema v1',
+    'Staging installation schema v2',
     '`otulfnouybahfnsycxqn`',
     '`ofewxuqfjhamgerwzull`',
-    '`supabase/staging-migrations/20260721_05_installation_schema_install.sql`',
-    '`supabase/staging-tests/20260721_installation_schema_acceptance.sql`',
-    'не применялась',
+    '`20260721191810`',
+    '`staging_installation_job_update_rpc_20260721`',
+    '`installation_completed_at`',
+    '`leader_update_installation_job_rpc(jsonb)`',
+    '`leader-crm-installation v1`',
+    'новые миграции и Edge Functions не применялись',
     'Production не изменялся',
-    'leader_update_installation_job_rpc',
 ])
 
 require('workflow', [
@@ -184,4 +260,4 @@ if errors:
         print(f'- {error}', file=sys.stderr)
     raise SystemExit(1)
 
-print('Staging installation schema, grants, acceptance, status registry and production boundary are coherent.')
+print('Staging installation schema, deployed RPC/Edge prerequisites, grants and production boundary are coherent.')
