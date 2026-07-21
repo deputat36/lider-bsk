@@ -1,6 +1,6 @@
 {
   "contract": "crm-staging-installation-command-edge",
-  "version": 3,
+  "version": 4,
   "captured_at": "2026-07-21",
   "repository": "deputat36/lider-bsk",
   "project_ref": "otulfnouybahfnsycxqn",
@@ -24,13 +24,14 @@
     "compat_migration_version": "20260721195259",
     "compat_migration_name": "staging_installation_command_compat_20260721",
     "compat_source": "supabase/staging-migrations/20260721_07_installation_command_compat.sql",
+    "final_index_migration_version": "20260721200142",
+    "final_index_migration_name": "staging_installation_schema_indexes_reconcile_20260721",
+    "final_index_source": "supabase/staging-migrations/20260721_08_installation_items_order_index_candidate.sql",
+    "final_index_rollback": "supabase/staging-rollbacks/20260721_08_installation_items_order_index_rollback.sql",
     "schema_source": "supabase/staging-migrations/20260721_05_installation_schema_install.sql",
-    "schema_contract_version": 4,
+    "schema_contract_version": 5,
     "foreign_keys_aligned_with_production": true,
-    "schema_reconciliation_required": true,
-    "remaining_index": "leader_installation_job_items_order_id_idx",
-    "remaining_index_candidate": "supabase/staging-migrations/20260721_08_installation_items_order_index_candidate.sql",
-    "remaining_index_rollback": "supabase/staging-rollbacks/20260721_08_installation_items_order_index_rollback.sql"
+    "schema_reconciliation_required": false
   },
   "command": {
     "action": "installation_job.update",
@@ -84,26 +85,10 @@
     "service_role_execute": true
   },
   "rpc_fingerprints": {
-    "leader_installation_command_error": {
-      "schema": "leader_private",
-      "md5": "d263ee000b817642f549016be44d80de",
-      "bytes": 365
-    },
-    "leader_installation_status_key": {
-      "schema": "leader_private",
-      "md5": "12243bd5d50a49a8bf7e281d715bba03",
-      "bytes": 894
-    },
-    "leader_installation_status_label": {
-      "schema": "leader_private",
-      "md5": "3a1082636d166768f2b3334d76e1743d",
-      "bytes": 555
-    },
-    "leader_installation_transition_allowed": {
-      "schema": "leader_private",
-      "md5": "2463ec1b87fa4cf46a04590ac7e97d60",
-      "bytes": 600
-    },
+    "leader_installation_command_error": {"schema": "leader_private", "md5": "d263ee000b817642f549016be44d80de", "bytes": 365},
+    "leader_installation_status_key": {"schema": "leader_private", "md5": "12243bd5d50a49a8bf7e281d715bba03", "bytes": 894},
+    "leader_installation_status_label": {"schema": "leader_private", "md5": "3a1082636d166768f2b3334d76e1743d", "bytes": 555},
+    "leader_installation_transition_allowed": {"schema": "leader_private", "md5": "2463ec1b87fa4cf46a04590ac7e97d60", "bytes": 600},
     "leader_update_installation_job_rpc": {
       "schema": "public",
       "md5": "0ed4669197dac1f2695e763d0eec54e1",
@@ -123,24 +108,22 @@
     "browser_rpc_execute": false,
     "service_role_only": true,
     "security_advisors_new_error_or_warn": false,
-    "info_rls_no_policy_expected_closed_harness": true,
     "foreign_key_semantics_drift": [],
     "foreign_keys_aligned_with_production": true,
-    "present_covering_indexes": [
-      "leader_installation_events_order_id_idx"
-    ],
-    "missing_covering_indexes": [
-      "leader_installation_job_items_order_id_idx"
-    ]
+    "canonical_index_count": 9,
+    "missing_covering_indexes": [],
+    "post_reconcile_command_smoke": true,
+    "idempotent_replay": true
   },
   "readiness": {
     "edge_source_synced": true,
     "rpc_source_synced": true,
     "compat_source_synced": true,
+    "final_index_source_synced": true,
     "authorization_ready": true,
     "atomic_command_ready": true,
     "foreign_keys_ready": true,
-    "schema_reconciliation_ready": false,
+    "schema_reconciliation_ready": true,
     "user_jwt_smoke_completed": false,
     "frontend_switch_ready": false,
     "production_ready": false
@@ -152,15 +135,16 @@
     "target_write_path": "single_leader-crm-installation_edge_command"
   },
   "current_cycle": {
-    "new_database_migration_applied": false,
+    "new_database_migration_applied": true,
     "new_edge_deploy_performed": false,
-    "remaining_index_ddl_applied": false,
+    "remaining_index_ddl_applied": true,
     "working_data_changed": false,
-    "source_and_evidence_sync_only": true
+    "source_and_evidence_sync_only": false
   },
   "production_boundary": {
     "production_project_ref": "ofewxuqfjhamgerwzull",
-    "production_migration": false,
+    "production_rpc_exists": false,
+    "production_reconciliation_migrations": false,
     "production_edge_deploy": false,
     "production_frontend_switch": false,
     "production_data_changed": false,

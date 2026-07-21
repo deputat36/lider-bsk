@@ -1,6 +1,6 @@
 {
   "contract": "crm-staging-installation-schema",
-  "version": 4,
+  "version": 5,
   "source_audit_date": "2026-07-21",
   "repository": "deputat36/lider-bsk",
   "staging_project_ref": "otulfnouybahfnsycxqn",
@@ -9,7 +9,7 @@
   "canonical_schema_source": "supabase/staging-migrations/20260721_05_installation_schema_install.sql",
   "acceptance_source": "supabase/staging-tests/20260721_installation_schema_acceptance.sql",
   "staging_deployment": {
-    "state": "deployed_active_with_one_missing_index",
+    "state": "deployed_active_reconciled",
     "command_migration": {
       "version": "20260721191810",
       "name": "staging_installation_job_update_rpc_20260721",
@@ -20,10 +20,16 @@
       "name": "staging_installation_command_compat_20260721",
       "source": "supabase/staging-migrations/20260721_07_installation_command_compat.sql"
     },
+    "final_index_migration": {
+      "version": "20260721200142",
+      "name": "staging_installation_schema_indexes_reconcile_20260721",
+      "source": "supabase/staging-migrations/20260721_08_installation_items_order_index_candidate.sql",
+      "rollback": "supabase/staging-rollbacks/20260721_08_installation_items_order_index_rollback.sql"
+    },
     "tables_present": true,
     "order_columns_present": true,
     "foreign_keys_aligned_with_production": true,
-    "events_order_index_present": true,
+    "canonical_index_count": 9,
     "fixture_rows": {
       "leader_installation_jobs": 0,
       "leader_installation_job_items": 0,
@@ -36,7 +42,6 @@
     "tables": {
       "leader_installation_jobs": {
         "columns": 30,
-        "primary_key": "id",
         "foreign_keys": {
           "order_id": "leader_orders(id) ON DELETE SET NULL",
           "production_job_id": "leader_production_jobs(id) ON DELETE SET NULL"
@@ -50,7 +55,6 @@
       },
       "leader_installation_job_items": {
         "columns": 12,
-        "primary_key": "id",
         "foreign_keys": {
           "job_id": "leader_installation_jobs(id) ON DELETE CASCADE",
           "order_id": "leader_orders(id) ON DELETE SET NULL"
@@ -62,7 +66,6 @@
       },
       "leader_installation_events": {
         "columns": 9,
-        "primary_key": "id",
         "foreign_keys": {
           "job_id": "leader_installation_jobs(id) ON DELETE CASCADE",
           "order_id": "leader_orders(id) ON DELETE SET NULL"
@@ -74,13 +77,10 @@
       },
       "leader_installation_comments": {
         "columns": 7,
-        "primary_key": "id",
         "foreign_keys": {
           "job_id": "leader_installation_jobs(id) ON DELETE CASCADE"
         },
-        "indexes": [
-          "leader_installation_comments_job_idx"
-        ]
+        "indexes": ["leader_installation_comments_job_idx"]
       }
     },
     "order_columns": [
@@ -93,44 +93,19 @@
       "current_stage",
       "updated_at",
       "stage_updated_at"
-    ],
-    "triggers": [],
-    "production_installation_functions": []
-  },
-  "historical_staging_gap_before_deployment": {
-    "missing_tables": [
-      "leader_installation_jobs",
-      "leader_installation_job_items",
-      "leader_installation_events",
-      "leader_installation_comments"
-    ],
-    "missing_order_columns": [
-      "installation_address",
-      "installation_scheduled_at",
-      "installation_completed_at",
-      "installer_name",
-      "installer_phone"
-    ],
-    "existing_order_columns": [
-      "installation_status",
-      "current_stage",
-      "updated_at",
-      "stage_updated_at"
     ]
   },
   "deployed_staging_schema_drift": {
-    "reconciliation_required": true,
+    "reconciliation_required": false,
+    "reconciliation_completed": true,
     "foreign_keys": [],
     "foreign_keys_aligned_with_production": true,
-    "missing_covering_indexes": [
-      "leader_installation_job_items_order_id_idx"
-    ],
-    "present_covering_indexes": [
-      "leader_installation_events_order_id_idx"
-    ],
-    "remaining_index_candidate": "supabase/staging-migrations/20260721_08_installation_items_order_index_candidate.sql",
-    "remaining_index_rollback": "supabase/staging-rollbacks/20260721_08_installation_items_order_index_rollback.sql",
-    "current_cycle_ddl_applied": false
+    "missing_covering_indexes": [],
+    "canonical_index_count": 9,
+    "current_cycle_ddl_applied": true,
+    "post_reconcile_command_smoke": true,
+    "idempotent_replay": true,
+    "synthetic_cleanup_zero": true
   },
   "staging_access_model": {
     "rls_enabled": true,
@@ -138,34 +113,13 @@
     "public_privileges": false,
     "anon_privileges": false,
     "authenticated_privileges": false,
-    "service_role": {
-      "leader_installation_jobs": ["SELECT", "INSERT", "UPDATE"],
-      "leader_installation_job_items": ["SELECT", "INSERT"],
-      "leader_installation_events": ["SELECT", "INSERT"],
-      "leader_installation_comments": ["SELECT", "INSERT"]
-    }
+    "service_role_only": true
   },
   "staging_functions": {
-    "leader_installation_command_error": {
-      "md5": "d263ee000b817642f549016be44d80de",
-      "bytes": 365,
-      "service_role_only": true
-    },
-    "leader_installation_status_key": {
-      "md5": "12243bd5d50a49a8bf7e281d715bba03",
-      "bytes": 894,
-      "service_role_only": true
-    },
-    "leader_installation_status_label": {
-      "md5": "3a1082636d166768f2b3334d76e1743d",
-      "bytes": 555,
-      "service_role_only": true
-    },
-    "leader_installation_transition_allowed": {
-      "md5": "2463ec1b87fa4cf46a04590ac7e97d60",
-      "bytes": 600,
-      "service_role_only": true
-    },
+    "leader_installation_command_error": {"md5": "d263ee000b817642f549016be44d80de", "bytes": 365},
+    "leader_installation_status_key": {"md5": "12243bd5d50a49a8bf7e281d715bba03", "bytes": 894},
+    "leader_installation_status_label": {"md5": "3a1082636d166768f2b3334d76e1743d", "bytes": 555},
+    "leader_installation_transition_allowed": {"md5": "2463ec1b87fa4cf46a04590ac7e97d60", "bytes": 600},
     "leader_update_installation_job_rpc": {
       "md5": "0ed4669197dac1f2695e763d0eec54e1",
       "bytes": 19061,
@@ -174,40 +128,14 @@
       "empty_search_path": true
     }
   },
-  "status_registry": {
-    "source": "crm/v4/assets/v4/status-transitions-v1.js",
-    "domain": "installation",
-    "canonical": [
-      "Не назначен",
-      "Запланирован",
-      "Перенесён",
-      "В работе",
-      "Выполнен",
-      "Не требуется",
-      "Отменён"
-    ],
-    "legacy_aliases": {
-      "Нужно назначить": "Не назначен",
-      "Проблема": "Перенесён",
-      "Перенесен": "Перенесён",
-      "Завершён": "Выполнен",
-      "Завершен": "Выполнен",
-      "Отменен": "Отменён"
-    }
-  },
-  "acceptance_guards": {
-    "exact_staging_environment": true,
-    "synthetic_rows_only": true,
-    "transaction_rollback": true,
-    "foreign_keys_checked": true,
-    "cascade_checked": true,
-    "job_items_checked": true,
-    "browser_grants_closed": true,
-    "service_role_grants_checked": true
+  "advisors": {
+    "security_new_error_or_warn": false,
+    "missing_fk_index_advice": false,
+    "unused_index_info_expected_on_empty_tables": true
   },
   "not_in_scope": [
-    "remaining staging index DDL",
     "frontend switch",
+    "user JWT smoke",
     "production migration",
     "production data",
     "production RLS or grants",
