@@ -26,6 +26,7 @@ $guard$;
 alter table public.leader_orders
   add column if not exists installation_address text,
   add column if not exists installation_scheduled_at timestamptz,
+  add column if not exists installation_completed_at timestamptz,
   add column if not exists installer_name text,
   add column if not exists installer_phone text;
 
