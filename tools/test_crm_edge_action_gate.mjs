@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import {
   CRM_EDGE_ACTION_GATE_VERSION,
+  DESIGN_ACTION_PERMISSION,
   LEADS_ACTION_PERMISSION,
   ORDER_UPDATE_FIELD_PERMISSION,
+  designActionPlan,
   leadsActionPlan,
   orderActionPlan,
 } from '../supabase/staging-functions/_shared/crm-canonical-action-map-v1.js';
@@ -25,6 +27,9 @@ assert.deepEqual(ORDER_UPDATE_FIELD_PERMISSION, {
   layout_comment: 'orders.update',
   deadline: 'orders.update',
   payment_status: 'finance.write',
+});
+assert.deepEqual(DESIGN_ACTION_PERMISSION, {
+  'design_task.create_from_order': ['design.write'],
 });
 
 assert.deepEqual(leadsActionPlan({}, ''), {
@@ -94,10 +99,30 @@ assert.deepEqual(orderActionPlan({
 assert.deepEqual(orderActionPlan({ action: 'update' }).permissions, ['orders.update']);
 assert.equal(orderActionPlan({ action: 'remove' }).known, false);
 
+assert.deepEqual(designActionPlan({ action: 'design_task.create_from_order' }), {
+  action: 'design_task.create_from_order',
+  known: true,
+  bootstrap: false,
+  permissions: ['design.write'],
+});
+assert.deepEqual(designActionPlan({ action: 'design_task.read_everything' }), {
+  action: 'design_task.read_everything',
+  known: false,
+  bootstrap: false,
+  permissions: [],
+});
+assert.deepEqual(designActionPlan({}), {
+  action: '',
+  known: false,
+  bootstrap: false,
+  permissions: [],
+});
+
 for (const plan of [
   leadsActionPlan({ action: 'create' }),
   leadsActionPlan({ action: 'ensure_profile' }),
   orderActionPlan({ action: 'update', status: 'Готово' }),
+  designActionPlan({ action: 'design_task.create_from_order' }),
 ]) {
   assert.ok(Object.isFrozen(plan));
   assert.ok(Object.isFrozen(plan.permissions));
