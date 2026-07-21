@@ -5,13 +5,13 @@ import {
   leadStatusFilterOptions,
   leadStatusUiModel,
   rawLeadStatus
-} from './lead-status-ui-model-v1.js';
+} from './lead-status-ui-model-v1.js?v=20260721-followup-1';
 
 const STYLE_ID = 'leadStatusUiRegistryV1Styles';
 let syncScheduled = false;
 
 function esc(value) {
-  return String(value ?? '').replace(/[&<>\"]/g, (match) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[match]));
+  return String(value ?? '').replace(/[&<>"]/g, (match) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[match]));
 }
 
 function ensureStyles() {
