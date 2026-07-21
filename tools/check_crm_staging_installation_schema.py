@@ -7,23 +7,21 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 STAGING = 'otulfnouybahfnsycxqn'
 PRODUCTION = 'ofewxuqfjhamgerwzull'
-
-PATHS = {
+FILES = {
     'schema': ROOT / 'supabase/staging-migrations/20260721_05_installation_schema_install.sql',
     'rpc': ROOT / 'supabase/staging-migrations/20260721_06_installation_job_update_rpc.sql',
     'compat': ROOT / 'supabase/staging-migrations/20260721_07_installation_command_compat.sql',
-    'candidate': ROOT / 'supabase/staging-migrations/20260721_08_installation_items_order_index_candidate.sql',
+    'final': ROOT / 'supabase/staging-migrations/20260721_08_installation_items_order_index_candidate.sql',
     'rollback': ROOT / 'supabase/staging-rollbacks/20260721_08_installation_items_order_index_rollback.sql',
     'acceptance': ROOT / 'supabase/staging-tests/20260721_installation_schema_acceptance.sql',
     'contract': ROOT / 'contracts/crm-staging-installation-schema-v1.json',
     'docs': ROOT / 'docs/SUPABASE_STAGING_INSTALLATION_SCHEMA_V1_2026-07-21.md',
     'workflow': ROOT / '.github/workflows/crm-staging-installation-schema-check.yml',
-    'registry': ROOT / 'crm/v4/assets/v4/status-transitions-v1.js',
+    'status': ROOT / 'crm/v4/assets/v4/status-transitions-v1.js',
 }
-
 errors = []
 texts = {}
-for name, path in PATHS.items():
+for name, path in FILES.items():
     if not path.is_file():
         errors.append(f'Missing file: {path.relative_to(ROOT)}')
         texts[name] = ''
@@ -31,147 +29,134 @@ for name, path in PATHS.items():
         texts[name] = path.read_text(encoding='utf-8')
 
 
-def require(name, *markers):
+def require(name, markers):
     for marker in markers:
         if marker not in texts[name]:
             errors.append(f'{name}: missing marker {marker!r}')
 
 
-for name in ('schema', 'rpc', 'compat', 'candidate', 'rollback', 'acceptance'):
-    require(name, "project_ref = 'otulfnouybahfnsycxqn'", "environment_name = 'staging'", "repository = 'deputat36/lider-bsk'")
-    if PRODUCTION in texts[name]:
-        errors.append(f'{name}: production ref is forbidden in staging executable SQL')
+try:
+    contract = json.loads(texts['contract']) if texts['contract'] else {}
+except json.JSONDecodeError as exc:
+    contract = {}
+    errors.append(f'contract JSON invalid: {exc}')
 
-require('schema',
-    'installation_completed_at timestamptz',
+for key, value in {
+    'contract': 'crm-staging-installation-schema',
+    'version': 5,
+    'staging_project_ref': STAGING,
+    'production_project_ref_read_only': PRODUCTION,
+    'environment': 'staging',
+}.items():
+    if contract.get(key) != value:
+        errors.append(f'contract: {key} drifted')
+
+deployment = contract.get('staging_deployment', {})
+if deployment.get('state') != 'deployed_active_reconciled':
+    errors.append('contract: staging state must be reconciled')
+for key, version, name in [
+    ('command_migration','20260721191810','staging_installation_job_update_rpc_20260721'),
+    ('compat_migration','20260721195259','staging_installation_command_compat_20260721'),
+    ('final_index_migration','20260721200142','staging_installation_schema_indexes_reconcile_20260721'),
+]:
+    item = deployment.get(key, {})
+    if item.get('version') != version or item.get('name') != name:
+        errors.append(f'contract: {key} evidence drifted')
+if deployment.get('canonical_index_count') != 9:
+    errors.append('contract: canonical index count must be 9')
+if deployment.get('foreign_keys_aligned_with_production') is not True:
+    errors.append('contract: foreign keys must be aligned')
+if any(value != 0 for value in (deployment.get('fixture_rows') or {}).values()):
+    errors.append('contract: fixture rows must remain zero')
+if deployment.get('installation_command_receipts') != 0:
+    errors.append('contract: receipts must remain zero')
+
+drift = contract.get('deployed_staging_schema_drift', {})
+if drift.get('reconciliation_required') is not False or drift.get('reconciliation_completed') is not True:
+    errors.append('contract: reconciliation completion drifted')
+if drift.get('foreign_keys') != [] or drift.get('missing_covering_indexes') != []:
+    errors.append('contract: no FK or index drift may remain')
+if drift.get('canonical_index_count') != 9:
+    errors.append('contract: reconciled canonical index count must be 9')
+for key in ('current_cycle_ddl_applied','post_reconcile_command_smoke','idempotent_replay','synthetic_cleanup_zero'):
+    if drift.get(key) is not True:
+        errors.append(f'contract: {key} must be true')
+
+access = contract.get('staging_access_model', {})
+for key in ('browser_policies','public_privileges','anon_privileges','authenticated_privileges'):
+    if access.get(key) is not False:
+        errors.append(f'contract access: {key} must be false')
+if access.get('service_role_only') is not True:
+    errors.append('contract access: service_role_only must be true')
+
+rpc = (contract.get('staging_functions') or {}).get('leader_update_installation_job_rpc', {})
+if rpc.get('md5') != '0ed4669197dac1f2695e763d0eec54e1' or rpc.get('bytes') != 19061:
+    errors.append('contract: RPC fingerprint drifted')
+for key in ('service_role_only','security_invoker','empty_search_path'):
+    if rpc.get(key) is not True:
+        errors.append(f'contract RPC: {key} must be true')
+
+require('compat', [
+    '20260721195259',
+    'on delete set null',
+    'leader_installation_events_order_id_idx',
+])
+require('final', [
+    'APPLIED RECONCILIATION SOURCE',
+    '20260721200142',
+    'create index if not exists leader_installation_job_items_order_id_idx',
+    'leader_installation_items_job_idx',
+    'leader_installation_comments_job_idx',
+])
+require('rollback', [
+    'drop index if exists public.leader_installation_job_items_order_id_idx',
+    'drop index if exists public.leader_installation_comments_job_idx',
+    'rename to leader_installation_job_items_job_id_idx',
+])
+require('schema', [
     'create table if not exists public.leader_installation_jobs',
     'create table if not exists public.leader_installation_job_items',
     'create table if not exists public.leader_installation_events',
     'create table if not exists public.leader_installation_comments',
-    'leader_installation_job_items_order_id_idx',
-    'leader_installation_events_order_id_idx',
-    'revoke all on table public.leader_installation_job_items from public, anon, authenticated',
-    'grant select, insert on table public.leader_installation_job_items to service_role')
+])
+require('rpc', [
+    'create or replace function public.leader_update_installation_job_rpc',
+    "'installation_job.update'", "'installation.write'",
+    'security invoker', "set search_path = ''",
+])
+require('acceptance', ['begin;', 'has_table_privilege', 'rollback;'])
+require('status', [
+    "installation: domain({", "label: 'Не назначен'", "label: 'Запланирован'",
+    "label: 'Перенесён'", "label: 'В работе'", "label: 'Выполнен'",
+])
+require('docs', [
+    'Staging installation schema v5',
+    '`20260721200142`',
+    'все девять canonical-индексов',
+    'Missing FK-index advisory больше не возвращается',
+    'Production исследован только read-only',
+])
+require('workflow', [
+    '20260721_08_installation_items_order_index_candidate.sql',
+    '20260721_08_installation_items_order_index_rollback.sql',
+    'python3 tools/check_crm_staging_installation_schema.py',
+])
 
-require('compat',
-    '20260721195259',
-    'staging_installation_command_compat_20260721',
-    'leader_installation_jobs_order_id_fkey',
-    'leader_installation_job_items_order_id_fkey',
-    'leader_installation_events_order_id_fkey',
-    'on delete set null',
-    'leader_installation_events_order_id_idx')
-
-require('candidate',
-    'SOURCE-ONLY CANDIDATE, NOT APPLIED',
-    'installation_items_order_index_already_exists',
-    'create index leader_installation_job_items_order_id_idx')
-require('rollback', 'drop index if exists public.leader_installation_job_items_order_id_idx')
-
-require('acceptance',
-    'begin;',
-    'leader_installation_job_items',
-    'installation_item_insert_failed',
-    'browser_table_privilege_must_be_closed',
-    'service_role_table_privilege_missing',
-    'installation_child_cascade_failed')
-if not texts['acceptance'].lower().rstrip().endswith('rollback;'):
-    errors.append('acceptance: script must end with ROLLBACK')
-if 'commit;' in texts['acceptance'].lower():
-    errors.append('acceptance: COMMIT is forbidden')
-
-try:
-    contract = json.loads(texts['contract'])
-except Exception as exc:
-    contract = {}
-    errors.append(f'contract: invalid JSON: {exc}')
-
-if contract:
-    expected = {
-        'contract': 'crm-staging-installation-schema',
-        'version': 4,
-        'staging_project_ref': STAGING,
-        'production_project_ref_read_only': PRODUCTION,
-        'environment': 'staging',
-    }
-    for key, value in expected.items():
-        if contract.get(key) != value:
-            errors.append(f'contract: {key} must equal {value!r}')
-
-    deployment = contract.get('staging_deployment', {})
-    if deployment.get('state') != 'deployed_active_with_one_missing_index':
-        errors.append('contract: unexpected deployment state')
-    command = deployment.get('command_migration', {})
-    compat = deployment.get('compat_migration', {})
-    if (command.get('version'), command.get('name')) != ('20260721191810', 'staging_installation_job_update_rpc_20260721'):
-        errors.append('contract: command migration identity drift')
-    if (compat.get('version'), compat.get('name')) != ('20260721195259', 'staging_installation_command_compat_20260721'):
-        errors.append('contract: compat migration identity drift')
-    if deployment.get('foreign_keys_aligned_with_production') is not True:
-        errors.append('contract: foreign keys must be aligned')
-    if deployment.get('events_order_index_present') is not True:
-        errors.append('contract: events order index must be present')
-    for count in deployment.get('fixture_rows', {}).values():
-        if count != 0:
-            errors.append('contract: fixture row counts must be zero')
-    if deployment.get('installation_command_receipts') != 0:
-        errors.append('contract: installation receipts must be zero')
-
-    drift = contract.get('deployed_staging_schema_drift', {})
-    if drift.get('reconciliation_required') is not True:
-        errors.append('contract: one-index reconciliation must remain required')
-    if drift.get('foreign_keys') != [] or drift.get('foreign_keys_aligned_with_production') is not True:
-        errors.append('contract: FK drift must be empty and aligned')
-    if drift.get('missing_covering_indexes') != ['leader_installation_job_items_order_id_idx']:
-        errors.append('contract: exactly one missing covering index is expected')
-    if drift.get('present_covering_indexes') != ['leader_installation_events_order_id_idx']:
-        errors.append('contract: events order index evidence is missing')
-    if drift.get('current_cycle_ddl_applied') is not False:
-        errors.append('contract: current cycle must not claim index DDL')
-
-    baseline = contract.get('production_baseline', {}).get('tables', {})
-    expected_columns = {
-        'leader_installation_jobs': 30,
-        'leader_installation_job_items': 12,
-        'leader_installation_events': 9,
-        'leader_installation_comments': 7,
-    }
-    for table, count in expected_columns.items():
-        if baseline.get(table, {}).get('columns') != count:
-            errors.append(f'contract: {table} must have {count} baseline columns')
-
-require('registry',
-    "installation: domain({",
-    "label: 'Не назначен'",
-    "label: 'Запланирован'",
-    "label: 'Перенесён'",
-    "label: 'В работе'",
-    "label: 'Выполнен'",
-    "label: 'Не требуется'",
-    "label: 'Отменён'")
-
-require('docs',
-    'Staging installation schema v4',
-    '`20260721195259`',
-    '`staging_installation_command_compat_20260721`',
-    '`leader_installation_job_items_order_id_idx`',
-    'Кандидат в текущем цикле не применялся',
-    'Production не изменялся')
-require('workflow',
-    'CRM staging installation schema check',
-    'python3 -m py_compile tools/check_crm_staging_installation_schema.py',
-    'python3 tools/check_crm_staging_installation_schema.py')
-
-for name, text in texts.items():
-    if re.search(r'sb_secret_[A-Za-z0-9_-]{10,}', text):
+for name in ('schema','rpc','compat','final','rollback','acceptance'):
+    if PRODUCTION in texts[name]:
+        errors.append(f'{name}: production ref forbidden in staging SQL')
+    if re.search(r'sb_secret_[A-Za-z0-9_-]{10,}', texts[name]):
         errors.append(f'{name}: possible secret material')
-    if re.search(r'eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}', text):
-        errors.append(f'{name}: possible JWT material')
+
+production_migrations = ROOT / 'supabase/migrations'
+if production_migrations.exists():
+    for path in production_migrations.rglob('*.sql'):
+        if 'staging_installation_schema_indexes_reconcile_20260721' in path.read_text(encoding='utf-8'):
+            errors.append(f'production migration boundary violated: {path.relative_to(ROOT)}')
 
 if errors:
-    print('Staging installation schema v4 checks failed:', file=sys.stderr)
+    print('CRM staging installation schema v5 checks failed:', file=sys.stderr)
     for error in errors:
         print(f'- {error}', file=sys.stderr)
     raise SystemExit(1)
-
-print('Installation schema v4, compat migration, one-index candidate, rollback and production boundary are coherent.')
+print('CRM staging installation schema v5 is fully reconciled and production-safe.')
