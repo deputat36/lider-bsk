@@ -84,18 +84,18 @@ body{
   border-bottom-color:var(--v4-brand-line)!important;
 }
 
-.v4-primary,
-button.v4-primary,
-a.v4-primary{
+html body .v4-primary,
+html body button.v4-primary,
+html body a.v4-primary{
   background:linear-gradient(135deg,var(--v4-brand-orange),#ff8a2a)!important;
   color:#fff!important;
   border-color:var(--v4-brand-orange)!important;
   box-shadow:0 10px 24px rgba(255,106,0,.25)!important;
 }
 
-.v4-primary:hover,
-button.v4-primary:hover,
-a.v4-primary:hover{
+html body .v4-primary:hover,
+html body button.v4-primary:hover,
+html body a.v4-primary:hover{
   background:linear-gradient(135deg,var(--v4-brand-orange-hover),#ff7a18)!important;
   border-color:var(--v4-brand-orange-hover)!important;
   box-shadow:0 13px 28px rgba(255,106,0,.3)!important;
@@ -192,12 +192,12 @@ textarea:focus{
   border-color:#fecaca!important;
 }
 
-.v4-action-panel,
-.v4-needs-section,
-.v4-calculations-host .v4-subcard,
-.v4-calc-auto-box,
-.v4-offers-section,
-.v4-orders-section{
+html body .v4-action-panel,
+html body .v4-needs-section,
+html body .v4-calculations-host .v4-subcard,
+html body .v4-calc-auto-box,
+html body .v4-offers-section,
+html body .v4-orders-section{
   border-color:var(--v4-brand-orange-line)!important;
   background:linear-gradient(135deg,var(--v4-brand-orange-soft),#fff 72%)!important;
 }
