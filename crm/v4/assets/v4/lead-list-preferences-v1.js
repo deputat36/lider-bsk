@@ -50,6 +50,7 @@ export function describeLeadFilters(filters = {}) {
     const statusLabels = {
       Все: 'все',
       unassigned: 'без ответственного',
+      overdue_contact: 'просрочен контакт',
       no_phone: 'без телефона',
       no_next_contact: 'без следующего контакта',
       site: 'заявки с сайта',

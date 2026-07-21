@@ -1,6 +1,6 @@
 import './lead-analytics-summary-v1.js';
 import './lead-operational-quality-v1.js?v=20260718-deferred-1';
-import './lead-status-ui-registry-v1.js';
+import './lead-status-ui-registry-v1.js?v=20260721-followup-1';
 import './order-operational-quality-v1.js';
 import { v4State } from './state.js';
 import { deriveLeadAnalytics } from './lead-analytics-normalization.js';
@@ -9,7 +9,7 @@ const BADGE_CLASS = 'v4-lead-analytics-badge';
 const STYLE_ID = 'leadAnalyticsBadgesV1Styles';
 
 function esc(value) {
-  return String(value ?? '').replace(/[&<>\"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
+  return String(value ?? '').replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
 }
 
 function ensureStyles() {

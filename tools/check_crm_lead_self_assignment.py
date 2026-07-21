@@ -143,7 +143,7 @@ if production_sql_path.exists():
 if html.exists():
     text = html.read_text(encoding='utf-8')
     for marker in [
-        'leads.js?v=20260721-assignment-1',
+        'leads.js?v=20260721-followup-1',
         'lead-card.js?v=20260721-assignment-1',
     ]:
         if marker not in text:

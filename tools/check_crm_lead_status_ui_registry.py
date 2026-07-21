@@ -19,6 +19,7 @@ checks = {
         "from './lead-assignment-model-v1.js'",
         'LEAD_QUICK_FILTERS',
         "value: 'unassigned'",
+        "value: 'overdue_contact'",
         'rawLeadStatus',
         'leadStatusDefinitions',
         'unknownLeadStatuses',
@@ -45,7 +46,7 @@ checks = {
         "canTransitionStatus('lead'",
     ],
     adapter: [
-        "from './lead-status-ui-model-v1.js'",
+        "from './lead-status-ui-model-v1.js?v=20260721-followup-1'",
         'syncStatusFilter',
         'data-unknown-status="true"',
         'syncLeadListCards',
@@ -62,7 +63,7 @@ checks = {
         "canLeadStatusTransition(model.raw, 'Ждём ответ')",
     ],
     entry: [
-        "import './lead-status-ui-registry-v1.js';",
+        "import './lead-status-ui-registry-v1.js?v=20260721-followup-1';",
     ],
     card: [
         'leadPrimaryAction',
@@ -76,6 +77,7 @@ checks = {
     ],
     html: [
         'lead-card.js?v=20260721-assignment-1',
+        'lead-analytics-badges-v1.js?v=20260721-followup-1',
         'styles.css?v=20260717-primary-action-1',
     ],
     test: [

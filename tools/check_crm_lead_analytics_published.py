@@ -58,21 +58,24 @@ TARGETS = (
     ),
     Target(
         "lead list module",
-        f"{CANONICAL_BASE_URL}assets/v4/leads.js?v=20260721-assignment-1",
+        f"{CANONICAL_BASE_URL}assets/v4/leads.js?v=20260721-followup-1",
         "javascript",
         (
             "import { leadAnalyticsSearchText } from './lead-analytics-normalization.js';",
+            "import { isOverdueFollowupLead } from './followup-schedule-model-v1.js';",
             "function leadHaystack(lead)",
             "leadAnalyticsSearchText(lead)",
             "function filteredLeads()",
+            "overdue_contact",
         ),
     ),
     Target(
         "analytics badges module",
-        f"{CANONICAL_BASE_URL}assets/v4/lead-analytics-badges-v1.js?v=20260718-deferred-1",
+        f"{CANONICAL_BASE_URL}assets/v4/lead-analytics-badges-v1.js?v=20260721-followup-1",
         "javascript",
         (
             "import './lead-analytics-summary-v1.js';",
+            "import './lead-status-ui-registry-v1.js?v=20260721-followup-1';",
             "import { deriveLeadAnalytics } from './lead-analytics-normalization.js';",
             "card.dataset.analyticsBadges === '1'",
             "leader-v4:leads-loaded",

@@ -6,6 +6,7 @@ import { openLeadRoute } from './router.js';
 import { leadAnalyticsSearchText } from './lead-analytics-normalization.js';
 import { describeLeadFilters, loadLeadListPreferences, resetLeadListPreferences, saveLeadListPreferences, sortLeadRows } from './lead-list-preferences-v1.js';
 import { buildLeadSelfAssignment, leadResponsibilityState, leadTakeButtonModel } from './lead-assignment-model-v1.js';
+import { isOverdueFollowupLead } from './followup-schedule-model-v1.js';
 
 const LEAD_LIST_FIELDS = 'id,created_at,name,phone,source,service,message,status,next_contact_at,page_url,source_page_path,request_id,utm_source,utm_medium,utm_campaign,budget,estimated_amount,city,assigned_to,converted_order_id,converted_client_id';
 const CLOSED_STATUSES = ['Спам', 'Создан заказ', 'Отказ', 'Не отвечает', 'Дорого', 'Передумал'];
@@ -15,6 +16,7 @@ const STATUSES = ['Все', 'Новая', 'В работе', 'Уточнение
 const QUICK_FILTERS = [
   ['active', 'Активные в работе'],
   ['unassigned', 'Без ответственного'],
+  ['overdue_contact', 'Просрочен контакт'],
   ['no_phone', 'Без телефона'],
   ['no_next_contact', 'Без следующего контакта'],
   ['site', 'Заявки с сайта'],
@@ -79,10 +81,11 @@ function filteredLeads() {
     if (status === 'active' && !isActiveLead(lead)) return false;
     if (status === 'archive' && !ARCHIVE_STATUSES.has(leadStatus)) return false;
     if (status === 'unassigned' && (lead.assigned_to || !isActiveLead(lead))) return false;
+    if (status === 'overdue_contact' && !isOverdueFollowupLead(lead)) return false;
     if (status === 'no_phone' && (String(lead.phone || '').trim() || !isActiveLead(lead))) return false;
     if (status === 'no_next_contact' && (lead.next_contact_at || !isActiveLead(lead))) return false;
     if (status === 'site' && !isSiteLead(lead)) return false;
-    if (!['active', 'archive', 'unassigned', 'no_phone', 'no_next_contact', 'site', 'Все'].includes(status) && leadStatus !== status) return false;
+    if (!['active', 'archive', 'unassigned', 'overdue_contact', 'no_phone', 'no_next_contact', 'site', 'Все'].includes(status) && leadStatus !== status) return false;
     if (source !== 'Все' && (lead.source || 'Не указан') !== source) return false;
     if (query && !leadHaystack(lead).includes(query)) return false;
     return true;
@@ -118,6 +121,7 @@ function renderStats() {
   setText('v4StatWorkLeads', leads.filter((lead) => (lead.status || '') === 'В работе').length);
   setText('v4StatWaitingLeads', leads.filter((lead) => ['Ждём ответ', 'КП отправлено', 'Уточнение деталей'].includes(lead.status || '')).length);
   setText('v4StatUnassignedLeads', active.filter((lead) => !lead.assigned_to).length);
+  setText('v4StatOverdueContactLeads', active.filter((lead) => isOverdueFollowupLead(lead)).length);
   setText('v4StatNoPhoneLeads', active.filter((lead) => !String(lead.phone || '').trim()).length);
   setText('v4StatNoNextContactLeads', active.filter((lead) => !lead.next_contact_at).length);
 }
@@ -154,7 +158,7 @@ function statusClass(status) {
 function ensureLeadStatsExtras() {
   const stats = document.querySelector('.v4-lead-stats');
   if (!stats || document.getElementById('v4StatUnassignedLeads')) return;
-  stats.insertAdjacentHTML('beforeend', '<div><span>Без ответственного</span><b id="v4StatUnassignedLeads">0</b></div><div><span>Без телефона</span><b id="v4StatNoPhoneLeads">0</b></div><div><span>Без контакта</span><b id="v4StatNoNextContactLeads">0</b></div>');
+  stats.insertAdjacentHTML('beforeend', '<div><span>Без ответственного</span><b id="v4StatUnassignedLeads">0</b></div><div><span>Просрочен контакт</span><b id="v4StatOverdueContactLeads">0</b></div><div><span>Без телефона</span><b id="v4StatNoPhoneLeads">0</b></div><div><span>Без контакта</span><b id="v4StatNoNextContactLeads">0</b></div>');
 }
 
 function ensureInlineStyles() {
@@ -169,6 +173,7 @@ function renderLeadCard(lead) {
   const phone = phoneHref(lead.phone);
   const noPhone = !String(lead.phone || '').trim();
   const noNextContact = !lead.next_contact_at && isActiveLead(lead);
+  const overdueContact = isOverdueFollowupLead(lead);
   const siteLead = isSiteLead(lead);
   const responsibility = leadResponsibilityState(lead, assignmentContext());
   const takeButton = leadTakeButtonModel(lead, assignmentContext());
@@ -176,6 +181,7 @@ function renderLeadCard(lead) {
   const hints = [
     siteLead ? '<span class="v4-lead-inline-hint is-site">Сайт</span>' : '',
     `<span class="v4-lead-inline-hint ${responsibilityClass}">${esc(responsibility.label)}</span>`,
+    overdueContact ? '<span class="v4-lead-inline-hint is-danger">Контакт просрочен</span>' : '',
     noPhone ? '<span class="v4-lead-inline-hint is-danger">Нет телефона</span>' : '',
     noNextContact ? '<span class="v4-lead-inline-hint is-warn">Нет следующего контакта</span>' : ''
   ].filter(Boolean).join('');

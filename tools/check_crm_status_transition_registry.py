@@ -194,7 +194,7 @@ for path, markers in {
         'unknownLeadStatuses',
     ],
     lead_ui_adapter: [
-        "from './lead-status-ui-model-v1.js'",
+        "from './lead-status-ui-model-v1.js?v=20260721-followup-1'",
         'syncStatusFilter',
         'syncLeadCardStatusActions',
         'guardStatusClicks',
