@@ -1,0 +1,50 @@
+{
+  "contract": "crm-staging-production-command-edge",
+  "version": 1,
+  "project_ref": "otulfnouybahfnsycxqn",
+  "environment": "staging",
+  "edge": {
+    "slug": "leader-crm-production",
+    "deployment_state": "source_only_not_deployed",
+    "verify_jwt_required": true,
+    "action": "production_job.update",
+    "permissions": [
+      "production.write"
+    ],
+    "conditional_permissions": {
+      "internal_comment": "orders.update"
+    },
+    "business_rpc": "leader_update_production_job_rpc",
+    "permission_rpc": "leader_actor_has_crm_action_rpc"
+  },
+  "rpc_baseline": {
+    "identity": "leader_update_production_job_rpc(jsonb)",
+    "function_md5": "53380fb1798f4e4ab25c7d9b98ae2562",
+    "function_bytes": 15485,
+    "security_definer": false,
+    "search_path": "",
+    "execute": {
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    }
+  },
+  "execution_order": [
+    "validate_environment",
+    "authenticate_user",
+    "validate_request",
+    "check_canonical_permissions",
+    "execute_transactional_rpc"
+  ],
+  "transactional_targets": [
+    "leader_production_jobs",
+    "leader_orders",
+    "leader_production_events",
+    "leader_command_receipts"
+  ],
+  "idempotency_required": true,
+  "optimistic_concurrency_required": true,
+  "browser_role_parameter": false,
+  "frontend_switch": "not_performed",
+  "production_deployment": "not_performed_requires_explicit_approval"
+}

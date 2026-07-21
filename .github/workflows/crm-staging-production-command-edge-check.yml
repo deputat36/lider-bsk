@@ -1,0 +1,34 @@
+name: CRM staging production command Edge check
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/staging-functions/leader-crm-production/**'
+      - 'contracts/crm-staging-production-command-edge-v1.json'
+      - 'docs/SUPABASE_STAGING_PRODUCTION_COMMAND_EDGE_V1_2026-07-21.md'
+      - 'tools/check_crm_staging_production_command_edge.py'
+      - 'crm/v4/assets/v4/production-job-card-v2.js'
+      - '.github/workflows/crm-staging-production-command-edge-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/staging-functions/leader-crm-production/**'
+      - 'contracts/crm-staging-production-command-edge-v1.json'
+      - 'docs/SUPABASE_STAGING_PRODUCTION_COMMAND_EDGE_V1_2026-07-21.md'
+      - 'tools/check_crm_staging_production_command_edge.py'
+      - 'crm/v4/assets/v4/production-job-card-v2.js'
+      - '.github/workflows/crm-staging-production-command-edge-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile checker
+        run: python3 -m py_compile tools/check_crm_staging_production_command_edge.py
+      - name: Validate source-only production command contract
+        run: python3 tools/check_crm_staging_production_command_edge.py
