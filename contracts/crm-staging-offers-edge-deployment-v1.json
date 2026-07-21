@@ -5,10 +5,10 @@
   "environment": "staging",
   "function": {
     "slug": "leader-crm-offers",
-    "version": 4,
+    "version": 5,
     "status": "ACTIVE",
     "verify_jwt": true,
-    "sha256": "25b2ff8b11ede3351f95c8f29315b5e43230e5cea153526f75039dc8ff99455e"
+    "sha256": "b20ffa860121826b265bc01bda3757277573a2e87a2604c0c4764bf4add627a7"
   },
   "action": "offer.create_from_calculation",
   "permission": "offers.write",
@@ -24,5 +24,11 @@
   "browser_role_parameter": false,
   "idempotency_required": true,
   "optimistic_concurrency_required": true,
+  "typed_headers": true,
+  "previous_version": {
+    "version": 4,
+    "sha256": "25b2ff8b11ede3351f95c8f29315b5e43230e5cea153526f75039dc8ff99455e",
+    "valid_rollback": true
+  },
   "production_deployment": "not_performed_requires_explicit_approval"
 }
