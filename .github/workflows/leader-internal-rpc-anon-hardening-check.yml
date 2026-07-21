@@ -1,0 +1,28 @@
+name: Leader internal RPC anon hardening check
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20260721123000_revoke_anon_execute_leader_internal_rpcs.sql'
+      - 'docs/ROLLBACK_REVOKE_ANON_LEADER_INTERNAL_RPCS_2026-07-21.sql'
+      - 'docs/LEADER_INTERNAL_RPC_ANON_HARDENING_2026-07-21.md'
+      - 'tools/check_leader_internal_rpc_anon_hardening.py'
+      - '.github/workflows/leader-internal-rpc-anon-hardening-check.yml'
+  push:
+    branches:
+      - main
+      - security/revoke-anon-leader-internal-rpcs
+    paths:
+      - 'supabase/migrations/20260721123000_revoke_anon_execute_leader_internal_rpcs.sql'
+      - 'docs/ROLLBACK_REVOKE_ANON_LEADER_INTERNAL_RPCS_2026-07-21.sql'
+      - 'docs/LEADER_INTERNAL_RPC_ANON_HARDENING_2026-07-21.md'
+      - 'tools/check_leader_internal_rpc_anon_hardening.py'
+      - '.github/workflows/leader-internal-rpc-anon-hardening-check.yml'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate anonymous RPC hardening contract
+        run: python3 tools/check_leader_internal_rpc_anon_hardening.py
