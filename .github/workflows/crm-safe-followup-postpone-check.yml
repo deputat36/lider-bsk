@@ -45,10 +45,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate safe followup postpone
-        shell: bash
+      - name: Syntax checks
         run: |
-          set -euo pipefail
           node --check crm/v4/assets/v4/followup-schedule-model-v1.js
           node --check crm/v4/assets/v4/followups.js
           node --check crm/v4/assets/v4/leads.js
@@ -57,8 +55,13 @@ jobs:
           node --check crm/v4/assets/v4/lead-analytics-badges-v1.js
           node --check crm/v4/assets/v4/lead-list-preferences-v1.js
           node --check tools/test_crm_followup_schedule.mjs
-          node tools/test_crm_followup_schedule.mjs
-          python3 tools/check_crm_safe_followup_postpone.py
-          python3 tools/check_crm_loading_integrity.py
-          python3 tools/check_crm_lead_status_ui_registry.py
-          python3 tools/check_crm_lead_self_assignment.py
+      - name: Pure model tests
+        run: node tools/test_crm_followup_schedule.mjs
+      - name: Safe followup source contract
+        run: python3 tools/check_crm_safe_followup_postpone.py
+      - name: Loading integrity contract
+        run: python3 tools/check_crm_loading_integrity.py
+      - name: Status registry contract
+        run: python3 tools/check_crm_lead_status_ui_registry.py
+      - name: Assignment regression contract
+        run: python3 tools/check_crm_lead_self_assignment.py
