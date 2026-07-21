@@ -1,13 +1,22 @@
 {
   "contract": "crm-staging-installation-schema",
-  "version": 1,
+  "version": 2,
   "source_audit_date": "2026-07-21",
   "repository": "deputat36/lider-bsk",
   "staging_project_ref": "otulfnouybahfnsycxqn",
   "production_project_ref_read_only": "ofewxuqfjhamgerwzull",
   "environment": "staging",
-  "migration": "supabase/staging-migrations/20260721_05_installation_schema_install.sql",
-  "acceptance": "supabase/staging-tests/20260721_installation_schema_acceptance.sql",
+  "canonical_schema_source": "supabase/staging-migrations/20260721_05_installation_schema_install.sql",
+  "acceptance_source": "supabase/staging-tests/20260721_installation_schema_acceptance.sql",
+  "staging_deployment": {
+    "state": "deployed_active_production_locked",
+    "migration_version": "20260721191810",
+    "migration_name": "staging_installation_job_update_rpc_20260721",
+    "tables_present": true,
+    "order_columns_present": true,
+    "fixture_rows": 0,
+    "installation_command_receipts": 0
+  },
   "production_baseline": {
     "tables": {
       "leader_installation_jobs": {
@@ -51,6 +60,7 @@
       "installation_status",
       "installation_address",
       "installation_scheduled_at",
+      "installation_completed_at",
       "installer_name",
       "installer_phone",
       "current_stage",
@@ -58,9 +68,9 @@
       "stage_updated_at"
     ],
     "triggers": [],
-    "installation_functions": []
+    "production_installation_functions": []
   },
-  "staging_gap_before_migration": {
+  "historical_staging_gap_before_deployment": {
     "missing_tables": [
       "leader_installation_jobs",
       "leader_installation_events",
@@ -69,6 +79,7 @@
     "missing_order_columns": [
       "installation_address",
       "installation_scheduled_at",
+      "installation_completed_at",
       "installer_name",
       "installer_phone"
     ],
@@ -89,6 +100,35 @@
       "leader_installation_jobs": ["SELECT", "INSERT", "UPDATE"],
       "leader_installation_events": ["SELECT", "INSERT"],
       "leader_installation_comments": ["SELECT", "INSERT"]
+    }
+  },
+  "staging_functions": {
+    "leader_installation_command_error": {
+      "md5": "d263ee000b817642f549016be44d80de",
+      "bytes": 365,
+      "service_role_only": true
+    },
+    "leader_installation_status_key": {
+      "md5": "12243bd5d50a49a8bf7e281d715bba03",
+      "bytes": 894,
+      "service_role_only": true
+    },
+    "leader_installation_status_label": {
+      "md5": "3a1082636d166768f2b3334d76e1743d",
+      "bytes": 555,
+      "service_role_only": true
+    },
+    "leader_installation_transition_allowed": {
+      "md5": "2463ec1b87fa4cf46a04590ac7e97d60",
+      "bytes": 600,
+      "service_role_only": true
+    },
+    "leader_update_installation_job_rpc": {
+      "md5": "0ed4669197dac1f2695e763d0eec54e1",
+      "bytes": 19061,
+      "service_role_only": true,
+      "security_invoker": true,
+      "empty_search_path": true
     }
   },
   "status_registry": {
@@ -122,8 +162,6 @@
     "service_role_grants_checked": true
   },
   "not_in_scope": [
-    "leader_update_installation_job_rpc",
-    "installation Edge deploy",
     "frontend switch",
     "production migration",
     "production data",
