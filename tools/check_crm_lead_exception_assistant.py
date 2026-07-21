@@ -5,6 +5,7 @@ import sys
 root = Path(__file__).resolve().parents[1]
 model = (root / 'crm/v4/assets/v4/lead-exception-scenarios-v1.js').read_text(encoding='utf-8')
 assistant = (root / 'crm/v4/assets/v4/lead-exception-assistant-v1.js').read_text(encoding='utf-8')
+controller = (root / 'crm/v4/assets/v4/lead-exception-apply-v2.js').read_text(encoding='utf-8')
 timeline = (root / 'crm/v4/assets/v4/lead-timeline.js').read_text(encoding='utf-8')
 manual = (root / 'docs/CRM_LEAD_EXCEPTION_ASSISTANT_MANUAL_TEST_2026-07-20.md').read_text(encoding='utf-8')
 
@@ -18,7 +19,9 @@ for marker in [
     'too_expensive',
     'deadline_shift',
     'buildLeadExceptionPlan',
-    'Данные ещё не сохранены',
+    'buildLeadExceptionApplication',
+    'leadExceptionApplyOutcome',
+    'одним действием',
 ]:
     if marker not in model:
         errors.append('Missing exception model marker: ' + marker)
@@ -30,20 +33,39 @@ for source_name, source in [('model', model), ('assistant', assistant)]:
 
 for marker in [
     'Ситуация изменилась',
+    'data-lead-exception-apply',
+    'Применить изменения',
     'data-lead-exception-prepare',
-    'leadNextContactInput',
-    'leadTimelineType',
-    'leadTimelineBody',
-    'is-recommended',
-    'leader-v4:lead-exception-prepared',
-    'Сохраните статус, дату контакта и запись в истории',
+    'Подготовить вручную',
+    'data-lead-exception-retry-history',
+    'leader-v4:lead-exception-apply-requested',
+    'leader-v4:lead-exception-history-retry-requested',
+    'leader-v4:lead-exception-apply-state',
+    'partial',
 ]:
     if marker not in assistant:
         errors.append('Missing assistant marker: ' + marker)
 
 for forbidden in ['.click()', '.submit()', 'requestSubmit()', 'leaderAddLeadEvent(']:
     if forbidden in assistant:
-        errors.append('Assistant must prepare existing controls without automatic save: ' + forbidden)
+        errors.append('Assistant UI must not bypass the dedicated apply controller: ' + forbidden)
+
+for marker in [
+    ".from('leader_leads')",
+    ".from('leader_lead_events')",
+    "window.leaderAddLeadEvent",
+    'if (busy) return',
+    'DEDUPE_WINDOW_MS',
+    'checkDuplicate: true',
+    'leader-v4:route-change',
+    'leadExceptionApplyOutcome',
+]:
+    if marker not in controller:
+        errors.append('Missing apply controller marker: ' + marker)
+
+for forbidden in ['.insert(', '.delete(', '.upsert(', '.rpc(', 'service_role']:
+    if forbidden in controller:
+        errors.append('Apply controller uses a forbidden write path: ' + forbidden)
 
 if "import './lead-exception-assistant-v1.js?v=20260720-1';" not in timeline:
     errors.append('Lead timeline must load the exception assistant with the canonical cache marker')
@@ -51,8 +73,11 @@ if "import './lead-exception-assistant-v1.js?v=20260720-1';" not in timeline:
 for marker in [
     'Desktop',
     'Mobile',
-    'Без автоматического сохранения',
-    'Повторное открытие карточки',
+    'Одно действие',
+    'Частичный результат',
+    'Повтор только истории',
+    'Двойной клик',
+    'Ручной запасной путь',
     'Production boundary',
 ]:
     if marker not in manual:
@@ -62,4 +87,4 @@ if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('CRM lead exception assistant contract is valid.')
+print('CRM lead exception assistant one-action contract is valid.')
