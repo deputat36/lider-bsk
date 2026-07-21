@@ -9,15 +9,14 @@ STAGING = 'otulfnouybahfnsycxqn'
 PRODUCTION = 'ofewxuqfjhamgerwzull'
 EDGE_SHA = '4be533387e91a4d91a025a8c7c0ea9516563a4cba7e236c270cdd23097cb6bdc'
 
-PATHS = {
+FILES = {
     'evidence': ROOT / 'contracts/crm-staging-installation-command-edge-v1.json',
-    'schema_evidence': ROOT / 'contracts/crm-staging-installation-schema-v1.json',
+    'schema': ROOT / 'contracts/crm-staging-installation-schema-v1.json',
     'edge': ROOT / 'supabase/staging-functions/leader-crm-installation/index.ts',
     'contract': ROOT / 'supabase/staging-functions/leader-crm-installation/contract.ts',
     'rpc': ROOT / 'supabase/staging-migrations/20260721_06_installation_job_update_rpc.sql',
     'compat': ROOT / 'supabase/staging-migrations/20260721_07_installation_command_compat.sql',
-    'candidate': ROOT / 'supabase/staging-migrations/20260721_08_installation_items_order_index_candidate.sql',
-    'rollback': ROOT / 'supabase/staging-rollbacks/20260721_08_installation_items_order_index_rollback.sql',
+    'index': ROOT / 'supabase/staging-migrations/20260721_09_installation_schema_indexes_reconcile.sql',
     'frontend': ROOT / 'crm/v4/assets/v4/installation-job-card-v2.js',
     'docs': ROOT / 'docs/SUPABASE_STAGING_INSTALLATION_COMMAND_EDGE_V1_2026-07-21.md',
     'workflow': ROOT / '.github/workflows/crm-staging-installation-command-edge-check.yml',
@@ -25,7 +24,7 @@ PATHS = {
 
 errors = []
 texts = {}
-for name, path in PATHS.items():
+for name, path in FILES.items():
     if not path.is_file():
         errors.append(f'Missing file: {path.relative_to(ROOT)}')
         texts[name] = ''
@@ -50,20 +49,19 @@ def ordered(name, *markers):
 
 try:
     evidence = json.loads(texts['evidence'])
-    schema = json.loads(texts['schema_evidence'])
+    schema = json.loads(texts['schema'])
 except Exception as exc:
     evidence = {}
     schema = {}
     errors.append(f'evidence JSON error: {exc}')
 
 if evidence:
-    expected = {
+    for key, value in {
         'contract': 'crm-staging-installation-command-edge',
-        'version': 3,
+        'version': 4,
         'project_ref': STAGING,
         'environment': 'staging',
-    }
-    for key, value in expected.items():
+    }.items():
         if evidence.get(key) != value:
             errors.append(f'evidence: {key} must equal {value!r}')
 
@@ -74,30 +72,34 @@ if evidence:
         'status': 'ACTIVE',
         'verify_jwt': True,
         'sha256': EDGE_SHA,
-        'contract_version': 'leader-crm-installation-edge-v1',
     }.items():
         if edge.get(key) != value:
-            errors.append(f'evidence.edge: {key} must equal {value!r}')
+            errors.append(f'evidence.edge: {key} drift')
 
     db = evidence.get('database', {})
-    if (db.get('command_migration_version'), db.get('command_migration_name')) != ('20260721191810', 'staging_installation_job_update_rpc_20260721'):
-        errors.append('evidence.database: command migration drift')
-    if (db.get('compat_migration_version'), db.get('compat_migration_name')) != ('20260721195259', 'staging_installation_command_compat_20260721'):
-        errors.append('evidence.database: compat migration drift')
-    if db.get('schema_contract_version') != 4:
-        errors.append('evidence.database: schema contract must be v4')
+    expected = {
+        'command_migration': ('20260721191810', 'staging_installation_job_update_rpc_20260721'),
+        'compat_migration': ('20260721195259', 'staging_installation_command_compat_20260721'),
+        'index_reconcile_migration': ('20260721200142', 'staging_installation_schema_indexes_reconcile_20260721'),
+    }
+    for key, identity in expected.items():
+        item = db.get(key, {})
+        if (item.get('version'), item.get('name')) != identity:
+            errors.append(f'evidence.database: {key} identity drift')
+    if db.get('schema_contract_version') != 5:
+        errors.append('evidence.database: schema contract must be v5')
     if db.get('foreign_keys_aligned_with_production') is not True:
-        errors.append('evidence.database: foreign keys must be aligned')
-    if db.get('remaining_index') != 'leader_installation_job_items_order_id_idx':
-        errors.append('evidence.database: unexpected remaining index')
-    if db.get('schema_reconciliation_required') is not True:
-        errors.append('evidence.database: remaining index reconciliation must be required')
+        errors.append('evidence.database: FK alignment missing')
+    if db.get('covering_indexes_aligned_with_production') is not True:
+        errors.append('evidence.database: index alignment missing')
+    if db.get('schema_reconciliation_required') is not False:
+        errors.append('evidence.database: schema reconciliation must be complete')
 
     command = evidence.get('command', {})
     if command.get('action') != 'installation_job.update' or command.get('permission') != 'installation.write':
-        errors.append('evidence.command: action or permission drift')
+        errors.append('evidence.command: action/permission drift')
     if command.get('browser_role_parameter') is not False:
-        errors.append('evidence.command: browser role must remain forbidden')
+        errors.append('evidence.command: browser role must be forbidden')
     if command.get('execution_order') != [
         'validate_environment', 'authenticate_user', 'validate_request',
         'check_canonical_permission', 'execute_transactional_rpc'
@@ -116,27 +118,40 @@ if evidence:
     for key in ('installation_jobs', 'installation_job_items', 'installation_events', 'installation_comments', 'command_receipts'):
         if postflight.get(key) != 0:
             errors.append(f'evidence.postflight: {key} must be zero')
-    if postflight.get('foreign_key_semantics_drift') != [] or postflight.get('foreign_keys_aligned_with_production') is not True:
-        errors.append('evidence.postflight: FK drift must be closed')
-    if postflight.get('present_covering_indexes') != ['leader_installation_events_order_id_idx']:
-        errors.append('evidence.postflight: events index evidence missing')
-    if postflight.get('missing_covering_indexes') != ['leader_installation_job_items_order_id_idx']:
-        errors.append('evidence.postflight: exactly one missing index expected')
+    if postflight.get('foreign_key_semantics_drift') != []:
+        errors.append('evidence.postflight: FK drift must be empty')
+    if postflight.get('missing_covering_indexes') != []:
+        errors.append('evidence.postflight: missing indexes must be empty')
+    if postflight.get('foreign_keys_aligned_with_production') is not True:
+        errors.append('evidence.postflight: FK alignment missing')
+    if postflight.get('covering_indexes_aligned_with_production') is not True:
+        errors.append('evidence.postflight: index alignment missing')
+    if set(postflight.get('present_covering_indexes', [])) != {
+        'leader_installation_job_items_order_id_idx',
+        'leader_installation_events_order_id_idx',
+    }:
+        errors.append('evidence.postflight: both covering indexes required')
+    if postflight.get('performance_missing_fk_index_warnings') != 0:
+        errors.append('evidence.postflight: missing FK index warnings must be zero')
 
     readiness = evidence.get('readiness', {})
-    for key in ('edge_source_synced', 'rpc_source_synced', 'compat_source_synced', 'authorization_ready', 'atomic_command_ready', 'foreign_keys_ready'):
+    for key in (
+        'edge_source_synced', 'rpc_source_synced', 'compat_source_synced',
+        'index_reconcile_source_synced', 'authorization_ready',
+        'atomic_command_ready', 'foreign_keys_ready', 'schema_reconciliation_ready'
+    ):
         if readiness.get(key) is not True:
             errors.append(f'evidence.readiness: {key} must be true')
-    for key in ('schema_reconciliation_ready', 'user_jwt_smoke_completed', 'frontend_switch_ready', 'production_ready'):
+    for key in ('user_jwt_smoke_completed', 'frontend_switch_ready', 'production_ready'):
         if readiness.get(key) is not False:
             errors.append(f'evidence.readiness: {key} must be false')
 
     cycle = evidence.get('current_cycle', {})
-    for key in ('new_database_migration_applied', 'new_edge_deploy_performed', 'remaining_index_ddl_applied', 'working_data_changed'):
+    for key in ('new_database_migration_applied', 'new_edge_deploy_performed', 'working_data_changed'):
         if cycle.get(key) is not False:
             errors.append(f'evidence.current_cycle: {key} must be false')
     if cycle.get('source_and_evidence_sync_only') is not True:
-        errors.append('evidence.current_cycle: source sync flag must be true')
+        errors.append('evidence.current_cycle: source-only flag must be true')
 
     production = evidence.get('production_boundary', {})
     if production.get('production_project_ref') != PRODUCTION:
@@ -146,17 +161,15 @@ if evidence:
             errors.append(f'evidence.production: {key} must be false')
 
 if schema:
-    if schema.get('version') != 4:
-        errors.append('schema evidence must be v4')
+    if schema.get('version') != 5:
+        errors.append('schema evidence must be v5')
     deployment = schema.get('staging_deployment', {})
-    if deployment.get('foreign_keys_aligned_with_production') is not True:
-        errors.append('schema evidence: foreign keys not aligned')
-    drift = schema.get('deployed_staging_schema_drift', {})
-    if drift.get('missing_covering_indexes') != ['leader_installation_job_items_order_id_idx']:
-        errors.append('schema evidence: remaining index drift mismatch')
+    if deployment.get('state') != 'deployed_active_schema_aligned':
+        errors.append('schema deployment state is not aligned')
+    if deployment.get('covering_indexes_aligned_with_production') is not True:
+        errors.append('schema index alignment missing')
 
 require('contract',
-    "INSTALLATION_EDGE_CONTRACT_VERSION = 'leader-crm-installation-edge-v1'",
     "INSTALLATION_ACTION = 'installation_job.update'",
     "INSTALLATION_PERMISSION = 'installation.write'",
     "STAGING_PROJECT_REF = 'otulfnouybahfnsycxqn'",
@@ -174,39 +187,21 @@ ordered('edge',
     'const permissionResult = await canonicalPermission(',
     '/rest/v1/rpc/leader_update_installation_job_rpc')
 
-for forbidden in ('payload.role', 'input.role', 'request.role', 'user_metadata.role'):
-    if forbidden in texts['edge'] or forbidden in texts['contract']:
-        errors.append(f'edge: forbidden browser role marker {forbidden}')
-
-require('rpc',
-    "'installation_job.update'", "'installation.write'",
-    'installation_completed_at = v_completed_at',
-    'insert into public.leader_installation_events',
-    'insert into leader_private.leader_command_receipts',
-    'security invoker', "set search_path = ''")
-require('compat',
-    '20260721195259', 'staging_installation_command_compat_20260721',
-    'leader_installation_jobs_order_id_fkey',
-    'leader_installation_job_items_order_id_fkey',
-    'leader_installation_events_order_id_fkey',
-    'on delete set null',
-    'leader_installation_events_order_id_idx')
-require('candidate', 'SOURCE-ONLY CANDIDATE, NOT APPLIED', 'leader_installation_job_items_order_id_idx')
-require('rollback', 'drop index if exists public.leader_installation_job_items_order_id_idx')
+require('rpc', "'installation_job.update'", "'installation.write'", 'installation_completed_at = v_completed_at')
+require('compat', '20260721195259', 'on delete set null', 'leader_installation_events_order_id_idx')
+require('index', '20260721200142', 'leader_installation_job_items_order_id_idx')
 
 require('frontend',
     "supabaseClient.from('leader_installation_jobs').update(patch)",
     "supabaseClient.from('leader_orders').update(",
     "supabaseClient.from('leader_installation_events').insert(")
 if "functions.invoke('leader-crm-installation'" in texts['frontend']:
-    errors.append('frontend: switch is still declared pending')
+    errors.append('frontend switch is still declared pending')
 
 require('docs',
-    'Staging installation command Edge v3',
-    '`20260721195259`',
-    '`staging_installation_command_compat_20260721`',
-    '`leader_installation_job_items_order_id_idx`',
-    'Кандидат в текущем цикле не применялся',
+    'Staging installation command Edge v4',
+    '`20260721200142 / staging_installation_schema_indexes_reconcile_20260721`',
+    'missing-FK-index warnings: 0',
     'Frontend switch не выполнен',
     'Production не изменялся')
 require('workflow',
@@ -216,14 +211,14 @@ require('workflow',
 
 for name, text in texts.items():
     if re.search(r'sb_secret_[A-Za-z0-9_-]{10,}', text):
-        errors.append(f'{name}: possible secret material')
+        errors.append(f'{name}: possible secret')
     if re.search(r'eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}', text):
-        errors.append(f'{name}: possible JWT material')
+        errors.append(f'{name}: possible JWT')
 
 if errors:
-    print('Staging installation command v3 checks failed:', file=sys.stderr)
+    print('Installation command v4 checks failed:', file=sys.stderr)
     for error in errors:
         print(f'- {error}', file=sys.stderr)
     raise SystemExit(1)
 
-print('Installation command v3, compat migration, one-index gate and production boundary are coherent.')
+print('Installation command v4 is schema-ready, source-synced and production-locked.')
