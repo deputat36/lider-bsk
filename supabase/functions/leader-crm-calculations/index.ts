@@ -6,7 +6,6 @@ import {
   CALCULATION_PERMISSION,
   STAGING_PROJECT_REF,
   asObject,
-  canWriteCalculation,
   cleanText,
   projectRefFromUrl,
   rpcStatus,
@@ -61,22 +60,30 @@ async function authenticatedUser(req: Request, supabaseUrl: string, anonKey: str
   return { user: { id, email: cleanText(user?.email, 240).toLowerCase() } }
 }
 
-async function activeProfile(
+async function canonicalPermission(
   supabaseUrl: string,
   serviceRole: string,
-  userId: string,
+  actorId: string,
+  permission: string,
 ) {
   const response = await serviceFetch(
     supabaseUrl,
     serviceRole,
-    `/rest/v1/leader_user_profiles?user_id=eq.${encodeURIComponent(userId)}&is_active=eq.true&select=user_id,email,role,is_active,permissions&limit=1`,
+    '/rest/v1/rpc/leader_actor_has_crm_action_rpc',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_actor_id: actorId, p_action: permission }),
+    },
   )
-  if (!response.ok) return { error: json(403, { error: 'inactive_profile' }) }
-
-  const rows = await response.json()
-  const profile = Array.isArray(rows) ? asObject(rows[0]) : null
-  if (!profile) return { error: json(403, { error: 'inactive_profile' }) }
-  return { profile }
+  if (!response.ok) {
+    console.error('leader-crm-calculations permission transport failure', {
+      status: response.status,
+      permission,
+    })
+    return { error: json(500, { error: 'permission_check_failed' }) }
+  }
+  return { allowed: (await response.json()) === true }
 }
 
 function safeRpcError(value: unknown) {
@@ -142,17 +149,6 @@ Deno.serve(async (req: Request) => {
   const checked = await authenticatedUser(req, supabaseUrl, anonKey)
   if (checked.error) return checked.error
 
-  const profileResult = await activeProfile(supabaseUrl, serviceRole, checked.user.id)
-  if (profileResult.error) return profileResult.error
-  if (!canWriteCalculation(profileResult.profile.role)) {
-    return json(403, {
-      error: 'forbidden',
-      action: CALCULATION_ACTION,
-      permission: CALCULATION_PERMISSION,
-      contract: CALCULATION_EDGE_CONTRACT_VERSION,
-    })
-  }
-
   let input: unknown
   try {
     input = await req.json()
@@ -166,6 +162,22 @@ Deno.serve(async (req: Request) => {
       ok: false,
       request_id: cleanText(asObject(input)?.request_id, 80) || null,
       error: { code: validation.code, message: validation.message },
+    })
+  }
+
+  const permissionResult = await canonicalPermission(
+    supabaseUrl,
+    serviceRole,
+    checked.user.id,
+    CALCULATION_PERMISSION,
+  )
+  if (permissionResult.error) return permissionResult.error
+  if (!permissionResult.allowed) {
+    return json(403, {
+      error: 'forbidden',
+      action: CALCULATION_ACTION,
+      permission: CALCULATION_PERMISSION,
+      contract: CALCULATION_EDGE_CONTRACT_VERSION,
     })
   }
 
