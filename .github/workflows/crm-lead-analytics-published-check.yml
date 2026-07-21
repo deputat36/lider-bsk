@@ -38,7 +38,17 @@ jobs:
         with:
           show-progress: false
 
+      - name: Validate published smoke script in pull request
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile tools/check_crm_lead_analytics_published.py
+          grep -q 'CANONICAL_BASE_URL = "https://www.lider-bsk.ru/crm/v4/"' tools/check_crm_lead_analytics_published.py
+          grep -q 'validate_final_url' tools/check_crm_lead_analytics_published.py
+
       - name: Check published CRM analytics assets
+        if: github.event_name != 'pull_request'
         id: published_smoke
         shell: bash
         run: |
@@ -50,7 +60,7 @@ jobs:
           fi
 
       - name: Upload published smoke diagnostics
-        if: always()
+        if: always() && github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: crm-lead-analytics-published-smoke-${{ github.run_id }}
