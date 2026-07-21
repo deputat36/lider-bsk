@@ -1,0 +1,245 @@
+/*
+ * РА «Лидер» — фирменный визуальный фундамент CRM v2.
+ *
+ * Этот слой меняет только представление. Он не изменяет DOM-контракты,
+ * роли, статусы, запросы Supabase и рабочие действия.
+ */
+
+:root{
+  --v4-brand-orange:#ff6a00;
+  --v4-brand-orange-hover:#e85f00;
+  --v4-brand-orange-soft:#fff3e8;
+  --v4-brand-orange-line:#ffd2ad;
+  --v4-brand-graphite:#171717;
+  --v4-brand-graphite-soft:#242424;
+  --v4-brand-surface:#ffffff;
+  --v4-brand-canvas:#f7f7f8;
+  --v4-brand-line:#e5e7eb;
+  --v4-brand-muted:#667085;
+  --v4-brand-shadow:0 18px 46px rgba(23,23,23,.08);
+  --v4-brand-focus:0 0 0 4px rgba(255,106,0,.22);
+}
+
+html{
+  background:var(--v4-brand-canvas);
+}
+
+body{
+  color:var(--v4-brand-graphite);
+  background:
+    radial-gradient(circle at 8% 0%,rgba(255,106,0,.07),transparent 25rem),
+    var(--v4-brand-canvas);
+}
+
+.v4-shell{
+  color:var(--v4-brand-graphite);
+}
+
+.v4-hero{
+  background:
+    linear-gradient(118deg,rgba(255,106,0,.16),transparent 36%),
+    linear-gradient(135deg,var(--v4-brand-graphite),#0e0e0f 70%);
+  border-color:#303033;
+  box-shadow:0 20px 54px rgba(23,23,23,.18);
+}
+
+.v4-hero h1,
+.v4-hero .v4-subtitle,
+.v4-hero .v4-kicker{
+  color:#fff;
+}
+
+.v4-hero .v4-kicker{
+  display:inline-flex;
+  width:max-content;
+  padding:7px 11px;
+  border-radius:999px;
+  background:var(--v4-brand-orange);
+  letter-spacing:.035em;
+}
+
+.v4-auth-card{
+  border-color:rgba(255,255,255,.2);
+  box-shadow:0 20px 50px rgba(0,0,0,.2);
+}
+
+.v4-card,
+.v4-subcard,
+.v4-card-view,
+.v4-lead-card,
+.v4-offer-card,
+.v4-saved-calc-card{
+  border-color:var(--v4-brand-line)!important;
+  box-shadow:var(--v4-brand-shadow);
+}
+
+.v4-card:hover,
+.v4-subcard:hover{
+  border-color:var(--v4-brand-orange-line)!important;
+}
+
+.v4-section-head,
+.v4-subcard-head,
+.v4-card-view-head{
+  border-bottom-color:var(--v4-brand-line)!important;
+}
+
+.v4-primary,
+button.v4-primary,
+a.v4-primary{
+  background:linear-gradient(135deg,var(--v4-brand-orange),#ff8a2a)!important;
+  color:#fff!important;
+  border-color:var(--v4-brand-orange)!important;
+  box-shadow:0 10px 24px rgba(255,106,0,.25)!important;
+}
+
+.v4-primary:hover,
+button.v4-primary:hover,
+a.v4-primary:hover{
+  background:linear-gradient(135deg,var(--v4-brand-orange-hover),#ff7a18)!important;
+  border-color:var(--v4-brand-orange-hover)!important;
+  box-shadow:0 13px 28px rgba(255,106,0,.3)!important;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible{
+  outline:2px solid var(--v4-brand-orange)!important;
+  outline-offset:2px;
+  box-shadow:var(--v4-brand-focus)!important;
+}
+
+input:focus,
+select:focus,
+textarea:focus{
+  border-color:var(--v4-brand-orange)!important;
+}
+
+.v4-layout-tabs{
+  background:rgba(255,255,255,.95)!important;
+  border-color:var(--v4-brand-line)!important;
+  box-shadow:0 12px 34px rgba(23,23,23,.09)!important;
+}
+
+.v4-layout-tabs b{
+  color:var(--v4-brand-graphite)!important;
+}
+
+.v4-layout-tabs button{
+  border-color:#d1d5db!important;
+  color:#353535;
+}
+
+.v4-layout-tabs button:hover{
+  border-color:var(--v4-brand-orange-line)!important;
+  background:var(--v4-brand-orange-soft)!important;
+}
+
+.v4-layout-tabs button.is-active{
+  background:var(--v4-brand-orange)!important;
+  border-color:var(--v4-brand-orange)!important;
+  color:#fff!important;
+  box-shadow:0 7px 18px rgba(255,106,0,.22)!important;
+}
+
+.v4-lead-card,
+.v4-offer-card,
+.v4-saved-calc-card{
+  border-left-color:var(--v4-brand-orange-line)!important;
+}
+
+.v4-lead-card:hover,
+.v4-offer-card:hover,
+.v4-saved-calc-card:hover,
+.v4-lead-card.is-active{
+  border-left-color:var(--v4-brand-orange)!important;
+}
+
+.v4-status:not(.is-good):not(.is-warn):not(.is-error),
+.v4-lead-status:not(.is-good):not(.is-warn):not(.is-error),
+.v4-offer-title-row span:not(.is-good):not(.is-warn):not(.is-error),
+.v4-saved-calc-title span:not(.is-good):not(.is-warn):not(.is-error){
+  background:var(--v4-brand-orange-soft)!important;
+  color:#9a3f00!important;
+  border-color:var(--v4-brand-orange-line)!important;
+}
+
+/* Семантические статусы сохраняют собственные цвета. */
+.v4-status.is-good,
+.v4-lead-status.is-good,
+.v4-offer-title-row span.is-good{
+  background:#dcfce7!important;
+  color:#166534!important;
+  border-color:#bbf7d0!important;
+}
+
+.v4-status.is-warn,
+.v4-lead-status.is-warn,
+.v4-offer-title-row span.is-warn{
+  background:#fef3c7!important;
+  color:#92400e!important;
+  border-color:#fde68a!important;
+}
+
+.v4-status.is-error,
+.v4-lead-status.is-error,
+.v4-offer-title-row span.is-error{
+  background:#fee2e2!important;
+  color:#991b1b!important;
+  border-color:#fecaca!important;
+}
+
+.v4-action-panel,
+.v4-needs-section,
+.v4-calculations-host .v4-subcard,
+.v4-calc-auto-box,
+.v4-offers-section,
+.v4-orders-section{
+  border-color:var(--v4-brand-orange-line)!important;
+  background:linear-gradient(135deg,var(--v4-brand-orange-soft),#fff 72%)!important;
+}
+
+.v4-workflow-guide div,
+.v4-detail-grid div,
+.v4-profile-grid div,
+.v4-empty{
+  background:#fafafa!important;
+  border-color:var(--v4-brand-line)!important;
+}
+
+.v4-workflow-guide div.is-done{
+  background:#f0fdf4!important;
+  border-color:#bbf7d0!important;
+  color:#166534!important;
+}
+
+.v4-detail-grid dt,
+.v4-profile-grid dt,
+.v4-muted{
+  color:var(--v4-brand-muted)!important;
+}
+
+.v4-detail-grid dd,
+.v4-profile-grid dd{
+  color:var(--v4-brand-graphite)!important;
+}
+
+.v4-toast{
+  border-color:rgba(255,106,0,.28)!important;
+  box-shadow:0 20px 52px rgba(23,23,23,.24)!important;
+}
+
+@media(max-width:640px){
+  .v4-hero{
+    background:
+      linear-gradient(145deg,rgba(255,106,0,.15),transparent 52%),
+      var(--v4-brand-graphite);
+  }
+
+  .v4-layout-tabs button{
+    min-height:44px;
+  }
+}
