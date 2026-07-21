@@ -57,7 +57,7 @@ except json.JSONDecodeError as exc:
 if evidence:
     expected = {
         'contract': 'crm-staging-installation-command-edge',
-        'version': 1,
+        'version': 2,
         'project_ref': STAGING,
         'environment': 'staging',
     }
@@ -83,6 +83,10 @@ if evidence:
         errors.append('evidence.database: unexpected migration version')
     if database.get('migration_name') != 'staging_installation_job_update_rpc_20260721':
         errors.append('evidence.database: unexpected migration name')
+    if database.get('schema_contract_version') != 3:
+        errors.append('evidence.database: schema contract version must be 3')
+    if database.get('schema_reconciliation_required') is not True:
+        errors.append('evidence.database: schema reconciliation must remain required')
 
     command = evidence.get('command', {})
     if command.get('action') != 'installation_job.update':
@@ -109,7 +113,13 @@ if evidence:
             errors.append(f'evidence.authorization: {key} must be false')
 
     postflight = evidence.get('staging_postflight', {})
-    for key in ('installation_jobs', 'installation_events', 'installation_comments', 'command_receipts'):
+    for key in (
+        'installation_jobs',
+        'installation_job_items',
+        'installation_events',
+        'installation_comments',
+        'command_receipts',
+    ):
         if postflight.get(key) != 0:
             errors.append(f'evidence.staging_postflight: {key} must be zero')
     for key in ('edge_logs_empty', 'service_role_only'):
@@ -118,6 +128,25 @@ if evidence:
     for key in ('browser_table_access', 'browser_rpc_execute'):
         if postflight.get(key) is not False:
             errors.append(f'evidence.staging_postflight: {key} must be false')
+    if set(postflight.get('missing_covering_indexes', [])) != {
+        'leader_installation_job_items_order_id_idx',
+        'leader_installation_events_order_id_idx',
+    }:
+        errors.append('evidence.staging_postflight: missing index inventory is incomplete')
+    if set(postflight.get('foreign_key_semantics_drift', [])) != {
+        'leader_installation_jobs.order_id',
+        'leader_installation_job_items.order_id',
+        'leader_installation_events.order_id',
+    }:
+        errors.append('evidence.staging_postflight: FK drift inventory is incomplete')
+
+    readiness = evidence.get('readiness', {})
+    for key in ('edge_source_synced', 'rpc_source_synced', 'authorization_ready', 'atomic_command_ready'):
+        if readiness.get(key) is not True:
+            errors.append(f'evidence.readiness: {key} must be true')
+    for key in ('schema_reconciliation_ready', 'user_jwt_smoke_completed', 'frontend_switch_ready', 'production_ready'):
+        if readiness.get(key) is not False:
+            errors.append(f'evidence.readiness: {key} must be false')
 
     frontend = evidence.get('frontend', {})
     if frontend.get('switch_performed') is not False:
@@ -126,7 +155,12 @@ if evidence:
         errors.append('evidence.frontend: current write path must remain explicit')
 
     current_cycle = evidence.get('current_cycle', {})
-    for key in ('new_database_migration_applied', 'new_edge_deploy_performed', 'working_data_changed'):
+    for key in (
+        'new_database_migration_applied',
+        'new_edge_deploy_performed',
+        'schema_reconciliation_ddl_applied',
+        'working_data_changed',
+    ):
         if current_cycle.get(key) is not False:
             errors.append(f'evidence.current_cycle: {key} must be false')
     if current_cycle.get('source_and_evidence_sync_only') is not True:
@@ -161,13 +195,18 @@ except json.JSONDecodeError as exc:
     errors.append(f'schema_evidence: invalid JSON: {exc}')
 
 if schema_evidence:
-    if schema_evidence.get('version') != 2:
-        errors.append('schema_evidence: version must be 2')
+    if schema_evidence.get('version') != 3:
+        errors.append('schema_evidence: version must be 3')
     if 'installation_completed_at' not in schema_evidence.get('production_baseline', {}).get('order_columns', []):
         errors.append('schema_evidence: installation_completed_at missing')
+    if 'leader_installation_job_items' not in schema_evidence.get('production_baseline', {}).get('tables', {}):
+        errors.append('schema_evidence: installation job items baseline missing')
     deployment = schema_evidence.get('staging_deployment', {})
     if deployment.get('migration_version') != '20260721191810':
         errors.append('schema_evidence: migration version drift')
+    drift = schema_evidence.get('deployed_staging_schema_drift', {})
+    if drift.get('reconciliation_required') is not True:
+        errors.append('schema_evidence: reconciliation requirement is missing')
 
 require('contract', [
     "INSTALLATION_EDGE_CONTRACT_VERSION = 'leader-crm-installation-edge-v1'",
@@ -187,7 +226,6 @@ require('edge', [
     'projectRefFromUrl(supabaseUrl) !== STAGING_PROJECT_REF',
     'authenticatedUser(req, supabaseUrl, publicKey)',
     'validateInstallationRequest(input)',
-    'canonicalPermission(',
     'p_action: INSTALLATION_PERMISSION',
     '/rest/v1/rpc/leader_update_installation_job_rpc',
     'actor_id: checked.user.id',
@@ -196,9 +234,9 @@ require('edge', [
 ])
 ordered('edge', [
     'projectRefFromUrl(supabaseUrl) !== STAGING_PROJECT_REF',
-    'authenticatedUser(req, supabaseUrl, publicKey)',
-    'validateInstallationRequest(input)',
-    'canonicalPermission(',
+    'const checked = await authenticatedUser(req, supabaseUrl, publicKey)',
+    'const validation = validateInstallationRequest(input)',
+    'const permissionResult = await canonicalPermission(',
     '/rest/v1/rpc/leader_update_installation_job_rpc',
 ])
 
@@ -208,8 +246,11 @@ for forbidden in ('payload.role', 'input.role', 'request.role', 'user_metadata.r
 
 require('schema_migration', [
     'add column if not exists installation_completed_at timestamptz',
-    'revoke all on table public.leader_installation_jobs from public, anon, authenticated',
-    'grant select, insert, update on table public.leader_installation_jobs to service_role',
+    'create table if not exists public.leader_installation_job_items',
+    'leader_installation_job_items_order_id_idx',
+    'leader_installation_events_order_id_idx',
+    'revoke all on table public.leader_installation_job_items from public, anon, authenticated',
+    'grant select, insert on table public.leader_installation_job_items to service_role',
 ])
 
 require('rpc_migration', [
@@ -254,9 +295,8 @@ require('status_registry', [
 ])
 
 require('docs', [
-    'Staging installation command Edge v1',
+    'Staging installation command Edge v2',
     '`leader-crm-installation`',
-    '`1`',
     '`ACTIVE`',
     '`verify_jwt=true`',
     f'`{EDGE_SHA}`',
@@ -265,6 +305,10 @@ require('docs', [
     '`installation_job.update`',
     '`installation.write`',
     '`installation_completed_at`',
+    'installation job items: `0`',
+    'schema reconciliation: требуется',
+    '`leader_installation_job_items_order_id_idx`',
+    '`leader_installation_events_order_id_idx`',
     'новый Edge deploy и новый migration apply не выполнялись',
     'Frontend switch не выполнен',
     'Production rollout требует отдельного явного согласования',
@@ -289,4 +333,4 @@ if errors:
         print(f'- {error}', file=sys.stderr)
     raise SystemExit(1)
 
-print('Staging installation Edge, RPC, ACL, atomicity, deployment evidence and production boundary are coherent.')
+print('Staging installation Edge, RPC, ACL, schema drift, readiness and production boundary are coherent.')
