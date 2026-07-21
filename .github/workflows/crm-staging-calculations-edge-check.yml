@@ -1,0 +1,38 @@
+name: CRM staging calculations Edge check
+
+on:
+  pull_request:
+    paths:
+      - 'contracts/crm-staging-calculations-edge-deployment-v1.json'
+      - 'supabase/functions/leader-crm-calculations/**'
+      - 'contracts/crm-v4-role-action-matrix-v1.json'
+      - 'docs/SUPABASE_STAGING_CALCULATIONS_EDGE_V5_2026-07-21.md'
+      - 'tools/check_crm_staging_calculations_edge_deployment.py'
+      - '.github/workflows/crm-staging-calculations-edge-check.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'contracts/crm-staging-calculations-edge-deployment-v1.json'
+      - 'supabase/functions/leader-crm-calculations/**'
+      - 'contracts/crm-v4-role-action-matrix-v1.json'
+      - 'docs/SUPABASE_STAGING_CALCULATIONS_EDGE_V5_2026-07-21.md'
+      - 'tools/check_crm_staging_calculations_edge_deployment.py'
+      - '.github/workflows/crm-staging-calculations-edge-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compile checker
+        run: python3 -m py_compile tools/check_crm_staging_calculations_edge_deployment.py
+
+      - name: Verify staging deployment contract
+        run: python3 tools/check_crm_staging_calculations_edge_deployment.py

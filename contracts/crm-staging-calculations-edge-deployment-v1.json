@@ -1,0 +1,36 @@
+{
+  "contract": "crm-staging-calculations-edge-deployment",
+  "version": 1,
+  "observed_at": "2026-07-21",
+  "project_ref": "otulfnouybahfnsycxqn",
+  "environment": "staging",
+  "function": {
+    "slug": "leader-crm-calculations",
+    "version": 5,
+    "status": "ACTIVE",
+    "verify_jwt": true,
+    "sha256": "4cd0bde123d6f6c052e0c5337ca01f17a0f76edfb5adf2eed1975e25e39357a4",
+    "source": "supabase/functions/leader-crm-calculations/index.ts",
+    "contract_source": "supabase/functions/leader-crm-calculations/contract.ts"
+  },
+  "action": "calculation.create_version",
+  "permission": "calculations.write",
+  "permission_rpc": "leader_actor_has_crm_action_rpc",
+  "transaction_rpc": "leader_create_calculation_version_rpc",
+  "execution_order": [
+    "environment_guard",
+    "jwt_authentication",
+    "payload_validation",
+    "canonical_permission_check",
+    "transactional_rpc"
+  ],
+  "request_guards": {
+    "maximum_body_bytes": 262144,
+    "maximum_items": 200,
+    "idempotency_key_required": true,
+    "optimistic_concurrency_required": true,
+    "browser_role_parameter": false
+  },
+  "deployment_action_performed_by_this_change": false,
+  "production_deployment": "not_performed_requires_explicit_approval"
+}
