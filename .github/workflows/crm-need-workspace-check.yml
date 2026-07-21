@@ -13,6 +13,9 @@ on:
       - 'tools/check_crm_need_workspace.py'
       - 'docs/CRM_PRODUCT_SIMPLICITY_AND_EXCEPTION_MODEL.md'
       - 'docs/CRM_NEED_WORKSPACE_MANUAL_TEST_2026-07-17.md'
+      - 'docs/CRM_NEED_DUPLICATE_REVIEW_MANUAL_TEST_2026-07-21.md'
+      - 'docs/CRM_NEED_DUPLICATE_REVIEW_STAGING_2026-07-21.md'
+      - 'supabase/staging/20260721102500_staging_need_duplicate_dependency_compat.sql'
       - 'docs/STATUS.md'
       - 'docs/DECISIONS.md'
       - '.github/workflows/crm-need-workspace-check.yml'
@@ -28,6 +31,9 @@ on:
       - 'tools/check_crm_need_workspace.py'
       - 'docs/CRM_PRODUCT_SIMPLICITY_AND_EXCEPTION_MODEL.md'
       - 'docs/CRM_NEED_WORKSPACE_MANUAL_TEST_2026-07-17.md'
+      - 'docs/CRM_NEED_DUPLICATE_REVIEW_MANUAL_TEST_2026-07-21.md'
+      - 'docs/CRM_NEED_DUPLICATE_REVIEW_STAGING_2026-07-21.md'
+      - 'supabase/staging/20260721102500_staging_need_duplicate_dependency_compat.sql'
       - 'docs/STATUS.md'
       - 'docs/DECISIONS.md'
       - '.github/workflows/crm-need-workspace-check.yml'
@@ -37,7 +43,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate need workspace behavior and source contract
+
+      - name: JavaScript syntax
         shell: bash
         run: |
           set -euo pipefail
@@ -45,6 +52,21 @@ jobs:
           node --check crm/v4/assets/v4/needs.js
           node --check crm/v4/assets/v4/lead-card.js
           node --check tools/test_need_workspace_model.mjs
+
+      - name: Pure need workspace model
+        shell: bash
+        run: |
+          set -euo pipefail
           node tools/test_need_workspace_model.mjs
+
+      - name: Need workspace source and staging contract
+        shell: bash
+        run: |
+          set -euo pipefail
           python3 tools/check_crm_need_workspace.py
+
+      - name: Need calculation regression contract
+        shell: bash
+        run: |
+          set -euo pipefail
           python3 tools/check_crm_need_calculation_flow.py
