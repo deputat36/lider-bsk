@@ -1,0 +1,136 @@
+{
+  "contract": "crm-staging-installation-schema",
+  "version": 1,
+  "source_audit_date": "2026-07-21",
+  "repository": "deputat36/lider-bsk",
+  "staging_project_ref": "otulfnouybahfnsycxqn",
+  "production_project_ref_read_only": "ofewxuqfjhamgerwzull",
+  "environment": "staging",
+  "migration": "supabase/staging-migrations/20260721_05_installation_schema_install.sql",
+  "acceptance": "supabase/staging-tests/20260721_installation_schema_acceptance.sql",
+  "production_baseline": {
+    "tables": {
+      "leader_installation_jobs": {
+        "columns": 30,
+        "primary_key": "id",
+        "foreign_keys": {
+          "order_id": "leader_orders(id) ON DELETE SET NULL",
+          "production_job_id": "leader_production_jobs(id) ON DELETE SET NULL"
+        },
+        "indexes": [
+          "leader_installation_jobs_order_id_idx",
+          "leader_installation_jobs_production_job_id_idx",
+          "leader_installation_jobs_scheduled_at_idx",
+          "leader_installation_jobs_status_idx"
+        ]
+      },
+      "leader_installation_events": {
+        "columns": 9,
+        "primary_key": "id",
+        "foreign_keys": {
+          "job_id": "leader_installation_jobs(id) ON DELETE CASCADE",
+          "order_id": "leader_orders(id) ON DELETE SET NULL"
+        },
+        "indexes": [
+          "leader_installation_events_job_idx",
+          "leader_installation_events_order_id_idx"
+        ]
+      },
+      "leader_installation_comments": {
+        "columns": 7,
+        "primary_key": "id",
+        "foreign_keys": {
+          "job_id": "leader_installation_jobs(id) ON DELETE CASCADE"
+        },
+        "indexes": [
+          "leader_installation_comments_job_idx"
+        ]
+      }
+    },
+    "order_columns": [
+      "installation_status",
+      "installation_address",
+      "installation_scheduled_at",
+      "installer_name",
+      "installer_phone",
+      "current_stage",
+      "updated_at",
+      "stage_updated_at"
+    ],
+    "triggers": [],
+    "installation_functions": []
+  },
+  "staging_gap_before_migration": {
+    "missing_tables": [
+      "leader_installation_jobs",
+      "leader_installation_events",
+      "leader_installation_comments"
+    ],
+    "missing_order_columns": [
+      "installation_address",
+      "installation_scheduled_at",
+      "installer_name",
+      "installer_phone"
+    ],
+    "existing_order_columns": [
+      "installation_status",
+      "current_stage",
+      "updated_at",
+      "stage_updated_at"
+    ]
+  },
+  "staging_access_model": {
+    "rls_enabled": true,
+    "browser_policies": false,
+    "public_privileges": false,
+    "anon_privileges": false,
+    "authenticated_privileges": false,
+    "service_role": {
+      "leader_installation_jobs": ["SELECT", "INSERT", "UPDATE"],
+      "leader_installation_events": ["SELECT", "INSERT"],
+      "leader_installation_comments": ["SELECT", "INSERT"]
+    }
+  },
+  "status_registry": {
+    "source": "crm/v4/assets/v4/status-transitions-v1.js",
+    "domain": "installation",
+    "canonical": [
+      "Не назначен",
+      "Запланирован",
+      "Перенесён",
+      "В работе",
+      "Выполнен",
+      "Не требуется",
+      "Отменён"
+    ],
+    "legacy_aliases": {
+      "Нужно назначить": "Не назначен",
+      "Проблема": "Перенесён",
+      "Перенесен": "Перенесён",
+      "Завершён": "Выполнен",
+      "Завершен": "Выполнен",
+      "Отменен": "Отменён"
+    }
+  },
+  "acceptance_guards": {
+    "exact_staging_environment": true,
+    "synthetic_rows_only": true,
+    "transaction_rollback": true,
+    "foreign_keys_checked": true,
+    "cascade_checked": true,
+    "browser_grants_closed": true,
+    "service_role_grants_checked": true
+  },
+  "not_in_scope": [
+    "leader_update_installation_job_rpc",
+    "installation Edge deploy",
+    "frontend switch",
+    "production migration",
+    "production data",
+    "production RLS or grants",
+    "Auth",
+    "Storage",
+    "secrets",
+    "nav_*"
+  ]
+}
