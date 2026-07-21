@@ -14,6 +14,8 @@ on:
       - 'docs/CRM_PRODUCT_SIMPLICITY_AND_EXCEPTION_MODEL.md'
       - 'docs/CRM_NEED_WORKSPACE_MANUAL_TEST_2026-07-17.md'
       - 'docs/CRM_NEED_DUPLICATE_REVIEW_MANUAL_TEST_2026-07-21.md'
+      - 'docs/CRM_NEED_DUPLICATE_REVIEW_STAGING_2026-07-21.md'
+      - 'supabase/staging/20260721102500_staging_need_duplicate_dependency_compat.sql'
       - 'docs/STATUS.md'
       - 'docs/DECISIONS.md'
       - '.github/workflows/crm-need-workspace-check.yml'
@@ -30,6 +32,8 @@ on:
       - 'docs/CRM_PRODUCT_SIMPLICITY_AND_EXCEPTION_MODEL.md'
       - 'docs/CRM_NEED_WORKSPACE_MANUAL_TEST_2026-07-17.md'
       - 'docs/CRM_NEED_DUPLICATE_REVIEW_MANUAL_TEST_2026-07-21.md'
+      - 'docs/CRM_NEED_DUPLICATE_REVIEW_STAGING_2026-07-21.md'
+      - 'supabase/staging/20260721102500_staging_need_duplicate_dependency_compat.sql'
       - 'docs/STATUS.md'
       - 'docs/DECISIONS.md'
       - '.github/workflows/crm-need-workspace-check.yml'
@@ -55,7 +59,7 @@ jobs:
           set -euo pipefail
           node tools/test_need_workspace_model.mjs
 
-      - name: Need workspace source contract
+      - name: Need workspace source and staging contract
         shell: bash
         run: |
           set -euo pipefail
