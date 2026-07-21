@@ -55,9 +55,9 @@ for forbidden in ['.click()', '.submit()', 'requestSubmit()', 'leaderAddLeadEven
         errors.append('Assistant UI must not bypass the dedicated apply controller: ' + forbidden)
 
 for marker in [
-    ".from('leader_leads')",
     ".from('leader_lead_events')",
-    "window.leaderAddLeadEvent",
+    'window.leaderUpdateLeadForException',
+    'window.leaderAddLeadEvent',
     'if (busy) return',
     'DEDUPE_WINDOW_MS',
     'checkDuplicate: true',
@@ -67,12 +67,20 @@ for marker in [
     if marker not in controller:
         errors.append('Missing apply controller marker: ' + marker)
 
-for forbidden in ['.insert(', '.delete(', '.upsert(', '.rpc(', 'service_role']:
+for forbidden in ['.insert(', '.update(', '.delete(', '.upsert(', '.rpc(', 'service_role']:
     if forbidden in controller:
-        errors.append('Apply controller uses a forbidden write path: ' + forbidden)
+        errors.append('Apply controller must coordinate existing write modules without a direct write: ' + forbidden)
 
-if "import './lead-exception-assistant-v1.js?v=20260720-1';" not in timeline:
-    errors.append('Lead timeline must load the exception assistant with the canonical cache marker')
+for marker in [
+    "import './lead-exception-assistant-v1.js?v=20260721-one-action-1';",
+    'export async function updateLeadForException',
+    ".from('leader_leads')",
+    '.update({ status, next_contact_at: nextContactAt',
+    'window.leaderUpdateLeadForException = updateLeadForException',
+    'window.leaderAddLeadEvent = addLeadTimelineEvent',
+]:
+    if marker not in timeline:
+        errors.append('Missing classified timeline write-module marker: ' + marker)
 
 for marker in [
     'Desktop',
