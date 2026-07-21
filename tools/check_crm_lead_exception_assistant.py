@@ -8,6 +8,10 @@ assistant = (root / 'crm/v4/assets/v4/lead-exception-assistant-v1.js').read_text
 controller = (root / 'crm/v4/assets/v4/lead-exception-apply-v2.js').read_text(encoding='utf-8')
 timeline = (root / 'crm/v4/assets/v4/lead-timeline.js').read_text(encoding='utf-8')
 manual = (root / 'docs/CRM_LEAD_EXCEPTION_ASSISTANT_MANUAL_TEST_2026-07-20.md').read_text(encoding='utf-8')
+staging_report = (root / 'docs/CRM_LEAD_EXCEPTION_ONE_ACTION_STAGING_2026-07-21.md').read_text(encoding='utf-8')
+staging_sql_path = root / 'supabase/staging/20260721051000_staging_lead_exception_core.sql'
+staging_sql = staging_sql_path.read_text(encoding='utf-8')
+production_migration_path = root / 'supabase/migrations/20260721051000_staging_lead_exception_core.sql'
 
 errors = []
 
@@ -82,6 +86,33 @@ for marker in [
 ]:
     if marker not in manual:
         errors.append('Missing manual test marker: ' + marker)
+
+for marker in [
+    'staging_lead_exception_core_20260721',
+    'service_role',
+    'anon',
+    'authenticated',
+    'синтетический',
+    'production migration не требуется',
+]:
+    if marker.lower() not in staging_report.lower():
+        errors.append('Missing staging report marker: ' + marker)
+
+for marker in [
+    'Staging-only',
+    'Never apply this file to production',
+    'add column if not exists next_contact_at',
+    'create table if not exists public.leader_lead_events',
+    'enable row level security',
+    'revoke all on table public.leader_leads from public, anon, authenticated',
+    'revoke all on table public.leader_lead_events from public, anon, authenticated',
+    'grant select, insert, update, delete on table public.leader_lead_events to service_role',
+]:
+    if marker.lower() not in staging_sql.lower():
+        errors.append('Missing staging SQL safety marker: ' + marker)
+
+if production_migration_path.exists():
+    errors.append('Staging-only SQL must never exist under supabase/migrations')
 
 if errors:
     print('\n'.join(errors))
