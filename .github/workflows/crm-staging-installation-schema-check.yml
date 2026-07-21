@@ -6,14 +6,12 @@ on:
       - 'supabase/staging-migrations/20260721_05_installation_schema_install.sql'
       - 'supabase/staging-migrations/20260721_06_installation_job_update_rpc.sql'
       - 'supabase/staging-migrations/20260721_07_installation_command_compat.sql'
-      - 'supabase/staging-migrations/20260721_08_installation_items_order_index_candidate.sql'
-      - 'supabase/staging-rollbacks/20260721_08_installation_items_order_index_rollback.sql'
+      - 'supabase/staging-migrations/20260721_09_installation_schema_indexes_reconcile.sql'
       - 'supabase/staging-tests/20260721_installation_schema_acceptance.sql'
       - 'supabase/staging-functions/leader-crm-installation/**'
       - 'contracts/crm-staging-installation-schema-v1.json'
       - 'docs/SUPABASE_STAGING_INSTALLATION_SCHEMA_V1_2026-07-21.md'
       - 'tools/check_crm_staging_installation_schema.py'
-      - 'crm/v4/assets/v4/status-transitions-v1.js'
       - '.github/workflows/crm-staging-installation-schema-check.yml'
   push:
     branches: [main]
@@ -21,14 +19,12 @@ on:
       - 'supabase/staging-migrations/20260721_05_installation_schema_install.sql'
       - 'supabase/staging-migrations/20260721_06_installation_job_update_rpc.sql'
       - 'supabase/staging-migrations/20260721_07_installation_command_compat.sql'
-      - 'supabase/staging-migrations/20260721_08_installation_items_order_index_candidate.sql'
-      - 'supabase/staging-rollbacks/20260721_08_installation_items_order_index_rollback.sql'
+      - 'supabase/staging-migrations/20260721_09_installation_schema_indexes_reconcile.sql'
       - 'supabase/staging-tests/20260721_installation_schema_acceptance.sql'
       - 'supabase/staging-functions/leader-crm-installation/**'
       - 'contracts/crm-staging-installation-schema-v1.json'
       - 'docs/SUPABASE_STAGING_INSTALLATION_SCHEMA_V1_2026-07-21.md'
       - 'tools/check_crm_staging_installation_schema.py'
-      - 'crm/v4/assets/v4/status-transitions-v1.js'
       - '.github/workflows/crm-staging-installation-schema-check.yml'
 
 permissions:
@@ -42,5 +38,5 @@ jobs:
       - uses: actions/checkout@v4
       - name: Compile checker
         run: python3 -m py_compile tools/check_crm_staging_installation_schema.py
-      - name: Validate staging installation schema v4 and one-index gate
+      - name: Validate aligned staging installation schema v5
         run: python3 tools/check_crm_staging_installation_schema.py
