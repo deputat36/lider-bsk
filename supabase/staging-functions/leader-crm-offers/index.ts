@@ -33,16 +33,12 @@ async function adminFetch(
   path: string,
   init: RequestInit = {},
 ) {
-  const authorization = isJwtApiKey(adminKey)
-    ? { Authorization: `Bearer ${adminKey}` }
-    : {}
+  const headers = new Headers(init.headers || {})
+  headers.set('apikey', adminKey)
+  if (isJwtApiKey(adminKey)) headers.set('Authorization', `Bearer ${adminKey}`)
   return await fetch(supabaseUrl + path, {
     ...init,
-    headers: {
-      apikey: adminKey,
-      ...authorization,
-      ...(init.headers || {}),
-    },
+    headers,
   })
 }
 
