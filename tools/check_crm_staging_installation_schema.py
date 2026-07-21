@@ -162,7 +162,7 @@ require('docs', [
     '`20260721_05_installation_schema_install.sql`',
     '`20260721_installation_schema_acceptance.sql`',
     'не применялась',
-    'production не изменялся',
+    'Production не изменялся',
     'leader_update_installation_job_rpc',
 ])
 
