@@ -1,0 +1,83 @@
+{
+  "contract": "crm-staging-calculation-offer-canonical-permissions",
+  "version": 1,
+  "project_ref": "otulfnouybahfnsycxqn",
+  "environment": "staging",
+  "database_authorization": {
+    "matrix": "leader_private.leader_role_action_matrix_v1",
+    "private_helper": "leader_private.leader_actor_has_crm_action(uuid,text)",
+    "edge_bridge": "public.leader_actor_has_crm_action_rpc(uuid,text)",
+    "bridge_execute_grantees": ["postgres", "service_role"],
+    "browser_role_parameter": false,
+    "active_profile_required": true,
+    "unknown_role": "deny",
+    "unknown_action": "deny"
+  },
+  "effective_write_roles": ["owner", "admin", "manager"],
+  "denied_roles": ["accountant", "designer", "installer", "contractor"],
+  "functions": {
+    "leader-crm-calculations": {
+      "version": 5,
+      "status": "ACTIVE",
+      "verify_jwt": true,
+      "permission": "calculations.write",
+      "action": "calculation.create_version",
+      "business_rpc": "leader_create_calculation_version_rpc",
+      "sha256": "4cd0bde123d6f6c052e0c5337ca01f17a0f76edfb5adf2eed1975e25e39357a4",
+      "local_role_allowlist": false,
+      "direct_profile_read_for_authorization": false,
+      "previous_version": {
+        "version": 4,
+        "sha256": "305d3c1d74f79de427ec4554bd19d7f1eb2b5d3932f53b7895e822e8aa088767",
+        "valid_rollback": true
+      }
+    },
+    "leader-crm-offers": {
+      "version": 5,
+      "status": "ACTIVE",
+      "verify_jwt": true,
+      "permission": "offers.write",
+      "action": "offer.create_from_calculation",
+      "business_rpc": "leader_create_offer_from_calculation_rpc",
+      "sha256": "b20ffa860121826b265bc01bda3757277573a2e87a2604c0c4764bf4add627a7",
+      "local_role_allowlist": false,
+      "direct_profile_read_for_authorization": false,
+      "typed_headers": true,
+      "previous_version": {
+        "version": 4,
+        "sha256": "25b2ff8b11ede3351f95c8f29315b5e43230e5cea153526f75039dc8ff99455e",
+        "valid_rollback": true
+      }
+    }
+  },
+  "call_order": [
+    "environment_guard",
+    "platform_verify_jwt",
+    "auth_user_verification",
+    "payload_validation",
+    "canonical_permission_rpc",
+    "transactional_business_rpc",
+    "safe_response_projection"
+  ],
+  "staging_verification": {
+    "matrix_transaction_test": "passed",
+    "positive_roles": ["owner", "admin", "manager"],
+    "negative_roles": ["accountant", "designer", "installer", "contractor", "unknown_role", "inactive_owner"],
+    "synthetic_profiles_after_rollback": 0,
+    "authenticated_http_e2e": "not_run_no_test_auth_user_created",
+    "business_data_mutated_by_verification": false
+  },
+  "production": {
+    "project_ref": "ofewxuqfjhamgerwzull",
+    "edge_deployed": false,
+    "database_mutated": false,
+    "auth_mutated": false,
+    "requires_explicit_approval": true
+  },
+  "rollback": {
+    "calculations": "redeploy recorded version 4 bundle",
+    "offers": "redeploy recorded version 4 bundle",
+    "database_change_required": false,
+    "business_data_cleanup_required": false
+  }
+}
