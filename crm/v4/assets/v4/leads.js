@@ -274,18 +274,19 @@ export async function loadLeads({ silent = false, force = false } = {}) {
   return leadsLoadPromise;
 }
 
-async function updateLead(id, patch) {
+async function updateLead(id, patch, options = {}) {
+  let query = supabaseClient
+    .from('leader_leads')
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (options.requireUnassigned === true) query = query.is('assigned_to', null);
   const response = await timeout(
-    supabaseClient
-      .from('leader_leads')
-      .update({ ...patch, updated_at: new Date().toISOString() })
-      .eq('id', id)
-      .select(LEAD_LIST_FIELDS)
-      .single(),
+    query.select(LEAD_LIST_FIELDS).maybeSingle(),
     16000,
     'Заявка не обновилась за 16 секунд'
   );
   if (response.error) throw response.error;
+  if (!response.data) throw new Error('Заявку уже взял другой сотрудник. Обновите список.');
   const updated = response.data;
   setState({
     leads: (v4State.leads || []).map((lead) => (lead.id === id ? { ...lead, ...updated } : lead)),
@@ -369,7 +370,7 @@ function bindLeadActions() {
       button.disabled = true;
       setStatus('Назначаю вас ответственным...', 'warn');
       try {
-        await updateLead(id, assignment.patch);
+        await updateLead(id, assignment.patch, { requireUnassigned: true });
         try {
           await addAssignmentHistory(assignment);
           toast('Заявка назначена вам');
