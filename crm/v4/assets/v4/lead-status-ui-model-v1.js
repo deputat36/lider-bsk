@@ -9,6 +9,7 @@ import { leadResponsibilityState } from './lead-assignment-model-v1.js';
 export const LEAD_QUICK_FILTERS = Object.freeze([
   Object.freeze({ value: 'active', label: 'Активные в работе' }),
   Object.freeze({ value: 'unassigned', label: 'Без ответственного' }),
+  Object.freeze({ value: 'overdue_contact', label: 'Просрочен контакт' }),
   Object.freeze({ value: 'no_phone', label: 'Без телефона' }),
   Object.freeze({ value: 'no_next_contact', label: 'Без следующего контакта' }),
   Object.freeze({ value: 'site', label: 'Заявки с сайта' }),
