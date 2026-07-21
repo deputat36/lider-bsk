@@ -1,0 +1,70 @@
+{
+  "contract": "crm-staging-installation-user-jwt-smoke",
+  "version": 1,
+  "project_ref": "otulfnouybahfnsycxqn",
+  "environment": "staging",
+  "function": "leader-crm-installation",
+  "action": "installation_job.update",
+  "permission": "installation.write",
+  "runner": "tools/run_crm_staging_installation_user_jwt_smoke.mjs",
+  "runtime_environment": [
+    "STAGING_SUPABASE_URL",
+    "STAGING_SUPABASE_PUBLISHABLE_KEY",
+    "STAGING_INSTALLATION_AUTHORIZED_USER_JWT",
+    "STAGING_INSTALLATION_FORBIDDEN_USER_JWT"
+  ],
+  "secrets_in_repository": false,
+  "cases": [
+    {
+      "name": "missing_jwt",
+      "expected_http": 401,
+      "expected_error": "missing_or_invalid_jwt"
+    },
+    {
+      "name": "invalid_jwt",
+      "expected_http": 401,
+      "expected_error": "missing_or_invalid_jwt"
+    },
+    {
+      "name": "forbidden_role",
+      "expected_http": 403,
+      "expected_error": "forbidden",
+      "expected_action": "installation_job.update",
+      "expected_permission": "installation.write"
+    },
+    {
+      "name": "authorized_role",
+      "expected_http": 404,
+      "expected_error": "not_found",
+      "meaning": "JWT accepted, canonical permission passed, request reached transactional RPC"
+    }
+  ],
+  "persistent_fixture": false,
+  "persistent_receipt": false,
+  "working_data_write_expected": false,
+  "database_precondition": {
+    "schema_reconciliation_ready": true,
+    "edge_active": true,
+    "verify_jwt": true,
+    "edge_sha256": "4be533387e91a4d91a025a8c7c0ea9516563a4cba7e236c270cdd23097cb6bdc",
+    "rpc_md5": "0ed4669197dac1f2695e763d0eec54e1"
+  },
+  "execution_gate": {
+    "manual_runtime_tokens_required": true,
+    "authorized_and_forbidden_tokens_must_differ": true,
+    "tokens_must_not_be_logged": true,
+    "tokens_must_not_be_committed": true,
+    "run_not_performed_in_source_pr": true
+  },
+  "success_effect": {
+    "user_jwt_smoke_completed": true,
+    "frontend_switch_ready_for_separate_review": true,
+    "production_ready": false
+  },
+  "production_boundary": {
+    "production_project_ref": "ofewxuqfjhamgerwzull",
+    "production_call": false,
+    "production_data_change": false,
+    "explicit_approval_required": true
+  }
+}

@@ -1,0 +1,36 @@
+name: CRM staging installation user-JWT smoke check
+
+on:
+  pull_request:
+    paths:
+      - 'tools/run_crm_staging_installation_user_jwt_smoke.mjs'
+      - 'tools/check_crm_staging_installation_user_jwt_smoke.py'
+      - 'contracts/crm-staging-installation-user-jwt-smoke-v1.json'
+      - 'contracts/crm-staging-installation-command-edge-v1.json'
+      - 'docs/SUPABASE_STAGING_INSTALLATION_USER_JWT_SMOKE_V1_2026-07-21.md'
+      - '.github/workflows/crm-staging-installation-user-jwt-smoke-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/run_crm_staging_installation_user_jwt_smoke.mjs'
+      - 'tools/check_crm_staging_installation_user_jwt_smoke.py'
+      - 'contracts/crm-staging-installation-user-jwt-smoke-v1.json'
+      - 'contracts/crm-staging-installation-command-edge-v1.json'
+      - 'docs/SUPABASE_STAGING_INSTALLATION_USER_JWT_SMOKE_V1_2026-07-21.md'
+      - '.github/workflows/crm-staging-installation-user-jwt-smoke-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check runner syntax
+        run: node --check tools/run_crm_staging_installation_user_jwt_smoke.mjs
+      - name: Compile contract checker
+        run: python3 -m py_compile tools/check_crm_staging_installation_user_jwt_smoke.py
+      - name: Validate no-secret smoke contract
+        run: python3 tools/check_crm_staging_installation_user_jwt_smoke.py
