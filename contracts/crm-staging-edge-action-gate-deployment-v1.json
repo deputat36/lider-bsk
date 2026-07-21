@@ -1,0 +1,68 @@
+{
+  "contract": "crm-staging-edge-action-gate-deployment",
+  "version": 1,
+  "project_ref": "otulfnouybahfnsycxqn",
+  "environment": "staging",
+  "gate_version": "20260721-canonical-action-gate-1",
+  "database_permission_rpc": {
+    "name": "leader_actor_has_crm_action_rpc",
+    "execute_grantees": ["postgres", "service_role"],
+    "browser_role_parameter": false
+  },
+  "functions": {
+    "leader-crm-leads-staging": {
+      "version": 2,
+      "status": "ACTIVE",
+      "verify_jwt": true,
+      "implementation_slug": "leader-crm-leads-staging-impl",
+      "sha256": "3009c3530b5b6de2b852ea215c0634e90667aa694e5cb536d82a514d261dc1ba"
+    },
+    "leader-crm-leads-staging-impl": {
+      "version": 1,
+      "status": "ACTIVE",
+      "verify_jwt": true,
+      "pinned_commit": "17524ea9ef08c11b18b385b9469778d5b1084ddb",
+      "sha256": "b3e864d49e4529d6c112ce70185337e71484bfa833676031dfa28e1fb21fe1bd"
+    },
+    "leader-crm-orders": {
+      "version": 2,
+      "status": "ACTIVE",
+      "verify_jwt": true,
+      "implementation_slug": "leader-crm-orders-impl",
+      "sha256": "ae3de121e1f991f1886549141340179c1fc8e71135648f6fb36ae3496646aaa5"
+    },
+    "leader-crm-orders-impl": {
+      "version": 1,
+      "status": "ACTIVE",
+      "verify_jwt": true,
+      "pinned_commit": "4dafa2723c1018574572d9a91441cf382ac25b34",
+      "sha256": "7ba9f9b59790b0c683a7d3cc64ccfc27fc42c9ea24c9f009a8b064554c5831d7"
+    }
+  },
+  "leads_mapping": {
+    "dashboard": ["leads.read"],
+    "list": ["leads.read"],
+    "list_orders": ["orders.read"],
+    "create": ["leads.create"],
+    "update": ["leads.update"],
+    "ensure_client": ["clients.write"],
+    "create_order": ["orders.create"],
+    "create_order_from_offer": ["orders.create"],
+    "ensure_profile": []
+  },
+  "orders_update_mapping": {
+    "status": "orders.update",
+    "layout_status": "orders.update",
+    "production_status": "orders.update",
+    "layout_comment": "orders.update",
+    "deadline": "orders.update",
+    "payment_status": "finance.write"
+  },
+  "unknown_action": "deny_before_implementation",
+  "permission_denied": "deny_before_implementation",
+  "rollback": {
+    "leads": "redeploy leader-crm-leads-staging v1 pinned import",
+    "orders": "redeploy leader-crm-orders v1 pinned import"
+  },
+  "production_deployment": "not_performed_requires_explicit_approval"
+}
