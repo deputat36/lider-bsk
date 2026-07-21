@@ -1,0 +1,26 @@
+name: CRM brand foundations v2 check
+
+on:
+  pull_request:
+    paths:
+      - 'crm/v4/assets/v4/brand-foundations-v2.css'
+      - 'crm/v4/assets/v4/ui-polish.css'
+      - 'tools/check_crm_brand_foundations_v2.py'
+      - '.github/workflows/crm-brand-foundations-v2-check.yml'
+  push:
+    branches:
+      - main
+      - design/crm-brand-foundations-v2
+    paths:
+      - 'crm/v4/assets/v4/brand-foundations-v2.css'
+      - 'crm/v4/assets/v4/ui-polish.css'
+      - 'tools/check_crm_brand_foundations_v2.py'
+      - '.github/workflows/crm-brand-foundations-v2-check.yml'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate CRM brand foundations v2
+        run: python3 tools/check_crm_brand_foundations_v2.py
