@@ -20,10 +20,10 @@ Staging functions использовали проверенные, но уста
 - `leader-crm-leads-staging-impl v1`;
 - `leader-crm-orders-impl v1`.
 
-Исходные slugs теперь принадлежат canonical wrappers:
+Исходные slugs теперь принадлежат JWT-first canonical wrappers:
 
-- `leader-crm-leads-staging v2`;
-- `leader-crm-orders v2`.
+- `leader-crm-leads-staging v3`;
+- `leader-crm-orders v3`.
 
 Все четыре функции имеют статус ACTIVE и `verify_jwt=true`.
 
@@ -31,12 +31,15 @@ Staging functions использовали проверенные, но уста
 
 Wrapper выполняет действия строго в таком порядке:
 
-1. определяет action и canonical permissions;
-2. отклоняет unknown action;
-3. проверяет JWT через Auth user endpoint;
-4. вызывает service-role-only `leader_actor_has_crm_action_rpc`;
-5. при false возвращает `forbidden`;
-6. только после разрешения вызывает implementation slug с исходным JWT и body.
+1. читает body без бизнес-запросов;
+2. проверяет JWT через Auth user endpoint;
+3. определяет action и canonical permissions;
+4. отклоняет unknown action;
+5. вызывает service-role-only `leader_actor_has_crm_action_rpc`;
+6. при false возвращает `forbidden`;
+7. только после разрешения вызывает implementation slug с исходным JWT и body.
+
+Unknown action больше нельзя анонимно использовать как oracle: без JWT запрос не доходит до распознавания action.
 
 Browser-supplied role не принимается и не передаётся в permission RPC.
 
@@ -81,8 +84,8 @@ Update без полей требует `orders.update`, после чего п�
 ### Leads wrapper
 
 - slug: `leader-crm-leads-staging`;
-- version: 2;
-- SHA-256: `3009c3530b5b6de2b852ea215c0634e90667aa694e5cb536d82a514d261dc1ba`;
+- version: 3;
+- SHA-256: `e64036306fefff72bcb457f0f64756bcf40f27cc406e695e3f3d4c76d2b1b4d1`;
 - implementation: `leader-crm-leads-staging-impl`.
 
 ### Leads implementation
@@ -94,8 +97,8 @@ Update без полей требует `orders.update`, после чего п�
 ### Orders wrapper
 
 - slug: `leader-crm-orders`;
-- version: 2;
-- SHA-256: `ae3de121e1f991f1886549141340179c1fc8e71135648f6fb36ae3496646aaa5`;
+- version: 3;
+- SHA-256: `dccbd8ec3c57cdd58db269e6808f86cdc99f4416ae41eca8b6df24a284649646`;
 - implementation: `leader-crm-orders-impl`.
 
 ### Orders implementation
@@ -127,7 +130,7 @@ Pure mapping test проверяет:
 
 Развёрнутые function source повторно прочитаны через Supabase management API. Wrapper-файлы и shared dependencies соответствуют ветке.
 
-Edge runtime logs после deployment пусты: boot errors не зарегистрированы, но реальный user-JWT запрос не выполнялся. Тестовых Auth-пользователей и паролей не создавали. Missing-token path подтверждён исходным wrapper-кодом и обязательной платформенной настройкой `verify_jwt=true`, но отдельный HTTP probe из доступных инструментов не выполнялся.
+Edge runtime logs после deployment пусты: boot errors не зарегистрированы, но реальный user-JWT запрос не выполнялся. Тестовых Auth-пользователей и паролей не создавали. Missing-token path подтверждён JWT-first wrapper-кодом и обязательной платформенной настройкой `verify_jwt=true`, но отдельный HTTP probe из доступных инструментов не выполнялся.
 
 ## Rollback
 
