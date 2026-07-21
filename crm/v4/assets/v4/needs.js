@@ -5,17 +5,22 @@ import { byId, setStatus, toast } from './ui.js';
 import { CRM_V4_ACTIONS, canPerformV4Action, requireV4Action } from './action-permissions-v1.js';
 import {
   activeNeeds,
+  duplicateNeedGroups,
   findDuplicateNeed,
+  needArchiveDecision,
   needDraftFromRecord,
+  needDuplicateSummary,
   needFingerprint,
   needFormPresentation
 } from './need-workspace-model-v1.js';
 
 const NEED_FIELDS = 'id,lead_id,client_id,need_type,title,description,structured_data,need_design,need_installation,design_reason,installation_reason,deadline_text,deadline_date,files,status,completeness_score,missing_fields,created_by,updated_by,created_at,updated_at';
+const NEED_ARCHIVE_DEPENDENCY_FIELDS = 'id,need_id,status,commercial_offer_id,order_id,is_current_revision,created_at';
 const NEED_TYPES = ['Баннер', 'Вывеска', 'Пленка / наклейки', 'Полиграфия', 'Табличка', 'Дизайн', 'Монтаж', 'Интернет-реклама', 'Другое'];
 
 let saveBusy = false;
 let needsLoadSequence = 0;
+const archiveBusy = new Set();
 let workspace = {
   leadId: null,
   mode: 'create',
@@ -27,6 +32,11 @@ let workspace = {
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
+}
+
+function formatDateTime(value) {
+  if (!value) return 'дата не указана';
+  try { return new Date(value).toLocaleString('ru-RU'); } catch (_) { return String(value); }
 }
 
 function typeOptions(selected = 'Другое') {
@@ -45,6 +55,7 @@ function createUuid() {
 
 function resetWorkspace(leadId, mode = 'loading') {
   saveBusy = false;
+  archiveBusy.clear();
   workspace = {
     leadId: leadId || null,
     mode,
@@ -80,19 +91,72 @@ function calculateCompleteness(payload) {
   return { score: Math.min(score, 100), missing };
 }
 
-function renderNeedCard(need) {
+function duplicateMetaMap(summary) {
+  const result = new Map();
+  for (const group of summary.groups || []) {
+    for (const record of group.records || []) {
+      const id = record.need?.id;
+      if (!id) continue;
+      result.set(id, {
+        groupKey: group.key,
+        rowCount: group.rowCount,
+        extraCount: group.extraCount,
+        keeperId: group.keeperId,
+        isKeeper: record.isKeeper,
+        position: record.index + 1,
+        calculationCount: record.calculationCount,
+        offerLinkCount: record.offerLinkCount,
+        orderLinkCount: record.orderLinkCount
+      });
+    }
+  }
+  return result;
+}
+
+function renderDuplicateReview(summary) {
+  if (!summary.groupCount) return '';
+  return `
+    <details class="v4-need-duplicate-panel">
+      <summary>
+        <span><b>Найдены вероятные дубли</b><small>Групп: ${summary.groupCount} · лишних активных записей: ${summary.extraRecordCount}</small></span>
+        <strong>Проверить</strong>
+      </summary>
+      <div class="v4-need-duplicate-panel-body">
+        <p>CRM ничего не удаляет автоматически. Основной считается запись с рабочими связями, а при их отсутствии — самая ранняя. Перед архивированием система ещё раз проверит расчёты, КП и заказы.</p>
+        ${(summary.groups || []).map((group, groupIndex) => `
+          <section class="v4-need-duplicate-group">
+            <div><b>Группа ${groupIndex + 1}: ${esc(group.title)}</b><span>${group.rowCount} одинаковые записи</span></div>
+            <div class="v4-need-duplicate-records">
+              ${(group.records || []).map((record) => `
+                <button type="button" data-need-duplicate-focus="${esc(record.need?.id)}" class="${record.isKeeper ? 'is-keeper' : 'is-extra'}">
+                  <b>${record.isKeeper ? 'Рекомендуется оставить' : 'Вероятный дубль'}</b>
+                  <span>${esc(formatDateTime(record.need?.created_at))}${record.calculationCount ? ` · расчётов: ${record.calculationCount}` : ''}</span>
+                </button>`).join('')}
+            </div>
+          </section>`).join('')}
+      </div>
+    </details>`;
+}
+
+function renderNeedCard(need, duplicateMeta = null) {
   const data = need.structured_data || {};
   const flags = [need.need_design ? 'Нужен дизайн' : '', need.need_installation ? 'Нужен монтаж' : ''].filter(Boolean);
   const missing = Array.isArray(need.missing_fields) ? need.missing_fields : [];
   const canWrite = canPerformV4Action(CRM_V4_ACTIONS.NEEDS_WRITE);
   const canCalculate = canPerformV4Action(CRM_V4_ACTIONS.CALCULATIONS_WRITE);
+  const duplicateClass = duplicateMeta ? ` is-duplicate ${duplicateMeta.isKeeper ? 'is-duplicate-keeper' : 'is-duplicate-extra'}` : '';
+  const archiveLabel = duplicateMeta ? (duplicateMeta.isKeeper ? 'Проверить архивирование' : 'Архивировать дубль') : 'Архивировать';
+  const duplicateNote = duplicateMeta
+    ? `<div class="v4-need-duplicate-note ${duplicateMeta.isKeeper ? 'is-keeper' : 'is-extra'}"><b>${duplicateMeta.isKeeper ? 'Рекомендуемая основная запись' : `Вероятный дубль ${duplicateMeta.position} из ${duplicateMeta.rowCount}`}</b><span>${duplicateMeta.isKeeper ? 'Сначала проверьте и архивируйте более поздние одинаковые записи.' : 'Перед архивированием CRM проверит расчёты, КП и заказы.'}</span></div>`
+    : '';
   return `
-    <article class="v4-need-card" data-id="${esc(need.id)}">
+    <article class="v4-need-card${duplicateClass}" data-id="${esc(need.id)}">
       <div>
         <div class="v4-need-title-row">
           <h4>${esc(need.title || need.need_type || 'Потребность')}</h4>
           <span>${esc(need.status || 'Черновик')} · ${Number(need.completeness_score || 0)}%</span>
         </div>
+        ${duplicateNote}
         <p>${esc(need.description || 'Описание пока не заполнено.')}</p>
         <div class="v4-need-meta">
           <span>${esc(need.need_type || 'Другое')}</span>
@@ -108,7 +172,7 @@ function renderNeedCard(need) {
       </div>
       <div class="v4-need-actions">
         ${canCalculate ? '<button type="button" class="v4-primary" data-action="calculate-need">Перейти к расчёту</button>' : ''}
-        ${canWrite ? '<button type="button" data-action="edit-need">Изменить</button><button type="button" data-action="copy-need">Создать копию</button><button type="button" data-action="archive-need">Архивировать</button>' : ''}
+        ${canWrite ? `<button type="button" data-action="edit-need">Изменить</button><button type="button" data-action="copy-need">Создать копию</button><button type="button" data-action="archive-need">${esc(archiveLabel)}</button>` : ''}
       </div>
     </article>`;
 }
@@ -191,7 +255,13 @@ export function renderNeeds() {
   }
   if (headerAddButton) headerAddButton.hidden = false;
   const visibleNeeds = activeNeeds(v4State.leadNeeds || []);
-  if (counter) counter.textContent = v4State.leadNeedsBusy ? 'Загружаю...' : `Потребностей: ${visibleNeeds.length}`;
+  const duplicateSummary = needDuplicateSummary(visibleNeeds, v4State.calculations || []);
+  const duplicateById = duplicateMetaMap(duplicateSummary);
+  if (counter) {
+    counter.textContent = v4State.leadNeedsBusy
+      ? 'Загружаю...'
+      : `Потребностей: ${visibleNeeds.length}${duplicateSummary.extraRecordCount ? ` · вероятных дублей: ${duplicateSummary.extraRecordCount}` : ''}`;
+  }
   if (headerAddButton) {
     const formOpen = ['create', 'edit', 'copy'].includes(workspace.mode);
     headerAddButton.disabled = formOpen || v4State.leadNeedsBusy;
@@ -200,7 +270,7 @@ export function renderNeeds() {
   if (v4State.leadNeedsBusy) list.innerHTML = '<div class="v4-empty">Загружаю потребности...</div>';
   else if (v4State.leadNeedsError) list.innerHTML = `<div class="v4-empty is-error">${esc(v4State.leadNeedsError)}</div>`;
   else if (!visibleNeeds.length) list.innerHTML = '<div class="v4-empty">Активных потребностей пока нет.</div>';
-  else list.innerHTML = visibleNeeds.map(renderNeedCard).join('');
+  else list.innerHTML = `${renderDuplicateReview(duplicateSummary)}${visibleNeeds.map((need) => renderNeedCard(need, duplicateById.get(need.id) || null)).join('')}`;
 
   if (workspace.mode === 'loading') {
     formBox.innerHTML = '';
@@ -424,6 +494,22 @@ async function saveNeed() {
   }
 }
 
+async function loadNeedArchiveDependencies(needIds = []) {
+  const ids = [...new Set((Array.isArray(needIds) ? needIds : []).map((id) => String(id || '').trim()).filter(Boolean))];
+  if (!ids.length) return [];
+  const response = await timeout(
+    supabaseClient
+      .from('leader_lead_calculations')
+      .select(NEED_ARCHIVE_DEPENDENCY_FIELDS)
+      .in('need_id', ids)
+      .limit(100),
+    10000,
+    'Не удалось проверить связи потребности за 10 секунд'
+  );
+  if (response.error) throw response.error;
+  return response.data || [];
+}
+
 async function archiveNeed(id) {
   if (!requireV4Action(CRM_V4_ACTIONS.NEEDS_WRITE)) throw new Error('У вашей роли нет права архивировать потребности');
   const response = await timeout(
@@ -442,6 +528,45 @@ function needFromAction(target) {
   return (v4State.leadNeeds || []).find((need) => need.id === id) || null;
 }
 
+function focusDuplicateNeed(id) {
+  const card = document.querySelector(`.v4-need-card[data-id="${CSS.escape(String(id || ''))}"]`);
+  if (!card) return;
+  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  card.classList.add('is-duplicate-focus');
+  setTimeout(() => card.classList.remove('is-duplicate-focus'), 1800);
+}
+
+async function reviewAndArchiveNeed(need, button) {
+  if (!need?.id || archiveBusy.has(need.id)) return;
+  archiveBusy.add(need.id);
+  button.disabled = true;
+  try {
+    setStatus('Проверяю расчёты, КП и заказы...', 'warn');
+    const group = duplicateNeedGroups(v4State.leadNeeds || []).find((item) => item.records.some((record) => record.need?.id === need.id));
+    const groupIds = group ? group.records.map((record) => record.need?.id).filter(Boolean) : [need.id];
+    const dependencies = await loadNeedArchiveDependencies(groupIds);
+    const decision = needArchiveDecision(need, v4State.leadNeeds || [], dependencies);
+    if (!decision.allowed) {
+      toast(decision.message);
+      setStatus(decision.message, 'warn');
+      renderNeeds();
+      return;
+    }
+    const confirmed = typeof globalThis.confirm === 'function' && globalThis.confirm(decision.confirmMessage);
+    if (!confirmed) {
+      setStatus('Архивирование отменено. Данные не изменены.', 'warn');
+      return;
+    }
+    await archiveNeed(need.id);
+    toast(decision.code === 'duplicate' ? 'Дубль отправлен в архив' : 'Потребность отправлена в архив');
+    setStatus(decision.code === 'duplicate' ? 'Дубль архивирован, основная запись сохранена' : 'Потребность отправлена в архив', 'good');
+  } finally {
+    archiveBusy.delete(need.id);
+    if (button.isConnected) button.disabled = false;
+    renderNeeds();
+  }
+}
+
 function bindNeedsEvents() {
   byId('leadCardSection')?.addEventListener('submit', async (event) => {
     if (event.target?.id !== 'needForm') return;
@@ -454,6 +579,11 @@ function bindNeedsEvents() {
     }
   });
   byId('leadCardSection')?.addEventListener('click', async (event) => {
+    const duplicateFocus = event.target.closest('[data-need-duplicate-focus]');
+    if (duplicateFocus) {
+      focusDuplicateNeed(duplicateFocus.dataset.needDuplicateFocus);
+      return;
+    }
     if (event.target?.id === 'cancelNeedBtn' || event.target?.id === 'cancelNeedTopBtn') { closeNeedForm(); return; }
     const openCreate = event.target.closest('button[data-action="open-create-need"]');
     if (openCreate) {
@@ -476,14 +606,11 @@ function bindNeedsEvents() {
     if (!archive) return;
     const need = needFromAction(archive);
     if (!need) return;
-    archive.disabled = true;
     try {
-      await archiveNeed(need.id);
-      toast('Потребность отправлена в архив');
+      await reviewAndArchiveNeed(need, archive);
     } catch (error) {
       toast(friendlyError(error));
-    } finally {
-      archive.disabled = false;
+      setStatus(`Архивирование не выполнено: ${friendlyError(error)}`, 'error');
     }
   });
   byId('leadCardSection')?.addEventListener('change', (event) => {
