@@ -4,6 +4,7 @@
   "project_ref": "otulfnouybahfnsycxqn",
   "environment": "staging",
   "gate_version": "20260721-canonical-action-gate-1",
+  "execution_order": ["parse_body", "authenticate_user", "resolve_action", "check_permissions", "forward_to_implementation"],
   "database_permission_rpc": {
     "name": "leader_actor_has_crm_action_rpc",
     "execute_grantees": ["postgres", "service_role"],
@@ -11,11 +12,11 @@
   },
   "functions": {
     "leader-crm-leads-staging": {
-      "version": 2,
+      "version": 3,
       "status": "ACTIVE",
       "verify_jwt": true,
       "implementation_slug": "leader-crm-leads-staging-impl",
-      "sha256": "3009c3530b5b6de2b852ea215c0634e90667aa694e5cb536d82a514d261dc1ba"
+      "sha256": "e64036306fefff72bcb457f0f64756bcf40f27cc406e695e3f3d4c76d2b1b4d1"
     },
     "leader-crm-leads-staging-impl": {
       "version": 1,
@@ -25,11 +26,11 @@
       "sha256": "b3e864d49e4529d6c112ce70185337e71484bfa833676031dfa28e1fb21fe1bd"
     },
     "leader-crm-orders": {
-      "version": 2,
+      "version": 3,
       "status": "ACTIVE",
       "verify_jwt": true,
       "implementation_slug": "leader-crm-orders-impl",
-      "sha256": "ae3de121e1f991f1886549141340179c1fc8e71135648f6fb36ae3496646aaa5"
+      "sha256": "dccbd8ec3c57cdd58db269e6808f86cdc99f4416ae41eca8b6df24a284649646"
     },
     "leader-crm-orders-impl": {
       "version": 1,
@@ -58,7 +59,8 @@
     "deadline": "orders.update",
     "payment_status": "finance.write"
   },
-  "unknown_action": "deny_before_implementation",
+  "anonymous_action_oracle": "blocked_by_jwt_first_order",
+  "unknown_action": "deny_before_permission_and_implementation",
   "permission_denied": "deny_before_implementation",
   "rollback": {
     "leads": "redeploy leader-crm-leads-staging v1 pinned import",
