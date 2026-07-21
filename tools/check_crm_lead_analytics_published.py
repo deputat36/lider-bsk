@@ -58,7 +58,7 @@ TARGETS = (
     ),
     Target(
         "lead list module",
-        f"{CANONICAL_BASE_URL}assets/v4/leads.js?v=20260717-module-singleton-1",
+        f"{CANONICAL_BASE_URL}assets/v4/leads.js?v=20260721-assignment-1",
         "javascript",
         (
             "import { leadAnalyticsSearchText } from './lead-analytics-normalization.js';",
