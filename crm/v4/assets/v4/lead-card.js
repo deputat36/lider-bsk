@@ -270,20 +270,21 @@ async function loadLead(id) {
   }
 }
 
-async function updateCurrentLead(patch) {
+async function updateCurrentLead(patch, options = {}) {
   const id = v4State.currentLead?.id || v4State.route.leadId;
   if (!id) return null;
+  let query = supabaseClient
+    .from('leader_leads')
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (options.requireUnassigned === true) query = query.is('assigned_to', null);
   const response = await timeout(
-    supabaseClient
-      .from('leader_leads')
-      .update({ ...patch, updated_at: new Date().toISOString() })
-      .eq('id', id)
-      .select(FULL_LEAD_FIELDS)
-      .single(),
+    query.select(FULL_LEAD_FIELDS).maybeSingle(),
     16000,
     'Заявка не обновилась за 16 секунд'
   );
   if (response.error) throw response.error;
+  if (!response.data) throw new Error('Заявку уже взял другой сотрудник. Обновите карточку.');
   setState({
     currentLead: response.data,
     leads: (v4State.leads || []).map((lead) => (lead.id === id ? { ...lead, ...response.data } : lead))
@@ -319,10 +320,10 @@ async function handleTakeLead(button) {
   if (button) button.disabled = true;
   setStatus('Назначаю вас ответственным...', 'warn');
   try {
-    await updateCurrentLead(assignment.patch);
-    const addEvent = window.leaderAddLeadEvent;
-    if (typeof addEvent !== 'function') throw new Error('История заявки ещё загружается');
+    await updateCurrentLead(assignment.patch, { requireUnassigned: true });
     try {
+      const addEvent = window.leaderAddLeadEvent;
+      if (typeof addEvent !== 'function') throw new Error('История заявки ещё загружается');
       await addEvent({
         leadId: assignment.leadId,
         eventType: assignment.event.eventType,
