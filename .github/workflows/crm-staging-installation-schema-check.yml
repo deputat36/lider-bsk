@@ -39,4 +39,18 @@ jobs:
       - name: Compile checker
         run: python3 -m py_compile tools/check_crm_staging_installation_schema.py
       - name: Validate aligned staging installation schema v5
-        run: python3 tools/check_crm_staging_installation_schema.py
+        shell: bash
+        run: |
+          set +e
+          python3 tools/check_crm_staging_installation_schema.py > installation-schema-check.log 2>&1
+          status=$?
+          cat installation-schema-check.log
+          exit "$status"
+      - name: Upload installation schema diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: installation-schema-check-diagnostics
+          path: installation-schema-check.log
+          if-no-files-found: error
+          retention-days: 7
