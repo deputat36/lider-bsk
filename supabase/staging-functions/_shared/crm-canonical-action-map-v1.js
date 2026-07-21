@@ -20,6 +20,10 @@ export const ORDER_UPDATE_FIELD_PERMISSION = Object.freeze({
   payment_status: 'finance.write',
 })
 
+export const DESIGN_ACTION_PERMISSION = Object.freeze({
+  'design_task.create_from_order': Object.freeze(['design.write']),
+})
+
 function clean(value, max = 80) {
   return String(value ?? '').trim().slice(0, max)
 }
@@ -62,5 +66,16 @@ export function orderActionPlan(body = {}) {
     bootstrap: false,
     permissions: Object.freeze(permissions),
     fields: Object.freeze(fields),
+  })
+}
+
+export function designActionPlan(body = {}) {
+  const action = clean(body?.action, 80)
+  const permissions = DESIGN_ACTION_PERMISSION[action]
+  return Object.freeze({
+    action,
+    known: Array.isArray(permissions),
+    bootstrap: false,
+    permissions: Object.freeze([...(permissions || [])]),
   })
 }
