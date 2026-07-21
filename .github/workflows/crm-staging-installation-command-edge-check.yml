@@ -1,0 +1,53 @@
+name: CRM staging installation command Edge check
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/staging-migrations/20260721_05_installation_schema_install.sql'
+      - 'supabase/staging-migrations/20260721_06_installation_job_update_rpc.sql'
+      - 'supabase/staging-functions/leader-crm-installation/**'
+      - 'contracts/crm-staging-installation-schema-v1.json'
+      - 'contracts/crm-staging-installation-command-edge-v1.json'
+      - 'docs/SUPABASE_STAGING_INSTALLATION_SCHEMA_V1_2026-07-21.md'
+      - 'docs/SUPABASE_STAGING_INSTALLATION_COMMAND_EDGE_V1_2026-07-21.md'
+      - 'tools/check_crm_staging_installation_schema.py'
+      - 'tools/check_crm_staging_installation_command_edge.py'
+      - 'crm/v4/assets/v4/installation-job-card-v2.js'
+      - 'crm/v4/assets/v4/status-transitions-v1.js'
+      - '.github/workflows/crm-staging-installation-schema-check.yml'
+      - '.github/workflows/crm-staging-installation-command-edge-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/staging-migrations/20260721_05_installation_schema_install.sql'
+      - 'supabase/staging-migrations/20260721_06_installation_job_update_rpc.sql'
+      - 'supabase/staging-functions/leader-crm-installation/**'
+      - 'contracts/crm-staging-installation-schema-v1.json'
+      - 'contracts/crm-staging-installation-command-edge-v1.json'
+      - 'docs/SUPABASE_STAGING_INSTALLATION_SCHEMA_V1_2026-07-21.md'
+      - 'docs/SUPABASE_STAGING_INSTALLATION_COMMAND_EDGE_V1_2026-07-21.md'
+      - 'tools/check_crm_staging_installation_schema.py'
+      - 'tools/check_crm_staging_installation_command_edge.py'
+      - 'crm/v4/assets/v4/installation-job-card-v2.js'
+      - 'crm/v4/assets/v4/status-transitions-v1.js'
+      - '.github/workflows/crm-staging-installation-schema-check.yml'
+      - '.github/workflows/crm-staging-installation-command-edge-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check deployed Edge source
+        run: deno check supabase/staging-functions/leader-crm-installation/index.ts
+      - name: Compile deployment checker
+        run: python3 -m py_compile tools/check_crm_staging_installation_command_edge.py
+      - name: Validate installation Edge, RPC, ACL and production boundary
+        run: python3 tools/check_crm_staging_installation_command_edge.py
