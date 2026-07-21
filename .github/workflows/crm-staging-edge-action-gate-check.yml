@@ -1,0 +1,50 @@
+name: CRM staging Edge action gate check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'contracts/crm-v4-role-action-matrix-v1.json'
+      - 'contracts/crm-staging-edge-action-gate-deployment-v1.json'
+      - 'supabase/staging-migrations/20260721_03_actor_action_permission_rpc.sql'
+      - 'supabase/staging-functions/_shared/crm-canonical-action-map-v1.js'
+      - 'supabase/staging-functions/_shared/canonical-edge-wrapper-v1.js'
+      - 'supabase/staging-functions/leader-crm-leads-staging/index.ts'
+      - 'supabase/staging-functions/leader-crm-leads-staging-impl/index.ts'
+      - 'supabase/staging-functions/leader-crm-orders/index.ts'
+      - 'supabase/staging-functions/leader-crm-orders-impl/index.ts'
+      - 'tools/test_crm_edge_action_gate.mjs'
+      - 'tools/check_crm_staging_edge_action_gate.py'
+      - 'docs/SUPABASE_STAGING_EDGE_ACTION_GATE_2026-07-21.md'
+      - '.github/workflows/crm-staging-edge-action-gate-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'contracts/crm-v4-role-action-matrix-v1.json'
+      - 'contracts/crm-staging-edge-action-gate-deployment-v1.json'
+      - 'supabase/staging-migrations/20260721_03_actor_action_permission_rpc.sql'
+      - 'supabase/staging-functions/_shared/crm-canonical-action-map-v1.js'
+      - 'supabase/staging-functions/_shared/canonical-edge-wrapper-v1.js'
+      - 'supabase/staging-functions/leader-crm-leads-staging/index.ts'
+      - 'supabase/staging-functions/leader-crm-leads-staging-impl/index.ts'
+      - 'supabase/staging-functions/leader-crm-orders/index.ts'
+      - 'supabase/staging-functions/leader-crm-orders-impl/index.ts'
+      - 'tools/test_crm_edge_action_gate.mjs'
+      - 'tools/check_crm_staging_edge_action_gate.py'
+      - 'docs/SUPABASE_STAGING_EDGE_ACTION_GATE_2026-07-21.md'
+      - '.github/workflows/crm-staging-edge-action-gate-check.yml'
+
+jobs:
+  staging-edge-action-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: JavaScript and TypeScript syntax
+        run: |
+          node --check supabase/staging-functions/_shared/crm-canonical-action-map-v1.js
+          node --check supabase/staging-functions/_shared/canonical-edge-wrapper-v1.js
+          node --check tools/test_crm_edge_action_gate.mjs
+      - name: Canonical action mapping
+        run: node tools/test_crm_edge_action_gate.mjs
+      - name: JWT-first source and deployment contract
+        run: python3 tools/check_crm_staging_edge_action_gate.py
