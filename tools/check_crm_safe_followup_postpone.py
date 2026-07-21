@@ -40,6 +40,7 @@ checks = {
         "previousStatus === 'Новая' ? 'Ждём ответ' : previousStatus",
         'Этап заявки:',
         '— без изменения',
+        'У другого сотрудника',
         'Перенос контакта доступен только текущему ответственному',
     ],
     assignment_model: [
@@ -58,8 +59,7 @@ checks = {
         'data-followup-responsibility',
         'data-followup-take',
         'Взять в работу',
-        'У другого сотрудника',
-        "query.is('assigned_to', null)" if False else ".is('assigned_to', null)",
+        ".is('assigned_to', null)",
         ".eq('assigned_to', context.currentUserId)",
         '.maybeSingle()',
         'Заявку уже взял другой сотрудник. Обновите очередь.',
@@ -186,10 +186,14 @@ if followups.exists():
             errors.append(f'Followup UI must use pure plans and non-destructive writes: {forbidden}')
     if ".from('leader_leads')" not in text or '.update(' not in text:
         errors.append('Existing classified followups.js must remain the write owner')
-    if text.find(".is('assigned_to', null)") > text.find('.update({ ...assignment.patch'):
-        pass
-    if ".is('assigned_to', null)" not in text or ".eq('assigned_to', context.currentUserId)" not in text:
-        errors.append('Followup writes must use conditional assignment ownership checks')
+    assignment_update = text.find('.update({ ...assignment.patch')
+    unassigned_guard = text.find(".is('assigned_to', null)", assignment_update)
+    postpone_update = text.find('.update({ ...plan.patch')
+    owner_guard = text.find(".eq('assigned_to', context.currentUserId)", postpone_update)
+    if assignment_update < 0 or unassigned_guard < assignment_update:
+        errors.append('Self-assignment update must be followed by assigned_to IS NULL compare-and-set')
+    if postpone_update < 0 or owner_guard < postpone_update:
+        errors.append('Followup postpone update must be followed by current-owner compare-and-set')
 
 production_candidates = list((root / 'supabase/migrations').glob('*followup*postpone*.sql')) + list((root / 'supabase/migrations').glob('*followup*ownership*.sql'))
 if production_candidates:
