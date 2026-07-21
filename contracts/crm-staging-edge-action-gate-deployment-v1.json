@@ -38,6 +38,20 @@
       "verify_jwt": true,
       "pinned_commit": "4dafa2723c1018574572d9a91441cf382ac25b34",
       "sha256": "7ba9f9b59790b0c683a7d3cc64ccfc27fc42c9ea24c9f009a8b064554c5831d7"
+    },
+    "leader-crm-design": {
+      "version": 2,
+      "status": "ACTIVE",
+      "verify_jwt": true,
+      "implementation_slug": "leader-crm-design-impl",
+      "sha256": "ea64030d36026762694ae1608fce61a1a58e86569e3cb2fb245b610243b9f91d"
+    },
+    "leader-crm-design-impl": {
+      "version": 1,
+      "status": "ACTIVE",
+      "verify_jwt": true,
+      "preserved_from": "leader-crm-design-v1",
+      "sha256": "1fe2ad2a48d8f2d9870fdcb0c8a7fb7dfde2c6e12cf0ac274e0511f65e48d8ac"
     }
   },
   "leads_mapping": {
@@ -59,12 +73,16 @@
     "deadline": "orders.update",
     "payment_status": "finance.write"
   },
+  "design_mapping": {
+    "design_task.create_from_order": ["design.write"]
+  },
   "anonymous_action_oracle": "blocked_by_jwt_first_order",
   "unknown_action": "deny_before_permission_and_implementation",
   "permission_denied": "deny_before_implementation",
   "rollback": {
     "leads": "redeploy leader-crm-leads-staging v1 pinned import",
-    "orders": "redeploy leader-crm-orders v1 pinned import"
+    "orders": "redeploy leader-crm-orders v1 pinned import",
+    "design": "redeploy preserved leader-crm-design v1 source under the original slug"
   },
   "production_deployment": "not_performed_requires_explicit_approval"
 }
