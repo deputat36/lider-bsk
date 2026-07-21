@@ -1,0 +1,44 @@
+name: CRM staging design action gate check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'contracts/crm-staging-edge-action-gate-deployment-v1.json'
+      - 'supabase/staging-functions/_shared/crm-canonical-action-map-v1.js'
+      - 'supabase/staging-functions/_shared/canonical-edge-wrapper-v1.js'
+      - 'supabase/staging-functions/leader-crm-design/index.ts'
+      - 'supabase/staging-functions/leader-crm-design-impl/index.ts'
+      - 'supabase/staging-functions/leader-crm-design-impl/contract.ts'
+      - 'tools/test_crm_edge_action_gate.mjs'
+      - 'tools/check_crm_design_staging_action_gate.py'
+      - 'docs/SUPABASE_STAGING_DESIGN_ACTION_GATE_2026-07-21.md'
+      - '.github/workflows/crm-design-staging-action-gate-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'contracts/crm-staging-edge-action-gate-deployment-v1.json'
+      - 'supabase/staging-functions/_shared/crm-canonical-action-map-v1.js'
+      - 'supabase/staging-functions/_shared/canonical-edge-wrapper-v1.js'
+      - 'supabase/staging-functions/leader-crm-design/index.ts'
+      - 'supabase/staging-functions/leader-crm-design-impl/index.ts'
+      - 'supabase/staging-functions/leader-crm-design-impl/contract.ts'
+      - 'tools/test_crm_edge_action_gate.mjs'
+      - 'tools/check_crm_design_staging_action_gate.py'
+      - 'docs/SUPABASE_STAGING_DESIGN_ACTION_GATE_2026-07-21.md'
+      - '.github/workflows/crm-design-staging-action-gate-check.yml'
+
+jobs:
+  design-action-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: JavaScript syntax
+        run: |
+          node --check supabase/staging-functions/_shared/crm-canonical-action-map-v1.js
+          node --check supabase/staging-functions/_shared/canonical-edge-wrapper-v1.js
+          node --check tools/test_crm_edge_action_gate.mjs
+      - name: Canonical mapping tests
+        run: node tools/test_crm_edge_action_gate.mjs
+      - name: Design staging source and deployment contract
+        run: python3 tools/check_crm_design_staging_action_gate.py
