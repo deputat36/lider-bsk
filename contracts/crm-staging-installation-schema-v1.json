@@ -1,6 +1,6 @@
 {
   "contract": "crm-staging-installation-schema",
-  "version": 2,
+  "version": 3,
   "source_audit_date": "2026-07-21",
   "repository": "deputat36/lider-bsk",
   "staging_project_ref": "otulfnouybahfnsycxqn",
@@ -9,12 +9,17 @@
   "canonical_schema_source": "supabase/staging-migrations/20260721_05_installation_schema_install.sql",
   "acceptance_source": "supabase/staging-tests/20260721_installation_schema_acceptance.sql",
   "staging_deployment": {
-    "state": "deployed_active_production_locked",
+    "state": "deployed_active_with_schema_drift",
     "migration_version": "20260721191810",
     "migration_name": "staging_installation_job_update_rpc_20260721",
     "tables_present": true,
     "order_columns_present": true,
-    "fixture_rows": 0,
+    "fixture_rows": {
+      "leader_installation_jobs": 0,
+      "leader_installation_job_items": 0,
+      "leader_installation_events": 0,
+      "leader_installation_comments": 0
+    },
     "installation_command_receipts": 0
   },
   "production_baseline": {
@@ -31,6 +36,18 @@
           "leader_installation_jobs_production_job_id_idx",
           "leader_installation_jobs_scheduled_at_idx",
           "leader_installation_jobs_status_idx"
+        ]
+      },
+      "leader_installation_job_items": {
+        "columns": 12,
+        "primary_key": "id",
+        "foreign_keys": {
+          "job_id": "leader_installation_jobs(id) ON DELETE CASCADE",
+          "order_id": "leader_orders(id) ON DELETE SET NULL"
+        },
+        "indexes": [
+          "leader_installation_items_job_idx",
+          "leader_installation_job_items_order_id_idx"
         ]
       },
       "leader_installation_events": {
@@ -73,6 +90,7 @@
   "historical_staging_gap_before_deployment": {
     "missing_tables": [
       "leader_installation_jobs",
+      "leader_installation_job_items",
       "leader_installation_events",
       "leader_installation_comments"
     ],
@@ -90,6 +108,39 @@
       "stage_updated_at"
     ]
   },
+  "deployed_staging_schema_drift": {
+    "reconciliation_required": true,
+    "foreign_keys": [
+      {
+        "table": "leader_installation_jobs",
+        "column": "order_id",
+        "deployed": "ON DELETE CASCADE",
+        "production_baseline": "ON DELETE SET NULL"
+      },
+      {
+        "table": "leader_installation_job_items",
+        "column": "order_id",
+        "deployed": "ON DELETE CASCADE",
+        "production_baseline": "ON DELETE SET NULL"
+      },
+      {
+        "table": "leader_installation_events",
+        "column": "order_id",
+        "deployed": "ON DELETE CASCADE",
+        "production_baseline": "ON DELETE SET NULL"
+      }
+    ],
+    "missing_covering_indexes": [
+      "leader_installation_job_items_order_id_idx",
+      "leader_installation_events_order_id_idx"
+    ],
+    "deployed_alternative_indexes": [
+      "leader_installation_job_items_job_id_idx",
+      "leader_installation_events_job_id_created_idx",
+      "leader_installation_comments_job_id_created_idx"
+    ],
+    "current_cycle_ddl_applied": false
+  },
   "staging_access_model": {
     "rls_enabled": true,
     "browser_policies": false,
@@ -98,6 +149,7 @@
     "authenticated_privileges": false,
     "service_role": {
       "leader_installation_jobs": ["SELECT", "INSERT", "UPDATE"],
+      "leader_installation_job_items": ["SELECT", "INSERT"],
       "leader_installation_events": ["SELECT", "INSERT"],
       "leader_installation_comments": ["SELECT", "INSERT"]
     }
@@ -158,10 +210,12 @@
     "transaction_rollback": true,
     "foreign_keys_checked": true,
     "cascade_checked": true,
+    "job_items_checked": true,
     "browser_grants_closed": true,
     "service_role_grants_checked": true
   },
   "not_in_scope": [
+    "staging schema reconciliation DDL",
     "frontend switch",
     "production migration",
     "production data",
