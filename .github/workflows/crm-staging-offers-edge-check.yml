@@ -1,0 +1,39 @@
+name: CRM staging offers Edge check
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/staging-functions/leader-crm-offers/**'
+      - 'contracts/crm-staging-offers-edge-deployment-v1.json'
+      - 'contracts/crm-v4-role-action-matrix-v1.json'
+      - 'docs/SUPABASE_STAGING_OFFERS_EDGE_V4_2026-07-21.md'
+      - 'tools/check_crm_staging_offers_edge_deployment.py'
+      - '.github/workflows/crm-staging-offers-edge-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/staging-functions/leader-crm-offers/**'
+      - 'contracts/crm-staging-offers-edge-deployment-v1.json'
+      - 'contracts/crm-v4-role-action-matrix-v1.json'
+      - 'docs/SUPABASE_STAGING_OFFERS_EDGE_V4_2026-07-21.md'
+      - 'tools/check_crm_staging_offers_edge_deployment.py'
+      - '.github/workflows/crm-staging-offers-edge-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check synchronized staging offers deployment
+        run: python3 tools/check_crm_staging_offers_edge_deployment.py
+      - name: Confirm staging source paths
+        run: |
+          test -f supabase/staging-functions/leader-crm-offers/index.ts
+          test -f supabase/staging-functions/leader-crm-offers/contract.ts
+          test -f contracts/crm-staging-offers-edge-deployment-v1.json

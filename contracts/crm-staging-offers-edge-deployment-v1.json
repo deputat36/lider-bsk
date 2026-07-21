@@ -1,0 +1,28 @@
+{
+  "contract": "crm-staging-offers-edge-deployment",
+  "version": 1,
+  "project_ref": "otulfnouybahfnsycxqn",
+  "environment": "staging",
+  "function": {
+    "slug": "leader-crm-offers",
+    "version": 4,
+    "status": "ACTIVE",
+    "verify_jwt": true,
+    "sha256": "25b2ff8b11ede3351f95c8f29315b5e43230e5cea153526f75039dc8ff99455e"
+  },
+  "action": "offer.create_from_calculation",
+  "permission": "offers.write",
+  "permission_rpc": "leader_actor_has_crm_action_rpc",
+  "business_rpc": "leader_create_offer_from_calculation_rpc",
+  "execution_order": [
+    "validate_environment",
+    "authenticate_user",
+    "validate_request",
+    "check_canonical_permission",
+    "execute_transactional_rpc"
+  ],
+  "browser_role_parameter": false,
+  "idempotency_required": true,
+  "optimistic_concurrency_required": true,
+  "production_deployment": "not_performed_requires_explicit_approval"
+}
