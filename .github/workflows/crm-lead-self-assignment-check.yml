@@ -1,0 +1,61 @@
+name: CRM lead self-assignment check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/lead-assignment-model-v1.js'
+      - 'crm/v4/assets/v4/lead-status-ui-model-v1.js'
+      - 'crm/v4/assets/v4/leads.js'
+      - 'crm/v4/assets/v4/lead-card.js'
+      - 'crm/v4/assets/v4/lead-list-preferences-v1.js'
+      - 'crm/v4/index.html'
+      - 'tools/test_crm_lead_assignment.mjs'
+      - 'tools/test_crm_lead_status_ui.mjs'
+      - 'tools/check_crm_lead_self_assignment.py'
+      - 'tools/check_crm_lead_status_ui_registry.py'
+      - 'tools/check_crm_loading_integrity.py'
+      - 'docs/CRM_LEAD_SELF_ASSIGNMENT_MANUAL_TEST_2026-07-21.md'
+      - 'docs/CRM_LEAD_SELF_ASSIGNMENT_STAGING_2026-07-21.md'
+      - 'supabase/staging/20260721054500_staging_lead_assignment_core.sql'
+      - '.github/workflows/crm-lead-self-assignment-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/lead-assignment-model-v1.js'
+      - 'crm/v4/assets/v4/lead-status-ui-model-v1.js'
+      - 'crm/v4/assets/v4/leads.js'
+      - 'crm/v4/assets/v4/lead-card.js'
+      - 'crm/v4/assets/v4/lead-list-preferences-v1.js'
+      - 'crm/v4/index.html'
+      - 'tools/test_crm_lead_assignment.mjs'
+      - 'tools/test_crm_lead_status_ui.mjs'
+      - 'tools/check_crm_lead_self_assignment.py'
+      - 'tools/check_crm_lead_status_ui_registry.py'
+      - 'tools/check_crm_loading_integrity.py'
+      - 'docs/CRM_LEAD_SELF_ASSIGNMENT_MANUAL_TEST_2026-07-21.md'
+      - 'docs/CRM_LEAD_SELF_ASSIGNMENT_STAGING_2026-07-21.md'
+      - 'supabase/staging/20260721054500_staging_lead_assignment_core.sql'
+      - '.github/workflows/crm-lead-self-assignment-check.yml'
+
+jobs:
+  lead-self-assignment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate lead self-assignment
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check crm/v4/assets/v4/lead-assignment-model-v1.js
+          node --check crm/v4/assets/v4/lead-status-ui-model-v1.js
+          node --check crm/v4/assets/v4/leads.js
+          node --check crm/v4/assets/v4/lead-card.js
+          node --check crm/v4/assets/v4/lead-list-preferences-v1.js
+          node --check tools/test_crm_lead_assignment.mjs
+          node --check tools/test_crm_lead_status_ui.mjs
+          node tools/test_crm_lead_assignment.mjs
+          node tools/test_crm_lead_status_ui.mjs
+          python3 tools/check_crm_lead_self_assignment.py
+          python3 tools/check_crm_lead_status_ui_registry.py
+          python3 tools/check_crm_loading_integrity.py
