@@ -1,6 +1,6 @@
 {
   "contract": "crm-staging-installation-schema",
-  "version": 3,
+  "version": 4,
   "source_audit_date": "2026-07-21",
   "repository": "deputat36/lider-bsk",
   "staging_project_ref": "otulfnouybahfnsycxqn",
@@ -9,11 +9,21 @@
   "canonical_schema_source": "supabase/staging-migrations/20260721_05_installation_schema_install.sql",
   "acceptance_source": "supabase/staging-tests/20260721_installation_schema_acceptance.sql",
   "staging_deployment": {
-    "state": "deployed_active_with_schema_drift",
-    "migration_version": "20260721191810",
-    "migration_name": "staging_installation_job_update_rpc_20260721",
+    "state": "deployed_active_with_one_missing_index",
+    "command_migration": {
+      "version": "20260721191810",
+      "name": "staging_installation_job_update_rpc_20260721",
+      "source": "supabase/staging-migrations/20260721_06_installation_job_update_rpc.sql"
+    },
+    "compat_migration": {
+      "version": "20260721195259",
+      "name": "staging_installation_command_compat_20260721",
+      "source": "supabase/staging-migrations/20260721_07_installation_command_compat.sql"
+    },
     "tables_present": true,
     "order_columns_present": true,
+    "foreign_keys_aligned_with_production": true,
+    "events_order_index_present": true,
     "fixture_rows": {
       "leader_installation_jobs": 0,
       "leader_installation_job_items": 0,
@@ -110,35 +120,16 @@
   },
   "deployed_staging_schema_drift": {
     "reconciliation_required": true,
-    "foreign_keys": [
-      {
-        "table": "leader_installation_jobs",
-        "column": "order_id",
-        "deployed": "ON DELETE CASCADE",
-        "production_baseline": "ON DELETE SET NULL"
-      },
-      {
-        "table": "leader_installation_job_items",
-        "column": "order_id",
-        "deployed": "ON DELETE CASCADE",
-        "production_baseline": "ON DELETE SET NULL"
-      },
-      {
-        "table": "leader_installation_events",
-        "column": "order_id",
-        "deployed": "ON DELETE CASCADE",
-        "production_baseline": "ON DELETE SET NULL"
-      }
-    ],
+    "foreign_keys": [],
+    "foreign_keys_aligned_with_production": true,
     "missing_covering_indexes": [
-      "leader_installation_job_items_order_id_idx",
+      "leader_installation_job_items_order_id_idx"
+    ],
+    "present_covering_indexes": [
       "leader_installation_events_order_id_idx"
     ],
-    "deployed_alternative_indexes": [
-      "leader_installation_job_items_job_id_idx",
-      "leader_installation_events_job_id_created_idx",
-      "leader_installation_comments_job_id_created_idx"
-    ],
+    "remaining_index_candidate": "supabase/staging-migrations/20260721_08_installation_items_order_index_candidate.sql",
+    "remaining_index_rollback": "supabase/staging-rollbacks/20260721_08_installation_items_order_index_rollback.sql",
     "current_cycle_ddl_applied": false
   },
   "staging_access_model": {
@@ -215,7 +206,7 @@
     "service_role_grants_checked": true
   },
   "not_in_scope": [
-    "staging schema reconciliation DDL",
+    "remaining staging index DDL",
     "frontend switch",
     "production migration",
     "production data",

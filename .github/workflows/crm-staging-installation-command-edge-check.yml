@@ -5,6 +5,9 @@ on:
     paths:
       - 'supabase/staging-migrations/20260721_05_installation_schema_install.sql'
       - 'supabase/staging-migrations/20260721_06_installation_job_update_rpc.sql'
+      - 'supabase/staging-migrations/20260721_07_installation_command_compat.sql'
+      - 'supabase/staging-migrations/20260721_08_installation_items_order_index_candidate.sql'
+      - 'supabase/staging-rollbacks/20260721_08_installation_items_order_index_rollback.sql'
       - 'supabase/staging-functions/leader-crm-installation/**'
       - 'contracts/crm-staging-installation-schema-v1.json'
       - 'contracts/crm-staging-installation-command-edge-v1.json'
@@ -21,6 +24,9 @@ on:
     paths:
       - 'supabase/staging-migrations/20260721_05_installation_schema_install.sql'
       - 'supabase/staging-migrations/20260721_06_installation_job_update_rpc.sql'
+      - 'supabase/staging-migrations/20260721_07_installation_command_compat.sql'
+      - 'supabase/staging-migrations/20260721_08_installation_items_order_index_candidate.sql'
+      - 'supabase/staging-rollbacks/20260721_08_installation_items_order_index_rollback.sql'
       - 'supabase/staging-functions/leader-crm-installation/**'
       - 'contracts/crm-staging-installation-schema-v1.json'
       - 'contracts/crm-staging-installation-command-edge-v1.json'
@@ -49,7 +55,7 @@ jobs:
         run: deno check supabase/staging-functions/leader-crm-installation/index.ts
       - name: Compile deployment checker
         run: python3 -m py_compile tools/check_crm_staging_installation_command_edge.py
-      - name: Validate installation Edge, RPC, ACL and production boundary
+      - name: Validate installation command v3 and remaining index gate
         shell: bash
         run: |
           set +e
