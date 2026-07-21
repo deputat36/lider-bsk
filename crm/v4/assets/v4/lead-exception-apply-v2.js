@@ -1,12 +1,11 @@
 import { supabaseClient } from './supabase-client.js';
 import { timeout, friendlyError } from './api.js';
-import { v4State, setState } from './state.js';
+import { v4State } from './state.js';
 import { setStatus, toast } from './ui.js';
 import { buildLeadExceptionApplication, leadExceptionApplyOutcome } from './lead-exception-scenarios-v1.js';
 
 const GLOBAL_FLAG = '__leaderLeadExceptionApplyV2';
 const DEDUPE_WINDOW_MS = 15 * 60 * 1000;
-const LEAD_RESULT_FIELDS = 'id,status,next_contact_at,updated_at';
 const EVENT_RESULT_FIELDS = 'id,lead_id,event_type,old_status,new_status,body,created_by,created_by_email,created_at';
 
 let busy = false;
@@ -23,32 +22,15 @@ function publish(phase, application = pendingApplication, extra = {}) {
   }));
 }
 
-function mergeLeadState(savedLead) {
-  if (!savedLead?.id) return;
-  const currentLead = v4State.currentLead?.id === savedLead.id
-    ? { ...v4State.currentLead, ...savedLead }
-    : v4State.currentLead;
-  setState({
-    currentLead,
-    leads: (v4State.leads || []).map((lead) => (lead.id === savedLead.id ? { ...lead, ...savedLead } : lead))
-  });
-  document.dispatchEvent(new CustomEvent('leader-v4:route-change', { detail: { leadId: savedLead.id } }));
-}
-
 async function saveLead(application) {
-  const response = await timeout(
-    supabaseClient
-      .from('leader_leads')
-      .update({ ...application.leadPatch, updated_at: new Date().toISOString() })
-      .eq('id', application.leadId)
-      .select(LEAD_RESULT_FIELDS)
-      .single(),
-    16000,
-    'Изменения заявки не сохранились за 16 секунд'
-  );
-  if (response.error) throw response.error;
-  mergeLeadState(response.data);
-  return response.data;
+  const updateLead = window.leaderUpdateLeadForException;
+  if (typeof updateLead !== 'function') {
+    throw new Error('Карточка заявки ещё загружается. Повторите действие через несколько секунд.');
+  }
+  return updateLead({
+    leadId: application.leadId,
+    patch: application.leadPatch
+  });
 }
 
 async function findRecentTimelineDuplicate(application) {
