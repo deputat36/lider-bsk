@@ -2,12 +2,16 @@ import assert from 'node:assert/strict';
 import {
   FOLLOWUP_CLOSED_STATUSES,
   buildFollowupPostponePlan,
+  buildOwnedFollowupPostponePlan,
   followupDate,
+  followupResponsibilityModel,
   isFollowupClosedStatus,
   isOverdueFollowupLead
 } from '../crm/v4/assets/v4/followup-schedule-model-v1.js';
 
 const now = new Date('2026-07-21T06:30:00.000Z');
+const manager = { currentUserId: 'user-1', currentUserRole: 'manager' };
+const designer = { currentUserId: 'user-1', currentUserRole: 'designer' };
 
 assert.ok(FOLLOWUP_CLOSED_STATUSES.includes('Отказ'));
 assert.equal(isFollowupClosedStatus('КП отправлено'), false);
@@ -57,4 +61,40 @@ assert.equal(isOverdueFollowupLead({ ...offerLead, next_contact_at: '2026-07-22T
 assert.equal(isOverdueFollowupLead({ ...offerLead, status: 'Спам' }, now), false);
 assert.equal(isOverdueFollowupLead({ ...offerLead, next_contact_at: null }, now), false);
 
-console.log('CRM safe followup schedule model is valid.');
+const unassigned = { ...offerLead, assigned_to: null };
+const unassignedManager = followupResponsibilityModel(unassigned, manager);
+assert.equal(unassignedManager.key, 'unassigned');
+assert.equal(unassignedManager.canTake, true);
+assert.equal(unassignedManager.canPostpone, false);
+
+const unassignedDesigner = followupResponsibilityModel(unassigned, designer);
+assert.equal(unassignedDesigner.key, 'unavailable');
+assert.equal(unassignedDesigner.canTake, false);
+assert.equal(unassignedDesigner.canPostpone, false);
+
+const mine = { ...offerLead, assigned_to: 'user-1' };
+const mineModel = followupResponsibilityModel(mine, manager);
+assert.equal(mineModel.key, 'mine');
+assert.equal(mineModel.canPostpone, true);
+assert.equal(mineModel.canTake, false);
+
+const other = { ...offerLead, assigned_to: 'user-2' };
+const otherModel = followupResponsibilityModel(other, manager);
+assert.equal(otherModel.key, 'other');
+assert.equal(otherModel.canPostpone, false);
+assert.equal(otherModel.canTake, false);
+
+const ownedPlan = buildOwnedFollowupPostponePlan(mine, 'tomorrow', manager, now);
+assert.ok(ownedPlan);
+assert.equal(ownedPlan.assignedTo, 'user-1');
+assert.equal(ownedPlan.responsibilityKey, 'mine');
+assert.equal(ownedPlan.patch.status, 'КП отправлено');
+assert.equal(buildOwnedFollowupPostponePlan(unassigned, 'tomorrow', manager, now), null);
+assert.equal(buildOwnedFollowupPostponePlan(other, 'tomorrow', manager, now), null);
+assert.equal(buildOwnedFollowupPostponePlan(mine, 'tomorrow', designer, now), null, 'same user id remains owner regardless role');
+
+const closedModel = followupResponsibilityModel({ ...mine, status: 'Отказ' }, manager);
+assert.equal(closedModel.key, 'closed');
+assert.equal(closedModel.canPostpone, false);
+
+console.log('CRM followup ownership and safe schedule model are valid.');
