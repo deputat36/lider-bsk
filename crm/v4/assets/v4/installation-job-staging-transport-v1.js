@@ -1,8 +1,10 @@
 const STAGING_PROJECT_REF = 'otulfnouybahfnsycxqn';
 const STAGING_HOSTNAME = `${STAGING_PROJECT_REF}.supabase.co`;
 const FUNCTION_SLUG = 'leader-crm-installation';
-const ACTION = 'installation_job.update';
-const PERMISSION = 'installation.write';
+const READ_ACTION = 'installation_job.read';
+const READ_PERMISSION = 'installation.read';
+const UPDATE_ACTION = 'installation_job.update';
+const UPDATE_PERMISSION = 'installation.write';
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const PATCH_FIELDS = Object.freeze([
   'title', 'install_status', 'installer_name', 'installer_phone', 'address',
@@ -27,6 +29,21 @@ export function isStagingInstallationEnvironment(supabaseUrl) {
   return projectRefFromInstallationSupabaseUrl(supabaseUrl) === STAGING_PROJECT_REF;
 }
 
+export function installationStagingReadAvailability({ supabaseUrl = '', jobId = '' } = {}) {
+  const staging = isStagingInstallationEnvironment(supabaseUrl);
+  let reason = '';
+  if (!staging) reason = 'production_locked';
+  else if (!uuid(jobId)) reason = 'job_missing';
+  return Object.freeze({
+    enabled: staging && uuid(jobId),
+    staging,
+    reason,
+    projectRef: projectRefFromInstallationSupabaseUrl(supabaseUrl),
+    functionSlug: FUNCTION_SLUG,
+    permission: READ_PERMISSION
+  });
+}
+
 export function installationStagingTransportAvailability({
   supabaseUrl = '', canWrite = false, job = null, patch = null, expectedUpdatedAt = null
 } = {}) {
@@ -47,7 +64,17 @@ export function installationStagingTransportAvailability({
     reason,
     projectRef: projectRefFromInstallationSupabaseUrl(supabaseUrl),
     functionSlug: FUNCTION_SLUG,
-    permission: PERMISSION
+    permission: UPDATE_PERMISSION
+  });
+}
+
+export function buildStagingInstallationJobReadCommand({ jobId, requestId } = {}) {
+  if (!uuid(jobId)) throw new Error('job_id_invalid');
+  if (!uuid(requestId)) throw new Error('request_id_invalid');
+  return Object.freeze({
+    action: READ_ACTION,
+    request_id: text(requestId),
+    payload: Object.freeze({ job_id: text(jobId) })
   });
 }
 
@@ -82,7 +109,7 @@ export function buildStagingInstallationJobCommand({ job, patch, expectedUpdated
   if (!key || key.length > 160) throw new Error('idempotency_key_invalid');
 
   return Object.freeze({
-    action: ACTION,
+    action: UPDATE_ACTION,
     request_id: text(requestId),
     expected_updated_at: new Date(expectedUpdatedAt).toISOString(),
     payload: Object.freeze({
@@ -109,6 +136,7 @@ function classifyError(code) {
   if (key === 'invalid_transition') return 'invalid_transition';
   if (key === 'duplicate_request') return 'duplicate_request';
   if (key === 'validation_error' || key === 'unknown_action') return 'validation_error';
+  if (key === 'read_failed') return 'read_failed';
   if (key === 'network_error') return 'network_error';
   return 'persistence_failed';
 }
@@ -116,15 +144,17 @@ function classifyError(code) {
 export function installationStagingResultMessage(kind, replay = false) {
   if (replay) return 'Безопасный повтор: сервер вернул уже сохранённое состояние без дубликата.';
   return ({
+    loaded: 'Монтажное задание загружено через защищённый staging Edge.',
     updated: 'Монтажное задание сохранено одной командой только в staging.',
-    wrong_environment: 'Серверное сохранение монтажа разрешено только в staging.',
+    wrong_environment: 'Серверный маршрут монтажа разрешён только в staging.',
     auth_required: 'Нужен вход отдельного staging-пользователя.',
-    forbidden: 'У staging-профиля нет права installation.write.',
+    forbidden: 'У staging-профиля нет нужного права на монтаж.',
     not_found: 'Монтажное задание не найдено в staging.',
     conflict: 'Задание изменилось. Перечитайте карточку и повторите.',
     invalid_transition: 'Переход статуса запрещён серверным registry.',
     duplicate_request: 'Команда с этим request_id уже обработана с другим содержимым.',
     validation_error: 'Команда не прошла проверку полей.',
+    read_failed: 'Staging не смог безопасно прочитать монтажное задание.',
     network_error: 'Не удалось связаться со staging Edge Function.',
     persistence_failed: 'Staging не смог атомарно сохранить монтажное задание.'
   })[kind] || 'Staging вернул неизвестный результат.';
@@ -144,6 +174,75 @@ async function edgeErrorDetails(error) {
   };
 }
 
+async function currentSession(client) {
+  if (!client?.auth?.getSession || !client?.functions?.invoke) {
+    return { ok: false, result: Object.freeze({ ok: false, status: 500, kind: 'persistence_failed', code: 'client_unavailable', message: installationStagingResultMessage('persistence_failed') }) };
+  }
+  let sessionResult;
+  try { sessionResult = await client.auth.getSession(); }
+  catch (_) {
+    return { ok: false, result: Object.freeze({ ok: false, status: 0, kind: 'network_error', code: 'network_error', message: installationStagingResultMessage('network_error') }) };
+  }
+  if (sessionResult?.error || !sessionResult?.data?.session?.access_token) {
+    return { ok: false, result: Object.freeze({ ok: false, status: 401, kind: 'auth_required', code: 'auth_required', message: installationStagingResultMessage('auth_required') }) };
+  }
+  return { ok: true };
+}
+
+async function invokeCommand(client, command, fallbackKind) {
+  let invoked;
+  try { invoked = await client.functions.invoke(FUNCTION_SLUG, { body: command }); }
+  catch (_) {
+    return Object.freeze({ ok: false, status: 0, kind: 'network_error', code: 'network_error', message: installationStagingResultMessage('network_error'), command });
+  }
+  if (invoked?.error || invoked?.data?.ok !== true) {
+    const details = invoked?.error ? await edgeErrorDetails(invoked.error) : {
+      status: 0,
+      code: text(invoked?.data?.error?.code || invoked?.data?.error || fallbackKind)
+    };
+    const kind = classifyError(details.code);
+    return Object.freeze({ ok: false, status: details.status, kind, code: details.code || kind, message: installationStagingResultMessage(kind), requestId: command.request_id, command });
+  }
+  return { ok: true, data: asObject(invoked.data) || {}, command };
+}
+
+export async function invokeStagingInstallationJobRead({
+  client, supabaseUrl = '', jobId = '', cryptoObject = globalThis.crypto
+} = {}) {
+  const availability = installationStagingReadAvailability({ supabaseUrl, jobId });
+  if (!availability.enabled) {
+    const kind = availability.reason === 'production_locked' ? 'wrong_environment' : 'validation_error';
+    return Object.freeze({ ok: false, status: kind === 'wrong_environment' ? 503 : 400, kind, code: kind, message: installationStagingResultMessage(kind) });
+  }
+  const session = await currentSession(client);
+  if (!session.ok) return session.result;
+
+  let command;
+  try { command = buildStagingInstallationJobReadCommand({ jobId, requestId: secureRequestId(cryptoObject) }); }
+  catch (error) {
+    return Object.freeze({ ok: false, status: 400, kind: 'validation_error', code: text(error?.message) || 'validation_error', message: installationStagingResultMessage('validation_error') });
+  }
+
+  const invoked = await invokeCommand(client, command, 'read_failed');
+  if (!invoked.ok) return invoked;
+  const data = invoked.data;
+  const entity = asObject(data.entity);
+  const capabilities = asObject(data.capabilities);
+  if (!entity || !uuid(entity.id) || capabilities?.can_read !== true) {
+    return Object.freeze({ ok: false, status: 500, kind: 'read_failed', code: 'invalid_read_projection', message: installationStagingResultMessage('read_failed'), requestId: command.request_id, command });
+  }
+  return Object.freeze({
+    ok: true,
+    status: 200,
+    kind: 'loaded',
+    code: 'loaded',
+    message: installationStagingResultMessage('loaded'),
+    requestId: text(data.request_id || command.request_id),
+    data,
+    command
+  });
+}
+
 export async function invokeStagingInstallationJob({
   client, supabaseUrl = '', canWrite = false, job = null, patch = null,
   expectedUpdatedAt = null, idempotencyKey = '', cryptoObject = globalThis.crypto,
@@ -155,16 +254,8 @@ export async function invokeStagingInstallationJob({
       : availability.reason === 'forbidden' ? 'forbidden' : 'validation_error';
     return Object.freeze({ ok: false, status: kind === 'forbidden' ? 403 : kind === 'wrong_environment' ? 503 : 400, kind, code: kind, message: installationStagingResultMessage(kind) });
   }
-  if (!client?.auth?.getSession || !client?.functions?.invoke) {
-    return Object.freeze({ ok: false, status: 500, kind: 'persistence_failed', code: 'client_unavailable', message: installationStagingResultMessage('persistence_failed') });
-  }
-
-  let sessionResult;
-  try { sessionResult = await client.auth.getSession(); }
-  catch (_) { return Object.freeze({ ok: false, status: 0, kind: 'network_error', code: 'network_error', message: installationStagingResultMessage('network_error') }); }
-  if (sessionResult?.error || !sessionResult?.data?.session?.access_token) {
-    return Object.freeze({ ok: false, status: 401, kind: 'auth_required', code: 'auth_required', message: installationStagingResultMessage('auth_required') });
-  }
+  const session = await currentSession(client);
+  if (!session.ok) return session.result;
 
   let command;
   try {
@@ -173,20 +264,9 @@ export async function invokeStagingInstallationJob({
     return Object.freeze({ ok: false, status: 400, kind: 'validation_error', code: text(error?.message) || 'validation_error', message: installationStagingResultMessage('validation_error') });
   }
 
-  let invoked;
-  try { invoked = await client.functions.invoke(FUNCTION_SLUG, { body: command }); }
-  catch (_) { return Object.freeze({ ok: false, status: 0, kind: 'network_error', code: 'network_error', message: installationStagingResultMessage('network_error'), command }); }
-
-  if (invoked?.error || invoked?.data?.ok !== true) {
-    const details = invoked?.error ? await edgeErrorDetails(invoked.error) : {
-      status: 0,
-      code: text(invoked?.data?.error?.code || invoked?.data?.error)
-    };
-    const kind = classifyError(details.code);
-    return Object.freeze({ ok: false, status: details.status, kind, code: details.code || kind, message: installationStagingResultMessage(kind), requestId: command.request_id, command });
-  }
-
-  const data = asObject(invoked.data) || {};
+  const invoked = await invokeCommand(client, command, 'persistence_failed');
+  if (!invoked.ok) return invoked;
+  const data = invoked.data;
   const replay = data.idempotent_replay === true;
   let refreshed = null;
   let refreshFailed = false;
@@ -199,7 +279,7 @@ export async function invokeStagingInstallationJob({
     kind: replay ? 'replay' : 'updated',
     code: replay ? 'idempotent_replay' : 'updated',
     replay,
-    message: installationStagingResultMessage(replay ? 'updated' : 'updated', replay),
+    message: installationStagingResultMessage('updated', replay),
     requestId: text(data.request_id || command.request_id),
     data,
     refreshed,
