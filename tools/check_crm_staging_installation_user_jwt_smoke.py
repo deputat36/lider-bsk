@@ -7,7 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 EDGE_SHA = '24183605aad2c5cfcc84ebe14c348dcfce1b68de41a43dcfb973f65cef8cb369'
 READ_MD5 = '5a353818606012d0e657a83f133723b6'
-WRITE_MD5 = '0ed4669197dac1f2695d0eec54e1'
+WRITE_MD5 = '0ed4669197dac1f2695e763d0eec54e1'
 
 FILES = {
     'runner': ROOT / 'tools/run_crm_staging_installation_user_jwt_smoke.mjs',
