@@ -1,99 +1,164 @@
-# Staging frontend transport монтажа v1
+# Staging frontend transport монтажа v2
 
 Дата: 22 июля 2026 года.
 
-## Цель
+## Результат
 
-Подготовить браузерный транспорт для одной атомарной команды `installation_job.update`, не переключая рабочую карточку монтажа и не затрагивая production.
+Карточка монтажа подключена к `leader-crm-installation v2` только на отдельной staging-странице:
 
-## Текущее состояние
+`/lider-bsk/crm/v4/staging-installation.html`
 
-- staging schema reconciliation завершён;
-- `leader-crm-installation v1` активен и требует JWT;
-- RPC доступен только `service_role`;
-- runtime user-JWT smoke ещё не выполнен;
-- рабочая карточка `installation-job-card-v2.js` пока использует существующий путь сохранения;
-- новый transport к карточке не подключён.
+Рабочая страница `crm/v4/index.html` и production-карточка `installation-job-card-v2.js` не подключают staging-модули и продолжают использовать прежний production-путь.
 
-## Новые модули
+## Изоляция окружений
 
-`crm/v4/assets/v4/installation-job-save-route-v1.js`
+`crm/v4/assets/v4/config.js` выбирает staging только при одновременном совпадении:
 
-Определяет маршрут:
+- hostname `deputat36.github.io`, `localhost` или `127.0.0.1`;
+- pathname `/lider-bsk/crm/v4/staging-installation.html` или локальный `/crm/v4/staging-installation.html`.
 
-- exact staging URL → `staging_edge`;
-- любой другой URL, включая production → `production_locked`;
-- `browserDirectWrite=false` для нового маршрута;
-- production backend считается неразвёрнутым.
+Любой другой hostname или путь получает production-конфигурацию:
 
-`crm/v4/assets/v4/installation-job-staging-transport-v1.js`
+- Supabase `ofewxuqfjhamgerwzull`;
+- storage key `leader_crm_v4_main_session`.
 
-Транспорт:
+Staging использует отдельные:
 
-1. Проверяет точный hostname `otulfnouybahfnsycxqn.supabase.co`.
-2. Проверяет наличие права на уровне UI-вызова.
-3. Получает текущую пользовательскую сессию через `client.auth.getSession()`.
-4. Формирует allowlisted команду.
-5. Вызывает `client.functions.invoke('leader-crm-installation', { body: command })`.
-6. Не выполняет `.from()`, `.insert()`, `.update()`, `.delete()`, `.upsert()` или browser RPC.
-7. Не содержит `service_role` и секретов.
+- Supabase `otulfnouybahfnsycxqn`;
+- browser publishable key;
+- storage key `leader_crm_v4_staging_installation_session`.
 
-## Команда
+Publishable key допустим в браузере. Service-role и secret keys в HTML, JavaScript и репозитории отсутствуют.
 
-Envelope:
+## Отдельная страница
 
-- `action=installation_job.update`;
-- UUID `request_id`;
+`crm/v4/staging-installation.html`:
+
+- имеет `noindex,nofollow,noarchive`;
+- явно помечена как изолированный staging;
+- предупреждает не использовать реальные данные;
+- содержит только вход, UUID синтетического задания и безопасную карточку монтажа;
+- не загружает заявки, расчёты, КП, заказы, финансы или рабочие production-модули.
+
+`staging-installation-harness-v1.js`:
+
+- повторно проверяет exact host/path до Auth-запроса;
+- использует отдельную локальную сессию;
+- выполняет `signInWithPassword`, `getSession` и локальный `signOut`;
+- не читает таблицу профилей напрямую;
+- передаёт UUID карточке, а доступ подтверждает Edge и серверная action matrix.
+
+## Edge чтение и запись
+
+`installation-job-staging-transport-v1.js` обслуживает два действия:
+
+- `installation_job.read` → `installation.read`;
+- `installation_job.update` → `installation.write`.
+
+Для обоих действий:
+
+1. Проверяется точный staging Supabase hostname.
+2. Получается текущая пользовательская сессия.
+3. `supabase.functions.invoke('leader-crm-installation')` отправляет пользовательский JWT.
+4. Browser service-role отсутствует.
+5. Прямые `.from()`, `.insert()`, `.update()`, `.delete()`, `.upsert()` и `.rpc()` отсутствуют.
+
+Запись дополнительно использует:
+
 - `expected_updated_at`;
-- `payload.job_id`;
-- `payload.idempotency_key`;
-- allowlisted `payload.patch`.
+- UUID `request_id`;
+- idempotency key;
+- allowlisted patch;
+- read-after-success через тот же Edge.
 
-Разрешённые поля patch:
+## Capability projection
 
-- `title`;
-- `install_status`;
-- `installer_name`;
-- `installer_phone`;
-- `address`;
-- `scheduled_at`;
-- `before_photo_url`;
-- `after_photo_url`;
-- `technical_task`;
-- `tools_required`;
-- `installer_comment`.
+Migration:
 
-Browser-generated `updated_by`, `updated_at`, status timestamps, order stage и event payload в команду не входят. Их контролирует серверная транзакция.
+- version `20260722194950`;
+- name `staging_installation_read_capabilities_20260722`;
+- source `supabase/staging-migrations/20260722_05_installation_read_capabilities.sql`.
 
-## Безопасность окружения
+Read RPC теперь возвращает:
 
-Рабочий `config.js` по-прежнему указывает на production `ofewxuqfjhamgerwzull.supabase.co`.
+```json
+{
+  "capabilities": {
+    "can_read": true,
+    "can_write": true
+  }
+}
+```
 
-Новый transport fail-closed на:
+`can_write` вычисляется сервером через `leader_actor_has_crm_action(..., 'installation.write')`.
 
-- production URL;
-- похожем поддомене;
-- произвольном URL;
-- пустом или некорректном URL.
+В projection не возвращаются роль, email, user ID или полный список действий. Browser не принимает решения по названию роли.
 
-Проверка exact hostname выполняется до чтения сессии и до Edge invoke.
+Fingerprint:
 
-## Тесты
+- read RPC MD5 `01e91816d4f3a6a1bea2d6cbe760011f`;
+- read RPC bytes `5599`;
+- write RPC не изменилась: `0ed4669197dac1f2695d0eec54e1`, `19061` bytes.
+
+RPC остаётся `SECURITY INVOKER`, `search_path=''`, EXECUTE только `service_role`.
+
+## Staging-карточка
+
+`installation-job-staging-card-v1.js`:
+
+- читает только safe projection Edge;
+- показывает кнопку сохранения только при `capabilities.can_write=true`;
+- при отсутствии права переводит форму в режим просмотра;
+- не показывает имя или телефон клиента;
+- не показывает цены, себестоимость, оплату или прибыль;
+- не читает и не создаёт internal comments;
+- печатает только безопасный staging-лист;
+- не содержит прямых обращений к таблицам.
+
+Неопределённый ответ сервера, неверный UUID, потерянная сессия, forbidden, conflict и network failure обрабатываются fail-closed.
+
+## Production
+
+Production route в `installation-job-save-route-v1.js` называется `production_legacy` и честно описывает существующее поведение:
+
+- `browserDirectWrite=true`;
+- атомарный installation Edge в production не включён;
+- рабочая `installation-job-card-v2.js` не изменена;
+- `crm/v4/index.html` не импортирует staging card или harness.
+
+Это не rollout production. Для production по-прежнему нужны отдельное согласование, backend deployment, migration, rollback и browser smoke.
+
+## Проверки
 
 - `tools/test_installation_job_save_route.mjs`;
 - `tools/test_installation_job_staging_transport.mjs`;
+- `tools/test_crm_v4_config_routes.mjs`;
+- `tools/test_installation_job_staging_card_contract.mjs`;
 - `tools/check_crm_staging_installation_frontend_transport.py`;
+- `supabase/staging-tests/20260722_installation_frontend_wiring_acceptance.sql`;
 - `.github/workflows/crm-staging-installation-frontend-transport-check.yml`.
 
-Тесты проверяют production lock, exact hostname, idempotency key, allowlist, отсутствие browser-generated полей, missing session, success/replay и forbidden response.
+SQL acceptance создаёт только синтетические строки внутри транзакции и заканчивается `ROLLBACK`.
 
-## Следующий gate
+Подтверждается:
 
-1. Выполнить runtime user-JWT smoke с временными staging JWT.
-2. Зафиксировать evidence `401 / 401 / 403 / 404`.
-3. Отдельным PR подключить route и transport к карточке только для exact staging URL.
-4. Удалить три прямые browser writes только из staging-ветки сохранения.
-5. Провести authenticated staging UI smoke с synthetic fixture и cleanup.
-6. Production rollout согласовывать отдельно.
+- manager и installer получают `can_write=true`;
+- accountant получает `forbidden`;
+- sensitive markers не попадают в projection;
+- capability object не раскрывает identity/role/action inventory;
+- browser EXECUTE закрыт;
+- service-role EXECUTE открыт.
 
-Production не изменялся. Supabase в этом этапе использовался только read-only. Figma-файл не изменялся из-за лимита Starter MCP.
+## Текущее ограничение
+
+Реальный user-JWT API smoke уже завершён в #438. Исходный код isolated staging UI теперь подключён, но ручное взаимодействие в браузере с временным Auth-пользователем и synthetic fixture в этом PR ещё не выполнено.
+
+Следующий gate:
+
+1. Создать одноразовых staging users и synthetic job.
+2. Открыть отдельную staging-страницу в браузере.
+3. Проверить manager/installer read-update-reload и accountant deny.
+4. Удалить Auth users, profiles, fixtures, events и receipts.
+5. Зафиксировать нулевой postflight.
+
+Production Supabase, Auth, Edge Functions, RLS, Storage, рабочие данные и `nav_*` не изменялись.
