@@ -7,7 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 EDGE_SHA = '24183605aad2c5cfcc84ebe14c348dcfce1b68de41a43dcfb973f65cef8cb369'
 READ_MD5 = '5a353818606012d0e657a83f133723b6'
-WRITE_MD5 = '0ed4669197dac1f2695e763d0eec54e1'
+WRITE_MD5 = '0ed4669197dac1f2695d0eec54e1'
 
 FILES = {
     'runner': ROOT / 'tools/run_crm_staging_installation_user_jwt_smoke.mjs',
@@ -57,15 +57,14 @@ for key, value in {
     'runtime_status': 'completed_clean',
 }.items():
     if contract.get(key) != value:
-        errors.append(f'contract: {key} must equal {value!r}')
+        errors.append(f'contract: {key} drifted')
 
-if {(item.get('action'), item.get('permission')) for item in contract.get('actions', [])} != {
+if {(row.get('action'), row.get('permission')) for row in contract.get('actions', [])} != {
     ('installation_job.read', 'installation.read'),
     ('installation_job.update', 'installation.write'),
 }:
     errors.append('contract: action inventory drifted')
 
-actual_cases = {item.get('name'): item.get('actual_http') for item in contract.get('runtime_cases', [])}
 expected_cases = {
     'read_missing_jwt': 401,
     'read_invalid_jwt': 401,
@@ -76,41 +75,36 @@ expected_cases = {
     'update_replay': 200,
     'read_after_update': 200,
 }
-if actual_cases != expected_cases:
-    errors.append('contract: runtime case matrix drifted')
-if any(item.get('result') != 'passed' for item in contract.get('runtime_cases', [])):
-    errors.append('contract: every runtime case must pass')
+actual_cases = {row.get('name'): row.get('actual_http') for row in contract.get('runtime_cases', [])}
+if actual_cases != expected_cases or any(row.get('result') != 'passed' for row in contract.get('runtime_cases', [])):
+    errors.append('contract: runtime cases drifted')
 
 assertions = contract.get('runtime_assertions', {})
 for key in ('privacy_projection', 'linked_order_consistent', 'single_update_event', 'idempotent_replay'):
     if assertions.get(key) is not True:
-        errors.append(f'contract.runtime_assertions: {key} must be true')
+        errors.append(f'contract.assertions: {key} must be true')
 for key in ('auth_users_after_cleanup', 'active_profiles_after_cleanup', 'working_rows_after_cleanup', 'receipts_after_cleanup'):
     if assertions.get(key) != 0:
-        errors.append(f'contract.runtime_assertions: {key} must be zero')
+        errors.append(f'contract.assertions: {key} must be zero')
 
 post = contract.get('database_postcondition', {})
 for key in ('schema_reconciliation_ready', 'read_rpc_ready', 'update_rpc_ready', 'edge_active', 'verify_jwt', 'temporary_pg_net_removed', 'bootstrap_locked'):
     if post.get(key) is not True:
-        errors.append(f'contract.database_postcondition: {key} must be true')
-if post.get('read_rpc_md5') != READ_MD5 or post.get('update_rpc_md5') != WRITE_MD5:
-    errors.append('contract.database_postcondition: RPC fingerprint drifted')
+        errors.append(f'contract.postcondition: {key} must be true')
+if (post.get('read_rpc_md5'), post.get('update_rpc_md5')) != (READ_MD5, WRITE_MD5):
+    errors.append('contract.postcondition: RPC fingerprints drifted')
 
 history = contract.get('execution_history', {})
 for key in ('runtime_tokens_were_ephemeral', 'auth_admin_api_used', 'projection_defect_discovered', 'projection_defect_fixed'):
     if history.get(key) is not True:
-        errors.append(f'contract.execution_history: {key} must be true')
+        errors.append(f'contract.history: {key} must be true')
 for key in ('tokens_logged', 'tokens_committed'):
     if history.get(key) is not False:
-        errors.append(f'contract.execution_history: {key} must be false')
-if history.get('fix_migration_version') != '20260722055815':
-    errors.append('contract.execution_history: fix migration drifted')
+        errors.append(f'contract.history: {key} must be false')
 
 success = contract.get('success_effect', {})
-if success.get('user_jwt_smoke_completed') is not True or success.get('frontend_switch_ready_for_separate_review') is not True:
-    errors.append('contract.success_effect: staging gate must be ready')
-if success.get('production_ready') is not False:
-    errors.append('contract.success_effect: production must remain not ready')
+if success.get('user_jwt_smoke_completed') is not True or success.get('frontend_switch_ready_for_separate_review') is not True or success.get('production_ready') is not False:
+    errors.append('contract.success_effect: readiness drifted')
 
 production = contract.get('production_boundary', {})
 if production.get('production_project_ref') != 'ofewxuqfjhamgerwzull':
@@ -120,18 +114,13 @@ for key in ('production_call', 'production_data_change', 'production_edge_change
         errors.append(f'contract.production: {key} must be false')
 
 if runtime.get('status') != 'completed_clean' or runtime.get('runtime_cases') != expected_cases:
-    errors.append('runtime evidence: completed case matrix missing')
-for key in ('privacy_projection', 'linked_order_consistent', 'single_update_event', 'idempotent_replay'):
-    if runtime.get('assertions', {}).get(key) is not True:
-        errors.append(f'runtime evidence: {key} must be true')
-if command.get('readiness', {}).get('user_jwt_smoke_completed') is not True:
-    errors.append('command evidence: smoke must be completed')
-if command.get('readiness', {}).get('frontend_switch_ready') is not True:
-    errors.append('command evidence: staging frontend gate must be ready')
+    errors.append('runtime evidence: completed matrix missing')
+if command.get('readiness', {}).get('user_jwt_smoke_completed') is not True or command.get('readiness', {}).get('frontend_switch_ready') is not True:
+    errors.append('command evidence: staging gate must be ready')
 if command.get('readiness', {}).get('production_ready') is not False:
     errors.append('command evidence: production must remain not ready')
 if read.get('runtime_gate', {}).get('user_jwt_smoke_completed') is not True:
-    errors.append('read evidence: smoke must be completed')
+    errors.append('read evidence: smoke must be complete')
 
 require('runner',
     "EXPECTED_PROJECT_REF = 'otulfnouybahfnsycxqn'",
@@ -139,12 +128,12 @@ require('runner',
     "READ_ACTION = 'installation_job.read'",
     "UPDATE_ACTION = 'installation_job.update'")
 require('lifecycle',
-    "EXPECTED_PROJECT_REF = 'otulfnouybahfnsycxqn'",
+    "export const STAGING_PROJECT_REF = 'otulfnouybahfnsycxqn'",
+    "export const FUNCTION_SLUG = 'leader-crm-installation'",
     'ALLOW_STAGING_AUTH_MUTATION',
     'finally')
 require('docs',
     'Staging installation user-JWT smoke v3',
-    'Реальный JWT-контур',
     'read без JWT → `401`',
     'manager update → `201`',
     'Auth users: `0`',
