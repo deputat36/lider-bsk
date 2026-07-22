@@ -1,97 +1,70 @@
-# Staging installation read Edge v1
+# Staging installation read Edge v2
 
-Дата deployment: 22 июля 2026 года.
+Дата обновления: 22 июля 2026 года.
 
 ## Результат
 
-В staging добавлен безопасный серверный read projection монтажного задания. Он устраняет блокер, при котором installation-таблицы закрыты для browser roles и карточка не может загружать данные напрямую.
+На staging `otulfnouybahfnsycxqn` работает JWT-first действие `installation_job.read` с canonical permission `installation.read`.
 
-Контуры:
+Контур:
 
-- staging: `otulfnouybahfnsycxqn`;
-- production read-only: `ofewxuqfjhamgerwzull`;
-- Edge: `leader-crm-installation v2`;
+- Edge `leader-crm-installation v2`;
 - `verify_jwt=true`;
-- SHA-256: `24183605aad2c5cfcc84ebe14c348dcfce1b68de41a43dcfb973f65cef8cb369`.
-
-## Действие
-
-- action: `installation_job.read`;
-- permission: `installation.read`;
-- RPC: `public.leader_read_installation_job_rpc(uuid,uuid)`;
-- migration: `20260722050355 / staging_installation_job_read_rpc_20260722`;
-- RPC MD5: `98fc1e36b2ed8202e6580d7734088df1`;
-- размер функции: `5378` bytes.
-
-Порядок:
-
-`exact staging guard → verified JWT → strict validation → canonical permission → service-role-only read RPC`
-
-RPC повторно проверяет `installation.read`, использует SECURITY INVOKER и `search_path=''`. Для `public`, `anon`, `authenticated` EXECUTE закрыт.
+- SHA-256 `24183605aad2c5cfcc84ebe14c348dcfce1b68de41a43dcfb973f65cef8cb369`;
+- RPC `public.leader_read_installation_job_rpc(uuid,uuid)`;
+- SECURITY INVOKER, `search_path=''`;
+- EXECUTE только `service_role`.
 
 ## Safe projection
 
-Возвращаются:
+Возвращаются job, безопасная сводка заказа и производства, позиции без цен, события и только не-internal комментарии. В order projection теперь явно входит `installation_status`.
 
-- основные данные задания и `updated_at`;
-- безопасная сводка заказа;
-- безопасная сводка производства;
-- позиции без цен;
-- история событий;
-- только не-internal комментарии.
+Не возвращаются контакты клиента, финансовые поля, `orders.data`, внутренние комментарии и server-owned actor fields.
 
-Не возвращаются:
+## Обнаруженный дефект
 
-- имя и телефон клиента;
-- стоимость монтажника и клиентские цены;
-- суммы заказа, себестоимость и прибыль;
-- `orders.data`;
-- внутренние комментарии;
-- `owner_id`, `created_by`, `updated_by`.
+Первый реальный JWT smoke подтвердил, что update RPC правильно меняет job и связанный order, но read projection не включала ключ `order.installation_status`.
 
-Ограничения: до 120 позиций, 30 событий и 20 комментариев.
+Исправление:
 
-## Acceptance
+- migration `20260722055815`;
+- name `staging_installation_read_order_status_fix_20260722`;
+- source `supabase/staging-migrations/20260722_03_installation_read_order_status_fix.sql`.
 
-Rollback-safe SQL-тест специально заполняет скрытые поля маркерами `SENSITIVE_*`.
+Текущий fingerprint read RPC:
+
+- MD5 `5a353818606012d0e657a83f133723b6`;
+- 5432 bytes.
+
+## Runtime user-JWT smoke
+
+Финальный smoke использовал реальные краткоживущие JWT двух staging-профилей.
 
 Подтверждено:
 
-- manager с `installation.read` получает safe projection;
-- accountant получает `forbidden`;
-- inactive manager получает `forbidden`;
-- неизвестное задание даёт `not_found`;
-- сериализованный JSON не содержит ни одного `SENSITIVE_*`;
-- internal comment не возвращается;
-- browser EXECUTE закрыт;
-- service-role EXECUTE открыт;
-- после `ROLLBACK` fixture-строки отсутствуют.
+- missing JWT → `401`;
+- invalid JWT → `401`;
+- accountant read → `403`;
+- manager read → `200`;
+- privacy projection не содержит ни одного `SENSITIVE_*`;
+- internal comment и item prices скрыты;
+- после update повторный read возвращает `job.install_status = Запланирован` и `order.installation_status = Запланирован`.
 
-## Write regression
-
-После deployment Edge v2 повторно проверена существующая команда `installation_job.update`:
-
-- write RPC fingerprint не изменился: `0ed4669197dac1f2695e763d0eec54e1`, 19061 bytes;
-- задание и связанный заказ обновляются;
-- idempotent replay работает;
-- повтор не создаёт второе событие;
-- тест завершён внешним `ROLLBACK`.
+Полное evidence: `contracts/crm-staging-installation-runtime-smoke-v1.json`.
 
 ## Postflight
 
+После smoke:
+
+- Auth users/profiles: `0`;
 - jobs/items/events/comments/receipts: `0`;
-- Auth users: `0`;
-- active profiles: `0`;
-- Edge logs пусты;
+- временный `pg_net` удалён;
+- bootstrap оставлен только в permanently locked версии с `verify_jwt=true`;
 - security ERROR/WARN отсутствуют;
-- performance содержит только ожидаемые `unused_index` INFO для пустого staging-контура.
+- performance содержит только INFO для unused indexes пустого staging-контура.
 
-## Runtime gate
-
-Полный user-JWT smoke не выполнен: staging содержит `0` Auth users и `0` active profiles. Пользователи не создавались, прямые изменения `auth.users` не выполнялись.
-
-Frontend read/write wiring не выполнялось. Source-ready write transport остаётся exact-staging-only и не подключён к production-карточке.
+Frontend read/write wiring ещё не выполнено. Runtime gate снят только для отдельного exact-staging UI PR.
 
 ## Production boundary
 
-Production использован только read-only. В production отсутствуют read RPC, migration `20260722050355` и Edge `leader-crm-installation`. Production DDL/DML, RLS, grants, Auth, Storage, frontend, рабочие данные и `nav_*` не менялись.
+Production `ofewxuqfjhamgerwzull` использован только read-only. В production отсутствуют read RPC, fix migration и installation/bootstrap Edge. Production DDL/DML, RLS, grants, Auth, Storage, frontend, рабочие данные и `nav_*` не менялись.
