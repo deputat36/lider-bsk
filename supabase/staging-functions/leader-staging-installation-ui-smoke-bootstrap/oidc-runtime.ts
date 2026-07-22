@@ -1,5 +1,4 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
-import { createClient } from 'npm:@supabase/supabase-js@2.57.4'
 import { createRemoteJWKSet, jwtVerify } from 'npm:jose@5.9.6'
 
 const STAGING_REF = 'otulfnouybahfnsycxqn'
@@ -14,7 +13,9 @@ const WORKFLOW_REF = `${REPOSITORY}/.github/workflows/crm-staging-installation-a
 const SUBJECT = `repo:${REPOSITORY}:ref:${BRANCH_REF}`
 const JWKS = createRemoteJWKSet(new URL(`${ISSUER}/.well-known/jwks`))
 
-function response(status: number, value: Record<string, unknown>) {
+type JsonObject = Record<string, unknown>
+
+function response(status: number, value: JsonObject) {
   return new Response(JSON.stringify(value), {
     status,
     headers: {
@@ -35,7 +36,7 @@ function bearer(req: Request) {
   return value.toLowerCase().startsWith('bearer ') ? value.slice(7).trim() : ''
 }
 
-function runKey(payload: Record<string, unknown>) {
+function runKey(payload: JsonObject) {
   const runId = text(payload.run_id)
   const attempt = text(payload.run_attempt)
   if (!/^\d+$/.test(runId) || !/^\d+$/.test(attempt)) throw new Error('github_run_claim_invalid')
@@ -50,7 +51,7 @@ async function verifiedClaims(req: Request) {
     audience: AUDIENCE,
     algorithms: ['RS256']
   })
-  const claims = verified.payload as Record<string, unknown>
+  const claims = verified.payload as JsonObject
   const expected: Record<string, string> = {
     repository: REPOSITORY,
     repository_id: REPOSITORY_ID,
@@ -87,36 +88,92 @@ function exactStagingUrl(value: string) {
   }
 }
 
-function serviceClient() {
+function decodeJwtHeader(value: string) {
+  try {
+    const first = value.split('.')[0]
+    if (!first) return null
+    const base64 = first.replaceAll('-', '+').replaceAll('_', '/')
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=')
+    return JSON.parse(atob(padded)) as JsonObject
+  } catch (_) {
+    return null
+  }
+}
+
+function serviceEnvironment() {
   const url = text(Deno.env.get('SUPABASE_URL'))
   const key = text(Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'))
   if (!exactStagingUrl(url) || !key) throw new Error('staging_service_environment_invalid')
-  return createClient(url, key, {
-    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+  return { url: url.replace(/\/$/, ''), key }
+}
+
+function serviceHeaders(key: string, json = true) {
+  const headers: Record<string, string> = {
+    apikey: key,
+    Accept: 'application/json'
+  }
+  if (json) headers['Content-Type'] = 'application/json'
+  const jwtHeader = decodeJwtHeader(key)
+  if (text(jwtHeader?.alg).toUpperCase() === 'HS256') {
+    headers.Authorization = `Bearer ${key}`
+  }
+  return headers
+}
+
+async function serviceRequest(path: string, init: RequestInit = {}) {
+  const env = serviceEnvironment()
+  const result = await fetch(`${env.url}${path}`, {
+    ...init,
+    headers: {
+      ...serviceHeaders(env.key, init.body !== undefined),
+      ...(init.headers || {})
+    }
+  })
+  const body = await result.json().catch(() => ({})) as JsonObject
+  return { ok: result.ok, status: result.status, body }
+}
+
+async function rpc(name: string, args: JsonObject) {
+  return await serviceRequest(`/rest/v1/rpc/${name}`, {
+    method: 'POST',
+    body: JSON.stringify(args)
   })
 }
 
-async function prepare(client: ReturnType<typeof createClient>, runKeyValue: string) {
+async function createAuthUser(email: string, password: string, runKeyValue: string) {
+  return await serviceRequest('/auth/v1/admin/users', {
+    method: 'POST',
+    body: JSON.stringify({
+      email,
+      password,
+      email_confirm: true,
+      app_metadata: { staging_installation_ui_smoke: true, run_key: runKeyValue },
+      user_metadata: { synthetic: true }
+    })
+  })
+}
+
+async function deleteAuthUser(userId: string) {
+  return await serviceRequest(`/auth/v1/admin/users/${encodeURIComponent(userId)}`, {
+    method: 'DELETE'
+  })
+}
+
+async function prepare(runKeyValue: string) {
   const suffix = crypto.randomUUID().replaceAll('-', '')
   const email = `installation-ui-${runKeyValue.replace(':', '-')}-${suffix}@example.invalid`
   const password = randomPassword()
-  const created = await client.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-    app_metadata: { staging_installation_ui_smoke: true, run_key: runKeyValue },
-    user_metadata: { synthetic: true }
-  })
-  if (created.error || !created.data.user) throw new Error(`auth_create_failed:${created.error?.status || 0}`)
-  const userId = created.data.user.id
+  const created = await createAuthUser(email, password, runKeyValue)
+  const userId = text(created.body.id || (created.body.user as JsonObject | undefined)?.id)
+  if (!created.ok || !userId) throw new Error(`auth_create_failed:${created.status}`)
   try {
-    const prepared = await client.rpc('leader_prepare_installation_ui_smoke_rpc', {
+    const prepared = await rpc('leader_prepare_installation_ui_smoke_rpc', {
       p_run_key: runKeyValue,
       p_user_id: userId,
       p_email: email
     })
-    if (prepared.error || prepared.data?.ok !== true) {
-      throw new Error(`fixture_prepare_failed:${prepared.error?.code || 'unknown'}`)
+    if (!prepared.ok || prepared.body.ok !== true) {
+      throw new Error(`fixture_prepare_failed:${prepared.status}`)
     }
     return {
       ok: true,
@@ -124,33 +181,31 @@ async function prepare(client: ReturnType<typeof createClient>, runKeyValue: str
       run_key: runKeyValue,
       email,
       password,
-      job_id: prepared.data.job_id,
-      role: prepared.data.role,
-      expected_status: prepared.data.expected_status
+      job_id: prepared.body.job_id,
+      role: prepared.body.role,
+      expected_status: prepared.body.expected_status
     }
   } catch (error) {
-    await client.auth.admin.deleteUser(userId).catch(() => undefined)
+    await deleteAuthUser(userId).catch(() => undefined)
     throw error
   }
 }
 
-async function cleanup(client: ReturnType<typeof createClient>, runKeyValue: string) {
-  const inspected = await client.rpc('leader_inspect_installation_ui_smoke_rpc', { p_run_key: runKeyValue })
-  if (inspected.error || inspected.data?.ok !== true) {
-    throw new Error(`fixture_inspect_failed:${inspected.error?.code || 'unknown'}`)
+async function cleanup(runKeyValue: string) {
+  const inspected = await rpc('leader_inspect_installation_ui_smoke_rpc', { p_run_key: runKeyValue })
+  if (!inspected.ok || inspected.body.ok !== true) {
+    throw new Error(`fixture_inspect_failed:${inspected.status}`)
   }
-  const userId = text(inspected.data?.auth_user_id)
-  if (inspected.data?.exists === true && userId) {
-    const deleted = await client.auth.admin.deleteUser(userId)
-    if (deleted.error && deleted.error.status !== 404) {
-      throw new Error(`auth_delete_failed:${deleted.error.status || 0}`)
-    }
+  const userId = text(inspected.body.auth_user_id)
+  if (inspected.body.exists === true && userId) {
+    const deleted = await deleteAuthUser(userId)
+    if (!deleted.ok && deleted.status !== 404) throw new Error(`auth_delete_failed:${deleted.status}`)
   }
-  const cleaned = await client.rpc('leader_cleanup_installation_ui_smoke_rpc', { p_run_key: runKeyValue })
-  if (cleaned.error || cleaned.data?.ok !== true) {
-    throw new Error(`fixture_cleanup_failed:${cleaned.error?.code || 'unknown'}`)
+  const cleaned = await rpc('leader_cleanup_installation_ui_smoke_rpc', { p_run_key: runKeyValue })
+  if (!cleaned.ok || cleaned.body.ok !== true) {
+    throw new Error(`fixture_cleanup_failed:${cleaned.status}`)
   }
-  const residue = cleaned.data?.residue || {}
+  const residue = (cleaned.body.residue || {}) as JsonObject
   for (const value of Object.values(residue)) {
     if (Number(value) !== 0) throw new Error('fixture_cleanup_residue')
   }
@@ -158,7 +213,7 @@ async function cleanup(client: ReturnType<typeof createClient>, runKeyValue: str
     ok: true,
     action: 'cleanup',
     run_key: runKeyValue,
-    already_clean: cleaned.data?.already_clean === true,
+    already_clean: cleaned.body.already_clean === true,
     residue
   }
 }
@@ -167,13 +222,12 @@ Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') return response(405, { ok: false, error: 'method_not_allowed' })
   try {
     const verified = await verifiedClaims(req)
-    const body = await req.json().catch(() => ({})) as Record<string, unknown>
+    const body = await req.json().catch(() => ({})) as JsonObject
     const action = text(body.action)
     const suppliedRunKey = text(body.run_key)
     if (suppliedRunKey && suppliedRunKey !== verified.runKey) throw new Error('run_key_claim_mismatch')
-    const client = serviceClient()
-    if (action === 'prepare') return response(201, await prepare(client, verified.runKey))
-    if (action === 'cleanup') return response(200, await cleanup(client, verified.runKey))
+    if (action === 'prepare') return response(201, await prepare(verified.runKey))
+    if (action === 'cleanup') return response(200, await cleanup(verified.runKey))
     return response(400, { ok: false, error: 'unknown_action' })
   } catch (error) {
     return response(403, {
