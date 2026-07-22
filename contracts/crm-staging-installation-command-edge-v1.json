@@ -1,6 +1,6 @@
 {
   "contract": "crm-staging-installation-command-edge",
-  "version": 5,
+  "version": 6,
   "captured_at": "2026-07-22",
   "repository": "deputat36/lider-bsk",
   "project_ref": "otulfnouybahfnsycxqn",
@@ -25,6 +25,9 @@
     "read_migration_version": "20260722050355",
     "read_migration_name": "staging_installation_job_read_rpc_20260722",
     "read_source": "supabase/staging-migrations/20260722_01_installation_job_read_rpc.sql",
+    "read_fix_migration_version": "20260722055815",
+    "read_fix_migration_name": "staging_installation_read_order_status_fix_20260722",
+    "read_fix_source": "supabase/staging-migrations/20260722_03_installation_read_order_status_fix.sql",
     "schema_contract_version": 5,
     "foreign_keys_aligned_with_production": true,
     "schema_reconciliation_required": false
@@ -38,17 +41,9 @@
     "idempotency_key_required": true,
     "expected_updated_at_required": true,
     "patch_allowed_fields": [
-      "title",
-      "install_status",
-      "installer_name",
-      "installer_phone",
-      "address",
-      "scheduled_at",
-      "before_photo_url",
-      "after_photo_url",
-      "technical_task",
-      "tools_required",
-      "installer_comment"
+      "title", "install_status", "installer_name", "installer_phone", "address",
+      "scheduled_at", "before_photo_url", "after_photo_url", "technical_task",
+      "tools_required", "installer_comment"
     ],
     "atomicity": {
       "installation_job_update": true,
@@ -70,14 +65,12 @@
     "client_contacts_excluded": true,
     "financial_fields_excluded": true,
     "internal_comments_excluded": true,
-    "order_data_excluded": true
+    "order_data_excluded": true,
+    "order_installation_status_included": true
   },
   "execution_order": [
-    "validate_environment",
-    "authenticate_user",
-    "validate_request",
-    "check_canonical_permission",
-    "execute_action_rpc"
+    "validate_environment", "authenticate_user", "validate_request",
+    "check_canonical_permission", "execute_action_rpc"
   ],
   "authorization": {
     "actor_source": "verified_jwt",
@@ -98,11 +91,27 @@
     },
     "leader_read_installation_job_rpc": {
       "schema": "public",
-      "md5": "98fc1e36b2ed8202e6580d7734088df1",
-      "bytes": 5378,
+      "md5": "5a353818606012d0e657a83f133723b6",
+      "bytes": 5432,
       "security_invoker": true,
       "empty_search_path": true
     }
+  },
+  "runtime_smoke": {
+    "completed": true,
+    "evidence": "contracts/crm-staging-installation-runtime-smoke-v1.json",
+    "read_missing_jwt": 401,
+    "read_invalid_jwt": 401,
+    "read_forbidden": 403,
+    "read_authorized": 200,
+    "update_forbidden": 403,
+    "update_authorized": 201,
+    "update_replay": 200,
+    "read_after_update": 200,
+    "privacy_projection": true,
+    "linked_order_consistent": true,
+    "single_update_event": true,
+    "idempotent_replay": true
   },
   "staging_postflight": {
     "installation_jobs": 0,
@@ -112,7 +121,7 @@
     "command_receipts": 0,
     "auth_users": 0,
     "active_profiles": 0,
-    "edge_logs_empty": true,
+    "runtime_edge_logs_present": true,
     "browser_table_access": false,
     "browser_rpc_execute": false,
     "service_role_only": true,
@@ -121,7 +130,9 @@
     "canonical_index_count": 9,
     "write_regression_passed": true,
     "write_idempotent_replay": true,
-    "read_privacy_acceptance_passed": true
+    "read_privacy_acceptance_passed": true,
+    "temporary_pg_net_removed": true,
+    "bootstrap_locked": true
   },
   "readiness": {
     "edge_source_synced": true,
@@ -131,8 +142,8 @@
     "atomic_update_ready": true,
     "privacy_safe_read_ready": true,
     "schema_reconciliation_ready": true,
-    "user_jwt_smoke_completed": false,
-    "frontend_switch_ready": false,
+    "user_jwt_smoke_completed": true,
+    "frontend_switch_ready": true,
     "production_ready": false
   },
   "frontend": {
@@ -145,10 +156,11 @@
     "target_path": "single_leader-crm-installation_edge_for_read_and_update"
   },
   "current_cycle": {
-    "read_database_migration_applied": true,
-    "edge_v2_deployed": true,
+    "runtime_user_jwt_smoke_completed": true,
+    "read_projection_fix_applied": true,
+    "temporary_transport_removed": true,
     "working_data_changed": false,
-    "auth_mutation_performed": false,
+    "auth_fixtures_cleaned": true,
     "frontend_changed": false
   },
   "production_boundary": {

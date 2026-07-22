@@ -5,8 +5,10 @@ on:
     paths:
       - 'supabase/staging-functions/leader-crm-installation/**'
       - 'tools/run_crm_staging_installation_user_jwt_smoke.mjs'
+      - 'tools/run_crm_staging_installation_auth_fixture_lifecycle.mjs'
       - 'tools/check_crm_staging_installation_user_jwt_smoke.py'
       - 'contracts/crm-staging-installation-user-jwt-smoke-v1.json'
+      - 'contracts/crm-staging-installation-runtime-smoke-v1.json'
       - 'contracts/crm-staging-installation-command-edge-v1.json'
       - 'contracts/crm-staging-installation-read-edge-v1.json'
       - 'docs/SUPABASE_STAGING_INSTALLATION_USER_JWT_SMOKE_V1_2026-07-21.md'
@@ -16,8 +18,10 @@ on:
     paths:
       - 'supabase/staging-functions/leader-crm-installation/**'
       - 'tools/run_crm_staging_installation_user_jwt_smoke.mjs'
+      - 'tools/run_crm_staging_installation_auth_fixture_lifecycle.mjs'
       - 'tools/check_crm_staging_installation_user_jwt_smoke.py'
       - 'contracts/crm-staging-installation-user-jwt-smoke-v1.json'
+      - 'contracts/crm-staging-installation-runtime-smoke-v1.json'
       - 'contracts/crm-staging-installation-command-edge-v1.json'
       - 'contracts/crm-staging-installation-read-edge-v1.json'
       - 'docs/SUPABASE_STAGING_INSTALLATION_USER_JWT_SMOKE_V1_2026-07-21.md'
@@ -33,8 +37,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Check runner syntax
-        run: node --check tools/run_crm_staging_installation_user_jwt_smoke.mjs
+        run: |
+          node --check tools/run_crm_staging_installation_user_jwt_smoke.mjs
+          node --check tools/run_crm_staging_installation_auth_fixture_lifecycle.mjs
       - name: Compile contract checker
         run: python3 -m py_compile tools/check_crm_staging_installation_user_jwt_smoke.py
-      - name: Validate read/update no-secret smoke contract
-        run: python3 tools/check_crm_staging_installation_user_jwt_smoke.py
+      - name: Validate completed read/update smoke contract
+        id: contract
+        continue-on-error: true
+        run: python3 tools/check_crm_staging_installation_user_jwt_smoke.py > installation-user-jwt-smoke-check.log 2>&1
+      - name: Upload user JWT smoke diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: installation-user-jwt-smoke-check-diagnostics
+          path: installation-user-jwt-smoke-check.log
+          if-no-files-found: error
+          retention-days: 7
+      - name: Fail on contract error
+        if: steps.contract.outcome != 'success'
+        run: |
+          cat installation-user-jwt-smoke-check.log
+          exit 1

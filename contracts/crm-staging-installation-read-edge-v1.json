@@ -1,6 +1,6 @@
 {
   "contract": "crm-staging-installation-read-edge",
-  "version": 1,
+  "version": 2,
   "captured_at": "2026-07-22",
   "repository": "deputat36/lider-bsk",
   "project_ref": "otulfnouybahfnsycxqn",
@@ -18,13 +18,16 @@
     ]
   },
   "database": {
-    "migration_version": "20260722050355",
-    "migration_name": "staging_installation_job_read_rpc_20260722",
-    "source": "supabase/staging-migrations/20260722_01_installation_job_read_rpc.sql",
+    "base_migration_version": "20260722050355",
+    "base_migration_name": "staging_installation_job_read_rpc_20260722",
+    "base_source": "supabase/staging-migrations/20260722_01_installation_job_read_rpc.sql",
+    "fix_migration_version": "20260722055815",
+    "fix_migration_name": "staging_installation_read_order_status_fix_20260722",
+    "fix_source": "supabase/staging-migrations/20260722_03_installation_read_order_status_fix.sql",
     "acceptance": "supabase/staging-tests/20260722_installation_job_read_acceptance.sql",
     "rpc": "public.leader_read_installation_job_rpc(uuid,uuid)",
-    "rpc_md5": "98fc1e36b2ed8202e6580d7734088df1",
-    "rpc_bytes": 5378,
+    "rpc_md5": "5a353818606012d0e657a83f133723b6",
+    "rpc_bytes": 5432,
     "security_invoker": true,
     "empty_search_path": true
   },
@@ -39,6 +42,7 @@
   "projection": {
     "sections": ["entity", "order", "production", "items", "events", "comments"],
     "entity_has_updated_at": true,
+    "order_has_installation_status": true,
     "items_limit": 120,
     "events_limit": 30,
     "comments_limit": 20,
@@ -48,19 +52,9 @@
     "order_data_excluded": true,
     "server_owned_actor_fields_excluded": true,
     "forbidden_keys": [
-      "client_name",
-      "client_phone",
-      "installer_cost",
-      "client_price",
-      "client_total",
-      "contractor_cost",
-      "profit",
-      "internal_comment",
-      "client_comment",
-      "data",
-      "owner_id",
-      "created_by",
-      "updated_by"
+      "client_name", "client_phone", "installer_cost", "client_price",
+      "client_total", "contractor_cost", "profit", "internal_comment",
+      "client_comment", "data", "owner_id", "created_by", "updated_by"
     ]
   },
   "authorization": {
@@ -68,16 +62,16 @@
     "anon_execute": false,
     "authenticated_execute": false,
     "service_role_execute": true,
-    "manager_acceptance": "success",
-    "accountant_acceptance": "forbidden",
-    "inactive_profile_acceptance": "forbidden",
-    "unknown_job_acceptance": "not_found"
+    "runtime_authorized_role": "manager",
+    "runtime_forbidden_role": "accountant"
   },
   "acceptance": {
+    "rollback_privacy_acceptance": true,
+    "runtime_user_jwt_acceptance": true,
     "privacy_sensitive_markers_absent": true,
     "internal_comment_filtered": true,
-    "safe_child_counts_checked": true,
-    "transaction_rollback": true,
+    "item_prices_filtered": true,
+    "linked_order_status_verified": true,
     "persistent_fixture": false,
     "working_data_changed": false
   },
@@ -97,14 +91,16 @@
     "command_receipts": 0,
     "auth_users": 0,
     "active_profiles": 0,
-    "edge_logs_empty": true,
+    "runtime_edge_logs_present": true,
     "security_error_or_warn": false,
     "performance_only_unused_index_info": true
   },
   "runtime_gate": {
-    "user_jwt_smoke_completed": false,
-    "reason": "staging_has_no_auth_users_or_active_profiles",
-    "auth_mutation_performed": false,
+    "user_jwt_smoke_completed": true,
+    "runtime_evidence": "contracts/crm-staging-installation-runtime-smoke-v1.json",
+    "auth_mutation_performed_on_staging": true,
+    "auth_cleanup_verified": true,
+    "frontend_switch_ready_for_separate_review": true,
     "frontend_read_wired": false,
     "frontend_write_wired": false
   },

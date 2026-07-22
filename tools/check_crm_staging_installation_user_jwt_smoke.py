@@ -6,12 +6,17 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 EDGE_SHA = '24183605aad2c5cfcc84ebe14c348dcfce1b68de41a43dcfb973f65cef8cb369'
+READ_MD5 = '5a353818606012d0e657a83f133723b6'
+WRITE_MD5 = '0ed4669197dac1f2695e763d0eec54e1'
+
 FILES = {
     'runner': ROOT / 'tools/run_crm_staging_installation_user_jwt_smoke.mjs',
+    'lifecycle': ROOT / 'tools/run_crm_staging_installation_auth_fixture_lifecycle.mjs',
     'contract': ROOT / 'contracts/crm-staging-installation-user-jwt-smoke-v1.json',
+    'runtime': ROOT / 'contracts/crm-staging-installation-runtime-smoke-v1.json',
     'docs': ROOT / 'docs/SUPABASE_STAGING_INSTALLATION_USER_JWT_SMOKE_V1_2026-07-21.md',
-    'command_evidence': ROOT / 'contracts/crm-staging-installation-command-edge-v1.json',
-    'read_evidence': ROOT / 'contracts/crm-staging-installation-read-edge-v1.json',
+    'command': ROOT / 'contracts/crm-staging-installation-command-edge-v1.json',
+    'read': ROOT / 'contracts/crm-staging-installation-read-edge-v1.json',
     'workflow': ROOT / '.github/workflows/crm-staging-installation-user-jwt-smoke-check.yml',
 }
 
@@ -25,7 +30,7 @@ for name, path in FILES.items():
         texts[name] = path.read_text(encoding='utf-8')
 
 
-def require(name, markers):
+def require(name, *markers):
     for marker in markers:
         if marker not in texts.get(name, ''):
             errors.append(f'{name}: missing marker {marker!r}')
@@ -33,148 +38,120 @@ def require(name, markers):
 
 try:
     contract = json.loads(texts['contract'])
-    command = json.loads(texts['command_evidence'])
-    read = json.loads(texts['read_evidence'])
+    runtime = json.loads(texts['runtime'])
+    command = json.loads(texts['command'])
+    read = json.loads(texts['read'])
 except Exception as exc:
-    contract, command, read = {}, {}, {}
+    contract, runtime, command, read = {}, {}, {}, {}
     errors.append(f'Invalid JSON: {exc}')
 
 for key, value in {
     'contract': 'crm-staging-installation-user-jwt-smoke',
-    'version': 2,
+    'version': 3,
     'project_ref': 'otulfnouybahfnsycxqn',
     'environment': 'staging',
     'function': 'leader-crm-installation',
     'edge_version': 2,
     'edge_sha256': EDGE_SHA,
     'secrets_in_repository': False,
-    'persistent_fixture': False,
-    'persistent_receipt': False,
-    'working_data_write_expected': False,
+    'runtime_status': 'completed_clean',
 }.items():
     if contract.get(key) != value:
-        errors.append(f'contract: {key} must equal {value!r}')
+        errors.append(f'contract: {key} drifted')
 
-expected_actions = {
+if {(row.get('action'), row.get('permission')) for row in contract.get('actions', [])} != {
     ('installation_job.read', 'installation.read'),
     ('installation_job.update', 'installation.write'),
-}
-if {(item.get('action'), item.get('permission')) for item in contract.get('actions', [])} != expected_actions:
-    errors.append('contract: read/update action inventory drifted')
+}:
+    errors.append('contract: action inventory drifted')
 
-expected_env = {
-    'STAGING_SUPABASE_URL',
-    'STAGING_SUPABASE_PUBLISHABLE_KEY',
-    'STAGING_INSTALLATION_AUTHORIZED_USER_JWT',
-    'STAGING_INSTALLATION_FORBIDDEN_USER_JWT',
-}
-if set(contract.get('runtime_environment', [])) != expected_env:
-    errors.append('contract: runtime environment inventory drifted')
-
-cases = {item.get('name'): item for item in contract.get('cases', [])}
 expected_cases = {
-    'missing_jwt': (401, 'missing_or_invalid_jwt'),
-    'invalid_jwt': (401, 'missing_or_invalid_jwt'),
-    'forbidden_read': (403, 'forbidden'),
-    'forbidden_update': (403, 'forbidden'),
-    'authorized_read': (404, 'not_found'),
-    'authorized_update': (404, 'not_found'),
+    'read_missing_jwt': 401,
+    'read_invalid_jwt': 401,
+    'read_forbidden': 403,
+    'read_authorized': 200,
+    'update_forbidden': 403,
+    'update_authorized': 201,
+    'update_replay': 200,
+    'read_after_update': 200,
 }
-for name, expected in expected_cases.items():
-    item = cases.get(name, {})
-    if (item.get('expected_http'), item.get('expected_error')) != expected:
-        errors.append(f'contract: unexpected {name} expectation')
+actual_cases = {row.get('name'): row.get('actual_http') for row in contract.get('runtime_cases', [])}
+if actual_cases != expected_cases or any(row.get('result') != 'passed' for row in contract.get('runtime_cases', [])):
+    errors.append('contract: runtime cases drifted')
 
-precondition = contract.get('database_precondition', {})
-for key in ('schema_reconciliation_ready','read_rpc_ready','update_rpc_ready','edge_active','verify_jwt'):
-    if precondition.get(key) is not True:
-        errors.append(f'contract.precondition: {key} must be true')
-if precondition.get('read_rpc_md5') != '98fc1e36b2ed8202e6580d7734088df1':
-    errors.append('contract.precondition: read RPC fingerprint drifted')
-if precondition.get('update_rpc_md5') != '0ed4669197dac1f2695e763d0eec54e1':
-    errors.append('contract.precondition: update RPC fingerprint drifted')
+assertions = contract.get('runtime_assertions', {})
+for key in ('privacy_projection', 'linked_order_consistent', 'single_update_event', 'idempotent_replay'):
+    if assertions.get(key) is not True:
+        errors.append(f'contract.assertions: {key} must be true')
+for key in ('auth_users_after_cleanup', 'active_profiles_after_cleanup', 'working_rows_after_cleanup', 'receipts_after_cleanup'):
+    if assertions.get(key) != 0:
+        errors.append(f'contract.assertions: {key} must be zero')
 
-gate = contract.get('execution_gate', {})
-for key in ('manual_runtime_tokens_required','authorized_and_forbidden_tokens_must_differ','tokens_must_not_be_logged','tokens_must_not_be_committed','run_not_performed_in_source_pr'):
-    if gate.get(key) is not True:
-        errors.append(f'contract.execution_gate: {key} must be true')
-if gate.get('current_auth_users') != 0 or gate.get('current_active_profiles') != 0:
-    errors.append('contract.execution_gate: current auth/profile counts must be zero')
-if gate.get('blocked_reason') != 'staging_has_no_auth_users_or_active_profiles':
-    errors.append('contract.execution_gate: blocked reason drifted')
+post = contract.get('database_postcondition', {})
+for key in ('schema_reconciliation_ready', 'read_rpc_ready', 'update_rpc_ready', 'edge_active', 'verify_jwt', 'temporary_pg_net_removed', 'bootstrap_locked'):
+    if post.get(key) is not True:
+        errors.append(f'contract.postcondition: {key} must be true')
+if (post.get('read_rpc_md5'), post.get('update_rpc_md5')) != (READ_MD5, WRITE_MD5):
+    errors.append('contract.postcondition: RPC fingerprints drifted')
+
+history = contract.get('execution_history', {})
+for key in ('runtime_tokens_were_ephemeral', 'auth_admin_api_used', 'projection_defect_discovered', 'projection_defect_fixed'):
+    if history.get(key) is not True:
+        errors.append(f'contract.history: {key} must be true')
+for key in ('tokens_logged', 'tokens_committed'):
+    if history.get(key) is not False:
+        errors.append(f'contract.history: {key} must be false')
+
+success = contract.get('success_effect', {})
+if success.get('user_jwt_smoke_completed') is not True or success.get('frontend_switch_ready_for_separate_review') is not True or success.get('production_ready') is not False:
+    errors.append('contract.success_effect: readiness drifted')
 
 production = contract.get('production_boundary', {})
 if production.get('production_project_ref') != 'ofewxuqfjhamgerwzull':
-    errors.append('contract: wrong production ref')
-if production.get('production_call') is not False or production.get('production_data_change') is not False:
-    errors.append('contract: production call/data change must be false')
+    errors.append('contract.production: wrong ref')
+for key in ('production_call', 'production_data_change', 'production_edge_change', 'production_auth_change'):
+    if production.get(key) is not False:
+        errors.append(f'contract.production: {key} must be false')
 
-if command.get('edge', {}).get('sha256') != EDGE_SHA or command.get('edge', {}).get('version') != 2:
-    errors.append('command evidence: deployed Edge v2 mismatch')
-if command.get('readiness', {}).get('user_jwt_smoke_completed') is not False:
-    errors.append('command evidence: user JWT smoke must remain false')
-if command.get('readiness', {}).get('frontend_switch_ready') is not False:
-    errors.append('command evidence: frontend switch must remain false')
-if read.get('edge', {}).get('sha256') != EDGE_SHA:
-    errors.append('read evidence: deployed Edge SHA mismatch')
-if read.get('runtime_gate', {}).get('user_jwt_smoke_completed') is not False:
-    errors.append('read evidence: user JWT smoke must remain false')
+if runtime.get('status') != 'completed_clean' or runtime.get('runtime_cases') != expected_cases:
+    errors.append('runtime evidence: completed matrix missing')
+if command.get('readiness', {}).get('user_jwt_smoke_completed') is not True or command.get('readiness', {}).get('frontend_switch_ready') is not True:
+    errors.append('command evidence: staging gate must be ready')
+if command.get('readiness', {}).get('production_ready') is not False:
+    errors.append('command evidence: production must remain not ready')
+if read.get('runtime_gate', {}).get('user_jwt_smoke_completed') is not True:
+    errors.append('read evidence: smoke must be complete')
 
-require('runner', [
+require('runner',
     "EXPECTED_PROJECT_REF = 'otulfnouybahfnsycxqn'",
     "FUNCTION_SLUG = 'leader-crm-installation'",
     "READ_ACTION = 'installation_job.read'",
-    "READ_PERMISSION = 'installation.read'",
-    "UPDATE_ACTION = 'installation_job.update'",
-    "UPDATE_PERMISSION = 'installation.write'",
-    "env('STAGING_SUPABASE_URL')",
-    "env('STAGING_SUPABASE_PUBLISHABLE_KEY')",
-    "env('STAGING_INSTALLATION_AUTHORIZED_USER_JWT')",
-    "env('STAGING_INSTALLATION_FORBIDDEN_USER_JWT')",
-    "assertCase(missing, 401, 'missing_or_invalid_jwt'",
-    "assertCase(invalid, 401, 'missing_or_invalid_jwt'",
-    "assertCase(forbiddenRead, 403, 'forbidden'",
-    "assertCase(forbiddenUpdate, 403, 'forbidden'",
-    "assertCase(authorizedRead, 404, 'not_found'",
-    "assertCase(authorizedUpdate, 404, 'not_found'",
-    'persistent_fixture_expected: false',
-    'receipt_expected: false',
-])
-
-for forbidden in (
-    'console.log(authorizedJwt', 'console.log(forbiddenJwt',
-    'console.error(authorizedJwt', 'console.error(forbiddenJwt',
-    'SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SECRET_KEYS',
-):
-    if forbidden in texts['runner']:
-        errors.append(f'runner: forbidden marker {forbidden!r}')
-
-require('docs', [
-    'Staging installation user-JWT smoke v2',
-    '`installation_job.read`', '`installation_job.update`',
-    '`401 missing_or_invalid_jwt`', '`403 forbidden`', '`404 not_found`',
-    'Реальные значения в репозиторий не добавляются',
-    'Runtime smoke в source PR не запускается',
+    "UPDATE_ACTION = 'installation_job.update'")
+require('lifecycle',
+    "export const STAGING_PROJECT_REF = 'otulfnouybahfnsycxqn'",
+    "export const FUNCTION_SLUG = 'leader-crm-installation'",
+    'ALLOW_STAGING_AUTH_MUTATION',
+    'finally')
+require('docs',
+    'Staging installation user-JWT smoke v3',
+    'read без JWT → `401`',
+    'manager update → `201`',
     'Auth users: `0`',
-    'Production `ofewxuqfjhamgerwzull` не изменяется',
-])
-require('workflow', [
+    'Production `ofewxuqfjhamgerwzull` не вызывался')
+require('workflow',
     'CRM staging installation user-JWT smoke check',
-    'node --check tools/run_crm_staging_installation_user_jwt_smoke.mjs',
-    'python3 -m py_compile tools/check_crm_staging_installation_user_jwt_smoke.py',
-    'python3 tools/check_crm_staging_installation_user_jwt_smoke.py',
-])
+    'python3 tools/check_crm_staging_installation_user_jwt_smoke.py')
 
-for name, text in texts.items():
-    if re.search(r'sb_secret_[A-Za-z0-9_-]{10,}', text):
+for name, content in texts.items():
+    if re.search(r'sb_secret_[A-Za-z0-9_-]{10,}', content):
         errors.append(f'{name}: possible secret material')
-    if re.search(r'eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}', text):
+    if re.search(r'eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}', content):
         errors.append(f'{name}: possible JWT material')
 
 if errors:
-    print('Installation user-JWT smoke v2 checks failed:', file=sys.stderr)
+    print('Installation user-JWT smoke v3 checks failed:', file=sys.stderr)
     for error in errors:
         print(f'- {error}', file=sys.stderr)
     raise SystemExit(1)
 
-print('Installation user-JWT smoke v2 covers read/update and remains safely runtime-gated.')
+print('Installation user-JWT smoke v3 is completed, cleaned and production-safe.')
