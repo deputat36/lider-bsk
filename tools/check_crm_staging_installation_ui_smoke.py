@@ -315,7 +315,7 @@ require('workflow', [
 secret_patterns = [
     r'eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}',
     r'sb_secret_[A-Za-z0-9_-]{12,}',
-    r'installation-ui-[^\s"\']+@example\.invalid',
+    r'installation-ui-\d+-\d+-[0-9a-f]{16,}@example\.invalid',
 ]
 for name in texts:
     for pattern in secret_patterns:
