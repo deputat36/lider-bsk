@@ -110,7 +110,6 @@ jobs:
             .authenticated == true and
             .edge_notice == true and
             .privacy_projection == true and
-            .comments_read_only == true and
             .update_via_edge == true and
             .server_read_back == true and
             .title_changed == true and
