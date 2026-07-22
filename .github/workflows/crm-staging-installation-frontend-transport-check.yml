@@ -7,10 +7,13 @@ on:
       - 'crm/v4/assets/v4/installation-job-card-v2.js'
       - 'crm/v4/assets/v4/installation-job-save-route-v1.js'
       - 'crm/v4/assets/v4/installation-job-staging-transport-v1.js'
+      - 'crm/v4/assets/v4/installation-job-staging-read-transport-v1.js'
       - 'contracts/crm-staging-installation-frontend-transport-v1.json'
+      - 'contracts/crm-staging-installation-runtime-smoke-v1.json'
       - 'docs/CRM_STAGING_INSTALLATION_FRONTEND_TRANSPORT_V1_2026-07-22.md'
       - 'tools/test_installation_job_save_route.mjs'
       - 'tools/test_installation_job_staging_transport.mjs'
+      - 'tools/test_installation_job_staging_read_transport.mjs'
       - 'tools/check_crm_staging_installation_frontend_transport.py'
       - '.github/workflows/crm-staging-installation-frontend-transport-check.yml'
   push:
@@ -20,10 +23,13 @@ on:
       - 'crm/v4/assets/v4/installation-job-card-v2.js'
       - 'crm/v4/assets/v4/installation-job-save-route-v1.js'
       - 'crm/v4/assets/v4/installation-job-staging-transport-v1.js'
+      - 'crm/v4/assets/v4/installation-job-staging-read-transport-v1.js'
       - 'contracts/crm-staging-installation-frontend-transport-v1.json'
+      - 'contracts/crm-staging-installation-runtime-smoke-v1.json'
       - 'docs/CRM_STAGING_INSTALLATION_FRONTEND_TRANSPORT_V1_2026-07-22.md'
       - 'tools/test_installation_job_save_route.mjs'
       - 'tools/test_installation_job_staging_transport.mjs'
+      - 'tools/test_installation_job_staging_read_transport.mjs'
       - 'tools/check_crm_staging_installation_frontend_transport.py'
       - '.github/workflows/crm-staging-installation-frontend-transport-check.yml'
 
@@ -38,15 +44,35 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check JavaScript syntax
         run: |
+          node --check crm/v4/assets/v4/installation-job-card-v2.js
           node --check crm/v4/assets/v4/installation-job-save-route-v1.js
           node --check crm/v4/assets/v4/installation-job-staging-transport-v1.js
+          node --check crm/v4/assets/v4/installation-job-staging-read-transport-v1.js
           node --check tools/test_installation_job_save_route.mjs
           node --check tools/test_installation_job_staging_transport.mjs
+          node --check tools/test_installation_job_staging_read_transport.mjs
       - name: Run route tests
         run: node tools/test_installation_job_save_route.mjs
-      - name: Run transport tests
+      - name: Run write transport tests
         run: node tools/test_installation_job_staging_transport.mjs
+      - name: Run read transport tests
+        run: node tools/test_installation_job_staging_read_transport.mjs
       - name: Compile contract checker
         run: python3 -m py_compile tools/check_crm_staging_installation_frontend_transport.py
-      - name: Validate exact staging transport and production lock
-        run: python3 tools/check_crm_staging_installation_frontend_transport.py
+      - name: Validate exact staging wiring and production boundary
+        id: contract
+        continue-on-error: true
+        run: python3 tools/check_crm_staging_installation_frontend_transport.py > installation-frontend-transport-check.log 2>&1
+      - name: Upload transport diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: installation-frontend-transport-check-diagnostics
+          path: installation-frontend-transport-check.log
+          if-no-files-found: error
+          retention-days: 7
+      - name: Fail on contract error
+        if: steps.contract.outcome != 'success'
+        run: |
+          cat installation-frontend-transport-check.log
+          exit 1
