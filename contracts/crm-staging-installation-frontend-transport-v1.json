@@ -1,0 +1,60 @@
+{
+  "contract": "crm-staging-installation-frontend-transport",
+  "version": 1,
+  "captured_at": "2026-07-22",
+  "repository": "deputat36/lider-bsk",
+  "status": "source_ready_not_wired_runtime_gated_production_unchanged",
+  "environment": {
+    "staging_project_ref": "otulfnouybahfnsycxqn",
+    "allowed_hostname": "otulfnouybahfnsycxqn.supabase.co",
+    "production_project_ref": "ofewxuqfjhamgerwzull",
+    "production_route": "production_locked",
+    "wrong_environment": "fail_closed_on_non_exact_hostname_before_session_or_invoke"
+  },
+  "transport": {
+    "source": "crm/v4/assets/v4/installation-job-staging-transport-v1.js",
+    "route_source": "crm/v4/assets/v4/installation-job-save-route-v1.js",
+    "function_slug": "leader-crm-installation",
+    "action": "installation_job.update",
+    "permission": "installation.write",
+    "atomic": true,
+    "browser_direct_write": false,
+    "service_role_in_browser": false,
+    "requires_session_access_token": true,
+    "requires_expected_updated_at": true,
+    "requires_idempotency_key": true,
+    "requires_request_id": true,
+    "patch_allowlist": [
+      "title",
+      "install_status",
+      "installer_name",
+      "installer_phone",
+      "address",
+      "scheduled_at",
+      "before_photo_url",
+      "after_photo_url",
+      "technical_task",
+      "tools_required",
+      "installer_comment"
+    ]
+  },
+  "frontend": {
+    "current_card": "crm/v4/assets/v4/installation-job-card-v2.js",
+    "current_card_modified": false,
+    "source_wired_to_card": false,
+    "production_browser_behavior_changed": false,
+    "next_gate": "runtime_user_jwt_smoke_then_separate_staging_ui_wiring_pr"
+  },
+  "tests": {
+    "route": "tools/test_installation_job_save_route.mjs",
+    "transport": "tools/test_installation_job_staging_transport.mjs",
+    "checker": "tools/check_crm_staging_installation_frontend_transport.py"
+  },
+  "production_boundary": {
+    "production_supabase_changed": false,
+    "production_frontend_switch": false,
+    "production_edge_deploy": false,
+    "production_data_changed": false,
+    "nav_changed": false
+  }
+}
