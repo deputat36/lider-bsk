@@ -1,29 +1,64 @@
 {
   "contract": "crm-staging-installation-frontend-transport",
-  "version": 1,
+  "version": 2,
   "captured_at": "2026-07-22",
   "repository": "deputat36/lider-bsk",
-  "status": "source_ready_not_wired_runtime_gated_production_unchanged",
+  "issue": 439,
+  "status": "wired_on_isolated_staging_page_production_legacy_unchanged",
   "environment": {
     "staging_project_ref": "otulfnouybahfnsycxqn",
+    "staging_supabase_url": "https://otulfnouybahfnsycxqn.supabase.co",
     "allowed_hostname": "otulfnouybahfnsycxqn.supabase.co",
+    "staging_page": "crm/v4/staging-installation.html",
+    "published_path": "/lider-bsk/crm/v4/staging-installation.html",
+    "local_path": "/crm/v4/staging-installation.html",
     "production_project_ref": "ofewxuqfjhamgerwzull",
-    "production_route": "production_locked",
-    "wrong_environment": "fail_closed_on_non_exact_hostname_before_session_or_invoke"
+    "production_page": "crm/v4/index.html",
+    "production_route": "production_legacy",
+    "wrong_page_or_host": "production_config_before_client_creation",
+    "staging_session_storage": "leader_crm_v4_staging_installation_session",
+    "production_session_storage": "leader_crm_v4_main_session"
+  },
+  "database": {
+    "migration_version": "20260722194950",
+    "migration_name": "staging_installation_read_capabilities_20260722",
+    "source": "supabase/staging-migrations/20260722_05_installation_read_capabilities.sql",
+    "acceptance": "supabase/staging-tests/20260722_installation_frontend_wiring_acceptance.sql",
+    "read_rpc": "public.leader_read_installation_job_rpc(uuid,uuid)",
+    "read_rpc_md5": "01e91816d4f3a6a1bea2d6cbe760011f",
+    "read_rpc_bytes": 5599,
+    "write_rpc_md5": "0ed4669197dac1f2695d0eec54e1",
+    "write_rpc_bytes": 19061,
+    "security_invoker": true,
+    "empty_search_path": true,
+    "browser_execute": false,
+    "service_role_execute": true,
+    "capabilities": {
+      "can_read": "server_true_after_installation.read",
+      "can_write": "server_projection_of_installation.write",
+      "role_or_identity_exposed": false
+    }
   },
   "transport": {
     "source": "crm/v4/assets/v4/installation-job-staging-transport-v1.js",
     "route_source": "crm/v4/assets/v4/installation-job-save-route-v1.js",
     "function_slug": "leader-crm-installation",
-    "action": "installation_job.update",
-    "permission": "installation.write",
-    "atomic": true,
-    "browser_direct_write": false,
+    "edge_version": 2,
+    "edge_sha256": "24183605aad2c5cfcc84ebe14c348dcfce1b68de41a43dcfb973f65cef8cb369",
+    "verify_jwt": true,
+    "actions": [
+      {"action": "installation_job.read", "permission": "installation.read"},
+      {"action": "installation_job.update", "permission": "installation.write"}
+    ],
+    "atomic_update": true,
+    "browser_direct_read_on_staging": false,
+    "browser_direct_write_on_staging": false,
     "service_role_in_browser": false,
-    "requires_session_access_token": true,
+    "requires_current_user_session": true,
     "requires_expected_updated_at": true,
     "requires_idempotency_key": true,
     "requires_request_id": true,
+    "read_after_success_through_edge": true,
     "patch_allowlist": [
       "title",
       "install_status",
@@ -39,22 +74,56 @@
     ]
   },
   "frontend": {
-    "current_card": "crm/v4/assets/v4/installation-job-card-v2.js",
-    "current_card_modified": false,
-    "source_wired_to_card": false,
+    "staging_page": "crm/v4/staging-installation.html",
+    "harness": "crm/v4/assets/v4/staging-installation-harness-v1.js",
+    "staging_card": "crm/v4/assets/v4/installation-job-staging-card-v1.js",
+    "production_card": "crm/v4/assets/v4/installation-job-card-v2.js",
+    "source_wired_to_staging_card": true,
+    "server_capability_controls_save": true,
+    "read_only_when_can_write_false": true,
+    "internal_comment_write_available": false,
+    "client_contacts_excluded": true,
+    "financial_fields_excluded": true,
+    "production_card_modified": false,
+    "production_index_imports_staging": false,
     "production_browser_behavior_changed": false,
-    "next_gate": "runtime_user_jwt_smoke_then_separate_staging_ui_wiring_pr"
+    "production_legacy_direct_path_preserved": true
+  },
+  "runtime_gate": {
+    "user_jwt_smoke_completed": true,
+    "runtime_evidence": "contracts/crm-staging-installation-runtime-smoke-v1.json",
+    "isolated_staging_ui_source_wired": true,
+    "authenticated_browser_ui_smoke_completed": false,
+    "persistent_fixture": false,
+    "next_gate": "authenticated_browser_ui_smoke_with_synthetic_fixture_and_cleanup"
+  },
+  "staging_postflight": {
+    "auth_users": 0,
+    "profiles": 0,
+    "orders": 0,
+    "production_jobs": 0,
+    "installation_jobs": 0,
+    "installation_items": 0,
+    "installation_events": 0,
+    "installation_comments": 0,
+    "command_receipts": 0,
+    "working_data_changed": false
   },
   "tests": {
     "route": "tools/test_installation_job_save_route.mjs",
     "transport": "tools/test_installation_job_staging_transport.mjs",
+    "config": "tools/test_crm_v4_config_routes.mjs",
+    "card_isolation": "tools/test_installation_job_staging_card_contract.mjs",
     "checker": "tools/check_crm_staging_installation_frontend_transport.py"
   },
   "production_boundary": {
     "production_supabase_changed": false,
     "production_frontend_switch": false,
     "production_edge_deploy": false,
+    "production_auth_changed": false,
     "production_data_changed": false,
-    "nav_changed": false
+    "production_read_rpc_exists": false,
+    "nav_changed": false,
+    "explicit_approval_required": true
   }
 }
