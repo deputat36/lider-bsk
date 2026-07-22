@@ -1,6 +1,6 @@
 {
   "contract": "crm-staging-installation-user-jwt-smoke",
-  "version": 3,
+  "version": 4,
   "project_ref": "otulfnouybahfnsycxqn",
   "environment": "staging",
   "function": "leader-crm-installation",
@@ -41,8 +41,12 @@
     "update_rpc_ready": true,
     "edge_active": true,
     "verify_jwt": true,
-    "read_rpc_md5": "5a353818606012d0e657a83f133723b6",
-    "update_rpc_md5": "0ed4669197dac1f2695e763d0eec54e1",
+    "read_rpc_md5": "01e91816d4f3a6a1bea2d6cbe760011f",
+    "read_rpc_bytes": 5599,
+    "update_rpc_md5": "0ed4669197dac1f2695d0eec54e1",
+    "update_rpc_bytes": 19061,
+    "server_capability_projection": true,
+    "capability_migration_version": "20260722194950",
     "temporary_pg_net_removed": true,
     "bootstrap_locked": true
   },
@@ -51,13 +55,15 @@
     "tokens_logged": false,
     "tokens_committed": false,
     "auth_admin_api_used": true,
-    "projection_defect_discovered": true,
-    "projection_defect_fixed": true,
-    "fix_migration_version": "20260722055815"
+    "order_status_projection_defect_fixed": true,
+    "order_status_fix_migration_version": "20260722055815",
+    "capability_projection_added_after_runtime_smoke": true,
+    "capability_acceptance_rollback_safe": true
   },
   "success_effect": {
     "user_jwt_smoke_completed": true,
-    "frontend_switch_ready_for_separate_review": true,
+    "isolated_staging_frontend_wired": true,
+    "authenticated_browser_ui_smoke_completed": false,
     "production_ready": false
   },
   "production_boundary": {
@@ -66,6 +72,7 @@
     "production_data_change": false,
     "production_edge_change": false,
     "production_auth_change": false,
+    "production_frontend_switch": false,
     "explicit_approval_required": true
   }
 }
