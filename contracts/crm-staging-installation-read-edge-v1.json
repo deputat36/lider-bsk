@@ -1,6 +1,6 @@
 {
   "contract": "crm-staging-installation-read-edge",
-  "version": 2,
+  "version": 3,
   "captured_at": "2026-07-22",
   "repository": "deputat36/lider-bsk",
   "project_ref": "otulfnouybahfnsycxqn",
@@ -21,13 +21,16 @@
     "base_migration_version": "20260722050355",
     "base_migration_name": "staging_installation_job_read_rpc_20260722",
     "base_source": "supabase/staging-migrations/20260722_01_installation_job_read_rpc.sql",
-    "fix_migration_version": "20260722055815",
-    "fix_migration_name": "staging_installation_read_order_status_fix_20260722",
-    "fix_source": "supabase/staging-migrations/20260722_03_installation_read_order_status_fix.sql",
-    "acceptance": "supabase/staging-tests/20260722_installation_job_read_acceptance.sql",
+    "order_status_fix_migration_version": "20260722055815",
+    "order_status_fix_migration_name": "staging_installation_read_order_status_fix_20260722",
+    "order_status_fix_source": "supabase/staging-migrations/20260722_03_installation_read_order_status_fix.sql",
+    "capability_migration_version": "20260722194950",
+    "capability_migration_name": "staging_installation_read_capabilities_20260722",
+    "capability_source": "supabase/staging-migrations/20260722_05_installation_read_capabilities.sql",
+    "acceptance": "supabase/staging-tests/20260722_installation_frontend_wiring_acceptance.sql",
     "rpc": "public.leader_read_installation_job_rpc(uuid,uuid)",
-    "rpc_md5": "5a353818606012d0e657a83f133723b6",
-    "rpc_bytes": 5432,
+    "rpc_md5": "01e91816d4f3a6a1bea2d6cbe760011f",
+    "rpc_bytes": 5599,
     "security_invoker": true,
     "empty_search_path": true
   },
@@ -40,9 +43,14 @@
     "payload_fields": ["job_id"]
   },
   "projection": {
-    "sections": ["entity", "order", "production", "items", "events", "comments"],
+    "sections": ["capabilities", "entity", "order", "production", "items", "events", "comments"],
     "entity_has_updated_at": true,
     "order_has_installation_status": true,
+    "capabilities": {
+      "can_read": "true_after_installation.read",
+      "can_write": "server_projection_of_installation.write",
+      "identity_or_role_exposed": false
+    },
     "items_limit": 120,
     "events_limit": 30,
     "comments_limit": 20,
@@ -54,7 +62,8 @@
     "forbidden_keys": [
       "client_name", "client_phone", "installer_cost", "client_price",
       "client_total", "contractor_cost", "profit", "internal_comment",
-      "client_comment", "data", "owner_id", "created_by", "updated_by"
+      "client_comment", "data", "owner_id", "created_by", "updated_by",
+      "role", "email", "user_id", "actions"
     ]
   },
   "authorization": {
@@ -63,12 +72,15 @@
     "authenticated_execute": false,
     "service_role_execute": true,
     "runtime_authorized_role": "manager",
-    "runtime_forbidden_role": "accountant"
+    "runtime_forbidden_role": "accountant",
+    "server_capability_acceptance_roles": ["manager", "installer"]
   },
   "acceptance": {
     "rollback_privacy_acceptance": true,
     "runtime_user_jwt_acceptance": true,
+    "capability_acceptance": true,
     "privacy_sensitive_markers_absent": true,
+    "capability_identity_markers_absent": true,
     "internal_comment_filtered": true,
     "item_prices_filtered": true,
     "linked_order_status_verified": true,
@@ -76,7 +88,7 @@
     "working_data_changed": false
   },
   "write_regression": {
-    "write_rpc_md5": "0ed4669197dac1f2695e763d0eec54e1",
+    "write_rpc_md5": "0ed4669197dac1f2695d0eec54e1",
     "write_rpc_bytes": 19061,
     "success": true,
     "linked_order_sync": true,
@@ -91,18 +103,19 @@
     "command_receipts": 0,
     "auth_users": 0,
     "active_profiles": 0,
-    "runtime_edge_logs_present": true,
     "security_error_or_warn": false,
     "performance_only_unused_index_info": true
   },
   "runtime_gate": {
     "user_jwt_smoke_completed": true,
     "runtime_evidence": "contracts/crm-staging-installation-runtime-smoke-v1.json",
-    "auth_mutation_performed_on_staging": true,
     "auth_cleanup_verified": true,
-    "frontend_switch_ready_for_separate_review": true,
-    "frontend_read_wired": false,
-    "frontend_write_wired": false
+    "isolated_staging_frontend_source_wired": true,
+    "staging_page": "crm/v4/staging-installation.html",
+    "frontend_read_wired_on_staging": true,
+    "frontend_write_wired_on_staging": true,
+    "authenticated_browser_ui_smoke_completed": false,
+    "production_frontend_wired": false
   },
   "production_boundary": {
     "production_project_ref": "ofewxuqfjhamgerwzull",
