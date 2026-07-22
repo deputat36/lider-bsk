@@ -1,6 +1,6 @@
 {
   "contract": "crm-staging-installation-runtime-smoke",
-  "version": 1,
+  "version": 2,
   "captured_at": "2026-07-22",
   "repository": "deputat36/lider-bsk",
   "issue": 436,
@@ -33,22 +33,27 @@
     "canonical_read_permission_checked": true,
     "canonical_write_permission_checked": true
   },
-  "discovered_defect": {
-    "code": "installation_read_order_status_missing",
-    "symptom": "order.installation_status was absent from the safe read projection",
-    "database_row_was_correct": true,
-    "fixed": true,
-    "fix_migration_version": "20260722055815",
-    "fix_migration_name": "staging_installation_read_order_status_fix_20260722",
-    "fix_source": "supabase/staging-migrations/20260722_03_installation_read_order_status_fix.sql"
+  "runtime_function_state": {
+    "read_rpc_md5_at_runtime": "5a353818606012d0e657a83f133723b6",
+    "read_rpc_bytes_at_runtime": 5432,
+    "order_installation_status_included": true,
+    "write_rpc_md5": "0ed4669197dac1f2695d0eec54e1",
+    "write_rpc_bytes": 19061
+  },
+  "subsequent_safe_enhancement": {
+    "code": "installation_read_capability_projection",
+    "migration_version": "20260722194950",
+    "migration_name": "staging_installation_read_capabilities_20260722",
+    "source": "supabase/staging-migrations/20260722_05_installation_read_capabilities.sql",
+    "acceptance": "supabase/staging-tests/20260722_installation_frontend_wiring_acceptance.sql",
+    "can_write_server_projected": true,
+    "identity_or_role_exposed": false,
+    "runtime_edge_unchanged": true,
+    "write_rpc_unchanged": true
   },
   "temporary_transport": {
     "install_migration_version": "20260722053726",
-    "install_migration_name": "staging_pg_net_smoke_transport_20260722",
-    "install_source": "supabase/staging-migrations/20260722_02_pg_net_smoke_transport.sql",
     "cleanup_migration_version": "20260722060407",
-    "cleanup_migration_name": "staging_pg_net_smoke_transport_cleanup_20260722",
-    "cleanup_source": "supabase/staging-migrations/20260722_04_pg_net_smoke_transport_cleanup.sql",
     "pg_net_installed_after_cleanup": false,
     "net_schema_exists_after_cleanup": false
   },
@@ -65,18 +70,19 @@
   "rpc_postflight": {
     "read": {
       "signature": "public.leader_read_installation_job_rpc(uuid,uuid)",
-      "md5": "5a353818606012d0e657a83f133723b6",
-      "bytes": 5432,
+      "md5": "01e91816d4f3a6a1bea2d6cbe760011f",
+      "bytes": 5599,
       "security_invoker": true,
       "empty_search_path": true,
       "order_installation_status_included": true,
+      "server_capabilities_included": true,
       "anon_execute": false,
       "authenticated_execute": false,
       "service_role_execute": true
     },
     "update": {
       "signature": "public.leader_update_installation_job_rpc(jsonb)",
-      "md5": "0ed4669197dac1f2695e763d0eec54e1",
+      "md5": "0ed4669197dac1f2695d0eec54e1",
       "bytes": 19061,
       "authenticated_execute": false,
       "service_role_execute": true,
@@ -102,14 +108,16 @@
   "frontend": {
     "staging_transport_source_ready": true,
     "runtime_gate_completed": true,
-    "frontend_wired": false,
-    "next_step": "separate exact-staging UI wiring review"
+    "isolated_staging_frontend_wired": true,
+    "staging_page": "crm/v4/staging-installation.html",
+    "authenticated_browser_ui_smoke_completed": false,
+    "production_frontend_wired": false,
+    "next_step": "authenticated isolated staging UI smoke with synthetic fixture and cleanup"
   },
   "production_boundary": {
     "project_ref": "ofewxuqfjhamgerwzull",
     "read_rpc_exists": false,
-    "read_fix_migration_exists": false,
-    "pg_net_smoke_migration_exists": false,
+    "capability_migration_exists": false,
     "installation_edge_deployed": false,
     "bootstrap_edge_deployed": false,
     "database_changed": false,
