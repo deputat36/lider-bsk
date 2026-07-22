@@ -1,0 +1,120 @@
+{
+  "contract": "crm-staging-installation-read-edge",
+  "version": 1,
+  "captured_at": "2026-07-22",
+  "repository": "deputat36/lider-bsk",
+  "project_ref": "otulfnouybahfnsycxqn",
+  "environment": "staging",
+  "edge": {
+    "slug": "leader-crm-installation",
+    "version": 2,
+    "status": "ACTIVE",
+    "verify_jwt": true,
+    "sha256": "24183605aad2c5cfcc84ebe14c348dcfce1b68de41a43dcfb973f65cef8cb369",
+    "contract_version": "leader-crm-installation-edge-v2",
+    "source": [
+      "supabase/staging-functions/leader-crm-installation/index.ts",
+      "supabase/staging-functions/leader-crm-installation/contract.ts"
+    ]
+  },
+  "database": {
+    "migration_version": "20260722050355",
+    "migration_name": "staging_installation_job_read_rpc_20260722",
+    "source": "supabase/staging-migrations/20260722_01_installation_job_read_rpc.sql",
+    "acceptance": "supabase/staging-tests/20260722_installation_job_read_acceptance.sql",
+    "rpc": "public.leader_read_installation_job_rpc(uuid,uuid)",
+    "rpc_md5": "98fc1e36b2ed8202e6580d7734088df1",
+    "rpc_bytes": 5378,
+    "security_invoker": true,
+    "empty_search_path": true
+  },
+  "action": {
+    "name": "installation_job.read",
+    "permission": "installation.read",
+    "edge_permission_check": true,
+    "rpc_permission_recheck": true,
+    "request_fields": ["action", "request_id", "payload"],
+    "payload_fields": ["job_id"]
+  },
+  "projection": {
+    "sections": ["entity", "order", "production", "items", "events", "comments"],
+    "entity_has_updated_at": true,
+    "items_limit": 120,
+    "events_limit": 30,
+    "comments_limit": 20,
+    "internal_comments_excluded": true,
+    "client_contacts_excluded": true,
+    "financial_fields_excluded": true,
+    "order_data_excluded": true,
+    "server_owned_actor_fields_excluded": true,
+    "forbidden_keys": [
+      "client_name",
+      "client_phone",
+      "installer_cost",
+      "client_price",
+      "client_total",
+      "contractor_cost",
+      "profit",
+      "internal_comment",
+      "client_comment",
+      "data",
+      "owner_id",
+      "created_by",
+      "updated_by"
+    ]
+  },
+  "authorization": {
+    "public_execute": false,
+    "anon_execute": false,
+    "authenticated_execute": false,
+    "service_role_execute": true,
+    "manager_acceptance": "success",
+    "accountant_acceptance": "forbidden",
+    "inactive_profile_acceptance": "forbidden",
+    "unknown_job_acceptance": "not_found"
+  },
+  "acceptance": {
+    "privacy_sensitive_markers_absent": true,
+    "internal_comment_filtered": true,
+    "safe_child_counts_checked": true,
+    "transaction_rollback": true,
+    "persistent_fixture": false,
+    "working_data_changed": false
+  },
+  "write_regression": {
+    "write_rpc_md5": "0ed4669197dac1f2695e763d0eec54e1",
+    "write_rpc_bytes": 19061,
+    "success": true,
+    "linked_order_sync": true,
+    "idempotent_replay": true,
+    "duplicate_event": false
+  },
+  "staging_postflight": {
+    "installation_jobs": 0,
+    "installation_job_items": 0,
+    "installation_events": 0,
+    "installation_comments": 0,
+    "command_receipts": 0,
+    "auth_users": 0,
+    "active_profiles": 0,
+    "edge_logs_empty": true,
+    "security_error_or_warn": false,
+    "performance_only_unused_index_info": true
+  },
+  "runtime_gate": {
+    "user_jwt_smoke_completed": false,
+    "reason": "staging_has_no_auth_users_or_active_profiles",
+    "auth_mutation_performed": false,
+    "frontend_read_wired": false,
+    "frontend_write_wired": false
+  },
+  "production_boundary": {
+    "production_project_ref": "ofewxuqfjhamgerwzull",
+    "production_rpc_exists": false,
+    "production_migration_exists": false,
+    "production_edge_deploy": false,
+    "production_frontend_switch": false,
+    "production_data_changed": false,
+    "explicit_approval_required": true
+  }
+}

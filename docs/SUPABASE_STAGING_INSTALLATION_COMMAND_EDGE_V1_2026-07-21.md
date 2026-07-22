@@ -1,61 +1,68 @@
-# Staging installation command Edge v4
+# Staging installation command Edge v5
 
-Дата reconciliation: 21 июля 2026 года.
+Дата обновления: 22 июля 2026 года.
 
 ## Deployment
 
 - staging: `otulfnouybahfnsycxqn`;
-- Edge: `leader-crm-installation v1`;
+- Edge: `leader-crm-installation v2`;
 - status: `ACTIVE`;
 - `verify_jwt=true`;
-- SHA-256: `4be533387e91a4d91a025a8c7c0ea9516563a4cba7e236c270cdd23097cb6bdc`;
-- action: `installation_job.update`;
-- permission: `installation.write`;
-- RPC: `public.leader_update_installation_job_rpc(jsonb)`.
+- SHA-256: `24183605aad2c5cfcc84ebe14c348dcfce1b68de41a43dcfb973f65cef8cb369`;
+- contract: `leader-crm-installation-edge-v2`.
 
-Новый Edge deploy в текущем цикле не выполнялся.
+Edge обслуживает два действия:
 
-## Schema readiness
+- `installation_job.read` → `installation.read`;
+- `installation_job.update` → `installation.write`.
 
-Schema reconciliation завершён:
+Порядок для обоих действий:
 
-- `20260721195259` — FK/compat migration;
-- `20260721200142` — final index reconciliation.
+`exact staging guard → verified JWT → strict validation → canonical permission → service-role-only RPC`
 
-Все три `order_id` FK используют `ON DELETE SET NULL`, присутствуют все девять production-compatible индексов, missing FK-index advice отсутствует.
+Browser role не принимается. RPC повторно проверяют canonical permission.
 
-## Команда
+## Атомарное обновление
 
-Порядок:
+`leader_update_installation_job_rpc` не изменена:
 
-`staging guard → JWT → validation → canonical permission → transactional RPC`
+- MD5 `0ed4669197dac1f2695d0eec54e1`;
+- 19061 bytes;
+- job/order/event/receipt одной транзакцией;
+- row/advisory locks;
+- optimistic concurrency;
+- idempotent replay.
 
-Browser role не принимается. RPC одной транзакцией обновляет job, linked order, installation event и command receipt. Используются row locks, advisory locks, optimistic concurrency, idempotent replay и safe response.
+После Edge v2 write regression и replay повторно прошли, второе событие не создаётся.
+
+## Безопасное чтение
+
+Migration `20260722050355 / staging_installation_job_read_rpc_20260722` добавила `leader_read_installation_job_rpc(uuid,uuid)`:
+
+- MD5 `98fc1e36b2ed8202e6580d7734088df1`;
+- 5378 bytes;
+- SECURITY INVOKER;
+- `search_path=''`;
+- EXECUTE только `service_role`;
+- safe projection без контактов клиента, финансов, `orders.data` и внутренних комментариев.
+
+Подробный privacy/RBAC acceptance: `docs/SUPABASE_STAGING_INSTALLATION_READ_EDGE_V1_2026-07-22.md`.
 
 ## Postflight
 
-- installation jobs/items/events/comments: `0`;
-- receipts: `0`;
-- RPC EXECUTE: только `service_role`;
-- RPC fingerprint и Edge SHA не изменились;
+- jobs/items/events/comments/receipts: `0`;
+- Auth users и active profiles: `0`;
 - Edge logs пусты;
-- command smoke: success;
-- replay: success без второго события;
-- security ERROR/WARN: нет.
+- security ERROR/WARN отсутствуют;
+- write regression: success;
+- read privacy acceptance: success.
 
-## Readiness
+## Runtime gate
 
-- Edge source synced: да;
-- RPC source synced: да;
-- authorization ready: да;
-- atomic command ready: да;
-- schema reconciliation ready: да;
-- user-JWT smoke completed: нет;
-- frontend switch ready: нет;
-- production ready: нет.
+User-JWT smoke не выполнен, потому что staging Auth пустой. Auth-пользователи не создавались и прямые изменения `auth.users` не выполнялись.
 
-`installation-job-card-v2.js` пока использует три direct browser writes. Переключение не выполнялось.
+Frontend switch не выполнен. Production-карточка продолжает использовать прежние direct browser reads/writes. Exact-staging write transport существует только как source-ready модуль и к карточке не подключён.
 
 ## Production boundary
 
-Production проект `ofewxuqfjhamgerwzull` использован только read-only. В нём отсутствуют installation RPC, reconciliation migrations и Edge slug. Production rollout требует отдельного approval и rollback-плана.
+Production `ofewxuqfjhamgerwzull` использован только read-only. Read RPC, migration и Edge slug в production отсутствуют. Production DDL/DML, RLS, grants, Auth, Storage, frontend, рабочие данные и `nav_*` не менялись.

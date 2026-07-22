@@ -1,9 +1,9 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 
 import {
-  INSTALLATION_ACTION,
   INSTALLATION_EDGE_CONTRACT_VERSION,
-  INSTALLATION_PERMISSION,
+  INSTALLATION_READ_ACTION,
+  INSTALLATION_UPDATE_ACTION,
   MAX_BODY_BYTES,
   STAGING_PROJECT_REF,
   asObject,
@@ -60,6 +60,7 @@ async function canonicalPermission(
   supabaseUrl: string,
   adminKey: string,
   actorId: string,
+  permission: string,
 ) {
   const response = await adminFetch(
     supabaseUrl,
@@ -68,23 +69,24 @@ async function canonicalPermission(
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ p_actor_id: actorId, p_action: INSTALLATION_PERMISSION }),
+      body: JSON.stringify({ p_actor_id: actorId, p_action: permission }),
     },
   )
   if (!response.ok) {
     console.error('leader-crm-installation permission transport failure', {
       status: response.status,
-      permission: INSTALLATION_PERMISSION,
+      permission,
     })
     return { error: json(500, { error: 'permission_check_failed' }) }
   }
   return { allowed: (await response.json()) === true }
 }
 
-function safeRpcError(value: unknown) {
+function safeRpcError(value: unknown, requestId: string, mode: 'read' | 'update') {
   const result = asObject(value)
   const error = asObject(result?.error)
-  const code = cleanText(error?.code, 80) || 'persistence_failed'
+  const fallbackCode = mode === 'read' ? 'read_failed' : 'persistence_failed'
+  const code = cleanText(error?.code, 80) || fallbackCode
   const known = new Set([
     'validation_error',
     'unknown_action',
@@ -93,17 +95,20 @@ function safeRpcError(value: unknown) {
     'conflict',
     'duplicate_request',
     'invalid_transition',
+    'read_failed',
     'persistence_failed',
   ])
-  const safeCode = known.has(code) ? code : 'persistence_failed'
+  const safeCode = known.has(code) ? code : fallbackCode
   return {
     status: rpcStatus(safeCode),
     body: {
       ok: false,
-      request_id: cleanText(result?.request_id, 80) || null,
+      request_id: requestId || null,
       error: {
         code: safeCode,
-        message: safeCode === 'persistence_failed'
+        message: safeCode === 'read_failed'
+          ? 'Installation job could not be read'
+          : safeCode === 'persistence_failed'
           ? 'Installation job update could not be persisted'
           : cleanText(error?.message, 300) || safeCode,
       },
@@ -160,18 +165,74 @@ Deno.serve(async (req: Request) => {
     })
   }
 
-  const permissionResult = await canonicalPermission(
-    supabaseUrl,
-    adminKey,
-    checked.user.id,
-  )
-  if (permissionResult.error) return permissionResult.error
-  if (!permissionResult.allowed) {
-    return json(403, {
-      error: 'forbidden',
-      action: INSTALLATION_ACTION,
-      permission: INSTALLATION_PERMISSION,
-      contract: INSTALLATION_EDGE_CONTRACT_VERSION,
+  for (const permission of validation.permissions) {
+    const permissionResult = await canonicalPermission(
+      supabaseUrl,
+      adminKey,
+      checked.user.id,
+      permission,
+    )
+    if (permissionResult.error) return permissionResult.error
+    if (!permissionResult.allowed) {
+      return json(403, {
+        error: 'forbidden',
+        action: validation.request.action,
+        permission,
+        contract: INSTALLATION_EDGE_CONTRACT_VERSION,
+      })
+    }
+  }
+
+  const requestId = cleanText(validation.request.request_id, 80)
+
+  if (validation.kind === 'read' && validation.request.action === INSTALLATION_READ_ACTION) {
+    const payload = asObject(validation.request.payload)
+    const rpcResponse = await adminFetch(
+      supabaseUrl,
+      adminKey,
+      '/rest/v1/rpc/leader_read_installation_job_rpc',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          p_actor_id: checked.user.id,
+          p_job_id: cleanText(payload?.job_id, 80),
+        }),
+      },
+    )
+
+    if (!rpcResponse.ok) {
+      console.error('leader-crm-installation read RPC transport failure', {
+        status: rpcResponse.status,
+        request_id: requestId,
+      })
+      return json(500, {
+        ok: false,
+        request_id: requestId,
+        error: { code: 'read_failed', message: 'Installation read RPC unavailable' },
+      })
+    }
+
+    const result = asObject(await rpcResponse.json())
+    if (!result) {
+      return json(500, {
+        ok: false,
+        request_id: requestId,
+        error: { code: 'read_failed', message: 'Invalid read RPC response' },
+      })
+    }
+    if (result.ok !== true) {
+      const safe = safeRpcError(result, requestId, 'read')
+      return json(safe.status, safe.body)
+    }
+    return json(200, { ...result, request_id: requestId })
+  }
+
+  if (validation.kind !== 'update' || validation.request.action !== INSTALLATION_UPDATE_ACTION) {
+    return json(400, {
+      ok: false,
+      request_id: requestId,
+      error: { code: 'unknown_action', message: 'Unsupported action' },
     })
   }
 
@@ -193,13 +254,13 @@ Deno.serve(async (req: Request) => {
   )
 
   if (!rpcResponse.ok) {
-    console.error('leader-crm-installation rpc transport failure', {
+    console.error('leader-crm-installation update RPC transport failure', {
       status: rpcResponse.status,
-      request_id: validation.request.request_id,
+      request_id: requestId,
     })
     return json(500, {
       ok: false,
-      request_id: validation.request.request_id,
+      request_id: requestId,
       error: { code: 'persistence_failed', message: 'Installation command RPC unavailable' },
     })
   }
@@ -208,12 +269,12 @@ Deno.serve(async (req: Request) => {
   if (!result) {
     return json(500, {
       ok: false,
-      request_id: validation.request.request_id,
+      request_id: requestId,
       error: { code: 'persistence_failed', message: 'Invalid RPC response' },
     })
   }
   if (result.ok !== true) {
-    const safe = safeRpcError(result)
+    const safe = safeRpcError(result, requestId, 'update')
     return json(safe.status, safe.body)
   }
 

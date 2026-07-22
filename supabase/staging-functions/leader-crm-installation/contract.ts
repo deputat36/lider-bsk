@@ -1,20 +1,34 @@
-export const INSTALLATION_EDGE_CONTRACT_VERSION = 'leader-crm-installation-edge-v1'
-export const INSTALLATION_ACTION = 'installation_job.update'
-export const INSTALLATION_PERMISSION = 'installation.write'
+export const INSTALLATION_EDGE_CONTRACT_VERSION = 'leader-crm-installation-edge-v2'
+export const INSTALLATION_UPDATE_ACTION = 'installation_job.update'
+export const INSTALLATION_UPDATE_PERMISSION = 'installation.write'
+export const INSTALLATION_READ_ACTION = 'installation_job.read'
+export const INSTALLATION_READ_PERMISSION = 'installation.read'
+export const INSTALLATION_ACTION = INSTALLATION_UPDATE_ACTION
+export const INSTALLATION_PERMISSION = INSTALLATION_UPDATE_PERMISSION
 export const STAGING_PROJECT_REF = 'otulfnouybahfnsycxqn'
 export const MAX_BODY_BYTES = 64 * 1024
 
-const REQUEST_FIELDS = Object.freeze(new Set([
+const UPDATE_REQUEST_FIELDS = Object.freeze(new Set([
   'action',
   'request_id',
   'expected_updated_at',
   'payload',
 ]))
 
-const PAYLOAD_FIELDS = Object.freeze(new Set([
+const READ_REQUEST_FIELDS = Object.freeze(new Set([
+  'action',
+  'request_id',
+  'payload',
+]))
+
+const UPDATE_PAYLOAD_FIELDS = Object.freeze(new Set([
   'job_id',
   'idempotency_key',
   'patch',
+]))
+
+const READ_PAYLOAD_FIELDS = Object.freeze(new Set([
+  'job_id',
 ]))
 
 const PATCH_FIELDS = Object.freeze(new Set([
@@ -40,7 +54,7 @@ type ValidationError = {
 }
 
 export type ValidationResult =
-  | { ok: true; request: JsonObject; permissions: string[] }
+  | { ok: true; kind: 'read' | 'update'; request: JsonObject; permissions: string[] }
   | ValidationError
 
 export function asObject(value: unknown): JsonObject | null {
@@ -106,13 +120,32 @@ function normalizeNullableText(
   return { ok: true, value: raw || null }
 }
 
-export function validateInstallationRequest(value: unknown): ValidationResult {
-  const request = asObject(value)
-  if (!request || !hasOnlyFields(request, REQUEST_FIELDS)) {
-    return { ok: false, code: 'validation_error', message: 'Invalid request envelope' }
+function validateReadRequest(request: JsonObject): ValidationResult {
+  if (!hasOnlyFields(request, READ_REQUEST_FIELDS)) {
+    return { ok: false, code: 'validation_error', message: 'Invalid read request envelope' }
   }
-  if (cleanText(request.action, 80) !== INSTALLATION_ACTION) {
-    return { ok: false, code: 'unknown_action', message: 'Unsupported action' }
+  if (!validUuid(request.request_id)) {
+    return { ok: false, code: 'validation_error', message: 'request_id must be UUID' }
+  }
+  const payload = asObject(request.payload)
+  if (!payload || !hasOnlyFields(payload, READ_PAYLOAD_FIELDS) || !validUuid(payload.job_id)) {
+    return { ok: false, code: 'validation_error', message: 'Read payload requires job_id UUID' }
+  }
+  return {
+    ok: true,
+    kind: 'read',
+    permissions: [INSTALLATION_READ_PERMISSION],
+    request: {
+      action: INSTALLATION_READ_ACTION,
+      request_id: cleanText(request.request_id, 80),
+      payload: { job_id: cleanText(payload.job_id, 80) },
+    },
+  }
+}
+
+function validateUpdateRequest(request: JsonObject): ValidationResult {
+  if (!hasOnlyFields(request, UPDATE_REQUEST_FIELDS)) {
+    return { ok: false, code: 'validation_error', message: 'Invalid update request envelope' }
   }
   if (!validUuid(request.request_id)) {
     return { ok: false, code: 'validation_error', message: 'request_id must be UUID' }
@@ -122,7 +155,7 @@ export function validateInstallationRequest(value: unknown): ValidationResult {
   }
 
   const payload = asObject(request.payload)
-  if (!payload || !hasOnlyFields(payload, PAYLOAD_FIELDS)) {
+  if (!payload || !hasOnlyFields(payload, UPDATE_PAYLOAD_FIELDS)) {
     return { ok: false, code: 'validation_error', message: 'Invalid business payload' }
   }
   if (!validUuid(payload.job_id)) {
@@ -189,9 +222,10 @@ export function validateInstallationRequest(value: unknown): ValidationResult {
 
   return {
     ok: true,
-    permissions: [INSTALLATION_PERMISSION],
+    kind: 'update',
+    permissions: [INSTALLATION_UPDATE_PERMISSION],
     request: {
-      action: INSTALLATION_ACTION,
+      action: INSTALLATION_UPDATE_ACTION,
       request_id: cleanText(request.request_id, 80),
       expected_updated_at: cleanText(request.expected_updated_at, 80),
       payload: {
@@ -201,6 +235,15 @@ export function validateInstallationRequest(value: unknown): ValidationResult {
       },
     },
   }
+}
+
+export function validateInstallationRequest(value: unknown): ValidationResult {
+  const request = asObject(value)
+  if (!request) return { ok: false, code: 'validation_error', message: 'Invalid request envelope' }
+  const action = cleanText(request.action, 80)
+  if (action === INSTALLATION_READ_ACTION) return validateReadRequest(request)
+  if (action === INSTALLATION_UPDATE_ACTION) return validateUpdateRequest(request)
+  return { ok: false, code: 'unknown_action', message: 'Unsupported action' }
 }
 
 export function rpcStatus(code: unknown): number {
