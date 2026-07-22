@@ -1,6 +1,6 @@
 {
   "contract": "crm-staging-installation-command-edge",
-  "version": 6,
+  "version": 7,
   "captured_at": "2026-07-22",
   "repository": "deputat36/lider-bsk",
   "project_ref": "otulfnouybahfnsycxqn",
@@ -22,12 +22,11 @@
     "command_migration_version": "20260721191810",
     "command_migration_name": "staging_installation_job_update_rpc_20260721",
     "command_source": "supabase/staging-migrations/20260721_06_installation_job_update_rpc.sql",
-    "read_migration_version": "20260722050355",
-    "read_migration_name": "staging_installation_job_read_rpc_20260722",
-    "read_source": "supabase/staging-migrations/20260722_01_installation_job_read_rpc.sql",
-    "read_fix_migration_version": "20260722055815",
-    "read_fix_migration_name": "staging_installation_read_order_status_fix_20260722",
-    "read_fix_source": "supabase/staging-migrations/20260722_03_installation_read_order_status_fix.sql",
+    "read_base_migration_version": "20260722050355",
+    "read_order_status_fix_migration_version": "20260722055815",
+    "read_capability_migration_version": "20260722194950",
+    "read_capability_migration_name": "staging_installation_read_capabilities_20260722",
+    "read_capability_source": "supabase/staging-migrations/20260722_05_installation_read_capabilities.sql",
     "schema_contract_version": 5,
     "foreign_keys_aligned_with_production": true,
     "schema_reconciliation_required": false
@@ -66,7 +65,10 @@
     "financial_fields_excluded": true,
     "internal_comments_excluded": true,
     "order_data_excluded": true,
-    "order_installation_status_included": true
+    "order_installation_status_included": true,
+    "server_capabilities_included": true,
+    "server_can_write_projection": true,
+    "identity_or_role_exposed": false
   },
   "execution_order": [
     "validate_environment", "authenticate_user", "validate_request",
@@ -84,15 +86,15 @@
   "rpc_fingerprints": {
     "leader_update_installation_job_rpc": {
       "schema": "public",
-      "md5": "0ed4669197dac1f2695e763d0eec54e1",
+      "md5": "0ed4669197dac1f2695d0eec54e1",
       "bytes": 19061,
       "security_invoker": true,
       "empty_search_path": true
     },
     "leader_read_installation_job_rpc": {
       "schema": "public",
-      "md5": "5a353818606012d0e657a83f133723b6",
-      "bytes": 5432,
+      "md5": "01e91816d4f3a6a1bea2d6cbe760011f",
+      "bytes": 5599,
       "security_invoker": true,
       "empty_search_path": true
     }
@@ -121,7 +123,6 @@
     "command_receipts": 0,
     "auth_users": 0,
     "active_profiles": 0,
-    "runtime_edge_logs_present": true,
     "browser_table_access": false,
     "browser_rpc_execute": false,
     "service_role_only": true,
@@ -131,6 +132,7 @@
     "write_regression_passed": true,
     "write_idempotent_replay": true,
     "read_privacy_acceptance_passed": true,
+    "capability_acceptance_passed": true,
     "temporary_pg_net_removed": true,
     "bootstrap_locked": true
   },
@@ -141,27 +143,33 @@
     "authorization_ready": true,
     "atomic_update_ready": true,
     "privacy_safe_read_ready": true,
+    "server_capability_projection_ready": true,
     "schema_reconciliation_ready": true,
     "user_jwt_smoke_completed": true,
-    "frontend_switch_ready": true,
+    "isolated_staging_frontend_wired": true,
+    "authenticated_browser_ui_smoke_completed": false,
     "production_ready": false
   },
   "frontend": {
-    "switch_performed": false,
-    "current_file": "crm/v4/assets/v4/installation-job-card-v2.js",
-    "current_read_path": "direct_browser_reads",
-    "current_write_path": "three_direct_browser_writes",
-    "staging_write_transport_source_ready": true,
-    "staging_transport_wired": false,
-    "target_path": "single_leader-crm-installation_edge_for_read_and_update"
+    "staging_page": "crm/v4/staging-installation.html",
+    "staging_card": "crm/v4/assets/v4/installation-job-staging-card-v1.js",
+    "staging_read_path": "leader-crm-installation/installation_job.read",
+    "staging_write_path": "leader-crm-installation/installation_job.update",
+    "staging_transport_wired": true,
+    "server_capability_controls_write": true,
+    "production_file": "crm/v4/assets/v4/installation-job-card-v2.js",
+    "production_read_path": "direct_browser_reads",
+    "production_write_path": "three_direct_browser_writes",
+    "production_changed": false
   },
   "current_cycle": {
     "runtime_user_jwt_smoke_completed": true,
     "read_projection_fix_applied": true,
-    "temporary_transport_removed": true,
+    "read_capability_projection_applied": true,
+    "isolated_staging_frontend_added": true,
     "working_data_changed": false,
-    "auth_fixtures_cleaned": true,
-    "frontend_changed": false
+    "auth_fixtures_present": false,
+    "production_frontend_changed": false
   },
   "production_boundary": {
     "production_project_ref": "ofewxuqfjhamgerwzull",
