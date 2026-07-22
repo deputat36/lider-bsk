@@ -1,0 +1,121 @@
+{
+  "contract": "crm-staging-installation-runtime-smoke",
+  "version": 1,
+  "captured_at": "2026-07-22",
+  "repository": "deputat36/lider-bsk",
+  "issue": 436,
+  "project_ref": "otulfnouybahfnsycxqn",
+  "environment": "staging",
+  "run_id": "6a1524f5-dae4-40fc-af57-308a196cbae6",
+  "status": "completed_clean",
+  "target": {
+    "function": "leader-crm-installation",
+    "version": 2,
+    "verify_jwt": true,
+    "sha256": "24183605aad2c5cfcc84ebe14c348dcfce1b68de41a43dcfb973f65cef8cb369"
+  },
+  "runtime_cases": {
+    "read_missing_jwt": 401,
+    "read_invalid_jwt": 401,
+    "read_forbidden": 403,
+    "read_authorized": 200,
+    "update_forbidden": 403,
+    "update_authorized": 201,
+    "update_replay": 200,
+    "read_after_update": 200
+  },
+  "assertions": {
+    "privacy_projection": true,
+    "linked_order_consistent": true,
+    "single_update_event": true,
+    "idempotent_replay": true,
+    "real_user_jwt_used": true,
+    "canonical_read_permission_checked": true,
+    "canonical_write_permission_checked": true
+  },
+  "discovered_defect": {
+    "code": "installation_read_order_status_missing",
+    "symptom": "order.installation_status was absent from the safe read projection",
+    "database_row_was_correct": true,
+    "fixed": true,
+    "fix_migration_version": "20260722055815",
+    "fix_migration_name": "staging_installation_read_order_status_fix_20260722",
+    "fix_source": "supabase/staging-migrations/20260722_03_installation_read_order_status_fix.sql"
+  },
+  "temporary_transport": {
+    "install_migration_version": "20260722053726",
+    "install_migration_name": "staging_pg_net_smoke_transport_20260722",
+    "install_source": "supabase/staging-migrations/20260722_02_pg_net_smoke_transport.sql",
+    "cleanup_migration_version": "20260722060407",
+    "cleanup_migration_name": "staging_pg_net_smoke_transport_cleanup_20260722",
+    "cleanup_source": "supabase/staging-migrations/20260722_04_pg_net_smoke_transport_cleanup.sql",
+    "pg_net_installed_after_cleanup": false,
+    "net_schema_exists_after_cleanup": false
+  },
+  "bootstrap": {
+    "slug": "leader-staging-installation-smoke-bootstrap",
+    "final_version": 8,
+    "status": "ACTIVE_LOCKED",
+    "verify_jwt": true,
+    "sha256": "5152c788bc25988378b57e453b16ee8be4a7d3d5f74f11b85318fc5c77daf977",
+    "locked_response": 410,
+    "source": "supabase/staging-functions/leader-staging-installation-smoke-bootstrap/index.ts",
+    "runtime_credentials_in_repository": false
+  },
+  "rpc_postflight": {
+    "read": {
+      "signature": "public.leader_read_installation_job_rpc(uuid,uuid)",
+      "md5": "5a353818606012d0e657a83f133723b6",
+      "bytes": 5432,
+      "security_invoker": true,
+      "empty_search_path": true,
+      "order_installation_status_included": true,
+      "anon_execute": false,
+      "authenticated_execute": false,
+      "service_role_execute": true
+    },
+    "update": {
+      "signature": "public.leader_update_installation_job_rpc(jsonb)",
+      "md5": "0ed4669197dac1f2695e763d0eec54e1",
+      "bytes": 19061,
+      "authenticated_execute": false,
+      "service_role_execute": true,
+      "unchanged": true
+    }
+  },
+  "cleanup_postflight": {
+    "auth_users": 0,
+    "profiles": 0,
+    "orders": 0,
+    "production_jobs": 0,
+    "installation_jobs": 0,
+    "installation_items": 0,
+    "installation_events": 0,
+    "installation_comments": 0,
+    "command_receipts": 0
+  },
+  "advisors": {
+    "new_security_error_or_warn": false,
+    "security_info_only": true,
+    "performance_info_only": true
+  },
+  "frontend": {
+    "staging_transport_source_ready": true,
+    "runtime_gate_completed": true,
+    "frontend_wired": false,
+    "next_step": "separate exact-staging UI wiring review"
+  },
+  "production_boundary": {
+    "project_ref": "ofewxuqfjhamgerwzull",
+    "read_rpc_exists": false,
+    "read_fix_migration_exists": false,
+    "pg_net_smoke_migration_exists": false,
+    "installation_edge_deployed": false,
+    "bootstrap_edge_deployed": false,
+    "database_changed": false,
+    "auth_changed": false,
+    "frontend_changed": false,
+    "nav_changed": false,
+    "explicit_approval_required": true
+  }
+}
