@@ -2,8 +2,11 @@ import assert from 'node:assert/strict';
 import {
   projectRefFromInstallationSupabaseUrl,
   isStagingInstallationEnvironment,
+  installationStagingReadAvailability,
   installationStagingTransportAvailability,
+  buildStagingInstallationJobReadCommand,
   buildStagingInstallationJobCommand,
+  invokeStagingInstallationJobRead,
   invokeStagingInstallationJob
 } from '../crm/v4/assets/v4/installation-job-staging-transport-v1.js';
 
@@ -23,6 +26,20 @@ assert.equal(projectRefFromInstallationSupabaseUrl(stagingUrl), 'otulfnouybahfns
 assert.equal(isStagingInstallationEnvironment(stagingUrl), true);
 assert.equal(isStagingInstallationEnvironment('https://evil.otulfnouybahfnsycxqn.supabase.co'), false);
 assert.equal(isStagingInstallationEnvironment('https://ofewxuqfjhamgerwzull.supabase.co'), false);
+
+const readAvailability = installationStagingReadAvailability({ supabaseUrl: stagingUrl, jobId: job.id });
+assert.equal(readAvailability.enabled, true);
+assert.equal(readAvailability.permission, 'installation.read');
+assert.equal(installationStagingReadAvailability({ supabaseUrl: stagingUrl, jobId: 'bad' }).reason, 'job_missing');
+assert.equal(installationStagingReadAvailability({ supabaseUrl: 'https://ofewxuqfjhamgerwzull.supabase.co', jobId: job.id }).reason, 'production_locked');
+
+const readCommand = buildStagingInstallationJobReadCommand({ jobId: job.id, requestId });
+assert.deepEqual(readCommand, {
+  action: 'installation_job.read',
+  request_id: requestId,
+  payload: { job_id: job.id }
+});
+assert.throws(() => buildStagingInstallationJobReadCommand({ jobId: 'bad', requestId }), /job_id_invalid/);
 
 const availability = installationStagingTransportAvailability({
   supabaseUrl: stagingUrl,
@@ -48,8 +65,67 @@ assert.equal('updated_by' in command.payload.patch, false);
 assert.throws(() => buildStagingInstallationJobCommand({ job, patch: { updated_by: job.id }, expectedUpdatedAt, requestId, idempotencyKey }), /patch_field_not_allowed/);
 
 const cryptoObject = { randomUUID: () => requestId };
+const noSessionClient = {
+  auth: { getSession: async () => ({ data: { session: null } }) },
+  functions: { invoke: async () => ({}) }
+};
+const missingReadSession = await invokeStagingInstallationJobRead({
+  client: noSessionClient,
+  supabaseUrl: stagingUrl,
+  jobId: job.id,
+  cryptoObject
+});
+assert.equal(missingReadSession.status, 401);
+assert.equal(missingReadSession.kind, 'auth_required');
+
+let readInvokedName = '';
+let readInvokedBody = null;
+const readSuccess = await invokeStagingInstallationJobRead({
+  client: {
+    auth: { getSession: async () => ({ data: { session: { access_token: 'runtime-only' } } }) },
+    functions: { invoke: async (name, options) => {
+      readInvokedName = name;
+      readInvokedBody = options.body;
+      return {
+        data: {
+          ok: true,
+          request_id: requestId,
+          capabilities: { can_read: true, can_write: true },
+          entity: { id: job.id, updated_at: expectedUpdatedAt },
+          order: null,
+          production: null,
+          items: [],
+          events: [],
+          comments: []
+        },
+        error: null
+      };
+    } }
+  },
+  supabaseUrl: stagingUrl,
+  jobId: job.id,
+  cryptoObject
+});
+assert.equal(readInvokedName, 'leader-crm-installation');
+assert.equal(readInvokedBody.action, 'installation_job.read');
+assert.equal(readSuccess.ok, true);
+assert.equal(readSuccess.status, 200);
+assert.equal(readSuccess.data.capabilities.can_write, true);
+
+const invalidProjection = await invokeStagingInstallationJobRead({
+  client: {
+    auth: { getSession: async () => ({ data: { session: { access_token: 'runtime-only' } } }) },
+    functions: { invoke: async () => ({ data: { ok: true, capabilities: { can_read: false }, entity: { id: job.id } }, error: null }) }
+  },
+  supabaseUrl: stagingUrl,
+  jobId: job.id,
+  cryptoObject
+});
+assert.equal(invalidProjection.kind, 'read_failed');
+assert.equal(invalidProjection.code, 'invalid_read_projection');
+
 const missingSession = await invokeStagingInstallationJob({
-  client: { auth: { getSession: async () => ({ data: { session: null } }) }, functions: { invoke: async () => ({}) } },
+  client: noSessionClient,
   supabaseUrl: stagingUrl,
   canWrite: true,
   job,
@@ -69,7 +145,7 @@ const success = await invokeStagingInstallationJob({
     functions: { invoke: async (name, options) => {
       invokedName = name;
       invokedBody = options.body;
-      return { data: { ok: true, request_id: requestId, idempotent_replay: true, job: { id: job.id } }, error: null };
+      return { data: { ok: true, request_id: requestId, idempotent_replay: true, entity: { id: job.id } }, error: null };
     } }
   },
   supabaseUrl: stagingUrl,
@@ -116,4 +192,4 @@ const forbidden = await invokeStagingInstallationJob({
 });
 assert.equal(forbidden.kind, 'forbidden');
 
-console.log('Installation job staging transport tests passed.');
+console.log('Installation job staging read/update transport tests passed.');
