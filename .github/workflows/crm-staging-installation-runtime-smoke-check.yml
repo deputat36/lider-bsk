@@ -46,4 +46,19 @@ jobs:
       - name: Compile evidence checker
         run: python3 -m py_compile tools/check_crm_staging_installation_runtime_smoke.py
       - name: Validate runtime evidence, cleanup and production boundary
-        run: python3 tools/check_crm_staging_installation_runtime_smoke.py
+        id: contract
+        continue-on-error: true
+        run: python3 tools/check_crm_staging_installation_runtime_smoke.py > installation-runtime-smoke-check.log 2>&1
+      - name: Upload runtime smoke diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: installation-runtime-smoke-check-diagnostics
+          path: installation-runtime-smoke-check.log
+          if-no-files-found: error
+          retention-days: 7
+      - name: Fail on contract error
+        if: steps.contract.outcome != 'success'
+        run: |
+          cat installation-runtime-smoke-check.log
+          exit 1
