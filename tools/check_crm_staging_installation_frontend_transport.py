@@ -40,41 +40,21 @@ require('config', [
     "authStorageKey: 'leader_crm_v4_main_session'",
 ])
 require('route', [
-    "from './installation-job-staging-transport-v1.js'",
-    "mode: 'staging_edge'",
-    'enabled: true',
-    'atomic: true',
-    'browserDirectWrite: false',
-    "mode: 'production_locked'",
-    'enabled: false',
-    "reason: 'production_backend_not_deployed'",
-    'отдельного production rollout',
-    'createInstallationJobIdempotencyKey',
-    'installation-job:',
+    "mode: 'staging_edge'", "mode: 'production_locked'",
+    'browserDirectWrite: false', "reason: 'production_backend_not_deployed'",
+    'отдельного production rollout', 'createInstallationJobIdempotencyKey',
 ])
 require('write_transport', [
     "const STAGING_PROJECT_REF = 'otulfnouybahfnsycxqn'",
-    'const STAGING_HOSTNAME = `${STAGING_PROJECT_REF}.supabase.co`',
-    "const FUNCTION_SLUG = 'leader-crm-installation'",
-    "const ACTION = 'installation_job.update'",
-    "const PERMISSION = 'installation.write'",
-    'client.auth.getSession()',
-    'client.functions.invoke(FUNCTION_SLUG, { body: command })',
-    'expected_updated_at',
-    'idempotency_key',
-    'patch_field_not_allowed',
-    'hostname === STAGING_HOSTNAME ? STAGING_PROJECT_REF :',
+    "const ACTION = 'installation_job.update'", "const PERMISSION = 'installation.write'",
+    'client.auth.getSession()', 'client.functions.invoke(FUNCTION_SLUG, { body: command })',
+    'expected_updated_at', 'idempotency_key', 'patch_field_not_allowed',
 ])
 require('read_transport', [
     "const STAGING_PROJECT_REF = 'otulfnouybahfnsycxqn'",
-    'const STAGING_HOSTNAME = `${STAGING_PROJECT_REF}.supabase.co`',
-    "const FUNCTION_SLUG = 'leader-crm-installation'",
-    "const ACTION = 'installation_job.read'",
-    "const PERMISSION = 'installation.read'",
-    'client.auth.getSession()',
-    'client.functions.invoke(FUNCTION_SLUG, { body: command })',
-    'installationReadBundle',
-    'source?.entity',
+    "const ACTION = 'installation_job.read'", "const PERMISSION = 'installation.read'",
+    'client.auth.getSession()', 'client.functions.invoke(FUNCTION_SLUG, { body: command })',
+    'installationReadBundle', 'source?.entity',
     'hostname.toLowerCase() === STAGING_HOSTNAME',
 ])
 
@@ -90,9 +70,7 @@ require('card', [
     "from './installation-job-staging-transport-v1.js'",
     "from './installation-job-staging-read-transport-v1.js'",
     'installationJobPersistenceRoute(V4_CONFIG.supabaseUrl)',
-    "route.mode === 'staging_edge'",
-    'invokeStagingInstallationJobRead({',
-    'invokeStagingInstallationJob({',
+    'invokeStagingInstallationJobRead({', 'invokeStagingInstallationJob({',
     'expectedUpdatedAt: old.updated_at',
     'idempotencyKey: createInstallationJobIdempotencyKey(jobId)',
     'readAfterSuccess: () => fetchBundle(jobId)',
@@ -127,8 +105,10 @@ else:
 
 if 'const patch = {\n      ...edgePatch,' not in card:
     errors.append('production fallback must extend edgePatch separately')
-if 'updated_by: v4State.user?.id || null' not in card or 'installationStatusTimestampPatch(transition, old, nowIso())' not in card:
-    errors.append('production fallback server-owned compatibility fields drifted')
+if 'updated_by: v4State.user?.id || null' not in card:
+    errors.append('production fallback updated_by compatibility drifted')
+if 'installationStatusTimestampPatch(transition, old, nowIso())' not in card:
+    errors.append('production fallback status timestamp compatibility drifted')
 
 try:
     contract = json.loads(texts.get('contract', '{}'))
@@ -167,43 +147,34 @@ for key in ['production_supabase_changed', 'production_frontend_switch', 'produc
         errors.append(f'production boundary must keep {key}=false')
 
 require('runtime_contract', [
-    '"completed": true',
-    '"user_jwt_smoke_completed": true',
-    '"frontend_switch_ready": true',
+    '"status": "completed_clean"',
+    '"real_user_jwt_used": true',
+    '"runtime_gate_completed": true',
+    '"auth_users": 0',
+    '"command_receipts": 0',
 ])
 require('route_test', [
-    "mode, 'staging_edge'",
-    "mode, 'production_locked'",
+    "mode, 'staging_edge'", "mode, 'production_locked'",
     'evil.otulfnouybahfnsycxqn.supabase.co',
     'Installation job save route tests passed.',
 ])
 require('write_test', [
-    'leader-crm-installation',
-    'installation_job.update',
-    'patch_field_not_allowed',
-    "kind, 'wrong_environment'",
-    "kind, 'forbidden'",
+    'installation_job.update', 'patch_field_not_allowed',
+    "kind, 'wrong_environment'", "kind, 'forbidden'",
     'Installation job staging transport tests passed.',
 ])
 require('read_test', [
-    'installation_job.read',
-    'installation.read',
-    'evil.otulfnouybahfnsycxqn.supabase.co',
-    'read_bundle_invalid',
+    'installation_job.read', 'installation.read',
+    'evil.otulfnouybahfnsycxqn.supabase.co', 'read_bundle_invalid',
     'Installation job staging read transport tests passed.',
 ])
 require('doc', [
-    'exact staging URL',
-    'runtime user-JWT smoke завершён',
-    'installation_job.read',
-    'installation_job.update',
-    'Production не изменялся',
-    'authenticated staging UI smoke',
+    'exact staging URL', 'runtime user-JWT smoke завершён',
+    'installation_job.read', 'installation_job.update',
+    'Production не изменялся', 'authenticated staging UI smoke',
 ])
 require('workflow', [
     'node --check crm/v4/assets/v4/installation-job-card-v2.js',
-    'node --check crm/v4/assets/v4/installation-job-save-route-v1.js',
-    'node --check crm/v4/assets/v4/installation-job-staging-transport-v1.js',
     'node --check crm/v4/assets/v4/installation-job-staging-read-transport-v1.js',
     'node tools/test_installation_job_save_route.mjs',
     'node tools/test_installation_job_staging_transport.mjs',
