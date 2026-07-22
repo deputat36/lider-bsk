@@ -7,17 +7,17 @@ on:
       - 'supabase/staging-migrations/20260721_06_installation_job_update_rpc.sql'
       - 'supabase/staging-migrations/20260721_07_installation_command_compat.sql'
       - 'supabase/staging-migrations/20260721_08_installation_items_order_index_candidate.sql'
-      - 'supabase/staging-rollbacks/20260721_08_installation_items_order_index_rollback.sql'
+      - 'supabase/staging-migrations/20260722_01_installation_job_read_rpc.sql'
+      - 'supabase/staging-tests/20260722_installation_job_read_acceptance.sql'
       - 'supabase/staging-functions/leader-crm-installation/**'
       - 'contracts/crm-staging-installation-schema-v1.json'
       - 'contracts/crm-staging-installation-command-edge-v1.json'
-      - 'docs/SUPABASE_STAGING_INSTALLATION_SCHEMA_V1_2026-07-21.md'
+      - 'contracts/crm-staging-installation-read-edge-v1.json'
       - 'docs/SUPABASE_STAGING_INSTALLATION_COMMAND_EDGE_V1_2026-07-21.md'
-      - 'tools/check_crm_staging_installation_schema.py'
+      - 'docs/SUPABASE_STAGING_INSTALLATION_READ_EDGE_V1_2026-07-22.md'
       - 'tools/check_crm_staging_installation_command_edge.py'
+      - 'tools/check_crm_staging_installation_read_edge.py'
       - 'crm/v4/assets/v4/installation-job-card-v2.js'
-      - 'crm/v4/assets/v4/status-transitions-v1.js'
-      - '.github/workflows/crm-staging-installation-schema-check.yml'
       - '.github/workflows/crm-staging-installation-command-edge-check.yml'
   push:
     branches: [main]
@@ -26,17 +26,17 @@ on:
       - 'supabase/staging-migrations/20260721_06_installation_job_update_rpc.sql'
       - 'supabase/staging-migrations/20260721_07_installation_command_compat.sql'
       - 'supabase/staging-migrations/20260721_08_installation_items_order_index_candidate.sql'
-      - 'supabase/staging-rollbacks/20260721_08_installation_items_order_index_rollback.sql'
+      - 'supabase/staging-migrations/20260722_01_installation_job_read_rpc.sql'
+      - 'supabase/staging-tests/20260722_installation_job_read_acceptance.sql'
       - 'supabase/staging-functions/leader-crm-installation/**'
       - 'contracts/crm-staging-installation-schema-v1.json'
       - 'contracts/crm-staging-installation-command-edge-v1.json'
-      - 'docs/SUPABASE_STAGING_INSTALLATION_SCHEMA_V1_2026-07-21.md'
+      - 'contracts/crm-staging-installation-read-edge-v1.json'
       - 'docs/SUPABASE_STAGING_INSTALLATION_COMMAND_EDGE_V1_2026-07-21.md'
-      - 'tools/check_crm_staging_installation_schema.py'
+      - 'docs/SUPABASE_STAGING_INSTALLATION_READ_EDGE_V1_2026-07-22.md'
       - 'tools/check_crm_staging_installation_command_edge.py'
+      - 'tools/check_crm_staging_installation_read_edge.py'
       - 'crm/v4/assets/v4/installation-job-card-v2.js'
-      - 'crm/v4/assets/v4/status-transitions-v1.js'
-      - '.github/workflows/crm-staging-installation-schema-check.yml'
       - '.github/workflows/crm-staging-installation-command-edge-check.yml'
 
 permissions:
@@ -51,11 +51,11 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - name: Type-check deployed Edge source
+      - name: Type-check deployed Edge v2 source
         run: deno check supabase/staging-functions/leader-crm-installation/index.ts
       - name: Compile deployment checker
         run: python3 -m py_compile tools/check_crm_staging_installation_command_edge.py
-      - name: Validate installation command v3 and remaining index gate
+      - name: Validate installation read/update Edge v2 and production boundary
         shell: bash
         run: |
           set +e

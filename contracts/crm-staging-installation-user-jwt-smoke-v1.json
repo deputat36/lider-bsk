@@ -1,11 +1,15 @@
 {
   "contract": "crm-staging-installation-user-jwt-smoke",
-  "version": 1,
+  "version": 2,
   "project_ref": "otulfnouybahfnsycxqn",
   "environment": "staging",
   "function": "leader-crm-installation",
-  "action": "installation_job.update",
-  "permission": "installation.write",
+  "edge_version": 2,
+  "edge_sha256": "24183605aad2c5cfcc84ebe14c348dcfce1b68de41a43dcfb973f65cef8cb369",
+  "actions": [
+    {"action": "installation_job.read", "permission": "installation.read"},
+    {"action": "installation_job.update", "permission": "installation.write"}
+  ],
   "runner": "tools/run_crm_staging_installation_user_jwt_smoke.mjs",
   "runtime_environment": [
     "STAGING_SUPABASE_URL",
@@ -15,46 +19,34 @@
   ],
   "secrets_in_repository": false,
   "cases": [
-    {
-      "name": "missing_jwt",
-      "expected_http": 401,
-      "expected_error": "missing_or_invalid_jwt"
-    },
-    {
-      "name": "invalid_jwt",
-      "expected_http": 401,
-      "expected_error": "missing_or_invalid_jwt"
-    },
-    {
-      "name": "forbidden_role",
-      "expected_http": 403,
-      "expected_error": "forbidden",
-      "expected_action": "installation_job.update",
-      "expected_permission": "installation.write"
-    },
-    {
-      "name": "authorized_role",
-      "expected_http": 404,
-      "expected_error": "not_found",
-      "meaning": "JWT accepted, canonical permission passed, request reached transactional RPC"
-    }
+    {"name": "missing_jwt", "expected_http": 401, "expected_error": "missing_or_invalid_jwt"},
+    {"name": "invalid_jwt", "expected_http": 401, "expected_error": "missing_or_invalid_jwt"},
+    {"name": "forbidden_read", "expected_http": 403, "expected_error": "forbidden", "expected_action": "installation_job.read", "expected_permission": "installation.read"},
+    {"name": "forbidden_update", "expected_http": 403, "expected_error": "forbidden", "expected_action": "installation_job.update", "expected_permission": "installation.write"},
+    {"name": "authorized_read", "expected_http": 404, "expected_error": "not_found", "meaning": "JWT accepted, installation.read passed, read RPC reached"},
+    {"name": "authorized_update", "expected_http": 404, "expected_error": "not_found", "meaning": "JWT accepted, installation.write passed, update RPC reached"}
   ],
   "persistent_fixture": false,
   "persistent_receipt": false,
   "working_data_write_expected": false,
   "database_precondition": {
     "schema_reconciliation_ready": true,
+    "read_rpc_ready": true,
+    "update_rpc_ready": true,
     "edge_active": true,
     "verify_jwt": true,
-    "edge_sha256": "4be533387e91a4d91a025a8c7c0ea9516563a4cba7e236c270cdd23097cb6bdc",
-    "rpc_md5": "0ed4669197dac1f2695e763d0eec54e1"
+    "read_rpc_md5": "98fc1e36b2ed8202e6580d7734088df1",
+    "update_rpc_md5": "0ed4669197dac1f2695e763d0eec54e1"
   },
   "execution_gate": {
     "manual_runtime_tokens_required": true,
     "authorized_and_forbidden_tokens_must_differ": true,
     "tokens_must_not_be_logged": true,
     "tokens_must_not_be_committed": true,
-    "run_not_performed_in_source_pr": true
+    "run_not_performed_in_source_pr": true,
+    "current_auth_users": 0,
+    "current_active_profiles": 0,
+    "blocked_reason": "staging_has_no_auth_users_or_active_profiles"
   },
   "success_effect": {
     "user_jwt_smoke_completed": true,

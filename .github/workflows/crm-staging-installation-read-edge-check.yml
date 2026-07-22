@@ -1,0 +1,45 @@
+name: CRM staging installation read Edge check
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/staging-functions/leader-crm-installation/**'
+      - 'supabase/staging-migrations/20260722_01_installation_job_read_rpc.sql'
+      - 'supabase/staging-tests/20260722_installation_job_read_acceptance.sql'
+      - 'contracts/crm-staging-installation-read-edge-v1.json'
+      - 'contracts/crm-staging-installation-command-edge-v1.json'
+      - 'docs/SUPABASE_STAGING_INSTALLATION_READ_EDGE_V1_2026-07-22.md'
+      - 'tools/check_crm_staging_installation_read_edge.py'
+      - 'crm/v4/assets/v4/installation-job-card-v2.js'
+      - '.github/workflows/crm-staging-installation-read-edge-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/staging-functions/leader-crm-installation/**'
+      - 'supabase/staging-migrations/20260722_01_installation_job_read_rpc.sql'
+      - 'supabase/staging-tests/20260722_installation_job_read_acceptance.sql'
+      - 'contracts/crm-staging-installation-read-edge-v1.json'
+      - 'contracts/crm-staging-installation-command-edge-v1.json'
+      - 'docs/SUPABASE_STAGING_INSTALLATION_READ_EDGE_V1_2026-07-22.md'
+      - 'tools/check_crm_staging_installation_read_edge.py'
+      - 'crm/v4/assets/v4/installation-job-card-v2.js'
+      - '.github/workflows/crm-staging-installation-read-edge-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check Edge v2 source
+        run: deno check supabase/staging-functions/leader-crm-installation/index.ts
+      - name: Compile read deployment checker
+        run: python3 -m py_compile tools/check_crm_staging_installation_read_edge.py
+      - name: Validate privacy projection, RBAC, write regression and production boundary
+        run: python3 tools/check_crm_staging_installation_read_edge.py
