@@ -17,10 +17,11 @@ for (const url of [
   ''
 ]) {
   const route = installationJobPersistenceRoute(url);
-  assert.equal(route.mode, 'production_locked');
-  assert.equal(route.enabled, false);
-  assert.equal(route.browserDirectWrite, false);
-  assert.equal(route.reason, 'production_backend_not_deployed');
+  assert.equal(route.mode, 'production_legacy');
+  assert.equal(route.enabled, true);
+  assert.equal(route.atomic, false);
+  assert.equal(route.browserDirectWrite, true);
+  assert.equal(route.reason, 'existing_production_path');
 }
 
 const jobId = '11111111-1111-4111-8111-111111111111';
