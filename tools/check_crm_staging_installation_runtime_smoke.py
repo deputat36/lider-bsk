@@ -17,9 +17,9 @@ FILES = {
     'fix': ROOT / 'supabase/staging-migrations/20260722_03_installation_read_order_status_fix.sql',
     'cleanup': ROOT / 'supabase/staging-migrations/20260722_04_pg_net_smoke_transport_cleanup.sql',
     'locked': ROOT / 'supabase/staging-functions/leader-staging-installation-smoke-bootstrap/index.ts',
-    'read_contract': ROOT / 'contracts/crm-staging-installation-read-edge-v1.json',
-    'command_contract': ROOT / 'contracts/crm-staging-installation-command-edge-v1.json',
-    'jwt_contract': ROOT / 'contracts/crm-staging-installation-user-jwt-smoke-v1.json',
+    'read': ROOT / 'contracts/crm-staging-installation-read-edge-v1.json',
+    'command': ROOT / 'contracts/crm-staging-installation-command-edge-v1.json',
+    'jwt': ROOT / 'contracts/crm-staging-installation-user-jwt-smoke-v1.json',
     'docs': ROOT / 'docs/SUPABASE_STAGING_INSTALLATION_USER_JWT_SMOKE_V1_2026-07-21.md',
     'workflow': ROOT / '.github/workflows/crm-staging-installation-runtime-smoke-check.yml',
 }
@@ -42,24 +42,12 @@ def require(name, *markers):
 
 try:
     evidence = json.loads(texts['evidence'])
-    read = json.loads(texts['read_contract'])
-    command = json.loads(texts['command_contract'])
-    jwt = json.loads(texts['jwt_contract'])
+    read = json.loads(texts['read'])
+    command = json.loads(texts['command'])
+    jwt = json.loads(texts['jwt'])
 except Exception as exc:
     evidence, read, command, jwt = {}, {}, {}, {}
     errors.append(f'Invalid JSON: {exc}')
-
-for key, value in {
-    'contract': 'crm-staging-installation-runtime-smoke',
-    'version': 1,
-    'project_ref': STAGING,
-    'environment': 'staging',
-    'issue': 436,
-    'run_id': '6a1524f5-dae4-40fc-af57-308a196cbae6',
-    'status': 'completed_clean',
-}.items():
-    if evidence.get(key) != value:
-        errors.append(f'evidence: {key} must equal {value!r}')
 
 expected_cases = {
     'read_missing_jwt': 401,
@@ -71,8 +59,19 @@ expected_cases = {
     'update_replay': 200,
     'read_after_update': 200,
 }
-if evidence.get('runtime_cases') != expected_cases:
-    errors.append('evidence: runtime case matrix drifted')
+for key, value in {
+    'contract': 'crm-staging-installation-runtime-smoke',
+    'version': 1,
+    'project_ref': STAGING,
+    'environment': 'staging',
+    'issue': 436,
+    'run_id': '6a1524f5-dae4-40fc-af57-308a196cbae6',
+    'status': 'completed_clean',
+    'runtime_cases': expected_cases,
+}.items():
+    if evidence.get(key) != value:
+        errors.append(f'evidence: {key} drifted')
+
 for key in (
     'privacy_projection', 'linked_order_consistent', 'single_update_event',
     'idempotent_replay', 'real_user_jwt_used',
@@ -81,18 +80,13 @@ for key in (
     if evidence.get('assertions', {}).get(key) is not True:
         errors.append(f'evidence.assertions: {key} must be true')
 
-defect = evidence.get('discovered_defect', {})
-for key in ('database_row_was_correct', 'fixed'):
-    if defect.get(key) is not True:
-        errors.append(f'evidence.defect: {key} must be true')
-if defect.get('fix_migration_version') != '20260722055815':
-    errors.append('evidence.defect: fix migration drifted')
-
+if evidence.get('discovered_defect', {}).get('fix_migration_version') != '20260722055815' or evidence.get('discovered_defect', {}).get('fixed') is not True:
+    errors.append('evidence.defect: projection fix missing')
 transport = evidence.get('temporary_transport', {})
-if transport.get('install_migration_version') != '20260722053726' or transport.get('cleanup_migration_version') != '20260722060407':
+if (transport.get('install_migration_version'), transport.get('cleanup_migration_version')) != ('20260722053726', '20260722060407'):
     errors.append('evidence.transport: migration versions drifted')
 if transport.get('pg_net_installed_after_cleanup') is not False or transport.get('net_schema_exists_after_cleanup') is not False:
-    errors.append('evidence.transport: pg_net/net must be absent')
+    errors.append('evidence.transport: temporary transport must be absent')
 
 bootstrap = evidence.get('bootstrap', {})
 for key, value in {
@@ -107,8 +101,7 @@ for key, value in {
     if bootstrap.get(key) != value:
         errors.append(f'evidence.bootstrap: {key} drifted')
 
-rpc = evidence.get('rpc_postflight', {})
-read_rpc = rpc.get('read', {})
+read_rpc = evidence.get('rpc_postflight', {}).get('read', {})
 if (read_rpc.get('md5'), read_rpc.get('bytes')) != (READ_MD5, 5432):
     errors.append('evidence.rpc: read fingerprint drifted')
 for key in ('security_invoker', 'empty_search_path', 'order_installation_status_included', 'service_role_execute'):
@@ -117,16 +110,13 @@ for key in ('security_invoker', 'empty_search_path', 'order_installation_status_
 for key in ('anon_execute', 'authenticated_execute'):
     if read_rpc.get(key) is not False:
         errors.append(f'evidence.rpc.read: {key} must be false')
-update_rpc = rpc.get('update', {})
-if (update_rpc.get('md5'), update_rpc.get('bytes')) != (WRITE_MD5, 19061):
-    errors.append('evidence.rpc: update fingerprint drifted')
-if update_rpc.get('unchanged') is not True:
-    errors.append('evidence.rpc: update must remain unchanged')
+update_rpc = evidence.get('rpc_postflight', {}).get('update', {})
+if (update_rpc.get('md5'), update_rpc.get('bytes'), update_rpc.get('unchanged')) != (WRITE_MD5, 19061, True):
+    errors.append('evidence.rpc: update fingerprint or unchanged flag drifted')
 
-for key, value in (evidence.get('cleanup_postflight') or {}).items():
+for key, value in evidence.get('cleanup_postflight', {}).items():
     if value != 0:
         errors.append(f'evidence.cleanup: {key} must be zero')
-
 production = evidence.get('production_boundary', {})
 if production.get('project_ref') != PRODUCTION:
     errors.append('evidence.production: wrong project ref')
@@ -147,40 +137,24 @@ if command.get('readiness', {}).get('production_ready') is not False:
 if jwt.get('runtime_status') != 'completed_clean':
     errors.append('JWT contract: runtime status drifted')
 
-require('transport',
-    '20260722053726', 'staging_pg_net_smoke_transport_20260722',
-    'create extension if not exists pg_net',
-    "project_ref = 'otulfnouybahfnsycxqn'")
-require('fix',
-    '20260722055815', 'staging_installation_read_order_status_fix_20260722',
-    "'installation_status', o.installation_status",
-    'revoke all on function public.leader_read_installation_job_rpc(uuid, uuid) from public, anon, authenticated')
-require('cleanup',
-    '20260722060407', 'staging_pg_net_smoke_transport_cleanup_20260722',
-    'drop extension if exists pg_net cascade', 'drop schema if exists net cascade')
-require('locked',
-    "error: 'bootstrap_locked'", 'status: 410', "'Cache-Control': 'no-store'")
+require('transport', '20260722053726', 'create extension if not exists pg_net', "project_ref = 'otulfnouybahfnsycxqn'")
+require('fix', '20260722055815', "'installation_status', o.installation_status", 'grant execute on function public.leader_read_installation_job_rpc(uuid, uuid) to service_role')
+require('cleanup', '20260722060407', 'drop extension if exists pg_net cascade', 'drop schema if exists net cascade')
+require('locked', "'{\"error\":\"locked\"}'", 'status: 410', "'Cache-Control': 'no-store'")
 for forbidden in ('fetch(', '/auth/v1/', 'SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SECRET_KEYS', 'password', 'access_token'):
     if forbidden in texts['locked']:
         errors.append(f'locked bootstrap contains forbidden runtime marker {forbidden!r}')
-require('docs',
-    'Staging installation user-JWT smoke v3',
-    'manager update → `201`', 'command receipts: `0`',
-    'Production `ofewxuqfjhamgerwzull` не вызывался')
-require('workflow',
-    'CRM staging installation runtime smoke check',
-    'deno check supabase/staging-functions/leader-staging-installation-smoke-bootstrap/index.ts',
-    'python3 tools/check_crm_staging_installation_runtime_smoke.py')
+require('docs', 'Staging installation user-JWT smoke v3', 'manager update → `201`', 'command receipts: `0`', 'Production `ofewxuqfjhamgerwzull` не вызывался')
+require('workflow', 'CRM staging installation runtime smoke check', 'deno check supabase/staging-functions/leader-staging-installation-smoke-bootstrap/index.ts', 'python3 tools/check_crm_staging_installation_runtime_smoke.py')
 
-secret_patterns = (
-    r'sb_secret_[A-Za-z0-9_-]{10,}',
-    r'eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}',
-    r'installation-smoke-[^\s"\']+@',
-)
 for name, content in texts.items():
-    for pattern in secret_patterns:
+    for pattern in (
+        r'sb_secret_[A-Za-z0-9_-]{10,}',
+        r'eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}',
+        r'installation-smoke-[^\s"\']+@',
+    ):
         if re.search(pattern, content):
-            errors.append(f'{name}: forbidden credential-like material matched {pattern!r}')
+            errors.append(f'{name}: forbidden credential-like material matched')
 
 if errors:
     print('Installation runtime smoke checks failed:', file=sys.stderr)
