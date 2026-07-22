@@ -1,0 +1,113 @@
+{
+  "contract": "crm-staging-installation-ui-smoke",
+  "version": 1,
+  "captured_at": "2026-07-22",
+  "repository": "deputat36/lider-bsk",
+  "status": "source_ready_runtime_not_executed",
+  "environment": {
+    "project_ref": "otulfnouybahfnsycxqn",
+    "exact_url": "https://otulfnouybahfnsycxqn.supabase.co",
+    "production_project_ref": "ofewxuqfjhamgerwzull",
+    "production_enabled": false,
+    "localhost_only": true,
+    "temporary_copy_of_crm": true,
+    "production_config_file_modified": false
+  },
+  "prerequisites": {
+    "installation_edge_version": 2,
+    "installation_edge_sha256": "24183605aad2c5cfcc84ebe14c348dcfce1b68de41a43dcfb973f65cef8cb369",
+    "runtime_user_jwt_smoke_completed": true,
+    "frontend_wiring_merged": true,
+    "frontend_wiring_merge_commit": "50de6e9a8c1ac12017cc141c4111da9179dbdc2f",
+    "synthetic_auth_user_required": true,
+    "synthetic_profile_required": true,
+    "synthetic_installation_job_required": true,
+    "external_fixture_cleanup_required": true
+  },
+  "runner": {
+    "source": "tools/run_crm_staging_installation_ui_smoke.mjs",
+    "plan_mode": "--mode=plan",
+    "run_mode": "--mode=run",
+    "confirmation": "YES_USE_EXISTING_SYNTHETIC_FIXTURES",
+    "uses_real_card_source": "crm/v4/assets/v4/installation-job-card-v2.js",
+    "copies_crm_to_os_temp": true,
+    "overwrites_config_only_in_temp": true,
+    "bind_address": "127.0.0.1",
+    "headless_browser": "chrome_or_chromium",
+    "dom_dump_evidence": true,
+    "screenshot_run_enabled": false,
+    "expected_mutation_count": 1,
+    "local_temp_removed_in_finally": true,
+    "user_logout_in_finally": true
+  },
+  "runtime_inputs": {
+    "STAGING_SUPABASE_URL": "exact_staging_only",
+    "STAGING_SUPABASE_PUBLISHABLE_KEY": "runtime_only",
+    "STAGING_INSTALLATION_UI_EMAIL": "runtime_only",
+    "STAGING_INSTALLATION_UI_PASSWORD": "runtime_only",
+    "STAGING_INSTALLATION_UI_JOB_ID": "runtime_only_uuid",
+    "STAGING_INSTALLATION_UI_ROLE": ["installer", "manager", "admin", "owner"],
+    "STAGING_INSTALLATION_UI_EXPECTED_STATUS": "runtime_only",
+    "STAGING_INSTALLATION_UI_TITLE_SUFFIX": "runtime_only",
+    "STAGING_INSTALLATION_UI_SMOKE_CONFIRM": "required_exact_phrase"
+  },
+  "assertions": {
+    "authenticated_session": true,
+    "real_installation_card_opened": true,
+    "staging_edge_notice_visible": true,
+    "privacy_safe_projection": true,
+    "cost_fields_hidden": true,
+    "comments_read_only": true,
+    "comment_write_control_hidden": true,
+    "single_edge_update": true,
+    "server_read_back": true,
+    "title_changed": true,
+    "mutation_count": 1,
+    "production_config_unchanged": true
+  },
+  "evidence": {
+    "version": "leader-installation-staging-ui-smoke-evidence-v1",
+    "default_path": "artifacts/installation-staging-ui-smoke/evidence.json",
+    "file_mode": "0600",
+    "forbidden_fields": [
+      "email",
+      "password",
+      "token",
+      "authorization",
+      "apikey",
+      "api_key",
+      "secret",
+      "phone",
+      "client",
+      "cost",
+      "profit",
+      "payment",
+      "balance",
+      "comment"
+    ],
+    "runtime_completed": false
+  },
+  "cleanup": {
+    "local_credentials_deleted": true,
+    "local_temp_copy_deleted": true,
+    "browser_session_logged_out": true,
+    "server_auth_user_cleanup": "external_required",
+    "server_profile_cleanup": "external_required",
+    "server_job_cleanup": "external_required",
+    "server_events_receipts_cleanup": "external_required"
+  },
+  "tests": {
+    "unit": "tools/test_crm_staging_installation_ui_smoke.mjs",
+    "checker": "tools/check_crm_staging_installation_ui_smoke.py",
+    "workflow": ".github/workflows/crm-staging-installation-ui-smoke-check.yml"
+  },
+  "production_boundary": {
+    "production_supabase_changed": false,
+    "production_frontend_changed": false,
+    "production_edge_deployed": false,
+    "production_auth_changed": false,
+    "production_data_changed": false,
+    "nav_changed": false,
+    "explicit_approval_required": true
+  }
+}
