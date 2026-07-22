@@ -1,48 +1,74 @@
-# Staging installation user-JWT smoke v2
+# Staging installation user-JWT smoke v3
 
-Дата обновления: 22 июля 2026 года.
+Дата выполнения: 22 июля 2026 года.
 
-## Назначение
+## Результат
 
-Runner проверяет реальный JWT-контур Edge `leader-crm-installation v2` для двух действий:
+Реальный JWT-контур Edge `leader-crm-installation v2` проверен на staging `otulfnouybahfnsycxqn`.
 
-- `installation_job.read` / `installation.read`;
-- `installation_job.update` / `installation.write`.
+Использовались два краткоживущих Auth-пользователя с active profiles:
 
-Edge SHA-256: `24183605aad2c5cfcc84ebe14c348dcfce1b68de41a43dcfb973f65cef8cb369`.
+- manager — разрешены `installation.read` и `installation.write`;
+- accountant — оба действия запрещены.
 
-## Runtime cases
+Пользователи создавались официальным server-side Auth Admin API. Пароли, JWT и ключи не записывались в репозиторий, evidence или логи.
 
-- без JWT → `401 missing_or_invalid_jwt`;
-- некорректный JWT → `401 missing_or_invalid_jwt`;
-- запрещённый read → `403 forbidden` с action/permission evidence;
-- запрещённый update → `403 forbidden` с action/permission evidence;
-- разрешённый read несуществующего job → `404 not_found` после permission gate;
-- разрешённый update несуществующего job → `404 not_found` после permission gate.
+## Фактические сценарии
 
-Нужны два разных краткоживущих пользовательских JWT: профиль с обоими installation permissions и профиль без них. Service-role key runner не использует.
+- read без JWT → `401`;
+- read с invalid JWT → `401`;
+- accountant read → `403`;
+- manager read → `200`;
+- accountant update → `403`;
+- manager update → `201`;
+- повтор той же update-команды → `200` с idempotent replay;
+- read после update → `200`.
 
-Реальные значения в репозиторий не добавляются, не логируются и не сохраняются в artifacts.
+## Проверенные свойства
 
-## Текущий gate
+- safe projection скрывает все `SENSITIVE_*` маркеры;
+- internal comment не возвращается;
+- prices позиций не возвращаются;
+- job и связанный order синхронно получают статус «Запланирован»;
+- replay не создаёт второе update event;
+- receipt создаётся один раз.
 
-Runtime smoke в source PR не запускается. На staging сейчас:
+## Найденный и исправленный дефект
+
+Первый post-update read выявил отсутствие `order.installation_status` в projection. Сама строка order обновлялась правильно.
+
+Дефект исправлен migration `20260722055815 / staging_installation_read_order_status_fix_20260722`.
+
+Текущий read RPC:
+
+- MD5 `5a353818606012d0e657a83f133723b6`;
+- 5432 bytes.
+
+Write RPC не изменилась:
+
+- MD5 `0ed4669197dac1f2695e763d0eec54e1`;
+- 19061 bytes.
+
+## Cleanup
+
+После финального успешного запуска:
 
 - Auth users: `0`;
-- active profiles: `0`.
+- profiles: `0`;
+- orders/production/jobs/items/events/comments: `0`;
+- command receipts: `0`;
+- временный `pg_net` удалён;
+- schema `net` отсутствует;
+- bootstrap version 8 permanently locked, `verify_jwt=true`, HTTP `410`.
 
-Поэтому реальные JWT отсутствуют. Auth-пользователи не создавались, прямые изменения `auth.users` не выполнялись.
+Reusable lifecycle для будущих повторов находится в `tools/run_crm_staging_installation_auth_fixture_lifecycle.mjs`. Source-only runner с готовыми JWT сохранён для диагностических сценариев.
 
-## Запуск
+Полное evidence: `contracts/crm-staging-installation-runtime-smoke-v1.json`.
 
-```bash
-STAGING_SUPABASE_URL='https://otulfnouybahfnsycxqn.supabase.co' \
-STAGING_SUPABASE_PUBLISHABLE_KEY='...' \
-STAGING_INSTALLATION_AUTHORIZED_USER_JWT='...' \
-STAGING_INSTALLATION_FORBIDDEN_USER_JWT='...' \
-node tools/run_crm_staging_installation_user_jwt_smoke.mjs
-```
+## Следующий gate
+
+Разрешён отдельный exact-staging frontend wiring review. Production rollout по-прежнему запрещён без отдельного approval и отдельного production backend deployment.
 
 ## Production boundary
 
-Production `ofewxuqfjhamgerwzull` не изменяется и runner должен завершиться до вызова сети при любом другом project ref.
+Production `ofewxuqfjhamgerwzull` не вызывался runtime smoke и не изменялся. В production отсутствуют read RPC, fix migration и installation/bootstrap Edge.
