@@ -1,0 +1,60 @@
+name: CRM staging installation Auth fixture lifecycle check
+
+on:
+  pull_request:
+    paths:
+      - 'tools/run_crm_staging_installation_auth_fixture_lifecycle.mjs'
+      - 'tools/test_crm_staging_installation_auth_fixture_lifecycle.mjs'
+      - 'tools/check_crm_staging_installation_auth_fixture_lifecycle.py'
+      - 'contracts/crm-staging-installation-auth-fixture-lifecycle-v1.json'
+      - 'docs/SUPABASE_STAGING_INSTALLATION_AUTH_FIXTURE_LIFECYCLE_V1_2026-07-22.md'
+      - '.github/workflows/crm-staging-installation-auth-fixture-lifecycle-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/run_crm_staging_installation_auth_fixture_lifecycle.mjs'
+      - 'tools/test_crm_staging_installation_auth_fixture_lifecycle.mjs'
+      - 'tools/check_crm_staging_installation_auth_fixture_lifecycle.py'
+      - 'contracts/crm-staging-installation-auth-fixture-lifecycle-v1.json'
+      - 'docs/SUPABASE_STAGING_INSTALLATION_AUTH_FIXTURE_LIFECYCLE_V1_2026-07-22.md'
+      - '.github/workflows/crm-staging-installation-auth-fixture-lifecycle-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check JavaScript syntax
+        run: |
+          node --check tools/run_crm_staging_installation_auth_fixture_lifecycle.mjs
+          node --check tools/test_crm_staging_installation_auth_fixture_lifecycle.mjs
+
+      - name: Run mocked lifecycle tests
+        run: node tools/test_crm_staging_installation_auth_fixture_lifecycle.mjs
+
+      - name: Validate lifecycle contract
+        id: contract
+        continue-on-error: true
+        run: |
+          python3 tools/check_crm_staging_installation_auth_fixture_lifecycle.py \
+            > installation-auth-fixture-lifecycle-check.log 2>&1
+
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: installation-auth-fixture-lifecycle-check-diagnostics
+          path: installation-auth-fixture-lifecycle-check.log
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Fail on contract error
+        if: steps.contract.outcome != 'success'
+        run: |
+          cat installation-auth-fixture-lifecycle-check.log
+          exit 1

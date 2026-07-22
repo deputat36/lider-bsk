@@ -1,0 +1,83 @@
+{
+  "contract": "crm-staging-installation-auth-fixture-lifecycle",
+  "version": 1,
+  "captured_at": "2026-07-22",
+  "repository": "deputat36/lider-bsk",
+  "environment": {
+    "project_ref": "otulfnouybahfnsycxqn",
+    "exact_url": "https://otulfnouybahfnsycxqn.supabase.co",
+    "production_project_ref": "ofewxuqfjhamgerwzull",
+    "production_enabled": false,
+    "wrong_environment": "fail_closed_before_secret_use_or_auth_mutation"
+  },
+  "runtime_gate": {
+    "mode_default": "plan",
+    "mutation_mode": "run",
+    "confirmation_variable": "ALLOW_STAGING_AUTH_MUTATION",
+    "confirmation_value": "YES_DELETE_ALL_FIXTURES",
+    "secret_variable": "STAGING_SUPABASE_SECRET_KEY",
+    "publishable_variable": "STAGING_SUPABASE_PUBLISHABLE_KEY",
+    "secrets_in_repository": false,
+    "secrets_in_evidence": false
+  },
+  "key_handling": {
+    "publishable_key": "apikey_header_only_for_user_auth_and_edge_calls",
+    "modern_secret_key": "apikey_header_only",
+    "legacy_service_role_jwt": "apikey_and_authorization_bearer",
+    "browser_execution_allowed": false
+  },
+  "fixtures": {
+    "auth_users_created": 2,
+    "profiles_created": 2,
+    "authorized_role": "installer",
+    "forbidden_role": "accountant",
+    "email_domain": "example.invalid",
+    "email_confirmed_by_admin": true,
+    "persistent_fixture_expected": false,
+    "storage_objects_created": false
+  },
+  "smoke_cases": {
+    "missing_jwt": "401/missing_or_invalid_jwt",
+    "invalid_jwt": "401/missing_or_invalid_jwt",
+    "accountant_read": "403/forbidden",
+    "accountant_update": "403/forbidden",
+    "installer_read_missing_job": "404/not_found_after_permission_gate",
+    "installer_update_missing_job": "404/not_found_after_permission_gate"
+  },
+  "cleanup": {
+    "location": "finally",
+    "order": [
+      "logout_user_session",
+      "delete_leader_user_profile",
+      "delete_auth_user",
+      "verify_profile_absent"
+    ],
+    "reverse_creation_order": true,
+    "cleanup_failure_fails_run": true,
+    "receipt_expected": false,
+    "installation_rows_expected": false
+  },
+  "evidence": {
+    "version": "leader-installation-auth-fixture-lifecycle-v1",
+    "default_path": "artifacts/installation-auth-fixture-lifecycle-evidence.json",
+    "file_mode": "0600",
+    "forbidden_keys_pattern": "password|token|authorization|apikey|api_key|secret|email",
+    "privacy_safe": true
+  },
+  "current_state": {
+    "staging_auth_users_before_runtime": 0,
+    "staging_active_profiles_before_runtime": 0,
+    "edge_slug": "leader-crm-installation",
+    "edge_version": 2,
+    "edge_contract": "leader-crm-installation-edge-v2",
+    "runtime_executed_in_this_pr": false,
+    "supabase_changed_in_this_pr": false
+  },
+  "production_boundary": {
+    "production_auth_mutation": false,
+    "production_database_mutation": false,
+    "production_edge_deploy": false,
+    "production_frontend_switch": false,
+    "nav_changed": false
+  }
+}
