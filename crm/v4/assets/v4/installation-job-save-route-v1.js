@@ -14,21 +14,21 @@ export function installationJobPersistenceRoute(supabaseUrl = '') {
       atomic: true,
       browserDirectWrite: false,
       reason: '',
-      title: 'Тестовый staging',
-      description: 'Монтажное задание будет сохранено одной атомарной командой через защищённый сервер.',
+      title: 'Изолированный staging',
+      description: 'Чтение и сохранение выполняются через защищённый installation Edge.',
       buttonPrefix: 'Сохранить в staging'
     });
   }
 
   return Object.freeze({
-    mode: 'production_locked',
-    enabled: false,
+    mode: 'production_legacy',
+    enabled: true,
     atomic: false,
-    browserDirectWrite: false,
-    reason: 'production_backend_not_deployed',
-    title: 'Новый серверный маршрут не включён',
-    description: 'Подключение installation Edge к production запрещено до отдельного rollout и user-JWT smoke.',
-    buttonPrefix: 'Серверное сохранение недоступно'
+    browserDirectWrite: true,
+    reason: 'existing_production_path',
+    title: 'Рабочий production',
+    description: 'Production сохраняет прежний путь. Installation Edge здесь не включён.',
+    buttonPrefix: 'Сохранить'
   });
 }
 
