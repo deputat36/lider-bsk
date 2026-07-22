@@ -4,26 +4,44 @@ on:
   pull_request:
     paths:
       - 'crm/v4/assets/v4/config.js'
+      - 'crm/v4/index.html'
+      - 'crm/v4/staging-installation.html'
+      - 'crm/v4/assets/v4/staging-installation-harness-v1.js'
       - 'crm/v4/assets/v4/installation-job-card-v2.js'
+      - 'crm/v4/assets/v4/installation-job-staging-card-v1.js'
       - 'crm/v4/assets/v4/installation-job-save-route-v1.js'
       - 'crm/v4/assets/v4/installation-job-staging-transport-v1.js'
+      - 'supabase/staging-migrations/20260722_05_installation_read_capabilities.sql'
+      - 'supabase/staging-tests/20260722_installation_frontend_wiring_acceptance.sql'
       - 'contracts/crm-staging-installation-frontend-transport-v1.json'
+      - 'contracts/crm-staging-installation-runtime-smoke-v1.json'
       - 'docs/CRM_STAGING_INSTALLATION_FRONTEND_TRANSPORT_V1_2026-07-22.md'
       - 'tools/test_installation_job_save_route.mjs'
       - 'tools/test_installation_job_staging_transport.mjs'
+      - 'tools/test_crm_v4_config_routes.mjs'
+      - 'tools/test_installation_job_staging_card_contract.mjs'
       - 'tools/check_crm_staging_installation_frontend_transport.py'
       - '.github/workflows/crm-staging-installation-frontend-transport-check.yml'
   push:
     branches: [main]
     paths:
       - 'crm/v4/assets/v4/config.js'
+      - 'crm/v4/index.html'
+      - 'crm/v4/staging-installation.html'
+      - 'crm/v4/assets/v4/staging-installation-harness-v1.js'
       - 'crm/v4/assets/v4/installation-job-card-v2.js'
+      - 'crm/v4/assets/v4/installation-job-staging-card-v1.js'
       - 'crm/v4/assets/v4/installation-job-save-route-v1.js'
       - 'crm/v4/assets/v4/installation-job-staging-transport-v1.js'
+      - 'supabase/staging-migrations/20260722_05_installation_read_capabilities.sql'
+      - 'supabase/staging-tests/20260722_installation_frontend_wiring_acceptance.sql'
       - 'contracts/crm-staging-installation-frontend-transport-v1.json'
+      - 'contracts/crm-staging-installation-runtime-smoke-v1.json'
       - 'docs/CRM_STAGING_INSTALLATION_FRONTEND_TRANSPORT_V1_2026-07-22.md'
       - 'tools/test_installation_job_save_route.mjs'
       - 'tools/test_installation_job_staging_transport.mjs'
+      - 'tools/test_crm_v4_config_routes.mjs'
+      - 'tools/test_installation_job_staging_card_contract.mjs'
       - 'tools/check_crm_staging_installation_frontend_transport.py'
       - '.github/workflows/crm-staging-installation-frontend-transport-check.yml'
 
@@ -38,15 +56,24 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check JavaScript syntax
         run: |
+          node --check crm/v4/assets/v4/config.js
+          node --check crm/v4/assets/v4/staging-installation-harness-v1.js
           node --check crm/v4/assets/v4/installation-job-save-route-v1.js
           node --check crm/v4/assets/v4/installation-job-staging-transport-v1.js
+          node --check crm/v4/assets/v4/installation-job-staging-card-v1.js
           node --check tools/test_installation_job_save_route.mjs
           node --check tools/test_installation_job_staging_transport.mjs
+          node --check tools/test_crm_v4_config_routes.mjs
+          node --check tools/test_installation_job_staging_card_contract.mjs
       - name: Run route tests
         run: node tools/test_installation_job_save_route.mjs
       - name: Run transport tests
         run: node tools/test_installation_job_staging_transport.mjs
+      - name: Run config route tests
+        run: node tools/test_crm_v4_config_routes.mjs
+      - name: Run staging card isolation tests
+        run: node tools/test_installation_job_staging_card_contract.mjs
       - name: Compile contract checker
         run: python3 -m py_compile tools/check_crm_staging_installation_frontend_transport.py
-      - name: Validate exact staging transport and production lock
+      - name: Validate exact staging UI and production isolation
         run: python3 tools/check_crm_staging_installation_frontend_transport.py
