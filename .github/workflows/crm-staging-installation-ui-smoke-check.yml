@@ -1,0 +1,66 @@
+name: CRM staging installation UI smoke check
+
+on:
+  pull_request:
+    paths:
+      - 'tools/run_crm_staging_installation_ui_smoke.mjs'
+      - 'tools/test_crm_staging_installation_ui_smoke.mjs'
+      - 'tools/check_crm_staging_installation_ui_smoke.py'
+      - 'contracts/crm-staging-installation-ui-smoke-v1.json'
+      - 'contracts/crm-staging-installation-frontend-transport-v1.json'
+      - 'contracts/crm-staging-installation-runtime-smoke-v1.json'
+      - 'docs/CRM_STAGING_INSTALLATION_UI_SMOKE_V1_2026-07-22.md'
+      - 'crm/v4/assets/v4/installation-job-card-v2.js'
+      - 'crm/v4/assets/v4/config.js'
+      - '.github/workflows/crm-staging-installation-ui-smoke-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/run_crm_staging_installation_ui_smoke.mjs'
+      - 'tools/test_crm_staging_installation_ui_smoke.mjs'
+      - 'tools/check_crm_staging_installation_ui_smoke.py'
+      - 'contracts/crm-staging-installation-ui-smoke-v1.json'
+      - 'contracts/crm-staging-installation-frontend-transport-v1.json'
+      - 'contracts/crm-staging-installation-runtime-smoke-v1.json'
+      - 'docs/CRM_STAGING_INSTALLATION_UI_SMOKE_V1_2026-07-22.md'
+      - 'crm/v4/assets/v4/installation-job-card-v2.js'
+      - 'crm/v4/assets/v4/config.js'
+      - '.github/workflows/crm-staging-installation-ui-smoke-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check source syntax
+        run: |
+          node --check tools/run_crm_staging_installation_ui_smoke.mjs
+          node --check tools/test_crm_staging_installation_ui_smoke.mjs
+          python3 -m py_compile tools/check_crm_staging_installation_ui_smoke.py
+      - name: Run UI smoke unit tests
+        run: node tools/test_crm_staging_installation_ui_smoke.mjs
+      - name: Verify no-secret plan mode
+        run: node tools/run_crm_staging_installation_ui_smoke.mjs --mode=plan > installation-ui-smoke-plan.json
+      - name: Validate UI smoke contract
+        id: contract
+        continue-on-error: true
+        run: python3 tools/check_crm_staging_installation_ui_smoke.py > installation-ui-smoke-check.log 2>&1
+      - name: Upload UI smoke diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: installation-ui-smoke-check-diagnostics
+          path: |
+            installation-ui-smoke-plan.json
+            installation-ui-smoke-check.log
+          if-no-files-found: error
+          retention-days: 7
+      - name: Fail on contract error
+        if: steps.contract.outcome != 'success'
+        run: |
+          cat installation-ui-smoke-check.log
+          exit 1
