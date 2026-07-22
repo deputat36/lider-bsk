@@ -1,6 +1,6 @@
 {
   "contract": "crm-staging-installation-user-jwt-smoke",
-  "version": 2,
+  "version": 3,
   "project_ref": "otulfnouybahfnsycxqn",
   "environment": "staging",
   "function": "leader-crm-installation",
@@ -10,43 +10,50 @@
     {"action": "installation_job.read", "permission": "installation.read"},
     {"action": "installation_job.update", "permission": "installation.write"}
   ],
-  "runner": "tools/run_crm_staging_installation_user_jwt_smoke.mjs",
-  "runtime_environment": [
-    "STAGING_SUPABASE_URL",
-    "STAGING_SUPABASE_PUBLISHABLE_KEY",
-    "STAGING_INSTALLATION_AUTHORIZED_USER_JWT",
-    "STAGING_INSTALLATION_FORBIDDEN_USER_JWT"
-  ],
+  "source_runner": "tools/run_crm_staging_installation_user_jwt_smoke.mjs",
+  "auth_lifecycle_runner": "tools/run_crm_staging_installation_auth_fixture_lifecycle.mjs",
+  "runtime_evidence": "contracts/crm-staging-installation-runtime-smoke-v1.json",
   "secrets_in_repository": false,
-  "cases": [
-    {"name": "missing_jwt", "expected_http": 401, "expected_error": "missing_or_invalid_jwt"},
-    {"name": "invalid_jwt", "expected_http": 401, "expected_error": "missing_or_invalid_jwt"},
-    {"name": "forbidden_read", "expected_http": 403, "expected_error": "forbidden", "expected_action": "installation_job.read", "expected_permission": "installation.read"},
-    {"name": "forbidden_update", "expected_http": 403, "expected_error": "forbidden", "expected_action": "installation_job.update", "expected_permission": "installation.write"},
-    {"name": "authorized_read", "expected_http": 404, "expected_error": "not_found", "meaning": "JWT accepted, installation.read passed, read RPC reached"},
-    {"name": "authorized_update", "expected_http": 404, "expected_error": "not_found", "meaning": "JWT accepted, installation.write passed, update RPC reached"}
+  "runtime_status": "completed_clean",
+  "runtime_cases": [
+    {"name": "read_missing_jwt", "actual_http": 401, "result": "passed"},
+    {"name": "read_invalid_jwt", "actual_http": 401, "result": "passed"},
+    {"name": "read_forbidden", "actual_http": 403, "result": "passed"},
+    {"name": "read_authorized", "actual_http": 200, "result": "passed"},
+    {"name": "update_forbidden", "actual_http": 403, "result": "passed"},
+    {"name": "update_authorized", "actual_http": 201, "result": "passed"},
+    {"name": "update_replay", "actual_http": 200, "result": "passed"},
+    {"name": "read_after_update", "actual_http": 200, "result": "passed"}
   ],
-  "persistent_fixture": false,
-  "persistent_receipt": false,
-  "working_data_write_expected": false,
-  "database_precondition": {
+  "runtime_assertions": {
+    "privacy_projection": true,
+    "linked_order_consistent": true,
+    "single_update_event": true,
+    "idempotent_replay": true,
+    "auth_users_after_cleanup": 0,
+    "active_profiles_after_cleanup": 0,
+    "working_rows_after_cleanup": 0,
+    "receipts_after_cleanup": 0
+  },
+  "database_postcondition": {
     "schema_reconciliation_ready": true,
     "read_rpc_ready": true,
     "update_rpc_ready": true,
     "edge_active": true,
     "verify_jwt": true,
-    "read_rpc_md5": "98fc1e36b2ed8202e6580d7734088df1",
-    "update_rpc_md5": "0ed4669197dac1f2695e763d0eec54e1"
+    "read_rpc_md5": "5a353818606012d0e657a83f133723b6",
+    "update_rpc_md5": "0ed4669197dac1f2695e763d0eec54e1",
+    "temporary_pg_net_removed": true,
+    "bootstrap_locked": true
   },
-  "execution_gate": {
-    "manual_runtime_tokens_required": true,
-    "authorized_and_forbidden_tokens_must_differ": true,
-    "tokens_must_not_be_logged": true,
-    "tokens_must_not_be_committed": true,
-    "run_not_performed_in_source_pr": true,
-    "current_auth_users": 0,
-    "current_active_profiles": 0,
-    "blocked_reason": "staging_has_no_auth_users_or_active_profiles"
+  "execution_history": {
+    "runtime_tokens_were_ephemeral": true,
+    "tokens_logged": false,
+    "tokens_committed": false,
+    "auth_admin_api_used": true,
+    "projection_defect_discovered": true,
+    "projection_defect_fixed": true,
+    "fix_migration_version": "20260722055815"
   },
   "success_effect": {
     "user_jwt_smoke_completed": true,
@@ -57,6 +64,8 @@
     "production_project_ref": "ofewxuqfjhamgerwzull",
     "production_call": false,
     "production_data_change": false,
+    "production_edge_change": false,
+    "production_auth_change": false,
     "explicit_approval_required": true
   }
 }
