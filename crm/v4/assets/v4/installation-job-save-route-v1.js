@@ -27,7 +27,7 @@ export function installationJobPersistenceRoute(supabaseUrl = '') {
     browserDirectWrite: false,
     reason: 'production_backend_not_deployed',
     title: 'Новый серверный маршрут не включён',
-    description: 'Подключение installation Edge к production запрещено до отдельного rollout и user-JWT smoke.',
+    description: 'Подключение installation Edge к production запрещено до отдельного production rollout.',
     buttonPrefix: 'Серверное сохранение недоступно'
   });
 }
