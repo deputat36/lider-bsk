@@ -199,3 +199,5 @@ CI запускает только syntax/unit/contract checks. Реальный
 - Supabase в этом PR не изменяется;
 - production не изменяется;
 - Figma не изменяется из-за лимита Starter MCP.
+
+Production не изменяется.
