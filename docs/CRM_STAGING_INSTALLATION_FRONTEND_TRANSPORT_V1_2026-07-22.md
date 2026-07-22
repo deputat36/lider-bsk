@@ -11,6 +11,10 @@
 - user-JWT API smoke;
 - authenticated UI smoke в реальном headless Google Chrome.
 
+runtime user-JWT smoke завершён.
+
+authenticated staging UI smoke завершён.
+
 Production продолжает существующий браузерный путь и не переключался на новый Edge.
 
 ## Маршрутизация
