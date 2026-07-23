@@ -58,7 +58,7 @@ CI генерирует эти файлы заново и сохраняет и�
 
 Оба output-файла:
 
-- блокируют запуск при наличии `leader_staging.environment_guard`;
+- блокируют запуск при наличии `leader_staging.environment_guard`; точный stop code — `production_rpc_candidate_rejected_on_staging`;
 - требуют установленный RBAC/receipts layer;
 - требуют все таблицы и поля, используемые RPC;
 - блокируют установку поверх существующей target function;
@@ -67,7 +67,7 @@ CI генерирует эти файлы заново и сохраняет и�
 
 Update output дополнительно:
 
-- требует установленный read RPC;
+- требует установленный read RPC; при его отсутствии используется stop code `installation_read_rpc_dependency_missing`;
 - требует `extensions.digest(bytea,text)`;
 - тем самым фиксирует порядок применения read → update.
 
@@ -190,7 +190,7 @@ Rollback сохраняет:
 
 Rollback блокируется кодом `installation_command_receipts_present`, если уже существует хотя бы один receipt с action `installation_job.update`.
 
-Не выполнять broad schema drop.
+не выполнять broad schema drop.
 
 ## Production boundary
 
