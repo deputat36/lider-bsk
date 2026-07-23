@@ -10,18 +10,20 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "supabase/functions/leader-crm-leads/index.ts"
 WRAPPER = ROOT / "supabase/staging-functions/leader-crm-leads-staging/index.ts"
+SHARED_WRAPPER = ROOT / "supabase/staging-functions/_shared/canonical-edge-wrapper-v1.js"
 IMPLEMENTATION = ROOT / "supabase/staging-functions/leader-crm-leads-staging-impl/index.ts"
 RUNNER = ROOT / "tools/run_crm_leads_orders_staging_auth_e2e.mjs"
 HISTORICAL_CONTRACT = ROOT / "contracts/crm-leads-orders-staging-deployment-v1.json"
 CURRENT_CONTRACT = ROOT / "contracts/crm-staging-edge-action-gate-deployment-v1.json"
+WORKFLOW_CONTRACT = ROOT / "contracts/crm-staging-lead-workflow-command-v1.json"
 DOC = ROOT / "docs/SUPABASE_STAGING_CRM_LEADS_ORDERS_PROBE_2026-07-16.md"
 WORKFLOW = ROOT / ".github/workflows/crm-leads-orders-staging-transport-check.yml"
 
 STAGING_REF = "otulfnouybahfnsycxqn"
 PRODUCTION_REF = "ofewxuqfjhamgerwzull"
 SOURCE_COMMIT = "17524ea9ef08c11b18b385b9469778d5b1084ddb"
-CURRENT_VERSION = 3
-CURRENT_SHA256 = "e64036306fefff72bcb457f0f64756bcf40f27cc406e695e3f3d4c76d2b1b4d1"
+CURRENT_VERSION = 4
+CURRENT_SHA256 = "6ee051d0c8db9154c87bdd3b49b1d60b8bf27f6407c9a2843403886b4999868a"
 
 MANAGER_FIELDS = {
     "id", "order_number", "created_at", "updated_at", "project_name", "client_name",
@@ -62,17 +64,19 @@ def runner_projection(text: str, const_name: str) -> set[str]:
 
 
 def main() -> int:
-    required = [SOURCE, WRAPPER, IMPLEMENTATION, RUNNER, HISTORICAL_CONTRACT, CURRENT_CONTRACT, DOC, WORKFLOW]
+    required = [SOURCE, WRAPPER, SHARED_WRAPPER, IMPLEMENTATION, RUNNER, HISTORICAL_CONTRACT, CURRENT_CONTRACT, WORKFLOW_CONTRACT, DOC, WORKFLOW]
     for path in required:
         if not path.is_file():
             raise AssertionError(f"missing file: {path.relative_to(ROOT)}")
 
     source = SOURCE.read_text(encoding="utf-8")
     wrapper = WRAPPER.read_text(encoding="utf-8")
+    shared_wrapper = SHARED_WRAPPER.read_text(encoding="utf-8")
     implementation = IMPLEMENTATION.read_text(encoding="utf-8")
     runner = RUNNER.read_text(encoding="utf-8")
     historical = json.loads(HISTORICAL_CONTRACT.read_text(encoding="utf-8"))
     current = json.loads(CURRENT_CONTRACT.read_text(encoding="utf-8"))
+    workflow_contract = json.loads(WORKFLOW_CONTRACT.read_text(encoding="utf-8"))
     doc = DOC.read_text(encoding="utf-8")
     workflow = WORKFLOW.read_text(encoding="utf-8")
 
@@ -80,9 +84,14 @@ def main() -> int:
     require(implementation, expected_import, "implementation")
     if implementation.count("import ") != 1:
         raise AssertionError("leads implementation must contain exactly one pinned import")
-    for marker in ("runCanonicalEdgeWrapper", "leadsActionPlan", "leader-crm-leads-staging-impl"):
+    for marker in (
+        "runCanonicalEdgeWrapper", "leadsActionPlan", "leader-crm-leads-staging-impl",
+        "leader_update_lead_workflow_rpc", "workflow_fields_must_be_separate", "executeLeadWorkflow",
+    ):
         require(wrapper, marker, "wrapper")
-    if PRODUCTION_REF in wrapper or PRODUCTION_REF in implementation:
+    for marker in ("typeof options.execute === 'function'", "if (handled instanceof Response) return handled"):
+        require(shared_wrapper, marker, "shared wrapper")
+    if PRODUCTION_REF in wrapper or PRODUCTION_REF in implementation or PRODUCTION_REF in shared_wrapper:
         raise AssertionError("staging transport must not reference production")
 
     if historical.get("contract_version") != "leader-crm-leads-orders-staging-deployment-v1":
@@ -100,9 +109,23 @@ def main() -> int:
         raise AssertionError("current leads wrapper deployment drift")
     if active.get("verify_jwt") is not True or active.get("implementation_slug") != "leader-crm-leads-staging-impl":
         raise AssertionError("current leads wrapper security drift")
+    if active.get("workflow_rpc") != "leader_update_lead_workflow_rpc":
+        raise AssertionError("current leads workflow RPC drift")
+    if active.get("guarded_fields") != ["status", "next_contact_at", "assigned_to"]:
+        raise AssertionError("current leads guarded field drift")
+    if active.get("legacy_non_workflow_delegation") is not True:
+        raise AssertionError("current leads legacy delegation drift")
+
     impl = current["functions"]["leader-crm-leads-staging-impl"]
     if impl.get("version") != 1 or impl.get("pinned_commit") != SOURCE_COMMIT or impl.get("verify_jwt") is not True:
         raise AssertionError("current leads implementation drift")
+
+    if workflow_contract.get("contract") != "crm-staging-lead-workflow-command":
+        raise AssertionError("lead workflow contract missing")
+    if workflow_contract.get("edge", {}).get("version") != CURRENT_VERSION:
+        raise AssertionError("lead workflow contract version drift")
+    if workflow_contract.get("database", {}).get("rpc_md5") != "6236711baa1a4ba45c9724fb2fe2d2a4":
+        raise AssertionError("lead workflow RPC fingerprint drift")
 
     if source_projection(source, "manager") != MANAGER_FIELDS:
         raise AssertionError("source manager projection drift")
@@ -128,7 +151,7 @@ def main() -> int:
     for marker in ("tools/check_crm_leads_orders_staging_deployment.py", "supabase/staging-functions/leader-crm-leads-staging/index.ts"):
         require(workflow, marker, "workflow")
 
-    print("CRM leads historical probe and current JWT-first wrapper deployment are synchronized.")
+    print("CRM leads historical probe and current JWT-first workflow wrapper deployment are synchronized.")
     return 0
 
 

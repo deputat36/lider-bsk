@@ -12,8 +12,11 @@ function clean(value, max = 1000) {
   return String(value ?? '').trim().slice(0, max)
 }
 
-function json(status, body) {
-  return new Response(JSON.stringify(body), { status, headers: canonicalCorsHeaders })
+function json(status, body, extraHeaders = {}) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...canonicalCorsHeaders, ...extraHeaders },
+  })
 }
 
 async function parseBody(req) {
@@ -116,11 +119,18 @@ export async function runCanonicalEdgeWrapper(req, options) {
     }
   }
 
-  return await forwardToImplementation(
-    req,
-    body,
-    options,
-    { supabaseUrl, anonKey, serviceRole },
-    auth.authorization,
-  )
+  const env = Object.freeze({ supabaseUrl, anonKey, serviceRole })
+  if (typeof options.execute === 'function') {
+    const handled = await options.execute({
+      req,
+      body,
+      plan,
+      auth,
+      env,
+      helpers: Object.freeze({ clean, json }),
+    })
+    if (handled instanceof Response) return handled
+  }
+
+  return await forwardToImplementation(req, body, options, env, auth.authorization)
 }
