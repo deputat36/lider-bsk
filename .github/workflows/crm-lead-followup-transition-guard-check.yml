@@ -1,0 +1,45 @@
+name: CRM lead followup transition guard check
+
+on:
+  pull_request:
+    paths:
+      - 'crm/v4/assets/v4/lead-followup-transition-guard-model-v1.js'
+      - 'crm/v4/assets/v4/lead-followup-transition-guard-v1.js'
+      - 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
+      - 'tools/test_lead_followup_transition_guard.mjs'
+      - 'tools/check_crm_lead_followup_transition_guard.py'
+      - 'contracts/crm-lead-followup-transition-guard-v1.json'
+      - 'docs/CRM_LEAD_FOLLOWUP_TRANSITION_GUARD_V1_2026-07-23.md'
+      - '.github/workflows/crm-lead-followup-transition-guard-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/lead-followup-transition-guard-model-v1.js'
+      - 'crm/v4/assets/v4/lead-followup-transition-guard-v1.js'
+      - 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
+      - 'tools/test_lead_followup_transition_guard.mjs'
+      - 'tools/check_crm_lead_followup_transition_guard.py'
+      - 'contracts/crm-lead-followup-transition-guard-v1.json'
+      - 'docs/CRM_LEAD_FOLLOWUP_TRANSITION_GUARD_V1_2026-07-23.md'
+      - '.github/workflows/crm-lead-followup-transition-guard-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check JavaScript syntax
+        run: |
+          node --check crm/v4/assets/v4/lead-followup-transition-guard-model-v1.js
+          node --check crm/v4/assets/v4/lead-followup-transition-guard-v1.js
+          node --check tools/test_lead_followup_transition_guard.mjs
+      - name: Run followup guard model tests
+        run: node tools/test_lead_followup_transition_guard.mjs
+      - name: Compile source checker
+        run: python3 -m py_compile tools/check_crm_lead_followup_transition_guard.py
+      - name: Validate source-only followup guard contract
+        run: python3 tools/check_crm_lead_followup_transition_guard.py
