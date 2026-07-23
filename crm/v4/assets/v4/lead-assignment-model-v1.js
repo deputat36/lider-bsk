@@ -1,3 +1,5 @@
+import './lead-workflow-staging-bootstrap-v1.js';
+
 export const LEAD_ASSIGNABLE_ROLES = Object.freeze(['owner', 'admin', 'manager']);
 
 function clean(value) {

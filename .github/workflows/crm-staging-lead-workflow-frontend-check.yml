@@ -1,0 +1,44 @@
+name: CRM staging lead workflow frontend check
+
+on:
+  pull_request:
+    paths:
+      - 'crm/v4/assets/v4/lead-workflow-staging-transport-v1.js'
+      - 'crm/v4/assets/v4/lead-workflow-staging-bootstrap-v1.js'
+      - 'crm/v4/assets/v4/lead-workflow-staging-ui-v1.js'
+      - 'crm/v4/assets/v4/lead-assignment-model-v1.js'
+      - 'supabase/staging-functions/leader-crm-leads-staging/index.ts'
+      - 'contracts/crm-staging-lead-workflow-frontend-v1.json'
+      - 'tools/test_lead_workflow_staging_transport.mjs'
+      - 'tools/check_crm_staging_lead_workflow_frontend.py'
+      - 'docs/CRM_STAGING_LEAD_WORKFLOW_FRONTEND_V1_2026-07-23.md'
+      - '.github/workflows/crm-staging-lead-workflow-frontend-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/lead-workflow-staging-transport-v1.js'
+      - 'crm/v4/assets/v4/lead-workflow-staging-bootstrap-v1.js'
+      - 'crm/v4/assets/v4/lead-workflow-staging-ui-v1.js'
+      - 'crm/v4/assets/v4/lead-assignment-model-v1.js'
+      - 'supabase/staging-functions/leader-crm-leads-staging/index.ts'
+      - 'contracts/crm-staging-lead-workflow-frontend-v1.json'
+      - 'tools/test_lead_workflow_staging_transport.mjs'
+      - 'tools/check_crm_staging_lead_workflow_frontend.py'
+      - 'docs/CRM_STAGING_LEAD_WORKFLOW_FRONTEND_V1_2026-07-23.md'
+      - '.github/workflows/crm-staging-lead-workflow-frontend-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile checker
+        run: python3 -m py_compile tools/check_crm_staging_lead_workflow_frontend.py
+      - name: Validate staging frontend boundary
+        run: python3 tools/check_crm_staging_lead_workflow_frontend.py
+      - name: Test transport and command shape
+        run: node tools/test_lead_workflow_staging_transport.mjs

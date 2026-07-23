@@ -1,0 +1,53 @@
+{
+  "contract": "crm-staging-lead-workflow-frontend",
+  "version": 1,
+  "captured_at": "2026-07-23",
+  "repository": "deputat36/lider-bsk",
+  "project_ref": "otulfnouybahfnsycxqn",
+  "environment": "staging",
+  "frontend": {
+    "staging_card_wired": true,
+    "activation": "exact V4_CONFIG.supabaseUrl hostname match",
+    "transport": "crm/v4/assets/v4/lead-workflow-staging-transport-v1.js",
+    "ui_sidecar": "crm/v4/assets/v4/lead-workflow-staging-ui-v1.js",
+    "browser_bootstrap": "crm/v4/assets/v4/lead-workflow-staging-bootstrap-v1.js",
+    "loaded_from": "crm/v4/assets/v4/lead-assignment-model-v1.js",
+    "intercept_phase": "document capture",
+    "guarded_actions": ["self_assignment", "status_change", "next_contact_change"],
+    "guarded_fields": ["status", "next_contact_at", "assigned_to"],
+    "browser_direct_write_on_staging": false,
+    "browser_manual_event_on_staging": false,
+    "server_readback": "existing card refresh after success",
+    "optimistic_concurrency": true,
+    "idempotency": true
+  },
+  "server": {
+    "edge_slug": "leader-crm-leads-staging",
+    "edge_version": 4,
+    "verify_jwt": true,
+    "rpc": "public.leader_update_lead_workflow_rpc(jsonb)",
+    "permission": "leads.update",
+    "atomic_lead_event_receipt": true
+  },
+  "user_guards": {
+    "working_status_requires_assignee": true,
+    "waiting_status_requires_future_contact": true,
+    "self_assignment_only": true,
+    "stale_update_returns_conflict": true,
+    "conflict_triggers_card_refresh": true
+  },
+  "production_boundary": {
+    "project_ref": "ofewxuqfjhamgerwzull",
+    "frontend_behavior_changed": false,
+    "legacy_direct_write_preserved": true,
+    "production_edge_deployed": false,
+    "production_database_changed": false,
+    "explicit_rollout_approval_required": true
+  },
+  "verification": {
+    "static_checker": "tools/check_crm_staging_lead_workflow_frontend.py",
+    "behavior_test": "tools/test_lead_workflow_staging_transport.mjs",
+    "authenticated_ui_smoke_completed": false,
+    "next_gate": "temporary staging user plus synthetic lead UI smoke with complete cleanup"
+  }
+}
