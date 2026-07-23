@@ -1,0 +1,98 @@
+{
+  "contract": "crm-installation-production-p0-evidence",
+  "version": 1,
+  "captured_at": "2026-07-23T15:22:26Z",
+  "repository": "deputat36/lider-bsk",
+  "issue": 456,
+  "status": "p0_passed_p1_not_approved",
+  "production": {
+    "project_ref": "ofewxuqfjhamgerwzull",
+    "database_changed": false,
+    "edge_deployed": false,
+    "frontend_switched": false,
+    "auth_changed": false,
+    "data_changed": false,
+    "nav_changed": false
+  },
+  "github": {
+    "main_commit": "cd4b7b0488bc106244cdc69684991ce9d694e6c4",
+    "rollout_plan_pr": 457,
+    "current_loader": "assets/v4/installation-job-card-v2.js?v=20260622-1",
+    "candidate_loader": "assets/v4/installation-job-card-v3.js?v=20260723-production-edge-candidate-1",
+    "working_loader_switched": false
+  },
+  "database_snapshot": {
+    "profiles_rows": 4,
+    "roles": {
+      "owner": 2,
+      "admin": 1,
+      "manager": 1
+    },
+    "unknown_roles": [],
+    "orders_rows": 0,
+    "installation_jobs_rows": 0,
+    "installation_items_rows": 0,
+    "installation_events_rows": 0,
+    "installation_comments_rows": 0,
+    "required_columns_total": 73,
+    "required_columns_missing": [],
+    "generator_schema_preflight_passed": true,
+    "staging_environment_guard_exists": false
+  },
+  "rollout_components": {
+    "role_action_matrix_exists": false,
+    "command_receipts_exists": false,
+    "actor_permission_function_exists": false,
+    "actor_permission_rpc_exists": false,
+    "installation_read_rpc_exists": false,
+    "installation_update_rpc_exists": false,
+    "installation_edge_exists": false
+  },
+  "acl": {
+    "browser_execute_on_actor_permission_rpc": false,
+    "browser_execute_on_installation_read_rpc": false,
+    "browser_execute_on_installation_update_rpc": false
+  },
+  "migrations": {
+    "latest_recorded_version": "20260721122333",
+    "latest_recorded_name": "revoke_anon_execute_leader_internal_rpcs",
+    "production_candidate_migrations_applied": false
+  },
+  "advisors": {
+    "installation_specific_security_warn_or_error": 0,
+    "installation_specific_performance_warn_or_error": 0,
+    "known_security_findings_out_of_scope": [
+      "nav_* authenticated SECURITY DEFINER execute warnings",
+      "Auth leaked password protection disabled"
+    ],
+    "known_performance_findings_out_of_scope": [
+      "legacy unindexed foreign keys",
+      "legacy auth RLS initplan warnings",
+      "legacy multiple permissive policies",
+      "unused indexes on low-traffic or empty tables"
+    ],
+    "nav_changes_allowed": false
+  },
+  "logs": {
+    "installation_edge_logs_present": false,
+    "installation_specific_unexpected_5xx": 0,
+    "auth_errors_related_to_installation": 0,
+    "postgres_errors_related_to_installation": 0,
+    "known_nav_permission_denial_probes_out_of_scope": true
+  },
+  "p0_decision": {
+    "passed": true,
+    "stop_condition_triggered": false,
+    "next_gate": "P1_apply_rbac_receipts",
+    "next_gate_requires_explicit_production_approval": true,
+    "next_gate_approved": false
+  },
+  "evidence": {
+    "readonly_sql": "supabase/production-preflight/20260723_installation_p0_readonly.sql",
+    "rollout_plan_contract": "contracts/crm-installation-production-rollout-plan-v1.json",
+    "rbac_receipts_candidate": "contracts/crm-installation-production-rbac-receipts-candidate-v1.json",
+    "rpc_candidate": "contracts/crm-installation-production-rpc-candidate-v1.json",
+    "edge_candidate": "contracts/crm-installation-production-edge-candidate-v1.json",
+    "frontend_candidate": "contracts/crm-installation-production-frontend-candidate-v1.json"
+  }
+}
