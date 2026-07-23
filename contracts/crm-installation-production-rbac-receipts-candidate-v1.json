@@ -1,0 +1,117 @@
+{
+  "contract": "crm-installation-production-rbac-receipts-candidate",
+  "version": 1,
+  "captured_at": "2026-07-23",
+  "repository": "deputat36/lider-bsk",
+  "issue": 423,
+  "status": "source_only_not_applied",
+  "production": {
+    "project_ref": "ofewxuqfjhamgerwzull",
+    "database_changed": false,
+    "edge_deployed": false,
+    "frontend_switched": false,
+    "auth_changed": false,
+    "data_changed": false,
+    "nav_changed": false
+  },
+  "source": {
+    "migration": "supabase/production-candidates/20260723_01_installation_rbac_receipts_candidate.sql",
+    "rollback": "supabase/production-candidates/rollback/20260723_01_installation_rbac_receipts_candidate_rollback.sql",
+    "runbook": "docs/CRM_INSTALLATION_PRODUCTION_RBAC_RECEIPTS_CANDIDATE_V1_2026-07-23.md",
+    "checker": "tools/check_crm_installation_production_rbac_receipts_candidate.py"
+  },
+  "preflight_snapshot": {
+    "profiles_rows": 4,
+    "roles": {
+      "owner": 2,
+      "admin": 1,
+      "manager": 1
+    },
+    "orders_rows": 0,
+    "installation_jobs_rows": 0,
+    "installation_items_rows": 0,
+    "installation_events_rows": 0,
+    "installation_comments_rows": 0,
+    "staging_guard_exists": false,
+    "role_action_matrix_exists": false,
+    "actor_permission_function_exists": false,
+    "actor_permission_rpc_exists": false,
+    "command_receipts_exists": false
+  },
+  "objects_created_by_candidate": {
+    "tables": [
+      "leader_private.leader_role_action_matrix_v1",
+      "leader_private.leader_command_receipts"
+    ],
+    "functions": [
+      "leader_private.leader_actor_has_crm_action(uuid,text)",
+      "public.leader_actor_has_crm_action_rpc(uuid,text)"
+    ]
+  },
+  "security": {
+    "matrix_rls_enabled": true,
+    "receipts_rls_enabled": true,
+    "browser_table_privileges": false,
+    "browser_function_execute": false,
+    "service_role_only_bridge": true,
+    "unknown_role": "deny",
+    "unknown_action": "deny",
+    "inactive_profile": "deny",
+    "browser_supplied_role": false,
+    "staging_environment_rejected": true
+  },
+  "canonical_matrix": {
+    "source": "contracts/crm-v4-role-action-matrix-v1.json",
+    "version": 1,
+    "roles": [
+      "owner",
+      "admin",
+      "manager",
+      "accountant",
+      "designer",
+      "installer",
+      "contractor"
+    ],
+    "installation_permissions": [
+      "installation.read",
+      "installation.write"
+    ]
+  },
+  "receipts": {
+    "unique_action_idempotency_key": true,
+    "unique_action_request_id": true,
+    "request_hash_sha256_hex": true,
+    "states": [
+      "in_progress",
+      "success"
+    ],
+    "service_role_privileges": [
+      "select",
+      "insert",
+      "update"
+    ]
+  },
+  "excluded_from_candidate": {
+    "installation_read_rpc": true,
+    "installation_update_rpc": true,
+    "installation_edge": true,
+    "frontend_route": true,
+    "design_wrappers": true,
+    "calculation_or_offer_logic": true,
+    "staging_guard_creation": true,
+    "smoke_bootstrap": true,
+    "pg_net_transport": true,
+    "nav_changes": true
+  },
+  "rollback": {
+    "requires_explicit_approval": true,
+    "blocked_if_installation_rpc_exists": true,
+    "blocked_if_receipts_not_empty": true,
+    "preserves_leader_private_schema": true,
+    "broad_schema_drop": false
+  },
+  "approval_gate": {
+    "production_database_migration_required": true,
+    "approved": false
+  }
+}
