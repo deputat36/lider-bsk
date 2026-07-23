@@ -12,6 +12,7 @@ RPC_MD5 = '6236711baa1a4ba45c9724fb2fe2d2a4'
 
 FILES = {
     'migration': ROOT / 'supabase/staging-migrations/20260723_01_lead_workflow_update_rpc.sql',
+    'rollback': ROOT / 'supabase/staging-rollbacks/20260723_01_lead_workflow_update_rpc_rollback.sql',
     'acceptance': ROOT / 'supabase/staging-tests/20260723_lead_workflow_update_acceptance.sql',
     'edge': ROOT / 'supabase/staging-functions/leader-crm-leads-staging/index.ts',
     'wrapper': ROOT / 'supabase/staging-functions/_shared/canonical-edge-wrapper-v1.js',
@@ -67,6 +68,9 @@ database = contract.get('database', {})
 for key, value in {
     'migration_version': '20260723153001',
     'migration_name': 'staging_lead_workflow_update_rpc_20260723',
+    'source': 'supabase/staging-migrations/20260723_01_lead_workflow_update_rpc.sql',
+    'rollback': 'supabase/staging-rollbacks/20260723_01_lead_workflow_update_rpc_rollback.sql',
+    'acceptance': 'supabase/staging-tests/20260723_lead_workflow_update_acceptance.sql',
     'rpc': 'public.leader_update_lead_workflow_rpc(jsonb)',
     'rpc_md5': RPC_MD5,
     'rpc_bytes': 12510,
@@ -101,6 +105,11 @@ for key in ('requires_request_id', 'requires_expected_updated_at', 'requires_ide
         errors.append(f'contract.workflow: {key} must be true')
 if workflow.get('takeover_of_other_assignee') is not False:
     errors.append('contract.workflow: takeover must remain false')
+
+rollback = contract.get('rollback', {})
+for key in ('source_ready', 'requires_zero_workflow_receipts', 'drops_only_workflow_rpc_and_helpers', 'preserved_implementation_unchanged'):
+    if rollback.get(key) is not True:
+        errors.append(f'contract.rollback: {key} must be true')
 
 acceptance = contract.get('acceptance', {})
 for key in (
@@ -143,6 +152,14 @@ require('migration',
     'pg_advisory_xact_lock', 'for update', 'leader_command_receipts',
     'leader_lead_events', 'security invoker', "set search_path = ''",
     'grant execute on function public.leader_update_lead_workflow_rpc(jsonb) to service_role')
+require('rollback',
+    '-- STAGING ONLY rollback', 'lead_workflow_rollback_blocked_by_receipts',
+    "where action = 'lead_workflow.update'",
+    'revoke all on function public.leader_update_lead_workflow_rpc(jsonb)',
+    'drop function if exists public.leader_update_lead_workflow_rpc(jsonb)',
+    'drop function if exists leader_private.leader_lead_status_requires_future_contact(text)',
+    'drop function if exists leader_private.leader_lead_status_requires_assignee(text)',
+    'drop function if exists leader_private.leader_lead_workflow_error(uuid,text,text)')
 require('acceptance',
     'assignee gate failed', 'role gate failed', 'self assignment gate failed',
     'replay failed', 'future contact gate failed', 'waiting success failed',
@@ -173,12 +190,15 @@ if 'body.role' in texts['wrapper'] or 'p_role' in texts['wrapper']:
 require('implementation', '17524ea9ef08c11b18b385b9469778d5b1084ddb')
 require('docs',
     'Staging lead workflow command v1', 'leader-crm-leads-staging v4',
-    'assignee_required', 'next_contact_required', 'Production boundary')
+    'assignee_required', 'next_contact_required',
+    'supabase/staging-rollbacks/20260723_01_lead_workflow_update_rpc_rollback.sql',
+    'Production boundary')
 require('workflow',
+    'supabase/staging-rollbacks/20260723_01_lead_workflow_update_rpc_rollback.sql',
     'deno check supabase/staging-functions/leader-crm-leads-staging/index.ts',
     'python3 tools/check_crm_staging_lead_workflow_command.py')
 
-for name in ('migration', 'acceptance', 'edge', 'wrapper'):
+for name in ('migration', 'rollback', 'acceptance', 'edge', 'wrapper'):
     if PRODUCTION in texts[name]:
         errors.append(f'{name}: production ref forbidden in executable staging source')
     if re.search(r'sb_secret_[A-Za-z0-9_-]{10,}', texts[name]):
