@@ -1,6 +1,6 @@
 # Canonical action gate для staging leads/orders Edge
 
-Дата: 21 июля 2026 года.
+Дата первоначального gate: 21 июля 2026 года. Leads workflow extension: 23 июля 2026 года.
 
 ## Причина изменения
 
@@ -9,23 +9,29 @@ Staging functions использовали проверенные, но уста
 - `leader-crm-leads-staging v1` импортировал generic source из commit `17524ea9ef08c11b18b385b9469778d5b1084ddb`;
 - `leader-crm-orders v1` импортировал source из commit `4dafa2723c1018574572d9a91441cf382ac25b34`.
 
-После внедрения canonical SQL matrix через PR #410 эти локальные списки стали вторым источником истины.
+После внедрения canonical SQL matrix через PR #410 локальные списки стали вторым источником истины. Дополнительно generic leads update позволял менять рабочий статус и `next_contact_at` без server-side дисциплины.
 
 ## Решение
 
-Бизнес-реализации не переписывались.
-
-Старые deployed implementations сохранены под отдельными slug:
+Старые implementations сохранены под отдельными slug:
 
 - `leader-crm-leads-staging-impl v1`;
 - `leader-crm-orders-impl v1`.
 
-Исходные slugs теперь принадлежат JWT-first canonical wrappers:
+Исходные slugs принадлежат JWT-first canonical wrappers:
 
-- `leader-crm-leads-staging v3`;
+- `leader-crm-leads-staging v4`;
 - `leader-crm-orders v3`.
 
-Все четыре функции имеют статус ACTIVE и `verify_jwt=true`.
+Все функции имеют статус ACTIVE и `verify_jwt=true`.
+
+Leads wrapper v4 добавляет optional execute hook после canonical permission check. Он перехватывает только workflow fields:
+
+- `status`;
+- `next_contact_at`;
+- `assigned_to`.
+
+Эти поля направляются в атомарную `leader_update_lead_workflow_rpc`. Остальные legacy update fields продолжают делегироваться сохранённой implementation. Смешивание workflow и legacy fields блокируется до implementation.
 
 ## Порядок выполнения
 
@@ -37,11 +43,10 @@ Wrapper выполняет действия строго в таком поря�
 4. отклоняет unknown action;
 5. вызывает service-role-only `leader_actor_has_crm_action_rpc`;
 6. при false возвращает `forbidden`;
-7. только после разрешения вызывает implementation slug с исходным JWT и body.
+7. выполняет optional execute только для явно поддерживаемой атомарной команды;
+8. если optional execute не обработал запрос, вызывает preserved implementation с исходным JWT и body.
 
-Unknown action больше нельзя анонимно использовать как oracle: без JWT запрос не доходит до распознавания action.
-
-Browser-supplied role не принимается и не передаётся в permission RPC.
+Unknown action нельзя анонимно использовать как oracle: без JWT запрос не доходит до распознавания action. Browser-supplied role не принимается и не передаётся в permission RPC.
 
 ## Permission RPC
 
@@ -49,7 +54,7 @@ Browser-supplied role не принимается и не передаётся �
 
 `public.leader_actor_has_crm_action_rpc(actor_id, action)`
 
-Функция является bridge к приватному `leader_actor_has_crm_action` из PR #410.
+Функция является bridge к приватному `leader_actor_has_crm_action`.
 
 EXECUTE grantees:
 
@@ -69,6 +74,28 @@ Anon и authenticated не имеют EXECUTE.
 
 `ensure_profile` остаётся отдельным authenticated bootstrap: сначала JWT, затем прежняя implementation создаёт только неактивный manager profile или синхронизирует email. Доступ к бизнес-действиям он не выдаёт.
 
+## Leads workflow update
+
+Staging migration:
+
+- version `20260723153001`;
+- name `staging_lead_workflow_update_rpc_20260723`;
+- RPC `public.leader_update_lead_workflow_rpc(jsonb)`;
+- action `lead_workflow.update`;
+- permission `leads.update`.
+
+Команда требует `request_id`, `expected_updated_at`, `idempotency_key` и выполняет одной транзакцией:
+
+- optimistic concurrency;
+- self-assignment без перехвата чужой заявки;
+- проверку обязательного ответственного;
+- проверку будущего следующего контакта;
+- update заявки;
+- insert события;
+- completion command receipt.
+
+Рабочие статусы без `assigned_to` блокируются. `КП отправлено` и `Ждём ответ` без будущего `next_contact_at` блокируются.
+
 ## Orders mapping
 
 - list → `orders.read`;
@@ -77,16 +104,15 @@ Anon и authenticated не имеют EXECUTE.
 
 Для запроса с несколькими полями требуются все уникальные permissions. Например, status + payment_status требуют одновременно `orders.update` и `finance.write`.
 
-Update без полей требует `orders.update`, после чего прежняя implementation вернёт `no_update_fields`.
-
 ## Развёрнутые версии
 
 ### Leads wrapper
 
 - slug: `leader-crm-leads-staging`;
-- version: 3;
-- SHA-256: `e64036306fefff72bcb457f0f64756bcf40f27cc406e695e3f3d4c76d2b1b4d1`;
-- implementation: `leader-crm-leads-staging-impl`.
+- version: 4;
+- SHA-256: `6ee051d0c8db9154c87bdd3b49b1d60b8bf27f6407c9a2843403886b4999868a`;
+- implementation fallback: `leader-crm-leads-staging-impl`;
+- workflow RPC: `leader_update_lead_workflow_rpc`.
 
 ### Leads implementation
 
@@ -109,37 +135,33 @@ Update без полей требует `orders.update`, после чего п�
 
 ## Проверки
 
-Pure mapping test проверяет:
+Pure mapping test проверяет leads/orders actions, unknown actions, finance separation и immutable plans.
 
-- все leads actions;
-- ensure_profile bootstrap;
-- unknown actions;
-- orders list;
-- operations fields;
-- finance field separation;
-- multi-field permission union;
-- immutable plan objects.
+Транзакционный database test lead workflow проверил:
 
-Транзакционный database test проверил:
+- рабочий статус без ответственного запрещён;
+- accountant запрещён;
+- назначение другому сотруднику запрещено;
+- self-assignment разрешён;
+- ожидание без будущей даты запрещено;
+- будущая дата разрешена;
+- stale update запрещён;
+- replay не создаёт второе событие;
+- 2 успешные команды создают 2 события и 2 receipts;
+- synthetic profiles после rollback = 0;
+- leads/events/receipts после rollback = 0.
 
-- owner: leads.read и orders.update разрешены;
-- accountant: orders.read и finance.write разрешены;
-- accountant: orders.update запрещён;
-- unknown action запрещён;
-- synthetic profiles после rollback = 0.
-
-Развёрнутые function source повторно прочитаны через Supabase management API. Wrapper-файлы и shared dependencies соответствуют ветке.
-
-Edge runtime logs после deployment пусты: boot errors не зарегистрированы, но реальный user-JWT запрос не выполнялся. Тестовых Auth-пользователей и паролей не создавали. Missing-token path подтверждён JWT-first wrapper-кодом и обязательной платформенной настройкой `verify_jwt=true`, но отдельный HTTP probe из доступных инструментов не выполнялся.
+Развёрнутые function source повторно прочитаны через Supabase management API. Leads wrapper v4 и shared dependencies соответствуют ветке. Реальный user-JWT запрос для нового lead workflow в этом этапе не выполнялся; это отдельный staging gate. SQL business acceptance и `verify_jwt=true` подтверждены.
 
 ## Rollback
 
-Быстрый rollback не требует изменений базы или бизнес-данных:
+Быстрый Edge rollback:
 
-- для leads повторно развернуть прежний pinned import под `leader-crm-leads-staging`;
-- для orders повторно развернуть прежний pinned import под `leader-crm-orders`.
+- повторно развернуть leads wrapper v3 SHA `e64036306fefff72bcb457f0f64756bcf40f27cc406e695e3f3d4c76d2b1b4d1`;
+- preserved leads implementation v1 остаётся доступной;
+- orders wrapper не менялся.
 
-Implementation slugs уже содержат эти версии и могут использоваться как точный источник rollback.
+Database rollback должен выполняться отдельно и только при отсутствии workflow receipts; текущий staging postflight содержит 0 workflow receipts.
 
 ## Production boundary
 
@@ -150,7 +172,8 @@ Implementation slugs уже содержат эти версии и могут �
 - production RLS/grants/function changes;
 - Auth user creation;
 - secrets или Storage changes;
-- бизнес-запросы с service role;
-- создание или изменение заявок, клиентов, заказов, платежей и расходов.
+- создание или изменение production заявок, клиентов, заказов, платежей и расходов;
+- frontend switch;
+- изменения `nav_*`.
 
-Production rollout требует отдельного explicit approval и предварительного smoke test с реальными ролями.
+Production содержит 13 заявок, но workflow RPC, migration и receipts table отсутствуют. Production rollout требует отдельного explicit approval и предварительного authenticated smoke test.
