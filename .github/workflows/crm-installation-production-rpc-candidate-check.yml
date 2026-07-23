@@ -18,7 +18,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'tools/generate_crm_installATION_production_rpc_candidate.py'
+      - 'tools/generate_crm_installation_production_rpc_candidate.py'
       - 'tools/check_crm_installation_production_rpc_candidate.py'
       - 'contracts/crm-installation-production-rpc-candidate-v1.json'
       - 'contracts/crm-installation-production-rbac-receipts-candidate-v1.json'
