@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'supabase/staging-migrations/20260723_01_lead_workflow_update_rpc.sql'
+      - 'supabase/staging-rollbacks/20260723_01_lead_workflow_update_rpc_rollback.sql'
       - 'supabase/staging-tests/20260723_lead_workflow_update_acceptance.sql'
       - 'supabase/staging-functions/leader-crm-leads-staging/**'
       - 'supabase/staging-functions/_shared/canonical-edge-wrapper-v1.js'
@@ -18,6 +19,7 @@ on:
     branches: [main]
     paths:
       - 'supabase/staging-migrations/20260723_01_lead_workflow_update_rpc.sql'
+      - 'supabase/staging-rollbacks/20260723_01_lead_workflow_update_rpc_rollback.sql'
       - 'supabase/staging-tests/20260723_lead_workflow_update_acceptance.sql'
       - 'supabase/staging-functions/leader-crm-leads-staging/**'
       - 'supabase/staging-functions/_shared/canonical-edge-wrapper-v1.js'
