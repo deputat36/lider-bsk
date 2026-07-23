@@ -7,7 +7,11 @@ on:
     paths:
       - 'supabase/functions/leader-crm-leads/index.ts'
       - 'supabase/staging-functions/leader-crm-leads-staging/index.ts'
+      - 'supabase/staging-functions/leader-crm-leads-staging-impl/index.ts'
+      - 'supabase/staging-functions/_shared/canonical-edge-wrapper-v1.js'
       - 'contracts/crm-leads-orders-staging-deployment-v1.json'
+      - 'contracts/crm-staging-edge-action-gate-deployment-v1.json'
+      - 'contracts/crm-staging-lead-workflow-command-v1.json'
       - 'tools/run_crm_leads_orders_staging_auth_e2e.mjs'
       - 'tools/check_crm_leads_orders_staging_deployment.py'
       - 'docs/SUPABASE_STAGING_CRM_LEADS_ORDERS_PROBE_2026-07-16.md'
@@ -17,7 +21,11 @@ on:
     paths:
       - 'supabase/functions/leader-crm-leads/index.ts'
       - 'supabase/staging-functions/leader-crm-leads-staging/index.ts'
+      - 'supabase/staging-functions/leader-crm-leads-staging-impl/index.ts'
+      - 'supabase/staging-functions/_shared/canonical-edge-wrapper-v1.js'
       - 'contracts/crm-leads-orders-staging-deployment-v1.json'
+      - 'contracts/crm-staging-edge-action-gate-deployment-v1.json'
+      - 'contracts/crm-staging-lead-workflow-command-v1.json'
       - 'tools/run_crm_leads_orders_staging_auth_e2e.mjs'
       - 'tools/check_crm_leads_orders_staging_deployment.py'
       - 'docs/SUPABASE_STAGING_CRM_LEADS_ORDERS_PROBE_2026-07-16.md'
