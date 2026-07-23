@@ -56,7 +56,7 @@ require("model", [
 require("ui", [
     "leader-v4:lead-card-rendered",
     "data-lead-status",
-    "data.assigneeTransitionBlocked",
+    "dataset.assigneeTransitionBlocked",
     "aria-disabled",
     "stopImmediatePropagation",
     "focusAssignmentAction",
