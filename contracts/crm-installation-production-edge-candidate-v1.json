@@ -1,0 +1,116 @@
+{
+  "contract": "crm-installation-production-edge-candidate",
+  "version": 1,
+  "captured_at": "2026-07-23",
+  "repository": "deputat36/lider-bsk",
+  "issue": 423,
+  "status": "source_only_generator_ready_not_deployed",
+  "production": {
+    "project_ref": "ofewxuqfjhamgerwzull",
+    "function_slug": "leader-crm-installation",
+    "database_changed": false,
+    "edge_deployed": false,
+    "frontend_switched": false,
+    "auth_changed": false,
+    "data_changed": false,
+    "nav_changed": false
+  },
+  "generator": {
+    "source": "tools/generate_crm_installation_production_edge_candidate.py",
+    "output_directory": "build/installation-production-edge-candidate/leader-crm-installation",
+    "outputs": [
+      "index.ts",
+      "contract.ts",
+      "deploy-manifest.json"
+    ],
+    "deterministic": true,
+    "environment_only_transform": true,
+    "business_logic_changed": false
+  },
+  "sources": {
+    "index": {
+      "path": "supabase/staging-functions/leader-crm-installation/index.ts",
+      "git_blob_sha": "a603fc11db7dc66435c6fea4c3547775d79feac9"
+    },
+    "contract": {
+      "path": "supabase/staging-functions/leader-crm-installation/contract.ts",
+      "git_blob_sha": "940c39edac833417aa1727ca04badd52fb5a415c"
+    }
+  },
+  "environment_transform": {
+    "from_project_ref": "otulfnouybahfnsycxqn",
+    "to_project_ref": "ofewxuqfjhamgerwzull",
+    "from_constant": "STAGING_PROJECT_REF",
+    "to_constant": "PRODUCTION_PROJECT_REF",
+    "wrong_environment_expected": "production",
+    "staging_identity_absent_from_output": true
+  },
+  "deployment": {
+    "slug": "leader-crm-installation",
+    "entrypoint": "index.ts",
+    "files": [
+      "index.ts",
+      "contract.ts"
+    ],
+    "verify_jwt": true,
+    "deploy_approved": false,
+    "currently_deployed_in_production": false
+  },
+  "actions": {
+    "installation_job.read": "installation.read",
+    "installation_job.update": "installation.write"
+  },
+  "security": {
+    "post_only": true,
+    "options_supported": true,
+    "payload_limit_bytes": 65536,
+    "jwt_user_lookup": true,
+    "missing_or_invalid_jwt_401": true,
+    "canonical_permission_rpc": "leader_actor_has_crm_action_rpc",
+    "read_rpc": "leader_read_installation_job_rpc",
+    "update_rpc": "leader_update_installation_job_rpc",
+    "service_role_in_browser": false,
+    "browser_supplied_role": false,
+    "safe_rpc_error_mapping": true,
+    "wrong_environment_fail_closed": true
+  },
+  "database_dependencies": {
+    "rbac_receipts_candidate": "contracts/crm-installation-production-rbac-receipts-candidate-v1.json",
+    "rpc_candidate": "contracts/crm-installation-production-rpc-candidate-v1.json",
+    "currently_applied_to_production": false,
+    "must_be_applied_and_verified_before_edge_deploy": true
+  },
+  "validated_staging_baseline": {
+    "function_version": 2,
+    "verify_jwt": true,
+    "sha256": "24183605aad2c5cfcc84ebe14c348dcfce1b68de41a43dcfb973f65cef8cb369",
+    "runtime_user_jwt_smoke_completed": true,
+    "authenticated_browser_ui_smoke_completed": true,
+    "cleanup_completed": true
+  },
+  "rollback": {
+    "source": "supabase/production-candidates/edge/leader-crm-installation-rollback/index.ts",
+    "slug": "leader-crm-installation",
+    "verify_jwt": true,
+    "response_status": 503,
+    "error_code": "production_installation_temporarily_disabled",
+    "database_access": false,
+    "service_role_key_read": false,
+    "requires_explicit_approval": true
+  },
+  "excluded": {
+    "database_apply": true,
+    "frontend_switch": true,
+    "auth_or_fixture_mutation": true,
+    "staging_bootstrap": true,
+    "pg_net_transport": true,
+    "nav_changes": true
+  },
+  "approval_gates": {
+    "generate_candidate_artifacts": false,
+    "production_database_apply": true,
+    "production_edge_deploy": true,
+    "production_frontend_switch": true,
+    "production_browser_smoke": true
+  }
+}
