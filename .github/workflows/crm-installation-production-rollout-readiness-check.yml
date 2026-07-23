@@ -1,0 +1,58 @@
+name: CRM installation production rollout readiness check
+
+on:
+  pull_request:
+    paths:
+      - 'contracts/crm-installation-production-rollout-readiness-v1.json'
+      - 'docs/PREFLIGHT_INSTALLATION_PRODUCTION_ROLLOUT_2026-07-23.sql'
+      - 'docs/CRM_INSTALLATION_PRODUCTION_ROLLOUT_READINESS_V1_2026-07-23.md'
+      - 'tools/check_crm_installation_production_rollout_readiness.py'
+      - 'crm/v4/assets/v4/installation-job-save-route-v1.js'
+      - 'contracts/crm-staging-installation-runtime-smoke-v1.json'
+      - 'contracts/crm-staging-installation-frontend-transport-v1.json'
+      - '.github/workflows/crm-installation-production-rollout-readiness-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'contracts/crm-installation-production-rollout-readiness-v1.json'
+      - 'docs/PREFLIGHT_INSTALLATION_PRODUCTION_ROLLOUT_2026-07-23.sql'
+      - 'docs/CRM_INSTALLATION_PRODUCTION_ROLLOUT_READINESS_V1_2026-07-23.md'
+      - 'tools/check_crm_installation_production_rollout_readiness.py'
+      - 'crm/v4/assets/v4/installation-job-save-route-v1.js'
+      - 'contracts/crm-staging-installation-runtime-smoke-v1.json'
+      - 'contracts/crm-staging-installation-frontend-transport-v1.json'
+      - '.github/workflows/crm-installation-production-rollout-readiness-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate JSON syntax
+        run: |
+          python3 -m json.tool contracts/crm-installation-production-rollout-readiness-v1.json >/dev/null
+          python3 -m json.tool contracts/crm-staging-installation-runtime-smoke-v1.json >/dev/null
+          python3 -m json.tool contracts/crm-staging-installation-frontend-transport-v1.json >/dev/null
+      - name: Compile readiness checker
+        run: python3 -m py_compile tools/check_crm_installation_production_rollout_readiness.py
+      - name: Validate read-only readiness contract
+        id: readiness
+        continue-on-error: true
+        run: python3 tools/check_crm_installation_production_rollout_readiness.py > installation-production-rollout-readiness-check.log 2>&1
+      - name: Upload readiness diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: installation-production-rollout-readiness-diagnostics
+          path: installation-production-rollout-readiness-check.log
+          if-no-files-found: error
+          retention-days: 7
+      - name: Fail on readiness drift
+        if: steps.readiness.outcome != 'success'
+        run: |
+          cat installation-production-rollout-readiness-check.log
+          exit 1

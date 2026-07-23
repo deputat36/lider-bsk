@@ -1,0 +1,114 @@
+{
+  "contract": "crm-installation-production-rollout-readiness",
+  "version": 1,
+  "captured_at": "2026-07-23",
+  "repository": "deputat36/lider-bsk",
+  "status": "read_only_audit_complete_source_package_required",
+  "production": {
+    "project_ref": "ofewxuqfjhamgerwzull",
+    "database_changed": false,
+    "edge_deployed": false,
+    "frontend_switched": false,
+    "auth_changed": false,
+    "data_changed": false,
+    "nav_changed": false
+  },
+  "production_snapshot": {
+    "leader_private_schema": true,
+    "pgcrypto_digest": true,
+    "profiles_table": true,
+    "orders_table": true,
+    "production_jobs_table": true,
+    "installation_jobs_table": true,
+    "installation_items_table": true,
+    "installation_events_table": true,
+    "installation_comments_table": true,
+    "orders_rows": 0,
+    "installation_jobs_rows": 0,
+    "installation_items_rows": 0,
+    "installation_events_rows": 0,
+    "installation_comments_rows": 0,
+    "required_order_columns_present": true,
+    "required_installation_columns_present": true,
+    "required_relationship_indexes_present": true
+  },
+  "missing_components": {
+    "role_action_matrix_table": true,
+    "actor_permission_function": true,
+    "actor_permission_rpc": true,
+    "command_receipts_table": true,
+    "installation_read_rpc": true,
+    "installation_update_rpc": true,
+    "installation_edge_function": true
+  },
+  "validated_staging_baseline": {
+    "project_ref": "otulfnouybahfnsycxqn",
+    "runtime_jwt_smoke": "completed_clean",
+    "authenticated_browser_smoke": true,
+    "cleanup_completed": true,
+    "edge": {
+      "slug": "leader-crm-installation",
+      "version": 2,
+      "verify_jwt": true,
+      "sha256": "24183605aad2c5cfcc84ebe14c348dcfce1b68de41a43dcfb973f65cef8cb369"
+    },
+    "read_rpc": {
+      "signature": "public.leader_read_installation_job_rpc(uuid,uuid)",
+      "md5": "5a353818606012d0e657a83f133723b6",
+      "bytes": 5432,
+      "security_invoker": true,
+      "service_role_only": true
+    },
+    "update_rpc": {
+      "signature": "public.leader_update_installation_job_rpc(jsonb)",
+      "md5": "0ed4669197dac1f2695e763d0eec54e1",
+      "bytes": 19061,
+      "security_invoker": true,
+      "service_role_only": true
+    }
+  },
+  "candidate_sources": {
+    "canonical_rbac_reference": "supabase/staging-migrations/20260721_01_canonical_action_rbac.sql",
+    "actor_permission_rpc_reference": "supabase/staging-migrations/20260721_03_actor_action_permission_rpc.sql",
+    "update_rpc_reference": "supabase/staging-migrations/20260721_06_installation_job_update_rpc.sql",
+    "read_rpc_reference": "supabase/staging-migrations/20260722_06_installation_read_rpc_main_reconcile.sql",
+    "edge_reference": "supabase/staging-functions/leader-crm-installation/index.ts",
+    "frontend_route": "crm/v4/assets/v4/installation-job-save-route-v1.js"
+  },
+  "required_extraction": {
+    "canonical_rbac_core_only": true,
+    "exclude_design_wrappers": true,
+    "exclude_calculation_and_offer_logic": true,
+    "exclude_staging_environment_guard": true,
+    "exclude_smoke_bootstrap": true,
+    "exclude_pg_net_transport": true,
+    "exclude_nav": true
+  },
+  "rollout_sequence": [
+    "repeat_read_only_preflight",
+    "apply_production_rbac_core_and_receipt_migration",
+    "apply_installation_read_update_rpc_migration",
+    "run_database_postflight_and_hash_check",
+    "deploy_leader_crm_installation_with_verify_jwt",
+    "run_missing_invalid_forbidden_not_found_smoke",
+    "keep_frontend_production_route_locked",
+    "obtain_separate_frontend_switch_approval",
+    "switch_production_route",
+    "run_authenticated_browser_smoke_with_cleanup"
+  ],
+  "rollback_requirements": {
+    "frontend_first": true,
+    "edge_disable_or_remove": true,
+    "drop_installation_rpcs_only_after_frontend_lock": true,
+    "preserve_existing_tables_and_data": true,
+    "preserve_role_action_core_when_used_by_other_modules": true,
+    "no_broad_schema_drop": true
+  },
+  "approval_gates": {
+    "production_database_migration": true,
+    "production_edge_deploy": true,
+    "production_frontend_switch": true,
+    "production_auth_or_fixture_mutation": true
+  },
+  "next_step": "prepare_minimal_production_migrations_and_rollback_without_applying_them"
+}
