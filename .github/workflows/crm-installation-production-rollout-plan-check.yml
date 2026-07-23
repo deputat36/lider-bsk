@@ -1,0 +1,79 @@
+name: CRM installation production rollout plan check
+
+on:
+  pull_request:
+    paths:
+      - 'tools/generate_crm_installation_production_rollout_plan.py'
+      - 'tools/check_crm_installation_production_rollout_plan.py'
+      - 'contracts/crm-installation-production-rollout-plan-v1.json'
+      - 'contracts/crm-installation-production-rollout-readiness-v1.json'
+      - 'contracts/crm-installation-production-rbac-receipts-candidate-v1.json'
+      - 'contracts/crm-installation-production-rpc-candidate-v1.json'
+      - 'contracts/crm-installation-production-edge-candidate-v1.json'
+      - 'contracts/crm-installation-production-frontend-candidate-v1.json'
+      - 'docs/CRM_INSTALLATION_PRODUCTION_ROLLOUT_PLAN_V1_2026-07-23.md'
+      - 'crm/v4/index.html'
+      - '.github/workflows/crm-installation-production-rollout-plan-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/generate_crm_installation_production_rollout_plan.py'
+      - 'tools/check_crm_installation_production_rollout_plan.py'
+      - 'contracts/crm-installation-production-rollout-plan-v1.json'
+      - 'contracts/crm-installation-production-rollout-readiness-v1.json'
+      - 'contracts/crm-installation-production-rbac-receipts-candidate-v1.json'
+      - 'contracts/crm-installation-production-rpc-candidate-v1.json'
+      - 'contracts/crm-installation-production-edge-candidate-v1.json'
+      - 'contracts/crm-installation-production-frontend-candidate-v1.json'
+      - 'docs/CRM_INSTALLATION_PRODUCTION_ROLLOUT_PLAN_V1_2026-07-23.md'
+      - 'crm/v4/index.html'
+      - '.github/workflows/crm-installation-production-rollout-plan-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate contract JSON
+        run: python3 -m json.tool contracts/crm-installation-production-rollout-plan-v1.json >/dev/null
+
+      - name: Compile generator and checker
+        run: |
+          python3 -m py_compile tools/generate_crm_installation_production_rollout_plan.py
+          python3 -m py_compile tools/check_crm_installation_production_rollout_plan.py
+
+      - name: Generate production rollout plan package
+        run: python3 tools/generate_crm_installation_production_rollout_plan.py
+
+      - name: Validate non-mutating approval-gated rollout plan
+        id: contract
+        continue-on-error: true
+        run: python3 tools/check_crm_installation_production_rollout_plan.py > installation-production-rollout-plan-check.log 2>&1
+
+      - name: Upload generated rollout plan package
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: installation-production-rollout-plan-package
+          path: build/installation-production-rollout-plan
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload rollout plan diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: installation-production-rollout-plan-diagnostics
+          path: installation-production-rollout-plan-check.log
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Fail on rollout plan drift
+        if: steps.contract.outcome != 'success'
+        run: |
+          cat installation-production-rollout-plan-check.log
+          exit 1
