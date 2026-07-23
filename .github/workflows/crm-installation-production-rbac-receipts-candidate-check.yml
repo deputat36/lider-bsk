@@ -1,0 +1,67 @@
+name: CRM installation production RBAC receipts candidate check
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/production-candidates/20260723_01_installation_rbac_receipts_candidate.sql'
+      - 'supabase/production-candidates/rollback/20260723_01_installation_rbac_receipts_candidate_rollback.sql'
+      - 'contracts/crm-installation-production-rbac-receipts-candidate-v1.json'
+      - 'contracts/crm-v4-role-action-matrix-v1.json'
+      - 'contracts/crm-installation-production-rollout-readiness-v1.json'
+      - 'docs/CRM_INSTALLATION_PRODUCTION_RBAC_RECEIPTS_CANDIDATE_V1_2026-07-23.md'
+      - 'crm/v4/assets/v4/installation-job-save-route-v1.js'
+      - 'tools/check_crm_installation_production_rbac_receipts_candidate.py'
+      - '.github/workflows/crm-installation-production-rbac-receipts-candidate-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/production-candidates/20260723_01_installation_rbac_receipts_candidate.sql'
+      - 'supabase/production-candidates/rollback/20260723_01_installation_rbac_receipts_candidate_rollback.sql'
+      - 'contracts/crm-installation-production-rbac-receipts-candidate-v1.json'
+      - 'contracts/crm-v4-role-action-matrix-v1.json'
+      - 'contracts/crm-installation-production-rollout-readiness-v1.json'
+      - 'docs/CRM_INSTALLATION_PRODUCTION_RBAC_RECEIPTS_CANDIDATE_V1_2026-07-23.md'
+      - 'crm/v4/assets/v4/installation-job-save-route-v1.js'
+      - 'tools/check_crm_installation_production_rbac_receipts_candidate.py'
+      - '.github/workflows/crm-installation-production-rbac-receipts-candidate-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate JSON syntax
+        run: |
+          python3 -m json.tool contracts/crm-installation-production-rbac-receipts-candidate-v1.json >/dev/null
+          python3 -m json.tool contracts/crm-v4-role-action-matrix-v1.json >/dev/null
+          python3 -m json.tool contracts/crm-installation-production-rollout-readiness-v1.json >/dev/null
+
+      - name: Compile candidate checker
+        run: python3 -m py_compile tools/check_crm_installation_production_rbac_receipts_candidate.py
+
+      - name: Validate source-only production candidate
+        id: candidate_check
+        continue-on-error: true
+        run: |
+          python3 tools/check_crm_installation_production_rbac_receipts_candidate.py \
+            >installation-production-rbac-receipts-candidate-diagnostics.txt 2>&1
+
+      - name: Upload candidate diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: installation-production-rbac-receipts-candidate-diagnostics
+          path: installation-production-rbac-receipts-candidate-diagnostics.txt
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Fail on candidate drift
+        if: steps.candidate_check.outcome != 'success'
+        run: |
+          cat installation-production-rbac-receipts-candidate-diagnostics.txt
+          exit 1
