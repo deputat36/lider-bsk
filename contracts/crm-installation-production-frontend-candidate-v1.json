@@ -1,0 +1,104 @@
+{
+  "contract": "crm-installation-production-frontend-candidate",
+  "version": 1,
+  "captured_at": "2026-07-23",
+  "repository": "deputat36/lider-bsk",
+  "issue": 423,
+  "status": "source_only_not_switched",
+  "production": {
+    "project_ref": "ofewxuqfjhamgerwzull",
+    "allowed_hostname": "ofewxuqfjhamgerwzull.supabase.co",
+    "database_changed": false,
+    "edge_deployed": false,
+    "frontend_switched": false,
+    "auth_changed": false,
+    "data_changed": false,
+    "nav_changed": false
+  },
+  "generator": {
+    "source": "tools/generate_crm_installation_production_frontend_candidate.py",
+    "output_directory": "build/installation-production-frontend-candidate",
+    "manifest": "build/installation-production-frontend-candidate/manifest.json",
+    "source_blob_guard": true,
+    "working_files_mutated": false
+  },
+  "source_blobs": {
+    "crm/v4/assets/v4/installation-job-save-route-v1.js": "64d6137600261d22397ff348f72a60eb908d5d4b",
+    "crm/v4/assets/v4/installation-job-staging-transport-v1.js": "a4f265fe53c438095ebcbc7b58d22e90e551c057",
+    "crm/v4/assets/v4/installation-job-staging-read-transport-v1.js": "b5ebf2a0b05404b639b63b7f8aae27c3574464ce",
+    "crm/v4/assets/v4/installation-job-card-v2.js": "1c360e08ce954d7879bc075bc203d3fd406db0ae",
+    "crm/v4/index.html": "404719b0338c4fc6d5c8b0cd5f5b85e06d902973"
+  },
+  "generated_outputs": [
+    "crm/v4/assets/v4/installation-job-save-route-v2.js",
+    "crm/v4/assets/v4/installation-job-production-transport-v1.js",
+    "crm/v4/assets/v4/installation-job-production-read-transport-v1.js",
+    "crm/v4/assets/v4/installation-job-card-v3.js",
+    "crm/v4/index.html"
+  ],
+  "route": {
+    "mode": "production_edge",
+    "exact_hostname_only": true,
+    "atomic": true,
+    "browser_direct_read": false,
+    "browser_direct_write": false,
+    "comments_write_enabled": false,
+    "wrong_environment": "production_locked"
+  },
+  "read_transport": {
+    "action": "installation_job.read",
+    "permission": "installation.read",
+    "function_slug": "leader-crm-installation",
+    "requires_session_access_token": true,
+    "browser_table_reads": false,
+    "privacy_safe_bundle": true
+  },
+  "write_transport": {
+    "action": "installation_job.update",
+    "permission": "installation.write",
+    "function_slug": "leader-crm-installation",
+    "requires_session_access_token": true,
+    "expected_updated_at_precision": "preserve_exact_postgresql_string",
+    "idempotency_key_required": true,
+    "browser_table_writes": false,
+    "server_owned_fields_excluded": true
+  },
+  "card": {
+    "source": "crm/v4/assets/v4/installation-job-card-v2.js",
+    "candidate": "crm/v4/assets/v4/installation-job-card-v3.js",
+    "read_path": "production_edge_only",
+    "write_path": "production_edge_only",
+    "direct_browser_fallback_removed": true,
+    "comments": "read_only_until_separate_server_action",
+    "costs_hidden_in_edge_projection": true
+  },
+  "loader": {
+    "source": "crm/v4/index.html",
+    "current_script": "assets/v4/installation-job-card-v2.js?v=20260622-1",
+    "candidate_script": "assets/v4/installation-job-card-v3.js?v=20260723-production-edge-candidate-1",
+    "working_index_changed": false
+  },
+  "dependencies": {
+    "rbac_receipts_contract": "contracts/crm-installation-production-rbac-receipts-candidate-v1.json",
+    "rpc_contract": "contracts/crm-installation-production-rpc-candidate-v1.json",
+    "edge_contract": "contracts/crm-installation-production-edge-candidate-v1.json",
+    "required_before_cutover": [
+      "production RBAC/receipts migration applied and postflight passed",
+      "production read RPC applied and postflight passed",
+      "production update RPC applied and postflight passed",
+      "leader-crm-installation production Edge deployed with verify_jwt=true",
+      "authenticated production smoke passed",
+      "rollback packages available"
+    ]
+  },
+  "approval_gate": {
+    "source_candidate_merge": true,
+    "production_frontend_switch_requires_explicit_approval": true,
+    "approved": false
+  },
+  "rollback": {
+    "loader_switch_only": "restore installation-job-card-v2.js script in crm/v4/index.html",
+    "candidate_files_can_remain_unused": true,
+    "database_or_edge_rollback_not_in_this_layer": true
+  }
+}
