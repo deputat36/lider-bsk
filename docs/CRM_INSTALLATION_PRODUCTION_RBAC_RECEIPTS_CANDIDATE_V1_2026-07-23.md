@@ -71,7 +71,7 @@ Browser-роли не получают `EXECUTE`. Публичный bridge до
 - неактивный профиль — deny;
 - пустой actor/action — deny;
 - browser-supplied role не принимается;
-- применение на staging блокируется наличием `leader_staging.environment_guard`;
+- применение на staging блокируется наличием `leader_staging.environment_guard` и кодом `production_candidate_rejected_on_staging`;
 - повторная установка поверх существующих объектов блокируется.
 
 ## Не входит в кандидат
@@ -151,9 +151,9 @@ Rollback сам блокируется, если:
 
 - существует `leader_read_installation_job_rpc`;
 - существует `leader_update_installation_job_rpc`;
-- receipts table не пуста.
+- receipts table не пуста; точный stop code — `command_receipts_not_empty`.
 
-Rollback удаляет только четыре объекта этого кандидата. `leader_private` schema и любые сторонние объекты сохраняются. Не выполнять broad schema drop.
+Rollback удаляет только четыре объекта этого кандидата. `leader_private` schema и любые сторонние объекты сохраняются. не выполнять broad schema drop.
 
 ## Production boundary
 
