@@ -32,15 +32,17 @@ deployment = json.loads(paths['deployment'].read_text(encoding='utf-8'))
 texts = {name: path.read_text(encoding='utf-8') for name, path in paths.items() if name not in {'matrix_contract', 'deployment'}}
 all_actions = set(matrix['all_actions'])
 
+if deployment.get('version') != 2:
+    errors.append('Deployment contract version must be 2')
 if deployment.get('project_ref') != 'otulfnouybahfnsycxqn' or deployment.get('environment') != 'staging':
     errors.append('Deployment contract must target the isolated staging project')
-if deployment.get('execution_order') != ['parse_body', 'authenticate_user', 'resolve_action', 'check_permissions', 'forward_to_implementation']:
+if deployment.get('execution_order') != ['parse_body', 'authenticate_user', 'resolve_action', 'check_permissions', 'optional_execute', 'forward_to_implementation']:
     errors.append('JWT-first execution order drift')
 if deployment.get('production_deployment') != 'not_performed_requires_explicit_approval':
     errors.append('Production deployment boundary drift')
 
 expected_functions = {
-    'leader-crm-leads-staging': (3, 'e64036306fefff72bcb457f0f64756bcf40f27cc406e695e3f3d4c76d2b1b4d1'),
+    'leader-crm-leads-staging': (4, '6ee051d0c8db9154c87bdd3b49b1d60b8bf27f6407c9a2843403886b4999868a'),
     'leader-crm-leads-staging-impl': (1, 'b3e864d49e4529d6c112ce70185337e71484bfa833676031dfa28e1fb21fe1bd'),
     'leader-crm-orders': (3, 'dccbd8ec3c57cdd58db269e6808f86cdc99f4416ae41eca8b6df24a284649646'),
     'leader-crm-orders-impl': (1, '7ba9f9b59790b0c683a7d3cc64ccfc27fc42c9ea24c9f009a8b064554c5831d7'),
@@ -51,6 +53,22 @@ for slug, (version, digest) in expected_functions.items():
         errors.append(f'Deployed version/hash drift for {slug}')
     if entry.get('verify_jwt') is not True or entry.get('status') != 'ACTIVE':
         errors.append(f'{slug} must remain ACTIVE with verify_jwt=true')
+
+lead_entry = deployment.get('functions', {}).get('leader-crm-leads-staging', {})
+if lead_entry.get('workflow_rpc') != 'leader_update_lead_workflow_rpc':
+    errors.append('Leads wrapper workflow RPC evidence drift')
+if lead_entry.get('guarded_fields') != ['status', 'next_contact_at', 'assigned_to']:
+    errors.append('Leads guarded fields evidence drift')
+if lead_entry.get('legacy_non_workflow_delegation') is not True:
+    errors.append('Leads legacy delegation evidence drift')
+
+routing = deployment.get('leads_update_routing', {})
+if routing.get('workflow_target') != 'leader_update_lead_workflow_rpc':
+    errors.append('Leads workflow routing target drift')
+if routing.get('legacy_non_workflow_target') != 'leader-crm-leads-staging-impl':
+    errors.append('Leads legacy routing target drift')
+if routing.get('mixed_fields') != 'deny_before_implementation':
+    errors.append('Leads mixed fields must fail closed')
 
 for action, permissions in deployment.get('leads_mapping', {}).items():
     if action != 'ensure_profile':
@@ -92,6 +110,8 @@ for marker in [
     '/rest/v1/rpc/leader_actor_has_crm_action_rpc',
     "error: 'unknown_action'",
     "error: 'forbidden'",
+    "typeof options.execute === 'function'",
+    'if (handled instanceof Response) return handled',
     'forwardToImplementation(',
     'X-CRM-Implementation',
 ]:
@@ -101,17 +121,27 @@ positions = {
     'auth': wrapper.find('const auth = await authenticatedUser'),
     'plan': wrapper.find('const plan = options.plan'),
     'permission': wrapper.find('const decision = await hasCanonicalPermission'),
+    'execute': wrapper.find("typeof options.execute === 'function'"),
     'forward': wrapper.find('return await forwardToImplementation'),
 }
-if not (0 <= positions['auth'] < positions['plan'] < positions['permission'] < positions['forward']):
+if not (0 <= positions['auth'] < positions['plan'] < positions['permission'] < positions['execute'] < positions['forward']):
     errors.append(f'Edge authorization order is unsafe: {positions}')
 if 'profile?.role' in wrapper or 'body.role' in wrapper or 'p_role' in wrapper:
     errors.append('Wrapper must never trust a browser-supplied role')
 
-for name, slug in [('leads', 'leader-crm-leads-staging-impl'), ('orders', 'leader-crm-orders-impl')]:
-    if slug not in texts[name] or 'runCanonicalEdgeWrapper' not in texts[name]:
-        errors.append(f'{name} wrapper does not target the preserved implementation')
+for marker in [
+    "const WORKFLOW_FIELDS = Object.freeze(['status', 'next_contact_at', 'assigned_to'])",
+    'workflow_fields_must_be_separate',
+    '/rest/v1/rpc/leader_update_lead_workflow_rpc',
+    "action: 'lead_workflow.update'",
+    'execute: executeLeadWorkflow',
+    "implementationSlug: 'leader-crm-leads-staging-impl'",
+]:
+    if marker not in texts['leads']:
+        errors.append(f'Missing leads v4 workflow marker: {marker}')
 
+if 'leader-crm-orders-impl' not in texts['orders'] or 'runCanonicalEdgeWrapper' not in texts['orders']:
+    errors.append('Orders wrapper does not target the preserved implementation')
 if '17524ea9ef08c11b18b385b9469778d5b1084ddb' not in texts['leads_impl']:
     errors.append('Leads implementation pin drift')
 if '4dafa2723c1018574572d9a91441cf382ac25b34' not in texts['orders_impl']:
@@ -128,10 +158,11 @@ for marker in [
 
 for marker in [
     'JWT-first',
-    'leader-crm-leads-staging v3',
+    'leader-crm-leads-staging v4',
     'leader-crm-orders v3',
+    'optional execute',
+    'leader_update_lead_workflow_rpc',
     'synthetic profiles после rollback = 0',
-    'реальный user-JWT запрос не выполнялся',
     'Production boundary',
     'production Edge deploy',
 ]:
@@ -150,7 +181,7 @@ for marker in [
 production_candidates = []
 for path in (root / 'supabase/migrations').glob('*.sql'):
     lowered = path.name.lower()
-    if 'actor_action_permission_rpc' in lowered or 'edge_action_gate' in lowered:
+    if 'actor_action_permission_rpc' in lowered or 'edge_action_gate' in lowered or 'lead_workflow_update_rpc' in lowered:
         production_candidates.append(path.name)
 if production_candidates:
     errors.append('Staging Edge gate SQL appeared in production migrations: ' + ', '.join(production_candidates))
