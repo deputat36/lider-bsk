@@ -1,0 +1,86 @@
+{
+  "contract": "crm-lead-work-quick-filters",
+  "version": 1,
+  "captured_at": "2026-07-23",
+  "repository": "deputat36/lider-bsk",
+  "issue": 444,
+  "status": "frontend_read_only_ready",
+  "production_snapshot": {
+    "read_only": true,
+    "total_leads": 13,
+    "new": 3,
+    "overdue_contact": 8,
+    "no_next_contact_active": 2,
+    "needs_calculation": 1,
+    "offer_waiting": 3
+  },
+  "filters": [
+    {
+      "key": "Новая",
+      "label": "Новые",
+      "source": "leader_leads.status"
+    },
+    {
+      "key": "overdue_contact",
+      "label": "Просрочен контакт",
+      "source": "leader_leads.next_contact_at"
+    },
+    {
+      "key": "no_next_contact",
+      "label": "Без следующего контакта",
+      "source": "leader_leads.next_contact_at"
+    },
+    {
+      "key": "needs_calculation",
+      "label": "Нужен расчёт",
+      "source": "lead status plus current calculation index",
+      "rule": "Нужно пересчитать OR ((В работе OR Уточнение деталей) AND no current calculation)"
+    },
+    {
+      "key": "offer_waiting",
+      "label": "КП ждёт ответа",
+      "source": "lead status plus sent offer index",
+      "rule": "КП отправлено OR Ждём ответ OR linked offer status Отправлено"
+    }
+  ],
+  "reads": {
+    "lead_source": "existing crm/v4/assets/v4/leads.js",
+    "calculation_table": "leader_lead_calculations",
+    "calculation_fields": ["lead_id", "status", "is_current_revision"],
+    "offer_table": "leader_commercial_offers",
+    "offer_fields": ["lead_id", "status"],
+    "lead_ids_limited_to_loaded_list": true,
+    "row_limit_each": 500,
+    "permission_checks": ["calculations.read", "offers.read"]
+  },
+  "failure_behavior": {
+    "main_lead_list_remains_available": true,
+    "lead_only_filters_remain_available": true,
+    "workflow_dependent_filters_disabled": true,
+    "advanced_filter_resets_to_active_on_read_failure": true
+  },
+  "interaction": {
+    "active_button_aria_pressed": true,
+    "click_active_filter_resets_to_active": true,
+    "source_search_and_sort_still_apply": true,
+    "mobile_layout": true,
+    "database_mutation": false
+  },
+  "files": {
+    "model": "crm/v4/assets/v4/lead-work-quick-filters-v1.js",
+    "ui": "crm/v4/assets/v4/lead-work-quick-filters-ui-v1.js",
+    "css": "crm/v4/assets/v4/lead-work-quick-filters-v1.css",
+    "loader": "crm/v4/assets/v4/lead-analytics-badges-v1.js",
+    "test": "tools/test_lead_work_quick_filters.mjs",
+    "checker": "tools/check_crm_lead_work_quick_filters.py"
+  },
+  "production_boundary": {
+    "production_ddl": false,
+    "production_dml": false,
+    "edge_deploy": false,
+    "auth_changed": false,
+    "rls_or_grants_changed": false,
+    "storage_changed": false,
+    "nav_changed": false
+  }
+}
