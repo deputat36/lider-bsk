@@ -1,0 +1,104 @@
+{
+  "contract": "crm-staging-lead-workflow-command",
+  "version": 1,
+  "captured_at": "2026-07-23",
+  "repository": "deputat36/lider-bsk",
+  "environment": "staging",
+  "project_ref": "otulfnouybahfnsycxqn",
+  "database": {
+    "migration_version": "20260723153001",
+    "migration_name": "staging_lead_workflow_update_rpc_20260723",
+    "source": "supabase/staging-migrations/20260723_01_lead_workflow_update_rpc.sql",
+    "acceptance": "supabase/staging-tests/20260723_lead_workflow_update_acceptance.sql",
+    "rpc": "public.leader_update_lead_workflow_rpc(jsonb)",
+    "rpc_md5": "6236711baa1a4ba45c9724fb2fe2d2a4",
+    "rpc_bytes": 12510,
+    "security_invoker": true,
+    "empty_search_path": true,
+    "execute_grantees": ["service_role"]
+  },
+  "edge": {
+    "slug": "leader-crm-leads-staging",
+    "version": 4,
+    "status": "ACTIVE",
+    "verify_jwt": true,
+    "sha256": "6ee051d0c8db9154c87bdd3b49b1d60b8bf27f6407c9a2843403886b4999868a",
+    "implementation_slug": "leader-crm-leads-staging-impl",
+    "preserved_implementation_version": 1,
+    "workflow_rpc_header": "leader_update_lead_workflow_rpc"
+  },
+  "workflow": {
+    "edge_action": "update",
+    "rpc_action": "lead_workflow.update",
+    "canonical_permission": "leads.update",
+    "guarded_fields": ["status", "next_contact_at", "assigned_to"],
+    "legacy_delegated_fields": ["lead_quality", "estimated_amount", "message", "reject_reason"],
+    "mixed_workflow_and_legacy_fields": "fail_closed",
+    "requires_request_id": true,
+    "requires_expected_updated_at": true,
+    "requires_idempotency_key": true,
+    "self_assignment_only": true,
+    "takeover_of_other_assignee": false,
+    "working_statuses_require_assignee": [
+      "В работе",
+      "Уточнение деталей",
+      "Расчёт подготовлен",
+      "КП отправлено",
+      "Ждём ответ",
+      "Нужно пересчитать",
+      "Согласовано"
+    ],
+    "future_contact_statuses": ["КП отправлено", "Ждём ответ"]
+  },
+  "atomicity": {
+    "lead_update": true,
+    "lead_event_insert": true,
+    "receipt_insert_and_complete": true,
+    "lead_row_lock": true,
+    "idempotency_advisory_lock": true,
+    "request_id_advisory_lock": true,
+    "optimistic_concurrency": true,
+    "idempotent_replay": true
+  },
+  "acceptance": {
+    "assignee_required": true,
+    "accountant_forbidden": true,
+    "other_employee_assignment_forbidden": true,
+    "self_assignment_success": true,
+    "future_contact_required": true,
+    "future_contact_success": true,
+    "stale_conflict": true,
+    "replay_without_duplicate_event": true,
+    "successful_events": 2,
+    "successful_receipts": 2,
+    "outer_transaction": "ROLLBACK"
+  },
+  "postflight": {
+    "lead_rows": 0,
+    "lead_event_rows": 0,
+    "workflow_receipts": 0,
+    "anon_execute": false,
+    "authenticated_execute": false,
+    "service_role_execute": true,
+    "new_security_error_or_warn": false,
+    "performance_info_only": true,
+    "runtime_user_jwt_smoke_completed": false
+  },
+  "frontend": {
+    "production_card_switched": false,
+    "staging_card_switched": false,
+    "current_production_path": "direct_browser_write",
+    "next_gate": "separate staging frontend transport and authenticated smoke"
+  },
+  "production_boundary": {
+    "project_ref": "ofewxuqfjhamgerwzull",
+    "workflow_rpc_exists": false,
+    "workflow_migration_exists": false,
+    "receipts_table_exists": false,
+    "lead_rows_read_only_snapshot": 13,
+    "edge_deployed": false,
+    "database_changed": false,
+    "frontend_changed": false,
+    "explicit_approval_required": true
+  }
+}
