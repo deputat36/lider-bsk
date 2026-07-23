@@ -1,0 +1,88 @@
+name: CRM installation production RPC candidate check
+
+on:
+  pull_request:
+    paths:
+      - 'tools/generate_crm_installation_production_rpc_candidate.py'
+      - 'tools/check_crm_installation_production_rpc_candidate.py'
+      - 'contracts/crm-installation-production-rpc-candidate-v1.json'
+      - 'contracts/crm-installation-production-rbac-receipts-candidate-v1.json'
+      - 'contracts/crm-staging-installation-runtime-smoke-v1.json'
+      - 'contracts/crm-staging-installation-frontend-transport-v1.json'
+      - 'supabase/staging-migrations/20260722_06_installation_read_rpc_main_reconcile.sql'
+      - 'supabase/staging-migrations/20260721_06_installation_job_update_rpc.sql'
+      - 'supabase/production-candidates/rollback/20260723_02_03_installation_rpc_candidate_rollback.sql'
+      - 'docs/CRM_INSTALLATION_PRODUCTION_RPC_CANDIDATE_V1_2026-07-23.md'
+      - 'crm/v4/assets/v4/installation-job-save-route-v1.js'
+      - '.github/workflows/crm-installation-production-rpc-candidate-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/generate_crm_installation_production_rpc_candidate.py'
+      - 'tools/check_crm_installation_production_rpc_candidate.py'
+      - 'contracts/crm-installation-production-rpc-candidate-v1.json'
+      - 'contracts/crm-installation-production-rbac-receipts-candidate-v1.json'
+      - 'contracts/crm-staging-installation-runtime-smoke-v1.json'
+      - 'contracts/crm-staging-installation-frontend-transport-v1.json'
+      - 'supabase/staging-migrations/20260722_06_installation_read_rpc_main_reconcile.sql'
+      - 'supabase/staging-migrations/20260721_06_installation_job_update_rpc.sql'
+      - 'supabase/production-candidates/rollback/20260723_02_03_installation_rpc_candidate_rollback.sql'
+      - 'docs/CRM_INSTALLATION_PRODUCTION_RPC_CANDIDATE_V1_2026-07-23.md'
+      - 'crm/v4/assets/v4/installation-job-save-route-v1.js'
+      - '.github/workflows/crm-installation-production-rpc-candidate-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate JSON syntax
+        run: |
+          python3 -m json.tool contracts/crm-installation-production-rpc-candidate-v1.json >/dev/null
+          python3 -m json.tool contracts/crm-installation-production-rbac-receipts-candidate-v1.json >/dev/null
+          python3 -m json.tool contracts/crm-staging-installation-runtime-smoke-v1.json >/dev/null
+          python3 -m json.tool contracts/crm-staging-installation-frontend-transport-v1.json >/dev/null
+
+      - name: Compile generator and checker
+        run: |
+          python3 -m py_compile tools/generate_crm_installation_production_rpc_candidate.py
+          python3 -m py_compile tools/check_crm_installation_production_rpc_candidate.py
+
+      - name: Generate production RPC candidate SQL
+        run: python3 tools/generate_crm_installation_production_rpc_candidate.py
+
+      - name: Validate deterministic source-only candidate
+        id: candidate_check
+        continue-on-error: true
+        run: |
+          python3 tools/check_crm_installation_production_rpc_candidate.py \
+            >installation-production-rpc-candidate-diagnostics.txt 2>&1
+
+      - name: Upload generated SQL artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: installation-production-rpc-candidate-sql
+          path: build/installation-production-rpc-candidate/*.sql
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload candidate diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: installation-production-rpc-candidate-diagnostics
+          path: installation-production-rpc-candidate-diagnostics.txt
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Fail on candidate drift
+        if: steps.candidate_check.outcome != 'success'
+        run: |
+          cat installation-production-rpc-candidate-diagnostics.txt
+          exit 1

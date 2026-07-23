@@ -1,0 +1,133 @@
+{
+  "contract": "crm-installation-production-rpc-candidate",
+  "version": 1,
+  "captured_at": "2026-07-23",
+  "repository": "deputat36/lider-bsk",
+  "issue": 423,
+  "status": "source_only_generator_ready_not_applied",
+  "production": {
+    "project_ref": "ofewxuqfjhamgerwzull",
+    "database_changed": false,
+    "edge_deployed": false,
+    "frontend_switched": false,
+    "auth_changed": false,
+    "data_changed": false,
+    "nav_changed": false
+  },
+  "dependency": {
+    "rbac_receipts_contract": "contracts/crm-installation-production-rbac-receipts-candidate-v1.json",
+    "rbac_receipts_candidate_merged": true,
+    "rbac_receipts_applied_to_production": false,
+    "required_before_rpc_apply": true
+  },
+  "generator": {
+    "source": "tools/generate_crm_installation_production_rpc_candidate.py",
+    "output_directory": "build/installation-production-rpc-candidate",
+    "outputs": [
+      "20260723_02_installation_read_rpc_candidate.sql",
+      "20260723_03_installation_update_rpc_candidate.sql"
+    ],
+    "deterministic": true,
+    "business_body_unchanged": true,
+    "staging_guard_removed_only_before_function_body": true,
+    "production_preflight_added": true
+  },
+  "sources": {
+    "read": {
+      "path": "supabase/staging-migrations/20260722_06_installation_read_rpc_main_reconcile.sql",
+      "git_blob_sha": "f001cec60245f1f48b8a0b71b8651fa84c6c4a6a",
+      "body_marker": "create or replace function public.leader_read_installation_job_rpc("
+    },
+    "update": {
+      "path": "supabase/staging-migrations/20260721_06_installation_job_update_rpc.sql",
+      "git_blob_sha": "700728bbead1fb9270390aafb50cfe26816767cd",
+      "body_marker": "create or replace function leader_private.leader_installation_command_error("
+    }
+  },
+  "validated_staging_runtime": {
+    "edge": {
+      "slug": "leader-crm-installation",
+      "version": 2,
+      "verify_jwt": true,
+      "sha256": "24183605aad2c5cfcc84ebe14c348dcfce1b68de41a43dcfb973f65cef8cb369"
+    },
+    "read_rpc": {
+      "signature": "public.leader_read_installation_job_rpc(uuid,uuid)",
+      "md5": "5a353818606012d0e657a83f133723b6",
+      "bytes": 5432,
+      "security_invoker": true,
+      "empty_search_path": true
+    },
+    "update_rpc": {
+      "signature": "public.leader_update_installation_job_rpc(jsonb)",
+      "md5": "0ed4669197dac1f2695e763d0eec54e1",
+      "bytes": 19061,
+      "security_invoker": true,
+      "empty_search_path": true
+    },
+    "runtime_user_jwt_smoke_completed": true,
+    "authenticated_browser_ui_smoke_completed": true,
+    "cleanup_completed": true
+  },
+  "generated_read_candidate": {
+    "action": "installation_job.read",
+    "permission": "installation.read",
+    "service_role_execute_only": true,
+    "privacy_projection": true,
+    "client_contacts_excluded": true,
+    "financial_fields_excluded": true,
+    "internal_comments_excluded": true,
+    "items_limit": 120,
+    "events_limit": 30,
+    "comments_limit": 20
+  },
+  "generated_update_candidate": {
+    "action": "installation_job.update",
+    "permission": "installation.write",
+    "service_role_execute_only": true,
+    "atomic": true,
+    "idempotent": true,
+    "optimistic_concurrency": true,
+    "row_locks": true,
+    "status_transition_registry": true,
+    "server_owned_fields_excluded": true,
+    "linked_order_updated": true,
+    "single_event_inserted": true,
+    "extensions_digest_required": true
+  },
+  "production_preflight": {
+    "rejects_staging_environment_guard": true,
+    "requires_rbac_matrix": true,
+    "requires_actor_permission_function": true,
+    "requires_actor_permission_rpc": true,
+    "requires_command_receipts": true,
+    "requires_expected_public_columns": true,
+    "rejects_existing_target_rpc": true,
+    "update_requires_read_rpc_first": true
+  },
+  "rollback": {
+    "source": "supabase/production-candidates/rollback/20260723_02_03_installation_rpc_candidate_rollback.sql",
+    "requires_explicit_approval": true,
+    "blocked_if_installation_receipts_exist": true,
+    "preserves_rbac_core": true,
+    "preserves_receipts_table": true,
+    "preserves_public_tables_and_data": true,
+    "broad_schema_drop": false
+  },
+  "excluded": {
+    "edge_deploy": true,
+    "frontend_switch": true,
+    "auth_or_fixture_mutation": true,
+    "staging_bootstrap": true,
+    "pg_net_transport": true,
+    "design_calculation_offer_logic": true,
+    "nav_changes": true
+  },
+  "approval_gates": {
+    "generate_candidate_artifacts": false,
+    "production_database_apply": true,
+    "production_edge_deploy": true,
+    "production_frontend_switch": true,
+    "production_browser_smoke": true
+  }
+}
