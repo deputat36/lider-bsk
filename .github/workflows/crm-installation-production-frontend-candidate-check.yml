@@ -1,0 +1,97 @@
+name: CRM installation production frontend candidate check
+
+on:
+  pull_request:
+    paths:
+      - 'tools/generate_crm_installation_production_frontend_candidate.py'
+      - 'tools/check_crm_installation_production_frontend_candidate.py'
+      - 'contracts/crm-installation-production-frontend-candidate-v1.json'
+      - 'contracts/crm-installation-production-rbac-receipts-candidate-v1.json'
+      - 'contracts/crm-installation-production-rpc-candidate-v1.json'
+      - 'contracts/crm-installation-production-edge-candidate-v1.json'
+      - 'docs/CRM_INSTALLATION_PRODUCTION_FRONTEND_CANDIDATE_V1_2026-07-23.md'
+      - 'crm/v4/assets/v4/installation-job-save-route-v1.js'
+      - 'crm/v4/assets/v4/installation-job-staging-transport-v1.js'
+      - 'crm/v4/assets/v4/installation-job-staging-read-transport-v1.js'
+      - 'crm/v4/assets/v4/installation-job-card-v2.js'
+      - 'crm/v4/index.html'
+      - '.github/workflows/crm-installation-production-frontend-candidate-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/generate_crm_installation_production_frontend_candidate.py'
+      - 'tools/check_crm_installation_production_frontend_candidate.py'
+      - 'contracts/crm-installation-production-frontend-candidate-v1.json'
+      - 'contracts/crm-installation-production-rbac-receipts-candidate-v1.json'
+      - 'contracts/crm-installation-production-rpc-candidate-v1.json'
+      - 'contracts/crm-installation-production-edge-candidate-v1.json'
+      - 'docs/CRM_INSTALLATION_PRODUCTION_FRONTEND_CANDIDATE_V1_2026-07-23.md'
+      - 'crm/v4/assets/v4/installation-job-save-route-v1.js'
+      - 'crm/v4/assets/v4/installation-job-staging-transport-v1.js'
+      - 'crm/v4/assets/v4/installation-job-staging-read-transport-v1.js'
+      - 'crm/v4/assets/v4/installation-job-card-v2.js'
+      - 'crm/v4/index.html'
+      - '.github/workflows/crm-installation-production-frontend-candidate-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate JSON syntax
+        run: |
+          python3 -m json.tool contracts/crm-installation-production-frontend-candidate-v1.json >/dev/null
+          python3 -m json.tool contracts/crm-installation-production-rbac-receipts-candidate-v1.json >/dev/null
+          python3 -m json.tool contracts/crm-installation-production-rpc-candidate-v1.json >/dev/null
+          python3 -m json.tool contracts/crm-installation-production-edge-candidate-v1.json >/dev/null
+
+      - name: Compile generator and checker
+        run: |
+          python3 -m py_compile tools/generate_crm_installation_production_frontend_candidate.py
+          python3 -m py_compile tools/check_crm_installation_production_frontend_candidate.py
+
+      - name: Generate production frontend candidate package
+        run: python3 tools/generate_crm_installation_production_frontend_candidate.py
+
+      - name: Check generated JavaScript syntax
+        run: |
+          node --check build/installation-production-frontend-candidate/crm/v4/assets/v4/installation-job-save-route-v2.js
+          node --check build/installation-production-frontend-candidate/crm/v4/assets/v4/installation-job-production-transport-v1.js
+          node --check build/installation-production-frontend-candidate/crm/v4/assets/v4/installation-job-production-read-transport-v1.js
+          node --check build/installation-production-frontend-candidate/crm/v4/assets/v4/installation-job-card-v3.js
+
+      - name: Validate deterministic server-only frontend candidate
+        id: candidate_check
+        continue-on-error: true
+        run: |
+          python3 tools/check_crm_installation_production_frontend_candidate.py \
+            >installation-production-frontend-candidate-diagnostics.txt 2>&1
+
+      - name: Upload generated frontend package
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: installation-production-frontend-candidate-package
+          path: build/installation-production-frontend-candidate
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload frontend candidate diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: installation-production-frontend-candidate-diagnostics
+          path: installation-production-frontend-candidate-diagnostics.txt
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Fail on frontend candidate drift
+        if: steps.candidate_check.outcome != 'success'
+        run: |
+          cat installation-production-frontend-candidate-diagnostics.txt
+          exit 1
