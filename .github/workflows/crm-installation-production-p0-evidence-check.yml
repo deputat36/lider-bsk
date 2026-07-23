@@ -1,0 +1,69 @@
+name: CRM installation production P0 evidence check
+
+on:
+  pull_request:
+    paths:
+      - 'contracts/crm-installation-production-p0-evidence-v1.json'
+      - 'docs/CRM_INSTALLATION_PRODUCTION_P0_EVIDENCE_V1_2026-07-23.md'
+      - 'supabase/production-preflight/20260723_installation_p0_readonly.sql'
+      - 'tools/check_crm_installation_production_p0_evidence.py'
+      - '.github/workflows/crm-installation-production-p0-evidence-check.yml'
+      - 'contracts/crm-installation-production-rollout-plan-v1.json'
+      - 'contracts/crm-installation-production-rbac-receipts-candidate-v1.json'
+      - 'contracts/crm-installation-production-rpc-candidate-v1.json'
+      - 'contracts/crm-installation-production-edge-candidate-v1.json'
+      - 'contracts/crm-installation-production-frontend-candidate-v1.json'
+      - 'crm/v4/index.html'
+  push:
+    branches: [main]
+    paths:
+      - 'contracts/crm-installation-production-p0-evidence-v1.json'
+      - 'docs/CRM_INSTALLATION_PRODUCTION_P0_EVIDENCE_V1_2026-07-23.md'
+      - 'supabase/production-preflight/20260723_installation_p0_readonly.sql'
+      - 'tools/check_crm_installation_production_p0_evidence.py'
+      - '.github/workflows/crm-installation-production-p0-evidence-check.yml'
+      - 'contracts/crm-installation-production-rollout-plan-v1.json'
+      - 'contracts/crm-installation-production-rbac-receipts-candidate-v1.json'
+      - 'contracts/crm-installation-production-rpc-candidate-v1.json'
+      - 'contracts/crm-installation-production-edge-candidate-v1.json'
+      - 'contracts/crm-installation-production-frontend-candidate-v1.json'
+      - 'crm/v4/index.html'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate contract JSON
+        run: python3 -m json.tool contracts/crm-installation-production-p0-evidence-v1.json >/dev/null
+
+      - name: Compile checker
+        run: python3 -m py_compile tools/check_crm_installation_production_p0_evidence.py
+
+      - name: Validate read-only P0 evidence and locked P1 gate
+        run: |
+          set +e
+          python3 tools/check_crm_installation_production_p0_evidence.py >p0-evidence-check.log 2>&1
+          status=$?
+          cat p0-evidence-check.log
+          echo "$status" >p0-evidence-check.status
+          exit 0
+
+      - name: Upload P0 diagnostics
+        uses: actions/upload-artifact@v4
+        with:
+          name: installation-production-p0-evidence-diagnostics
+          path: |
+            p0-evidence-check.log
+            p0-evidence-check.status
+            contracts/crm-installation-production-p0-evidence-v1.json
+            supabase/production-preflight/20260723_installation_p0_readonly.sql
+          retention-days: 7
+
+      - name: Fail on P0 evidence drift
+        run: |
+          test "$(cat p0-evidence-check.status)" = "0"
