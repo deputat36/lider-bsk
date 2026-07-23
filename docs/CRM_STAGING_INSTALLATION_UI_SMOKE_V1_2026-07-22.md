@@ -182,7 +182,7 @@ Email, пароль, JWT, Authorization, API keys, телефоны, клиен�
 - smoke state rows: `0`;
 - temporary fixture RPC/table: отсутствуют.
 
-Все счётчики `0`, временные Auth-пользователи, fixtures, receipts и server-side harness удалены.
+Проверка подтверждает: все счётчики `0`, временные Auth-пользователи, fixtures, receipts и server-side harness удалены.
 
 RPC fingerprints:
 
