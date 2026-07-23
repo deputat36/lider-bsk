@@ -17,7 +17,8 @@ Migration:
 
 - version `20260723153001`;
 - name `staging_lead_workflow_update_rpc_20260723`;
-- source `supabase/staging-migrations/20260723_01_lead_workflow_update_rpc.sql`.
+- source `supabase/staging-migrations/20260723_01_lead_workflow_update_rpc.sql`;
+- rollback source `supabase/staging-rollbacks/20260723_01_lead_workflow_update_rpc_rollback.sql`.
 
 ## Правила
 
@@ -91,6 +92,22 @@ Rollback-safe acceptance подтвердил:
 Acceptance source:
 
 `supabase/staging-tests/20260723_lead_workflow_update_acceptance.sql`
+
+## Rollback
+
+Rollback source:
+
+`supabase/staging-rollbacks/20260723_01_lead_workflow_update_rpc_rollback.sql`
+
+Он работает fail closed:
+
+- проверяет exact staging environment guard;
+- отказывается удалять RPC, если существует хотя бы один receipt `lead_workflow.update`;
+- удаляет только workflow RPC и её приватные helpers;
+- не изменяет preserved legacy implementation;
+- не удаляет заявки, события или другие бизнес-данные.
+
+Для Edge rollback отдельно разворачивается leads wrapper v3; database rollback выполняется только после проверки нулевых receipts.
 
 ## Postflight
 
