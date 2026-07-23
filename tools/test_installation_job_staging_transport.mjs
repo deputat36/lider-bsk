@@ -10,7 +10,7 @@ import {
 const stagingUrl = 'https://otulfnouybahfnsycxqn.supabase.co';
 const job = { id: '11111111-1111-4111-8111-111111111111' };
 const requestId = '22222222-2222-4222-8222-222222222222';
-const expectedUpdatedAt = '2026-07-21T20:00:00.000Z';
+const expectedUpdatedAt = '2026-07-21T20:00:00.123456+00:00';
 const idempotencyKey = `installation-job:${job.id}:${requestId}`;
 const patch = {
   title: ' Монтаж вывески ',
@@ -39,6 +39,7 @@ assert.equal(installationStagingTransportAvailability({ supabaseUrl: 'https://of
 
 const command = buildStagingInstallationJobCommand({ job, patch, expectedUpdatedAt, requestId, idempotencyKey });
 assert.equal(command.action, 'installation_job.update');
+assert.equal(command.expected_updated_at, expectedUpdatedAt);
 assert.equal(command.payload.job_id, job.id);
 assert.equal(command.payload.idempotency_key, idempotencyKey);
 assert.equal(command.payload.patch.title, 'Монтаж вывески');
@@ -83,6 +84,7 @@ const success = await invokeStagingInstallationJob({
 });
 assert.equal(invokedName, 'leader-crm-installation');
 assert.equal(invokedBody.action, 'installation_job.update');
+assert.equal(invokedBody.expected_updated_at, expectedUpdatedAt);
 assert.equal(success.ok, true);
 assert.equal(success.replay, true);
 assert.equal(success.status, 200);

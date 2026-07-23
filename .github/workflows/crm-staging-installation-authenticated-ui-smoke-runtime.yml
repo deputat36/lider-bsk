@@ -1,0 +1,177 @@
+name: CRM staging installation authenticated UI smoke runtime
+
+on:
+  push:
+    branches:
+      - fix/staging-installation-read-rpc-drift-v1
+    paths:
+      - 'tools/run-authenticated-installation-ui-smoke-once-20260722.txt'
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: staging-installation-authenticated-ui-smoke
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      STAGING_SUPABASE_URL: https://otulfnouybahfnsycxqn.supabase.co
+      STAGING_SUPABASE_PUBLISHABLE_KEY: sb_publishable_iRCLPHgRaI5SNo9h4efMQw_W7Kdby1D
+      BOOTSTRAP_URL: https://otulfnouybahfnsycxqn.supabase.co/functions/v1/leader-staging-installation-ui-smoke-bootstrap
+      OIDC_AUDIENCE: leader-staging-installation-ui-smoke
+      STAGING_INSTALLATION_UI_SMOKE_CONFIRM: YES_USE_EXISTING_SYNTHETIC_FIXTURES
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate source runner plan
+        run: |
+          set -euo pipefail
+          node --check tools/run_crm_staging_installation_ui_smoke.mjs
+          node tools/run_crm_staging_installation_ui_smoke.mjs --mode=plan \
+            > "${RUNNER_TEMP}/installation-ui-smoke-plan.json"
+          jq -e '.project_ref == "otulfnouybahfnsycxqn" and .production_enabled == false and .mutation_count_expected == 1' \
+            "${RUNNER_TEMP}/installation-ui-smoke-plan.json" >/dev/null
+
+      - name: Prepare ephemeral staging fixture with GitHub OIDC
+        id: prepare
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          PREPARE_FILE="${RUNNER_TEMP}/installation-ui-smoke-prepare.json"
+          OIDC_FILE="${RUNNER_TEMP}/installation-ui-smoke-oidc.json"
+          curl -fsS \
+            -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${OIDC_AUDIENCE}" \
+            > "${OIDC_FILE}"
+          OIDC_TOKEN="$(jq -er '.value' "${OIDC_FILE}")"
+          rm -f "${OIDC_FILE}"
+          HTTP_CODE="$(curl -sS -o "${PREPARE_FILE}" -w '%{http_code}' \
+            -X POST "${BOOTSTRAP_URL}" \
+            -H "Authorization: Bearer ${OIDC_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            --data '{"action":"prepare"}')"
+          unset OIDC_TOKEN
+          if [ "${HTTP_CODE}" != '201' ]; then
+            jq -r '{ok,error}' "${PREPARE_FILE}" >&2 || true
+            exit 1
+          fi
+          jq -e '.ok == true and .action == "prepare" and (.run_key | test("^[0-9]+:[0-9]+$")) and (.job_id | test("^[0-9a-f-]{36}$"))' \
+            "${PREPARE_FILE}" >/dev/null
+          TEST_EMAIL="$(jq -er '.email' "${PREPARE_FILE}")"
+          TEST_PASSWORD="$(jq -er '.password' "${PREPARE_FILE}")"
+          TEST_JOB_ID="$(jq -er '.job_id' "${PREPARE_FILE}")"
+          TEST_ROLE="$(jq -er '.role' "${PREPARE_FILE}")"
+          TEST_STATUS="$(jq -er '.expected_status' "${PREPARE_FILE}")"
+          TEST_RUN_KEY="$(jq -er '.run_key' "${PREPARE_FILE}")"
+          echo "::add-mask::${TEST_EMAIL}"
+          echo "::add-mask::${TEST_PASSWORD}"
+          echo "::add-mask::${TEST_JOB_ID}"
+          {
+            echo "STAGING_INSTALLATION_UI_EMAIL=${TEST_EMAIL}"
+            echo "STAGING_INSTALLATION_UI_PASSWORD=${TEST_PASSWORD}"
+            echo "STAGING_INSTALLATION_UI_JOB_ID=${TEST_JOB_ID}"
+            echo "STAGING_INSTALLATION_UI_ROLE=${TEST_ROLE}"
+            echo "STAGING_INSTALLATION_UI_EXPECTED_STATUS=${TEST_STATUS}"
+            echo "STAGING_INSTALLATION_UI_RUN_KEY=${TEST_RUN_KEY}"
+            echo "STAGING_INSTALLATION_UI_TITLE_SUFFIX= · authenticated UI smoke ${GITHUB_RUN_ID}"
+            echo "STAGING_INSTALLATION_UI_EVIDENCE_PATH=${RUNNER_TEMP}/installation-ui-smoke/evidence.json"
+          } >> "${GITHUB_ENV}"
+
+      - name: Run real installation card in headless Chrome
+        id: ui_smoke
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v google-chrome || command -v chromium || command -v chromium-browser
+          mkdir -p "${RUNNER_TEMP}/installation-ui-smoke"
+          node tools/run_crm_staging_installation_ui_smoke.mjs --mode=run \
+            > "${RUNNER_TEMP}/installation-ui-smoke/runner.log" 2>&1
+          cat "${RUNNER_TEMP}/installation-ui-smoke/runner.log"
+
+      - name: Validate privacy-safe UI evidence
+        id: validate
+        if: steps.ui_smoke.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          EVIDENCE="${RUNNER_TEMP}/installation-ui-smoke/evidence.json"
+          test -f "${EVIDENCE}"
+          jq -e '
+            .status == "passed" and
+            .project_ref == "otulfnouybahfnsycxqn" and
+            .card == "installation-job-card-v2" and
+            .authenticated == true and
+            .edge_notice == true and
+            .privacy_projection == true and
+            .update_via_edge == true and
+            .server_read_back == true and
+            .title_changed == true and
+            .mutation_count == 1 and
+            .cleanup_required == true
+          ' "${EVIDENCE}" >/dev/null
+          if grep -Eqi 'email|password|token|authorization|apikey|api_key|secret|phone|client|cost|profit|payment|balance|comment' "${EVIDENCE}"; then
+            echo 'Forbidden sensitive key found in UI evidence' >&2
+            exit 1
+          fi
+
+      - name: Cleanup Auth user and all staging fixtures
+        id: cleanup
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "${RUNNER_TEMP}/installation-ui-smoke"
+          CLEANUP_FILE="${RUNNER_TEMP}/installation-ui-smoke/cleanup.json"
+          OIDC_FILE="${RUNNER_TEMP}/installation-ui-smoke-cleanup-oidc.json"
+          RUN_KEY="${GITHUB_RUN_ID}:${GITHUB_RUN_ATTEMPT}"
+          curl -fsS \
+            -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${OIDC_AUDIENCE}" \
+            > "${OIDC_FILE}"
+          OIDC_TOKEN="$(jq -er '.value' "${OIDC_FILE}")"
+          rm -f "${OIDC_FILE}"
+          HTTP_CODE="$(curl -sS -o "${CLEANUP_FILE}" -w '%{http_code}' \
+            -X POST "${BOOTSTRAP_URL}" \
+            -H "Authorization: Bearer ${OIDC_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            --data "{\"action\":\"cleanup\",\"run_key\":\"${RUN_KEY}\"}")"
+          unset OIDC_TOKEN
+          rm -f "${RUNNER_TEMP}/installation-ui-smoke-prepare.json"
+          if [ "${HTTP_CODE}" != '200' ]; then
+            jq -r '{ok,error}' "${CLEANUP_FILE}" >&2 || true
+            exit 1
+          fi
+          jq -e '
+            .ok == true and .action == "cleanup" and
+            ([.residue[] | tonumber] | all(. == 0))
+          ' "${CLEANUP_FILE}" >/dev/null
+
+      - name: Upload privacy-safe runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: installation-authenticated-ui-smoke-evidence
+          path: |
+            ${{ runner.temp }}/installation-ui-smoke/evidence.json
+            ${{ runner.temp }}/installation-ui-smoke/cleanup.json
+            ${{ runner.temp }}/installation-ui-smoke/runner.log
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Enforce smoke and cleanup success
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test '${{ steps.prepare.outcome }}' = 'success'
+          test '${{ steps.ui_smoke.outcome }}' = 'success'
+          test '${{ steps.validate.outcome }}' = 'success'
+          test '${{ steps.cleanup.outcome }}' = 'success'

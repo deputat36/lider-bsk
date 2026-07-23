@@ -1,0 +1,8 @@
+One-time authenticated staging installation UI smoke trigger.
+Issue: #442
+Expected branch: fix/staging-installation-read-rpc-drift-v1
+Expected mutation count: 1
+Production enabled: false
+Attempt: 3
+Timestamp precision fix: preserve PostgreSQL microseconds
+OIDC bootstrap: explicit apikey and legacy-only Authorization

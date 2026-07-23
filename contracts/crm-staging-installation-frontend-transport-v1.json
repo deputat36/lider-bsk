@@ -1,9 +1,9 @@
 {
   "contract": "crm-staging-installation-frontend-transport",
-  "version": 2,
+  "version": 3,
   "captured_at": "2026-07-22",
   "repository": "deputat36/lider-bsk",
-  "status": "exact_staging_read_write_wired_production_unchanged",
+  "status": "exact_staging_read_write_browser_smoke_completed_production_unchanged",
   "environment": {
     "staging_project_ref": "otulfnouybahfnsycxqn",
     "allowed_hostname": "otulfnouybahfnsycxqn.supabase.co",
@@ -18,7 +18,9 @@
     "verify_jwt": true,
     "sha256": "24183605aad2c5cfcc84ebe14c348dcfce1b68de41a43dcfb973f65cef8cb369",
     "runtime_user_jwt_smoke_completed": true,
-    "runtime_evidence": "contracts/crm-staging-installation-runtime-smoke-v1.json"
+    "authenticated_browser_ui_smoke_completed": true,
+    "runtime_evidence": "contracts/crm-staging-installation-runtime-smoke-v1.json",
+    "ui_evidence": "contracts/crm-staging-installation-ui-smoke-v1.json"
   },
   "read_transport": {
     "source": "crm/v4/assets/v4/installation-job-staging-read-transport-v1.js",
@@ -43,6 +45,8 @@
     "service_role_in_browser": false,
     "requires_session_access_token": true,
     "requires_expected_updated_at": true,
+    "expected_updated_at_precision": "preserve_exact_postgresql_string",
+    "timestamp_normalization_for_optimistic_lock": false,
     "requires_idempotency_key": true,
     "requires_request_id": true,
     "patch_allowlist": [
@@ -78,15 +82,31 @@
     "production_browser_behavior_changed": false,
     "production_existing_direct_read_write_path_preserved": true
   },
+  "authenticated_ui_smoke": {
+    "completed": true,
+    "workflow_run_id": 29956544804,
+    "role": "installer",
+    "real_card": true,
+    "real_headless_chrome": true,
+    "authenticated": true,
+    "edge_notice": true,
+    "privacy_projection": true,
+    "comments_read_only": true,
+    "single_mutation": true,
+    "server_read_back": true,
+    "title_changed": true,
+    "cleanup_completed": true
+  },
   "tests": {
     "route": "tools/test_installation_job_save_route.mjs",
     "write_transport": "tools/test_installation_job_staging_transport.mjs",
     "read_transport": "tools/test_installation_job_staging_read_transport.mjs",
+    "ui_smoke": "tools/run_crm_staging_installation_ui_smoke.mjs",
     "checker": "tools/check_crm_staging_installation_frontend_transport.py"
   },
   "next_gate": {
-    "authenticated_staging_ui_smoke": true,
-    "synthetic_fixture_cleanup_required": true,
+    "authenticated_staging_ui_smoke": false,
+    "synthetic_fixture_cleanup_required": false,
     "production_rollout_requires_explicit_approval": true
   },
   "production_boundary": {

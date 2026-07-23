@@ -6,12 +6,22 @@ on:
       - 'tools/run_crm_staging_installation_ui_smoke.mjs'
       - 'tools/test_crm_staging_installation_ui_smoke.mjs'
       - 'tools/check_crm_staging_installation_ui_smoke.py'
+      - 'tools/test_installation_job_staging_transport.mjs'
       - 'contracts/crm-staging-installation-ui-smoke-v1.json'
       - 'contracts/crm-staging-installation-frontend-transport-v1.json'
       - 'contracts/crm-staging-installation-runtime-smoke-v1.json'
       - 'docs/CRM_STAGING_INSTALLATION_UI_SMOKE_V1_2026-07-22.md'
       - 'crm/v4/assets/v4/installation-job-card-v2.js'
+      - 'crm/v4/assets/v4/installation-job-staging-transport-v1.js'
       - 'crm/v4/assets/v4/config.js'
+      - 'supabase/staging-migrations/20260722_06_installation_read_rpc_main_reconcile.sql'
+      - 'supabase/staging-migrations/20260722_07_installation_ui_smoke_state.sql'
+      - 'supabase/staging-migrations/20260722_08_installation_ui_smoke_prepare_rpc.sql'
+      - 'supabase/staging-migrations/20260722_09_installation_ui_smoke_cleanup_rpc.sql'
+      - 'supabase/staging-migrations/20260722_10_installation_ui_smoke_inspect_rpc.sql'
+      - 'supabase/staging-migrations/20260722_11_installation_ui_smoke_harness_cleanup.sql'
+      - 'supabase/staging-functions/leader-staging-installation-ui-smoke-bootstrap/**'
+      - '.github/workflows/crm-staging-installation-authenticated-ui-smoke-runtime.yml'
       - '.github/workflows/crm-staging-installation-ui-smoke-check.yml'
   push:
     branches: [main]
@@ -19,12 +29,22 @@ on:
       - 'tools/run_crm_staging_installation_ui_smoke.mjs'
       - 'tools/test_crm_staging_installation_ui_smoke.mjs'
       - 'tools/check_crm_staging_installation_ui_smoke.py'
+      - 'tools/test_installation_job_staging_transport.mjs'
       - 'contracts/crm-staging-installation-ui-smoke-v1.json'
       - 'contracts/crm-staging-installation-frontend-transport-v1.json'
       - 'contracts/crm-staging-installation-runtime-smoke-v1.json'
       - 'docs/CRM_STAGING_INSTALLATION_UI_SMOKE_V1_2026-07-22.md'
       - 'crm/v4/assets/v4/installation-job-card-v2.js'
+      - 'crm/v4/assets/v4/installation-job-staging-transport-v1.js'
       - 'crm/v4/assets/v4/config.js'
+      - 'supabase/staging-migrations/20260722_06_installation_read_rpc_main_reconcile.sql'
+      - 'supabase/staging-migrations/20260722_07_installation_ui_smoke_state.sql'
+      - 'supabase/staging-migrations/20260722_08_installation_ui_smoke_prepare_rpc.sql'
+      - 'supabase/staging-migrations/20260722_09_installation_ui_smoke_cleanup_rpc.sql'
+      - 'supabase/staging-migrations/20260722_10_installation_ui_smoke_inspect_rpc.sql'
+      - 'supabase/staging-migrations/20260722_11_installation_ui_smoke_harness_cleanup.sql'
+      - 'supabase/staging-functions/leader-staging-installation-ui-smoke-bootstrap/**'
+      - '.github/workflows/crm-staging-installation-authenticated-ui-smoke-runtime.yml'
       - '.github/workflows/crm-staging-installation-ui-smoke-check.yml'
 
 permissions:
@@ -33,19 +53,28 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
       - name: Check source syntax
         run: |
           node --check tools/run_crm_staging_installation_ui_smoke.mjs
           node --check tools/test_crm_staging_installation_ui_smoke.mjs
+          node --check crm/v4/assets/v4/installation-job-staging-transport-v1.js
+          node --check tools/test_installation_job_staging_transport.mjs
           python3 -m py_compile tools/check_crm_staging_installation_ui_smoke.py
+          deno check supabase/staging-functions/leader-staging-installation-ui-smoke-bootstrap/index.ts
+          deno check supabase/staging-functions/leader-staging-installation-ui-smoke-bootstrap/oidc-runtime.ts
       - name: Run UI smoke unit tests
         run: node tools/test_crm_staging_installation_ui_smoke.mjs
+      - name: Run timestamp precision regression
+        run: node tools/test_installation_job_staging_transport.mjs
       - name: Verify no-secret plan mode
         run: node tools/run_crm_staging_installation_ui_smoke.mjs --mode=plan > installation-ui-smoke-plan.json
-      - name: Validate UI smoke contract
+      - name: Validate completed UI smoke contract
         id: contract
         continue-on-error: true
         run: python3 tools/check_crm_staging_installation_ui_smoke.py > installation-ui-smoke-check.log 2>&1

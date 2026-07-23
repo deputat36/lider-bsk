@@ -75,16 +75,17 @@ function normalizePatch(value) {
 
 export function buildStagingInstallationJobCommand({ job, patch, expectedUpdatedAt, requestId, idempotencyKey } = {}) {
   const jobObject = asObject(job);
+  const exactExpectedUpdatedAt = text(expectedUpdatedAt);
   if (!jobObject || !uuid(jobObject.id)) throw new Error('job_id_invalid');
   if (!uuid(requestId)) throw new Error('request_id_invalid');
-  if (!text(expectedUpdatedAt) || !Number.isFinite(Date.parse(expectedUpdatedAt))) throw new Error('expected_updated_at_invalid');
+  if (!exactExpectedUpdatedAt || !Number.isFinite(Date.parse(exactExpectedUpdatedAt))) throw new Error('expected_updated_at_invalid');
   const key = text(idempotencyKey);
   if (!key || key.length > 160) throw new Error('idempotency_key_invalid');
 
   return Object.freeze({
     action: ACTION,
     request_id: text(requestId),
-    expected_updated_at: new Date(expectedUpdatedAt).toISOString(),
+    expected_updated_at: exactExpectedUpdatedAt,
     payload: Object.freeze({
       job_id: text(jobObject.id),
       idempotency_key: key,

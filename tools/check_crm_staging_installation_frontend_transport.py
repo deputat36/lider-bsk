@@ -12,6 +12,7 @@ FILES = {
     'card': ROOT / 'crm/v4/assets/v4/installation-job-card-v2.js',
     'contract': ROOT / 'contracts/crm-staging-installation-frontend-transport-v1.json',
     'runtime_contract': ROOT / 'contracts/crm-staging-installation-runtime-smoke-v1.json',
+    'ui_contract': ROOT / 'contracts/crm-staging-installation-ui-smoke-v1.json',
     'doc': ROOT / 'docs/CRM_STAGING_INSTALLATION_FRONTEND_TRANSPORT_V1_2026-07-22.md',
     'route_test': ROOT / 'tools/test_installation_job_save_route.mjs',
     'write_test': ROOT / 'tools/test_installation_job_staging_transport.mjs',
@@ -48,8 +49,12 @@ require('write_transport', [
     "const STAGING_PROJECT_REF = 'otulfnouybahfnsycxqn'",
     "const ACTION = 'installation_job.update'", "const PERMISSION = 'installation.write'",
     'client.auth.getSession()', 'client.functions.invoke(FUNCTION_SLUG, { body: command })',
-    'expected_updated_at', 'idempotency_key', 'patch_field_not_allowed',
+    'const exactExpectedUpdatedAt = text(expectedUpdatedAt)',
+    'expected_updated_at: exactExpectedUpdatedAt',
+    'idempotency_key', 'patch_field_not_allowed',
 ])
+if "expected_updated_at: new Date(expectedUpdatedAt).toISOString()" in texts['write_transport']:
+    errors.append('write transport must not truncate PostgreSQL microseconds')
 require('read_transport', [
     "const STAGING_PROJECT_REF = 'otulfnouybahfnsycxqn'",
     "const ACTION = 'installation_job.read'", "const PERMISSION = 'installation.read'",
@@ -112,13 +117,14 @@ if 'installationStatusTimestampPatch(transition, old, nowIso())' not in card:
 
 try:
     contract = json.loads(texts.get('contract', '{}'))
+    ui_contract = json.loads(texts.get('ui_contract', '{}'))
 except json.JSONDecodeError as exc:
     errors.append(f'Invalid contract JSON: {exc}')
-    contract = {}
+    contract, ui_contract = {}, {}
 
-if contract.get('version') != 2:
-    errors.append('contract version must be 2')
-if contract.get('status') != 'exact_staging_read_write_wired_production_unchanged':
+if contract.get('version') != 3:
+    errors.append('contract version must be 3')
+if contract.get('status') != 'exact_staging_read_write_browser_smoke_completed_production_unchanged':
     errors.append('contract status drifted')
 environment = contract.get('environment', {})
 if environment.get('allowed_hostname') != 'otulfnouybahfnsycxqn.supabase.co':
@@ -130,8 +136,13 @@ if environment.get('production_existing_browser_path_preserved') is not True:
 edge = contract.get('edge', {})
 if edge.get('version') != 2 or edge.get('verify_jwt') is not True:
     errors.append('Edge v2/verify_jwt contract drifted')
-if edge.get('runtime_user_jwt_smoke_completed') is not True:
-    errors.append('runtime user-JWT smoke must be completed before wiring')
+if edge.get('runtime_user_jwt_smoke_completed') is not True or edge.get('authenticated_browser_ui_smoke_completed') is not True:
+    errors.append('runtime and browser smoke must be completed')
+write_contract = contract.get('write_transport', {})
+if write_contract.get('expected_updated_at_precision') != 'preserve_exact_postgresql_string':
+    errors.append('optimistic timestamp precision contract drifted')
+if write_contract.get('timestamp_normalization_for_optimistic_lock') is not False:
+    errors.append('optimistic timestamp normalization must remain false')
 frontend = contract.get('frontend', {})
 if frontend.get('source_wired_to_card') is not True:
     errors.append('contract must state source is wired to card')
@@ -141,10 +152,21 @@ if frontend.get('staging_write_path') != 'single_atomic_edge_action':
     errors.append('staging write path must be a single atomic Edge action')
 if frontend.get('production_browser_behavior_changed') is not False:
     errors.append('production browser behavior must remain unchanged')
+ui_smoke = contract.get('authenticated_ui_smoke', {})
+for key in ['completed', 'real_card', 'real_headless_chrome', 'authenticated', 'edge_notice', 'privacy_projection', 'comments_read_only', 'single_mutation', 'server_read_back', 'title_changed', 'cleanup_completed']:
+    if ui_smoke.get(key) is not True:
+        errors.append(f'authenticated_ui_smoke.{key} must be true')
+if ui_smoke.get('workflow_run_id') != 29956544804:
+    errors.append('authenticated UI workflow run drifted')
 production = contract.get('production_boundary', {})
 for key in ['production_supabase_changed', 'production_frontend_switch', 'production_edge_deploy', 'production_data_changed', 'nav_changed']:
     if production.get(key) is not False:
         errors.append(f'production boundary must keep {key}=false')
+
+if ui_contract.get('status') != 'completed_clean' or ui_contract.get('runtime', {}).get('mutation_count') != 1:
+    errors.append('UI smoke evidence must be completed with one mutation')
+if ui_contract.get('cleanup_postflight', {}).get('auth_users') != 0:
+    errors.append('UI smoke evidence must confirm Auth cleanup')
 
 require('runtime_contract', [
     '"status": "completed_clean"',
@@ -159,6 +181,8 @@ require('route_test', [
     'Installation job save route tests passed.',
 ])
 require('write_test', [
+    '2026-07-21T20:00:00.123456+00:00',
+    'command.expected_updated_at, expectedUpdatedAt',
     'installation_job.update', 'patch_field_not_allowed',
     "kind, 'wrong_environment'", "kind, 'forbidden'",
     'Installation job staging transport tests passed.',
@@ -171,7 +195,8 @@ require('read_test', [
 require('doc', [
     'exact staging URL', 'runtime user-JWT smoke завершён',
     'installation_job.read', 'installation_job.update',
-    'Production не изменялся', 'authenticated staging UI smoke',
+    'микросекунд', 'authenticated staging UI smoke завершён',
+    'Production не изменялся',
 ])
 require('workflow', [
     'node --check crm/v4/assets/v4/installation-job-card-v2.js',
@@ -186,4 +211,4 @@ if errors:
     print('\n'.join(errors), file=sys.stderr)
     raise SystemExit(1)
 
-print('Installation card uses exact-staging Edge read/write, keeps production fallback, and preserves the production boundary.')
+print('Installation card uses exact-staging Edge read/write, preserves PostgreSQL timestamp precision, passes authenticated UI smoke, and keeps production unchanged.')

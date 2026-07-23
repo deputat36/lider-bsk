@@ -1,203 +1,204 @@
-# Authenticated staging UI smoke карточки монтажа v1
+# Authenticated staging UI smoke карточки монтажа v2
 
 Дата: 22 июля 2026 года.
 
-## Назначение
+## Результат
 
-Проверить в headless Chrome реальную `installation-job-card-v2.js` после подключения exact-staging Edge read/write.
+Реальная `crm/v4/assets/v4/installation-job-card-v2.js` успешно проверена в headless Google Chrome с настоящей staging-сессией пользователя.
 
-Runner не создаёт пользователей, профили, заказы или монтажные задания. Он работает только с заранее созданными одноразовыми staging fixtures и после выполнения требует внешнюю очистку этих fixtures.
+GitHub Actions run: `29956544804`.
 
-## Что уже подтверждено
+Подтверждено:
 
-- `leader-crm-installation v2` активен;
+- вход временного пользователя через Supabase Auth;
+- открытие реальной карточки, а не тестовой копии логики;
+- `installation_job.read` через `leader-crm-installation v2`;
+- staging Edge notice в интерфейсе;
+- privacy-safe projection без клиентских контактов и финансов;
+- комментарии только для чтения;
+- ровно одна `installation_job.update`-мутация;
+- атомарное сохранение через Edge;
+- server read-back после сохранения;
+- новое название отображается после перерисовки;
+- локальный logout;
+- удаление Auth user, профиля, заказа, производства, монтажа, позиций, событий, комментариев и receipt.
+
+Итог workflow — success, все шаги включая cleanup завершены успешно.
+
+## Реальный пользовательский путь
+
+Runner `tools/run_crm_staging_installation_ui_smoke.mjs`:
+
+1. Проверил exact staging URL `https://otulfnouybahfnsycxqn.supabase.co`.
+2. Скопировал `crm/v4` в системную временную директорию.
+3. Изменил `config.js` только во временной копии.
+4. Запустил локальный сервер на `127.0.0.1`.
+5. Открыл страницу настоящим headless Chrome.
+6. Выполнил `signInWithPassword` временного staging-пользователя.
+7. Нажал реальную кнопку открытия монтажной карточки.
+8. Дождался safe Edge projection.
+9. Проверил отсутствие финансов и write-control для комментариев.
+10. Изменил только название задания.
+11. Нажал реальную кнопку сохранения.
+12. Получил успешный server read-back.
+13. Проверил изменённое название после перерисовки.
+14. Выполнил локальный logout.
+15. Удалил временную директорию в `finally`.
+
+Автоматический screenshot-run был отключён, чтобы не открыть страницу второй раз и не создать вторую мутацию.
+
+## Найденная ошибка optimistic concurrency
+
+Первая browser-попытка получила корректный `409 conflict`.
+
+Причина была не на сервере. Transport выполнял:
+
+`new Date(expectedUpdatedAt).toISOString()`
+
+PostgreSQL возвращал `updated_at` с микросекундами, например:
+
+`2026-07-21T20:00:00.123456+00:00`
+
+JavaScript `Date` сохраняет только миллисекунды. После нормализации значение становилось другим, и сервер справедливо отклонял stale timestamp.
+
+Исправление:
+
+- timestamp по-прежнему валидируется через `Date.parse`;
+- в `expected_updated_at` отправляется исходная точная PostgreSQL-строка;
+- unit-тест фиксирует строку с шестью знаками микросекунд;
+- серверная optimistic-concurrency защита не ослаблялась.
+
+Файлы:
+
+- `crm/v4/assets/v4/installation-job-staging-transport-v1.js`;
+- `tools/test_installation_job_staging_transport.mjs`.
+
+## OIDC fixture lifecycle
+
+Текущая execution-среда не имела внешнего DNS для локального Chrome. Вместо ослабления staging Auth использован GitHub Actions OIDC.
+
+Workflow:
+
+`.github/workflows/crm-staging-installation-authenticated-ui-smoke-runtime.yml`
+
+Он имеет только:
+
+- `contents: read`;
+- `id-token: write`.
+
+GitHub Secrets не использовались.
+
+Временный Edge bootstrap проверял подпись GitHub OIDC и точные claims:
+
+- issuer;
+- custom audience;
+- repository и repository ID;
+- repository owner ID;
+- actor ID;
+- branch ref;
+- workflow ref;
+- push event;
+- GitHub-hosted runner;
+- public repository visibility;
+- subject.
+
+Runtime source:
+
+`supabase/staging-functions/leader-staging-installation-ui-smoke-bootstrap/oidc-runtime.ts`
+
+После завершения bootstrap заменён permanently locked версией:
+
+- version `3`;
 - `verify_jwt=true`;
-- runtime user-JWT smoke завершён;
-- карточка монтажа подключена к `installation_job.read` и `installation_job.update` только на exact staging URL;
-- production сохраняет прежний browser read/write путь;
-- staging postflight после wiring: Auth users, profiles, jobs, items, events, comments и receipts — по 0.
+- HTTP `410`;
+- SHA-256 `a6aff37145a1fd89fc94bfba2b8a7b27ecacf6eaa087ff6d4720f6d53b63cc7f`.
 
-## Безопасная архитектура runner
+Locked source:
 
-Файл:
+`supabase/staging-functions/leader-staging-installation-ui-smoke-bootstrap/index.ts`
 
-`tools/run_crm_staging_installation_ui_smoke.mjs`
+## Server-side fixture harness
 
-Runner:
+Временно применялись staging migrations:
 
-1. Проверяет точный URL `https://otulfnouybahfnsycxqn.supabase.co`.
-2. Блокирует production и похожие hostname.
-3. Требует явную фразу `YES_USE_EXISTING_SYNTHETIC_FIXTURES`.
-4. Копирует `crm/v4` в системную временную директорию.
-5. Подменяет `config.js` только внутри временной копии.
-6. Записывает email, пароль и job UUID только во временный runtime-модуль с правами `0600`.
-7. Запускает локальный HTTP-сервер только на `127.0.0.1`.
-8. Открывает временную страницу в headless Chrome или Chromium.
-9. Импортирует реальную `installation-job-card-v2.js` из временной копии.
-10. После завершения выполняет локальный logout.
-11. В `finally` останавливает сервер и удаляет всю временную директорию.
+- `20260722203019` — state-table;
+- `20260722203052` — prepare RPC;
+- `20260722203119` — cleanup RPC;
+- `20260722203204` — inspect RPC.
 
-Production `crm/v4/assets/v4/config.js` не изменяется.
+RPC были доступны только `service_role`. Browser roles не получили доступ к fixture lifecycle.
 
-## Runtime-входы
+После успешного smoke применена migration:
 
-Обязательные переменные окружения:
+`20260722204939 / staging_installation_ui_smoke_harness_cleanup_20260722`
 
-- `STAGING_SUPABASE_URL`;
-- `STAGING_SUPABASE_PUBLISHABLE_KEY`;
-- `STAGING_INSTALLATION_UI_EMAIL`;
-- `STAGING_INSTALLATION_UI_PASSWORD`;
-- `STAGING_INSTALLATION_UI_JOB_ID`;
-- `STAGING_INSTALLATION_UI_SMOKE_CONFIRM=YES_USE_EXISTING_SYNTHETIC_FIXTURES`.
+Она удаляет:
 
-Дополнительные:
+- prepare RPC;
+- inspect RPC;
+- cleanup RPC;
+- state-table.
 
-- `STAGING_INSTALLATION_UI_ROLE`, по умолчанию `installer`;
-- `STAGING_INSTALLATION_UI_EXPECTED_STATUS`, по умолчанию `Запланирован`;
-- `STAGING_INSTALLATION_UI_TITLE_SUFFIX`, по умолчанию ` · UI smoke`;
-- `STAGING_INSTALLATION_UI_EVIDENCE_PATH`;
-- `CHROME_BIN`.
-
-Разрешённые UI-роли:
-
-- `installer`;
-- `manager`;
-- `admin`;
-- `owner`.
-
-`accountant` запрещён, потому что не имеет `installation.read/write`.
-
-## Plan-режим
-
-Plan-режим не требует секретов и не обращается к Supabase:
-
-```bash
-node tools/run_crm_staging_installation_ui_smoke.mjs --mode=plan
-```
-
-Он показывает:
-
-- exact staging boundary;
-- наличие runtime inputs без вывода значений;
-- ожидаемое число мутаций — 1;
-- отсутствие screenshot-run;
-- необходимость внешнего fixture lifecycle.
-
-## Run-режим
-
-Пример запуска с переменными окружения:
-
-```bash
-STAGING_SUPABASE_URL='https://otulfnouybahfnsycxqn.supabase.co' \
-STAGING_SUPABASE_PUBLISHABLE_KEY='runtime-value' \
-STAGING_INSTALLATION_UI_EMAIL='runtime-value' \
-STAGING_INSTALLATION_UI_PASSWORD='runtime-value' \
-STAGING_INSTALLATION_UI_JOB_ID='00000000-0000-4000-8000-000000000000' \
-STAGING_INSTALLATION_UI_ROLE='installer' \
-STAGING_INSTALLATION_UI_EXPECTED_STATUS='Запланирован' \
-STAGING_INSTALLATION_UI_SMOKE_CONFIRM='YES_USE_EXISTING_SYNTHETIC_FIXTURES' \
-node tools/run_crm_staging_installation_ui_smoke.mjs --mode=run
-```
-
-Значения в примере — placeholders. Реальные credentials нельзя сохранять в shell history, документации, issue, PR, Actions artifact или репозитории.
-
-## Проверяемый пользовательский путь
-
-Страница:
-
-1. Входит через `supabaseClient.auth.signInWithPassword()`.
-2. Устанавливает локальное UI-состояние роли одноразового пользователя.
-3. Нажимает реальный элемент `data-open-installation-job-card`.
-4. Ждёт появления `installJobTitle`.
-5. Проверяет staging Edge notice.
-6. Проверяет отсутствие финансовых блоков.
-7. Проверяет read-only комментарии и отсутствие кнопки добавления.
-8. Проверяет ожидаемый начальный статус.
-9. Меняет только название задания.
-10. Нажимает реальную кнопку `data-save-installation-job`.
-11. Ждёт успешного server read-back.
-12. Проверяет новое название после перерисовки карточки.
-13. Выполняет logout.
-
-Весь путь выполняет ровно одну update-мутацию.
-
-## Почему автоматический скриншот отключён
-
-Отдельный screenshot-запуск снова открыл бы страницу и мог повторно сохранить задание. Поэтому `screenshot_run_enabled=false`.
-
-Визуальный снимок допускается отдельным read-only инструментом только после появления специального review-режима, который физически не вызывает update.
+Cleanup migration предварительно требует полностью пустой staging-контур.
 
 ## Evidence
 
-По умолчанию создаётся:
+Privacy-safe artifact:
 
-`artifacts/installation-staging-ui-smoke/evidence.json`
+- artifact ID `8544259027`;
+- digest `sha256:e9e23e5fa822c71ac0bbd5f2b900e162835ec815cb79f2ff4e1c30c51c3d89f9`;
+- retention — 7 дней.
 
-Права файла — `0600`.
-
-Evidence не содержит:
-
-- email;
-- пароль;
-- JWT;
-- authorization headers;
-- API keys;
-- телефоны;
-- клиентские данные;
-- финансовые поля;
-- комментарии.
-
-Ожидаемые признаки успеха:
+Evidence содержит только:
 
 - `status=passed`;
-- `authenticated=true`;
-- `edge_notice=true`;
-- `privacy_projection=true`;
-- `comments_read_only=true`;
-- `update_via_edge=true`;
-- `server_read_back=true`;
-- `mutation_count=1`.
+- project ref;
+- имя карточки;
+- факт авторизации;
+- безопасную роль;
+- факт Edge notice;
+- privacy projection;
+- факт Edge update;
+- server read-back;
+- факт изменения title;
+- `mutation_count=1`;
+- результаты локальной и внешней очистки.
 
-## Внешний fixture lifecycle
+Email, пароль, JWT, Authorization, API keys, телефоны, клиентские данные, цены, прибыль и комментарии в evidence отсутствуют.
 
-До запуска должны существовать:
+## Финальный postflight
 
-- временный Auth user;
-- активный `leader_user_profiles` с разрешённой ролью;
-- synthetic order;
-- synthetic production job при необходимости;
-- synthetic installation job со статусом `Запланирован`.
+После cleanup:
 
-После запуска обязательна очистка:
+- Auth users: `0`;
+- profiles: `0`;
+- orders: `0`;
+- production jobs: `0`;
+- installation jobs: `0`;
+- items: `0`;
+- events: `0`;
+- comments: `0`;
+- installation command receipts: `0`;
+- smoke state rows: `0`;
+- temporary fixture RPC/table: отсутствуют.
 
-- Auth user;
-- profile;
-- order;
-- production job;
-- installation job;
-- items;
-- events;
-- comments;
-- command receipts.
+Проверка подтверждает: все счётчики `0`, временные Auth-пользователи, fixtures, receipts и server-side harness удалены.
 
-Postflight должен подтвердить нулевые значения всех этих счётчиков.
+RPC fingerprints:
 
-## Тесты
+- read: `5a353818606012d0e657a83f133723b6`, `5432` bytes;
+- write: `0ed4669197dac1f2695d0eec54e1`, `19061` bytes.
 
-- `tools/test_crm_staging_installation_ui_smoke.mjs`;
-- `tools/check_crm_staging_installation_ui_smoke.py`;
-- `.github/workflows/crm-staging-installation-ui-smoke-check.yml`.
+Security и performance advisors не добавили новых ERROR/WARN. Остались только ранее ожидаемые INFO закрытого staging harness и unused indexes пустого контура.
 
-CI запускает только syntax/unit/contract checks. Реальный UI smoke в GitHub Actions не выполняется, потому что credentials и server fixtures намеренно отсутствуют.
+## Production boundary
 
-## Текущее состояние
+Production `ofewxuqfjhamgerwzull` не изменялся:
 
-- source готов;
-- unit tests подготовлены;
-- runtime UI smoke ещё не выполнен;
-- server fixtures не создавались;
-- Supabase в этом PR не изменяется;
-- production не изменяется;
-- Figma не изменяется из-за лимита Starter MCP.
+- DDL/DML не выполнялись;
+- Edge Functions не разворачивались;
+- Auth, RLS, grants и Storage не менялись;
+- frontend production не переключался;
+- рабочие данные и `nav_*` не затрагивались.
 
-Production не изменяется.
+Production rollout по-прежнему требует отдельного явного согласования.
