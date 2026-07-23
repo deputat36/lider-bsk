@@ -56,7 +56,7 @@ require_text("doc", [
     "verify_jwt=true",
     "card v2",
     "card v3",
-    "nav_* не менять",
+    "`nav_*` не менять",
     "Production не изменён",
 ])
 require_text("workflow", [
