@@ -122,7 +122,7 @@ require("runbook", [
     "Gate 3 — production frontend switch",
     "Gate 4 — authenticated production browser smoke",
     "frontend route в `production_locked`",
-    "не выполнять broad schema drop",
+    "Не выполнять broad schema drop",
     "production migration source ещё не подготовлен",
     "`nav_*` не изменялся",
 ])
