@@ -1,0 +1,100 @@
+{
+  "contract": "crm-installation-production-rollout-plan",
+  "version": 1,
+  "captured_at": "2026-07-23",
+  "repository": "deputat36/lider-bsk",
+  "issue": 456,
+  "status": "source_only_plan_ready_not_executed",
+  "production": {
+    "project_ref": "ofewxuqfjhamgerwzull",
+    "database_changed": false,
+    "edge_deployed": false,
+    "frontend_switched": false,
+    "auth_changed": false,
+    "data_changed": false,
+    "nav_changed": false
+  },
+  "generator": {
+    "source": "tools/generate_crm_installation_production_rollout_plan.py",
+    "output_directory": "build/installation-production-rollout-plan",
+    "outputs": [
+      "rollout-plan.json",
+      "rollout-checklist.md"
+    ],
+    "requires_supabase_credentials": false,
+    "executes_sql": false,
+    "deploys_edge": false,
+    "changes_working_frontend": false,
+    "deterministic_from_repository_contracts": true
+  },
+  "dependencies": {
+    "readiness": "contracts/crm-installation-production-rollout-readiness-v1.json",
+    "rbac_receipts": "contracts/crm-installation-production-rbac-receipts-candidate-v1.json",
+    "rpc": "contracts/crm-installation-production-rpc-candidate-v1.json",
+    "edge": "contracts/crm-installation-production-edge-candidate-v1.json",
+    "frontend": "contracts/crm-installation-production-frontend-candidate-v1.json",
+    "all_source_candidates_merged": true,
+    "any_candidate_applied_to_production": false
+  },
+  "expected_current_state": {
+    "orders_rows": 0,
+    "installation_jobs_rows": 0,
+    "installation_items_rows": 0,
+    "installation_events_rows": 0,
+    "installation_comments_rows": 0,
+    "role_action_matrix_exists": false,
+    "command_receipts_exists": false,
+    "installation_read_rpc_exists": false,
+    "installation_update_rpc_exists": false,
+    "installation_edge_exists": false,
+    "current_loader": "assets/v4/installation-job-card-v2.js?v=20260622-1"
+  },
+  "phases": [
+    "P0_repeat_read_only_preflight",
+    "P1_apply_rbac_receipts",
+    "P2_apply_read_rpc",
+    "P3_apply_update_rpc",
+    "P4_deploy_edge",
+    "P5_api_jwt_smoke",
+    "P6_temporary_authenticated_browser_smoke",
+    "P7_frontend_loader_switch",
+    "P8_observation_and_final_postflight"
+  ],
+  "approval_gates": {
+    "P1_apply_rbac_receipts": false,
+    "P2_apply_read_rpc": false,
+    "P3_apply_update_rpc": false,
+    "P4_deploy_edge": false,
+    "P6_temporary_authenticated_browser_smoke": false,
+    "P7_frontend_loader_switch": false
+  },
+  "security": {
+    "verify_jwt_required": true,
+    "browser_execute_on_business_rpc": false,
+    "browser_direct_table_persistence_after_cutover": false,
+    "unknown_role": "deny",
+    "inactive_profile": "deny",
+    "cleanup_required": true,
+    "nav_changes_allowed": false,
+    "known_nav_advisor_warnings_out_of_scope": true,
+    "leaked_password_protection_warning_separate_auth_hardening": true
+  },
+  "stop_conditions": [
+    "production project_ref mismatch",
+    "unexpected nonzero business rows",
+    "source contract or blob drift",
+    "unknown production role",
+    "browser EXECUTE on installation business RPC",
+    "Edge verify_jwt is not true",
+    "fixture or receipt cleanup is incomplete",
+    "new installation-specific security WARN or ERROR",
+    "any required nav_* change"
+  ],
+  "rollback_order": [
+    "restore frontend loader to card v2",
+    "deploy fail-closed Edge rollback if needed",
+    "remove installation RPC only after frontend is locked",
+    "remove RBAC/receipts only when no dependent RPC and receipts are empty"
+  ],
+  "next_gate": "explicit production approval for P1 only"
+}
