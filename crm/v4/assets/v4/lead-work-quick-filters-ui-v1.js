@@ -10,6 +10,7 @@ import {
 } from './lead-work-quick-filters-v1.js';
 
 const ADVANCED_FILTERS = new Set(['needs_calculation', 'offer_waiting']);
+const STYLE_LINK_ID = 'leadWorkQuickFiltersV1Styles';
 
 let advancedFilter = '';
 let workflowIndex = emptyLeadWorkflowIndex();
@@ -20,7 +21,16 @@ let internalStatusChange = false;
 let scheduled = false;
 
 function esc(value) {
-  return String(value ?? '').replace(/[&<>\"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[char]));
+  return String(value ?? '').replace(/[&<>"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[char]));
+}
+
+function ensureStyles() {
+  if (document.getElementById(STYLE_LINK_ID)) return;
+  const link = document.createElement('link');
+  link.id = STYLE_LINK_ID;
+  link.rel = 'stylesheet';
+  link.href = new URL('./lead-work-quick-filters-v1.css?v=20260723-1', import.meta.url).href;
+  document.head.appendChild(link);
 }
 
 function scheduleRender() {
@@ -79,6 +89,12 @@ function applyAdvancedFilterToDom() {
   const counter = byId('leadsCounter');
   if (counter && v4State.leadsLoaded) {
     counter.textContent = `Показано: ${visible} · очередь «${model?.label || advancedFilter}»`;
+  }
+  const summary = byId('leadActiveFilters');
+  if (summary && model) {
+    const base = summary.textContent || '';
+    if (!base.includes(`очередь: ${model.label}`)) summary.textContent = `${base} · очередь: ${model.label}`;
+    summary.dataset.hasCustomFilters = '1';
   }
 
   if (cards.length && visible === 0) {
@@ -226,6 +242,7 @@ function bindGlobalEvents() {
 export function bootLeadWorkQuickFilters() {
   if (window.LeaderV4LeadWorkQuickFiltersBooted) return;
   window.LeaderV4LeadWorkQuickFiltersBooted = true;
+  ensureStyles();
   filterHost();
   bindGlobalEvents();
   renderQuickFilters();
