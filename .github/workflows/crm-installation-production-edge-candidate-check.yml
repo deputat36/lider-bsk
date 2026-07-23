@@ -1,0 +1,85 @@
+name: CRM installation production Edge candidate check
+
+on:
+  pull_request:
+    paths:
+      - 'tools/generate_crm_installation_production_edge_candidate.py'
+      - 'tools/check_crm_installation_production_edge_candidate.py'
+      - 'contracts/crm-installation-production-edge-candidate-v1.json'
+      - 'contracts/crm-installation-production-rbac-receipts-candidate-v1.json'
+      - 'contracts/crm-installation-production-rpc-candidate-v1.json'
+      - 'supabase/staging-functions/leader-crm-installation/index.ts'
+      - 'supabase/staging-functions/leader-crm-installation/contract.ts'
+      - 'supabase/production-candidates/edge/leader-crm-installation-rollback/index.ts'
+      - 'docs/CRM_INSTALLATION_PRODUCTION_EDGE_CANDIDATE_V1_2026-07-23.md'
+      - 'crm/v4/assets/v4/installation-job-save-route-v1.js'
+      - '.github/workflows/crm-installation-production-edge-candidate-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/generate_crm_installation_production_edge_candidate.py'
+      - 'tools/check_crm_installation_production_edge_candidate.py'
+      - 'contracts/crm-installation-production-edge-candidate-v1.json'
+      - 'contracts/crm-installation-production-rbac-receipts-candidate-v1.json'
+      - 'contracts/crm-installation-production-rpc-candidate-v1.json'
+      - 'supabase/staging-functions/leader-crm-installation/index.ts'
+      - 'supabase/staging-functions/leader-crm-installation/contract.ts'
+      - 'supabase/production-candidates/edge/leader-crm-installation-rollback/index.ts'
+      - 'docs/CRM_INSTALLATION_PRODUCTION_EDGE_CANDIDATE_V1_2026-07-23.md'
+      - 'crm/v4/assets/v4/installation-job-save-route-v1.js'
+      - '.github/workflows/crm-installation-production-edge-candidate-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate JSON syntax
+        run: |
+          python3 -m json.tool contracts/crm-installation-production-edge-candidate-v1.json >/dev/null
+          python3 -m json.tool contracts/crm-installation-production-rbac-receipts-candidate-v1.json >/dev/null
+          python3 -m json.tool contracts/crm-installation-production-rpc-candidate-v1.json >/dev/null
+
+      - name: Compile generator and checker
+        run: |
+          python3 -m py_compile tools/generate_crm_installation_production_edge_candidate.py
+          python3 -m py_compile tools/check_crm_installation_production_edge_candidate.py
+
+      - name: Generate production Edge candidate package
+        run: python3 tools/generate_crm_installation_production_edge_candidate.py
+
+      - name: Validate deterministic source-only Edge candidate
+        id: candidate_check
+        continue-on-error: true
+        run: |
+          python3 tools/check_crm_installation_production_edge_candidate.py \
+            >installation-production-edge-candidate-diagnostics.txt 2>&1
+
+      - name: Upload generated Edge package
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: installation-production-edge-candidate-package
+          path: build/installation-production-edge-candidate/leader-crm-installation/*
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload Edge candidate diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: installation-production-edge-candidate-diagnostics
+          path: installation-production-edge-candidate-diagnostics.txt
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Fail on Edge candidate drift
+        if: steps.candidate_check.outcome != 'success'
+        run: |
+          cat installation-production-edge-candidate-diagnostics.txt
+          exit 1
