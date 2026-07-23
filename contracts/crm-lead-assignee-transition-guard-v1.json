@@ -1,0 +1,52 @@
+{
+  "contract": "crm-lead-assignee-transition-guard",
+  "version": 1,
+  "captured_at": "2026-07-23",
+  "repository": "deputat36/lider-bsk",
+  "issue": 447,
+  "status": "frontend_guard_ready",
+  "goal": "Do not let the lead-card UI move an unassigned lead into an operational status.",
+  "required_statuses": [
+    "В работе",
+    "Уточнение деталей",
+    "Расчёт подготовлен",
+    "КП отправлено",
+    "Ждём ответ",
+    "Нужно пересчитать",
+    "Согласовано"
+  ],
+  "allowed_without_assignee": [
+    "Отказ",
+    "Спам"
+  ],
+  "behavior": {
+    "pure_model": true,
+    "buttons_disabled_when_blocked": true,
+    "visible_explanation": true,
+    "capture_phase_fail_closed_guard": true,
+    "focuses_primary_assignment_action": true,
+    "same_status_is_not_treated_as_transition": true,
+    "historical_data_backfill": false
+  },
+  "integration": {
+    "loader": "crm/v4/assets/v4/lead-analytics-badges-v1.js",
+    "model": "crm/v4/assets/v4/lead-assignee-transition-guard-model-v1.js",
+    "ui_guard": "crm/v4/assets/v4/lead-assignee-transition-guard-v1.js",
+    "source_event": "leader-v4:lead-card-rendered",
+    "source_state": "v4State.currentLead"
+  },
+  "limitations": {
+    "server_side_enforcement": false,
+    "direct_rest_or_edge_bypass_prevented": false,
+    "canonical_backend_transition_contract_ready": false
+  },
+  "production_boundary": {
+    "production_ddl": false,
+    "production_dml": false,
+    "edge_deploy": false,
+    "auth_changed": false,
+    "rls_or_grants_changed": false,
+    "storage_changed": false,
+    "nav_changed": false
+  }
+}
