@@ -1,16 +1,12 @@
 name: CRM staging lead workflow authenticated UI smoke runtime
 
 on:
-  push:
-    branches:
-      - agent/staging-lead-workflow-ui-smoke-v1
-    paths:
-      - 'tools/run-authenticated-lead-workflow-ui-smoke-once-20260724.txt'
-  pull_request:
-    branches:
-      - main
-    paths:
-      - 'tools/run-authenticated-lead-workflow-ui-smoke-once-20260724.txt'
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Redeploy the staging OIDC bootstrap, then enter STAGING_BOOTSTRAP_REDEPLOYED'
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -22,6 +18,7 @@ concurrency:
 
 jobs:
   smoke:
+    if: github.event.inputs.confirmation == 'STAGING_BOOTSTRAP_REDEPLOYED'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
