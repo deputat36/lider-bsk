@@ -35,10 +35,12 @@ required_model_fragments = [
 ]
 
 required_transport_fragments = [
-    "otulfnouybahfnsycxqn.supabase.co",
-    "ofewxuqfjhamgerwzull",
+    "const STAGING_PROJECT_REF = 'otulfnouybahfnsycxqn'",
+    "hostname === STAGING_HOSTNAME",
     "mode: 'staging_edge'",
-    "mode: 'legacy_direct_write'",
+    "browserDirectWrite: false",
+    "mode: 'production_legacy'",
+    "browserDirectWrite: true",
 ]
 
 missing = []
@@ -61,6 +63,9 @@ for forbidden in [
 
 if "action.lead || v4State.currentLead" not in ui:
     missing.append("explicit list/card lead selection is missing")
+
+if "ofewxuqfjhamgerwzull" in transport:
+    missing.append("production project ref must not be embedded in staging transport")
 
 if missing:
     raise SystemExit("\n".join(missing))
