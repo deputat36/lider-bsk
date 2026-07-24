@@ -6,6 +6,11 @@ on:
       - agent/staging-lead-workflow-ui-smoke-v1
     paths:
       - 'tools/run-authenticated-lead-workflow-ui-smoke-once-20260724.txt'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'tools/run-authenticated-lead-workflow-ui-smoke-once-20260724.txt'
 
 permissions:
   contents: read
