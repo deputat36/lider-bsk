@@ -39,5 +39,5 @@ jobs:
           python3 tools/check_public_intake_cutover_plan.py
       - name: Confirm no production automation
         run: |
-          ! grep -R "supabase functions deploy leader-public-lead" .github/workflows
-          ! grep -R "supabase db push" .github/workflows
+          ! grep -R --exclude='public-intake-service-role-candidate-check.yml' "supabase functions deploy leader-public-lead" .github/workflows
+          ! grep -R --exclude='public-intake-service-role-candidate-check.yml' "supabase db push" .github/workflows
