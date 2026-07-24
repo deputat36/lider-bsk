@@ -1,0 +1,53 @@
+name: CRM profile-first browser check
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'crm/v4/assets/v4/auth.js'
+      - 'tools/run_crm_profile_first_boot_browser_check.mjs'
+      - 'docs/CRM_PROFILE_FIRST_BOOT_BROWSER_CHECK_2026-07-24.md'
+      - '.github/workflows/crm-profile-first-browser-check.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'crm/v4/assets/v4/auth.js'
+      - 'tools/run_crm_profile_first_boot_browser_check.mjs'
+      - 'docs/CRM_PROFILE_FIRST_BOOT_BROWSER_CHECK_2026-07-24.md'
+      - '.github/workflows/crm-profile-first-browser-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  browser-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate JavaScript syntax
+        run: node --check tools/run_crm_profile_first_boot_browser_check.mjs
+      - name: Run five isolated browser scenarios
+        id: browser
+        shell: bash
+        run: |
+          set +e
+          node tools/run_crm_profile_first_boot_browser_check.mjs > profile-first-browser-result.json 2>&1
+          status=$?
+          cat profile-first-browser-result.json
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+      - name: Upload safe diagnostic result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crm-profile-first-browser-result
+          path: profile-first-browser-result.json
+          if-no-files-found: error
+          retention-days: 3
+      - name: Enforce browser result
+        if: always()
+        run: |
+          test "${{ steps.browser.outputs.exit_code }}" = "0"
