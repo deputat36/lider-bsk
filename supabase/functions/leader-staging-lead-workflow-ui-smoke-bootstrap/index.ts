@@ -2,7 +2,8 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 
 const EXPECTED_AUDIENCE = 'leader-staging-lead-workflow-ui-smoke'
 const EXPECTED_REPOSITORY = 'deputat36/lider-bsk'
-const EXPECTED_REF = 'refs/heads/agent/staging-lead-workflow-ui-smoke-v1'
+const EXPECTED_PUSH_REF = 'refs/heads/agent/staging-lead-workflow-ui-smoke-v1'
+const EXPECTED_PR_REF = 'refs/pull/462/merge'
 const MARKER_PREFIX = 'leader-lead-ui-smoke:'
 const JSON_HEADERS = Object.freeze({
   'Content-Type': 'application/json; charset=utf-8',
@@ -73,8 +74,12 @@ async function verifyGithubOidc(req: Request) {
   if (!Number.isFinite(Number(claims?.exp)) || Number(claims.exp) <= now - 30) throw new Error('oidc_expired')
   if (Number.isFinite(Number(claims?.nbf)) && Number(claims.nbf) > now + 30) throw new Error('oidc_not_yet_valid')
   if (text(claims?.repository, 300) !== EXPECTED_REPOSITORY) throw new Error('oidc_repository_invalid')
-  if (text(claims?.ref, 500) !== EXPECTED_REF) throw new Error('oidc_ref_invalid')
-  if (text(claims?.event_name, 100) !== 'push') throw new Error('oidc_event_invalid')
+
+  const eventName = text(claims?.event_name, 100)
+  const ref = text(claims?.ref, 500)
+  const validContext = (eventName === 'push' && ref === EXPECTED_PUSH_REF)
+    || (eventName === 'pull_request' && ref === EXPECTED_PR_REF)
+  if (!validContext) throw new Error('oidc_workflow_context_invalid')
 
   const runId = text(claims?.run_id, 40)
   const runAttempt = text(claims?.run_attempt, 20)
