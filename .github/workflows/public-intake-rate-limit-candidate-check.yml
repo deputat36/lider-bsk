@@ -43,5 +43,11 @@ jobs:
           node --experimental-strip-types --check supabase/functions/leader-public-lead/index.ts
       - name: Confirm no production automation
         run: |
-          ! grep -R --exclude='public-intake-rate-limit-candidate-check.yml' "supabase functions deploy leader-public-lead" .github/workflows
-          ! grep -R --exclude='public-intake-rate-limit-candidate-check.yml' "supabase db push" .github/workflows
+          ! grep -R \
+            --exclude='public-intake-rate-limit-candidate-check.yml' \
+            --exclude='public-intake-service-role-candidate-check.yml' \
+            "supabase functions deploy leader-public-lead" .github/workflows
+          ! grep -R \
+            --exclude='public-intake-rate-limit-candidate-check.yml' \
+            --exclude='public-intake-service-role-candidate-check.yml' \
+            "supabase db push" .github/workflows
