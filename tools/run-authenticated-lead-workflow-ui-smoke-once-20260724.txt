@@ -1,2 +1,3 @@
 Run the staging-only authenticated lead workflow UI smoke once on 2026-07-24.
 Production remains disabled. All synthetic fixtures must be deleted.
+Retry 2: exact PR #462 OIDC context is active.
