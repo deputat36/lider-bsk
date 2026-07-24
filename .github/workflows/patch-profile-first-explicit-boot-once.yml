@@ -1,0 +1,40 @@
+name: Patch profile-first explicit boot once
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'tools/patch_profile_first_explicit_boot_once.py'
+      - 'tools/run-patch-profile-first-explicit-boot-once.txt'
+      - '.github/workflows/patch-profile-first-explicit-boot-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.head_ref == 'agent/profile-first-browser-check-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Apply explicit boot patch
+        run: |
+          set -euo pipefail
+          python3 tools/patch_profile_first_explicit_boot_once.py
+          node --check tools/run_crm_profile_first_boot_browser_check.mjs
+      - name: Commit patched browser runner
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- tools/run_crm_profile_first_boot_browser_check.mjs; then
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tools/run_crm_profile_first_boot_browser_check.mjs
+          git commit -m 'Вызывать bootAuth явно в изолированном browser check'
+          git push origin HEAD:${{ github.head_ref }}
