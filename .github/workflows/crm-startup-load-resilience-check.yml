@@ -1,0 +1,35 @@
+name: CRM startup load resilience check
+
+on:
+  pull_request:
+    paths:
+      - 'crm/v4/assets/v4/management-dashboard-v3.js'
+      - 'crm/v4/assets/v4/leads.js'
+      - 'tools/patch_crm_startup_load_resilience_v1.py'
+      - '.github/workflows/crm-startup-load-resilience-check.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'crm/v4/assets/v4/management-dashboard-v3.js'
+      - 'crm/v4/assets/v4/leads.js'
+      - 'tools/patch_crm_startup_load_resilience_v1.py'
+      - '.github/workflows/crm-startup-load-resilience-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate JavaScript syntax
+        run: |
+          node --check crm/v4/assets/v4/management-dashboard-v3.js
+          node --check crm/v4/assets/v4/leads.js
+      - name: Validate exact startup contract
+        run: |
+          python3 -m py_compile tools/patch_crm_startup_load_resilience_v1.py
+          python3 tools/patch_crm_startup_load_resilience_v1.py --check
