@@ -6,9 +6,11 @@ import sys
 root = Path(__file__).resolve().parents[1]
 plan = root / 'docs/PUBLIC_INTAKE_SERVICE_ROLE_CUTOVER_PLAN_2026-07-10.md'
 edge = root / 'supabase/functions/leader-public-lead/index.ts'
+rate_module = root / 'supabase/functions/leader-public-lead/rate-limit.ts'
 form = root / 'assets/public-lead-form.js'
 retry = root / 'assets/public-lead-reference-v1.js'
 candidate_checker = root / 'tools/check_public_intake_service_role_candidate.py'
+rate_checker = root / 'tools/check_public_intake_rate_limit_candidate.py'
 errors = []
 
 if not plan.exists():
@@ -39,11 +41,19 @@ source_checks = {
         "Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')",
         "headers: { apikey: secretKey }",
         "Authorization: 'Bearer ' + legacyServiceRole",
+        "Deno.env.get('LEADER_PUBLIC_RATE_LIMIT_SALT')",
+        "from './rate-limit.ts'",
+        'checkPublicIntakeRateLimit({',
         "supabaseUrl + '/rest/v1/leader_leads'",
         "supabaseUrl + '/rest/v1/leader_public_lead_audit'",
         'isAllowedOrigin(req)',
         'honeypot_filled',
         'request_id_conflict',
+    ],
+    rate_module: [
+        "crypto.subtle.digest('SHA-256'",
+        '/rest/v1/rpc/leader_public_intake_rate_limit_rpc',
+        "reason: 'rate_limit_unavailable'",
     ],
     form: [
         '/functions/v1/leader-public-lead',
@@ -70,12 +80,14 @@ if edge.exists():
         if marker in text:
             errors.append(f'Legacy public database credential remains in Edge source: {marker}')
 
-if not candidate_checker.exists():
-    errors.append('Missing public intake service-role candidate checker')
+for checker in [candidate_checker, rate_checker]:
+    if not checker.exists():
+        errors.append(f'Missing public intake checker: {checker.relative_to(root)}')
 
 if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
 runpy.run_path(str(candidate_checker), run_name='__main__')
-print('Protected public intake source candidate and cutover plan are complete; production remains unchanged.')
+runpy.run_path(str(rate_checker), run_name='__main__')
+print('Protected public intake source, rate limit and cutover plan are complete; production remains unchanged.')
