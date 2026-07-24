@@ -27,8 +27,11 @@
   },
   "source": {
     "edge": "supabase/functions/leader-public-lead/index.ts",
+    "edge_rate_limit_module": "supabase/functions/leader-public-lead/rate-limit.ts",
     "migration": "supabase/production-candidates/20260724_01_public_intake_service_role_cutover_candidate.sql",
+    "rate_limit_migration": "supabase/production-candidates/20260724_02_public_intake_rate_limit_candidate.sql",
     "rollback": "supabase/production-candidates/rollback/20260724_01_public_intake_service_role_cutover_candidate_rollback.sql",
+    "rate_limit_rollback": "supabase/production-candidates/rollback/20260724_02_public_intake_rate_limit_candidate_rollback.sql",
     "runbook": "docs/PUBLIC_INTAKE_SERVICE_ROLE_CUTOVER_CANDIDATE_V1_2026-07-24.md",
     "checker": "tools/check_public_intake_service_role_candidate.py"
   },
@@ -40,7 +43,10 @@
     "fail_closed_without_backend_credential": true,
     "anon_key_for_database_writes": false,
     "verify_jwt": false,
-    "public_origin_and_payload_checks_preserved": true
+    "public_origin_and_payload_checks_preserved": true,
+    "rate_limit_candidate_required": true,
+    "rate_limit_salt_env": "LEADER_PUBLIC_RATE_LIMIT_SALT",
+    "rate_limit_fail_closed": true
   },
   "database_candidate": {
     "anon_lead_insert_after": false,
@@ -63,6 +69,7 @@
   },
   "approval_gate": {
     "merge_source_candidate_allowed": true,
+    "set_rate_limit_salt_requires_explicit_owner_approval": true,
     "edge_deploy_requires_explicit_owner_approval": true,
     "database_migration_requires_explicit_owner_approval": true,
     "production_browser_e2e_requires_explicit_owner_approval": true,
