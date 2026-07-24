@@ -1,7 +1,9 @@
 import { supabaseClient } from './supabase-client.js';
 import { V4_CONFIG } from './config.js';
+import { timeout } from './api.js';
 import { v4State, setState } from './state.js';
 import { setStatus, toast } from './ui.js';
+import { buildStagingLeadListWorkflowAction } from './lead-workflow-staging-list-model-v1.js';
 import {
   createLeadWorkflowIdempotencyKey,
   invokeStagingLeadWorkflow,
@@ -22,8 +24,7 @@ function nextContactDate(kind) {
   return date.toISOString();
 }
 
-function actionFromClick(target) {
-  if (!target?.closest) return null;
+function cardActionFromClick(target) {
   const card = target.closest('#leadCardSection');
   if (!card) return null;
 
@@ -31,9 +32,11 @@ function actionFromClick(target) {
   if (primary?.dataset.leadPrimaryAction === 'assign_self') {
     const userId = text(v4State.user?.id);
     const lead = v4State.currentLead || {};
-    if (!userId) return { button: primary, error: 'Не найден текущий пользователь staging.' };
+    if (!userId) return { button: primary, context: 'card', error: 'Не найден текущий пользователь staging.' };
     return {
       button: primary,
+      context: 'card',
+      lead,
       label: 'Назначаю ответственного...',
       patch: {
         assigned_to: userId,
@@ -46,7 +49,13 @@ function actionFromClick(target) {
   if (statusButton) {
     const status = text(statusButton.dataset.leadStatus);
     if (!status) return null;
-    return { button: statusButton, label: 'Обновляю статус...', patch: { status } };
+    return {
+      button: statusButton,
+      context: 'card',
+      lead: v4State.currentLead,
+      label: 'Обновляю статус...',
+      patch: { status }
+    };
   }
 
   const contactButton = target.closest('[data-next-contact]');
@@ -56,7 +65,7 @@ function actionFromClick(target) {
     if (kind === 'save') {
       const inputValue = text(document.getElementById('leadNextContactInput')?.value);
       if (inputValue && !Number.isFinite(Date.parse(inputValue))) {
-        return { button: contactButton, error: 'Проверьте дату и время следующего контакта.' };
+        return { button: contactButton, context: 'card', error: 'Проверьте дату и время следующего контакта.' };
       }
       nextContactAt = inputValue ? new Date(inputValue).toISOString() : null;
     } else if (kind !== 'clear') {
@@ -65,6 +74,8 @@ function actionFromClick(target) {
     const currentStatus = text(v4State.currentLead?.status) || 'Новая';
     return {
       button: contactButton,
+      context: 'card',
+      lead: v4State.currentLead,
       label: 'Сохраняю следующий контакт...',
       patch: {
         next_contact_at: nextContactAt,
@@ -76,30 +87,130 @@ function actionFromClick(target) {
   return null;
 }
 
+function listActionFromClick(target) {
+  if (!target.closest('#leadsSection')) return null;
+  const button = target.closest('button[data-action]');
+  const actionName = text(button?.dataset.action);
+  if (!['take', 'work'].includes(actionName)) return null;
+
+  const leadId = text(button.closest('.v4-lead-card')?.dataset.id);
+  const lead = (v4State.leads || []).find((item) => text(item?.id) === leadId) || null;
+  const model = buildStagingLeadListWorkflowAction({
+    action: actionName,
+    lead,
+    userId: v4State.user?.id
+  });
+  if (!model) return null;
+  return {
+    ...model,
+    button,
+    context: 'list',
+    listActionName: actionName
+  };
+}
+
+function actionFromClick(target) {
+  if (!target?.closest) return null;
+  return cardActionFromClick(target) || listActionFromClick(target);
+}
+
+async function loadCurrentLeadVersion(lead) {
+  if (!lead?.id) return null;
+  if (lead.updated_at) return lead;
+
+  const response = await timeout(
+    supabaseClient
+      .from('leader_leads')
+      .select('id,status,assigned_to,next_contact_at,updated_at')
+      .eq('id', lead.id)
+      .maybeSingle(),
+    12000,
+    'Актуальная версия заявки не загрузилась за 12 секунд'
+  );
+  if (response.error) throw response.error;
+  if (!response.data?.updated_at) throw new Error('Актуальная версия заявки не найдена');
+  return { ...lead, ...response.data };
+}
+
+async function resolveAction(action) {
+  if (action.error) return action;
+  const lead = await loadCurrentLeadVersion(action.lead || v4State.currentLead);
+  if (!lead) return { ...action, error: 'Заявка ещё не готова. Обновите список.' };
+
+  if (action.context !== 'list') return { ...action, lead };
+
+  const refreshedModel = buildStagingLeadListWorkflowAction({
+    action: action.listActionName,
+    lead,
+    userId: v4State.user?.id
+  });
+  return refreshedModel
+    ? { ...action, ...refreshedModel, lead }
+    : { ...action, lead, error: 'Действие списка заявки не распознано.' };
+}
+
 function mergeLeadState(partialLead) {
-  const current = v4State.currentLead || {};
-  const merged = { ...current, ...(partialLead || {}) };
+  const partial = partialLead && typeof partialLead === 'object' ? partialLead : {};
+  const id = text(partial.id);
+  const current = v4State.currentLead;
+  const mergedCurrent = id && text(current?.id) === id ? { ...current, ...partial } : current;
+  const mergedList = (v4State.leads || []).map((lead) => (
+    id && text(lead?.id) === id ? { ...lead, ...partial } : lead
+  ));
+  const merged = id && text(mergedCurrent?.id) === id
+    ? mergedCurrent
+    : mergedList.find((lead) => text(lead?.id) === id) || partial;
+
   setState({
-    currentLead: merged,
-    leads: (v4State.leads || []).map((lead) => lead.id === merged.id ? { ...lead, ...merged } : lead)
+    currentLead: mergedCurrent,
+    leads: mergedList
   });
   return merged;
 }
 
-function refreshCard() {
+function refreshCard(leadId = '') {
+  if (leadId && text(v4State.currentLead?.id) !== text(leadId)) return;
   const button = document.getElementById('refreshLeadBtn');
   if (button) window.setTimeout(() => button.click(), 0);
 }
 
-async function saveWorkflow(action) {
-  const lead = v4State.currentLead;
+function refreshList({ openLeadId = '' } = {}) {
+  window.setTimeout(() => {
+    if (openLeadId) {
+      const card = [...document.querySelectorAll('#leadsList .v4-lead-card')]
+        .find((item) => text(item?.dataset.id) === text(openLeadId));
+      card?.querySelector('button[data-action="open"]')?.click();
+    }
+    document.getElementById('reloadLeadsBtn')?.click();
+  }, 0);
+}
+
+function refreshAfterResult(action, leadId) {
+  if (action.context === 'list') refreshList({ openLeadId: leadId });
+  else refreshCard(leadId);
+}
+
+async function saveWorkflow(rawAction) {
+  let action;
+  try {
+    action = await resolveAction(rawAction);
+  } catch (_) {
+    toast('Не удалось получить актуальную версию заявки. Обновите список.');
+    setStatus('Актуальная версия заявки не загрузилась', 'error');
+    refreshAfterResult(rawAction, rawAction.lead?.id);
+    return;
+  }
+
+  const lead = action.lead;
   if (!lead?.id || !lead?.updated_at) {
-    toast('Карточка заявки ещё не готова. Обновите её.');
+    toast('Заявка ещё не готова. Обновите её.');
+    refreshAfterResult(action, lead?.id);
     return;
   }
   if (action.error) {
     toast(action.error);
     setStatus(action.error, 'error');
+    refreshAfterResult(action, lead.id);
     return;
   }
   if (busy) {
@@ -132,20 +243,26 @@ async function saveWorkflow(action) {
     if (!result.ok) {
       toast(result.message);
       setStatus(result.message, result.kind === 'no_effect' ? 'warn' : 'error');
-      if (result.kind === 'conflict') refreshCard();
+      if (result.kind === 'conflict') refreshAfterResult(action, lead.id);
       return;
     }
 
     const merged = mergeLeadState(result.data?.lead);
     document.dispatchEvent(new CustomEvent('leader-v4:lead-workflow-updated', {
-      detail: { lead: merged, requestId: result.requestId, replay: result.replay === true }
+      detail: {
+        lead: merged,
+        requestId: result.requestId,
+        replay: result.replay === true,
+        source: action.context === 'list' ? 'lead_list' : 'lead_card'
+      }
     }));
     toast(result.message);
     setStatus(result.message, 'good');
-    refreshCard();
+    refreshAfterResult(action, merged?.id || lead.id);
   } catch (_) {
     toast('Не удалось сохранить рабочий маршрут заявки.');
     setStatus('Ошибка защищённого сохранения заявки', 'error');
+    refreshAfterResult(action, lead.id);
   } finally {
     busy = false;
     if (action.button?.isConnected) action.button.disabled = false;
