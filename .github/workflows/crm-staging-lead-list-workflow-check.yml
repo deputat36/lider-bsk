@@ -1,0 +1,44 @@
+name: CRM staging lead list workflow check
+
+on:
+  pull_request:
+    paths:
+      - 'crm/v4/assets/v4/lead-workflow-staging-ui-v1.js'
+      - 'crm/v4/assets/v4/lead-workflow-staging-list-model-v1.js'
+      - 'crm/v4/assets/v4/lead-workflow-staging-transport-v1.js'
+      - 'tools/test_lead_workflow_staging_list_model.mjs'
+      - 'tools/check_crm_staging_lead_list_workflow.py'
+      - '.github/workflows/crm-staging-lead-list-workflow-check.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'crm/v4/assets/v4/lead-workflow-staging-ui-v1.js'
+      - 'crm/v4/assets/v4/lead-workflow-staging-list-model-v1.js'
+      - 'crm/v4/assets/v4/lead-workflow-staging-transport-v1.js'
+      - 'tools/test_lead_workflow_staging_list_model.mjs'
+      - 'tools/check_crm_staging_lead_list_workflow.py'
+      - '.github/workflows/crm-staging-lead-list-workflow-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax checks
+        run: |
+          node --check crm/v4/assets/v4/lead-workflow-staging-ui-v1.js
+          node --check crm/v4/assets/v4/lead-workflow-staging-list-model-v1.js
+          node --check tools/test_lead_workflow_staging_list_model.mjs
+          python3 -m py_compile tools/check_crm_staging_lead_list_workflow.py
+      - name: Model tests
+        run: node tools/test_lead_workflow_staging_list_model.mjs
+      - name: Integration contract check
+        run: python3 tools/check_crm_staging_lead_list_workflow.py
