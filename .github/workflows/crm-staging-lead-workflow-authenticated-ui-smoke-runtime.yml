@@ -56,7 +56,9 @@ jobs:
         run: |
           set -euo pipefail
           umask 077
+          mkdir -p "${RUNNER_TEMP}/lead-workflow-ui-smoke"
           PREPARE_FILE="${RUNNER_TEMP}/lead-workflow-ui-smoke-prepare.json"
+          PREPARE_ERROR_FILE="${RUNNER_TEMP}/lead-workflow-ui-smoke/prepare-error.json"
           OIDC_FILE="${RUNNER_TEMP}/lead-workflow-ui-smoke-oidc.json"
           curl -fsS \
             -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
@@ -71,7 +73,8 @@ jobs:
             --data '{"action":"prepare"}')"
           unset OIDC_TOKEN
           if [ "${HTTP_CODE}" != '201' ]; then
-            jq -r '{ok,error}' "${PREPARE_FILE}" >&2 || true
+            jq '{ok,error}' "${PREPARE_FILE}" > "${PREPARE_ERROR_FILE}" || printf '{"ok":false,"error":"prepare_response_invalid"}\n' > "${PREPARE_ERROR_FILE}"
+            cat "${PREPARE_ERROR_FILE}" >&2
             exit 1
           fi
           jq -e '
@@ -184,6 +187,7 @@ jobs:
           path: |
             ${{ runner.temp }}/lead-workflow-ui-smoke/evidence.json
             ${{ runner.temp }}/lead-workflow-ui-smoke/cleanup.json
+            ${{ runner.temp }}/lead-workflow-ui-smoke/prepare-error.json
             ${{ runner.temp }}/lead-workflow-ui-smoke/runner.log
           if-no-files-found: warn
           retention-days: 7
