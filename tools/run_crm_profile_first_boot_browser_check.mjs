@@ -76,6 +76,7 @@ function buildPageSource() {
     + `const scenario=new URL(window.location.href).searchParams.get('scenario')||'active';\n`
     + `const resultNode=document.getElementById('profileBootResult');\n`
     + `let readyEvents=0;document.addEventListener('leader-v4:crm-ready',()=>{readyEvents+=1;});\n`
+    + `async function run(){\n`
     + `if(scenario==='expired_session')localStorage.setItem('leader_profile_first_browser_check_session','stale');\n`
     + `function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms));}\n`
     + `async function waitFor(check,code,timeoutMs=5000){const started=Date.now();while(Date.now()-started<timeoutMs){if(check())return;await sleep(25);}throw new Error(code);}\n`
@@ -99,7 +100,9 @@ function buildPageSource() {
     + `  if(scenario==='expired_session'){assert(v4State.crmReady===false,'expired_crm_ready');assert(v4State.user===null,'expired_user_not_cleared');assert(workspaceHidden===true,'expired_workspace_visible');assert(readyEvents===0,'expired_ready_event');assert(loginHidden===false&&userPanelHidden===true,'expired_login_not_restored');assert(metrics.signOut===1,'expired_local_signout_missing');assert(localStorage.getItem('leader_profile_first_browser_check_session')===null,'expired_storage_not_cleared');}\n`
     + `  output('passed',{crm_ready:v4State.crmReady,profile_loaded:v4State.profileLoaded,workspace_hidden:workspaceHidden,ready_events:readyEvents,login_hidden:loginHidden,user_panel_hidden:userPanelHidden,get_session_calls:metrics.getSession,profile_reads:metrics.profileReads,ensure_profile_calls:metrics.ensureProfile,signout_calls:metrics.signOut});\n`
     + `}catch(error){output('failed',{error:String(error?.message||error||'profile_first_browser_failed'),crm_ready:v4State.crmReady,profile_loaded:v4State.profileLoaded,ready_events:readyEvents});document.body.dataset.profileFirstFailed='true';}\n`
-    + `document.body.dataset.profileFirstFinished='true';\n`;
+    + `document.body.dataset.profileFirstFinished='true';\n`
+    + `}\n`
+    + `run();\n`;
 }
 
 function buildHtml() {
