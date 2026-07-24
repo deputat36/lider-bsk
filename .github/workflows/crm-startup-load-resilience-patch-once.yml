@@ -1,0 +1,42 @@
+name: CRM startup load resilience patch once
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'tools/patch_crm_startup_load_resilience_v1.py'
+      - 'tools/run-crm-startup-load-resilience-patch-once-20260724.txt'
+      - '.github/workflows/crm-startup-load-resilience-patch-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.head_ref == 'agent/crm-startup-load-resilience-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Apply exact source patch
+        run: |
+          set -euo pipefail
+          python3 tools/patch_crm_startup_load_resilience_v1.py --apply
+          node --check crm/v4/assets/v4/management-dashboard-v3.js
+          node --check crm/v4/assets/v4/leads.js
+      - name: Commit exact changes once
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- crm/v4/assets/v4/management-dashboard-v3.js crm/v4/assets/v4/leads.js; then
+            python3 tools/patch_crm_startup_load_resilience_v1.py --check
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add crm/v4/assets/v4/management-dashboard-v3.js crm/v4/assets/v4/leads.js
+          git commit -m 'Ограничить ожидание дашборда и отложить скрытый список заявок'
+          git push origin HEAD:${{ github.head_ref }}
