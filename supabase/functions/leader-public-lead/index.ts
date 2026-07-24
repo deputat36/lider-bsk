@@ -78,7 +78,7 @@ function backendCredential(): BackendCredential | null {
         return { headers: { apikey: secretKey }, source: 'secret_key' }
       }
     } catch (_) {
-      return null
+      // Ignore malformed modern key configuration and try the explicit legacy transition key.
     }
   }
 
