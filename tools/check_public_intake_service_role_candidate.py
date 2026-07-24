@@ -24,6 +24,7 @@ if edge.exists():
         "Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')",
         "headers: { apikey: secretKey }",
         "Authorization: 'Bearer ' + legacyServiceRole",
+        'Ignore malformed modern key configuration and try the explicit legacy transition key.',
         'backendHeaders: credential.headers',
         '...params.backendHeaders',
         '...credential.headers',
