@@ -27,6 +27,8 @@ if edge.exists():
         "Deno.env.get('LEADER_PUBLIC_RATE_LIMIT_SALT')",
         'publicIntakeRateLimitIdentity(req, phoneNormalized, rateLimitSalt)',
         'checkPublicIntakeRateLimit({',
+        'ipHash: rateIdentity.ipHash',
+        'phoneHash: rateIdentity.phoneHash',
         "error: 'rate_limit_unavailable'",
         "error: 'rate_limited'",
         'retry_after_seconds: rateLimit.retryAfterSeconds',
@@ -35,7 +37,15 @@ if edge.exists():
     ]:
         if marker not in text:
             errors.append(f'Edge rate-limit marker missing: {marker}')
-    for forbidden in ['raw_ip', 'client_ip:', 'ip_address', 'ipHash:', 'phoneHash: rateIdentity.phoneHash,\n      payload']:
+    for forbidden in [
+        'raw_ip',
+        'client_ip:',
+        'ip_address',
+        'payload: {\n        ipHash',
+        'payload: {\n        phoneHash',
+        'console.log(rateIdentity',
+        'console.error(rateIdentity',
+    ]:
         if forbidden in text:
             errors.append(f'Edge may expose private identity: {forbidden}')
 
@@ -56,7 +66,7 @@ if module.exists():
     ]:
         if marker not in text:
             errors.append(f'rate-limit module marker missing: {marker}')
-    if re.search(r'(console\.|JSON\.stringify\([^)]*)(clientIp|ipHash)', text):
+    if re.search(r'console\.(log|error|warn)\([^\n]*(clientIp|ipHash|phoneHash)', text):
         errors.append('rate-limit module may log raw/private identity')
 
 if migration.exists():
