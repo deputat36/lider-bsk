@@ -1,0 +1,1 @@
+Apply the profile-first browser async patch once on agent/profile-first-browser-check-v1.
