@@ -1,1 +1,0 @@
-Apply the protected public intake source candidate once on agent/public-intake-service-role-candidate-v1.
