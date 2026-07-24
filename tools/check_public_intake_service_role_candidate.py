@@ -35,6 +35,15 @@ if edge.exists():
     for marker in required:
         if marker not in text:
             errors.append(f'edge candidate missing: {marker}')
+    singleton_markers = [
+        'type BackendCredential = {',
+        'function backendCredential(): BackendCredential | null',
+        "Deno.env.get('SUPABASE_SECRET_KEYS')",
+    ]
+    for marker in singleton_markers:
+        count = text.count(marker)
+        if count != 1:
+            errors.append(f'edge candidate singleton violation ({count}): {marker}')
     forbidden = [
         "Deno.env.get('SUPABASE_ANON_KEY')",
         "'apikey': anonKey",
