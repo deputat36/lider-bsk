@@ -1,6 +1,6 @@
 -- STAGING ONLY.
 -- Removes synthetic lead workflow UI-smoke rows, including receipts in the private schema.
--- Callable only by service_role.
+-- Execute is revoked from public/anon/authenticated and granted only to service_role.
 
 create or replace function public.leader_staging_lead_ui_smoke_cleanup_rpc(p_run_key text)
 returns jsonb
@@ -15,10 +15,6 @@ declare
   v_profiles integer := 0;
   v_receipts integer := 0;
 begin
-  if coalesce(current_setting('request.jwt.claim.role', true), '') <> 'service_role' then
-    raise exception 'service_role_required' using errcode = '42501';
-  end if;
-
   if p_run_key is null or p_run_key !~ '^[0-9]+:[0-9]+$' then
     raise exception 'run_key_invalid' using errcode = '22023';
   end if;
