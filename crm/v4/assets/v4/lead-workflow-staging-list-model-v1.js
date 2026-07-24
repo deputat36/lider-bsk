@@ -19,12 +19,6 @@ export function buildStagingLeadListWorkflowAction({ action, lead, userId } = {}
   if (!row?.id) {
     return Object.freeze({ error: 'Заявка не найдена в загруженном списке.' });
   }
-  if (!row.updated_at) {
-    return Object.freeze({
-      lead: row,
-      error: 'Заявка загружена без версии. Обновите список и повторите.'
-    });
-  }
   if (!actorId) {
     return Object.freeze({
       lead: row,
