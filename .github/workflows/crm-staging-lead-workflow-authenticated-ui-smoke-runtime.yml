@@ -1,0 +1,200 @@
+name: CRM staging lead workflow authenticated UI smoke runtime
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Redeploy the staging OIDC bootstrap, then enter STAGING_BOOTSTRAP_REDEPLOYED'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: staging-lead-workflow-authenticated-ui-smoke
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    if: github.event.inputs.confirmation == 'STAGING_BOOTSTRAP_REDEPLOYED'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      STAGING_SUPABASE_URL: https://otulfnouybahfnsycxqn.supabase.co
+      STAGING_SUPABASE_PUBLISHABLE_KEY: sb_publishable_iRCLPHgRaI5SNo9h4efMQw_W7Kdby1D
+      BOOTSTRAP_URL: https://otulfnouybahfnsycxqn.supabase.co/functions/v1/leader-staging-lead-workflow-ui-smoke-bootstrap
+      OIDC_AUDIENCE: leader-staging-lead-workflow-ui-smoke
+      STAGING_LEAD_UI_SMOKE_CONFIRM: YES_CREATE_AND_DELETE_SYNTHETIC_LEAD_FIXTURE
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate source runner plan
+        run: |
+          set -euo pipefail
+          node --check tools/run_crm_staging_lead_workflow_ui_smoke.mjs
+          node tools/run_crm_staging_lead_workflow_ui_smoke.mjs --mode=plan \
+            > "${RUNNER_TEMP}/lead-workflow-ui-smoke-plan.json"
+          jq -e '
+            .project_ref == "otulfnouybahfnsycxqn" and
+            .production_enabled == false and
+            .uses_real_lead_card_source == true and
+            .uses_real_staging_edge_transport == true and
+            .successful_mutations_expected == 3 and
+            .rejected_mutations_expected == 1 and
+            .server_events_expected == 3 and
+            .cleanup_required == true
+          ' "${RUNNER_TEMP}/lead-workflow-ui-smoke-plan.json" >/dev/null
+
+      - name: Prepare ephemeral staging fixture with GitHub OIDC
+        id: prepare
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "${RUNNER_TEMP}/lead-workflow-ui-smoke"
+          PREPARE_FILE="${RUNNER_TEMP}/lead-workflow-ui-smoke-prepare.json"
+          PREPARE_ERROR_FILE="${RUNNER_TEMP}/lead-workflow-ui-smoke/prepare-error.json"
+          OIDC_FILE="${RUNNER_TEMP}/lead-workflow-ui-smoke-oidc.json"
+          curl -fsS \
+            -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${OIDC_AUDIENCE}" \
+            > "${OIDC_FILE}"
+          OIDC_TOKEN="$(jq -er '.value' "${OIDC_FILE}")"
+          rm -f "${OIDC_FILE}"
+          HTTP_CODE="$(curl -sS -o "${PREPARE_FILE}" -w '%{http_code}' \
+            -X POST "${BOOTSTRAP_URL}" \
+            -H "Authorization: Bearer ${OIDC_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            --data '{"action":"prepare"}')"
+          unset OIDC_TOKEN
+          if [ "${HTTP_CODE}" != '201' ]; then
+            jq '{ok,error}' "${PREPARE_FILE}" > "${PREPARE_ERROR_FILE}" || printf '{"ok":false,"error":"prepare_response_invalid"}\n' > "${PREPARE_ERROR_FILE}"
+            cat "${PREPARE_ERROR_FILE}" >&2
+            exit 1
+          fi
+          jq -e '
+            .ok == true and .action == "prepare" and
+            (.run_key | test("^[0-9]+:[0-9]+$")) and
+            (.lead_id | test("^[0-9a-f-]{36}$")) and
+            .role == "manager" and
+            .expected_status == "Новая"
+          ' "${PREPARE_FILE}" >/dev/null
+          TEST_EMAIL="$(jq -er '.email' "${PREPARE_FILE}")"
+          TEST_PASSWORD="$(jq -er '.password' "${PREPARE_FILE}")"
+          TEST_LEAD_ID="$(jq -er '.lead_id' "${PREPARE_FILE}")"
+          TEST_ROLE="$(jq -er '.role' "${PREPARE_FILE}")"
+          TEST_STATUS="$(jq -er '.expected_status' "${PREPARE_FILE}")"
+          echo "::add-mask::${TEST_EMAIL}"
+          echo "::add-mask::${TEST_PASSWORD}"
+          echo "::add-mask::${TEST_LEAD_ID}"
+          {
+            echo "STAGING_LEAD_UI_EMAIL=${TEST_EMAIL}"
+            echo "STAGING_LEAD_UI_PASSWORD=${TEST_PASSWORD}"
+            echo "STAGING_LEAD_UI_LEAD_ID=${TEST_LEAD_ID}"
+            echo "STAGING_LEAD_UI_ROLE=${TEST_ROLE}"
+            echo "STAGING_LEAD_UI_EXPECTED_STATUS=${TEST_STATUS}"
+            echo "STAGING_LEAD_UI_EVIDENCE_PATH=${RUNNER_TEMP}/lead-workflow-ui-smoke/evidence.json"
+          } >> "${GITHUB_ENV}"
+
+      - name: Run real lead card in headless Chrome
+        id: ui_smoke
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v google-chrome || command -v chromium || command -v chromium-browser
+          mkdir -p "${RUNNER_TEMP}/lead-workflow-ui-smoke"
+          node tools/run_crm_staging_lead_workflow_ui_smoke.mjs --mode=run \
+            > "${RUNNER_TEMP}/lead-workflow-ui-smoke/runner.log" 2>&1
+          cat "${RUNNER_TEMP}/lead-workflow-ui-smoke/runner.log"
+
+      - name: Validate privacy-safe UI evidence
+        id: validate
+        if: steps.ui_smoke.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          EVIDENCE="${RUNNER_TEMP}/lead-workflow-ui-smoke/evidence.json"
+          test -f "${EVIDENCE}"
+          jq -e '
+            .status == "passed" and
+            .project_ref == "otulfnouybahfnsycxqn" and
+            .card == "lead-card-v4" and
+            .authenticated == true and
+            .exact_staging == true and
+            .direct_read_contract == true and
+            .assign_self_via_edge == true and
+            .missing_next_contact_rejected == true and
+            .rejection_event_delta_zero == true and
+            .next_contact_via_edge == true and
+            .waiting_status_via_edge == true and
+            .server_read_back == true and
+            .workflow_success_events == 3 and
+            .server_event_count == 3 and
+            .successful_mutation_count == 3 and
+            .rejected_mutation_count == 1 and
+            .duplicate_events == false and
+            .cleanup_required == true
+          ' "${EVIDENCE}" >/dev/null
+          if grep -Eqi 'email|password|token|authorization|apikey|api_key|secret|phone|client|message|payload' "${EVIDENCE}"; then
+            echo 'Forbidden sensitive key found in UI evidence' >&2
+            exit 1
+          fi
+
+      - name: Cleanup Auth user and all staging fixtures
+        id: cleanup
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "${RUNNER_TEMP}/lead-workflow-ui-smoke"
+          CLEANUP_FILE="${RUNNER_TEMP}/lead-workflow-ui-smoke/cleanup.json"
+          OIDC_FILE="${RUNNER_TEMP}/lead-workflow-ui-smoke-cleanup-oidc.json"
+          RUN_KEY="${GITHUB_RUN_ID}:${GITHUB_RUN_ATTEMPT}"
+          curl -fsS \
+            -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${OIDC_AUDIENCE}" \
+            > "${OIDC_FILE}"
+          OIDC_TOKEN="$(jq -er '.value' "${OIDC_FILE}")"
+          rm -f "${OIDC_FILE}"
+          HTTP_CODE="$(curl -sS -o "${CLEANUP_FILE}" -w '%{http_code}' \
+            -X POST "${BOOTSTRAP_URL}" \
+            -H "Authorization: Bearer ${OIDC_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            --data "{\"action\":\"cleanup\",\"run_key\":\"${RUN_KEY}\"}")"
+          unset OIDC_TOKEN
+          rm -f "${RUNNER_TEMP}/lead-workflow-ui-smoke-prepare.json"
+          if [ "${HTTP_CODE}" != '200' ]; then
+            jq -r '{ok,error}' "${CLEANUP_FILE}" >&2 || true
+            exit 1
+          fi
+          jq -e '
+            .ok == true and .action == "cleanup" and
+            ([.residue[] | tonumber] | all(. == 0))
+          ' "${CLEANUP_FILE}" >/dev/null
+
+      - name: Upload privacy-safe runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lead-workflow-authenticated-ui-smoke-evidence
+          path: |
+            ${{ runner.temp }}/lead-workflow-ui-smoke/evidence.json
+            ${{ runner.temp }}/lead-workflow-ui-smoke/cleanup.json
+            ${{ runner.temp }}/lead-workflow-ui-smoke/prepare-error.json
+            ${{ runner.temp }}/lead-workflow-ui-smoke/runner.log
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Enforce smoke and cleanup success
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test '${{ steps.prepare.outcome }}' = 'success'
+          test '${{ steps.ui_smoke.outcome }}' = 'success'
+          test '${{ steps.validate.outcome }}' = 'success'
+          test '${{ steps.cleanup.outcome }}' = 'success'
