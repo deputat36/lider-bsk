@@ -83,7 +83,8 @@ function buildPageSource() {
     + `function assert(value,code){if(!value)throw new Error(code);}\n`
     + `function output(status,payload){resultNode.dataset.status=status;resultNode.textContent=JSON.stringify({evidence_version:'${EVIDENCE_VERSION}',scenario,status,...payload},null,2);document.title=status==='passed'?'PROFILE FIRST PASSED':'PROFILE FIRST FAILED';}\n`
     + `try{\n`
-    + `  await import('./assets/v4/auth.js');\n`
+    + `  const authModule=await import('./assets/v4/auth.js');\n`
+    + `  authModule.bootAuth();\n`
     + `  const status=()=>document.getElementById('authStatus')?.textContent||'';\n`
     + `  if(scenario==='active')await waitFor(()=>readyEvents===1,'active_ready_timeout');\n`
     + `  if(scenario==='inactive'||scenario==='missing_profile')await waitFor(()=>status().includes('Доступ ожидает активации'),'pending_status_timeout');\n`
@@ -169,7 +170,11 @@ export async function runProfileFirstBrowserCheck({ repoRoot = path.resolve('.')
   let server = null;
   try {
     await mkdir(assets, { recursive: true });
-    await cp(path.join(repoRoot, 'crm', 'v4', 'assets', 'v4', 'auth.js'), path.join(assets, 'auth.js'));
+    const authSourcePath = path.join(repoRoot, 'crm', 'v4', 'assets', 'v4', 'auth.js');
+    const authSource = await readFile(authSourcePath, 'utf8');
+    const autoBoot = "document.addEventListener('DOMContentLoaded', bootAuth);";
+    if (!authSource.includes(autoBoot)) throw new Error('auth_auto_boot_marker_missing');
+    await writeFile(path.join(assets, 'auth.js'), authSource.replace(autoBoot, '// Browser check invokes bootAuth explicitly.'), 'utf8');
     await writeFile(path.join(assets, 'config.js'), buildConfigSource(), 'utf8');
     await writeFile(path.join(assets, 'state.js'), buildStateSource(), 'utf8');
     await writeFile(path.join(assets, 'api.js'), buildApiSource(), 'utf8');
