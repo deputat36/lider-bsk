@@ -120,11 +120,21 @@ begin
     );
   end if;
 
-  insert into leader_private.leader_public_intake_rate_limit_receipts (
-    request_id, ip_hash, phone_hash, created_at
-  ) values (
-    p_request_id, p_ip_hash, p_phone_hash, v_now
-  );
+  begin
+    insert into leader_private.leader_public_intake_rate_limit_receipts (
+      request_id, ip_hash, phone_hash, created_at
+    ) values (
+      p_request_id, p_ip_hash, p_phone_hash, v_now
+    );
+  exception when unique_violation then
+    -- The same request_id may race from another network. Treat it as an idempotent replay.
+    return jsonb_build_object(
+      'allowed', true,
+      'reason', 'idempotent_replay',
+      'retry_after_seconds', 0,
+      'idempotent_replay', true
+    );
+  end;
 
   return jsonb_build_object(
     'allowed', true,
