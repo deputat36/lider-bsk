@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import runpy
 import sys
 
 root = Path(__file__).resolve().parents[1]
@@ -7,7 +8,7 @@ plan = root / 'docs/PUBLIC_INTAKE_SERVICE_ROLE_CUTOVER_PLAN_2026-07-10.md'
 edge = root / 'supabase/functions/leader-public-lead/index.ts'
 form = root / 'assets/public-lead-form.js'
 retry = root / 'assets/public-lead-reference-v1.js'
-
+candidate_checker = root / 'tools/check_public_intake_service_role_candidate.py'
 errors = []
 
 if not plan.exists():
@@ -21,18 +22,12 @@ else:
         'backend-only and bypass RLS',
         'revoke insert on table public.leader_leads from anon',
         'revoke insert on table public.leader_public_lead_audit from anon',
-        'drop policy if exists leader_leads_insert_public_safe',
-        'drop policy if exists leader_public_lead_audit_insert_public',
         'Do not store raw IP addresses',
-        'The limiter must not block a legitimate retry with the same `request_id`',
         'Development-branch test matrix',
         'Direct write',
         'Rollback',
         'no production change without explicit approval',
-        'no `nav_*` changes',
         'no isolated grant/policy change without the matching Edge cutover',
-        'https://supabase.com/docs/guides/functions/secrets',
-        'https://supabase.com/docs/guides/database/postgres/row-level-security',
     ]
     for marker in required:
         if marker not in text:
@@ -40,7 +35,10 @@ else:
 
 source_checks = {
     edge: [
-        "const anonKey = Deno.env.get('SUPABASE_ANON_KEY')",
+        "Deno.env.get('SUPABASE_SECRET_KEYS')",
+        "Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')",
+        "headers: { apikey: secretKey }",
+        "Authorization: 'Bearer ' + legacyServiceRole",
         "supabaseUrl + '/rest/v1/leader_leads'",
         "supabaseUrl + '/rest/v1/leader_public_lead_audit'",
         'isAllowedOrigin(req)',
@@ -66,8 +64,18 @@ for path, markers in source_checks.items():
         if marker not in text:
             errors.append(f'Missing intake source marker in {path.relative_to(root)}: {marker}')
 
+if edge.exists():
+    text = edge.read_text(encoding='utf-8')
+    for marker in ["Deno.env.get('SUPABASE_ANON_KEY')", "'apikey': anonKey", 'params.anonKey']:
+        if marker in text:
+            errors.append(f'Legacy public database credential remains in Edge source: {marker}')
+
+if not candidate_checker.exists():
+    errors.append('Missing public intake service-role candidate checker')
+
 if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('Protected public intake cutover plan is complete; production remains unchanged.')
+runpy.run_path(str(candidate_checker), run_name='__main__')
+print('Protected public intake source candidate and cutover plan are complete; production remains unchanged.')

@@ -63,9 +63,42 @@ function isDuplicateRequest(details: string) {
   return text.includes('duplicate key') || text.includes('leader_leads_request_id_key') || text.includes('23505')
 }
 
+type BackendCredential = {
+  headers: Record<string, string>
+  source: 'secret_key' | 'legacy_service_role'
+}
+
+function backendCredential(): BackendCredential | null {
+  const secretKeysRaw = Deno.env.get('SUPABASE_SECRET_KEYS')
+  if (secretKeysRaw) {
+    try {
+      const parsed = JSON.parse(secretKeysRaw)
+      const secretKey = typeof parsed?.default === 'string' ? parsed.default.trim() : ''
+      if (secretKey) {
+        return { headers: { apikey: secretKey }, source: 'secret_key' }
+      }
+    } catch (_) {
+      // Ignore malformed modern key configuration and try the explicit legacy transition key.
+    }
+  }
+
+  const legacyServiceRole = (Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '').trim()
+  if (legacyServiceRole) {
+    return {
+      headers: {
+        apikey: legacyServiceRole,
+        Authorization: 'Bearer ' + legacyServiceRole,
+      },
+      source: 'legacy_service_role',
+    }
+  }
+
+  return null
+}
+
 async function writeAudit(params: {
   supabaseUrl: string
-  anonKey: string
+  backendHeaders: Record<string, string>
   requestId?: string
   phoneNormalized?: string
   sourcePagePath?: string
@@ -83,8 +116,7 @@ async function writeAudit(params: {
     const auditRes = await fetch(params.supabaseUrl + '/rest/v1/leader_public_lead_audit', {
       method: 'POST',
       headers: {
-        'apikey': params.anonKey,
-        'Authorization': 'Bearer ' + params.anonKey,
+        ...params.backendHeaders,
         'Content-Type': 'application/json',
         'Prefer': 'return=minimal',
       },
@@ -133,8 +165,8 @@ Deno.serve(async (req: Request) => {
   if (contentLength > MAX_BODY_BYTES) return json(req, 413, { error: 'payload_too_large' })
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
-  const anonKey = Deno.env.get('SUPABASE_ANON_KEY')
-  if (!supabaseUrl || !anonKey) return json(req, 500, { error: 'server_not_configured' })
+  const credential = backendCredential()
+  if (!supabaseUrl || !credential) return json(req, 500, { error: 'server_not_configured' })
 
   let body: Record<string, unknown>
   try { body = await req.json() } catch (_) { return json(req, 400, { error: 'bad_json' }) }
@@ -152,7 +184,7 @@ Deno.serve(async (req: Request) => {
 
   const auditBase = {
     supabaseUrl,
-    anonKey,
+    backendHeaders: credential.headers,
     requestId,
     phoneNormalized,
     sourcePagePath: pagePath,
@@ -228,8 +260,7 @@ Deno.serve(async (req: Request) => {
   const res = await fetch(supabaseUrl + '/rest/v1/leader_leads', {
     method: 'POST',
     headers: {
-      'apikey': anonKey,
-      'Authorization': 'Bearer ' + anonKey,
+      ...credential.headers,
       'Content-Type': 'application/json',
       'Prefer': 'return=minimal',
     },

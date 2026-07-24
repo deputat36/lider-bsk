@@ -11,6 +11,7 @@ auth = root / 'crm/v4/assets/v4/auth.js'
 menu = root / 'crm/v4/assets/v4/crm-v4-expanded-menu-v1.js'
 calculations = root / 'crm/v4/assets/v4/calculations.js'
 public_edge = root / 'supabase/functions/leader-public-lead/index.ts'
+public_candidate = root / 'contracts/public-intake-service-role-cutover-candidate-v1.json'
 
 errors = []
 
@@ -70,13 +71,23 @@ source_checks = [
         "category: raw.category || 'Расчёт по позиции'",
     ]),
     (public_edge, [
-        "const anonKey = Deno.env.get('SUPABASE_ANON_KEY')",
-        "'Authorization': 'Bearer ' + anonKey",
+        "Deno.env.get('SUPABASE_SECRET_KEYS')",
+        "Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')",
+        "headers: { apikey: secretKey }",
+        "Authorization: 'Bearer ' + legacyServiceRole",
         "supabaseUrl + '/rest/v1/leader_leads'",
+        "supabaseUrl + '/rest/v1/leader_public_lead_audit'",
+        "error: 'server_not_configured'",
     ]),
     (profile_manual, [
         'no inactive or unverified profile reaches `crmReady=true`',
         'does not alter Supabase Auth, RLS, grants, policies, database data or Edge Functions',
+    ]),
+    (public_candidate, [
+        '"status": "source_only_not_applied"',
+        '"database_changed": false',
+        '"edge_deployed": false',
+        '"approved": false',
     ]),
 ]
 
@@ -89,8 +100,17 @@ for path, markers in source_checks:
         if marker not in text:
             errors.append(f'Missing source marker in {path.relative_to(root)}: {marker}')
 
+if public_edge.exists():
+    text = public_edge.read_text(encoding='utf-8')
+    for marker in ["Deno.env.get('SUPABASE_ANON_KEY')", "'apikey': anonKey", 'params.anonKey']:
+        if marker in text:
+            errors.append(f'Legacy anonymous database write marker remains: {marker}')
+    for marker in ['type BackendCredential = {', 'function backendCredential(): BackendCredential | null']:
+        if text.count(marker) != 1:
+            errors.append(f'Public Edge helper must be singleton: {marker}')
+
 if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('Full CRM/site audit roadmap and current source evidence are present.')
+print('Full CRM/site audit roadmap and protected public intake source evidence are present.')

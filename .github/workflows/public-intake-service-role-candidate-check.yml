@@ -1,0 +1,43 @@
+name: Public intake service-role candidate check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/functions/leader-public-lead/index.ts'
+      - 'supabase/production-candidates/20260724_01_public_intake_service_role_cutover_candidate.sql'
+      - 'supabase/production-candidates/rollback/20260724_01_public_intake_service_role_cutover_candidate_rollback.sql'
+      - 'contracts/public-intake-service-role-cutover-candidate-v1.json'
+      - 'docs/PUBLIC_INTAKE_SERVICE_ROLE_CUTOVER_CANDIDATE_V1_2026-07-24.md'
+      - 'tools/check_public_intake_service_role_candidate.py'
+      - 'tools/check_public_intake_cutover_plan.py'
+      - '.github/workflows/public-intake-service-role-candidate-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/leader-public-lead/index.ts'
+      - 'supabase/production-candidates/20260724_01_public_intake_service_role_cutover_candidate.sql'
+      - 'supabase/production-candidates/rollback/20260724_01_public_intake_service_role_cutover_candidate_rollback.sql'
+      - 'contracts/public-intake-service-role-cutover-candidate-v1.json'
+      - 'docs/PUBLIC_INTAKE_SERVICE_ROLE_CUTOVER_CANDIDATE_V1_2026-07-24.md'
+      - 'tools/check_public_intake_service_role_candidate.py'
+      - 'tools/check_public_intake_cutover_plan.py'
+      - '.github/workflows/public-intake-service-role-candidate-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate source-only candidate
+        run: |
+          python3 tools/check_public_intake_service_role_candidate.py
+          python3 tools/check_public_intake_cutover_plan.py
+      - name: Confirm no production automation
+        run: |
+          ! grep -R --exclude='public-intake-service-role-candidate-check.yml' "supabase functions deploy leader-public-lead" .github/workflows
+          ! grep -R --exclude='public-intake-service-role-candidate-check.yml' "supabase db push" .github/workflows

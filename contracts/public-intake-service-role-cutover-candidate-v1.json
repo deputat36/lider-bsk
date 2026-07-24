@@ -1,0 +1,71 @@
+{
+  "contract": "public-intake-service-role-cutover-candidate",
+  "version": 1,
+  "captured_at": "2026-07-24",
+  "repository": "deputat36/lider-bsk",
+  "issue": 201,
+  "status": "source_only_not_applied",
+  "production": {
+    "project_ref": "ofewxuqfjhamgerwzull",
+    "database_changed": false,
+    "edge_deployed": false,
+    "data_changed": false,
+    "auth_changed": false,
+    "nav_changed": false
+  },
+  "live_preflight": {
+    "leader_leads_rls": true,
+    "leader_leads_anon_insert": true,
+    "leader_leads_authenticated_insert": true,
+    "leader_leads_service_role_insert": true,
+    "leader_public_lead_audit_rls": true,
+    "leader_public_lead_audit_anon_insert": true,
+    "leader_public_lead_audit_authenticated_insert": false,
+    "leader_public_lead_audit_service_role_insert": true,
+    "public_lead_policy": "leader_leads_insert_public_safe",
+    "public_audit_policy": "leader_public_lead_audit_insert_public"
+  },
+  "source": {
+    "edge": "supabase/functions/leader-public-lead/index.ts",
+    "migration": "supabase/production-candidates/20260724_01_public_intake_service_role_cutover_candidate.sql",
+    "rollback": "supabase/production-candidates/rollback/20260724_01_public_intake_service_role_cutover_candidate_rollback.sql",
+    "runbook": "docs/PUBLIC_INTAKE_SERVICE_ROLE_CUTOVER_CANDIDATE_V1_2026-07-24.md",
+    "checker": "tools/check_public_intake_service_role_candidate.py"
+  },
+  "edge_candidate": {
+    "preferred_key": "SUPABASE_SECRET_KEYS.default",
+    "legacy_fallback": "SUPABASE_SERVICE_ROLE_KEY",
+    "new_secret_authorization_header": false,
+    "legacy_service_role_authorization_header": true,
+    "fail_closed_without_backend_credential": true,
+    "anon_key_for_database_writes": false,
+    "verify_jwt": false,
+    "public_origin_and_payload_checks_preserved": true
+  },
+  "database_candidate": {
+    "anon_lead_insert_after": false,
+    "anon_audit_insert_after": false,
+    "authenticated_manual_lead_insert_after": true,
+    "authenticated_manual_lead_policy": "leader_leads_insert_app",
+    "manual_lead_check": "leader_private.leader_has_access()",
+    "service_role_lead_insert_after": true,
+    "service_role_audit_insert_after": true,
+    "transactional": true,
+    "preflight_drift_guards": true,
+    "postflight_assertions": true
+  },
+  "rollback": {
+    "source_only": true,
+    "restores_confirmed_2026_07_24_public_baseline": true,
+    "requires_edge_rollback_or_operator_confirmation_first": true,
+    "broad_schema_drop": false,
+    "historical_rows_changed": false
+  },
+  "approval_gate": {
+    "merge_source_candidate_allowed": true,
+    "edge_deploy_requires_explicit_owner_approval": true,
+    "database_migration_requires_explicit_owner_approval": true,
+    "production_browser_e2e_requires_explicit_owner_approval": true,
+    "approved": false
+  }
+}
