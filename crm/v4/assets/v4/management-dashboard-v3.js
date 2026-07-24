@@ -1,5 +1,5 @@
 import { supabaseClient } from './supabase-client.js';
-import { friendlyError } from './api.js';
+import { timeout, friendlyError } from './api.js';
 import { setStatus, toast } from './ui.js';
 import { openLeadRoute } from './router.js';
 import {
@@ -15,6 +15,7 @@ const ORDER_FIELDS = 'id,order_number,project_name,status,deadline,client_name,c
 const PRODUCTION_FIELDS = 'id,order_id,title,production_status,layout_status,priority,deadline,contractor_cost,client_total,file_url,created_at,updated_at';
 const INSTALL_FIELDS = 'id,order_id,title,install_status,priority,installer_name,address,scheduled_at,created_at,updated_at';
 const OFFER_FIELDS = 'id,lead_id,calculation_id,title,status,total_sum,valid_until,order_id,created_at';
+const DASHBOARD_SOURCE_TIMEOUT_MS = 12000;
 
 const CLOSED_LEADS = new Set(['Спам', 'Создан заказ', 'Отказ', 'Не отвечает', 'Дорого', 'Передумал']);
 const CLOSED_ORDERS = new Set(['Готово', 'Выдано', 'Закрыт', 'Отменён', 'Отмена']);
@@ -175,8 +176,18 @@ function render() {
   content.innerHTML = `${warning}${summaryHtml}${attentionPanel(queue)}${detailedAnalytics(c, queue)}`;
 }
 async function safeQuery(label, query) {
-  try { const response = await query; if (response.error) throw response.error; return response.data || []; }
-  catch (error) { sourceErrors.push(`${label} — ${friendlyError(error)}`); return []; }
+  try {
+    const response = await timeout(
+      query,
+      DASHBOARD_SOURCE_TIMEOUT_MS,
+      `${label} не ответил за ${Math.round(DASHBOARD_SOURCE_TIMEOUT_MS / 1000)} секунд`
+    );
+    if (response.error) throw response.error;
+    return response.data || [];
+  } catch (error) {
+    sourceErrors.push(`${label} — ${friendlyError(error)}`);
+    return [];
+  }
 }
 async function loadData(force = false) {
   if (busy) return;

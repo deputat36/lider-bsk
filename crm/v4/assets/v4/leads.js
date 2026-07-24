@@ -224,7 +224,7 @@ export function renderLeads() {
     return;
   }
   if (!v4State.leadsLoaded) {
-    list.innerHTML = '<div class="v4-empty">Заявки загрузятся автоматически после входа. Также можно нажать «Обновить заявки».</div>';
+    list.innerHTML = '<div class="v4-empty">Заявки загрузятся при открытии раздела. Также можно нажать «Обновить заявки».</div>';
     return;
   }
   if (!(v4State.leads || []).length) {
@@ -433,7 +433,21 @@ export function bootLeads() {
   bindLeadFilters();
   bindLeadActions();
   renderLeads();
-  document.addEventListener('leader-v4:crm-ready', () => loadLeads({ silent: true, force: true }));
+  const loadVisibleLeads = () => {
+    if (document.body?.dataset?.v4Tab !== 'leads') {
+      renderLeads();
+      return;
+    }
+    if (v4State.leadsLoaded) {
+      renderLeads();
+      return;
+    }
+    loadLeads({ silent: true });
+  };
+  document.addEventListener('leader-v4:crm-ready', loadVisibleLeads);
+  document.addEventListener('leader-v4:tab-opened', (event) => {
+    if (event.detail?.tab === 'leads') loadVisibleLeads();
+  });
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootLeads);
