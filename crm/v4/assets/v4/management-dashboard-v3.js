@@ -16,6 +16,7 @@ const PRODUCTION_FIELDS = 'id,order_id,title,production_status,layout_status,pri
 const INSTALL_FIELDS = 'id,order_id,title,install_status,priority,installer_name,address,scheduled_at,created_at,updated_at';
 const OFFER_FIELDS = 'id,lead_id,calculation_id,title,status,total_sum,valid_until,order_id,created_at';
 const DASHBOARD_SOURCE_TIMEOUT_MS = 12000;
+const DASHBOARD_SOURCE_TIMEOUT_MS = 12000;
 
 const CLOSED_LEADS = new Set(['Спам', 'Создан заказ', 'Отказ', 'Не отвечает', 'Дорого', 'Передумал']);
 const CLOSED_ORDERS = new Set(['Готово', 'Выдано', 'Закрыт', 'Отменён', 'Отмена']);
