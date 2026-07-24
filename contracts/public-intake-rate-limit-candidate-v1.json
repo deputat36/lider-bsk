@@ -1,0 +1,67 @@
+{
+  "contract": "public-intake-rate-limit-candidate",
+  "version": 1,
+  "captured_at": "2026-07-24",
+  "repository": "deputat36/lider-bsk",
+  "issue": 201,
+  "status": "source_only_not_applied",
+  "production": {
+    "database_changed": false,
+    "edge_deployed": false,
+    "data_changed": false,
+    "secrets_changed": false,
+    "nav_changed": false
+  },
+  "source": {
+    "edge_entrypoint": "supabase/functions/leader-public-lead/index.ts",
+    "edge_module": "supabase/functions/leader-public-lead/rate-limit.ts",
+    "migration": "supabase/production-candidates/20260724_02_public_intake_rate_limit_candidate.sql",
+    "rollback": "supabase/production-candidates/rollback/20260724_02_public_intake_rate_limit_candidate_rollback.sql",
+    "runbook": "docs/PUBLIC_INTAKE_RATE_LIMIT_CANDIDATE_V1_2026-07-24.md",
+    "checker": "tools/check_public_intake_rate_limit_candidate.py"
+  },
+  "privacy": {
+    "raw_ip_stored": false,
+    "raw_ip_logged": false,
+    "ip_hash": "sha256_with_private_salt",
+    "phone_hash": "sha256_with_private_salt",
+    "salt_env": "LEADER_PUBLIC_RATE_LIMIT_SALT",
+    "salt_min_length": 16,
+    "receipt_retention": "2 days"
+  },
+  "limits": {
+    "window_seconds": 300,
+    "ip_requests": 20,
+    "phone_requests": 5,
+    "http_status": 429,
+    "retry_after_returned": true
+  },
+  "idempotency": {
+    "same_request_id_consumes_quota_twice": false,
+    "cross_network_request_id_race_handled": true,
+    "normal_lead_duplicate_path_preserved": true
+  },
+  "failure_mode": {
+    "rpc_unavailable": "fail_closed_503",
+    "salt_missing": "fail_closed_500",
+    "database_write_bypass": false
+  },
+  "database": {
+    "schema": "leader_private",
+    "table": "leader_public_intake_rate_limit_receipts",
+    "rpc": "public.leader_public_intake_rate_limit_rpc",
+    "anon_execute": false,
+    "authenticated_execute": false,
+    "service_role_execute": true,
+    "rls_enabled": true,
+    "historical_business_rows_changed": false
+  },
+  "approval_gate": {
+    "merge_source_candidate_allowed": true,
+    "set_rate_limit_salt_requires_explicit_owner_approval": true,
+    "database_migration_requires_explicit_owner_approval": true,
+    "edge_deploy_requires_explicit_owner_approval": true,
+    "production_load_test_requires_explicit_owner_approval": true,
+    "approved": false
+  }
+}

@@ -1,4 +1,4 @@
-name: Public intake service-role candidate check
+name: Public intake rate-limit candidate check
 
 on:
   pull_request:
@@ -6,35 +6,25 @@ on:
     paths:
       - 'supabase/functions/leader-public-lead/index.ts'
       - 'supabase/functions/leader-public-lead/rate-limit.ts'
-      - 'supabase/production-candidates/20260724_01_public_intake_service_role_cutover_candidate.sql'
       - 'supabase/production-candidates/20260724_02_public_intake_rate_limit_candidate.sql'
-      - 'supabase/production-candidates/rollback/20260724_01_public_intake_service_role_cutover_candidate_rollback.sql'
       - 'supabase/production-candidates/rollback/20260724_02_public_intake_rate_limit_candidate_rollback.sql'
-      - 'contracts/public-intake-service-role-cutover-candidate-v1.json'
       - 'contracts/public-intake-rate-limit-candidate-v1.json'
-      - 'docs/PUBLIC_INTAKE_SERVICE_ROLE_CUTOVER_CANDIDATE_V1_2026-07-24.md'
       - 'docs/PUBLIC_INTAKE_RATE_LIMIT_CANDIDATE_V1_2026-07-24.md'
-      - 'tools/check_public_intake_service_role_candidate.py'
+      - 'docs/PUBLIC_INTAKE_SERVICE_ROLE_CUTOVER_CANDIDATE_V1_2026-07-24.md'
       - 'tools/check_public_intake_rate_limit_candidate.py'
-      - 'tools/check_public_intake_cutover_plan.py'
-      - '.github/workflows/public-intake-service-role-candidate-check.yml'
+      - '.github/workflows/public-intake-rate-limit-candidate-check.yml'
   push:
     branches: [main]
     paths:
       - 'supabase/functions/leader-public-lead/index.ts'
       - 'supabase/functions/leader-public-lead/rate-limit.ts'
-      - 'supabase/production-candidates/20260724_01_public_intake_service_role_cutover_candidate.sql'
       - 'supabase/production-candidates/20260724_02_public_intake_rate_limit_candidate.sql'
-      - 'supabase/production-candidates/rollback/20260724_01_public_intake_service_role_cutover_candidate_rollback.sql'
       - 'supabase/production-candidates/rollback/20260724_02_public_intake_rate_limit_candidate_rollback.sql'
-      - 'contracts/public-intake-service-role-cutover-candidate-v1.json'
       - 'contracts/public-intake-rate-limit-candidate-v1.json'
-      - 'docs/PUBLIC_INTAKE_SERVICE_ROLE_CUTOVER_CANDIDATE_V1_2026-07-24.md'
       - 'docs/PUBLIC_INTAKE_RATE_LIMIT_CANDIDATE_V1_2026-07-24.md'
-      - 'tools/check_public_intake_service_role_candidate.py'
+      - 'docs/PUBLIC_INTAKE_SERVICE_ROLE_CUTOVER_CANDIDATE_V1_2026-07-24.md'
       - 'tools/check_public_intake_rate_limit_candidate.py'
-      - 'tools/check_public_intake_cutover_plan.py'
-      - '.github/workflows/public-intake-service-role-candidate-check.yml'
+      - '.github/workflows/public-intake-rate-limit-candidate-check.yml'
 
 permissions:
   contents: read
@@ -45,17 +35,19 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - name: Validate source-only candidate
+      - name: Validate source-only rate-limit candidate
+        run: python3 tools/check_public_intake_rate_limit_candidate.py
+      - name: Validate TypeScript syntax
         run: |
-          python3 tools/check_public_intake_service_role_candidate.py
-          python3 tools/check_public_intake_cutover_plan.py
+          node --experimental-strip-types --check supabase/functions/leader-public-lead/rate-limit.ts
+          node --experimental-strip-types --check supabase/functions/leader-public-lead/index.ts
       - name: Confirm no production automation
         run: |
           ! grep -R \
-            --exclude='public-intake-service-role-candidate-check.yml' \
             --exclude='public-intake-rate-limit-candidate-check.yml' \
+            --exclude='public-intake-service-role-candidate-check.yml' \
             "supabase functions deploy leader-public-lead" .github/workflows
           ! grep -R \
-            --exclude='public-intake-service-role-candidate-check.yml' \
             --exclude='public-intake-rate-limit-candidate-check.yml' \
+            --exclude='public-intake-service-role-candidate-check.yml' \
             "supabase db push" .github/workflows

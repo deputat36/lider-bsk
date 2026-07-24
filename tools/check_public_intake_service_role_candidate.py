@@ -9,10 +9,12 @@ edge = root / 'supabase/functions/leader-public-lead/index.ts'
 migration = root / 'supabase/production-candidates/20260724_01_public_intake_service_role_cutover_candidate.sql'
 rollback = root / 'supabase/production-candidates/rollback/20260724_01_public_intake_service_role_cutover_candidate_rollback.sql'
 contract_path = root / 'contracts/public-intake-service-role-cutover-candidate-v1.json'
+rate_contract_path = root / 'contracts/public-intake-rate-limit-candidate-v1.json'
+rate_module = root / 'supabase/functions/leader-public-lead/rate-limit.ts'
 runbook = root / 'docs/PUBLIC_INTAKE_SERVICE_ROLE_CUTOVER_CANDIDATE_V1_2026-07-24.md'
 errors = []
 
-required_files = [edge, migration, rollback, contract_path, runbook]
+required_files = [edge, migration, rollback, contract_path, rate_contract_path, rate_module, runbook]
 for path in required_files:
     if not path.exists():
         errors.append(f'missing candidate file: {path.relative_to(root)}')
@@ -32,6 +34,9 @@ if edge.exists():
         'isAllowedOrigin(req)',
         'honeypot_filled',
         'request_id_conflict',
+        "from './rate-limit.ts'",
+        "Deno.env.get('LEADER_PUBLIC_RATE_LIMIT_SALT')",
+        'checkPublicIntakeRateLimit({',
     ]
     for marker in required:
         if marker not in text:
@@ -90,12 +95,12 @@ if rollback.exists():
         if marker not in text:
             errors.append(f'rollback candidate missing: {marker}')
 
+contract = {}
 if contract_path.exists():
     try:
         contract = json.loads(contract_path.read_text(encoding='utf-8'))
     except Exception as exc:
         errors.append(f'invalid candidate contract: {exc}')
-        contract = {}
     if contract.get('status') != 'source_only_not_applied':
         errors.append('contract must remain source_only_not_applied')
     production = contract.get('production') or {}
@@ -106,15 +111,31 @@ if contract_path.exists():
         errors.append('production approval must remain false')
     if gate.get('edge_deploy_requires_explicit_owner_approval') is not True or gate.get('database_migration_requires_explicit_owner_approval') is not True:
         errors.append('explicit owner approval gates missing')
+    edge_candidate = contract.get('edge_candidate') or {}
+    if edge_candidate.get('rate_limit_candidate_required') is not True or edge_candidate.get('rate_limit_fail_closed') is not True:
+        errors.append('service-role contract must require fail-closed rate limit')
+
+if rate_contract_path.exists():
+    try:
+        rate_contract = json.loads(rate_contract_path.read_text(encoding='utf-8'))
+    except Exception as exc:
+        errors.append(f'invalid rate-limit contract: {exc}')
+        rate_contract = {}
+    if rate_contract.get('status') != 'source_only_not_applied':
+        errors.append('rate-limit contract must remain source_only_not_applied')
+    if (rate_contract.get('approval_gate') or {}).get('approved') is not False:
+        errors.append('rate-limit approval must remain false')
 
 if runbook.exists():
     text = runbook.read_text(encoding='utf-8')
     for marker in [
         'Статус: source-only. Production не изменён.',
         'ручное создание заявки',
+        'Privacy-preserving rate limit',
+        'LEADER_PUBLIC_RATE_LIMIT_SALT',
         'Stop conditions',
         'Rollback order',
-        'merge source candidate не означает разрешение на deploy или migration',
+        'merge source candidate не означает разрешение на deploy, secret change или migration',
     ]:
         if marker not in text:
             errors.append(f'runbook missing: {marker}')
@@ -123,4 +144,4 @@ if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('Public intake service-role cutover candidate is complete; production remains unchanged.')
+print('Public intake service-role and rate-limit candidates are complete; production remains unchanged.')
