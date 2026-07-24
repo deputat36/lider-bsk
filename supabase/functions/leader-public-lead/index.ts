@@ -1,8 +1,13 @@
+import { checkPublicIntakeRateLimit, publicIntakeRateLimitIdentity } from './rate-limit.ts'
+
 const DEFAULT_ALLOWED_ORIGINS = [
   'https://www.lider-bsk.ru',
   'https://lider-bsk.ru',
 ]
 const MAX_BODY_BYTES = 25_000
+const RATE_LIMIT_WINDOW_SECONDS = 300
+const RATE_LIMIT_IP_MAX = 20
+const RATE_LIMIT_PHONE_MAX = 5
 
 function allowedOrigins() {
   const configured = Deno.env.get('LEADER_PUBLIC_ALLOWED_ORIGINS')
@@ -166,7 +171,10 @@ Deno.serve(async (req: Request) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const credential = backendCredential()
-  if (!supabaseUrl || !credential) return json(req, 500, { error: 'server_not_configured' })
+  const rateLimitSalt = (Deno.env.get('LEADER_PUBLIC_RATE_LIMIT_SALT') || '').trim()
+  if (!supabaseUrl || !credential || rateLimitSalt.length < 16) {
+    return json(req, 500, { error: 'server_not_configured' })
+  }
 
   let body: Record<string, unknown>
   try { body = await req.json() } catch (_) { return json(req, 400, { error: 'bad_json' }) }
@@ -194,6 +202,46 @@ Deno.serve(async (req: Request) => {
     utmSource,
     utmMedium,
     utmCampaign,
+  }
+
+  let rateIdentity: { ipHash: string; phoneHash: string | null }
+  try {
+    rateIdentity = await publicIntakeRateLimitIdentity(req, phoneNormalized, rateLimitSalt)
+  } catch (_) {
+    return json(req, 500, { error: 'server_not_configured', request_id: requestId })
+  }
+
+  const rateLimit = await checkPublicIntakeRateLimit({
+    supabaseUrl,
+    backendHeaders: credential.headers,
+    requestId,
+    ipHash: rateIdentity.ipHash,
+    phoneHash: rateIdentity.phoneHash,
+    windowSeconds: RATE_LIMIT_WINDOW_SECONDS,
+    ipLimit: RATE_LIMIT_IP_MAX,
+    phoneLimit: RATE_LIMIT_PHONE_MAX,
+  })
+
+  if (!rateLimit.ok) {
+    console.error('leader_public_lead_rate_limit_unavailable', { request_id: requestId, reason: rateLimit.reason })
+    return json(req, 503, { error: 'rate_limit_unavailable', request_id: requestId })
+  }
+
+  if (!rateLimit.allowed) {
+    await writeAudit({
+      ...auditBase,
+      result: 'rejected',
+      reason: rateLimit.reason,
+      payload: {
+        form: 'site_public_form_v7',
+        retry_after_seconds: rateLimit.retryAfterSeconds,
+      },
+    })
+    return json(req, 429, {
+      error: 'rate_limited',
+      request_id: requestId,
+      retry_after_seconds: rateLimit.retryAfterSeconds,
+    })
   }
 
   if (cleanText(body.website, 200)) {
