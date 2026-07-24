@@ -1,0 +1,31 @@
+name: CRM dashboard timeout singleton check
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'crm/v4/assets/v4/management-dashboard-v3.js'
+      - 'tools/check_crm_dashboard_timeout_singleton.py'
+      - '.github/workflows/crm-dashboard-timeout-singleton-check.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'crm/v4/assets/v4/management-dashboard-v3.js'
+      - 'tools/check_crm_dashboard_timeout_singleton.py'
+      - '.github/workflows/crm-dashboard-timeout-singleton-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate dashboard syntax
+        run: node --check crm/v4/assets/v4/management-dashboard-v3.js
+      - name: Validate timeout singleton
+        run: python3 tools/check_crm_dashboard_timeout_singleton.py
