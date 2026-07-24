@@ -129,6 +129,39 @@ function backendCredential(): BackendCredential | null {
   return null
 }
 
+type BackendCredential = {
+  headers: Record<string, string>
+  source: 'secret_key' | 'legacy_service_role'
+}
+
+function backendCredential(): BackendCredential | null {
+  const secretKeysRaw = Deno.env.get('SUPABASE_SECRET_KEYS')
+  if (secretKeysRaw) {
+    try {
+      const parsed = JSON.parse(secretKeysRaw)
+      const secretKey = typeof parsed?.default === 'string' ? parsed.default.trim() : ''
+      if (secretKey) {
+        return { headers: { apikey: secretKey }, source: 'secret_key' }
+      }
+    } catch (_) {
+      return null
+    }
+  }
+
+  const legacyServiceRole = (Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '').trim()
+  if (legacyServiceRole) {
+    return {
+      headers: {
+        apikey: legacyServiceRole,
+        Authorization: 'Bearer ' + legacyServiceRole,
+      },
+      source: 'legacy_service_role',
+    }
+  }
+
+  return null
+}
+
 async function writeAudit(params: {
   supabaseUrl: string
   backendHeaders: Record<string, string>
