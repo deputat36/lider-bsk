@@ -5,6 +5,10 @@ on:
     branches: [main]
     paths:
       - 'tools/run_public_intake_staging_runtime_smoke.mjs'
+      - 'supabase/staging-functions/leader-public-lead-staging/index.ts'
+      - 'supabase/staging-functions/leader-public-lead-staging-cleanup/index.ts'
+      - 'supabase/staging-migrations/20260725_01_public_intake_contract_alignment.sql'
+      - 'supabase/staging-migrations/20260725_02_public_intake_smoke_cleanup_rpc.sql'
       - '.github/workflows/public-intake-staging-runtime-smoke.yml'
       - 'docs/PUBLIC_INTAKE_STAGING_RUNTIME_SMOKE_V1_2026-07-25.md'
   workflow_dispatch:
@@ -19,6 +23,11 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+      - name: Validate staging smoke sources
+        run: |
+          node --check tools/run_public_intake_staging_runtime_smoke.mjs
+          node --experimental-strip-types --check supabase/staging-functions/leader-public-lead-staging/index.ts
+          node --experimental-strip-types --check supabase/staging-functions/leader-public-lead-staging-cleanup/index.ts
       - name: Run public intake staging runtime smoke
         run: node tools/run_public_intake_staging_runtime_smoke.mjs
       - name: Upload safe smoke report
