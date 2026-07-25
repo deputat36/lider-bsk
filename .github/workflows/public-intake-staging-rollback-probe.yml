@@ -1,0 +1,32 @@
+name: Public intake staging rollback probe
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/run_public_intake_staging_rollback_probe.mjs'
+      - '.github/workflows/public-intake-staging-rollback-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'agent/public-intake-staging-rollback-rehearsal-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      EXPECTED_STATUS: '410'
+      EXPECTED_ERROR: staging_rollback_locked
+    steps:
+      - uses: actions/checkout@v4
+      - run: node --check tools/run_public_intake_staging_rollback_probe.mjs
+      - run: node tools/run_public_intake_staging_rollback_probe.mjs
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-intake-staging-rollback-probe
+          path: public-intake-staging-rollback-probe.json
+          if-no-files-found: error
+          retention-days: 7
