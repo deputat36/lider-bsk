@@ -1,0 +1,52 @@
+name: Public intake staging runtime smoke
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/run_public_intake_staging_runtime_smoke.mjs'
+      - 'supabase/staging-functions/leader-public-lead-staging/index.ts'
+      - 'supabase/staging-functions/leader-public-lead-staging-cleanup/index.ts'
+      - 'supabase/staging-migrations/20260725_01_public_intake_contract_alignment.sql'
+      - 'supabase/staging-migrations/20260725_02_public_intake_smoke_cleanup_rpc.sql'
+      - '.github/workflows/public-intake-staging-runtime-smoke.yml'
+      - 'docs/PUBLIC_INTAKE_STAGING_RUNTIME_SMOKE_V1_2026-07-25.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'agent/public-intake-staging-runtime-smoke-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate staging smoke sources
+        run: |
+          node --check tools/run_public_intake_staging_runtime_smoke.mjs
+          node --experimental-strip-types <<'NODE'
+          const fs = require('node:fs')
+          const { stripTypeScriptTypes } = require('node:module')
+          const files = [
+            ['supabase/staging-functions/leader-public-lead-staging/index.ts', '/tmp/leader-public-lead-staging.mjs'],
+            ['supabase/staging-functions/leader-public-lead-staging-cleanup/index.ts', '/tmp/leader-public-lead-staging-cleanup.mjs'],
+          ]
+          for (const [source, target] of files) {
+            const stripped = stripTypeScriptTypes(fs.readFileSync(source, 'utf8'), { mode: 'transform' })
+            fs.writeFileSync(target, stripped)
+          }
+          NODE
+          node --check /tmp/leader-public-lead-staging.mjs
+          node --check /tmp/leader-public-lead-staging-cleanup.mjs
+      - name: Run public intake staging runtime smoke
+        run: node tools/run_public_intake_staging_runtime_smoke.mjs
+      - name: Upload safe smoke report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-intake-staging-smoke-report
+          path: public-intake-staging-smoke-report.json
+          if-no-files-found: error
+          retention-days: 7
