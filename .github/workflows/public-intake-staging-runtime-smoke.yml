@@ -1,0 +1,31 @@
+name: Public intake staging runtime smoke
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/run_public_intake_staging_runtime_smoke.mjs'
+      - '.github/workflows/public-intake-staging-runtime-smoke.yml'
+      - 'docs/PUBLIC_INTAKE_STAGING_RUNTIME_SMOKE_V1_2026-07-25.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'agent/public-intake-staging-runtime-smoke-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run public intake staging runtime smoke
+        run: node tools/run_public_intake_staging_runtime_smoke.mjs
+      - name: Upload safe smoke report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-intake-staging-smoke-report
+          path: public-intake-staging-smoke-report.json
+          if-no-files-found: error
+          retention-days: 7
