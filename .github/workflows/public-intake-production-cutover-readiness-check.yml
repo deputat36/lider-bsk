@@ -1,0 +1,45 @@
+name: Public intake production cutover readiness check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'contracts/public-intake-production-cutover-readiness-v1.json'
+      - 'contracts/public-intake-service-role-cutover-candidate-v1.json'
+      - 'contracts/public-intake-rate-limit-candidate-v1.json'
+      - 'docs/PUBLIC_INTAKE_STAGING_RUNTIME_SMOKE_V1_2026-07-25.md'
+      - 'tools/check_public_intake_production_cutover_readiness.py'
+      - '.github/workflows/public-intake-production-cutover-readiness-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'contracts/public-intake-production-cutover-readiness-v1.json'
+      - 'contracts/public-intake-service-role-cutover-candidate-v1.json'
+      - 'contracts/public-intake-rate-limit-candidate-v1.json'
+      - 'docs/PUBLIC_INTAKE_STAGING_RUNTIME_SMOKE_V1_2026-07-25.md'
+      - 'tools/check_public_intake_production_cutover_readiness.py'
+      - '.github/workflows/public-intake-production-cutover-readiness-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  readiness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate source and staging readiness
+        run: python3 tools/check_public_intake_production_cutover_readiness.py
+      - name: Confirm production automation remains absent
+        run: |
+          ! grep -R \
+            --exclude='public-intake-production-cutover-readiness-check.yml' \
+            --exclude='public-intake-rate-limit-candidate-check.yml' \
+            --exclude='public-intake-service-role-candidate-check.yml' \
+            "supabase functions deploy leader-public-lead" .github/workflows
+          ! grep -R \
+            --exclude='public-intake-production-cutover-readiness-check.yml' \
+            --exclude='public-intake-rate-limit-candidate-check.yml' \
+            --exclude='public-intake-service-role-candidate-check.yml' \
+            "supabase db push" .github/workflows
