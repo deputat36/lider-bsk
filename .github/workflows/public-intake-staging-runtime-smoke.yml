@@ -26,8 +26,20 @@ jobs:
       - name: Validate staging smoke sources
         run: |
           node --check tools/run_public_intake_staging_runtime_smoke.mjs
-          node --experimental-strip-types --check supabase/staging-functions/leader-public-lead-staging/index.ts
-          node --experimental-strip-types --check supabase/staging-functions/leader-public-lead-staging-cleanup/index.ts
+          node --experimental-strip-types <<'NODE'
+          const fs = require('node:fs')
+          const { stripTypeScriptTypes } = require('node:module')
+          const files = [
+            ['supabase/staging-functions/leader-public-lead-staging/index.ts', '/tmp/leader-public-lead-staging.mjs'],
+            ['supabase/staging-functions/leader-public-lead-staging-cleanup/index.ts', '/tmp/leader-public-lead-staging-cleanup.mjs'],
+          ]
+          for (const [source, target] of files) {
+            const stripped = stripTypeScriptTypes(fs.readFileSync(source, 'utf8'), { mode: 'transform' })
+            fs.writeFileSync(target, stripped)
+          }
+          NODE
+          node --check /tmp/leader-public-lead-staging.mjs
+          node --check /tmp/leader-public-lead-staging-cleanup.mjs
       - name: Run public intake staging runtime smoke
         run: node tools/run_public_intake_staging_runtime_smoke.mjs
       - name: Upload safe smoke report
