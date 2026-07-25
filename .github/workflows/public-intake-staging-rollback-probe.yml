@@ -17,8 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      EXPECTED_STATUS: '410'
-      EXPECTED_ERROR: staging_rollback_locked
+      EXPECTED_STATUS: '503'
+      EXPECTED_ERROR: rate_limit_unavailable
     steps:
       - uses: actions/checkout@v4
       - run: node --check tools/run_public_intake_staging_rollback_probe.mjs
