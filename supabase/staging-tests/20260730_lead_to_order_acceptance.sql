@@ -7,6 +7,8 @@
 begin;
 
 do $guard$
+declare
+  v_missing text[];
 begin
   if not exists (
     select 1 from leader_staging.environment_guard
@@ -15,6 +17,22 @@ begin
       and environment_name = 'staging'
       and repository = 'deputat36/lider-bsk'
   ) then raise exception 'staging_environment_guard_failed'; end if;
+
+  select array_agg(required.object_name order by required.object_name)
+  into v_missing
+  from (values
+    ('table:leader_clients', to_regclass('public.leader_clients') is not null),
+    ('table:leader_order_items', to_regclass('public.leader_order_items') is not null),
+    ('column:leader_lead_needs.client_id', exists(select 1 from information_schema.columns where table_schema='public' and table_name='leader_lead_needs' and column_name='client_id')),
+    ('column:leader_lead_needs.need_installation', exists(select 1 from information_schema.columns where table_schema='public' and table_name='leader_lead_needs' and column_name='need_installation')),
+    ('rpc:leader_create_calculation_version_rpc(jsonb)', to_regprocedure('public.leader_create_calculation_version_rpc(jsonb)') is not null),
+    ('rpc:leader_create_offer_from_calculation_rpc(jsonb)', to_regprocedure('public.leader_create_offer_from_calculation_rpc(jsonb)') is not null),
+    ('rpc:leader_create_order_from_offer_rpc(jsonb)', to_regprocedure('public.leader_create_order_from_offer_rpc(jsonb)') is not null)
+  ) required(object_name,present)
+  where not required.present;
+  if v_missing is not null then
+    raise exception 'lead_to_order_schema_preflight_failed:%', array_to_string(v_missing, ',');
+  end if;
 end $guard$;
 
 insert into public.leader_user_profiles(user_id,email,full_name,role,is_active,permissions)
