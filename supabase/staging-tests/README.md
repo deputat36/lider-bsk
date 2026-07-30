@@ -1,5 +1,9 @@
 # Calculation version staging tests
 
+Полный транзакционный сценарий `заявка → потребность → расчёт → КП → заказ`:
+`20260730_lead_to_order_acceptance.sql`. Он имеет жёсткий environment guard,
+завершается rollback и затем отдельно подтверждает нулевой остаток синтетического запуска.
+
 Canonical environment: Supabase project `otulfnouybahfnsycxqn` (`lider-bsk-staging`).
 
 The production project must never be used for these scripts.
