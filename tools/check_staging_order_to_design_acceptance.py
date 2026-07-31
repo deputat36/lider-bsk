@@ -19,7 +19,9 @@ missing = [marker for marker in required_sql if marker not in sql]
 if missing:
     raise SystemExit(f"order-to-design acceptance markers missing: {missing}")
 
-for name, text in (("sql", sql), ("doc", doc), ("workflow", workflow)):
+# Environment boundaries are enforced on executable/configuration artifacts.
+# The evidence document may explicitly state that forbidden contours were not touched.
+for name, text in (("sql", sql), ("workflow", workflow)):
     lowered = text.lower()
     for forbidden in ("ofewxuqfjhamgerwzull", "nav_", "parket_"):
         if forbidden.lower() in lowered:
@@ -31,6 +33,8 @@ if "create table" in sql.lower() or "alter table" in sql.lower() or "drop table"
     raise SystemExit("acceptance must not contain DDL")
 if "Runtime result" not in doc or "zero residue" not in doc:
     raise SystemExit("runtime evidence missing from documentation")
+if "Production Supabase не изменялся" not in doc:
+    raise SystemExit("production-unchanged evidence missing from documentation")
 if "python3 tools/check_staging_order_to_design_acceptance.py" not in workflow:
     raise SystemExit("workflow does not run the checker")
 
