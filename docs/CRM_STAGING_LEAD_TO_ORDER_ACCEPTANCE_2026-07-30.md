@@ -2,43 +2,68 @@
 
 ## Фактический результат
 
-Подготовлены staging-only compatibility migration, read-only schema preflight и
-единый транзакционный acceptance-сценарий для проекта `otulfnouybahfnsycxqn`.
-Migration добавляет отсутствующие минимальные таблицы `leader_clients`,
-`leader_order_items`, две колонки потребности и канонический
-`leader_create_order_from_offer_rpc(jsonb)` из main. Сценарий проверяет заявку, ответственного и следующий контакт,
-повторное чтение потребности, две неизменяемые версии расчёта, изменение цены и
-скидки, себестоимость, дополнительный расход, итог клиенту, КП из точной версии,
-атомарное создание заказа, перенос позиций и ключевых реквизитов, повтор команды
-без дубля и повторное чтение заказа.
+31 июля 2026 года фактически проверен staging-сценарий проекта
+`otulfnouybahfnsycxqn`:
 
-Сценарий использует только UUID, телефон и тексты с префиксом
-`LIDER-E2E-20260730`, выполняется внутри `BEGIN`/`ROLLBACK`, а после rollback
-отдельно проверяет нулевой остаток по заявке, клиенту, расчётам, КП и заказу.
+`заявка → потребность → расчёт v1 → расчёт v2 → КП → заказ`.
 
-## Статус запуска
+Перед запуском применены две staging-only migration:
 
-Source-проверка файлов проходит. По указанию технической приёмки migration и
-acceptance SQL удалённо не запускались. Поэтому документ не утверждает, что
-runtime-цепочка дошла до заказа или что удалённая очистка уже состоялась.
+- `lead_to_order_status_history_compat_20260730`;
+- `lead_to_order_acceptance_compat_20260730`.
 
-Точная следующая операция: применить compatibility migration, выполнить catalog
-preflight и только затем запустить acceptance SQL. Успешный запуск заканчивается notice
-`cleanup verified: zero residue`. Production-проект `ofewxuqfjhamgerwzull` не
-использовался и не изменялся; production cutover не выполнялся.
+Они добавили только недостающий staging-контракт: историю статусов заказа,
+`leader_clients`, `leader_order_items`, поля `client_id` и `need_installation`
+потребности и канонический `leader_create_order_from_offer_rpc(jsonb)`.
+
+Новые таблицы защищены RLS, закрыты от `anon` и `authenticated`, а доступ для
+staging harness предоставлен только `service_role`.
+
+## Что подтверждено runtime-проверкой
+
+- заявка сохраняет ответственного и следующий контакт;
+- потребность повторно читается без потери структурированных данных;
+- расчёт v1 остаётся неизменным после создания v2;
+- расчёт v2 получает номер версии 2;
+- клиентская сумма v2 равна 2400;
+- себестоимость v2 равна 1700;
+- скидка и дополнительный расход сохраняются в снимках позиций;
+- КП создаётся из точной версии v2;
+- фактический ответ RPC КП корректно читается через `entity.id`;
+- заказ получает правильную сумму, себестоимость, ответственного и источник;
+- в заказ перенесены две позиции расчёта;
+- повторный вызов создания заказа возвращает существующий заказ и не создаёт дубль;
+- заказ повторно читается после создания.
+
+## Очистка
+
+Acceptance выполнялся внутри `BEGIN`/`ROLLBACK` с синтетическим префиксом
+`LIDER-E2E-20260730`.
+
+После rollback отдельно подтверждён нулевой остаток:
+
+- заявок — 0;
+- клиентов — 0;
+- расчётов — 0;
+- коммерческих предложений — 0;
+- заказов — 0.
+
+Итог runtime-проверки:
+
+`lead-to-order acceptance: OK; cleanup verified: zero residue`.
 
 ## Компоненты цепочки
 
-- карточка заявки и потребности: `leader_leads`, `leader_lead_needs`, CRM v4;
-- версии: `leader_create_calculation_version_rpc`, `leader_lead_calculations`,
-  `leader_lead_calculation_items`;
+- заявка и потребность: `leader_leads`, `leader_lead_needs`;
+- версии расчёта: `leader_create_calculation_version_rpc`,
+  `leader_lead_calculations`, `leader_lead_calculation_items`;
 - КП: `leader_create_offer_from_calculation_rpc`, `leader_commercial_offers`;
 - заказ: `leader_create_order_from_offer_rpc`, `leader_orders`,
-  `leader_order_items`, события КП и история статуса заказа.
+  `leader_order_items`, `leader_order_status_history`.
 
-Preflight читает системный каталог staging и останавливает запуск с перечнем
-отсутствующих таблиц, колонок и RPC. Текстовая source-проверка отдельно доказывает,
-что определение order RPC дословно взято из канонической migration main.
+Catalog preflight прошёл перед acceptance. GitHub Actions, включая
+`Staging lead-to-order acceptance contract`, прошли после исправления фактического
+контракта ответа КП.
 
-Новых production-изменений, DDL/DML, тестовых production-строк и изменений
-`nav_*`/`parket_*` нет.
+Production-проект `ofewxuqfjhamgerwzull` не изменялся. Production cutover не
+выполнялся. Объекты `nav_*` и `parket_*` не затрагивались.
