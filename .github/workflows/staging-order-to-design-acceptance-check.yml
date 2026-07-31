@@ -1,0 +1,29 @@
+name: Staging order-to-design acceptance contract
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/staging-tests/20260731_order_to_design_acceptance.sql'
+      - 'tools/check_staging_order_to_design_acceptance.py'
+      - 'docs/CRM_STAGING_ORDER_TO_DESIGN_ACCEPTANCE_2026-07-31.md'
+      - '.github/workflows/staging-order-to-design-acceptance-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/staging-tests/20260731_order_to_design_acceptance.sql'
+      - 'tools/check_staging_order_to_design_acceptance.py'
+      - 'docs/CRM_STAGING_ORDER_TO_DESIGN_ACCEPTANCE_2026-07-31.md'
+      - '.github/workflows/staging-order-to-design-acceptance-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  source-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 tools/check_staging_order_to_design_acceptance.py
