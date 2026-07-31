@@ -108,7 +108,8 @@ begin
       'payload',jsonb_build_object('calculation_id',v_version_id,'idempotency_key','LIDER-E2E-20260730-offer',
         'title','LIDER-E2E-20260730 offer','valid_until',(current_date+14)::text))));
   if coalesce((v_offer->>'ok')::boolean,false) is not true then raise exception 'offer_failed: %',v_offer; end if;
-  v_offer_id := (v_offer#>>'{offer,id}')::uuid;
+  v_offer_id := (v_offer#>>'{entity,id}')::uuid;
+  if v_offer_id is null then raise exception 'offer_response_missing_entity_id: %', v_offer; end if;
   if (select calculation_id from public.leader_commercial_offers where id=v_offer_id) <> v_version_id then raise exception 'offer_wrong_version'; end if;
   update public.leader_commercial_offers set status='Согласовано' where id=v_offer_id;
 
