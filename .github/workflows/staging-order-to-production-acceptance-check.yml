@@ -1,0 +1,40 @@
+name: Staging order-to-production acceptance contract
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/staging-migrations/20260731_02_production_job_create_from_order_rpc.sql'
+      - 'supabase/staging-migrations/20260731_03_production_job_create_layout_gate_fix.sql'
+      - 'supabase/staging-tests/20260731_order_to_production_acceptance.sql'
+      - 'supabase/staging-functions/leader-crm-production-create/**'
+      - 'tools/check_staging_order_to_production_acceptance.py'
+      - 'docs/CRM_STAGING_ORDER_TO_PRODUCTION_ACCEPTANCE_2026-07-31.md'
+      - '.github/workflows/staging-order-to-production-acceptance-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/staging-migrations/20260731_02_production_job_create_from_order_rpc.sql'
+      - 'supabase/staging-migrations/20260731_03_production_job_create_layout_gate_fix.sql'
+      - 'supabase/staging-tests/20260731_order_to_production_acceptance.sql'
+      - 'supabase/staging-functions/leader-crm-production-create/**'
+      - 'tools/check_staging_order_to_production_acceptance.py'
+      - 'docs/CRM_STAGING_ORDER_TO_PRODUCTION_ACCEPTANCE_2026-07-31.md'
+      - '.github/workflows/staging-order-to-production-acceptance-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  source-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno check supabase/staging-functions/leader-crm-production-create/index.ts
+      - run: deno test supabase/staging-functions/leader-crm-production-create/contract_test.ts
+      - run: python3 tools/check_staging_order_to_production_acceptance.py
