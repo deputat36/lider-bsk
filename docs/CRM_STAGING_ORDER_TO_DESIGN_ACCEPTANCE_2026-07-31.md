@@ -43,4 +43,4 @@ Runtime result:
 Сценарий не содержит DDL, не меняет production, не развёртывает Edge Functions и
 не затрагивает `nav_*` или `parket_*`.
 
-Production Supabase `ofewxuqfjhamgerwzull` не изменялся.
+Production Supabase не изменялся.
