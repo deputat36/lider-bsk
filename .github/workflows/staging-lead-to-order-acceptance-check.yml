@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'supabase/migrations/20260626_06_leader_order_from_offer_rpc.sql'
+      - 'supabase/staging-migrations/20260730_00_lead_to_order_status_history_compat.sql'
       - 'supabase/staging-migrations/20260730_01_lead_to_order_acceptance_compat.sql'
       - 'supabase/staging-tests/20260730_lead_to_order_schema_preflight.sql'
       - 'supabase/staging-tests/20260730_lead_to_order_acceptance.sql'
@@ -13,6 +14,7 @@ on:
     branches: [main]
     paths:
       - 'supabase/migrations/20260626_06_leader_order_from_offer_rpc.sql'
+      - 'supabase/staging-migrations/20260730_00_lead_to_order_status_history_compat.sql'
       - 'supabase/staging-migrations/20260730_01_lead_to_order_acceptance_compat.sql'
       - 'supabase/staging-tests/20260730_lead_to_order_schema_preflight.sql'
       - 'supabase/staging-tests/20260730_lead_to_order_acceptance.sql'
