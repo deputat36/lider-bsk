@@ -1,5 +1,16 @@
 # Calculation version staging tests
 
+Полный транзакционный сценарий `заявка → потребность → расчёт → КП → заказ`:
+
+1. Применить staging-only compatibility migration
+   `../staging-migrations/20260730_01_lead_to_order_acceptance_compat.sql`.
+2. Запустить read-only catalog preflight `20260730_lead_to_order_schema_preflight.sql`.
+3. Запустить `20260730_lead_to_order_acceptance.sql`.
+
+Все три файла имеют жёсткий environment guard. Acceptance завершается rollback и
+затем отдельно подтверждает нулевой остаток синтетического запуска. Ни migration,
+ни acceptance ещё не применялись к удалённому staging из этого репозитория.
+
 Canonical environment: Supabase project `otulfnouybahfnsycxqn` (`lider-bsk-staging`).
 
 The production project must never be used for these scripts.
