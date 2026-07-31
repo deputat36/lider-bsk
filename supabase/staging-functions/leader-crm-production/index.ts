@@ -13,6 +13,10 @@ import {
   rpcStatus,
   validateProductionRequest,
 } from './contract.ts'
+import {
+  PRODUCTION_CREATE_ACTION,
+  validateProductionCreateRequest,
+} from './create-contract.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -104,7 +108,7 @@ function safeRpcError(value: unknown) {
       error: {
         code: safeCode,
         message: safeCode === 'persistence_failed'
-          ? 'Production job update could not be persisted'
+          ? 'Production command could not be persisted'
           : cleanText(error?.message, 300) || safeCode,
       },
     },
@@ -151,7 +155,10 @@ Deno.serve(async (req: Request) => {
     return json(400, { error: 'validation_error' })
   }
 
-  const validation = validateProductionRequest(input)
+  const action = cleanText(asObject(input)?.action, 80)
+  const validation = action === PRODUCTION_CREATE_ACTION
+    ? validateProductionCreateRequest(input)
+    : validateProductionRequest(input)
   if (!validation.ok) {
     return json(rpcStatus(validation.code), {
       ok: false,
@@ -171,17 +178,20 @@ Deno.serve(async (req: Request) => {
     if (!permissionResult.allowed) {
       return json(403, {
         error: 'forbidden',
-        action: PRODUCTION_ACTION,
+        action,
         permission,
         contract: PRODUCTION_EDGE_CONTRACT_VERSION,
       })
     }
   }
 
+  const rpcName = action === PRODUCTION_CREATE_ACTION
+    ? 'leader_create_production_job_from_order_rpc'
+    : 'leader_update_production_job_rpc'
   const rpcResponse = await adminFetch(
     supabaseUrl,
     adminKey,
-    '/rest/v1/rpc/leader_update_production_job_rpc',
+    `/rest/v1/rpc/${rpcName}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -198,6 +208,8 @@ Deno.serve(async (req: Request) => {
   if (!rpcResponse.ok) {
     console.error('leader-crm-production rpc transport failure', {
       status: rpcResponse.status,
+      action,
+      rpc: rpcName,
       request_id: validation.request.request_id,
     })
     return json(500, {
