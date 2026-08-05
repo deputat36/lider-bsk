@@ -22,7 +22,7 @@ checks = [
     ('unrelated query parameters are not cleared', "new URL(href" in route and "searchParams.set('tab'" in route),
     ('active item exposes aria-current', 'aria-current' in tabs and 'aria-current' in menu),
     ('role landing test covers all canonical roles', all(role in role_test for role in ('owner', 'admin', 'manager', 'accountant', 'designer', 'installer', 'contractor'))),
-    ('new cache marker is loaded', 'crm-v4-tabs-lite.js?v=20260720-role-landing-1' in index),
+    ('new cache marker is loaded', 'crm-v4-tabs-lite.js?v=20260805-lazy-tabs-1' in index),
     ('navigation helper performs no network writes', all(marker not in route for marker in ('fetch(', 'XMLHttpRequest', 'supabaseClient', '.from('))),
     ('tabs perform no database writes', all(marker not in tabs for marker in ('.insert(', '.update(', '.delete(', '.upsert(', '.rpc('))),
 ]
