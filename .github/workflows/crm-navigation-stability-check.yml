@@ -1,0 +1,30 @@
+name: CRM navigation stability check
+
+on:
+  pull_request:
+    paths:
+      - 'crm/v4/assets/v4/crm-v4-tabs-lite.js'
+      - 'crm/v4/assets/v4/crm-v4-expanded-menu-v1.js'
+      - 'tools/check_crm_navigation_stability.py'
+      - '.github/workflows/crm-navigation-stability-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/crm-v4-tabs-lite.js'
+      - 'crm/v4/assets/v4/crm-v4-expanded-menu-v1.js'
+      - 'tools/check_crm_navigation_stability.py'
+      - '.github/workflows/crm-navigation-stability-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  source-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate CRM navigation stability contract
+        run: python3 tools/check_crm_navigation_stability.py
