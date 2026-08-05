@@ -199,21 +199,23 @@ jobs:
         run: |
           set -euo pipefail
           index='crm/v4/index.html'
+          loader='crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
           test -f "$index"
-          grep -q 'management-dashboard-v3.js' "$index"
+          test -f "$loader"
+          grep -q 'crm-v4-tab-loader-v1.js' "$index"
+          grep -q 'management-dashboard-v3.js' "$loader"
           grep -q 'crm-v4-expanded-menu-v1.js' "$index"
           grep -q 'leads.js' "$index"
-          grep -q 'contact-control-v1.js' "$index"
-          grep -q 'orders-fast-loader-v1.js' "$index"
-          grep -q 'order-card-v1.js' "$index"
-          grep -q 'order-control-v2.js' "$index"
-          grep -q 'finance-control-v2.js' "$index"
-          grep -q 'production-board-v3.js' "$index"
-          grep -q 'production-alerts-v1.js' "$index"
-          grep -q 'production-job-card-v2.js' "$index"
-          grep -q 'installation-job-card-v2.js' "$index"
-          grep -q 'site-cache-note-v1.js' "$index"
-          grep -q 'site-cache-note-v1.js?v=20260718-deferred-1' "$index"
+          grep -q 'contact-control-v1.js' "$loader"
+          grep -q 'orders-fast-loader-v1.js' "$loader"
+          grep -q 'order-card-v1.js' "$loader"
+          grep -q 'order-control-v2.js' "$loader"
+          grep -q 'finance-control-v2.js' "$loader"
+          grep -q 'production-board-v3.js' "$loader"
+          grep -q 'production-alerts-v1.js' "$loader"
+          grep -q 'production-job-card-v2.js' "$loader"
+          grep -q 'installation-job-card-v2.js' "$loader"
+          python3 tools/check_crm_lazy_tab_loader.py
 
       - name: Validate CRM browser assets do not expose secrets
         shell: bash

@@ -14,6 +14,7 @@ on:
       - 'crm/v4/assets/v4/installation-job-staging-transport-v1.js'
       - 'crm/v4/assets/v4/installation-job-staging-read-transport-v1.js'
       - 'crm/v4/assets/v4/installation-job-card-v2.js'
+      - 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
       - 'crm/v4/index.html'
       - '.github/workflows/crm-installation-production-frontend-candidate-check.yml'
   push:
@@ -30,6 +31,7 @@ on:
       - 'crm/v4/assets/v4/installation-job-staging-transport-v1.js'
       - 'crm/v4/assets/v4/installation-job-staging-read-transport-v1.js'
       - 'crm/v4/assets/v4/installation-job-card-v2.js'
+      - 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
       - 'crm/v4/index.html'
       - '.github/workflows/crm-installation-production-frontend-candidate-check.yml'
 
@@ -64,6 +66,7 @@ jobs:
           node --check build/installation-production-frontend-candidate/crm/v4/assets/v4/installation-job-production-transport-v1.js
           node --check build/installation-production-frontend-candidate/crm/v4/assets/v4/installation-job-production-read-transport-v1.js
           node --check build/installation-production-frontend-candidate/crm/v4/assets/v4/installation-job-card-v3.js
+          node --check build/installation-production-frontend-candidate/crm/v4/assets/v4/crm-v4-tab-loader-v1.js
 
       - name: Validate deterministic server-only frontend candidate
         id: candidate_check

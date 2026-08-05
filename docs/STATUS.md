@@ -1,6 +1,20 @@
 # Статус проекта РА «Лидер»
 
-Дата обновления: 2026-07-17.
+Дата обновления: 2026-08-05.
+
+## Lazy-загрузка вкладок CRM v4
+
+Обновление 2026-08-05:
+
+- baseline issue #478 подтвердил, что старый `index.html` запускал 36 module entrypoints и тяжёлые read-запросы до открытия соответствующих вкладок;
+- `index.html` сокращён до 11 стартовых module entrypoints: core-навигация, lazy-loader, auth, список заявок и минимальный UI;
+- дашборд, заказы, контроль заказов, финансы, производство/монтаж, контроль контактов, аудит и доступ/роли переведены в `crm-v4-tab-loader-v1.js`;
+- карточка заявки, потребность, расчёты и КП загружаются только при открытии карточки;
+- `auth.js` больше не импортирует администрирование пользователей при старте, а lead analytics не запускает фоновые quality/quick-filter запросы тяжёлых таблиц;
+- legacy cache aliases оставлены только в import map и не создают eager network-загрузку;
+- новый source-contract `check_crm_lazy_tab_loader.py` отдельно проверяет предел eager entrypoints и запрещает тяжёлые module scripts в стартовом HTML;
+- installation-production frontend-candidate адаптирован к этой границе: рабочий монтаж остаётся на card v2, candidate переключает только dynamic import lazy-loader на card v3, а eager installation script в `index.html` запрещён;
+- Supabase production не изменялся: использовались только read-only API logs для baseline.
 
 ## Рабочий блок потребности
 

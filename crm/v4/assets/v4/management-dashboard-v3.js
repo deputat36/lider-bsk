@@ -249,3 +249,6 @@ if (!window.LeaderV4ManagementDashboardV3Booted) {
   window.LeaderV4ManagementDashboardV3Booted = true;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 }
+
+export function load() { return loadData(false); }
+export function refresh() { return loadData(true); }

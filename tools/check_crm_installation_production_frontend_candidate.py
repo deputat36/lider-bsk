@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -11,6 +12,7 @@ OUT = ROOT / 'build/installation-production-frontend-candidate'
 CONTRACT_PATH = ROOT / 'contracts/crm-installation-production-frontend-candidate-v1.json'
 GENERATOR = ROOT / 'tools/generate_crm_installation_production_frontend_candidate.py'
 CURRENT_INDEX = ROOT / 'crm/v4/index.html'
+CURRENT_LOADER = ROOT / 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
 CURRENT_ROUTE = ROOT / 'crm/v4/assets/v4/installation-job-save-route-v1.js'
 
 ERRORS: list[str] = []
@@ -69,11 +71,18 @@ if approval.get('approved') is not False:
 
 current_index = read(CURRENT_INDEX)
 require(current_index, [
-    'assets/v4/installation-job-card-v2.js?v=20260622-1',
+    'assets/v4/crm-v4-tab-loader-v1.js?v=20260805-lazy-tabs-1',
 ], 'working index')
-forbid(current_index, [
-    'assets/v4/installation-job-card-v3.js?v=20260723-production-edge-candidate-1',
-], 'working index')
+if re.search(r'<script\b[^>]*\bsrc=["\'][^"\']*installation-job-card-[^"\']*["\']', current_index, re.I):
+    fail('working index: eager installation card script is forbidden')
+
+current_loader = read(CURRENT_LOADER)
+require(current_loader, [
+    "() => import('./installation-job-card-v2.js?v=20260805-tab-loader-1')",
+], 'working lazy loader')
+forbid(current_loader, [
+    "() => import('./installation-job-card-v3.js?v=20260723-production-edge-candidate-1')",
+], 'working lazy loader')
 
 current_route = read(CURRENT_ROUTE)
 require(current_route, [
@@ -114,7 +123,7 @@ expected_outputs = {
     'crm/v4/assets/v4/installation-job-production-transport-v1.js',
     'crm/v4/assets/v4/installation-job-production-read-transport-v1.js',
     'crm/v4/assets/v4/installation-job-card-v3.js',
-    'crm/v4/index.html',
+    'crm/v4/assets/v4/crm-v4-tab-loader-v1.js',
 }
 if set(manifest.get('outputs', [])) != expected_outputs:
     fail('generated manifest outputs drifted')
@@ -127,14 +136,16 @@ if cutover.get('read') != 'single_production_edge_action':
     fail('generated read route drifted')
 if cutover.get('write') != 'single_atomic_production_edge_action':
     fail('generated write route drifted')
-if cutover.get('loader_switch_in_generated_index_only') is not True:
+if cutover.get('loader_switch_in_generated_lazy_loader_only') is not True:
     fail('generated loader boundary missing')
+if cutover.get('working_index_eager_installation_script') is not False:
+    fail('generated eager installation boundary missing')
 
 route = read(OUT / 'crm/v4/assets/v4/installation-job-save-route-v2.js')
 write_transport = read(OUT / 'crm/v4/assets/v4/installation-job-production-transport-v1.js')
 read_transport = read(OUT / 'crm/v4/assets/v4/installation-job-production-read-transport-v1.js')
 card = read(OUT / 'crm/v4/assets/v4/installation-job-card-v3.js')
-candidate_index = read(OUT / 'crm/v4/index.html')
+candidate_loader = read(OUT / 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js')
 
 require(route, [
     "from './installation-job-production-transport-v1.js'",
@@ -217,12 +228,12 @@ for label, text in [
         'invokeStagingInstallationJobRead',
     ], label)
 
-require(candidate_index, [
-    'assets/v4/installation-job-card-v3.js?v=20260723-production-edge-candidate-1',
-], 'generated index')
-forbid(candidate_index, [
-    'assets/v4/installation-job-card-v2.js?v=20260622-1',
-], 'generated index')
+require(candidate_loader, [
+    "() => import('./installation-job-card-v3.js?v=20260723-production-edge-candidate-1')",
+], 'generated lazy loader')
+forbid(candidate_loader, [
+    "() => import('./installation-job-card-v2.js?v=20260805-tab-loader-1')",
+], 'generated lazy loader')
 
 backend_contracts = [
     ROOT / 'contracts/crm-installation-production-rbac-receipts-candidate-v1.json',

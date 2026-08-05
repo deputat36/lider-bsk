@@ -125,6 +125,8 @@ function watchTabRender(tab) {
     feedbackTimer = 0;
     workspace()?.removeAttribute('aria-busy');
     if (document.body.dataset.v4Tab !== tab) return;
+    const loaderState = document.getElementById('v4TabLoadFeedback')?.dataset?.v4LoaderState;
+    if (loaderState === 'loading') return;
     if (tabHasVisibleSection(tab)) hideFeedback();
     else showFeedback(tab);
   }, TAB_RENDER_TIMEOUT_MS);
@@ -209,7 +211,7 @@ function setActiveTab(tab, options = {}) {
   }
 
   syncTabUrl(activeTab, options.historyMode || 'push');
-  document.dispatchEvent(new CustomEvent('leader-v4:tab-opened', { detail: { tab: activeTab } }));
+  document.dispatchEvent(new CustomEvent('leader-v4:tab-opened', { detail: { tab: activeTab, force: options.force === true } }));
   return true;
 }
 
@@ -253,6 +255,20 @@ function bootTabsLite() {
   document.addEventListener('leader-v4:tab-opened', (event) => {
     const tab = normalizeTab(event.detail?.tab);
     if (tab) watchTabRender(tab);
+  });
+
+  document.addEventListener('leader-v4:tab-section-ready', (event) => {
+    const tab = normalizeTab(event.detail?.tab);
+    if (!tab || document.body.dataset.v4Tab !== tab) return;
+    if (MANAGED_TABS.has(tab)) {
+      document.querySelectorAll('[data-v4-managed-section]').forEach((section) => {
+        section.hidden = section.dataset.v4ManagedSection !== tab;
+      });
+    }
+    if (tabHasVisibleSection(tab)) {
+      window.clearTimeout(feedbackTimer);
+      workspace()?.removeAttribute('aria-busy');
+    }
   });
 
   window.addEventListener('popstate', () => {

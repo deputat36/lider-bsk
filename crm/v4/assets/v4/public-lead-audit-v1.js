@@ -183,3 +183,6 @@ function boot() {
   setTimeout(ensureNav, 800);
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+
+export { load };
+export function refresh() { return load(true); }

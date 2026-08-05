@@ -6,7 +6,7 @@ import sys
 root = Path(__file__).resolve().parents[1]
 model = root / 'crm/v4/assets/v4/order-operational-quality-model-v1.js'
 ui = root / 'crm/v4/assets/v4/order-operational-quality-v1.js'
-bootstrap = root / 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
+bootstrap = root / 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
 test = root / 'tools/test_crm_order_operational_quality.mjs'
 manual = root / 'docs/CRM_ORDER_OPERATIONAL_QUALITY_MANUAL_TEST_2026-07-12.md'
 design_draft_checker = root / 'tools/check_design_task_draft_preview.py'
@@ -47,7 +47,7 @@ checks = {
         'без клиентских контактов, названий проектов и денежных сумм',
     ],
     bootstrap: [
-        "import './order-operational-quality-v1.js';",
+        "import('./order-operational-quality-v1.js?v=20260805-tab-loader-1')",
     ],
     test: [
         'orderOperationalQualityQueues',

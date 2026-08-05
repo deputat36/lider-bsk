@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -14,6 +15,7 @@ FILES = {
     "doc": ROOT / "docs" / "CRM_INSTALLATION_PRODUCTION_ROLLOUT_PLAN_V1_2026-07-23.md",
     "workflow": ROOT / ".github" / "workflows" / "crm-installation-production-rollout-plan-check.yml",
     "index": ROOT / "crm" / "v4" / "index.html",
+    "loader": ROOT / "crm" / "v4" / "assets" / "v4" / "crm-v4-tab-loader-v1.js",
 }
 
 errors: list[str] = []
@@ -65,12 +67,12 @@ require_text("workflow", [
     "installation-production-rollout-plan-package",
     "installation-production-rollout-plan-diagnostics",
 ])
-require_text("index", [
-    'assets/v4/installation-job-card-v2.js?v=20260622-1',
-])
-
-if 'assets/v4/installation-job-card-v3.js?v=20260723-production-edge-candidate-1' in texts["index"]:
-    errors.append("working_loader_already_switched")
+require_text("index", ['assets/v4/crm-v4-tab-loader-v1.js?v=20260805-lazy-tabs-1'])
+if re.search(r'<script\b[^>]*\bsrc=["\'][^"\']*installation-job-card-[^"\']*["\']', texts["index"], re.I):
+    errors.append("working_index_eager_installation_script")
+require_text("loader", ["() => import('./installation-job-card-v2.js?v=20260805-tab-loader-1')"])
+if "() => import('./installation-job-card-v3.js?v=20260723-production-edge-candidate-1')" in texts["loader"]:
+    errors.append("working_lazy_loader_already_switched")
 
 for name in ["generator", "workflow"]:
     for forbidden in [
@@ -108,7 +110,7 @@ if contract.get("dependencies", {}).get("any_candidate_applied_to_production") i
     errors.append("production_candidates_must_remain_unapplied")
 if any(value is not False for value in contract.get("approval_gates", {}).values()):
     errors.append("all_mutating_approval_gates_must_be_false")
-if contract.get("expected_current_state", {}).get("current_loader") != "assets/v4/installation-job-card-v2.js?v=20260622-1":
+if contract.get("expected_current_state", {}).get("current_loader") != "assets/v4/installation-job-card-v2.js?v=20260805-tab-loader-1":
     errors.append("expected_current_loader_mismatch")
 if contract.get("security", {}).get("nav_changes_allowed") is not False:
     errors.append("nav_changes_must_be_forbidden")
@@ -145,7 +147,7 @@ if not errors:
                     errors.append("generated_mutating_phase_approved")
                 if plan.get("execution", {}).get("commands_executed") is not False:
                     errors.append("generated_plan_claims_commands_executed")
-                if plan.get("current_state", {}).get("expected_current_loader") != "assets/v4/installation-job-card-v2.js?v=20260622-1":
+                if plan.get("current_state", {}).get("expected_current_loader") != "assets/v4/installation-job-card-v2.js?v=20260805-tab-loader-1":
                     errors.append("generated_current_loader_mismatch")
                 if "Production не изменён генерацией этого checklist." not in checklist:
                     errors.append("generated_checklist_boundary_missing")

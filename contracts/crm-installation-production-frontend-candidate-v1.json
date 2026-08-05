@@ -1,7 +1,7 @@
 {
   "contract": "crm-installation-production-frontend-candidate",
   "version": 1,
-  "captured_at": "2026-07-23",
+  "captured_at": "2026-08-05",
   "repository": "deputat36/lider-bsk",
   "issue": 423,
   "status": "source_only_not_switched",
@@ -27,14 +27,15 @@
     "crm/v4/assets/v4/installation-job-staging-transport-v1.js": "a4f265fe53c438095ebcbc7b58d22e90e551c057",
     "crm/v4/assets/v4/installation-job-staging-read-transport-v1.js": "b5ebf2a0b05404b639b63b7f8aae27c3574464ce",
     "crm/v4/assets/v4/installation-job-card-v2.js": "1c360e08ce954d7879bc075bc203d3fd406db0ae",
-    "crm/v4/index.html": "404719b0338c4fc6d5c8b0cd5f5b85e06d902973"
+    "crm/v4/assets/v4/crm-v4-tab-loader-v1.js": "d74d1a4ef67cabcaf2201f95432d2e27ff9e41dc",
+    "crm/v4/index.html": "dc4a800d1426c4056b5f9696e4e20938eca3eabd"
   },
   "generated_outputs": [
     "crm/v4/assets/v4/installation-job-save-route-v2.js",
     "crm/v4/assets/v4/installation-job-production-transport-v1.js",
     "crm/v4/assets/v4/installation-job-production-read-transport-v1.js",
     "crm/v4/assets/v4/installation-job-card-v3.js",
-    "crm/v4/index.html"
+    "crm/v4/assets/v4/crm-v4-tab-loader-v1.js"
   ],
   "route": {
     "mode": "production_edge",
@@ -73,10 +74,13 @@
     "costs_hidden_in_edge_projection": true
   },
   "loader": {
-    "source": "crm/v4/index.html",
-    "current_script": "assets/v4/installation-job-card-v2.js?v=20260622-1",
+    "source": "crm/v4/assets/v4/crm-v4-tab-loader-v1.js",
+    "index_entrypoint": "assets/v4/crm-v4-tab-loader-v1.js?v=20260805-lazy-tabs-1",
+    "current_script": "assets/v4/installation-job-card-v2.js?v=20260805-tab-loader-1",
     "candidate_script": "assets/v4/installation-job-card-v3.js?v=20260723-production-edge-candidate-1",
-    "working_index_changed": false
+    "switch_surface": "lazy_loader_only",
+    "working_index_eager_installation_script": false,
+    "working_loader_switched": false
   },
   "dependencies": {
     "rbac_receipts_contract": "contracts/crm-installation-production-rbac-receipts-candidate-v1.json",
@@ -97,7 +101,7 @@
     "approved": false
   },
   "rollback": {
-    "loader_switch_only": "restore installation-job-card-v2.js script in crm/v4/index.html",
+    "loader_switch_only": "restore installation-job-card-v2.js dynamic import in crm-v4-tab-loader-v1.js; never add an eager installation script to index.html",
     "candidate_files_can_remain_unused": true,
     "database_or_edge_rollback_not_in_this_layer": true
   }

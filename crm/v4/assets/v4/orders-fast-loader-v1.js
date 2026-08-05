@@ -238,4 +238,6 @@ if (!window.LeaderV4OrdersFastLoaderV1Booted) {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 }
 
+export function load() { return loadOrdersFast(false); }
+export function refresh() { return loadOrdersFast(true); }
 export { loadOrdersFast };

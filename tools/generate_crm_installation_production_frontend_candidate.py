@@ -28,9 +28,13 @@ SOURCES = {
         'path': ROOT / 'crm/v4/assets/v4/installation-job-card-v2.js',
         'blob_sha': '1c360e08ce954d7879bc075bc203d3fd406db0ae',
     },
+    'loader': {
+        'path': ROOT / 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js',
+        'blob_sha': 'd74d1a4ef67cabcaf2201f95432d2e27ff9e41dc',
+    },
     'index': {
         'path': ROOT / 'crm/v4/index.html',
-        'blob_sha': '404719b0338c4fc6d5c8b0cd5f5b85e06d902973',
+        'blob_sha': 'dc4a800d1426c4056b5f9696e4e20938eca3eabd',
     },
 }
 
@@ -339,20 +343,24 @@ def production_card(source: str) -> str:
     return text
 
 
-def candidate_index(source: str) -> str:
-    old = '<script type="module" src="assets/v4/installation-job-card-v2.js?v=20260622-1"></script>'
-    new = '<script type="module" src="assets/v4/installation-job-card-v3.js?v=20260723-production-edge-candidate-1"></script>'
-    return replace_once(source, old, new, 'index loader')
+def candidate_loader(source: str) -> str:
+    old = "() => import('./installation-job-card-v2.js?v=20260805-tab-loader-1')"
+    new = "() => import('./installation-job-card-v3.js?v=20260723-production-edge-candidate-1')"
+    return replace_once(source, old, new, 'lazy installation loader')
 
 
 def main() -> int:
     sources = load_sources()
+    if 'crm-v4-tab-loader-v1.js?v=20260805-lazy-tabs-1' not in sources['index']:
+        raise SystemExit('index: approved lazy tab loader entrypoint missing')
+    if '<script type="module" src="assets/v4/installation-job-card-' in sources['index']:
+        raise SystemExit('index: eager installation card script is forbidden')
     outputs = {
         'crm/v4/assets/v4/installation-job-save-route-v2.js': production_route(),
         'crm/v4/assets/v4/installation-job-production-transport-v1.js': production_write_transport(sources['write_transport']),
         'crm/v4/assets/v4/installation-job-production-read-transport-v1.js': production_read_transport(sources['read_transport']),
         'crm/v4/assets/v4/installation-job-card-v3.js': production_card(sources['card']),
-        'crm/v4/index.html': candidate_index(sources['index']),
+        'crm/v4/assets/v4/crm-v4-tab-loader-v1.js': candidate_loader(sources['loader']),
     }
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -375,7 +383,8 @@ def main() -> int:
             'browser_direct_read': False,
             'browser_direct_write': False,
             'comments_write': False,
-            'loader_switch_in_generated_index_only': True,
+            'loader_switch_in_generated_lazy_loader_only': True,
+            'working_index_eager_installation_script': False,
         },
         'production_boundary': {
             'repository_working_files_changed': False,

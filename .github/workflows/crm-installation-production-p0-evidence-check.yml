@@ -14,6 +14,7 @@ on:
       - 'contracts/crm-installation-production-edge-candidate-v1.json'
       - 'contracts/crm-installation-production-frontend-candidate-v1.json'
       - 'crm/v4/index.html'
+      - 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
   push:
     branches: [main]
     paths:
@@ -28,6 +29,7 @@ on:
       - 'contracts/crm-installation-production-edge-candidate-v1.json'
       - 'contracts/crm-installation-production-frontend-candidate-v1.json'
       - 'crm/v4/index.html'
+      - 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
 
 permissions:
   contents: read

@@ -281,3 +281,6 @@ function boot() {
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
 else boot();
+
+export function load() { return render(); }
+export function refresh() { return render(); }

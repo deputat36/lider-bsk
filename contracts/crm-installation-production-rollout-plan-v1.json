@@ -47,7 +47,7 @@
     "installation_read_rpc_exists": false,
     "installation_update_rpc_exists": false,
     "installation_edge_exists": false,
-    "current_loader": "assets/v4/installation-job-card-v2.js?v=20260622-1"
+    "current_loader": "assets/v4/installation-job-card-v2.js?v=20260805-tab-loader-1"
   },
   "phases": [
     "P0_repeat_read_only_preflight",

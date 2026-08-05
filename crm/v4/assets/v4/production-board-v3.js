@@ -262,4 +262,6 @@ if (!window.LeaderV4ProductionBoardV3Booted) {
   boot();
 }
 
+export function load() { return loadProductionBoard(false); }
+export function refresh() { return loadProductionBoard(true); }
 export { loadProductionBoard };

@@ -13,6 +13,7 @@ FILES = {
     "sql": ROOT / "supabase" / "production-preflight" / "20260723_installation_p0_readonly.sql",
     "workflow": ROOT / ".github" / "workflows" / "crm-installation-production-p0-evidence-check.yml",
     "index": ROOT / "crm" / "v4" / "index.html",
+    "loader": ROOT / "crm" / "v4" / "assets" / "v4" / "crm-v4-tab-loader-v1.js",
     "rollout": ROOT / "contracts" / "crm-installation-production-rollout-plan-v1.json",
     "rbac": ROOT / "contracts" / "crm-installation-production-rbac-receipts-candidate-v1.json",
     "rpc": ROOT / "contracts" / "crm-installation-production-rpc-candidate-v1.json",
@@ -127,10 +128,15 @@ if frontend.get("status") != "source_only_not_switched":
     errors.append("frontend_candidate_status_mismatch")
 
 index_text = texts.get("index", "")
-if 'assets/v4/installation-job-card-v2.js?v=20260622-1' not in index_text:
-    errors.append("working_loader_card_v2_missing")
-if 'assets/v4/installation-job-card-v3.js?v=20260723-production-edge-candidate-1' in index_text:
-    errors.append("working_loader_already_switched")
+loader_text = texts.get("loader", "")
+if 'assets/v4/crm-v4-tab-loader-v1.js?v=20260805-lazy-tabs-1' not in index_text:
+    errors.append("working_lazy_loader_entrypoint_missing")
+if re.search(r'<script\b[^>]*\bsrc=["\'][^"\']*installation-job-card-[^"\']*["\']', index_text, re.I):
+    errors.append("working_index_eager_installation_script")
+if "() => import('./installation-job-card-v2.js?v=20260805-tab-loader-1')" not in loader_text:
+    errors.append("working_lazy_loader_card_v2_missing")
+if "() => import('./installation-job-card-v3.js?v=20260723-production-edge-candidate-1')" in loader_text:
+    errors.append("working_lazy_loader_already_switched")
 
 doc_markers = [
     "P0 = passed",

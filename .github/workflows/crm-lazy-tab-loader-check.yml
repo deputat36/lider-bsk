@@ -1,0 +1,36 @@
+name: CRM lazy tab loader check
+
+on:
+  pull_request:
+    paths:
+      - 'crm/v4/index.html'
+      - 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
+      - 'crm/v4/assets/v4/auth.js'
+      - 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
+      - 'tools/check_crm_lazy_tab_loader.py'
+      - '.github/workflows/crm-lazy-tab-loader-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'crm/v4/index.html'
+      - 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
+      - 'crm/v4/assets/v4/auth.js'
+      - 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
+      - 'tools/check_crm_lazy_tab_loader.py'
+      - '.github/workflows/crm-lazy-tab-loader-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  source-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate CRM lazy tab loader contract
+        run: |
+          node --check crm/v4/assets/v4/crm-v4-tab-loader-v1.js
+          python3 tools/check_crm_lazy_tab_loader.py
