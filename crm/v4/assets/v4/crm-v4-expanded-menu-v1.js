@@ -1,6 +1,6 @@
 import { applyV4TabButtonVisibility } from './role-tab-permissions-v1.js';
 
-const CRM_V4_MENU = [
+const CRM_V4_MENU = Object.freeze([
   { tab: 'management_dashboard', label: 'Дашборд' },
   { tab: 'leads', label: 'Заявки' },
   { tab: 'orders', label: 'Заказы' },
@@ -10,7 +10,10 @@ const CRM_V4_MENU = [
   { tab: 'contact_control', label: 'Контроль контактов' },
   { tab: 'public_lead_audit', label: 'Аудит заявок' },
   { tab: 'user_admin', label: 'Доступ и роли' }
-];
+]);
+
+let menuBuilt = false;
+let scheduledFrame = 0;
 
 function menuRoot() {
   return document.getElementById('v4LayoutTabs');
@@ -18,6 +21,13 @@ function menuRoot() {
 
 function setButtonLabel(button, label) {
   const badge = button.querySelector('.v4-production-tab-badge');
+  const currentLabel = [...button.childNodes]
+    .filter((node) => node.nodeType === Node.TEXT_NODE)
+    .map((node) => node.textContent || '')
+    .join('')
+    .trim();
+
+  if (currentLabel === label && (!badge || button.contains(badge))) return;
   button.textContent = label;
   if (badge) button.appendChild(badge);
 }
@@ -33,10 +43,7 @@ function ensureButton(nav, item) {
   return button;
 }
 
-function syncExpandedMenu() {
-  const nav = menuRoot();
-  if (!nav) return;
-
+function buildMenuOnce(nav) {
   const title = nav.querySelector('b');
   let previous = title || null;
 
@@ -46,6 +53,14 @@ function syncExpandedMenu() {
     else nav.insertAdjacentElement('afterbegin', button);
     previous = button;
   });
+
+  menuBuilt = true;
+}
+
+function syncMenuState() {
+  const nav = menuRoot();
+  if (!nav) return;
+  if (!menuBuilt) buildMenuOnce(nav);
 
   applyV4TabButtonVisibility(nav);
   const activeTab = document.body?.dataset?.v4Tab || '';
@@ -57,13 +72,20 @@ function syncExpandedMenu() {
   });
 }
 
-function bootExpandedMenu() {
-  syncExpandedMenu();
-  document.addEventListener('leader-v4:crm-ready', () => window.setTimeout(syncExpandedMenu, 100));
-  document.addEventListener('leader-v4:tab-opened', () => window.setTimeout(syncExpandedMenu, 50));
-  document.addEventListener('leader-v4:tab-denied', () => window.setTimeout(syncExpandedMenu, 50));
-  window.setTimeout(syncExpandedMenu, 350);
-  window.setTimeout(syncExpandedMenu, 1200);
+function scheduleMenuSync() {
+  if (scheduledFrame) return;
+  scheduledFrame = window.requestAnimationFrame(() => {
+    scheduledFrame = 0;
+    syncMenuState();
+  });
 }
 
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootExpandedMenu); else bootExpandedMenu();
+function bootExpandedMenu() {
+  scheduleMenuSync();
+  document.addEventListener('leader-v4:crm-ready', scheduleMenuSync);
+  document.addEventListener('leader-v4:tab-opened', scheduleMenuSync);
+  document.addEventListener('leader-v4:tab-denied', scheduleMenuSync);
+}
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootExpandedMenu, { once: true });
+else bootExpandedMenu();
