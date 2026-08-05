@@ -21,17 +21,20 @@ jobs:
           index='crm/v4/index.html'
           menu='crm/v4/assets/v4/crm-v4-expanded-menu-v1.js'
           auth='crm/v4/assets/v4/auth.js'
+          loader='crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
           quick='crm/v4/assets/v4/crm-quick-start-v1.js'
           test -f "$index"
           test -f "$menu"
           test -f "$auth"
+          test -f "$loader"
           test -f "$quick"
           grep -Fq 'Доступ и роли' "$index"
           grep -Fq 'data-v4-tab-button="user_admin"' "$index"
-          grep -Fq 'crm-v4-tabs-lite.js?v=20260720-role-landing-1' "$index"
+          grep -Fq 'crm-v4-tabs-lite.js?v=20260805-lazy-tabs-1' "$index"
           grep -Fq 'crm-v4-expanded-menu-v1.js?v=20260714-navigation-history-1' "$index"
-          grep -Fq 'auth.js?v=20260628-access-label-1' "$index"
-          grep -Fq "import './user-admin-v1.js?v=20260628-access-label-1';" "$auth"
+          grep -Fq 'auth.js?v=20260805-lazy-tabs-1' "$index"
+          ! grep -Fq 'user-admin-v1.js' "$auth"
+          grep -Fq "import('./user-admin-v1.js?v=20260805-tab-loader-1')" "$loader"
           grep -Fq "{ tab: 'user_admin', label: 'Доступ и роли' }" "$menu"
           grep -Fq "link.href = '?tab=user_admin';" "$quick"
           grep -Fq "link.textContent = 'Открыть доступ CRM';" "$quick"

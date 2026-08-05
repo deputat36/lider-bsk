@@ -71,7 +71,7 @@ def main() -> int:
     # DECISIONS is also project-wide: its top-level date advances whenever a
     # new ADR is added, while the public-site ADR markers remain stable.
     for marker in (
-        "Дата обновления: 2026-07-17.",
+        "Дата обновления: 2026-08-05.",
         "ADR-012. Публичный сайт не раскрывает внутреннюю терминологию и неподтверждённый NAP",
         "ADR-013. Browser E2E публичной заявки является approval-gated production-действием",
         "leader-public-lead v10",

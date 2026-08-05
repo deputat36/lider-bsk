@@ -9,6 +9,7 @@ on:
       - 'crm/v4/assets/v4/crm-v4-expanded-menu-v1.js'
       - 'crm/v4/assets/v4/crm-v4-tabs-lite.js'
       - 'crm/v4/assets/v4/user-admin-v1.js'
+      - 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
       - 'crm/v4/assets/v4/crm-ui-selfcheck-v1.js'
       - 'docs/CRM_ACCESS_TAB_CHECK_2026-06-27.md'
       - '.github/workflows/crm-access-admin-check.yml'
@@ -20,6 +21,7 @@ on:
       - 'crm/v4/assets/v4/crm-v4-expanded-menu-v1.js'
       - 'crm/v4/assets/v4/crm-v4-tabs-lite.js'
       - 'crm/v4/assets/v4/user-admin-v1.js'
+      - 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
       - 'crm/v4/assets/v4/crm-ui-selfcheck-v1.js'
       - 'docs/CRM_ACCESS_TAB_CHECK_2026-06-27.md'
       - '.github/workflows/crm-access-admin-check.yml'
@@ -39,6 +41,7 @@ jobs:
           tabs='crm/v4/assets/v4/crm-v4-tabs-lite.js'
           route='crm/v4/assets/v4/crm-navigation-route-v1.js'
           auth='crm/v4/assets/v4/auth.js'
+          loader='crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
           admin='crm/v4/assets/v4/user-admin-v1.js'
           selfcheck='crm/v4/assets/v4/crm-ui-selfcheck-v1.js'
           runbook='docs/CRM_ACCESS_TAB_CHECK_2026-06-27.md'
@@ -48,6 +51,7 @@ jobs:
           test -f "$tabs"
           test -f "$route"
           test -f "$auth"
+          test -f "$loader"
           test -f "$admin"
           test -f "$selfcheck"
           test -f "$runbook"
@@ -64,10 +68,11 @@ jobs:
           grep -Fq "searchParams.get('tab')" "$route"
           grep -Fq "function readInitialTab()" "$tabs"
           grep -Fq "readCrmNavigationTab(window.location.href)" "$tabs"
-          grep -Fq "import './user-admin-v1.js?v=20260628-access-label-1';" "$auth"
-          grep -Fq "assets/v4/crm-v4-tabs-lite.js?v=20260720-role-landing-1" "$page"
+          ! grep -Fq "user-admin-v1.js" "$auth"
+          grep -Fq "import('./user-admin-v1.js?v=20260805-tab-loader-1')" "$loader"
+          grep -Fq "assets/v4/crm-v4-tabs-lite.js?v=20260805-lazy-tabs-1" "$page"
           grep -Fq "assets/v4/crm-v4-expanded-menu-v1.js?v=20260714-navigation-history-1" "$page"
-          grep -Fq "assets/v4/auth.js?v=20260628-access-label-1" "$page"
+          grep -Fq "assets/v4/auth.js?v=20260805-lazy-tabs-1" "$page"
           grep -Fq "Доступ ожидает активации" "$auth"
           grep -Fq "CRM access admin v1" "$admin"
           grep -Fq "Доступ и роли CRM" "$admin"

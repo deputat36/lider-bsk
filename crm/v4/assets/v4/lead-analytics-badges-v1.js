@@ -7,6 +7,9 @@ import { deriveLeadAnalytics } from './lead-analytics-normalization.js';
 
 const BADGE_CLASS = 'v4-lead-analytics-badge';
 const STYLE_ID = 'leadAnalyticsBadgesV1Styles';
+const QUICK_FILTER_TRIGGER_ID = 'leadWorkQuickFiltersLazyTrigger';
+
+let quickFiltersPromise = null;
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
@@ -54,9 +57,38 @@ function decorateCards() {
   document.querySelectorAll('.v4-lead-card[data-id]').forEach(decorateCard);
 }
 
+function ensureQuickFilterTrigger() {
+  if (document.getElementById('leadWorkQuickFilters') || document.getElementById(QUICK_FILTER_TRIGGER_ID)) return;
+  const filters = document.querySelector('#leadsSection .v4-filters');
+  if (!filters) return;
+  const button = document.createElement('button');
+  button.id = QUICK_FILTER_TRIGGER_ID;
+  button.type = 'button';
+  button.textContent = 'Показать рабочие очереди';
+  button.addEventListener('click', async () => {
+    if (quickFiltersPromise) return;
+    button.disabled = true;
+    button.textContent = 'Загружаю рабочие очереди…';
+    quickFiltersPromise = import('./lead-work-quick-filters-ui-v1.js?v=20260723-1')
+      .then(() => button.remove())
+      .catch((error) => {
+        console.warn('Lead work quick filters lazy load warning:', error);
+        quickFiltersPromise = null;
+        button.disabled = false;
+        button.textContent = 'Повторить загрузку рабочих очередей';
+      });
+    await quickFiltersPromise;
+  });
+  filters.insertAdjacentElement('beforebegin', button);
+}
+
 function boot() {
   decorateCards();
-  document.addEventListener('leader-v4:leads-loaded', decorateCards);
+  ensureQuickFilterTrigger();
+  document.addEventListener('leader-v4:leads-loaded', () => {
+    decorateCards();
+    ensureQuickFilterTrigger();
+  });
   const list = document.getElementById('leadsList');
   if (!list) return;
   const observer = new MutationObserver(() => decorateCards());

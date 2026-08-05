@@ -105,11 +105,14 @@ def main() -> int:
         raise AssertionError("auth.js must not eager-import user admin")
     for forbidden in (
         "lead-operational-quality-v1.js",
-        "lead-work-quick-filters-ui-v1.js",
         "order-operational-quality-v1.js",
     ):
         if forbidden in badges:
             raise AssertionError(f"lead analytics boot must not start background heavy module: {forbidden}")
+    if "import './lead-work-quick-filters-ui-v1.js" in badges:
+        raise AssertionError("lead quick filters must not use a static eager import")
+    require(badges, "import('./lead-work-quick-filters-ui-v1.js?v=20260723-1')", BADGES)
+    require(badges, "button.addEventListener('click', async () =>", BADGES)
 
     print(f"CRM lazy tab loader contract: OK ({len(parser.sources)} eager entrypoints)")
     return 0

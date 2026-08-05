@@ -64,8 +64,12 @@ require(
 )
 require(
     'loader',
-    "import './lead-work-quick-filters-ui-v1.js?v=20260723-1';",
+    "import('./lead-work-quick-filters-ui-v1.js?v=20260723-1')",
+    "button.textContent = 'Показать рабочие очереди';",
+    "button.addEventListener('click', async () =>",
 )
+if "import './lead-work-quick-filters-ui-v1.js" in texts.get('loader', ''):
+    errors.append('loader: quick filters must not use a static eager import')
 require(
     'css',
     '.v4-lead-work-filters',
@@ -86,6 +90,8 @@ require(
 require(
     'doc',
     'Что требует внимания',
+    'Показать рабочие очереди',
+    'только после явного нажатия',
     '1 заявка, которой действительно нужен расчёт',
     '3 заявки на этапе ожидания ответа по КП',
     "leader_lead_calculations.select('lead_id,status,is_current_revision')",
