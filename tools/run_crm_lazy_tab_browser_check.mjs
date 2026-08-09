@@ -73,6 +73,7 @@ const originalWarn=console.warn.bind(console);console.warn=(...args)=>{window.__
 function controllerSource() {
   return `const TABS=['management_dashboard','orders','order_control','finance_control','production','contact_control','public_lead_audit','user_admin'];
 const HEAVY=['management-dashboard-v3.js','orders-fast-loader-v1.js','order-control-v2.js','finance-control-v2.js','production-board-v3.js','production-alerts-v1.js','production-job-card-v2.js','installation-job-card-v2.js','contact-control-v1.js','public-lead-audit-v1.js','user-admin-v1.js','lead-card.js','needs.js','calculations.js','offers.js','orders.js'];
+const PRODUCTION_IMPORTS=['production-board-v3.js','production-alerts-v1.js','production-job-card-v2.js','installation-job-card-v2.js'];
 const out=document.getElementById('lazyBrowserCheckResult');
 const params=new URL(location.href).searchParams;
 const full=params.get('full')==='1';
@@ -84,6 +85,7 @@ function sectionReady(tab){if(tab==='leads')return document.getElementById('lead
 async function openTab(tab){const button=document.querySelector('[data-v4-tab-button="'+tab+'"]');assert(button,'button_missing:'+tab);const started=Date.now();button.click();await waitFor(()=>document.body.dataset.v4Tab===tab,'tab_state_timeout:'+tab);await waitFor(()=>sectionReady(tab),'tab_content_timeout:'+tab);assert(document.querySelectorAll('#v4LayoutTabs .is-active').length===1,'active_button_count:'+tab);assert(button.classList.contains('is-active'),'active_button_mismatch:'+tab);assert(new URL(location.href).searchParams.get('tab')===tab,'url_tab_mismatch:'+tab);return Date.now()-started;}
 function layoutEvidence(){const buttons=[...document.querySelectorAll('#v4LayoutTabs button')].filter(button=>getComputedStyle(button).display!=='none');const rects=buttons.map(button=>{const r=button.getBoundingClientRect();return {tab:button.dataset.v4TabButton,width:r.width,height:r.height,left:r.left,right:r.right,top:r.top,bottom:r.bottom};});let overlap=false;for(let i=0;i<rects.length;i+=1){for(let j=i+1;j<rects.length;j+=1){const a=rects[i],b=rects[j];if(Math.min(a.right,b.right)-Math.max(a.left,b.left)>1&&Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>1)overlap=true;}}return {inner_width:innerWidth,scroll_width:document.documentElement.scrollWidth,horizontal_overflow:document.documentElement.scrollWidth>innerWidth+1,button_overlap:overlap,min_button_height:Math.min(...rects.map(r=>r.height)),visible_buttons:rects.length};}
 function finish(status,payload){const result={evidence_version:'${EVIDENCE_VERSION}',status,viewport:params.get('viewport')||'',full,...payload};out.dataset.status=status;out.textContent=JSON.stringify(result);document.title=status==='passed'?'LAZY TAB BROWSER PASSED':'LAZY TAB BROWSER FAILED';document.body.dataset.lazyBrowserCheckFinished='true';}
+async function diagnoseProductionImports(){const results=[];for(const file of PRODUCTION_IMPORTS){try{await import('./'+file+'?browser-diagnostic=1');results.push({file,status:'loaded'});}catch(error){results.push({file,status:'failed',message:String(error?.stack||error?.message||error).slice(0,1200)});}}return results;}
 async function run(){try{
 await waitFor(()=>!document.getElementById('crmWorkspace')?.classList.contains('hidden'),'workspace_timeout');
 await waitFor(()=>document.body.dataset.v4Tab==='leads','initial_leads_timeout');
@@ -111,7 +113,7 @@ await openTab('orders');await openTab('finance_control');history.back();await wa
 const layout=layoutEvidence();assert(!layout.horizontal_overflow,'horizontal_overflow');assert(!layout.button_overlap,'navigation_button_overlap');assert(document.body.innerText.trim().length>200,'blank_workspace');
 await sleep(200);assert(window.__CRM_BROWSER_ERRORS__.length===0,'browser_errors:'+JSON.stringify(window.__CRM_BROWSER_ERRORS__));
 finish('passed',{eager_entrypoints:eagerEntrypoints,initial_heavy_modules:initialHeavy,first,repeated,rapid,history:historyResult,layout,installation_imports:1,mock_mutations:0,console_errors:0});
-}catch(error){const feedback=document.getElementById('v4TabLoadFeedback');finish('failed',{error:String(error?.message||error||'lazy_browser_failed'),tab:document.body.dataset.v4Tab,layout:layoutEvidence(),browser_errors:window.__CRM_BROWSER_ERRORS__,browser_warnings:window.__CRM_BROWSER_WARNINGS__,loader:{state:feedback?.dataset?.v4LoaderState||'',tab:feedback?.dataset?.v4LoaderTab||'',hidden:Boolean(feedback?.hidden),text:String(feedback?.innerText||'').slice(0,300)},managed_sections:[...document.querySelectorAll('[data-v4-managed-section]')].map(section=>({tab:section.dataset.v4ManagedSection,hidden:section.hidden})),production_resources:jsResources().filter(url=>url.includes('production')||url.includes('installation')).map(url=>url.split('/').pop()),mock_mutations:window.__CRM_BROWSER_MOCK__?.mutations||[]});}}
+}catch(error){const feedback=document.getElementById('v4TabLoadFeedback');const production_imports=document.body.dataset.v4Tab==='production'?await diagnoseProductionImports():[];finish('failed',{error:String(error?.message||error||'lazy_browser_failed'),tab:document.body.dataset.v4Tab,layout:layoutEvidence(),browser_errors:window.__CRM_BROWSER_ERRORS__,browser_warnings:window.__CRM_BROWSER_WARNINGS__,loader:{state:feedback?.dataset?.v4LoaderState||'',tab:feedback?.dataset?.v4LoaderTab||'',hidden:Boolean(feedback?.hidden),text:String(feedback?.innerText||'').slice(0,300)},managed_sections:[...document.querySelectorAll('[data-v4-managed-section]')].map(section=>({tab:section.dataset.v4ManagedSection,hidden:section.hidden})),production_resources:jsResources().filter(url=>url.includes('production')||url.includes('installation')).map(url=>url.split('/').pop()),production_imports,mock_mutations:window.__CRM_BROWSER_MOCK__?.mutations||[]});}}
 run();
 `;
 }
@@ -187,6 +189,7 @@ function evidenceFromDump(html) {
       loader: evidence.loader || {},
       managed_sections: evidence.managed_sections || [],
       production_resources: evidence.production_resources || [],
+      production_imports: evidence.production_imports || [],
       mock_mutations: evidence.mock_mutations || []
     }).slice(0, 2200);
     throw new Error(`lazy_browser_failed:${evidence.viewport}:${detail}`);
