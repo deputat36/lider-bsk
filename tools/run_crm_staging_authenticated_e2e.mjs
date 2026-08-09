@@ -103,7 +103,7 @@ async function firstLoginAndLead(){
   assert(document.body.dataset.v4Tab==='leads','initial_leads_tab_missing');record('login_first_entry');
   setValue('#leadSearch',R.marker);await waitFor(()=>document.querySelector('.v4-lead-card[data-id="'+R.leadId+'"]'),'synthetic_lead_not_listed');
   click('.v4-lead-card[data-id="'+R.leadId+'"] button[data-action="open"]');progress('lead_open_clicked');
-  await waitFor(()=>document.querySelector('.v4-lead-card-view')&&location.search.includes('lead='+R.leadId),'lead_card_open_timeout');record('lead_card');
+  const cardState=await waitFor(()=>document.querySelector('.v4-lead-card-view')||document.querySelector('#leadCardContent .v4-empty.is-error'),'lead_card_open_timeout');assert(cardState.classList.contains('v4-lead-card-view'),'lead_card_render_error:'+clean(cardState.textContent).slice(0,120));assert(location.search.includes('lead='+R.leadId),'lead_card_route_missing');record('lead_card');
   const assign=document.querySelector('[data-lead-primary-action="assign_self"]');if(assign)assign.click();
   await waitFor(async()=>{try{return (await one('leader_leads','id,status,assigned_to,updated_at',{id:R.leadId})).assigned_to||false;}catch(_){return false;}},'lead_assignment_timeout');
   const assigned=await one('leader_leads','id,status,assigned_to,updated_at',{id:R.leadId});assert(assigned.status==='В работе','lead_assignment_status_sync_failed');record('lead_assignment');
