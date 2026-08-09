@@ -55,15 +55,25 @@ required_ui = [
     "assigned_to: userId",
     "status: currentStatus === 'Новая' ? 'Ждём ответ' : currentStatus",
     "document.dispatchEvent(new CustomEvent('leader-v4:lead-workflow-updated'",
+    'dispatchWorkflowUpdated({ lead: serverLead, result, action })',
+    'reconcileSuccessfulWorkflow({ serverLead, result, action, fallbackLead: lead })',
+    'lead workflow persisted but local reconciliation failed',
 ]
 for marker in required_ui:
     if marker not in ui:
         raise SystemExit(f'ui marker missing: {marker}')
 
+ack_position = ui.find('dispatchWorkflowUpdated({ lead: serverLead, result, action })')
+reconcile_position = ui.find('reconcileSuccessfulWorkflow({ serverLead, result, action, fallbackLead: lead })')
+if ack_position < 0 or reconcile_position < 0 or ack_position >= reconcile_position:
+    raise SystemExit('authoritative server acknowledgement must precede local UI reconciliation')
+
 if 'leaderAddLeadEvent' in ui:
     raise SystemExit('staging sidecar must not create a second browser lead event')
 if "import('./lead-workflow-staging-ui-v1.js')" not in bootstrap:
     raise SystemExit('browser-only dynamic import missing')
+if 'await import(' not in bootstrap:
+    raise SystemExit('staging bootstrap import must be awaited to avoid first-click race')
 if not assignment.startswith("import './lead-workflow-staging-bootstrap-v1.js';"):
     raise SystemExit('lead card dependency does not load staging bootstrap')
 
