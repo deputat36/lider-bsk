@@ -11,4 +11,4 @@ Authenticated CRM E2E continuation trigger.
 Issue: #487
 Expected branch: agent/487-authenticated-staging-e2e
 Production enabled: false
-Reason: verify authoritative server acknowledgement before local UI reconciliation; frontend fix 52c28b7e5a409bdae1e0592031691bab7833244e
+Reason: verify deterministic protected fetch transport for staging lead workflow; transport fdc11233587c16e240344599c5178c7ad9dfd3a8
