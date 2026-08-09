@@ -4,7 +4,7 @@ import sys
 
 root = Path(__file__).resolve().parents[1]
 panel = root / 'crm/v4/assets/v4/lead-operational-quality-v1.js'
-loader = root / 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
+loader = root / 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
 manual = root / 'docs/CRM_OPERATIONAL_QUALITY_PANEL_MANUAL_TEST_2026-07-10.md'
 
 errors = []
