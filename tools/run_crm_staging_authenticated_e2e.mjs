@@ -89,7 +89,7 @@ function setChecked(selector,value=true){const node=document.querySelector(selec
 function click(selector){const node=document.querySelector(selector);assert(node,'missing:'+selector);assert(!node.disabled,'disabled:'+selector);node.click();return node;}
 async function table(tableName,fields,filters={}){let query=supabaseClient.from(tableName).select(fields);for(const [key,value] of Object.entries(filters))query=query.eq(key,value);const response=await query;if(response.error)throw new Error('read_failed:'+tableName+':'+response.error.message);return response.data||[];}
 async function one(tableName,fields,filters={}){const rows=await table(tableName,fields,filters);assert(rows.length===1,'expected_one:'+tableName+':'+rows.length);return rows[0];}
-function output(status,payload){result.dataset.status=status;result.textContent=JSON.stringify({evidence_version:'${EVIDENCE_VERSION}',status,project_ref:'${STAGING_REF}',production_enabled:false,...payload},null,2);document.body.dataset.crmAuthenticatedE2eFinished='true';document.title=status==='passed'?'CRM authenticated E2E PASSED':'CRM authenticated E2E FAILED';}
+function output(status,payload){result.dataset.status=status;result.textContent=JSON.stringify({evidence_version:'${EVIDENCE_VERSION}',status,project_ref:'${STAGING_REF}',production_enabled:false,...payload},null,2);document.body.dataset.crmAuthenticatedE2eFinished='true';document.title=status==='passed'?'CRM authenticated E2E PASSED':'CRM authenticated E2E FAILED';fetch('/__crm_e2e_result',{method:'POST',headers:{'Content-Type':'application/json'},body:result.textContent}).catch(()=>{});}
 async function invoke(functionName,body){const response=await supabaseClient.functions.invoke(functionName,{body});return response;}
 function edgeCode(response){return clean(response?.data?.error?.code||response?.error?.message||response?.data?.error||'');}
 async function assertCount(tableName,filters,count){const rows=await table(tableName,'id',filters);assert(rows.length===count,'count_mismatch:'+tableName+':'+rows.length+':'+count);return rows;}
@@ -175,7 +175,7 @@ function roleBrowserSource(expectedRole) {
   return `import {CRM_E2E_RUNTIME as R} from './crm-authenticated-e2e-runtime.mjs';
 const result=document.getElementById('crmAuthenticatedE2eResult');const sleep=(ms)=>new Promise((resolve)=>setTimeout(resolve,ms));
 const clean=(value)=>String(value??'').trim();function assert(value,code){if(!value)throw new Error(code);}async function waitFor(check,code,timeout=45000){const started=Date.now();while(Date.now()-started<timeout){const value=await check();if(value)return value;await sleep(120);}throw new Error(code);}
-function output(status,payload){result.dataset.status=status;result.textContent=JSON.stringify({evidence_version:'${EVIDENCE_VERSION}',status,project_ref:'${STAGING_REF}',production_enabled:false,...payload},null,2);document.body.dataset.crmAuthenticatedE2eFinished='true';document.title=status==='passed'?'CRM role UI PASSED':'CRM role UI FAILED';}
+function output(status,payload){result.dataset.status=status;result.textContent=JSON.stringify({evidence_version:'${EVIDENCE_VERSION}',status,project_ref:'${STAGING_REF}',production_enabled:false,...payload},null,2);document.body.dataset.crmAuthenticatedE2eFinished='true';document.title=status==='passed'?'CRM role UI PASSED':'CRM role UI FAILED';fetch('/__crm_e2e_result',{method:'POST',headers:{'Content-Type':'application/json'},body:result.textContent}).catch(()=>{});}
 try{await waitFor(()=>document.getElementById('loginForm')&&!document.getElementById('loginForm').classList.contains('hidden'),'login_form_missing');const email=document.getElementById('loginEmail'),password=document.getElementById('loginPassword');email.value=R.email;email.dispatchEvent(new Event('input',{bubbles:true}));password.value=R.password;password.dispatchEvent(new Event('input',{bubbles:true}));document.getElementById('loginBtn').click();await waitFor(()=>!document.getElementById('crmWorkspace')?.classList.contains('hidden')&&clean(document.getElementById('profileRole')?.textContent).toLowerCase()==='${expectedRole}','role_workspace_timeout');
 const visible=(tab)=>{const node=document.querySelector('[data-v4-tab-button="'+tab+'"]');return Boolean(node&&!node.hidden&&!node.disabled&&node.getAttribute('aria-hidden')!=='true');};
 ${expectedRole === 'owner'
@@ -189,9 +189,17 @@ function mimeType(filePath) {
 }
 async function localServer(root) {
   const safeRoot = path.resolve(root);
+  let settleResult;
+  const resultPromise = new Promise((resolve) => { settleResult = resolve; });
   const server = createServer(async (request, response) => {
     try {
       const url = new URL(request.url || '/', 'http://127.0.0.1');
+      if (url.pathname === '/__crm_e2e_result' && request.method === 'POST') {
+        const chunks = []; let size = 0;
+        for await (const chunk of request) { size += chunk.length; if (size > 65536) throw new Error('evidence_too_large'); chunks.push(chunk); }
+        const body = Buffer.concat(chunks).toString('utf8'); JSON.parse(body); settleResult(body);
+        response.writeHead(204, { 'Cache-Control': 'no-store' }); response.end(); return;
+      }
       const relative = decodeURIComponent(url.pathname).replace(/^\/+/, '') || 'index.html';
       const target = path.resolve(safeRoot, relative);
       if (target !== safeRoot && !target.startsWith(`${safeRoot}${path.sep}`)) throw new Error('forbidden');
@@ -201,7 +209,7 @@ async function localServer(root) {
   });
   await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
   const address = server.address(); if (!address || typeof address === 'string') throw new Error('server_address_invalid');
-  return { server, url: `http://127.0.0.1:${address.port}/index.html?tab=leads` };
+  return { server, url: `http://127.0.0.1:${address.port}/index.html?tab=leads`, resultPromise };
 }
 async function findChrome() {
   for (const candidate of ['/usr/bin/google-chrome', '/usr/bin/google-chrome-stable', '/usr/bin/chromium', '/usr/bin/chromium-browser']) {
@@ -209,55 +217,15 @@ async function findChrome() {
   }
   throw new Error('headless_chrome_not_found');
 }
-function runChrome(binary, args) {
+function runChrome(binary, args, resultPromise) {
   return new Promise((resolve, reject) => {
-    const child = spawn(binary, args, { stdio: ['ignore', 'pipe', 'pipe'] }); let stdout = ''; let stderr = '';
-    let settled = false; let connecting = false; let socket;
+    const child = spawn(binary, args, { stdio: ['ignore', 'pipe', 'pipe'] }); let stdout = ''; let stderr = ''; let evidenceBody = ''; let failure;
     const stop = () => { child.kill('SIGTERM'); setTimeout(() => child.kill('SIGKILL'), 5000).unref(); };
-    const finish = (value, error) => { if (settled) return; settled = true; clearTimeout(timer); try { socket?.close(); } catch (_) { /* noop */ } stop(); if (error) reject(error); else resolve(value); };
-    const connect = async (browserWebSocketUrl) => {
-      const parsed = new URL(browserWebSocketUrl); const listUrl = `http://${parsed.host}/json/list`;
-      let pageTarget;
-      for (let attempt = 0; attempt < 300 && !pageTarget; attempt += 1) {
-        const targets = await fetch(listUrl).then((response) => response.json()).catch(() => []);
-        pageTarget = targets.find((target) => target.type === 'page'
-          && /^http:\/\/127\.0\.0\.1:\d+\/index\.html\?tab=leads/.test(String(target.url || ''))
-          && target.webSocketDebuggerUrl);
-        if (!pageTarget) await new Promise((done) => setTimeout(done, 100));
-      }
-      if (!pageTarget) throw new Error('chrome_page_target_missing');
-      socket = new WebSocket(pageTarget.webSocketDebuggerUrl);
-      await new Promise((opened, failed) => { socket.addEventListener('open', opened, { once: true }); socket.addEventListener('error', () => failed(new Error('chrome_devtools_socket_failed')), { once: true }); });
-      clearTimeout(timer);
-      let sequence = 0; const pending = new Map();
-      socket.addEventListener('message', (event) => { const message = JSON.parse(String(event.data)); const callback = pending.get(message.id); if (!callback) return; pending.delete(message.id); clearTimeout(callback.timer); if (message.error) callback.reject(new Error(`chrome_cdp_error:${message.error.message}`)); else callback.resolve(message.result); });
-      const command = (method, params = {}) => new Promise((resolveCommand, rejectCommand) => {
-        const id = ++sequence;
-        const commandTimer = setTimeout(() => { pending.delete(id); rejectCommand(new Error(`chrome_cdp_timeout:${method}`)); }, 10000);
-        pending.set(id, { resolve: resolveCommand, reject: rejectCommand, timer: commandTimer });
-        socket.send(JSON.stringify({ id, method, params }));
-      });
-      await command('Runtime.enable');
-      await new Promise((done) => setTimeout(done, 1500));
-      const deadline = Date.now() + 360000;
-      while (Date.now() < deadline) {
-        let state;
-        try { state = await command('Runtime.evaluate', { expression: `document.body?.dataset?.crmAuthenticatedE2eFinished==='true'`, returnByValue: true }); }
-        catch (error) { if (String(error?.message || '').startsWith('chrome_cdp_timeout:Runtime.evaluate')) { await new Promise((done) => setTimeout(done, 500)); continue; } throw error; }
-        if (state?.result?.value === true) {
-          const dom = await command('Runtime.evaluate', { expression: 'document.documentElement.outerHTML', returnByValue: true });
-          finish({ code: 0, stdout: String(dom?.result?.value || ''), stderr }); return;
-        }
-        await new Promise((done) => setTimeout(done, 200));
-      }
-      throw new Error('chrome_browser_scenario_timeout');
-    };
-    const timer = setTimeout(() => finish(null, new Error('chrome_devtools_start_timeout')), 35000);
+    const timer = setTimeout(() => { failure = new Error('chrome_browser_scenario_timeout'); stop(); }, 360000);
     child.stdout.on('data', (chunk) => { stdout += chunk; }); child.stderr.on('data', (chunk) => { stderr += chunk; });
-    child.stderr.on('data', () => { const match = stderr.match(/DevTools listening on (ws:\/\/[^\s]+)/); if (match && !connecting) { connecting = true; connect(match[1]).catch((error) => finish(null, error)); } });
-    child.once('error', (error) => finish(null, error)); child.once('close', (code) => { if (!settled) finish({ code, stdout, stderr }); });
-    connecting = true;
-    connect('ws://127.0.0.1:9222/devtools/browser').catch((error) => finish(null, error));
+    resultPromise.then((body) => { evidenceBody = body; stop(); }).catch((error) => { failure = error; stop(); });
+    child.once('error', (error) => { clearTimeout(timer); reject(error); });
+    child.once('close', (code) => { clearTimeout(timer); if (failure) reject(failure); else if (!evidenceBody) reject(new Error(`headless_chrome_failed:${code}`)); else resolve({ code: 0, stdout, stderr, evidenceBody }); });
   });
 }
 function decodeHtml(value) { return value.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&'); }
@@ -279,9 +247,9 @@ async function run(env = process.env, roleUi = '') {
     const indexPath = path.join(tempV4, 'index.html'); const html = await readFile(indexPath, 'utf8');
     await writeFile(indexPath, html.replace('</body>', '<script src="./assets/vendor/supabase-v2.112.2.js"></script><pre id="crmAuthenticatedE2eResult" data-status="running" hidden>running</pre><script type="module" src="./crm-authenticated-e2e-page.mjs"></script></body>'), { mode: 0o600 });
     const local = await localServer(tempV4); server = local.server;
-    const chromeResult = await runChrome(chrome, ['--headless', '--disable-gpu', '--no-sandbox', '--hide-scrollbars', '--disable-sync', '--no-first-run', '--disable-background-networking', '--disable-dev-shm-usage', '--remote-debugging-port=9222', `--user-data-dir=${path.join(tempRoot, 'chrome-profile')}`, local.url]);
+    const chromeResult = await runChrome(chrome, ['--headless', '--disable-gpu', '--no-sandbox', '--hide-scrollbars', '--disable-sync', '--no-first-run', '--disable-background-networking', '--disable-dev-shm-usage', `--user-data-dir=${path.join(tempRoot, 'chrome-profile')}`, local.url], local.resultPromise);
     if (chromeResult.code !== 0) throw new Error(`headless_chrome_failed:${chromeResult.code}`);
-    const evidence = evidenceFromDom(chromeResult.stdout); const target = path.resolve(config.evidencePath); await mkdir(path.dirname(target), { recursive: true }); await writeFile(target, `${JSON.stringify(evidence, null, 2)}\n`, { mode: 0o600 }); return { evidence, target };
+    const evidence = sanitize(JSON.parse(chromeResult.evidenceBody)); if (evidence.status !== 'passed') throw new Error(`browser_e2e_failed:${evidence.error || 'unknown'}`); const target = path.resolve(config.evidencePath); await mkdir(path.dirname(target), { recursive: true }); await writeFile(target, `${JSON.stringify(evidence, null, 2)}\n`, { mode: 0o600 }); return { evidence, target };
   } finally {
     if (server) await new Promise((resolve) => server.close(resolve));
     for (let attempt = 0; attempt < 30; attempt += 1) {
