@@ -10,6 +10,7 @@ on:
       - 'crm/v4/assets/v4/*.js'
       - 'tools/check_crm_lazy_tab_loader.py'
       - 'tools/check_crm_single_tab_router.py'
+      - 'tools/run_crm_lazy_tab_browser_check.mjs'
       - '.github/workflows/crm-lazy-tab-loader-check.yml'
   push:
     branches: [main]
@@ -21,6 +22,7 @@ on:
       - 'crm/v4/assets/v4/*.js'
       - 'tools/check_crm_lazy_tab_loader.py'
       - 'tools/check_crm_single_tab_router.py'
+      - 'tools/run_crm_lazy_tab_browser_check.mjs'
       - '.github/workflows/crm-lazy-tab-loader-check.yml'
 
 permissions:
@@ -37,5 +39,6 @@ jobs:
       - name: Validate CRM lazy tab loader contract
         run: |
           node --check crm/v4/assets/v4/crm-v4-tab-loader-v1.js
+          node --check tools/run_crm_lazy_tab_browser_check.mjs
           python3 tools/check_crm_lazy_tab_loader.py
           python3 tools/check_crm_single_tab_router.py
