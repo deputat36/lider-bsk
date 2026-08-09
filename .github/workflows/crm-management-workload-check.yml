@@ -8,7 +8,7 @@ on:
       - 'crm/v4/assets/v4/management-workload-panel-v1.js'
       - 'crm/v4/assets/v4/status-transitions-v1.js'
       - 'crm/v4/assets/v4/role-tab-permissions-v1.js'
-      - 'crm/v4/assets/v4/site-cache-note-v1.js'
+      - 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
       - 'tools/test_management_workload.mjs'
       - 'tools/check_management_workload_dashboard.py'
       - 'docs/CRM_MANAGEMENT_WORKLOAD_SLA_MANUAL_TEST_2026-07-12.md'
@@ -21,7 +21,7 @@ on:
       - 'crm/v4/assets/v4/management-workload-panel-v1.js'
       - 'crm/v4/assets/v4/status-transitions-v1.js'
       - 'crm/v4/assets/v4/role-tab-permissions-v1.js'
-      - 'crm/v4/assets/v4/site-cache-note-v1.js'
+      - 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
       - 'tools/test_management_workload.mjs'
       - 'tools/check_management_workload_dashboard.py'
       - 'docs/CRM_MANAGEMENT_WORKLOAD_SLA_MANUAL_TEST_2026-07-12.md'
@@ -39,7 +39,7 @@ jobs:
           set -euo pipefail
           node --check crm/v4/assets/v4/management-workload-model-v1.js
           node --check crm/v4/assets/v4/management-workload-panel-v1.js
-          node --check crm/v4/assets/v4/site-cache-note-v1.js
+          node --check crm/v4/assets/v4/crm-v4-tab-loader-v1.js
           node --check tools/test_management_workload.mjs
           node tools/test_management_workload.mjs
           python3 tools/check_management_workload_dashboard.py

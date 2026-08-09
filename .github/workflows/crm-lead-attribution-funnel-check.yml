@@ -8,7 +8,7 @@ on:
       - 'crm/v4/assets/v4/lead-attribution-funnel-model-v1.js'
       - 'crm/v4/assets/v4/lead-attribution-funnel-panel-v1.js'
       - 'crm/v4/assets/v4/leads.js'
-      - 'crm/v4/assets/v4/site-cache-note-v1.js'
+      - 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
       - 'tools/test_lead_attribution_funnel.mjs'
       - 'tools/check_lead_attribution_funnel.py'
       - 'docs/CRM_LEAD_ATTRIBUTION_FUNNEL_MANUAL_TEST_2026-07-17.md'
@@ -21,7 +21,7 @@ on:
       - 'crm/v4/assets/v4/lead-attribution-funnel-model-v1.js'
       - 'crm/v4/assets/v4/lead-attribution-funnel-panel-v1.js'
       - 'crm/v4/assets/v4/leads.js'
-      - 'crm/v4/assets/v4/site-cache-note-v1.js'
+      - 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
       - 'tools/test_lead_attribution_funnel.mjs'
       - 'tools/check_lead_attribution_funnel.py'
       - 'docs/CRM_LEAD_ATTRIBUTION_FUNNEL_MANUAL_TEST_2026-07-17.md'
@@ -41,7 +41,7 @@ jobs:
           node --check crm/v4/assets/v4/lead-attribution-funnel-model-v1.js
           node --check crm/v4/assets/v4/lead-attribution-funnel-panel-v1.js
           node --check crm/v4/assets/v4/leads.js
-          node --check crm/v4/assets/v4/site-cache-note-v1.js
+          node --check crm/v4/assets/v4/lead-analytics-badges-v1.js
           node --check tools/test_lead_attribution_funnel.mjs
           node tools/test_lead_attribution_funnel.mjs
           node tools/test_crm_lead_analytics_runtime.mjs

@@ -11,7 +11,7 @@ on:
       - 'crm/v4/assets/v4/order-status-ui-model-v1.js'
       - 'crm/v4/assets/v4/status-transitions-v1.js'
       - 'crm/v4/assets/v4/role-tab-permissions-v1.js'
-      - 'crm/v4/assets/v4/site-cache-note-v1.js'
+      - 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
       - 'tools/test_finance_plan_actual.mjs'
       - 'tools/test_crm_payment_record_status.mjs'
       - 'tools/check_finance_plan_actual.py'
@@ -30,7 +30,7 @@ on:
       - 'crm/v4/assets/v4/order-status-ui-model-v1.js'
       - 'crm/v4/assets/v4/status-transitions-v1.js'
       - 'crm/v4/assets/v4/role-tab-permissions-v1.js'
-      - 'crm/v4/assets/v4/site-cache-note-v1.js'
+      - 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
       - 'tools/test_finance_plan_actual.mjs'
       - 'tools/test_crm_payment_record_status.mjs'
       - 'tools/check_finance_plan_actual.py'
@@ -56,7 +56,7 @@ jobs:
           node --check crm/v4/assets/v4/order-status-ui-model-v1.js
           node --check crm/v4/assets/v4/status-transitions-v1.js
           node --check crm/v4/assets/v4/role-tab-permissions-v1.js
-          node --check crm/v4/assets/v4/site-cache-note-v1.js
+          node --check crm/v4/assets/v4/crm-v4-tab-loader-v1.js
           node --check tools/test_finance_plan_actual.mjs
           node --check tools/test_crm_payment_record_status.mjs
           node tools/test_finance_plan_actual.mjs
