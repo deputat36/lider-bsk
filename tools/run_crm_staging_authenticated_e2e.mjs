@@ -230,8 +230,13 @@ function runChrome(binary, args) {
       await new Promise((opened, failed) => { socket.addEventListener('open', opened, { once: true }); socket.addEventListener('error', () => failed(new Error('chrome_devtools_socket_failed')), { once: true }); });
       clearTimeout(timer);
       let sequence = 0; const pending = new Map();
-      socket.addEventListener('message', (event) => { const message = JSON.parse(String(event.data)); const callback = pending.get(message.id); if (!callback) return; pending.delete(message.id); if (message.error) callback.reject(new Error(`chrome_cdp_error:${message.error.message}`)); else callback.resolve(message.result); });
-      const command = (method, params = {}) => new Promise((resolveCommand, rejectCommand) => { const id = ++sequence; pending.set(id, { resolve: resolveCommand, reject: rejectCommand }); socket.send(JSON.stringify({ id, method, params })); });
+      socket.addEventListener('message', (event) => { const message = JSON.parse(String(event.data)); const callback = pending.get(message.id); if (!callback) return; pending.delete(message.id); clearTimeout(callback.timer); if (message.error) callback.reject(new Error(`chrome_cdp_error:${message.error.message}`)); else callback.resolve(message.result); });
+      const command = (method, params = {}) => new Promise((resolveCommand, rejectCommand) => {
+        const id = ++sequence;
+        const commandTimer = setTimeout(() => { pending.delete(id); rejectCommand(new Error(`chrome_cdp_timeout:${method}`)); }, 10000);
+        pending.set(id, { resolve: resolveCommand, reject: rejectCommand, timer: commandTimer });
+        socket.send(JSON.stringify({ id, method, params }));
+      });
       await command('Runtime.enable');
       const deadline = Date.now() + 360000;
       while (Date.now() < deadline) {
