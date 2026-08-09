@@ -9,6 +9,10 @@ on:
       - 'tools/run-authenticated-installation-ui-smoke-once-20260722.txt'
       - '.github/workflows/crm-staging-installation-authenticated-ui-smoke-runtime.yml'
       - '.github/workflows/crm-staging-authenticated-e2e.yml'
+      - 'tools/run_crm_staging_authenticated_e2e.mjs'
+      - 'tools/run_crm_staging_role_permission_e2e.mjs'
+      - 'supabase/staging-migrations/20260809*.sql'
+      - 'supabase/staging-functions/leader-staging-authenticated-e2e-bootstrap/**'
 
 permissions:
   contents: read
