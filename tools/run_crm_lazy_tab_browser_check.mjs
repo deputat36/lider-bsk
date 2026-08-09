@@ -162,25 +162,106 @@ async function createLocalServer(root) {
   return { server, baseUrl: `http://127.0.0.1:${address.port}/crm/v4/index.html` };
 }
 
-function runChrome(chrome, args) {
-  return new Promise((resolve, reject) => {
-    const child = spawn(chrome, args, { stdio: ['ignore', 'pipe', 'pipe'] });
-    let stdout = ''; let stderr = '';
-    child.stdout.on('data', chunk => { stdout += chunk; });
-    child.stderr.on('data', chunk => { stderr += chunk; });
-    child.once('error', reject);
-    child.once('close', code => resolve({ code, stdout, stderr }));
+function pause(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+async function waitForDevToolsPort(profileDir, timeoutMs = 8000) {
+  const portFile = path.join(profileDir, 'DevToolsActivePort');
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    try {
+      const [port] = (await readFile(portFile, 'utf8')).trim().split(/\r?\n/);
+      if (Number(port) > 0) return Number(port);
+    } catch (_) { /* Chrome has not created the file yet */ }
+    await pause(50);
+  }
+  throw new Error('chrome_devtools_port_timeout');
+}
+
+async function connectCdp(webSocketUrl) {
+  if (typeof WebSocket !== 'function') throw new Error('node_websocket_unavailable');
+  const socket = new WebSocket(webSocketUrl);
+  const pending = new Map();
+  let sequence = 0;
+  await new Promise((resolve, reject) => {
+    socket.addEventListener('open', resolve, { once: true });
+    socket.addEventListener('error', () => reject(new Error('chrome_cdp_connect_failed')), { once: true });
   });
+  socket.addEventListener('message', (event) => {
+    const message = JSON.parse(typeof event.data === 'string' ? event.data : Buffer.from(event.data).toString('utf8'));
+    if (!message.id || !pending.has(message.id)) return;
+    const { resolve, reject } = pending.get(message.id);
+    pending.delete(message.id);
+    if (message.error) reject(new Error(`cdp_error:${message.error.message || 'unknown'}`));
+    else resolve(message.result || {});
+  });
+  return {
+    send(method, params = {}) {
+      const id = ++sequence;
+      return new Promise((resolve, reject) => {
+        pending.set(id, { resolve, reject });
+        socket.send(JSON.stringify({ id, method, params }));
+      });
+    },
+    close() { try { socket.close(); } catch (_) { /* best-effort */ } }
+  };
 }
 
-function decodeHtml(value) {
-  return value.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+async function stopChrome(child) {
+  if (!child || child.exitCode !== null) return;
+  const closed = new Promise(resolve => child.once('close', resolve));
+  child.kill('SIGTERM');
+  await Promise.race([closed, pause(1800)]);
+  if (child.exitCode === null) child.kill('SIGKILL');
 }
 
-function evidenceFromDump(html) {
-  const match = String(html).match(/<pre[^>]+id="lazyBrowserCheckResult"[^>]*>([\s\S]*?)<\/pre>/i);
-  if (!match) throw new Error('lazy_browser_result_missing');
-  const evidence = JSON.parse(decodeHtml(match[1]));
+async function runChromeViewport(chrome, { profileDir, url, width, height }) {
+  const child = spawn(chrome, [
+    '--headless', '--disable-gpu', '--no-sandbox', '--hide-scrollbars', '--disable-sync', '--no-first-run',
+    '--remote-debugging-address=127.0.0.1', '--remote-debugging-port=0', '--remote-allow-origins=*',
+    `--user-data-dir=${profileDir}`, 'about:blank'
+  ], { stdio: ['ignore', 'ignore', 'pipe'] });
+  let stderr = '';
+  let cdp = null;
+  child.stderr.on('data', chunk => { stderr += chunk; });
+  try {
+    const port = await waitForDevToolsPort(profileDir);
+    const targets = await fetch(`http://127.0.0.1:${port}/json/list`).then(response => response.json());
+    const page = targets.find(target => target.type === 'page' && target.webSocketDebuggerUrl);
+    if (!page) throw new Error('chrome_page_target_missing');
+    cdp = await connectCdp(page.webSocketDebuggerUrl);
+    await cdp.send('Page.enable');
+    await cdp.send('Runtime.enable');
+    await cdp.send('Emulation.setDeviceMetricsOverride', {
+      width, height, deviceScaleFactor: 1, mobile: width < 500,
+      screenWidth: width, screenHeight: height
+    });
+    if (width < 500) await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
+    await cdp.send('Page.navigate', { url });
+    const started = Date.now();
+    while (Date.now() - started < 30000) {
+      const result = await cdp.send('Runtime.evaluate', {
+        expression: "document.body?.dataset?.lazyBrowserCheckFinished === 'true'",
+        returnByValue: true
+      });
+      if (result.result?.value === true) break;
+      await pause(50);
+    }
+    const result = await cdp.send('Runtime.evaluate', {
+      expression: "document.getElementById('lazyBrowserCheckResult')?.textContent || ''",
+      returnByValue: true
+    });
+    const value = text(result.result?.value);
+    if (!value) throw new Error('lazy_browser_result_missing');
+    return JSON.parse(value);
+  } catch (error) {
+    throw new Error(`${error.message}:${text(stderr).slice(0, 280)}`);
+  } finally {
+    cdp?.close();
+    await stopChrome(child);
+  }
+}
+
+function validateEvidence(evidence) {
   if (evidence.status !== 'passed') {
     const detail = JSON.stringify({
       error: evidence.error || 'unknown',
@@ -219,13 +300,11 @@ export async function runLazyTabBrowserCheck({ repoRoot = path.resolve('.') } = 
       const profileDir = await mkdtemp(path.join(tmpdir(), `lider-lazy-tab-${viewport.name}-`));
       try {
         const url = `${local.baseUrl}?tab=leads&viewport=${encodeURIComponent(viewport.name)}&full=${viewport.full ? '1' : '0'}`;
-        const dump = await runChrome(chrome, [
-          '--headless', '--disable-gpu', '--no-sandbox', '--hide-scrollbars', '--disable-sync', '--no-first-run',
-          '--force-device-scale-factor=1', `--window-size=${viewport.width},${viewport.height}`,
-          `--user-data-dir=${profileDir}`, '--virtual-time-budget=30000', '--dump-dom', url
-        ]);
-        if (dump.code !== 0) throw new Error(`headless_chrome_failed:${viewport.name}:${dump.code}:${text(dump.stderr).slice(0, 220)}`);
-        evidence.push(evidenceFromDump(dump.stdout));
+        const result = validateEvidence(await runChromeViewport(chrome, {
+          profileDir, url, width: viewport.width, height: viewport.height
+        }));
+        assert(result.layout.inner_width === viewport.width, `viewport_width_mismatch:${viewport.name}:${result.layout.inner_width}`);
+        evidence.push(result);
       } finally { await rm(profileDir, { recursive: true, force: true }); }
     }
     assert(evidence.length === VIEWPORTS.length, 'viewport_count_invalid');
