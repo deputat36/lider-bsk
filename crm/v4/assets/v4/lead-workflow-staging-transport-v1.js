@@ -4,6 +4,7 @@ const FUNCTION_SLUG = 'leader-crm-leads-staging';
 const EDGE_ACTION = 'update';
 const PERMISSION = 'leads.update';
 const REQUEST_TIMEOUT_MS = 20000;
+const VERIFICATION_TIMEOUT_MS = 8000;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const WORKFLOW_FIELDS = Object.freeze(['status', 'next_contact_at', 'assigned_to']);
 const LEAD_STATUSES = new Set([
@@ -14,6 +15,7 @@ const LEAD_STATUSES = new Set([
 function text(value) { return String(value ?? '').trim(); }
 function object(value) { return value && typeof value === 'object' && !Array.isArray(value) ? value : null; }
 function uuid(value) { return UUID_PATTERN.test(text(value)); }
+function abortError(code = 'request_timeout') { const error = new Error(code); error.name = 'AbortError'; return error; }
 
 export function projectRefFromLeadWorkflowUrl(value) {
   try {
@@ -137,6 +139,7 @@ export function leadWorkflowResultMessage(kind, replay = false) {
   if (replay) return 'Безопасный повтор: сервер вернул уже сохранённое состояние без дубликата.';
   return ({
     updated: 'Рабочий маршрут заявки сохранён одной серверной командой.',
+    verified_after_transport_error: 'Изменение заявки сохранено и подтверждено контрольным чтением после сетевой задержки.',
     wrong_environment: 'Защищённый маршрут заявки разрешён только в staging.',
     auth_required: 'Сессия staging истекла. Войдите снова.',
     forbidden: 'У вашей роли нет права изменять рабочий маршрут заявки.',
@@ -161,20 +164,75 @@ function responseErrorDetails(body, status) {
   };
 }
 
-async function parseJsonResponse(response) {
+function expectedPatchFromCommand(command) {
+  return Object.fromEntries(WORKFLOW_FIELDS.filter((key) => Object.prototype.hasOwnProperty.call(command, key)).map((key) => [key, command[key]]));
+}
+
+function sameTimestamp(left, right) {
+  if (left === null || right === null) return left === right;
+  const a = Date.parse(text(left));
+  const b = Date.parse(text(right));
+  return Number.isFinite(a) && Number.isFinite(b) ? a === b : text(left) === text(right);
+}
+
+function leadMatchesPatch(lead, patch) {
+  if (!object(lead)) return false;
+  return Object.entries(patch).every(([key, expected]) => {
+    const actual = lead[key];
+    if (key === 'next_contact_at') return sameTimestamp(actual ?? null, expected ?? null);
+    return text(actual) === text(expected);
+  });
+}
+
+async function readLeadWithTimeout(client, leadId, timeoutMs = VERIFICATION_TIMEOUT_MS) {
+  let timer = 0;
+  const timeoutPromise = new Promise((_, reject) => {
+    timer = globalThis.setTimeout(() => reject(abortError('verification_timeout')), timeoutMs);
+  });
   try {
-    const value = await response.json();
-    return object(value) || {};
-  } catch (_) {
-    return {};
+    return await Promise.race([
+      client
+        .from('leader_leads')
+        .select('id,status,assigned_to,next_contact_at,updated_at')
+        .eq('id', leadId)
+        .maybeSingle(),
+      timeoutPromise
+    ]);
+  } finally {
+    globalThis.clearTimeout(timer);
   }
 }
 
-async function fetchWithTimeout(fetchImpl, url, init, timeoutMs = REQUEST_TIMEOUT_MS) {
-  const controller = new AbortController();
-  const timer = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+async function verifyPersistedWorkflow(client, command, timeoutMs = VERIFICATION_TIMEOUT_MS) {
+  if (!client?.from || !uuid(command?.id)) return null;
   try {
-    return await fetchImpl(url, { ...init, signal: controller.signal });
+    const response = await readLeadWithTimeout(client, command.id, timeoutMs);
+    if (response?.error || !response?.data) return null;
+    const expectedPatch = expectedPatchFromCommand(command);
+    return leadMatchesPatch(response.data, expectedPatch) ? response.data : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function fetchJsonWithTimeout(fetchImpl, url, init, timeoutMs = REQUEST_TIMEOUT_MS) {
+  const controller = new AbortController();
+  let timer = 0;
+  const timeoutPromise = new Promise((_, reject) => {
+    timer = globalThis.setTimeout(() => {
+      controller.abort();
+      reject(abortError('request_timeout'));
+    }, timeoutMs);
+  });
+  try {
+    return await Promise.race([
+      (async () => {
+        const response = await fetchImpl(url, { ...init, signal: controller.signal });
+        const raw = await response.json();
+        return { response, data: object(raw) || {} };
+      })(),
+      timeoutPromise
+    ]);
   } finally {
     globalThis.clearTimeout(timer);
   }
@@ -188,7 +246,9 @@ export async function invokeStagingLeadWorkflow({
   patch = null,
   idempotencyKey = '',
   cryptoObject = globalThis.crypto,
-  fetchImpl = globalThis.fetch
+  fetchImpl = globalThis.fetch,
+  requestTimeoutMs = REQUEST_TIMEOUT_MS,
+  verificationTimeoutMs = VERIFICATION_TIMEOUT_MS
 } = {}) {
   if (!isStagingLeadWorkflowEnvironment(supabaseUrl)) {
     return Object.freeze({ ok: false, status: 503, kind: 'wrong_environment', code: 'wrong_environment', message: leadWorkflowResultMessage('wrong_environment') });
@@ -228,9 +288,9 @@ export async function invokeStagingLeadWorkflow({
     });
   }
 
-  let response;
+  let transport;
   try {
-    response = await fetchWithTimeout(fetchImpl, `${supabaseUrl.replace(/\/+$/, '')}/functions/v1/${FUNCTION_SLUG}`, {
+    transport = await fetchJsonWithTimeout(fetchImpl, `${supabaseUrl.replace(/\/+$/, '')}/functions/v1/${FUNCTION_SLUG}`, {
       method: 'POST',
       headers: {
         apikey: publicKey,
@@ -238,8 +298,23 @@ export async function invokeStagingLeadWorkflow({
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(command)
-    });
+    }, requestTimeoutMs);
   } catch (error) {
+    const verifiedLead = await verifyPersistedWorkflow(client, command, verificationTimeoutMs);
+    if (verifiedLead) {
+      const kind = 'verified_after_transport_error';
+      return Object.freeze({
+        ok: true,
+        status: 202,
+        kind,
+        code: kind,
+        replay: false,
+        message: leadWorkflowResultMessage(kind),
+        requestId: command.request_id,
+        data: { ok: true, request_id: command.request_id, lead: verifiedLead, transport_recovered: true },
+        command
+      });
+    }
     const timeoutFailure = text(error?.name) === 'AbortError';
     const kind = 'network_error';
     return Object.freeze({
@@ -253,7 +328,7 @@ export async function invokeStagingLeadWorkflow({
     });
   }
 
-  const data = await parseJsonResponse(response);
+  const { response, data } = transport;
   if (!response.ok || data.ok !== true) {
     const details = responseErrorDetails(data, response.status);
     const kind = classifyError(details.code);
