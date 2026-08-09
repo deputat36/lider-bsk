@@ -55,6 +55,7 @@ function buildMenuOnce(nav) {
   });
 
   menuBuilt = true;
+  try { window.performance?.mark?.('crm_menu_ready'); } catch (_) { /* performance marks are best-effort */ }
 }
 
 function syncMenuState() {

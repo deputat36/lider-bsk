@@ -4,6 +4,10 @@ const modulePromises = new Map();
 const loadPromises = new Map();
 let cardBundlePromise = null;
 
+function mark(name, tab) {
+  try { window.performance?.mark?.(name, { detail: { tab } }); } catch (_) { /* performance marks are best-effort */ }
+}
+
 function loaderFeedback() {
   let host = document.getElementById('v4TabLoadFeedback');
   if (host) return host;
@@ -52,8 +56,18 @@ function hideLoading(tab) {
 
 function managedModule(importModule, extras = []) {
   return async () => {
-    const [primary] = await Promise.all([importModule(), ...extras.map((load) => load())]);
-    return primary;
+    const modules = await Promise.all([importModule(), ...extras.map((load) => load())]);
+    return Object.freeze({
+      mount: async () => Promise.all(modules.map((module) => module.mount?.())),
+      load: async () => {
+        await modules[0].load?.();
+        await Promise.all(modules.slice(1).map((module) => module.load?.()));
+      },
+      refresh: async () => {
+        await (modules[0].refresh || modules[0].load)?.();
+        await Promise.all(modules.slice(1).map((module) => (module.refresh || module.load)?.()));
+      }
+    });
   };
 }
 
@@ -62,10 +76,7 @@ const TAB_REGISTRY = Object.freeze({
     requiredPermission: 'management_dashboard',
     importModule: managedModule(
       () => import('./management-dashboard-v3.js?v=20260805-tab-loader-1'),
-      [
-        () => import('./management-workload-panel-v1.js?v=20260712-workload-1'),
-        () => import('./lead-operational-quality-v1.js?v=20260718-deferred-1')
-      ]
+      [() => import('./management-workload-panel-v1.js?v=20260712-workload-1')]
     ),
     mount: (module) => module.mount?.(),
     load: (module) => module.load?.(),
@@ -78,7 +89,6 @@ const TAB_REGISTRY = Object.freeze({
     importModule: managedModule(
       () => import('./orders-fast-loader-v1.js?v=20260805-tab-loader-1'),
       [
-        () => import('./orders.js?v=20260805-tab-loader-1'),
         () => import('./order-card-v1.js?v=20260805-tab-loader-1'),
         () => import('./order-act-preview-v1.js?v=20260805-tab-loader-1')
       ]
@@ -196,22 +206,26 @@ export async function loadV4Tab(tab, { force = false } = {}) {
     return false;
   }
 
+  mark('crm_tab_open_start', tab);
   showLoading(tab, config.loadingMessage);
   try {
     const module = await importTab(tab, config);
     if (document.body?.dataset?.v4Tab !== tab) return true;
     await runTabLoad(tab, config, module, force);
     hideLoading(tab);
+    mark('crm_tab_content_ready', tab);
     return true;
   } catch (error) {
     console.warn(`CRM v4 lazy tab failed: ${tab}`, error);
     showError(tab, config.errorMessage);
+    mark('crm_tab_content_error', tab);
     return false;
   }
 }
 
 async function loadLeadCardBundle() {
   if (!canOpenV4Tab('card')) return false;
+  mark('crm_tab_open_start', 'card');
   showLoading('card', 'Загружаю карточку заявки…');
   if (!cardBundlePromise) {
     cardBundlePromise = Promise.all([
@@ -224,11 +238,18 @@ async function loadLeadCardBundle() {
       import('./calculation-draft-review-v1.js?v=20260805-tab-loader-1'),
       import('./calculation-contractor-quote-v1.js?v=20260805-tab-loader-1'),
       import('./offers.js?v=20260805-tab-loader-1'),
+      import('./orders.js?v=20260805-tab-loader-1'),
       import('./offer-card-v1.js?v=20260805-tab-loader-1'),
       import('./offer-print.js?v=20260805-tab-loader-1'),
       import('./offer-order-create-v1.js?v=20260805-tab-loader-1'),
       import('./need-readiness-panel-v1.js?v=20260713-readiness-1')
-    ]).catch((error) => {
+    ]).then((modules) => {
+      modules[5].bootCalculations?.();
+      modules[6].bootCalculationDraftReview?.();
+      modules[8].bootOffers?.();
+      modules[9].bootOrders?.();
+      return modules;
+    }).catch((error) => {
       cardBundlePromise = null;
       throw error;
     });
@@ -237,10 +258,12 @@ async function loadLeadCardBundle() {
     await cardBundlePromise;
     document.dispatchEvent(new CustomEvent('leader-v4:tab-section-ready', { detail: { tab: 'card' } }));
     hideLoading('card');
+    mark('crm_tab_content_ready', 'card');
     return true;
   } catch (error) {
     console.warn('CRM v4 lead card bundle failed:', error);
     showError('card', 'Карточка заявки не загрузилась.');
+    mark('crm_tab_content_error', 'card');
     return false;
   }
 }

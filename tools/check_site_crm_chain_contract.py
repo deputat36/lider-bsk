@@ -7,7 +7,7 @@ PUBLIC_FORM = ROOT / 'assets' / 'public-lead-form.js'
 PUBLIC_EDGE = ROOT / 'supabase' / 'functions' / 'leader-public-lead' / 'index.ts'
 CRM_HELPER = ROOT / 'crm' / 'v4' / 'assets' / 'v4' / 'public-lead-audit-helper-v1.js'
 CRM_REQUEST_ID = ROOT / 'crm' / 'v4' / 'assets' / 'v4' / 'public-lead-request-id-v1.js'
-CRM_LOADER = ROOT / 'crm' / 'v4' / 'assets' / 'v4' / 'site-cache-note-v1.js'
+CRM_LOADER = ROOT / 'crm' / 'v4' / 'assets' / 'v4' / 'crm-v4-tab-loader-v1.js'
 CHECKLIST = ROOT / 'docs' / 'CRM_V4_AUDIT_V9_CHECK.md'
 
 

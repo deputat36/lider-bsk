@@ -43,6 +43,7 @@ function showWorkspace() {
 }
 
 function emitCrmReady() {
+  try { window.performance?.mark?.('crm_auth_ready'); } catch (_) { /* performance marks are best-effort */ }
   document.dispatchEvent(new CustomEvent('leader-v4:crm-ready', { detail: { state: v4State } }));
 }
 

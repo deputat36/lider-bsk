@@ -4,7 +4,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 AUDIT_UI = ROOT / 'crm/v4/assets/v4/public-lead-audit-v1.js'
-LOADER = ROOT / 'crm/v4/assets/v4/site-cache-note-v1.js'
+LOADER = ROOT / 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
 SOURCE_CONTRACT = ROOT / 'tools/check_public_lead_audit_contract.py'
 
 REASON_LABELS = {
@@ -15,7 +15,7 @@ REASON_LABELS = {
     'insert_failed': 'Не удалось записать заявку',
 }
 
-CACHE_IMPORT = "import('./public-lead-audit-v1.js?v=20260711-reason-labels-1')"
+CACHE_IMPORT = "import('./public-lead-audit-v1.js?v=20260805-tab-loader-1')"
 
 
 def read_required(path: Path, label: str, errors: list[str]) -> str:

@@ -107,17 +107,16 @@ function ensureAuditHelper() {
   section.insertBefore(note, section.firstChild);
 }
 
-function bootAuditHelper() {
+function mount() {
+  if (window.LeaderV4PublicLeadAuditHelperV1Mounted) return;
+  window.LeaderV4PublicLeadAuditHelperV1Mounted = true;
   ensureAuditHelper();
-  document.addEventListener('leader-v4:crm-ready', () => setTimeout(ensureAuditHelper, 300));
   document.addEventListener('click', (event) => {
-    if (event.target.closest?.('[data-v4-tab-button="public_lead_audit"]')) {
-      setTimeout(ensureAuditHelper, 300);
-    }
     const openLead = event.target.closest?.('[data-public-trace-open-lead]');
     if (openLead) {
       event.preventDefault();
       openLeadRoute(openLead.dataset.publicTraceOpenLead);
+      if (typeof window.v4SetTab === 'function') window.v4SetTab('card');
     }
   }, true);
   document.addEventListener('submit', (event) => {
@@ -125,7 +124,6 @@ function bootAuditHelper() {
     event.preventDefault();
     runTrace(document.getElementById('publicLeadTraceInputV1')?.value || '');
   });
-  setInterval(ensureAuditHelper, 2000);
 }
 
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootAuditHelper); else bootAuditHelper();
+export { mount };

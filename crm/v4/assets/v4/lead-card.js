@@ -450,7 +450,7 @@ function handlePrimaryAction(button) {
     return;
   }
   if (action === 'open_orders') {
-    document.querySelector('[data-v4-tab-button="orders"]')?.click();
+    if (typeof window.v4SetTab === 'function') window.v4SetTab('orders');
     return;
   }
   byId(button.dataset.targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });

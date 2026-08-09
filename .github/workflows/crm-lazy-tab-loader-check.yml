@@ -7,7 +7,9 @@ on:
       - 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
       - 'crm/v4/assets/v4/auth.js'
       - 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
+      - 'crm/v4/assets/v4/*.js'
       - 'tools/check_crm_lazy_tab_loader.py'
+      - 'tools/check_crm_single_tab_router.py'
       - '.github/workflows/crm-lazy-tab-loader-check.yml'
   push:
     branches: [main]
@@ -16,7 +18,9 @@ on:
       - 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
       - 'crm/v4/assets/v4/auth.js'
       - 'crm/v4/assets/v4/lead-analytics-badges-v1.js'
+      - 'crm/v4/assets/v4/*.js'
       - 'tools/check_crm_lazy_tab_loader.py'
+      - 'tools/check_crm_single_tab_router.py'
       - '.github/workflows/crm-lazy-tab-loader-check.yml'
 
 permissions:
@@ -34,3 +38,4 @@ jobs:
         run: |
           node --check crm/v4/assets/v4/crm-v4-tab-loader-v1.js
           python3 tools/check_crm_lazy_tab_loader.py
+          python3 tools/check_crm_single_tab_router.py

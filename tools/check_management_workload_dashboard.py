@@ -5,7 +5,7 @@ import sys
 root = Path(__file__).resolve().parents[1]
 model = root / 'crm/v4/assets/v4/management-workload-model-v1.js'
 panel = root / 'crm/v4/assets/v4/management-workload-panel-v1.js'
-loader = root / 'crm/v4/assets/v4/site-cache-note-v1.js'
+loader = root / 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
 test = root / 'tools/test_management_workload.mjs'
 manual = root / 'docs/CRM_MANAGEMENT_WORKLOAD_SLA_MANUAL_TEST_2026-07-12.md'
 status = root / 'docs/STATUS.md'
@@ -45,7 +45,9 @@ checks = {
         'data-workload-close',
         'Очереди только открывают карточки и не меняют данные.',
         'В очереди намеренно не отображаются имя клиента, телефон, email, сообщение, внутренние комментарии и финансовые суммы.',
-        "document.addEventListener('leader-v4:tab-opened'",
+        'export { mount };',
+        'export { load };',
+        'export function refresh()',
         "openLeadRoute(leadId)",
         "window.v4SetTab('card')",
     ],

@@ -189,27 +189,20 @@ async function refreshProductionAlerts(force = false) {
   }
 }
 
-function boot() {
+function mount() {
+  if (window.LeaderV4ProductionAlertsV1Mounted) return;
+  window.LeaderV4ProductionAlertsV1Mounted = true;
   ensureStyles();
   badge();
-  document.addEventListener('leader-v4:tab-opened', (event) => {
-    if (event.detail?.tab === 'production') setTimeout(() => refreshProductionAlerts(true), 900);
-  });
-  document.addEventListener('leader-v4:production-board-rendered', () => {
-    setTimeout(() => refreshProductionAlerts(true), 100);
-  });
   document.addEventListener('leader-v4-order-updated', () => {
     if (document.body.dataset.v4Tab === 'production') setTimeout(() => refreshProductionAlerts(true), 900);
   });
   document.addEventListener('click', (event) => {
-    if (!event.target.closest?.('[data-v4-tab-button="production"],[data-production-light-refresh],[data-production-light-kind]')) return;
+    if (!event.target.closest?.('[data-production-light-refresh],[data-production-light-kind]')) return;
     if (document.body.dataset.v4Tab === 'production') setTimeout(() => refreshProductionAlerts(true), 900);
   });
 }
 
-if (!window.LeaderV4ProductionAlertsV1Booted) {
-  window.LeaderV4ProductionAlertsV1Booted = true;
-  boot();
-}
-
-export { refreshProductionAlerts };
+export { mount, refreshProductionAlerts };
+export function load() { return refreshProductionAlerts(false); }
+export function refresh() { return refreshProductionAlerts(true); }

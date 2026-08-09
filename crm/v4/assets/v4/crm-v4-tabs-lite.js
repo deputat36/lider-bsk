@@ -17,6 +17,7 @@ const TAB_RENDER_TIMEOUT_MS = 1200;
 let lastTransitionTab = '';
 let lastTransitionAt = 0;
 let feedbackTimer = 0;
+let initialTabMarked = false;
 
 function workspace() {
   return document.getElementById('crmWorkspace');
@@ -212,6 +213,10 @@ function setActiveTab(tab, options = {}) {
 
   syncTabUrl(activeTab, options.historyMode || 'push');
   document.dispatchEvent(new CustomEvent('leader-v4:tab-opened', { detail: { tab: activeTab, force: options.force === true } }));
+  if (!initialTabMarked) {
+    initialTabMarked = true;
+    try { window.performance?.mark?.('crm_initial_tab_visible', { detail: { tab: activeTab } }); } catch (_) { /* best-effort */ }
+  }
   return true;
 }
 

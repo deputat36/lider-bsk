@@ -69,7 +69,11 @@ function ensureQuickFilterTrigger() {
     if (quickFiltersPromise) return;
     button.disabled = true;
     button.textContent = 'Загружаю рабочие очереди…';
-    quickFiltersPromise = import('./lead-work-quick-filters-ui-v1.js?v=20260723-1')
+    quickFiltersPromise = Promise.all([
+      import('./lead-work-quick-filters-ui-v1.js?v=20260723-1'),
+      import('./lead-operational-quality-v1.js?v=20260718-deferred-1'),
+      import('./lead-attribution-funnel-panel-v1.js?v=20260718-deferred-1')
+    ])
       .then(() => button.remove())
       .catch((error) => {
         console.warn('Lead work quick filters lazy load warning:', error);

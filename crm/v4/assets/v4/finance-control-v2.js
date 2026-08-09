@@ -130,18 +130,6 @@ function ensureSection() {
   return section;
 }
 
-function ensureNav() {
-  const nav = document.getElementById('v4LayoutTabs');
-  if (!nav || nav.querySelector('[data-v4-tab-button="finance_control"]')) return;
-  const anchor = nav.querySelector('[data-v4-tab-button="order_control"]') || nav.querySelector('[data-v4-tab-button="orders"]');
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.dataset.v4TabButton = 'finance_control';
-  button.textContent = 'Финансы';
-  if (anchor) anchor.insertAdjacentElement('afterend', button);
-  else nav.appendChild(button);
-}
-
 function stat(label, value, type = '') {
   return `<div class="v4-fin-stat ${type}"><span>${esc(label)}</span><b>${esc(value)}</b></div>`;
 }
@@ -212,49 +200,11 @@ async function loadData(force = false) {
   }
 }
 
-function hideBaseSections() {
-  const leads = document.getElementById('leadsSection');
-  if (leads) leads.style.display = 'none';
-  const cardSection = document.getElementById('leadCardSection');
-  if (cardSection) cardSection.style.display = 'none';
-  const next = document.querySelector('.v4-next-card');
-  if (next) next.style.display = 'none';
-}
-
-function showFinanceControl() {
+function mount() {
+  if (window.LeaderV4FinanceControlV2Mounted) return;
+  window.LeaderV4FinanceControlV2Mounted = true;
   ensureSection();
-  ensureNav();
-  document.body.dataset.v4Tab = 'finance_control';
-  document.querySelectorAll('[data-v4-tab-button]').forEach((button) => {
-    button.classList.toggle('is-active', button.dataset.v4TabButton === 'finance_control');
-  });
-  hideBaseSections();
-  document.querySelectorAll('[data-v4-managed-section]').forEach((section) => {
-    section.hidden = section.dataset.v4ManagedSection !== 'finance_control';
-  });
-  loadData(false);
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function boot() {
-  ensureSection();
-  ensureNav();
-  document.addEventListener('leader-v4:crm-ready', () => {
-    setTimeout(ensureNav, 300);
-    if (document.body.dataset.v4Tab === 'finance_control') loadData(false);
-  });
-  document.addEventListener('leader-v4:tab-opened', (event) => {
-    setTimeout(ensureNav, 150);
-    if (event.detail?.tab === 'finance_control' || document.body.dataset.v4Tab === 'finance_control') loadData(false);
-  });
   document.addEventListener('click', (event) => {
-    const tab = event.target.closest?.('[data-v4-tab-button="finance_control"]');
-    if (tab) {
-      event.preventDefault();
-      event.stopPropagation();
-      showFinanceControl();
-      return;
-    }
     if (event.target.closest?.('[data-finance-control-refresh]')) {
       event.preventDefault();
       loadData(true);
@@ -265,10 +215,9 @@ function boot() {
       const setTab = window.v4SetTab;
       if (typeof setTab === 'function') setTab('orders');
     }
-  }, true);
+  });
 }
 
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
-
+export { mount };
 export function load() { return loadData(false); }
 export function refresh() { return loadData(true); }

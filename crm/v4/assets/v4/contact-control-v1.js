@@ -146,18 +146,6 @@ function ensureSection() {
   return section;
 }
 
-function ensureNav() {
-  const nav = document.getElementById('v4LayoutTabs');
-  if (!nav || nav.querySelector('[data-v4-tab-button="contact_control"]')) return;
-  const leadsButton = nav.querySelector('[data-v4-tab-button="leads"]');
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.dataset.v4TabButton = 'contact_control';
-  button.textContent = 'Контроль контактов';
-  if (leadsButton) leadsButton.insertAdjacentElement('afterend', button);
-  else nav.appendChild(button);
-}
-
 function badge(text) {
   const danger = text === 'Нет телефона';
   return `<span class="v4-contact-badge ${danger ? 'is-danger' : 'is-warn'}">${esc(text)}</span>`;
@@ -219,35 +207,11 @@ function render() {
   content.innerHTML = `<div class="v4-crm-summary"><div><span>Всего в контроле</span><b>${items.length}</b></div><div><span>Без телефона</span><b>${noPhone}</b></div><div><span>Без контакта</span><b>${noNext}</b></div><div><span>Просрочены</span><b>${overdue}</b></div></div>${items.map(card).join('')}`;
 }
 
-function showContactControl() {
+function mount() {
+  if (window.LeaderV4ContactControlV1Mounted) return;
+  window.LeaderV4ContactControlV1Mounted = true;
   ensureSection();
-  ensureNav();
-  document.body.dataset.v4Tab = 'contact_control';
-  document.querySelectorAll('[data-v4-tab-button]').forEach((button) => button.classList.toggle('is-active', button.dataset.v4TabButton === 'contact_control'));
-  document.querySelectorAll('[data-v4-managed-section]').forEach((section) => { section.hidden = section.dataset.v4ManagedSection !== 'contact_control'; });
-  render();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function boot() {
-  ensureSection();
-  ensureNav();
-  document.addEventListener('leader-v4:crm-ready', () => {
-    setTimeout(ensureNav, 300);
-    setTimeout(render, 700);
-  });
-  document.addEventListener('leader-v4:tab-opened', () => {
-    setTimeout(ensureNav, 150);
-    if (document.body.dataset.v4Tab === 'contact_control') render();
-  });
   document.addEventListener('click', (event) => {
-    const tab = event.target.closest?.('[data-v4-tab-button="contact_control"]');
-    if (tab) {
-      event.preventDefault();
-      event.stopPropagation();
-      showContactControl();
-      return;
-    }
     const quick = event.target.closest?.('[data-contact-quick]');
     if (quick) {
       event.preventDefault();
@@ -258,7 +222,7 @@ function boot() {
     if (open) {
       openLeadRoute(open.dataset.contactOpen);
       const setTab = window.v4SetTab;
-      if (typeof setTab === 'function') setTab('card', { noLoad: true });
+      if (typeof setTab === 'function') setTab('card');
       return;
     }
     if (event.target.closest?.('[data-contact-control-refresh]')) render();
@@ -276,11 +240,9 @@ function boot() {
       if (typeof setTab === 'function') setTab('leads');
       select?.dispatchEvent(new Event('change', { bubbles: true }));
     }
-  }, true);
+  });
 }
 
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
-else boot();
-
+export { mount };
 export function load() { return render(); }
 export function refresh() { return render(); }

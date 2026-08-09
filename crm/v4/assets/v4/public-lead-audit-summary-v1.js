@@ -41,15 +41,16 @@ function renderAuditRequestSummary() {
   summary.innerHTML = `<div><span>Видно событий</span><b>${cards.length}</b></div><div><span>С request_id</span><b>${withRequestId}</b></div><div class="${withoutRequestId ? 'is-warn' : ''}"><span>Без request_id</span><b>${withoutRequestId}</b></div>`;
 }
 
-function bootAuditSummary() {
+function mount() {
+  if (window.LeaderV4PublicLeadAuditSummaryV1Mounted) return;
+  window.LeaderV4PublicLeadAuditSummaryV1Mounted = true;
   renderAuditRequestSummary();
-  document.addEventListener('leader-v4:crm-ready', () => setTimeout(renderAuditRequestSummary, 300));
   document.addEventListener('click', (event) => {
-    if (event.target.closest?.('[data-v4-tab-button="public_lead_audit"],[data-public-lead-audit-refresh],[data-public-lead-audit-filter]')) {
+    if (event.target.closest?.('[data-public-lead-audit-refresh],[data-public-lead-audit-filter]')) {
       setTimeout(renderAuditRequestSummary, 400);
       setTimeout(renderAuditRequestSummary, 1000);
     }
-  }, true);
+  });
   document.addEventListener('input', (event) => {
     if (event.target.closest?.('[data-public-lead-audit-search]')) setTimeout(renderAuditRequestSummary, 100);
   }, true);
@@ -57,4 +58,4 @@ function bootAuditSummary() {
   observer.observe(document.body, { childList: true, subtree: true });
 }
 
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootAuditSummary); else bootAuditSummary();
+export { mount };

@@ -509,6 +509,8 @@ function bindOfferEvents() {
 }
 
 export function bootOffers() {
+  if (window.LeaderV4OffersBooted) return;
+  window.LeaderV4OffersBooted = true;
   previousCalculations = v4State.calculations;
   bindOfferEvents();
   renderOffers();

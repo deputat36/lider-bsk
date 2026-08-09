@@ -88,22 +88,6 @@ function ensureSection() {
   else workspace().prepend(section);
   return section;
 }
-function ensureNav() {
-  const nav = document.getElementById('v4LayoutTabs');
-  if (!nav || nav.querySelector('[data-v4-tab-button="management_dashboard"]')) return;
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.dataset.v4TabButton = 'management_dashboard';
-  button.textContent = 'Сегодня';
-  const leads = nav.querySelector('[data-v4-tab-button="leads"]');
-  if (leads) leads.insertAdjacentElement('beforebegin', button);
-  else nav.appendChild(button);
-}
-function hideBaseSections() {
-  ['leadsSection', 'leadCardSection'].forEach((id) => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
-  const next = document.querySelector('.v4-next-card');
-  if (next) next.style.display = 'none';
-}
 function stat(label, value, type = '') { return `<div class="v4-mgmt-stat ${type}"><span>${esc(label)}</span><b>${esc(value)}</b></div>`; }
 function todayCard(label, value, note, type = '') { return `<article class="v4-today-card ${type}"><span>${esc(label)}</span><b>${esc(value)}</b><small>${esc(note)}</small></article>`; }
 function top(items, mapper) { return items.slice(0, 6).map(mapper).join('') || '<div class="v4-empty">Нет элементов в этой группе.</div>'; }
@@ -219,36 +203,19 @@ async function loadData(force = false) {
     render();
   }
 }
-function showDashboard() {
+function mount() {
+  if (window.LeaderV4ManagementDashboardV3Mounted) return;
+  window.LeaderV4ManagementDashboardV3Mounted = true;
   ensureSection();
-  ensureNav();
-  document.body.dataset.v4Tab = 'management_dashboard';
-  document.querySelectorAll('[data-v4-tab-button]').forEach((button) => button.classList.toggle('is-active', button.dataset.v4TabButton === 'management_dashboard'));
-  hideBaseSections();
-  document.querySelectorAll('[data-v4-managed-section]').forEach((section) => { section.hidden = section.dataset.v4ManagedSection !== 'management_dashboard'; });
-  loadData(false);
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-  document.dispatchEvent(new CustomEvent('leader-v4:tab-opened', { detail: { tab: 'management_dashboard' } }));
-}
-function boot() {
-  ensureSection();
-  ensureNav();
-  document.addEventListener('leader-v4:crm-ready', () => { setTimeout(ensureNav, 300); if (document.body.dataset.v4Tab === 'management_dashboard') loadData(false); });
-  document.addEventListener('leader-v4:tab-opened', (event) => { setTimeout(ensureNav, 150); if (event.detail?.tab === 'management_dashboard' || document.body.dataset.v4Tab === 'management_dashboard') loadData(false); });
   document.addEventListener('click', (event) => {
-    const tab = event.target.closest?.('[data-v4-tab-button="management_dashboard"]');
-    if (tab) { event.preventDefault(); event.stopImmediatePropagation(); showDashboard(); return; }
     if (event.target.closest?.('[data-management-dashboard-refresh]')) { event.preventDefault(); loadData(true); return; }
     const leadButton = event.target.closest?.('[data-management-open-lead]');
     if (leadButton) { event.preventDefault(); openLeadRoute(leadButton.dataset.managementOpenLead); if (typeof window.v4SetTab === 'function') window.v4SetTab('card'); return; }
     const target = event.target.closest?.('[data-management-tab]')?.dataset.managementTab;
-    if (target) { event.preventDefault(); document.querySelector(`[data-v4-tab-button="${target}"]`)?.click(); }
-  }, true);
-}
-if (!window.LeaderV4ManagementDashboardV3Booted) {
-  window.LeaderV4ManagementDashboardV3Booted = true;
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+    if (target && typeof window.v4SetTab === 'function') { event.preventDefault(); window.v4SetTab(target); }
+  });
 }
 
+export { mount };
 export function load() { return loadData(false); }
 export function refresh() { return loadData(true); }

@@ -74,18 +74,6 @@ function ensureStyles() {
   document.head.appendChild(style);
 }
 
-function ensureNav() {
-  const nav = document.getElementById('v4LayoutTabs');
-  if (!nav || nav.querySelector('[data-v4-tab-button="orders"]')) return;
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.dataset.v4TabButton = 'orders';
-  button.textContent = 'Заказы';
-  const leadsButton = nav.querySelector('[data-v4-tab-button="leads"]');
-  if (leadsButton) leadsButton.insertAdjacentElement('afterend', button);
-  else nav.appendChild(button);
-}
-
 function ensureSection() {
   let section = document.getElementById('ordersListSection');
   if (!section) {
@@ -108,21 +96,6 @@ function host() {
   return document.getElementById('ordersListSectionContent');
 }
 
-function showOrdersTab() {
-  ensureNav();
-  ensureSection();
-  document.body.dataset.v4Tab = 'orders';
-  document.querySelectorAll('[data-v4-tab-button]').forEach((button) => button.classList.toggle('is-active', button.dataset.v4TabButton === 'orders'));
-  document.querySelectorAll('[data-v4-managed-section]').forEach((section) => { section.hidden = section.dataset.v4ManagedSection !== 'orders'; });
-  const leads = document.getElementById('leadsSection');
-  const card = document.getElementById('leadCardSection');
-  const next = document.querySelector('.v4-next-card');
-  if (leads) leads.style.display = 'none';
-  if (card) card.style.display = 'none';
-  if (next) next.style.display = 'none';
-  document.dispatchEvent(new CustomEvent('leader-v4:tab-opened', { detail: { tab: 'orders' } }));
-}
-
 function renderOrderFastCard(order) {
   const statusModel = orderStatusUiModel(order.status);
   const warning = statusModel.known ? '' : `<div class="v4-orders-fast-warning" data-unknown-order-status="${esc(statusModel.raw)}">${esc(statusModel.warning)}</div>`;
@@ -131,7 +104,6 @@ function renderOrderFastCard(order) {
 
 function render() {
   ensureStyles();
-  ensureNav();
   const box = host();
   if (!box) return;
   const visibleRows = selectOrderRows(rows, preferences, { isActive: isActiveOrderStatus, designNeedsCheck });
@@ -157,7 +129,6 @@ function render() {
 async function loadOrdersFast(force = false) {
   ensureSection();
   ensureStyles();
-  ensureNav();
   if (busy) return;
   if (loaded && !force) { render(); return; }
   busy = true;
@@ -185,26 +156,16 @@ async function loadOrdersFast(force = false) {
   }
 }
 
-function boot() {
+function mount() {
+  if (window.LeaderV4OrdersFastLoaderV1Mounted) return;
+  window.LeaderV4OrdersFastLoaderV1Mounted = true;
   ensureSection();
-  ensureNav();
-  document.addEventListener('leader-v4:crm-ready', () => setTimeout(ensureNav, 300));
-  document.addEventListener('leader-v4:tab-opened', () => setTimeout(ensureNav, 200));
   document.addEventListener('click', (event) => {
     if (event.target.closest?.('[data-orders-fast-reset]')) {
       event.preventDefault();
       preferences = { ...resetOrderListPreferences(), search: '' };
       render();
       ensureSection().querySelector('[data-orders-fast-search]')?.focus();
-      return;
-    }
-    const tab = event.target.closest?.('[data-v4-tab-button="orders"]');
-    if (tab) {
-      event.preventDefault();
-      event.stopPropagation();
-      showOrdersTab();
-      loadOrdersFast(false);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
     if (event.target.closest?.('[data-orders-fast-refresh],[data-v4-list-refresh="orders"]')) {
@@ -218,7 +179,7 @@ function boot() {
       event.preventDefault();
       openLeadRoute(openLead.dataset.orderOpenLead);
     }
-  }, true);
+  });
   document.addEventListener('input', (event) => {
     if (!event.target.matches?.('[data-orders-fast-search]')) return;
     preferences = { ...preferences, search: event.target.value || '' };
@@ -233,11 +194,7 @@ function boot() {
   });
 }
 
-if (!window.LeaderV4OrdersFastLoaderV1Booted) {
-  window.LeaderV4OrdersFastLoaderV1Booted = true;
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
-}
-
+export { mount };
 export function load() { return loadOrdersFast(false); }
 export function refresh() { return loadOrdersFast(true); }
 export { loadOrdersFast };
