@@ -55,7 +55,8 @@ begin
      or not has_column_privilege('authenticated', 'public.leader_lead_needs', 'need_design', 'SELECT')
      or not has_column_privilege('authenticated', 'public.leader_lead_needs', 'created_at', 'SELECT')
      or not has_column_privilege('authenticated', 'public.leader_design_tasks', 'task_status', 'SELECT')
-     or not has_column_privilege('authenticated', 'public.leader_design_tasks', 'created_at', 'SELECT') then
+     or not has_column_privilege('authenticated', 'public.leader_design_tasks', 'created_at', 'SELECT')
+     or not has_column_privilege('authenticated', 'public.leader_design_tasks', 'updated_at', 'SELECT') then
     raise exception 'safe_column_select_missing';
   end if;
 

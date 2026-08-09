@@ -139,7 +139,8 @@ grant select (
   designer_name,
   deadline,
   layout_link,
-  created_at
+  created_at,
+  updated_at
 ) on table public.leader_design_tasks to authenticated;
 
 alter table public.leader_orders enable row level security;
