@@ -1,6 +1,10 @@
-// Browser-only bootstrap. The dynamic import keeps pure model tests free from browser/Supabase dependencies.
+// Browser-only bootstrap. Awaiting the dynamic import removes the race where the
+// lead card can become interactive before the protected staging workflow handler
+// is installed. Pure model/Node tests still skip browser/Supabase dependencies.
 if (typeof document !== 'undefined' && typeof window !== 'undefined') {
-  import('./lead-workflow-staging-ui-v1.js').catch((error) => {
+  try {
+    await import('./lead-workflow-staging-ui-v1.js');
+  } catch (error) {
     console.error('[leader-crm] staging lead workflow bootstrap failed', error);
-  });
+  }
 }
