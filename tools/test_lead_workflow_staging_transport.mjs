@@ -26,6 +26,21 @@ class FakeResponse {
   async json() { return this.body; }
 }
 
+function readClient(row) {
+  return {
+    auth: { getSession: async () => ({ data: { session: { access_token: ACCESS_TOKEN } }, error: null }) },
+    from(table) {
+      assert.equal(table, 'leader_leads');
+      const builder = {
+        select(fields) { assert.match(fields, /assigned_to/); return builder; },
+        eq(key, value) { assert.equal(key, 'id'); assert.equal(value, leadId); return builder; },
+        async maybeSingle() { return { data: row, error: null }; }
+      };
+      return builder;
+    }
+  };
+}
+
 assert.equal(projectRefFromLeadWorkflowUrl(STAGING_URL), 'otulfnouybahfnsycxqn');
 assert.equal(projectRefFromLeadWorkflowUrl('https://evil.otulfnouybahfnsycxqn.supabase.co'), '');
 assert.equal(leadWorkflowPersistenceRoute(STAGING_URL).mode, 'staging_edge');
@@ -95,6 +110,52 @@ const invokedBody = JSON.parse(invokedInit.body);
 assert.equal(invokedBody.action, 'update');
 assert.equal(invokedBody.assigned_to, actorId);
 assert.equal(invokedBody.expected_updated_at, expectedUpdatedAt);
+
+const recovered = await invokeStagingLeadWorkflow({
+  client: readClient({
+    id: leadId,
+    status: 'В работе',
+    assigned_to: actorId,
+    next_contact_at: null,
+    updated_at: '2026-07-23T18:01:00.000Z'
+  }),
+  supabaseUrl: STAGING_URL,
+  publishableKey: PUBLISHABLE_KEY,
+  lead: { id: leadId, updated_at: expectedUpdatedAt },
+  patch: { assigned_to: actorId, status: 'В работе' },
+  idempotencyKey: `lead-workflow:${leadId}:${randomId}`,
+  cryptoObject: { randomUUID: () => requestId },
+  requestTimeoutMs: 10,
+  verificationTimeoutMs: 100,
+  fetchImpl: async () => ({ status: 201, ok: true, json: async () => new Promise(() => {}) })
+});
+assert.equal(recovered.ok, true);
+assert.equal(recovered.kind, 'verified_after_transport_error');
+assert.equal(recovered.status, 202);
+assert.equal(recovered.data.transport_recovered, true);
+assert.equal(recovered.data.lead.assigned_to, actorId);
+
+const unresolvedTimeout = await invokeStagingLeadWorkflow({
+  client: readClient({
+    id: leadId,
+    status: 'Новая',
+    assigned_to: null,
+    next_contact_at: null,
+    updated_at: expectedUpdatedAt
+  }),
+  supabaseUrl: STAGING_URL,
+  publishableKey: PUBLISHABLE_KEY,
+  lead: { id: leadId, updated_at: expectedUpdatedAt },
+  patch: { assigned_to: actorId, status: 'В работе' },
+  idempotencyKey: `lead-workflow:${leadId}:${randomId}`,
+  cryptoObject: { randomUUID: () => requestId },
+  requestTimeoutMs: 10,
+  verificationTimeoutMs: 100,
+  fetchImpl: async () => ({ status: 201, ok: true, json: async () => new Promise(() => {}) })
+});
+assert.equal(unresolvedTimeout.ok, false);
+assert.equal(unresolvedTimeout.kind, 'network_error');
+assert.equal(unresolvedTimeout.code, 'request_timeout');
 
 const unauthenticated = await invokeStagingLeadWorkflow({
   client: { auth: { getSession: async () => ({ data: { session: null }, error: null }) } },
