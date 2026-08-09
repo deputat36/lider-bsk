@@ -183,7 +183,7 @@ async function saveJob(jobId) {
     await supabaseClient.from('leader_production_events').insert({ job_id: jobId, order_id: old.order_id, event_type: 'Обновление задания', old_status: old.production_status, new_status: status, body: 'Производственное задание обновлено из CRM v4', created_by: v4State.user?.id || null, created_by_email: v4State.user?.email || null });
     toast('Производственное задание сохранено');
     setStatus('Производственное задание сохранено', 'good');
-    document.dispatchEvent(new CustomEvent('leader-v4-order-updated', { detail: { order: { id: old.order_id, production_status: status } }));
+    document.dispatchEvent(new CustomEvent('leader-v4-order-updated', { detail: { order: { id: old.order_id, production_status: status } } }));
     renderCard(await fetchBundle(jobId));
   } catch (error) {
     toast(friendlyError(error));

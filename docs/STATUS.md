@@ -1,6 +1,25 @@
 # Статус проекта РА «Лидер»
 
-Дата обновления: 2026-07-17.
+Дата обновления: 2026-08-09.
+
+## Lazy-загрузка вкладок CRM v4
+
+Обновление 2026-08-05:
+
+- baseline issue #478 подтвердил, что старый `index.html` запускал 36 module entrypoints и тяжёлые read-запросы до открытия соответствующих вкладок;
+- `index.html` сокращён до 11 стартовых module entrypoints: core-навигация, lazy-loader, auth, список заявок и минимальный UI;
+- дашборд, заказы, контроль заказов, финансы, производство/монтаж, контроль контактов, аудит и доступ/роли переведены в `crm-v4-tab-loader-v1.js`;
+- карточка заявки, потребность, расчёты и КП загружаются только при открытии карточки;
+- `auth.js` больше не импортирует администрирование пользователей при старте, а lead analytics не запускает фоновые quality/quick-filter запросы тяжёлых таблиц;
+- legacy cache aliases оставлены только в import map и не создают eager network-загрузку;
+- новый source-contract `check_crm_lazy_tab_loader.py` отдельно проверяет предел eager entrypoints и запрещает тяжёлые module scripts в стартовом HTML;
+- центральный `crm-v4-tabs-lite.js` стал единственным владельцем переходов: lazy-модули больше не перехватывают главное меню, не меняют `body.dataset.v4Tab` и не создают повторный цикл `load`;
+- tab-loader монтирует и загружает основной модуль с дополнениями как одну управляемую группу; повторный клик переиспользует import Promise и кэш модуля;
+- скрытые рабочие очереди заявок (`quick filters`, operational quality и attribution) подключаются только после явного действия пользователя, а не при старте CRM;
+- добавлены безопасные performance marks `crm_auth_ready`, `crm_menu_ready`, `crm_initial_tab_visible`, `crm_tab_open_start` и `crm_tab_content_ready` для browser acceptance без клиентских данных;
+- source-contract `check_crm_single_tab_router.py` запрещает возвращение второго владельца навигации и скрытых импортов тяжёлых вкладок;
+- installation-production frontend-candidate адаптирован к этой границе: рабочий монтаж остаётся на card v2, candidate переключает только dynamic import lazy-loader на card v3, а eager installation script в `index.html` запрещён;
+- Supabase production не изменялся: использовались только read-only API logs для baseline.
 
 ## Рабочий блок потребности
 

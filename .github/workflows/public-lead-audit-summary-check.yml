@@ -15,7 +15,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          loader='crm/v4/assets/v4/site-cache-note-v1.js'
+          loader='crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
           addon='crm/v4/assets/v4/public-lead-audit-summary-v1.js'
           test -f "$loader"
           test -f "$addon"

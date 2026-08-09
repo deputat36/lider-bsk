@@ -1,4 +1,3 @@
-import './user-admin-v1.js?v=20260628-access-label-1';
 import { V4_CONFIG } from './config.js';
 import { supabaseClient } from './supabase-client.js';
 import { timeout, friendlyError, isNetworkError } from './api.js';
@@ -44,6 +43,7 @@ function showWorkspace() {
 }
 
 function emitCrmReady() {
+  try { window.performance?.mark?.('crm_auth_ready'); } catch (_) { /* performance marks are best-effort */ }
   document.dispatchEvent(new CustomEvent('leader-v4:crm-ready', { detail: { state: v4State } }));
 }
 

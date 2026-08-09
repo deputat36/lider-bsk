@@ -27,7 +27,7 @@ CONTRACT_PATHS = {
 
 EXPECTED_PROJECT_REF = "ofewxuqfjhamgerwzull"
 EXPECTED_EDGE_SLUG = "leader-crm-installation"
-EXPECTED_CURRENT_LOADER = "assets/v4/installation-job-card-v2.js?v=20260622-1"
+EXPECTED_CURRENT_LOADER = "assets/v4/installation-job-card-v2.js?v=20260805-tab-loader-1"
 EXPECTED_CANDIDATE_LOADER = "assets/v4/installation-job-card-v3.js?v=20260723-production-edge-candidate-1"
 
 
@@ -197,7 +197,7 @@ def build_plan(contracts: dict[str, dict[str, Any]]) -> dict[str, Any]:
             "mutating": True,
             "approval_required": True,
             "approved": False,
-            "success": "production loads card v3 and no direct browser table persistence remains",
+            "success": "approved lazy loader imports card v3; index stays eager-installation-free and no direct browser table persistence remains",
             "rollback": contracts["frontend"]["rollback"]["loader_switch_only"],
         },
         {

@@ -164,7 +164,9 @@ function openQueue(key) {
   document.body.appendChild(modal);
 }
 
-function boot() {
+function mount() {
+  if (window.LeaderV4OrderOperationalQualityV1Mounted) return;
+  window.LeaderV4OrderOperationalQualityV1Mounted = true;
   ensureStyles();
   const workspace = document.getElementById('crmWorkspace') || document.body;
   const workspaceObserver = new MutationObserver(() => {
@@ -174,20 +176,10 @@ function boot() {
   workspaceObserver.observe(workspace, { childList: true, subtree: true });
   watchOrderControlContent();
 
-  document.addEventListener('leader-v4:crm-ready', () => {
-    if (document.body.dataset.v4Tab === 'order_control') setTimeout(() => loadSnapshot(false), 500);
-  });
-  document.addEventListener('leader-v4:tab-opened', (event) => {
-    if (event.detail?.tab === 'order_control' || document.body.dataset.v4Tab === 'order_control') setTimeout(() => loadSnapshot(false), 500);
-  });
   document.addEventListener('leader-v4-order-updated', () => {
     if (document.body.dataset.v4Tab === 'order_control') setTimeout(() => loadSnapshot(true), 500);
   });
   document.addEventListener('click', (event) => {
-    if (event.target.closest?.('[data-v4-tab-button="order_control"]')) {
-      setTimeout(() => loadSnapshot(false), 700);
-      return;
-    }
     if (event.target.closest?.('[data-order-control-refresh]')) {
       setTimeout(() => loadSnapshot(true), 700);
       return;
@@ -209,12 +201,10 @@ function boot() {
       return;
     }
     if (event.target.closest?.('[data-order-quality-close-after-open]')) setTimeout(closeModal, 0);
-  }, true);
+  });
   document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeModal(); });
 }
 
-if (!window.LeaderV4OrderOperationalQualityV1Booted) {
-  window.LeaderV4OrderOperationalQualityV1Booted = true;
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
-  else boot();
-}
+export { mount };
+export function load() { return loadSnapshot(false); }
+export function refresh() { return loadSnapshot(true); }

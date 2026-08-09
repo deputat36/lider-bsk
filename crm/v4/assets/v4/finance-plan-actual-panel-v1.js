@@ -145,22 +145,17 @@ async function load(force = false) {
   }
 }
 
-function boot() {
+function mount() {
+  if (window.LeaderV4FinancePlanActualPanelV1Mounted) return;
+  window.LeaderV4FinancePlanActualPanelV1Mounted = true;
   ensurePanel();
-  document.addEventListener('leader-v4:crm-ready', () => {
-    if (document.body.dataset.v4Tab === 'finance_control') load(false);
-  });
-  document.addEventListener('leader-v4:tab-opened', (event) => {
-    if (event.detail?.tab === 'finance_control' || document.body.dataset.v4Tab === 'finance_control') setTimeout(() => load(false), 0);
-  });
   document.addEventListener('click', (event) => {
-    if (event.target.closest?.('[data-v4-tab-button="finance_control"]')) setTimeout(() => load(false), 0);
     if (event.target.closest?.('[data-plan-actual-refresh]')) {
       event.preventDefault();
       load(true);
     }
     if (event.target.closest?.('[data-finance-control-refresh]')) setTimeout(() => load(true), 0);
-  }, true);
+  });
   const observer = new MutationObserver(() => {
     if (!document.getElementById(PANEL_ID) && financeSection()) {
       ensurePanel();
@@ -170,4 +165,5 @@ function boot() {
   observer.observe(document.body, { childList: true, subtree: true });
 }
 
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+export { mount, load };
+export function refresh() { return load(true); }

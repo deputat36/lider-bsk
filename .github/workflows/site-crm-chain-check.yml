@@ -9,7 +9,7 @@ on:
       - 'supabase/functions/leader-public-lead/index.ts'
       - 'crm/v4/assets/v4/public-lead-audit-helper-v1.js'
       - 'crm/v4/assets/v4/public-lead-request-id-v1.js'
-      - 'crm/v4/assets/v4/site-cache-note-v1.js'
+      - 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
       - 'docs/CRM_V4_AUDIT_V9_CHECK.md'
       - 'tools/check_site_crm_chain_contract.py'
       - '.github/workflows/site-crm-chain-check.yml'
@@ -20,7 +20,7 @@ on:
       - 'supabase/functions/leader-public-lead/index.ts'
       - 'crm/v4/assets/v4/public-lead-audit-helper-v1.js'
       - 'crm/v4/assets/v4/public-lead-request-id-v1.js'
-      - 'crm/v4/assets/v4/site-cache-note-v1.js'
+      - 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
       - 'docs/CRM_V4_AUDIT_V9_CHECK.md'
       - 'tools/check_site_crm_chain_contract.py'
       - '.github/workflows/site-crm-chain-check.yml'
@@ -39,4 +39,4 @@ jobs:
           node --check assets/public-lead-form.js
           node --check crm/v4/assets/v4/public-lead-audit-helper-v1.js
           node --check crm/v4/assets/v4/public-lead-request-id-v1.js
-          node --check crm/v4/assets/v4/site-cache-note-v1.js
+          node --check crm/v4/assets/v4/crm-v4-tab-loader-v1.js

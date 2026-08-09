@@ -57,28 +57,6 @@ function ensureSection() {
   return section;
 }
 function content() { ensureSection(); return document.getElementById('productionBoardSectionContent'); }
-function hideBaseSections() {
-  const leads = document.getElementById('leadsSection');
-  if (leads) leads.style.display = 'none';
-  const cardSection = document.getElementById('leadCardSection');
-  if (cardSection) cardSection.style.display = 'none';
-  const next = document.querySelector('.v4-next-card');
-  if (next) next.style.display = 'none';
-}
-function showProductionTab() {
-  if (!canOpenV4Tab('production')) return false;
-  ensureSection();
-  document.body.dataset.v4Tab = 'production';
-  document.querySelectorAll('[data-v4-tab-button]').forEach((button) => {
-    button.classList.toggle('is-active', button.dataset.v4TabButton === 'production');
-  });
-  hideBaseSections();
-  document.querySelectorAll('[data-v4-managed-section]').forEach((section) => {
-    section.hidden = section.dataset.v4ManagedSection !== 'production';
-  });
-  return true;
-}
-
 function permittedKind(requested) {
   const value = String(requested || '').trim();
   return canOpenV4ProductionKind(value) ? value : firstAllowedV4ProductionKind();
@@ -212,25 +190,11 @@ async function loadProductionBoard(force = false) {
   } finally { busy = false; }
 }
 
-function openProduction() {
-  if (!showProductionTab() || !firstAllowedV4ProductionKind()) {
-    document.dispatchEvent(new CustomEvent('leader-v4:tab-denied', { detail: { requested: 'production', reason: 'role_not_allowed' } }));
-    return;
-  }
-  loadProductionBoard(false);
-  document.dispatchEvent(new CustomEvent('leader-v4:tab-opened', { detail: { tab: 'production' } }));
-}
-
-function boot() {
+function mount() {
+  if (window.LeaderV4ProductionBoardV3Mounted) return;
+  window.LeaderV4ProductionBoardV3Mounted = true;
   ensureSection();
   document.addEventListener('click', (event) => {
-    const tab = event.target.closest?.('[data-v4-tab-button="production"]');
-    if (tab) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      openProduction();
-      return;
-    }
     if (event.target.closest?.('[data-production-light-refresh]')) {
       event.preventDefault();
       loaded = false;
@@ -248,18 +212,10 @@ function boot() {
       document.body.dataset.productionBoardKind = kind;
       render(kind);
     }
-  }, true);
-  document.addEventListener('leader-v4:tab-opened', (event) => {
-    if (event.detail?.tab === 'production') loadProductionBoard(false);
-  });
-  window.addEventListener('leader-v4:force-tab', (event) => {
-    if (event.detail?.tab === 'production') openProduction();
   });
 }
 
-if (!window.LeaderV4ProductionBoardV3Booted) {
-  window.LeaderV4ProductionBoardV3Booted = true;
-  boot();
-}
-
+export { mount };
+export function load() { return loadProductionBoard(false); }
+export function refresh() { return loadProductionBoard(true); }
 export { loadProductionBoard };

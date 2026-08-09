@@ -138,16 +138,16 @@ Generated package PR #455 создаёт:
 - production read transport;
 - production write transport;
 - card v3;
-- candidate `index.html`.
+- candidate `crm-v4-tab-loader-v1.js`.
 
-Переключается только loader:
+Переключается только dynamic import внутри разрешённого lazy-loader; `index.html` остаётся без eager script монтажа:
 
 - было: card v2;
 - становится: card v3.
 
 Card v3 использует server-only read/write. Прямые browser table reads/writes отсутствуют. Комментарии остаются read-only до отдельной server action.
 
-Rollback P7: немедленно восстановить script card v2. Candidate-файлы могут оставаться неиспользуемыми.
+Rollback P7: немедленно восстановить dynamic import card v2 в `crm-v4-tab-loader-v1.js`; eager script в `index.html` не добавлять. Candidate-файлы могут оставаться неиспользуемыми.
 
 ## P8 — наблюдение и финальный postflight
 

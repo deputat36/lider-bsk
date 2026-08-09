@@ -273,6 +273,8 @@ function bindOrderEvents() {
   });
 }
 export function bootOrders() {
+  if (window.LeaderV4LeadOrdersBooted) return;
+  window.LeaderV4LeadOrdersBooted = true;
   previousOffers = v4State.offers;
   previousCalculations = v4State.calculations;
   bindOrderEvents();

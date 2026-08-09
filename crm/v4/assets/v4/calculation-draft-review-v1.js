@@ -250,6 +250,7 @@ function bindDraftReviewEvents(section) {
 }
 
 export function bootCalculationDraftReview() {
+  if (observer) return;
   const section = document.getElementById('leadCardSection');
   if (!section) return;
   observer = new MutationObserver(scheduleDecoration);

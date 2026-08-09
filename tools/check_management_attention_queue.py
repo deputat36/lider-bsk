@@ -14,7 +14,7 @@ checks = [
     ('model exposes simple work summary', 'buildManagementWorkSummary' in model and 'problemOrders' in model and 'totalQueue' in model),
     ('urgent count remains unique-entity based', 'managementUrgentCount' in model and 'priority || 0) >= 70' in model),
     ('dashboard loads needs and calculations read-only', "from('leader_lead_needs').select(NEED_FIELDS)" in dashboard and "from('leader_lead_calculations').select(CALC_FIELDS)" in dashboard),
-    ('dashboard is called Today', '<h2>Сегодня</h2>' in dashboard and "button.textContent = 'Сегодня'" in dashboard),
+    ('dashboard is called Today', '<h2>Сегодня</h2>' in dashboard),
     ('dashboard has five simple counters', all(marker in dashboard for marker in ('Срочно сегодня', 'Новые заявки', 'Потребности и расчёты', 'КП ждут действия', 'Проблемные заказы'))),
     ('dashboard exposes one work queue', 'Рабочая очередь' in dashboard and 'queue.slice(0, 12)' in dashboard),
     ('detailed analytics is collapsed', '<details class="v4-mgmt-details">' in dashboard and 'Подробная аналитика и все разделы' in dashboard),

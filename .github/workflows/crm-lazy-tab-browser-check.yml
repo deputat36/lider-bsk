@@ -1,0 +1,52 @@
+name: CRM lazy tab browser check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'crm/v4/index.html'
+      - 'crm/v4/assets/v4/*.js'
+      - 'crm/v4/assets/v4/*.css'
+      - 'tools/run_crm_lazy_tab_browser_check.mjs'
+      - '.github/workflows/crm-lazy-tab-browser-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'crm/v4/index.html'
+      - 'crm/v4/assets/v4/*.js'
+      - 'crm/v4/assets/v4/*.css'
+      - 'tools/run_crm_lazy_tab_browser_check.mjs'
+      - '.github/workflows/crm-lazy-tab-browser-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  browser-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate browser runner syntax
+        run: node --check tools/run_crm_lazy_tab_browser_check.mjs
+      - name: Run isolated desktop and mobile browser checks
+        id: browser
+        shell: bash
+        run: |
+          set +e
+          node tools/run_crm_lazy_tab_browser_check.mjs > lazy-tab-browser-result.json 2>&1
+          status=$?
+          cat lazy-tab-browser-result.json
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+      - name: Upload privacy-safe browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crm-lazy-tab-browser-result
+          path: lazy-tab-browser-result.json
+          if-no-files-found: error
+          retention-days: 3
+      - name: Enforce browser result
+        if: always()
+        run: test "${{ steps.browser.outputs.exit_code }}" = "0"

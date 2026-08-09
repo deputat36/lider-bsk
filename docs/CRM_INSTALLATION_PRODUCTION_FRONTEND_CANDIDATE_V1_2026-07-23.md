@@ -1,6 +1,7 @@
 # Production candidate: frontend cutover карточки монтажа
 
 Дата: 23 июля 2026 года  
+Адаптация к lazy-loader: 5 августа 2026 года
 Репозиторий: `deputat36/lider-bsk`  
 Production Supabase: `ofewxuqfjhamgerwzull`
 
@@ -40,7 +41,7 @@ Output:
 2. write transport;
 3. read transport;
 4. карточка;
-5. script loader в `crm/v4/index.html`.
+5. dynamic import карточки монтажа в `crm-v4-tab-loader-v1.js`.
 
 Переключение только route или только loader создало бы ложный доступ либо оставило бы прямые browser writes.
 
@@ -52,7 +53,8 @@ Generator останавливается при изменении любого 
 - staging write transport — `a4f265fe53c438095ebcbc7b58d22e90e551c057`;
 - staging read transport — `b5ebf2a0b05404b639b63b7f8aae27c3574464ce`;
 - card v2 — `1c360e08ce954d7879bc075bc203d3fd406db0ae`;
-- current index — `404719b0338c4fc6d5c8b0cd5f5b85e06d902973`.
+- lazy tab loader — `eca844104d1990fd18aa51789f66f070a4bb2846`;
+- current index — `dc4a800d1426c4056b5f9696e4e20938eca3eabd`.
 
 При source drift пакет нужно пересобрать после отдельного review, а не обновлять SHA автоматически.
 
@@ -62,7 +64,7 @@ Generator останавливается при изменении любого 
 - `crm/v4/assets/v4/installation-job-production-transport-v1.js`;
 - `crm/v4/assets/v4/installation-job-production-read-transport-v1.js`;
 - `crm/v4/assets/v4/installation-job-card-v3.js`;
-- candidate-версия `crm/v4/index.html`;
+- candidate-версия `crm/v4/assets/v4/crm-v4-tab-loader-v1.js`;
 - `manifest.json`.
 
 Файлы находятся только внутри build artifact. Generator не перезаписывает рабочие пути.
@@ -128,11 +130,13 @@ Production Edge v1/v2 не содержит отдельную action для з�
 
 ## Loader switch
 
-Рабочий `crm/v4/index.html` продолжает загружать:
+Рабочий `crm/v4/index.html` загружает только общий `crm-v4-tab-loader-v1.js` и не содержит eager `<script>` карточки монтажа.
 
-`installation-job-card-v2.js?v=20260622-1`
+Рабочий lazy-loader продолжает импортировать:
 
-Candidate index загружает:
+`installation-job-card-v2.js?v=20260805-tab-loader-1`
+
+Candidate lazy-loader импортирует:
 
 `installation-job-card-v3.js?v=20260723-production-edge-candidate-1`
 
@@ -160,7 +164,7 @@ Candidate index загружает:
 5. Выполнить controlled update/replay/conflict smoke.
 6. Зафиксировать отсутствие direct browser requests к installation tables.
 7. Применить четыре generated JS-файла.
-8. Последним отдельным commit переключить script loader на card v3.
+8. Последним отдельным commit переключить только dynamic import в `crm-v4-tab-loader-v1.js` на card v3; eager script в `index.html` не добавлять.
 9. Проверить реальную карточку в браузере.
 10. Проверить network trace: один Edge read и одна Edge update command.
 
@@ -181,9 +185,9 @@ Frontend rollback не откатывает database или Edge.
 
 Для отката loader:
 
-1. вернуть в `crm/v4/index.html` script `installation-job-card-v2.js?v=20260622-1`;
+1. вернуть в `crm-v4-tab-loader-v1.js` dynamic import `installation-job-card-v2.js?v=20260805-tab-loader-1`;
 2. очистить CDN/browser cache marker;
-3. подтвердить, что card v3 больше не загружается;
+3. подтвердить, что card v3 больше не загружается и `index.html` по-прежнему не содержит eager installation script;
 4. generated production files можно оставить неиспользуемыми для диагностики.
 
 Если проблема находится в backend, использовать соответствующий database/RPC/Edge rollback package отдельно.

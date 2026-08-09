@@ -104,18 +104,6 @@ function ensureSection() {
   return section;
 }
 
-function ensureNav() {
-  const nav = document.getElementById('v4LayoutTabs');
-  if (!nav || nav.querySelector('[data-v4-tab-button="order_control"]')) return;
-  const anchor = nav.querySelector('[data-v4-tab-button="orders"]');
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.dataset.v4TabButton = 'order_control';
-  button.textContent = 'Контроль заказов';
-  if (anchor) anchor.insertAdjacentElement('afterend', button);
-  else nav.appendChild(button);
-}
-
 function stat(label, value, type = '') {
   return `<div class="v4-order-stat ${type}"><span>${esc(label)}</span><b>${esc(value)}</b></div>`;
 }
@@ -184,49 +172,11 @@ async function loadOrders(force = false) {
   }
 }
 
-function hideBaseSections() {
-  const leads = document.getElementById('leadsSection');
-  if (leads) leads.style.display = 'none';
-  const cardSection = document.getElementById('leadCardSection');
-  if (cardSection) cardSection.style.display = 'none';
-  const next = document.querySelector('.v4-next-card');
-  if (next) next.style.display = 'none';
-}
-
-function showOrderControl() {
+function mount() {
+  if (window.LeaderV4OrderControlV2Mounted) return;
+  window.LeaderV4OrderControlV2Mounted = true;
   ensureSection();
-  ensureNav();
-  document.body.dataset.v4Tab = 'order_control';
-  document.querySelectorAll('[data-v4-tab-button]').forEach((button) => {
-    button.classList.toggle('is-active', button.dataset.v4TabButton === 'order_control');
-  });
-  hideBaseSections();
-  document.querySelectorAll('[data-v4-managed-section]').forEach((section) => {
-    section.hidden = section.dataset.v4ManagedSection !== 'order_control';
-  });
-  loadOrders(false);
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function boot() {
-  ensureSection();
-  ensureNav();
-  document.addEventListener('leader-v4:crm-ready', () => {
-    setTimeout(ensureNav, 300);
-    if (document.body.dataset.v4Tab === 'order_control') loadOrders(false);
-  });
-  document.addEventListener('leader-v4:tab-opened', (event) => {
-    setTimeout(ensureNav, 150);
-    if (event.detail?.tab === 'order_control' || document.body.dataset.v4Tab === 'order_control') loadOrders(false);
-  });
   document.addEventListener('click', (event) => {
-    const tab = event.target.closest?.('[data-v4-tab-button="order_control"]');
-    if (tab) {
-      event.preventDefault();
-      event.stopPropagation();
-      showOrderControl();
-      return;
-    }
     if (event.target.closest?.('[data-order-control-refresh]')) {
       event.preventDefault();
       loadOrders(true);
@@ -237,7 +187,9 @@ function boot() {
       const setTab = window.v4SetTab;
       if (typeof setTab === 'function') setTab('orders');
     }
-  }, true);
+  });
 }
 
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+export { mount };
+export function load() { return loadOrders(false); }
+export function refresh() { return loadOrders(true); }

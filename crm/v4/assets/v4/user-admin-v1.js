@@ -19,7 +19,8 @@ const state = {
   profile: null,
   profiles: [],
   invites: [],
-  busy: false
+  busy: false,
+  loaded: false
 };
 
 function esc(value) {
@@ -100,16 +101,6 @@ function ensureSection() {
   else workspace.appendChild(node);
 }
 
-function resyncCurrentTab() {
-  if (document.body?.dataset?.v4Tab !== 'user_admin') return;
-  if (typeof window.v4SetTab === 'function') {
-    window.v4SetTab('user_admin');
-    return;
-  }
-  const current = section();
-  if (current) current.hidden = false;
-}
-
 function renderMessage(message) {
   if (root()) root().innerHTML = `<div class="v4-access-alert">${esc(message)}</div>`;
 }
@@ -187,44 +178,55 @@ async function getSession() {
   return data.session;
 }
 
-async function load() {
-  renderLoading();
-  const session = await getSession();
-  state.user = session.user;
-
-  const profileRes = await supabaseClient
-    .from('leader_user_profiles')
-    .select('user_id,email,role,is_active,full_name')
-    .eq('user_id', session.user.id)
-    .maybeSingle();
-  if (profileRes.error) throw profileRes.error;
-  state.profile = profileRes.data;
-
-  if (!isAdmin()) {
-    renderMessage(`Раздел доступен только владельцу или администратору. Ваша роль: ${ROLE_LABELS[state.profile?.role] || state.profile?.role || 'не загружена'}.`);
+async function load(force = false) {
+  ensureSection();
+  if (state.busy) return;
+  if (state.loaded && !force) {
+    if (isAdmin()) renderAdmin();
+    else renderMessage(`Раздел доступен только владельцу или администратору. Ваша роль: ${ROLE_LABELS[state.profile?.role] || state.profile?.role || 'не загружена'}.`);
     return;
   }
+  state.busy = true;
+  renderLoading();
+  try {
+    const session = await getSession();
+    state.user = session.user;
 
-  const [profilesRes, invitesRes] = await Promise.all([
-    supabaseClient.from('leader_user_profiles').select('user_id,email,full_name,role,is_active,phone,created_at,updated_at').order('created_at', { ascending: false }),
-    supabaseClient.from('leader_user_invites').select('id,email,role,full_name,is_active,invited_by_email,expires_at,accepted_at,accepted_user_id,note,created_at,updated_at').order('created_at', { ascending: false }).limit(80)
-  ]);
-  if (profilesRes.error) throw profilesRes.error;
-  if (invitesRes.error) throw invitesRes.error;
-  state.profiles = profilesRes.data || [];
-  state.invites = invitesRes.data || [];
-  renderAdmin();
+    const profileRes = await supabaseClient
+      .from('leader_user_profiles')
+      .select('user_id,email,role,is_active,full_name')
+      .eq('user_id', session.user.id)
+      .maybeSingle();
+    if (profileRes.error) throw profileRes.error;
+    state.profile = profileRes.data;
+
+    if (!isAdmin()) {
+      state.loaded = true;
+      renderMessage(`Раздел доступен только владельцу или администратору. Ваша роль: ${ROLE_LABELS[state.profile?.role] || state.profile?.role || 'не загружена'}.`);
+      return;
+    }
+
+    const [profilesRes, invitesRes] = await Promise.all([
+      supabaseClient.from('leader_user_profiles').select('user_id,email,full_name,role,is_active,phone,created_at,updated_at').order('created_at', { ascending: false }),
+      supabaseClient.from('leader_user_invites').select('id,email,role,full_name,is_active,invited_by_email,expires_at,accepted_at,accepted_user_id,note,created_at,updated_at').order('created_at', { ascending: false }).limit(80)
+    ]);
+    if (profilesRes.error) throw profilesRes.error;
+    if (invitesRes.error) throw invitesRes.error;
+    state.profiles = profilesRes.data || [];
+    state.invites = invitesRes.data || [];
+    state.loaded = true;
+    renderAdmin();
+  } finally {
+    state.busy = false;
+  }
 }
 
 async function reload() {
   try {
-    state.busy = true;
-    await load();
+    await load(true);
   } catch (error) {
     console.warn('CRM access admin error:', error);
     renderMessage(friendlyError(error));
-  } finally {
-    state.busy = false;
   }
 }
 
@@ -264,57 +266,43 @@ async function cancelInvite(id) {
   if (error) throw error;
 }
 
-document.addEventListener('leader-v4:tab-opened', (event) => {
-  if (event.detail?.tab === 'user_admin') {
-    ensureSection();
-    reload();
-  }
-});
-
-document.addEventListener('leader-v4:crm-ready', () => {
-  if (document.body?.dataset?.v4Tab === 'user_admin') {
-    resyncCurrentTab();
-    window.setTimeout(reload, 250);
-  }
-});
-
-document.addEventListener('submit', async (event) => {
-  const form = event.target.closest?.('#userInviteForm');
-  if (!form) return;
-  event.preventDefault();
-  try { await createInvite(form); await reload(); } catch (error) { toast(friendlyError(error)); renderMessage(friendlyError(error)); }
-});
-
-document.addEventListener('click', async (event) => {
-  if (event.target.closest?.('#userAdminReloadBtn')) { event.preventDefault(); await reload(); return; }
-  const button = event.target.closest?.('[data-action]');
-  if (!button || !section()?.contains(button)) return;
-  try {
-    if (button.dataset.action === 'enable') await updateProfile(button.dataset.userId, { is_active: true });
-    if (button.dataset.action === 'disable') {
-      if (button.dataset.userId === state.user?.id) throw new Error('Нельзя отключить самого себя');
-      await updateProfile(button.dataset.userId, { is_active: false });
-    }
-    if (button.dataset.action === 'cancel') await cancelInvite(button.dataset.inviteId);
-    toast('Изменения сохранены');
-    await reload();
-  } catch (error) { toast(friendlyError(error)); renderMessage(friendlyError(error)); }
-});
-
-document.addEventListener('change', async (event) => {
-  const select = event.target.closest?.('[data-action="role"]');
-  if (!select || !section()?.contains(select)) return;
-  try {
-    if (!ROLE_LABELS[select.value]) throw new Error('Недопустимая роль');
-    await updateProfile(select.dataset.userId, { role: select.value });
-    toast('Роль обновлена');
-    await reload();
-  } catch (error) { toast(friendlyError(error)); renderMessage(friendlyError(error)); }
-});
-
-function boot() {
+function mount() {
+  if (window.LeaderV4UserAdminV1Mounted) return;
+  window.LeaderV4UserAdminV1Mounted = true;
   ensureSection();
-  resyncCurrentTab();
+  document.addEventListener('submit', async (event) => {
+    const form = event.target.closest?.('#userInviteForm');
+    if (!form) return;
+    event.preventDefault();
+    try { await createInvite(form); await reload(); } catch (error) { toast(friendlyError(error)); renderMessage(friendlyError(error)); }
+  });
+  document.addEventListener('click', async (event) => {
+    if (event.target.closest?.('#userAdminReloadBtn')) { event.preventDefault(); await reload(); return; }
+    const button = event.target.closest?.('[data-action]');
+    if (!button || !section()?.contains(button)) return;
+    try {
+      if (button.dataset.action === 'enable') await updateProfile(button.dataset.userId, { is_active: true });
+      if (button.dataset.action === 'disable') {
+        if (button.dataset.userId === state.user?.id) throw new Error('Нельзя отключить самого себя');
+        await updateProfile(button.dataset.userId, { is_active: false });
+      }
+      if (button.dataset.action === 'cancel') await cancelInvite(button.dataset.inviteId);
+      toast('Изменения сохранены');
+      await reload();
+    } catch (error) { toast(friendlyError(error)); renderMessage(friendlyError(error)); }
+  });
+  document.addEventListener('change', async (event) => {
+    const select = event.target.closest?.('[data-action="role"]');
+    if (!select || !section()?.contains(select)) return;
+    try {
+      if (!ROLE_LABELS[select.value]) throw new Error('Недопустимая роль');
+      await updateProfile(select.dataset.userId, { role: select.value });
+      toast('Роль обновлена');
+      await reload();
+    } catch (error) { toast(friendlyError(error)); renderMessage(friendlyError(error)); }
+  });
 }
 
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+export { mount };
+export { load };
+export function refresh() { return load(true); }

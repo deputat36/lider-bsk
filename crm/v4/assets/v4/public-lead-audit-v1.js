@@ -84,16 +84,6 @@ function ensureSection() {
   workspace().appendChild(section);
   return section;
 }
-function ensureNav() {
-  const nav = document.getElementById('v4LayoutTabs');
-  if (!nav || nav.querySelector('[data-v4-tab-button="public_lead_audit"]')) return;
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.dataset.v4TabButton = 'public_lead_audit';
-  button.textContent = 'Аудит заявок';
-  const anchor = nav.querySelector('[data-v4-tab-button="management_dashboard"]') || nav.querySelector('[data-v4-tab-button="leads"]');
-  if (anchor) anchor.insertAdjacentElement('afterend', button); else nav.appendChild(button);
-}
 function searchText(row) {
   return [row.request_id, row.phone_normalized, row.source_page_path, row.page_url, row.reason, reasonRu(row.reason), row.result, resultRu(row.result), row.referer, row.utm_source, row.utm_medium, row.utm_campaign].join(' ').toLowerCase();
 }
@@ -117,7 +107,7 @@ function card(row) {
   return `<article class="v4-audit-card ${cls}"><span class="v4-audit-badge ${cls}">${esc(resultRu(row.result))}</span><h3>${esc(dateRu(row.created_at))}</h3><small>Причина: ${esc(reasonText)}</small><small>Телефон: ${esc(row.phone_normalized || '—')} · request_id: ${esc(short(requestId, 44) || '—')}</small>${copyButton}${traceButton}<small>Страница: ${esc(short(page, 110))}</small><small>Referer: ${esc(short(row.referer || '—', 120))}</small><small>UTM: ${esc(short(utm, 110))}</small><small>User-Agent: ${esc(short(row.user_agent || '—', 120))}</small><details class="v4-audit-payload"><summary>Технические данные</summary><pre>${esc(short(payload, 1200))}</pre></details></article>`;
 }
 function render() {
-  ensureSection(); ensureNav();
+  ensureSection();
   const box = document.getElementById('publicLeadAuditContent');
   if (!box) return;
   if (busy) { box.innerHTML = '<div class="v4-empty">Загружаю аудит публичных заявок...</div>'; return; }
@@ -149,18 +139,10 @@ async function load(force = false) {
     setStatus('Аудит публичных заявок не загрузился', 'warn');
   } finally { busy = false; render(); }
 }
-function show() {
-  ensureSection(); ensureNav();
-  document.body.dataset.v4Tab = 'public_lead_audit';
-  document.querySelectorAll('[data-v4-tab-button]').forEach((button) => button.classList.toggle('is-active', button.dataset.v4TabButton === 'public_lead_audit'));
-  document.querySelectorAll('[data-v4-managed-section]').forEach((section) => { section.hidden = section.dataset.v4ManagedSection !== 'public_lead_audit'; });
-  load(false);
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-function boot() {
-  ensureSection(); ensureNav();
-  document.addEventListener('leader-v4:crm-ready', () => setTimeout(ensureNav, 300));
-  document.addEventListener('leader-v4:tab-opened', () => setTimeout(ensureNav, 200));
+function mount() {
+  if (window.LeaderV4PublicLeadAuditV1Mounted) return;
+  window.LeaderV4PublicLeadAuditV1Mounted = true;
+  ensureSection();
   document.addEventListener('input', (event) => {
     const input = event.target.closest?.('[data-public-lead-audit-search]');
     if (!input) return;
@@ -170,8 +152,6 @@ function boot() {
     if (next) { next.focus(); next.setSelectionRange(next.value.length, next.value.length); }
   });
   document.addEventListener('click', (event) => {
-    const tab = event.target.closest?.('[data-v4-tab-button="public_lead_audit"]');
-    if (tab) { event.preventDefault(); event.stopPropagation(); show(); return; }
     const copy = event.target.closest?.('[data-public-lead-audit-copy]');
     if (copy) { event.preventDefault(); copyText(copy.dataset.publicLeadAuditCopy || ''); return; }
     const trace = event.target.closest?.('[data-public-lead-audit-trace]');
@@ -179,7 +159,9 @@ function boot() {
     if (event.target.closest?.('[data-public-lead-audit-refresh]')) { event.preventDefault(); load(true); return; }
     const f = event.target.closest?.('[data-public-lead-audit-filter]');
     if (f) { event.preventDefault(); filter = f.dataset.publicLeadAuditFilter || 'all'; render(); }
-  }, true);
-  setTimeout(ensureNav, 800);
+  });
 }
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+
+export { mount };
+export { load };
+export function refresh() { return load(true); }

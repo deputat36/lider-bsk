@@ -5,14 +5,14 @@ on:
   push:
     branches: [main]
     paths:
-      - 'crm/v4/assets/v4/site-cache-note-v1.js'
+      - 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
       - 'crm/v4/assets/v4/public-lead-audit-helper-v1.js'
       - 'docs/CRM_V4_AUDIT_V9_CHECK.md'
       - '.github/workflows/public-lead-audit-helper-check.yml'
   pull_request:
     branches: [main]
     paths:
-      - 'crm/v4/assets/v4/site-cache-note-v1.js'
+      - 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
       - 'crm/v4/assets/v4/public-lead-audit-helper-v1.js'
       - 'docs/CRM_V4_AUDIT_V9_CHECK.md'
       - '.github/workflows/public-lead-audit-helper-check.yml'
@@ -26,7 +26,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          loader='crm/v4/assets/v4/site-cache-note-v1.js'
+          loader='crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
           helper='crm/v4/assets/v4/public-lead-audit-helper-v1.js'
           checklist='docs/CRM_V4_AUDIT_V9_CHECK.md'
           test -f "$loader"

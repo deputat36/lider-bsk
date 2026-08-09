@@ -172,14 +172,10 @@ function openLead(leadId) {
   if (typeof window.v4SetTab === 'function') window.v4SetTab('card');
 }
 
-function boot() {
+function mount() {
+  if (window.LeaderV4ManagementWorkloadPanelV1Mounted) return;
+  window.LeaderV4ManagementWorkloadPanelV1Mounted = true;
   observeDashboardContent();
-  document.addEventListener('leader-v4:crm-ready', () => {
-    if (document.body.dataset.v4Tab === 'management_dashboard') setTimeout(() => load(false), 0);
-  });
-  document.addEventListener('leader-v4:tab-opened', (event) => {
-    if (event.detail?.tab === 'management_dashboard') setTimeout(() => load(false), 0);
-  });
   document.addEventListener('click', (event) => {
     if (event.target.closest?.('[data-management-dashboard-refresh]')) {
       setTimeout(() => load(true), 0);
@@ -206,14 +202,12 @@ function boot() {
       event.preventDefault();
       closeModal();
     }
-  }, true);
+  });
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && activeGroupKey) closeModal();
   });
 }
 
-if (!window.LeaderV4ManagementWorkloadPanelV1Booted) {
-  window.LeaderV4ManagementWorkloadPanelV1Booted = true;
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
-  else boot();
-}
+export { mount };
+export function refresh() { return load(true); }
+export { load };
