@@ -161,7 +161,7 @@ async function createLocalServer(root) {
 
 function pause(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
-async function waitForDevToolsPort(profileDir, timeoutMs = 8000) {
+async function waitForDevToolsPort(profileDir, timeoutMs = 15000) {
   const portFile = path.join(profileDir, 'DevToolsActivePort');
   const started = Date.now();
   while (Date.now() - started < timeoutMs) {
@@ -207,13 +207,16 @@ async function stopChrome(child) {
   if (!child || child.exitCode !== null) return;
   const closed = new Promise(resolve => child.once('close', resolve));
   child.kill('SIGTERM');
-  await Promise.race([closed, pause(1800)]);
-  if (child.exitCode === null) child.kill('SIGKILL');
+  await Promise.race([closed, pause(3000)]);
+  if (child.exitCode === null) {
+    child.kill('SIGKILL');
+    await Promise.race([closed, pause(3000)]);
+  }
 }
 
 async function runChromeViewport(chrome, { profileDir, url, width, height }) {
   const child = spawn(chrome, [
-    '--headless', '--disable-gpu', '--no-sandbox', '--hide-scrollbars', '--disable-sync', '--no-first-run',
+    '--headless', '--disable-gpu', '--no-sandbox', '--disable-dev-shm-usage', '--hide-scrollbars', '--disable-sync', '--no-first-run',
     '--remote-debugging-address=127.0.0.1', '--remote-debugging-port=0', '--remote-allow-origins=*',
     `--user-data-dir=${profileDir}`, 'about:blank'
   ], { stdio: ['ignore', 'ignore', 'pipe'] });
