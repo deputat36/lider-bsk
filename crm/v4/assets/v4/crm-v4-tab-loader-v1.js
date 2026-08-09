@@ -133,7 +133,8 @@ const TAB_REGISTRY = Object.freeze({
       [
         () => import('./production-alerts-v1.js?v=20260805-tab-loader-1'),
         () => import('./production-job-card-v2.js?v=20260805-tab-loader-1'),
-        () => import('./installation-job-card-v2.js?v=20260805-tab-loader-1')
+        () => import('./installation-job-card-v2.js?v=20260805-tab-loader-1'),
+        () => import('./installation-job-staging-create-v1.js?v=20260809-auth-e2e-1')
       ]
     ),
     mount: (module) => module.mount?.(),

@@ -12,12 +12,13 @@ import {
 } from './design-task-staging-transport-v1.js';
 import { supabaseClient } from './supabase-client.js';
 import { toast } from './ui.js';
+import { invokeStagingWorkflow, isStagingWorkflowEnvironment } from './workflow-staging-transport-v1.js';
 
 const MODAL_ID = 'designTaskDraftPreviewV1';
 const STYLE_ID = 'designTaskDraftPreviewV1Styles';
 const ORDER_FIELDS = 'id,order_number,lead_id,project_name,status,priority,deadline,layout_status,layout_link,is_archived,updated_at';
 const NEED_FIELDS = 'id,lead_id,need_type,title,need_design,design_reason,deadline_date,status,completeness_score';
-const TASK_FIELDS = 'id,order_id,task_status,layout_status,designer_name,deadline,layout_link,created_at';
+const TASK_FIELDS = 'id,order_id,task_status,layout_status,designer_name,deadline,layout_link,created_at,updated_at';
 
 let busy = false;
 let stagingBusy = false;
@@ -139,6 +140,14 @@ function stagingActionHtml(result) {
   return '<button type="button" disabled title="Production rollout требует отдельного явного решения владельца">Создать задачу в CRM — отключено</button>';
 }
 
+function transitionActionHtml(result) {
+  if (!isStagingWorkflowEnvironment(V4_CONFIG.supabaseUrl) || !result.canWrite) return '';
+  const task = result.existingTasks?.[0];
+  const target = task?.key === 'new' ? 'В работе' : task?.key === 'in_progress' ? 'На согласовании' : task?.key === 'review' ? 'Согласовано' : '';
+  if (!target) return '';
+  return `<button type="button" data-design-task-transition="${esc(target)}">${target === 'Согласовано' ? 'Утвердить макет' : `Перевести: ${esc(target)}`}</button>`;
+}
+
 function renderResult(modal, result, feedback = null) {
   const payloadButton = result.draft
     ? '<button type="button" data-design-task-draft-copy>Скопировать JSON</button>'
@@ -146,7 +155,7 @@ function renderResult(modal, result, feedback = null) {
   const openOrder = result.order?.id
     ? `<button type="button" data-open-order="${esc(result.order.id)}" data-design-task-draft-close-after-open>Открыть заказ</button>`
     : '';
-  modal.innerHTML = `<div class="v4-design-draft-dialog" role="dialog" aria-modal="true" aria-labelledby="designTaskDraftTitle"><div class="v4-design-draft-head"><div><h2 id="designTaskDraftTitle">Черновик дизайн-задачи</h2><p>Production-запись отключена. Тестовый transport работает только при точном staging project ref.</p></div><button type="button" data-design-task-draft-close>Закрыть</button></div><div class="v4-design-draft-note ${stateClass(result.state)}"><b>${esc(stateLabel(result.state))}</b><br>${esc(result.message)}</div>${stagingFeedbackHtml(feedback)}${orderSummary(result)}${warningsHtml(result)}<div class="v4-design-draft-actions">${openOrder}${payloadButton}${stagingActionHtml(result)}</div>${needsHtml(result)}${existingTasksHtml(result)}${flowHtml(result)}${payloadHtml(result)}</div>`;
+  modal.innerHTML = `<div class="v4-design-draft-dialog" role="dialog" aria-modal="true" aria-labelledby="designTaskDraftTitle"><div class="v4-design-draft-head"><div><h2 id="designTaskDraftTitle">Черновик дизайн-задачи</h2><p>Production-запись отключена. Тестовый transport работает только при точном staging project ref.</p></div><button type="button" data-design-task-draft-close>Закрыть</button></div><div class="v4-design-draft-note ${stateClass(result.state)}"><b>${esc(stateLabel(result.state))}</b><br>${esc(result.message)}</div>${stagingFeedbackHtml(feedback)}${orderSummary(result)}${warningsHtml(result)}<div class="v4-design-draft-actions">${openOrder}${payloadButton}${stagingActionHtml(result)}${transitionActionHtml(result)}</div>${needsHtml(result)}${existingTasksHtml(result)}${flowHtml(result)}${payloadHtml(result)}</div>`;
   modal.dataset.payload = result.draft ? moneylessJson(result.draft) : '';
 }
 
@@ -248,6 +257,34 @@ async function createStagingDesignTask() {
   toast(response.message);
 }
 
+async function transitionStagingDesignTask(status) {
+  if (stagingBusy || !currentPreviewContext?.order) return;
+  const taskId = currentPreviewContext.result?.existingTasks?.[0]?.id;
+  if (!taskId || !requireV4Action(CRM_V4_ACTIONS.DESIGN_WRITE)) return;
+  stagingBusy = true;
+  try {
+    const tasks = await fetchTasks(currentPreviewContext.order.id);
+    const task = tasks.find((item) => item.id === taskId);
+    if (!task) throw new Error('design_task_not_found');
+    const result = await invokeStagingWorkflow({
+      client: supabaseClient,
+      supabaseUrl: V4_CONFIG.supabaseUrl,
+      action: 'design_task.transition',
+      entity: task,
+      status,
+      layoutLink: status === 'Согласовано' ? (task.layout_link || `https://example.invalid/synthetic-layout/${task.id}`) : task.layout_link
+    });
+    const [order, refreshedTasks] = await Promise.all([fetchOrder(currentPreviewContext.order.id), fetchTasks(currentPreviewContext.order.id)]);
+    currentPreviewContext.order = order;
+    currentPreviewContext.result = buildDesignTaskDraftPreview({
+      order, needs: currentPreviewContext.needs, designTasks: refreshedTasks,
+      canRead: canPerformV4Action(CRM_V4_ACTIONS.DESIGN_READ),
+      canWrite: canPerformV4Action(CRM_V4_ACTIONS.DESIGN_WRITE)
+    });
+    renderResult(document.getElementById(MODAL_ID), currentPreviewContext.result, { ok: true, message: result.idempotent_replay ? 'Безопасный повтор перехода дизайн-задачи.' : `Статус дизайн-задачи: ${status}.` });
+  } finally { stagingBusy = false; }
+}
+
 async function copyPayload() {
   const value = document.getElementById(MODAL_ID)?.dataset.payload || '';
   if (!value) return;
@@ -289,6 +326,12 @@ function boot() {
     if (event.target.closest?.('[data-design-task-staging-create]')) {
       event.preventDefault();
       createStagingDesignTask();
+      return;
+    }
+    const transition = event.target.closest?.('[data-design-task-transition]');
+    if (transition) {
+      event.preventDefault();
+      transitionStagingDesignTask(transition.dataset.designTaskTransition).catch((error) => toast(friendlyError(error)));
       return;
     }
     if (event.target.closest?.('[data-design-task-draft-close-after-open]')) setTimeout(closeModal, 0);

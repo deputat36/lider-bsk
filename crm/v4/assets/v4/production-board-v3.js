@@ -1,6 +1,8 @@
 import { supabaseClient } from './supabase-client.js';
 import { friendlyError } from './api.js';
 import { canOpenV4ProductionKind, canOpenV4Tab, canViewV4InternalNotes, firstAllowedV4ProductionKind } from './role-tab-permissions-v1.js';
+import { V4_CONFIG } from './config.js';
+import { isStagingProductionEnvironment } from './production-job-staging-transport-v1.js';
 
 let busy = false;
 let loaded = false;
@@ -20,6 +22,10 @@ function shortId(value) { return String(value || '').slice(0, 8); }
 function doneProduction(status) {
   const text = String(status || '').toLowerCase();
   return text.includes('готов') || text.includes('выдан') || text.includes('закры') || text.includes('отмен');
+}
+function installationReady(status) {
+  const text = String(status || '').toLowerCase();
+  return text.includes('готов') || text.includes('выдан');
 }
 function doneInstall(status) {
   const text = String(status || '').toLowerCase();
@@ -85,9 +91,11 @@ async function fetchData() {
   const ids = [...new Set([...production, ...installation].map((job) => job.order_id).filter(Boolean))];
   let orders = [];
   if (ids.length) {
-    const orderFields = canViewV4InternalNotes()
-      ? 'id,order_number,project_name,status,deadline,layout_status,installation_address,data'
-      : 'id,order_number,project_name,status,deadline,layout_status,installation_address';
+    const orderFields = isStagingProductionEnvironment(V4_CONFIG.supabaseUrl)
+      ? 'id,order_number,project_name,status,deadline,layout_status'
+      : canViewV4InternalNotes()
+        ? 'id,order_number,project_name,status,deadline,layout_status,installation_address,data'
+        : 'id,order_number,project_name,status,deadline,layout_status,installation_address';
     orders = await safeQuery('Заказы', supabaseClient.from('leader_orders').select(orderFields).in('id', ids).limit(80));
   }
   state = { ...state, production, installation, orders: new Map(orders.map((order) => [order.id, order])) };
@@ -102,7 +110,8 @@ function badgeClass(text) {
 function layoutStatus(job, order) { return job?.layout_status || order?.layout_status || '—'; }
 function layoutApproved(status) {
   const text = String(status || '').toLowerCase();
-  return text.includes('соглас') || text.includes('утверж') || text.includes('готов');
+  if (text.includes('на согласовании') || text.includes('согласовани') || text.includes('правк')) return false;
+  return text.includes('согласован') || text.includes('утверж') || text.includes('готов');
 }
 function layoutMissing(status) {
   const text = String(status || '').toLowerCase();
@@ -121,7 +130,9 @@ function jobActions(job, kind) {
   const jobId = esc(job.id);
   const orderButton = job.order_id && canOpenV4Tab('orders') ? `<button type="button" data-open-order="${esc(job.order_id)}">Открыть заказ</button>` : '';
   if (kind === 'production') {
-    return `<div class="v4-prod-light-card-actions"><button type="button" class="is-primary" data-open-production-job-card="${jobId}">Карточка</button><button type="button" data-print-production-job="${jobId}">Печать</button>${orderButton}</div>`;
+    const install = canOpenV4ProductionKind('installation') && installationReady(job.production_status) && !state.installation.some((item) => item.order_id === job.order_id)
+      ? `<button type="button" data-installation-staging-create="${jobId}" data-installation-order="${esc(job.order_id)}">Создать монтаж</button>` : '';
+    return `<div class="v4-prod-light-card-actions"><button type="button" class="is-primary" data-open-production-job-card="${jobId}">Карточка</button><button type="button" data-print-production-job="${jobId}">Печать</button>${install}${orderButton}</div>`;
   }
   return `<div class="v4-prod-light-card-actions"><button type="button" class="is-primary" data-open-installation-job-card="${jobId}">Карточка</button><button type="button" data-print-installation-job="${jobId}">Печать</button>${orderButton}</div>`;
 }

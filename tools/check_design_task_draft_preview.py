@@ -84,7 +84,7 @@ def main() -> None:
         [
             "const ORDER_FIELDS = 'id,order_number,lead_id,project_name,status,priority,deadline,layout_status,layout_link,is_archived,updated_at'",
             "const NEED_FIELDS = 'id,lead_id,need_type,title,need_design,design_reason,deadline_date,status,completeness_score'",
-            "const TASK_FIELDS = 'id,order_id,task_status,layout_status,designer_name,deadline,layout_link,created_at'",
+            "const TASK_FIELDS = 'id,order_id,task_status,layout_status,designer_name,deadline,layout_link,created_at,updated_at'",
             "from('leader_orders')",
             "from('leader_lead_needs')",
             "from('leader_design_tasks')",

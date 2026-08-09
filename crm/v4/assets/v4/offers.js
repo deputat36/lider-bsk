@@ -16,6 +16,8 @@ import {
   rawOfferStatus,
   validateOfferStatusTransition
 } from './offer-status-ui-model-v1.js';
+import { V4_CONFIG } from './config.js';
+import { invokeStagingWorkflow, isStagingWorkflowEnvironment } from './workflow-staging-transport-v1.js';
 
 const OFFER_FIELDS = 'id,lead_id,calculation_id,client_id,order_id,offer_number,offer_type,title,short_text,full_text,total_sum,valid_until,status,sent_at,approved_at,rejected_at,created_by,updated_by,created_at,updated_at';
 const CALC_FIELDS = 'id,lead_id,need_id,client_id,title,status,version_number,client_total,contractor_cost,profit,margin_percent,warning_level,warnings,public_comment,internal_comment,commercial_offer_id,order_id,created_by,updated_by,created_at,updated_at';
@@ -308,6 +310,39 @@ async function createOffer() {
     const texts = buildOfferTexts({ ...bundle, validUntil, extraComment });
     const title = byId('offerTitle')?.value?.trim() || `КП: ${calculation.title || 'Расчёт'}`;
 
+    if (isStagingWorkflowEnvironment(V4_CONFIG.supabaseUrl)) {
+      const invoked = await supabaseClient.functions.invoke('leader-crm-offers', { body: {
+        action: 'offer.create_from_calculation',
+        request_id: globalThis.crypto.randomUUID(),
+        expected_updated_at: calculation.updated_at,
+        payload: {
+          calculation_id: calculation.id,
+          idempotency_key: `offer.create_from_calculation:${calculation.id}:v1`,
+          title,
+          valid_until: validUntil,
+          extra_comment: extraComment || null
+        }
+      } });
+      if (invoked.error || invoked.data?.ok !== true) {
+        throw new Error(invoked.data?.error?.code || invoked.error?.message || 'offer_create_failed');
+      }
+      const offer = invoked.data.entity;
+      const updatedCalculation = invoked.data.calculation;
+      const updatedLead = invoked.data.lead;
+      activeOfferId = offer.id;
+      selectedCalculationId = '';
+      setState({
+        offers: [offer, ...(v4State.offers || []).filter((item) => item.id !== offer.id)],
+        calculations: (v4State.calculations || []).map((calc) => calc.id === updatedCalculation?.id ? { ...calc, ...updatedCalculation } : calc),
+        currentLead: updatedLead ? { ...(v4State.currentLead || {}), ...updatedLead } : v4State.currentLead,
+        leads: updatedLead ? (v4State.leads || []).map((lead) => lead.id === updatedLead.id ? { ...lead, ...updatedLead } : lead) : v4State.leads
+      });
+      renderOffers();
+      setStatus(invoked.data.idempotent_replay ? 'КП уже было сформировано — дубль не создан' : 'Коммерческое предложение сформировано атомарно в staging.', 'good');
+      toast(invoked.data.idempotent_replay ? 'КП восстановлено без дубля' : 'КП сформировано');
+      return;
+    }
+
     const response = await timeout(
       supabaseClient
         .from('leader_commercial_offers')
@@ -384,6 +419,30 @@ async function updateOfferStatus(offerId, status) {
   if (!transition.ok) throw new Error(`Переход КП «${rawOfferStatus(current.status)} → ${rawOfferStatus(status)}» не разрешён registry (${transition.reason}).`);
 
   const targetStatus = transition.label;
+
+  if (isStagingWorkflowEnvironment(V4_CONFIG.supabaseUrl)) {
+    const result = await invokeStagingWorkflow({
+      client: supabaseClient,
+      supabaseUrl: V4_CONFIG.supabaseUrl,
+      action: 'offer.transition',
+      entity: current,
+      status: targetStatus
+    });
+    const updated = result.offer;
+    const updatedCalculation = result.calculation;
+    const updatedLead = result.lead;
+    setState({
+      offers: (v4State.offers || []).map((offer) => offer.id === offerId ? updated : offer),
+      calculations: updatedCalculation ? (v4State.calculations || []).map((calc) => calc.id === updatedCalculation.id ? { ...calc, ...updatedCalculation } : calc) : v4State.calculations,
+      currentLead: updatedLead ? { ...(v4State.currentLead || {}), ...updatedLead } : v4State.currentLead,
+      leads: updatedLead ? (v4State.leads || []).map((lead) => lead.id === updatedLead.id ? { ...lead, ...updatedLead } : lead) : v4State.leads
+    });
+    renderOffers();
+    setStatus(`КП: ${targetStatus}. Проекции синхронизированы атомарно.`, targetStatus === 'Отклонено' ? 'warn' : 'good');
+    toast(result.idempotent_replay ? 'Безопасный повтор перехода КП' : `Статус КП: ${targetStatus}`);
+    return;
+  }
+
   const patch = { status: targetStatus, updated_at: new Date().toISOString() };
   if (transition.timestampField) patch[transition.timestampField] = new Date().toISOString();
 
