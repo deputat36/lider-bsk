@@ -108,6 +108,7 @@ async function firstLoginAndLead(){
 }
 
 async function createNeedAndCalculation(){
+  const needsModule=await import('./assets/v4/needs.js');await needsModule.loadNeeds(R.leadId);
   await waitFor(()=>{const node=document.querySelector('button[data-action="open-create-need"]');return document.querySelector('#needFormBox .v4-need-workspace-summary')&&node&&!node.disabled;},'need_create_entry_missing');click('button[data-action="open-create-need"]');
   await waitFor(()=>document.getElementById('needForm'),'need_form_missing');
   setValue('#needTitle',R.marker+' need');setValue('#needDescription',R.marker+' synthetic brief');setValue('#needWidth','2');setValue('#needHeight','1');setValue('#needQuantity','1');setValue('#needMaterial','Synthetic material');setValue('#needDeadline','Synthetic deadline '+R.marker);setChecked('#needDesign');setValue('#needDesignReason',R.marker+' synthetic design');setChecked('#needInstallation');setValue('#needInstallAddress',R.marker+' synthetic address');setValue('#needInstallationReason',R.marker+' synthetic installation');click('#saveNeedBtn');
