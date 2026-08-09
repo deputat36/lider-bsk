@@ -24,6 +24,7 @@ contract = json.loads(CONTRACT.read_text(encoding='utf-8'))
 required_transport = [
     "const STAGING_PROJECT_REF = 'otulfnouybahfnsycxqn'",
     "const FUNCTION_SLUG = 'leader-crm-leads-staging'",
+    "const REQUEST_TIMEOUT_MS = 20000",
     "const WORKFLOW_FIELDS = Object.freeze(['status', 'next_contact_at', 'assigned_to'])",
     "mode: 'staging_edge'",
     "browserDirectWrite: false",
@@ -32,13 +33,17 @@ required_transport = [
     "expected_updated_at: expectedUpdatedAt",
     "idempotency_key: key",
     "client.auth.getSession",
-    "client.functions.invoke(FUNCTION_SLUG",
+    "fetchWithTimeout(fetchImpl",
+    "/functions/v1/${FUNCTION_SLUG}",
+    "apikey: publicKey",
+    "Authorization: `Bearer ${accessToken}`",
 ]
 for marker in required_transport:
     if marker not in transport:
         raise SystemExit(f'transport marker missing: {marker}')
 
 for forbidden in [
+    'client.functions.invoke(FUNCTION_SLUG',
     'ofewxuqfjhamgerwzull.supabase.co/functions/v1/leader-crm-leads-staging',
     'service_role',
     'SUPABASE_SERVICE_ROLE_KEY',
@@ -52,6 +57,7 @@ required_ui = [
     'event.stopImmediatePropagation()',
     'createLeadWorkflowIdempotencyKey(lead.id)',
     'invokeStagingLeadWorkflow({',
+    'publishableKey: V4_CONFIG.supabasePublishableKey',
     "assigned_to: userId",
     "status: currentStatus === 'Новая' ? 'Ждём ответ' : currentStatus",
     "document.dispatchEvent(new CustomEvent('leader-v4:lead-workflow-updated'",
