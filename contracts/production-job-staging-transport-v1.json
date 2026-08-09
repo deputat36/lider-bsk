@@ -1,0 +1,86 @@
+{
+  "contract_version": "leader-production-job-staging-transport-v1",
+  "scope": "crm_v4_source_only_staging_transport",
+  "environment": {
+    "allowed_project_ref": "otulfnouybahfnsycxqn",
+    "production_project_ref": "ofewxuqfjhamgerwzull",
+    "production_enabled": false,
+    "function_slug": "leader-crm-production-create",
+    "verify_jwt_required": true
+  },
+  "authorization": {
+    "session_source": "current_supabase_client_session",
+    "required_read_action": "production.read",
+    "required_write_action": "production.write",
+    "canonical_registry": "crm/v4/assets/v4/action-permissions-v1.js",
+    "browser_service_role_allowed": false,
+    "browser_actor_fields_allowed": false
+  },
+  "request": {
+    "action": "production_job.create_from_order",
+    "envelope_fields": [
+      "action",
+      "request_id",
+      "expected_updated_at",
+      "payload"
+    ],
+    "payload_fields": [
+      "order_id",
+      "design_task_id",
+      "idempotency_key",
+      "job"
+    ],
+    "job_fields": [
+      "title",
+      "priority",
+      "deadline",
+      "layout_status",
+      "file_url",
+      "technical_task",
+      "contractor_id",
+      "contractor_cost"
+    ]
+  },
+  "forbidden_browser_request_fields": [
+    "actor_id",
+    "actor_email",
+    "author",
+    "owner_id",
+    "created_by",
+    "production_status",
+    "current_stage",
+    "next_action",
+    "client_name",
+    "client_phone",
+    "client_total",
+    "payment_status",
+    "balance",
+    "profit",
+    "internal_comment"
+  ],
+  "results": {
+    "create_http": 201,
+    "replay_http": 200,
+    "validation_http": 400,
+    "forbidden_http": 403,
+    "not_found_http": 404,
+    "conflict_http": 409,
+    "persistence_http": 500,
+    "read_after_success_required": true,
+    "read_after_success_mode": "exact_idempotent_replay"
+  },
+  "ui": {
+    "orders_lazy_group_owns_entrypoint": true,
+    "exact_staging_boot_guard_required": true,
+    "production_button_allowed": false,
+    "production_network_allowed": false
+  },
+  "current_gates": [
+    "separate staging Auth user",
+    "active staging leader_user_profiles row",
+    "staging-configured CRM build",
+    "authenticated positive browser E2E",
+    "cleanup proof with zero synthetic residue",
+    "separate production approval"
+  ]
+}

@@ -30,7 +30,7 @@ SOURCES = {
     },
     'loader': {
         'path': ROOT / 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js',
-        'blob_sha': 'eca844104d1990fd18aa51789f66f070a4bb2846',
+        'blob_sha': 'd456e0497a2c2909d27537bc5da12458786f4cd6',
     },
     'index': {
         'path': ROOT / 'crm/v4/index.html',
