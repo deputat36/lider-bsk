@@ -226,6 +226,7 @@ function runChrome(binary, args) {
       if (!pageTarget) throw new Error('chrome_page_target_missing');
       socket = new WebSocket(pageTarget.webSocketDebuggerUrl);
       await new Promise((opened, failed) => { socket.addEventListener('open', opened, { once: true }); socket.addEventListener('error', () => failed(new Error('chrome_devtools_socket_failed')), { once: true }); });
+      clearTimeout(timer);
       let sequence = 0; const pending = new Map();
       socket.addEventListener('message', (event) => { const message = JSON.parse(String(event.data)); const callback = pending.get(message.id); if (!callback) return; pending.delete(message.id); if (message.error) callback.reject(new Error(`chrome_cdp_error:${message.error.message}`)); else callback.resolve(message.result); });
       const command = (method, params = {}) => new Promise((resolveCommand, rejectCommand) => { const id = ++sequence; pending.set(id, { resolve: resolveCommand, reject: rejectCommand }); socket.send(JSON.stringify({ id, method, params })); });
