@@ -1,0 +1,63 @@
+name: CRM production job staging frontend check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/production-job-staging-draft-model-v1.js'
+      - 'crm/v4/assets/v4/production-job-staging-transport-v1.js'
+      - 'crm/v4/assets/v4/production-job-staging-preview-v1.js'
+      - 'crm/v4/assets/v4/order-card-v1.js'
+      - 'crm/v4/assets/v4/design-task-draft-entrypoints-v1.js'
+      - 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
+      - 'crm/v4/assets/v4/action-permissions-v1.js'
+      - 'crm/v4/assets/v4/config.js'
+      - 'supabase/staging-functions/leader-crm-production-create/contract.ts'
+      - 'contracts/production-job-staging-transport-v1.json'
+      - 'tools/test_production_job_staging_draft.mjs'
+      - 'tools/test_production_job_staging_transport.mjs'
+      - 'tools/check_production_job_staging_frontend.py'
+      - 'docs/CRM_PRODUCTION_JOB_STAGING_FRONTEND_RUNBOOK_2026-08-09.md'
+      - '.github/workflows/crm-production-job-staging-frontend-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/production-job-staging-draft-model-v1.js'
+      - 'crm/v4/assets/v4/production-job-staging-transport-v1.js'
+      - 'crm/v4/assets/v4/production-job-staging-preview-v1.js'
+      - 'crm/v4/assets/v4/order-card-v1.js'
+      - 'crm/v4/assets/v4/design-task-draft-entrypoints-v1.js'
+      - 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
+      - 'crm/v4/assets/v4/action-permissions-v1.js'
+      - 'crm/v4/assets/v4/config.js'
+      - 'supabase/staging-functions/leader-crm-production-create/contract.ts'
+      - 'contracts/production-job-staging-transport-v1.json'
+      - 'tools/test_production_job_staging_draft.mjs'
+      - 'tools/test_production_job_staging_transport.mjs'
+      - 'tools/check_production_job_staging_frontend.py'
+      - 'docs/CRM_PRODUCTION_JOB_STAGING_FRONTEND_RUNBOOK_2026-08-09.md'
+      - '.github/workflows/crm-production-job-staging-frontend-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-production-job-staging-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate production job staging frontend
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check crm/v4/assets/v4/production-job-staging-draft-model-v1.js
+          node --check crm/v4/assets/v4/production-job-staging-transport-v1.js
+          node --check crm/v4/assets/v4/production-job-staging-preview-v1.js
+          node --check crm/v4/assets/v4/order-card-v1.js
+          node --check crm/v4/assets/v4/design-task-draft-entrypoints-v1.js
+          node --check crm/v4/assets/v4/crm-v4-tab-loader-v1.js
+          node tools/test_production_job_staging_draft.mjs
+          node tools/test_production_job_staging_transport.mjs
+          python3 -m json.tool contracts/production-job-staging-transport-v1.json >/dev/null
+          python3 -m py_compile tools/check_production_job_staging_frontend.py
+          python3 tools/check_production_job_staging_frontend.py

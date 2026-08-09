@@ -90,7 +90,10 @@ const TAB_REGISTRY = Object.freeze({
       () => import('./orders-fast-loader-v1.js?v=20260805-tab-loader-1'),
       [
         () => import('./order-card-v1.js?v=20260805-tab-loader-1'),
-        () => import('./order-act-preview-v1.js?v=20260805-tab-loader-1')
+        () => import('./order-act-preview-v1.js?v=20260805-tab-loader-1'),
+        () => import('./design-task-draft-preview-v1.js?v=20260714-design-staging-1'),
+        () => import('./design-task-draft-entrypoints-v1.js?v=20260714-design-staging-1'),
+        () => import('./production-job-staging-preview-v1.js?v=20260809-production-staging-1')
       ]
     ),
     mount: (module) => module.mount?.(),

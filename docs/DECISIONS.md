@@ -206,3 +206,19 @@ Production Supabase этим решением не изменяется.
 7. Карточка монтажа может подключаться только из `crm-v4-tab-loader-v1.js`; installation-production candidate меняет dynamic import card v2 → card v3 внутри loader и не возвращает eager script в `index.html`.
 
 Production Supabase этим решением не изменяется.
+
+## ADR-018. Создание производственного задания подключается через staging-locked order transport
+
+Решение: browser-связка `заказ → production_job.create_from_order` подключается только при точном staging project ref. Рабочая production-конфигурация не создаёт entrypoint, DOM listeners или Network-вызовы этого transport до отдельного решения владельца.
+
+Требования:
+
+1. Карточка заказа использует canonical `production.read`, а отправка — `production.write` из общего action registry.
+2. Browser передаёт текущую JWT-сессию только в `leader-crm-production-create`; service-role и direct RPC запрещены.
+3. Command envelope не содержит actor, server-owned status/stage, клиента, телефона, оплаты, баланса, прибыли и внутренних комментариев.
+4. Согласование макета проверяют UI-модель и атомарный staging backend; неизвестное или активное production state блокирует безопасный дубль.
+5. После HTTP 201 transport выполняет exact idempotent replay и принимает только HTTP 200 с тем же production job.
+6. Design-task preview и entrypoints принадлежат lazy-группе `orders`, чтобы прямое открытие заказов не зависело от lead-card/site-cache.
+7. Authenticated browser E2E, cleanup staging fixture и любой production rollout остаются отдельными gates.
+
+Production Supabase этим решением не изменяется.

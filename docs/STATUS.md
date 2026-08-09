@@ -2,6 +2,22 @@
 
 Дата обновления: 2026-08-09.
 
+## Staging frontend «заказ → производство»
+
+Обновление 2026-08-09:
+
+- добавлены browser draft model и JWT transport для существующей staging-команды `production_job.create_from_order`;
+- transport допускает только exact staging ref `otulfnouybahfnsycxqn` и завершается до сессии/Network вне этого окружения;
+- command envelope не содержит actor/status/client/phone/payment/balance/profit и других server-owned или клиентских полей;
+- карточка заказа получает production entrypoint только в staging и только при canonical `production.read`;
+- отправка требует canonical `production.write`, различает stale order, layout, active-job и idempotency conflicts;
+- read-after-success выполняется безопасным exact idempotent replay и требует тот же production job без дубликата;
+- design-task preview и entrypoints импортируются напрямую вместе с lazy-группой `orders`, без зависимости от открытия карточки заявки;
+- добавлены behavior tests, source checker, contract, CI workflow и browser/Auth runbook;
+- рабочий `config.js` остаётся production, поэтому production-кнопка не появляется и staging Edge не вызывается;
+- authenticated positive browser E2E остаётся отдельным gate до безопасного lifecycle staging Auth user;
+- production Supabase, config, deployment и данные не изменялись.
+
 ## Lazy-загрузка вкладок CRM v4
 
 Обновление 2026-08-05:

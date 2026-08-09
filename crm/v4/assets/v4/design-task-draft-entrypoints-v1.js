@@ -93,6 +93,11 @@ function boot() {
   document.addEventListener('leader-v4:crm-ready', scheduleDecorate);
   document.addEventListener('leader-v4:tab-opened', scheduleDecorate);
   document.addEventListener('leader-v4-order-updated', scheduleDecorate);
+  document.addEventListener('leader-v4:order-card-rendered', (event) => {
+    const orderId = String(event.detail?.orderId || '').trim();
+    if (orderId) lastOpenedOrderId = orderId;
+    scheduleDecorate();
+  });
   scheduleDecorate();
 }
 
