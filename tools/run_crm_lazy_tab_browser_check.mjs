@@ -66,7 +66,7 @@ window.__CRM_BROWSER_WARNINGS__=[];
 window.addEventListener('error',event=>window.__CRM_BROWSER_ERRORS__.push({type:'error',message:String(event.message||'error')}));
 window.addEventListener('unhandledrejection',event=>window.__CRM_BROWSER_ERRORS__.push({type:'unhandledrejection',message:String(event.reason?.message||event.reason||'rejection')}));
 const originalError=console.error.bind(console);console.error=(...args)=>{window.__CRM_BROWSER_ERRORS__.push({type:'console.error',message:args.map(String).join(' ').slice(0,240)});originalError(...args);};
-const originalWarn=console.warn.bind(console);console.warn=(...args)=>{window.__CRM_BROWSER_WARNINGS__.push({type:'console.warn',message:args.map(value=>value?.message||String(value)).join(' ').slice(0,500)});originalWarn(...args);};
+const originalWarn=console.warn.bind(console);console.warn=(...args)=>{window.__CRM_BROWSER_WARNINGS__.push({type:'console.warn',message:args.map(value=>value?.stack||value?.message||String(value)).join(' ').slice(0,1400)});originalWarn(...args);};
 </script>`;
 }
 
@@ -242,4 +242,4 @@ async function main() {
 }
 
 const invokedDirectly = process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href;
-if (invokedDirectly) main().catch(error => { console.error(JSON.stringify({ ok: false, error: text(error?.message).slice(0, 500) })); process.exitCode = 1; });
+if (invokedDirectly) main().catch(error => { console.error(JSON.stringify({ ok: false, error: text(error?.message).slice(0, 4000) })); process.exitCode = 1; });
