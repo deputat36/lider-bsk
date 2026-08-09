@@ -208,8 +208,6 @@ function reconcileSuccessfulWorkflow({ serverLead, result, action, fallbackLead 
     toast(result.message);
     setStatus(result.message, 'good');
   } catch (error) {
-    // The server command is already committed. A local renderer failure must not
-    // turn that authoritative success into a false persistence error for the user.
     console.error('[leader-crm] lead workflow persisted but local reconciliation failed', error);
     toast('Изменение заявки сохранено. Обновляю карточку.');
     setStatus('Изменение сохранено, обновляю интерфейс', 'warn');
@@ -262,6 +260,7 @@ async function saveWorkflow(rawAction) {
     const result = await invokeStagingLeadWorkflow({
       client: supabaseClient,
       supabaseUrl: V4_CONFIG.supabaseUrl,
+      publishableKey: V4_CONFIG.supabasePublishableKey,
       lead,
       patch: action.patch,
       idempotencyKey
@@ -278,9 +277,6 @@ async function saveWorkflow(rawAction) {
       ? result.data.lead
       : lead;
 
-    // This event means the protected server command has succeeded. Dispatch it
-    // before any secondary local rendering so authoritative persistence cannot
-    // be hidden by an unrelated UI exception.
     dispatchWorkflowUpdated({ lead: serverLead, result, action });
     reconcileSuccessfulWorkflow({ serverLead, result, action, fallbackLead: lead });
   } catch (_) {
