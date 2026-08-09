@@ -11,4 +11,4 @@ Authenticated CRM E2E continuation trigger.
 Issue: #487
 Expected branch: agent/487-authenticated-staging-e2e
 Production enabled: false
-Reason: verify state-subscriber isolation after server-success UI false-failure diagnosis; state fix 20c8a7543ae89c196f9cd138e7271683f585f55d
+Reason: verify authoritative server acknowledgement before local UI reconciliation; frontend fix 52c28b7e5a409bdae1e0592031691bab7833244e
