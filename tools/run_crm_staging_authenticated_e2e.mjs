@@ -36,7 +36,8 @@ function loadConfig(env = process.env) {
     password: required('STAGING_CRM_E2E_PASSWORD', env),
     marker: required('STAGING_CRM_E2E_MARKER', env),
     leadId: required('STAGING_CRM_E2E_LEAD_ID', env),
-    evidencePath: required('STAGING_CRM_E2E_EVIDENCE_PATH', env)
+    evidencePath: required('STAGING_CRM_E2E_EVIDENCE_PATH', env),
+    supabaseUmdPath: required('STAGING_CRM_E2E_SUPABASE_UMD', env)
   };
   if (required('STAGING_CRM_E2E_CONFIRM', env) !== CONFIRMATION) throw new Error('explicit_staging_confirmation_required');
   if (!config.publishableKey.startsWith('sb_publishable_') && config.publishableKey.split('.').length !== 3) throw new Error('publishable_key_invalid');
@@ -63,15 +64,18 @@ function jsonScript(value) { return JSON.stringify(value).replace(/[<>&]/g, (cha
 function temporaryConfigSource(config) {
   return `export const V4_CONFIG=Object.freeze({supabaseUrl:${jsonScript(config.supabaseUrl)},supabasePublishableKey:${jsonScript(config.publishableKey)},authStorageKey:'leader_crm_v4_authenticated_staging_e2e',timeouts:Object.freeze({sessionMs:12000,loginMs:22000,logoutMs:8000,profileMs:12000,requestMs:20000})});\n`;
 }
+function temporaryClientSource() {
+  return `import {V4_CONFIG} from './config.js';\nif(!globalThis.supabase?.createClient)throw new Error('local_supabase_umd_missing');\nexport const supabaseClient=globalThis.supabase.createClient(V4_CONFIG.supabaseUrl,V4_CONFIG.supabasePublishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey:V4_CONFIG.authStorageKey}});\n`;
+}
 function runtimeSource(config) {
   return `export const CRM_E2E_RUNTIME=Object.freeze(${jsonScript({ email: config.email, password: config.password, marker: config.marker, leadId: config.leadId })});\n`;
 }
 
 function browserSource() {
   return `import {CRM_E2E_RUNTIME as R} from './crm-authenticated-e2e-runtime.mjs';
-import {supabaseClient} from './assets/v4/supabase-client.js';
 
 const result=document.getElementById('crmAuthenticatedE2eResult');
+let supabaseClient;
 const started=Date.now();
 const steps=[];
 const ids={};
@@ -159,6 +163,7 @@ async function designProductionInstallation(orderId){
 }
 
 try{
+  ({supabaseClient}=await import('./assets/v4/supabase-client.js'));
   const resume=JSON.parse(sessionStorage.getItem('leaderCrmAuthenticatedE2eResume')||'null');
   if(resume?.stage==='after_refresh'){sessionStorage.removeItem('leaderCrmAuthenticatedE2eResume');await designProductionInstallation(resume.orderId);}
   else{await firstLoginAndLead();await createNeedAndCalculation();await createOfferAndOrder();await navigationAndRefresh();}
@@ -207,8 +212,9 @@ async function findChrome() {
 function runChrome(binary, args) {
   return new Promise((resolve, reject) => {
     const child = spawn(binary, args, { stdio: ['ignore', 'pipe', 'pipe'] }); let stdout = ''; let stderr = '';
+    const timer = setTimeout(() => { child.kill('SIGTERM'); setTimeout(() => child.kill('SIGKILL'), 5000).unref(); }, 300000);
     child.stdout.on('data', (chunk) => { stdout += chunk; }); child.stderr.on('data', (chunk) => { stderr += chunk; });
-    child.once('error', reject); child.once('close', (code) => resolve({ code, stdout, stderr }));
+    child.once('error', (error) => { clearTimeout(timer); reject(error); }); child.once('close', (code) => { clearTimeout(timer); resolve({ code, stdout, stderr }); });
   });
 }
 function decodeHtml(value) { return value.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&'); }
@@ -221,11 +227,14 @@ async function run(env = process.env, roleUi = '') {
   const config = loadConfig(env); const chrome = await findChrome(); const tempRoot = await mkdtemp(path.join(tmpdir(), 'lider-crm-authenticated-e2e-')); const tempV4 = path.join(tempRoot, 'v4'); let server;
   try {
     await cp(path.resolve('crm/v4'), tempV4, { recursive: true });
+    await mkdir(path.join(tempV4, 'assets/vendor'), { recursive: true });
+    await cp(config.supabaseUmdPath, path.join(tempV4, 'assets/vendor/supabase-v2.112.2.js'));
     await writeFile(path.join(tempV4, 'assets/v4/config.js'), temporaryConfigSource(config), { mode: 0o600 });
+    await writeFile(path.join(tempV4, 'assets/v4/supabase-client.js'), temporaryClientSource(), { mode: 0o600 });
     await writeFile(path.join(tempV4, 'crm-authenticated-e2e-runtime.mjs'), runtimeSource(config), { mode: 0o600 });
     await writeFile(path.join(tempV4, 'crm-authenticated-e2e-page.mjs'), roleUi ? roleBrowserSource(roleUi) : browserSource(), { mode: 0o600 });
     const indexPath = path.join(tempV4, 'index.html'); const html = await readFile(indexPath, 'utf8');
-    await writeFile(indexPath, html.replace('</body>', '<pre id="crmAuthenticatedE2eResult" data-status="running" hidden>running</pre><script type="module" src="./crm-authenticated-e2e-page.mjs"></script></body>'), { mode: 0o600 });
+    await writeFile(indexPath, html.replace('</body>', '<script src="./assets/vendor/supabase-v2.112.2.js"></script><pre id="crmAuthenticatedE2eResult" data-status="running" hidden>running</pre><script type="module" src="./crm-authenticated-e2e-page.mjs"></script></body>'), { mode: 0o600 });
     const local = await localServer(tempV4); server = local.server;
     const chromeResult = await runChrome(chrome, ['--headless', '--disable-gpu', '--no-sandbox', '--hide-scrollbars', '--disable-sync', '--no-first-run', '--disable-background-networking', '--virtual-time-budget=220000', '--dump-dom', local.url]);
     if (chromeResult.code !== 0) throw new Error(`headless_chrome_failed:${chromeResult.code}`);

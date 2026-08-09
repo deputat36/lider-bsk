@@ -16,7 +16,7 @@ permissions:
 
 concurrency:
   group: staging-installation-authenticated-ui-smoke
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   smoke:
@@ -201,6 +201,17 @@ jobs:
           node --check crm/v4/assets/v4/installation-job-staging-create-v1.js
           node tools/run_crm_staging_authenticated_e2e.mjs --mode=plan > "${RUNNER_TEMP}/crm-e2e-plan.json"
           jq -e '.project_ref == "otulfnouybahfnsycxqn" and .production_enabled == false and .first_login_via_form == true and .external_cleanup_required == true' "${RUNNER_TEMP}/crm-e2e-plan.json" >/dev/null
+
+      - name: Pin browser Supabase dependency locally
+        shell: bash
+        run: |
+          set -euo pipefail
+          UMD_PATH="${RUNNER_TEMP}/supabase-js-2.112.2.umd.js"
+          curl -fsSL --retry 3 --max-time 30 \
+            'https://registry.npmjs.org/@supabase/supabase-js/-/supabase-js-2.112.2.tgz' \
+            | tar -xzO package/dist/umd/supabase.js > "${UMD_PATH}"
+          test "$(wc -c < "${UMD_PATH}")" -gt 100000
+          echo "STAGING_CRM_E2E_SUPABASE_UMD=${UMD_PATH}" >> "${GITHUB_ENV}"
 
       - name: Prepare one temporary Auth user and synthetic lead
         id: prepare

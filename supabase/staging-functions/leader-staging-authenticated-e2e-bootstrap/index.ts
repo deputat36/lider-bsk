@@ -27,7 +27,7 @@ async function claims(req:Request){
   const workflowRef=text(value.workflow_ref)
   if(workflowRef!==E2E_WORKFLOW_REF&&workflowRef!==CALLER_WORKFLOW_REF)throw new Error('github_claim_rejected:workflow_ref')
   const jobWorkflowRef=text(value.job_workflow_ref)
-  if(jobWorkflowRef&&jobWorkflowRef!==E2E_WORKFLOW_REF)throw new Error('github_claim_rejected:job_workflow_ref')
+  if(jobWorkflowRef&&jobWorkflowRef!==E2E_WORKFLOW_REF&&jobWorkflowRef!==CALLER_WORKFLOW_REF)throw new Error('github_claim_rejected:job_workflow_ref')
   if(!/^[0-9a-f]{40}$/i.test(text(value.sha)))throw new Error('github_sha_claim_invalid')
   return {runKey:runKey(value)}
 }
