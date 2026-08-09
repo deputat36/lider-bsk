@@ -243,7 +243,7 @@ function runChrome(binary, args) {
     };
     const timer = setTimeout(() => finish(null, new Error('chrome_devtools_start_timeout')), 20000);
     child.stdout.on('data', (chunk) => { stdout += chunk; }); child.stderr.on('data', (chunk) => { stderr += chunk; });
-    child.stderr.on('data', (chunk) => { const match = String(chunk).match(/DevTools listening on (ws:\/\/[^\s]+)/); if (match && !connecting) { connecting = true; connect(match[1]).catch((error) => finish(null, error)); } });
+    child.stderr.on('data', () => { const match = stderr.match(/DevTools listening on (ws:\/\/[^\s]+)/); if (match && !connecting) { connecting = true; connect(match[1]).catch((error) => finish(null, error)); } });
     child.once('error', (error) => finish(null, error)); child.once('close', (code) => { if (!settled) finish({ code, stdout, stderr }); });
   });
 }
