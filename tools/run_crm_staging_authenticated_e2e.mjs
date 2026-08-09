@@ -108,7 +108,7 @@ async function firstLoginAndLead(){
 }
 
 async function createNeedAndCalculation(){
-  await waitFor(()=>document.querySelector('button[data-action="open-create-need"]'),'need_create_entry_missing');click('button[data-action="open-create-need"]');
+  await waitFor(()=>{const node=document.querySelector('button[data-action="open-create-need"]');return node&&!node.disabled;},'need_create_entry_missing');click('button[data-action="open-create-need"]');
   await waitFor(()=>document.getElementById('needForm'),'need_form_missing');
   setValue('#needTitle',R.marker+' need');setValue('#needDescription',R.marker+' synthetic brief');setValue('#needWidth','2');setValue('#needHeight','1');setValue('#needQuantity','1');setValue('#needMaterial','Synthetic material');setValue('#needDeadline','Synthetic deadline '+R.marker);setChecked('#needDesign');setValue('#needDesignReason',R.marker+' synthetic design');setChecked('#needInstallation');setValue('#needInstallAddress',R.marker+' synthetic address');setValue('#needInstallationReason',R.marker+' synthetic installation');click('#saveNeedBtn');
   const need=await waitFor(async()=>{try{const rows=await table('leader_lead_needs','id,lead_id,title,need_design,need_installation,updated_at',{lead_id:R.leadId});return rows.length===1?rows[0]:false;}catch(_){return false;}},'need_create_timeout');ids.need=need.id;assert(need.need_design&&need.need_installation,'need_projection_failed');record('need_create');
