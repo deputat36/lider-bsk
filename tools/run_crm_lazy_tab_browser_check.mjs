@@ -176,7 +176,15 @@ function evidenceFromDump(html) {
   const match = String(html).match(/<pre[^>]+id="lazyBrowserCheckResult"[^>]*>([\s\S]*?)<\/pre>/i);
   if (!match) throw new Error('lazy_browser_result_missing');
   const evidence = JSON.parse(decodeHtml(match[1]));
-  if (evidence.status !== 'passed') throw new Error(`lazy_browser_failed:${evidence.viewport}:${evidence.error || 'unknown'}`);
+  if (evidence.status !== 'passed') {
+    const detail = JSON.stringify({
+      error: evidence.error || 'unknown',
+      tab: evidence.tab || '',
+      browser_errors: evidence.browser_errors || [],
+      mock_mutations: evidence.mock_mutations || []
+    }).slice(0, 1400);
+    throw new Error(`lazy_browser_failed:${evidence.viewport}:${detail}`);
+  }
   return evidence;
 }
 
