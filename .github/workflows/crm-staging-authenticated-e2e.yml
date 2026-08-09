@@ -1,6 +1,7 @@
 name: CRM staging authenticated E2E
 
 on:
+  workflow_call:
   push:
     branches:
       - agent/487-authenticated-staging-e2e

@@ -4,8 +4,11 @@ on:
   push:
     branches:
       - fix/staging-installation-read-rpc-drift-v1
+      - agent/487-authenticated-staging-e2e
     paths:
       - 'tools/run-authenticated-installation-ui-smoke-once-20260722.txt'
+      - '.github/workflows/crm-staging-installation-authenticated-ui-smoke-runtime.yml'
+      - '.github/workflows/crm-staging-authenticated-e2e.yml'
 
 permissions:
   contents: read
@@ -17,6 +20,7 @@ concurrency:
 
 jobs:
   smoke:
+    if: github.ref == 'refs/heads/fix/staging-installation-read-rpc-drift-v1'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -175,3 +179,10 @@ jobs:
           test '${{ steps.ui_smoke.outcome }}' = 'success'
           test '${{ steps.validate.outcome }}' = 'success'
           test '${{ steps.cleanup.outcome }}' = 'success'
+
+  authenticated-e2e:
+    if: github.ref == 'refs/heads/agent/487-authenticated-staging-e2e'
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/crm-staging-authenticated-e2e.yml
