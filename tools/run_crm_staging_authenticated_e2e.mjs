@@ -82,25 +82,27 @@ const ids={};
 const sleep=(ms)=>new Promise((resolve)=>setTimeout(resolve,ms));
 const clean=(value)=>String(value??'').trim();
 function assert(value,code){if(!value)throw new Error(code);}
-function record(name,detail='pass'){steps.push({name,detail});}
+function progress(name){try{navigator.sendBeacon('/__crm_e2e_progress',String(name).slice(0,80));}catch(_){}}
+function record(name,detail='pass'){steps.push({name,detail});progress(name);}
 async function waitFor(check,code,timeout=30000){const begin=Date.now();while(Date.now()-begin<timeout){const value=await check();if(value)return value;await sleep(120);}throw new Error(code);}
 function setValue(selector,value,event='input'){const node=document.querySelector(selector);assert(node,'missing:'+selector);node.value=value;node.dispatchEvent(new Event(event,{bubbles:true}));return node;}
 function setChecked(selector,value=true){const node=document.querySelector(selector);assert(node,'missing:'+selector);node.checked=value;node.dispatchEvent(new Event('change',{bubbles:true}));return node;}
 function click(selector){const node=document.querySelector(selector);assert(node,'missing:'+selector);assert(!node.disabled,'disabled:'+selector);node.click();return node;}
 async function table(tableName,fields,filters={}){let query=supabaseClient.from(tableName).select(fields);for(const [key,value] of Object.entries(filters))query=query.eq(key,value);const response=await Promise.race([query,sleep(20000).then(()=>{throw new Error('read_timeout:'+tableName);})]);if(response.error)throw new Error('read_failed:'+tableName+':'+response.error.message);return response.data||[];}
 async function one(tableName,fields,filters={}){const rows=await table(tableName,fields,filters);assert(rows.length===1,'expected_one:'+tableName+':'+rows.length);return rows[0];}
-function output(status,payload){result.dataset.status=status;result.textContent=JSON.stringify({evidence_version:'${EVIDENCE_VERSION}',status,project_ref:'${STAGING_REF}',production_enabled:false,...payload},null,2);document.body.dataset.crmAuthenticatedE2eFinished='true';document.title=status==='passed'?'CRM authenticated E2E PASSED':'CRM authenticated E2E FAILED';location.replace('/__crm_e2e_result?payload='+encodeURIComponent(result.textContent));}
+function output(status,payload){result.dataset.status=status;result.textContent=JSON.stringify({evidence_version:'${EVIDENCE_VERSION}',status,project_ref:'${STAGING_REF}',production_enabled:false,...payload},null,2);document.body.dataset.crmAuthenticatedE2eFinished='true';document.title=status==='passed'?'CRM authenticated E2E PASSED':'CRM authenticated E2E FAILED';if(!navigator.sendBeacon('/__crm_e2e_result',result.textContent))location.replace('/__crm_e2e_result?payload='+encodeURIComponent(result.textContent));}
 async function invoke(functionName,body){const response=await supabaseClient.functions.invoke(functionName,{body});return response;}
 function edgeCode(response){return clean(response?.data?.error?.code||response?.error?.message||response?.data?.error||'');}
 async function assertCount(tableName,filters,count){const rows=await table(tableName,'id',filters);assert(rows.length===count,'count_mismatch:'+tableName+':'+rows.length+':'+count);return rows;}
 
 async function firstLoginAndLead(){
+  progress('login_wait');
   await waitFor(()=>document.getElementById('loginForm')&&!document.getElementById('loginForm').classList.contains('hidden'),'login_form_missing');
-  setValue('#loginEmail',R.email);setValue('#loginPassword',R.password);click('#loginBtn');
+  setValue('#loginEmail',R.email);setValue('#loginPassword',R.password);click('#loginBtn');progress('login_submitted');
   await waitFor(()=>!document.getElementById('crmWorkspace')?.classList.contains('hidden')&&clean(document.getElementById('profileRole')?.textContent).toLowerCase()==='manager','authenticated_workspace_timeout',45000);
   assert(document.body.dataset.v4Tab==='leads','initial_leads_tab_missing');record('login_first_entry');
   setValue('#leadSearch',R.marker);await waitFor(()=>document.querySelector('.v4-lead-card[data-id="'+R.leadId+'"]'),'synthetic_lead_not_listed');
-  click('.v4-lead-card[data-id="'+R.leadId+'"] button[data-action="open"]');
+  click('.v4-lead-card[data-id="'+R.leadId+'"] button[data-action="open"]');progress('lead_open_clicked');
   await waitFor(()=>document.querySelector('.v4-lead-card-view')&&location.search.includes('lead='+R.leadId),'lead_card_open_timeout');record('lead_card');
   const assign=document.querySelector('[data-lead-primary-action="assign_self"]');if(assign)assign.click();
   await waitFor(async()=>{try{return (await one('leader_leads','id,status,assigned_to,updated_at',{id:R.leadId})).assigned_to||false;}catch(_){return false;}},'lead_assignment_timeout');
@@ -108,6 +110,7 @@ async function firstLoginAndLead(){
 }
 
 async function createNeedAndCalculation(){
+  progress('need_module_load');
   const needsModule=await import('./assets/v4/needs.js');await needsModule.loadNeeds(R.leadId);
   if(!document.getElementById('needForm')){await waitFor(()=>{const node=document.querySelector('button[data-action="open-create-need"]');return document.querySelector('#needFormBox .v4-need-workspace-summary')&&node&&!node.disabled;},'need_create_entry_missing');click('button[data-action="open-create-need"]');}
   await waitFor(()=>document.getElementById('needForm'),'need_form_missing');
@@ -176,7 +179,7 @@ function roleBrowserSource(expectedRole) {
   return `import {CRM_E2E_RUNTIME as R} from './crm-authenticated-e2e-runtime.mjs';
 const result=document.getElementById('crmAuthenticatedE2eResult');const sleep=(ms)=>new Promise((resolve)=>setTimeout(resolve,ms));
 const clean=(value)=>String(value??'').trim();function assert(value,code){if(!value)throw new Error(code);}async function waitFor(check,code,timeout=45000){const started=Date.now();while(Date.now()-started<timeout){const value=await check();if(value)return value;await sleep(120);}throw new Error(code);}
-function output(status,payload){result.dataset.status=status;result.textContent=JSON.stringify({evidence_version:'${EVIDENCE_VERSION}',status,project_ref:'${STAGING_REF}',production_enabled:false,...payload},null,2);document.body.dataset.crmAuthenticatedE2eFinished='true';document.title=status==='passed'?'CRM role UI PASSED':'CRM role UI FAILED';location.replace('/__crm_e2e_result?payload='+encodeURIComponent(result.textContent));}
+function output(status,payload){result.dataset.status=status;result.textContent=JSON.stringify({evidence_version:'${EVIDENCE_VERSION}',status,project_ref:'${STAGING_REF}',production_enabled:false,...payload},null,2);document.body.dataset.crmAuthenticatedE2eFinished='true';document.title=status==='passed'?'CRM role UI PASSED':'CRM role UI FAILED';if(!navigator.sendBeacon('/__crm_e2e_result',result.textContent))location.replace('/__crm_e2e_result?payload='+encodeURIComponent(result.textContent));}
 try{await waitFor(()=>document.getElementById('loginForm')&&!document.getElementById('loginForm').classList.contains('hidden'),'login_form_missing');const email=document.getElementById('loginEmail'),password=document.getElementById('loginPassword');email.value=R.email;email.dispatchEvent(new Event('input',{bubbles:true}));password.value=R.password;password.dispatchEvent(new Event('input',{bubbles:true}));document.getElementById('loginBtn').click();await waitFor(()=>!document.getElementById('crmWorkspace')?.classList.contains('hidden')&&clean(document.getElementById('profileRole')?.textContent).toLowerCase()==='${expectedRole}','role_workspace_timeout');
 const visible=(tab)=>{const node=document.querySelector('[data-v4-tab-button="'+tab+'"]');return Boolean(node&&!node.hidden&&!node.disabled&&node.getAttribute('aria-hidden')!=='true');};
 ${expectedRole === 'owner'
@@ -190,11 +193,17 @@ function mimeType(filePath) {
 }
 async function localServer(root) {
   const safeRoot = path.resolve(root);
+  let lastProgress = 'not_started';
   let settleResult;
   const resultPromise = new Promise((resolve) => { settleResult = resolve; });
   const server = createServer(async (request, response) => {
     try {
       const url = new URL(request.url || '/', 'http://127.0.0.1');
+      if (url.pathname === '/__crm_e2e_progress' && request.method === 'POST') {
+        const chunks = []; let size = 0; for await (const chunk of request) { size += chunk.length; if (size > 256) throw new Error('progress_too_large'); chunks.push(chunk); }
+        const value = Buffer.concat(chunks).toString('utf8'); if (/^[a-z0-9_:-]{1,80}$/i.test(value)) lastProgress = value;
+        response.writeHead(204, { 'Cache-Control': 'no-store' }); response.end(); return;
+      }
       if (url.pathname === '/__crm_e2e_result' && request.method === 'GET') {
         const body = url.searchParams.get('payload') || ''; if (!body || body.length > 65536) throw new Error('evidence_invalid'); JSON.parse(body); settleResult(body);
         response.writeHead(204, { 'Cache-Control': 'no-store' }); response.end(); return;
@@ -214,7 +223,7 @@ async function localServer(root) {
   });
   await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
   const address = server.address(); if (!address || typeof address === 'string') throw new Error('server_address_invalid');
-  return { server, url: `http://127.0.0.1:${address.port}/index.html?tab=leads`, resultPromise };
+  return { server, url: `http://127.0.0.1:${address.port}/index.html?tab=leads`, resultPromise, getProgress: () => lastProgress };
 }
 async function findChrome() {
   for (const candidate of ['/usr/bin/google-chrome', '/usr/bin/google-chrome-stable', '/usr/bin/chromium', '/usr/bin/chromium-browser']) {
@@ -222,11 +231,11 @@ async function findChrome() {
   }
   throw new Error('headless_chrome_not_found');
 }
-function runChrome(binary, args, resultPromise) {
+function runChrome(binary, args, resultPromise, getProgress) {
   return new Promise((resolve, reject) => {
     const child = spawn(binary, args, { stdio: ['ignore', 'pipe', 'pipe'] }); let stdout = ''; let stderr = ''; let evidenceBody = ''; let failure;
     const stop = () => { child.kill('SIGTERM'); setTimeout(() => child.kill('SIGKILL'), 5000).unref(); };
-    const timer = setTimeout(() => { failure = new Error('chrome_browser_scenario_timeout'); stop(); }, 360000);
+    const timer = setTimeout(() => { failure = new Error(`chrome_browser_scenario_timeout:${getProgress()}`); stop(); }, 120000);
     child.stdout.on('data', (chunk) => { stdout += chunk; }); child.stderr.on('data', (chunk) => { stderr += chunk; });
     resultPromise.then((body) => { evidenceBody = body; stop(); }).catch((error) => { failure = error; stop(); });
     child.once('error', (error) => { clearTimeout(timer); reject(error); });
@@ -252,7 +261,7 @@ async function run(env = process.env, roleUi = '') {
     const indexPath = path.join(tempV4, 'index.html'); const html = await readFile(indexPath, 'utf8');
     await writeFile(indexPath, html.replace('</body>', '<script src="./assets/vendor/supabase-v2.112.2.js"></script><pre id="crmAuthenticatedE2eResult" data-status="running" hidden>running</pre><script type="module" src="./crm-authenticated-e2e-page.mjs"></script></body>'), { mode: 0o600 });
     const local = await localServer(tempV4); server = local.server;
-    const chromeResult = await runChrome(chrome, ['--headless', '--disable-gpu', '--no-sandbox', '--hide-scrollbars', '--disable-sync', '--no-first-run', '--disable-background-networking', '--disable-dev-shm-usage', `--user-data-dir=${path.join(tempRoot, 'chrome-profile')}`, local.url], local.resultPromise);
+    const chromeResult = await runChrome(chrome, ['--headless', '--disable-gpu', '--no-sandbox', '--hide-scrollbars', '--disable-sync', '--no-first-run', '--disable-background-networking', '--disable-dev-shm-usage', `--user-data-dir=${path.join(tempRoot, 'chrome-profile')}`, local.url], local.resultPromise, local.getProgress);
     if (chromeResult.code !== 0) throw new Error(`headless_chrome_failed:${chromeResult.code}`);
     const evidence = sanitize(JSON.parse(chromeResult.evidenceBody)); if (evidence.status !== 'passed') throw new Error(`browser_e2e_failed:${evidence.error || 'unknown'}`); const target = path.resolve(config.evidencePath); await mkdir(path.dirname(target), { recursive: true }); await writeFile(target, `${JSON.stringify(evidence, null, 2)}\n`, { mode: 0o600 }); return { evidence, target };
   } finally {
