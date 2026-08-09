@@ -269,7 +269,13 @@ async function run(env = process.env, roleUi = '') {
     const chromeResult = await runChrome(chrome, ['--headless', '--disable-gpu', '--no-sandbox', '--hide-scrollbars', '--disable-sync', '--no-first-run', '--disable-background-networking', '--remote-debugging-port=0', `--user-data-dir=${path.join(tempRoot, 'chrome-profile')}`, local.url]);
     if (chromeResult.code !== 0) throw new Error(`headless_chrome_failed:${chromeResult.code}`);
     const evidence = evidenceFromDom(chromeResult.stdout); const target = path.resolve(config.evidencePath); await mkdir(path.dirname(target), { recursive: true }); await writeFile(target, `${JSON.stringify(evidence, null, 2)}\n`, { mode: 0o600 }); return { evidence, target };
-  } finally { if (server) await new Promise((resolve) => server.close(resolve)); await rm(tempRoot, { recursive: true, force: true }); }
+  } finally {
+    if (server) await new Promise((resolve) => server.close(resolve));
+    for (let attempt = 0; attempt < 30; attempt += 1) {
+      try { await rm(tempRoot, { recursive: true, force: true }); break; }
+      catch (error) { if (attempt === 29) throw error; await new Promise((resolve) => setTimeout(resolve, 100)); }
+    }
+  }
 }
 
 function arg(name) { const entry = process.argv.find((value) => value.startsWith(`${name}=`)); return entry ? entry.slice(name.length + 1) : ''; }
