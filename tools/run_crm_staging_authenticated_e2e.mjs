@@ -238,9 +238,12 @@ function runChrome(binary, args) {
         socket.send(JSON.stringify({ id, method, params }));
       });
       await command('Runtime.enable');
+      await new Promise((done) => setTimeout(done, 1500));
       const deadline = Date.now() + 360000;
       while (Date.now() < deadline) {
-        const state = await command('Runtime.evaluate', { expression: `document.body?.dataset?.crmAuthenticatedE2eFinished==='true'`, returnByValue: true });
+        let state;
+        try { state = await command('Runtime.evaluate', { expression: `document.body?.dataset?.crmAuthenticatedE2eFinished==='true'`, returnByValue: true }); }
+        catch (error) { if (String(error?.message || '').startsWith('chrome_cdp_timeout:Runtime.evaluate')) { await new Promise((done) => setTimeout(done, 500)); continue; } throw error; }
         if (state?.result?.value === true) {
           const dom = await command('Runtime.evaluate', { expression: 'document.documentElement.outerHTML', returnByValue: true });
           finish({ code: 0, stdout: String(dom?.result?.value || ''), stderr }); return;
