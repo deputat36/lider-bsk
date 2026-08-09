@@ -87,9 +87,9 @@ async function waitFor(check,code,timeout=30000){const begin=Date.now();while(Da
 function setValue(selector,value,event='input'){const node=document.querySelector(selector);assert(node,'missing:'+selector);node.value=value;node.dispatchEvent(new Event(event,{bubbles:true}));return node;}
 function setChecked(selector,value=true){const node=document.querySelector(selector);assert(node,'missing:'+selector);node.checked=value;node.dispatchEvent(new Event('change',{bubbles:true}));return node;}
 function click(selector){const node=document.querySelector(selector);assert(node,'missing:'+selector);assert(!node.disabled,'disabled:'+selector);node.click();return node;}
-async function table(tableName,fields,filters={}){let query=supabaseClient.from(tableName).select(fields);for(const [key,value] of Object.entries(filters))query=query.eq(key,value);const response=await query;if(response.error)throw new Error('read_failed:'+tableName+':'+response.error.message);return response.data||[];}
+async function table(tableName,fields,filters={}){let query=supabaseClient.from(tableName).select(fields);for(const [key,value] of Object.entries(filters))query=query.eq(key,value);const response=await Promise.race([query,sleep(20000).then(()=>{throw new Error('read_timeout:'+tableName);})]);if(response.error)throw new Error('read_failed:'+tableName+':'+response.error.message);return response.data||[];}
 async function one(tableName,fields,filters={}){const rows=await table(tableName,fields,filters);assert(rows.length===1,'expected_one:'+tableName+':'+rows.length);return rows[0];}
-function output(status,payload){result.dataset.status=status;result.textContent=JSON.stringify({evidence_version:'${EVIDENCE_VERSION}',status,project_ref:'${STAGING_REF}',production_enabled:false,...payload},null,2);document.body.dataset.crmAuthenticatedE2eFinished='true';document.title=status==='passed'?'CRM authenticated E2E PASSED':'CRM authenticated E2E FAILED';fetch('/__crm_e2e_result',{method:'POST',headers:{'Content-Type':'application/json'},body:result.textContent}).catch(()=>{});}
+function output(status,payload){result.dataset.status=status;result.textContent=JSON.stringify({evidence_version:'${EVIDENCE_VERSION}',status,project_ref:'${STAGING_REF}',production_enabled:false,...payload},null,2);document.body.dataset.crmAuthenticatedE2eFinished='true';document.title=status==='passed'?'CRM authenticated E2E PASSED':'CRM authenticated E2E FAILED';location.replace('/__crm_e2e_result?payload='+encodeURIComponent(result.textContent));}
 async function invoke(functionName,body){const response=await supabaseClient.functions.invoke(functionName,{body});return response;}
 function edgeCode(response){return clean(response?.data?.error?.code||response?.error?.message||response?.data?.error||'');}
 async function assertCount(tableName,filters,count){const rows=await table(tableName,'id',filters);assert(rows.length===count,'count_mismatch:'+tableName+':'+rows.length+':'+count);return rows;}
@@ -109,7 +109,7 @@ async function firstLoginAndLead(){
 
 async function createNeedAndCalculation(){
   const needsModule=await import('./assets/v4/needs.js');await needsModule.loadNeeds(R.leadId);
-  await waitFor(()=>{const node=document.querySelector('button[data-action="open-create-need"]');return document.querySelector('#needFormBox .v4-need-workspace-summary')&&node&&!node.disabled;},'need_create_entry_missing');click('button[data-action="open-create-need"]');
+  if(!document.getElementById('needForm')){await waitFor(()=>{const node=document.querySelector('button[data-action="open-create-need"]');return document.querySelector('#needFormBox .v4-need-workspace-summary')&&node&&!node.disabled;},'need_create_entry_missing');click('button[data-action="open-create-need"]');}
   await waitFor(()=>document.getElementById('needForm'),'need_form_missing');
   setValue('#needTitle',R.marker+' need');setValue('#needDescription',R.marker+' synthetic brief');setValue('#needWidth','2');setValue('#needHeight','1');setValue('#needQuantity','1');setValue('#needMaterial','Synthetic material');setValue('#needDeadline','Synthetic deadline '+R.marker);setChecked('#needDesign');setValue('#needDesignReason',R.marker+' synthetic design');setChecked('#needInstallation');setValue('#needInstallAddress',R.marker+' synthetic address');setValue('#needInstallationReason',R.marker+' synthetic installation');click('#saveNeedBtn');
   const need=await waitFor(async()=>{try{const rows=await table('leader_lead_needs','id,lead_id,title,need_design,need_installation,updated_at',{lead_id:R.leadId});return rows.length===1?rows[0]:false;}catch(_){return false;}},'need_create_timeout');ids.need=need.id;assert(need.need_design&&need.need_installation,'need_projection_failed');record('need_create');
@@ -176,7 +176,7 @@ function roleBrowserSource(expectedRole) {
   return `import {CRM_E2E_RUNTIME as R} from './crm-authenticated-e2e-runtime.mjs';
 const result=document.getElementById('crmAuthenticatedE2eResult');const sleep=(ms)=>new Promise((resolve)=>setTimeout(resolve,ms));
 const clean=(value)=>String(value??'').trim();function assert(value,code){if(!value)throw new Error(code);}async function waitFor(check,code,timeout=45000){const started=Date.now();while(Date.now()-started<timeout){const value=await check();if(value)return value;await sleep(120);}throw new Error(code);}
-function output(status,payload){result.dataset.status=status;result.textContent=JSON.stringify({evidence_version:'${EVIDENCE_VERSION}',status,project_ref:'${STAGING_REF}',production_enabled:false,...payload},null,2);document.body.dataset.crmAuthenticatedE2eFinished='true';document.title=status==='passed'?'CRM role UI PASSED':'CRM role UI FAILED';fetch('/__crm_e2e_result',{method:'POST',headers:{'Content-Type':'application/json'},body:result.textContent}).catch(()=>{});}
+function output(status,payload){result.dataset.status=status;result.textContent=JSON.stringify({evidence_version:'${EVIDENCE_VERSION}',status,project_ref:'${STAGING_REF}',production_enabled:false,...payload},null,2);document.body.dataset.crmAuthenticatedE2eFinished='true';document.title=status==='passed'?'CRM role UI PASSED':'CRM role UI FAILED';location.replace('/__crm_e2e_result?payload='+encodeURIComponent(result.textContent));}
 try{await waitFor(()=>document.getElementById('loginForm')&&!document.getElementById('loginForm').classList.contains('hidden'),'login_form_missing');const email=document.getElementById('loginEmail'),password=document.getElementById('loginPassword');email.value=R.email;email.dispatchEvent(new Event('input',{bubbles:true}));password.value=R.password;password.dispatchEvent(new Event('input',{bubbles:true}));document.getElementById('loginBtn').click();await waitFor(()=>!document.getElementById('crmWorkspace')?.classList.contains('hidden')&&clean(document.getElementById('profileRole')?.textContent).toLowerCase()==='${expectedRole}','role_workspace_timeout');
 const visible=(tab)=>{const node=document.querySelector('[data-v4-tab-button="'+tab+'"]');return Boolean(node&&!node.hidden&&!node.disabled&&node.getAttribute('aria-hidden')!=='true');};
 ${expectedRole === 'owner'
@@ -195,6 +195,10 @@ async function localServer(root) {
   const server = createServer(async (request, response) => {
     try {
       const url = new URL(request.url || '/', 'http://127.0.0.1');
+      if (url.pathname === '/__crm_e2e_result' && request.method === 'GET') {
+        const body = url.searchParams.get('payload') || ''; if (!body || body.length > 65536) throw new Error('evidence_invalid'); JSON.parse(body); settleResult(body);
+        response.writeHead(204, { 'Cache-Control': 'no-store' }); response.end(); return;
+      }
       if (url.pathname === '/__crm_e2e_result' && request.method === 'POST') {
         const chunks = []; let size = 0;
         for await (const chunk of request) { size += chunk.length; if (size > 65536) throw new Error('evidence_too_large'); chunks.push(chunk); }
