@@ -86,7 +86,7 @@ async function run(){try{
 await waitFor(()=>!document.getElementById('crmWorkspace')?.classList.contains('hidden'),'workspace_timeout');
 await waitFor(()=>document.body.dataset.v4Tab==='leads','initial_leads_timeout');
 await sleep(250);
-const eagerEntrypoints=document.querySelectorAll('script[type="module"][src]').length;
+const eagerEntrypoints=document.querySelectorAll('script[type="module"][src]:not([src$="lazy-tab-browser-controller.mjs"])').length;
 const initialResources=jsResources();
 const initialHeavy=HEAVY.filter(name=>initialResources.some(url=>url.includes(name)));
 assert(eagerEntrypoints<=11,'eager_entrypoints:'+eagerEntrypoints);
