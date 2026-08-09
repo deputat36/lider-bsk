@@ -15,7 +15,7 @@ const LEAD_STATUSES = new Set([
 function text(value) { return String(value ?? '').trim(); }
 function object(value) { return value && typeof value === 'object' && !Array.isArray(value) ? value : null; }
 function uuid(value) { return UUID_PATTERN.test(text(value)); }
-function abortError(code = 'request_timeout') { const error = new Error(code); error.name = 'AbortError'; return error; }
+function delay(ms) { return new Promise((resolve) => globalThis.setTimeout(resolve, ms)); }
 
 export function projectRefFromLeadWorkflowUrl(value) {
   try {
@@ -121,7 +121,7 @@ function secureRequestId(cryptoObject = globalThis.crypto) {
 function classifyError(code) {
   const key = text(code).toLowerCase() || 'workflow_update_failed';
   if (key === 'wrong_environment') return 'wrong_environment';
-  if (key === 'missing_or_invalid_jwt' || key === 'auth_required' || key === 'missing_token' || key === 'bad_token') return 'auth_required';
+  if (['missing_or_invalid_jwt', 'auth_required', 'missing_token', 'bad_token'].includes(key)) return 'auth_required';
   if (key === 'forbidden') return 'forbidden';
   if (key === 'not_found') return 'not_found';
   if (key === 'conflict') return 'conflict';
@@ -129,9 +129,8 @@ function classifyError(code) {
   if (key === 'next_contact_required') return 'next_contact_required';
   if (key === 'duplicate_request') return 'duplicate_request';
   if (key === 'no_effect') return 'no_effect';
-  if (key === 'workflow_fields_must_be_separate') return 'validation_error';
-  if (key === 'validation_error' || key === 'unknown_action') return 'validation_error';
-  if (key === 'network_error' || key === 'request_timeout') return 'network_error';
+  if (['workflow_fields_must_be_separate', 'validation_error', 'unknown_action'].includes(key)) return 'validation_error';
+  if (['network_error', 'request_timeout'].includes(key)) return 'network_error';
   return 'persistence_failed';
 }
 
@@ -165,7 +164,11 @@ function responseErrorDetails(body, status) {
 }
 
 function expectedPatchFromCommand(command) {
-  return Object.fromEntries(WORKFLOW_FIELDS.filter((key) => Object.prototype.hasOwnProperty.call(command, key)).map((key) => [key, command[key]]));
+  return Object.fromEntries(
+    WORKFLOW_FIELDS
+      .filter((key) => Object.prototype.hasOwnProperty.call(command, key))
+      .map((key) => [key, command[key]])
+  );
 }
 
 function sameTimestamp(left, right) {
@@ -175,67 +178,50 @@ function sameTimestamp(left, right) {
   return Number.isFinite(a) && Number.isFinite(b) ? a === b : text(left) === text(right);
 }
 
-function leadMatchesPatch(lead, patch) {
+function leadMatchesCommand(lead, command) {
   if (!object(lead)) return false;
-  return Object.entries(patch).every(([key, expected]) => {
+  const expectedPatch = expectedPatchFromCommand(command);
+  const patchMatches = Object.entries(expectedPatch).every(([key, expected]) => {
     const actual = lead[key];
     if (key === 'next_contact_at') return sameTimestamp(actual ?? null, expected ?? null);
     return text(actual) === text(expected);
   });
+  if (!patchMatches) return false;
+  const before = Date.parse(text(command.expected_updated_at));
+  const after = Date.parse(text(lead.updated_at));
+  return Number.isFinite(before) && Number.isFinite(after) && after !== before;
 }
 
-async function readLeadWithTimeout(client, leadId, timeoutMs = VERIFICATION_TIMEOUT_MS) {
-  let timer = 0;
-  const timeoutPromise = new Promise((_, reject) => {
-    timer = globalThis.setTimeout(() => reject(abortError('verification_timeout')), timeoutMs);
-  });
-  try {
-    return await Promise.race([
-      client
-        .from('leader_leads')
-        .select('id,status,assigned_to,next_contact_at,updated_at')
-        .eq('id', leadId)
-        .maybeSingle(),
-      timeoutPromise
-    ]);
-  } finally {
-    globalThis.clearTimeout(timer);
-  }
+async function readLead(client, leadId) {
+  const response = await client
+    .from('leader_leads')
+    .select('id,status,assigned_to,next_contact_at,updated_at')
+    .eq('id', leadId)
+    .maybeSingle();
+  if (response?.error || !response?.data) return null;
+  return response.data;
 }
 
-async function verifyPersistedWorkflow(client, command, timeoutMs = VERIFICATION_TIMEOUT_MS) {
-  if (!client?.from || !uuid(command?.id)) return null;
-  try {
-    const response = await readLeadWithTimeout(client, command.id, timeoutMs);
-    if (response?.error || !response?.data) return null;
-    const expectedPatch = expectedPatchFromCommand(command);
-    return leadMatchesPatch(response.data, expectedPatch) ? response.data : null;
-  } catch (_) {
-    return null;
+async function verifyPersistedWorkflow(client, command, timeoutMs = VERIFICATION_TIMEOUT_MS, cancelled = () => false) {
+  if (!client?.from || !uuid(command?.id)) return { type: 'verification_timeout' };
+  const started = Date.now();
+  const initialDelay = Math.min(700, Math.max(20, Math.floor(timeoutMs / 4)));
+  await delay(initialDelay);
+  while (!cancelled() && Date.now() - started < timeoutMs) {
+    try {
+      const lead = await readLead(client, command.id);
+      if (leadMatchesCommand(lead, command)) return { type: 'verified', lead };
+    } catch (_) {
+      // A transient read failure is retried until the bounded verification deadline.
+    }
+    await delay(Math.min(500, Math.max(20, Math.floor(timeoutMs / 5))));
   }
+  return { type: 'verification_timeout' };
 }
 
-async function fetchJsonWithTimeout(fetchImpl, url, init, timeoutMs = REQUEST_TIMEOUT_MS) {
-  const controller = new AbortController();
-  let timer = 0;
-  const timeoutPromise = new Promise((_, reject) => {
-    timer = globalThis.setTimeout(() => {
-      controller.abort();
-      reject(abortError('request_timeout'));
-    }, timeoutMs);
-  });
-  try {
-    return await Promise.race([
-      (async () => {
-        const response = await fetchImpl(url, { ...init, signal: controller.signal });
-        const raw = await response.json();
-        return { response, data: object(raw) || {} };
-      })(),
-      timeoutPromise
-    ]);
-  } finally {
-    globalThis.clearTimeout(timer);
-  }
+async function readTransportResponse(response) {
+  const raw = await response.json();
+  return { type: 'transport', response, data: object(raw) || {} };
 }
 
 export async function invokeStagingLeadWorkflow({
@@ -256,7 +242,6 @@ export async function invokeStagingLeadWorkflow({
   if (!client?.auth?.getSession || typeof fetchImpl !== 'function') {
     return Object.freeze({ ok: false, status: 500, kind: 'persistence_failed', code: 'client_unavailable', message: leadWorkflowResultMessage('persistence_failed') });
   }
-
   const publicKey = text(publishableKey);
   if (!publicKey) {
     return Object.freeze({ ok: false, status: 500, kind: 'persistence_failed', code: 'publishable_key_missing', message: leadWorkflowResultMessage('persistence_failed') });
@@ -288,35 +273,62 @@ export async function invokeStagingLeadWorkflow({
     });
   }
 
-  let transport;
-  try {
-    transport = await fetchJsonWithTimeout(fetchImpl, `${supabaseUrl.replace(/\/+$/, '')}/functions/v1/${FUNCTION_SLUG}`, {
-      method: 'POST',
-      headers: {
-        apikey: publicKey,
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(command)
-    }, requestTimeoutMs);
-  } catch (error) {
-    const verifiedLead = await verifyPersistedWorkflow(client, command, verificationTimeoutMs);
-    if (verifiedLead) {
-      const kind = 'verified_after_transport_error';
-      return Object.freeze({
-        ok: true,
-        status: 202,
-        kind,
-        code: kind,
-        replay: false,
-        message: leadWorkflowResultMessage(kind),
-        requestId: command.request_id,
-        data: { ok: true, request_id: command.request_id, lead: verifiedLead, transport_recovered: true },
-        command
+  const controller = new AbortController();
+  let finished = false;
+  const endpoint = `${supabaseUrl.replace(/\/+$/, '')}/functions/v1/${FUNCTION_SLUG}`;
+  const transportPromise = (async () => {
+    try {
+      const response = await fetchImpl(endpoint, {
+        method: 'POST',
+        headers: {
+          apikey: publicKey,
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(command),
+        signal: controller.signal
       });
+      return await readTransportResponse(response);
+    } catch (error) {
+      return { type: 'transport_error', error };
     }
-    const timeoutFailure = text(error?.name) === 'AbortError';
+  })();
+
+  const verificationPromise = verifyPersistedWorkflow(
+    client,
+    command,
+    Math.min(verificationTimeoutMs, requestTimeoutMs),
+    () => finished
+  );
+
+  const deadlinePromise = (async () => {
+    await delay(requestTimeoutMs);
+    return { type: 'deadline' };
+  })();
+
+  const winner = await Promise.race([transportPromise, verificationPromise, deadlinePromise]);
+  finished = true;
+
+  if (winner.type === 'verified') {
+    controller.abort();
+    const kind = 'verified_after_transport_error';
+    return Object.freeze({
+      ok: true,
+      status: 202,
+      kind,
+      code: kind,
+      replay: false,
+      message: leadWorkflowResultMessage(kind),
+      requestId: command.request_id,
+      data: { ok: true, request_id: command.request_id, lead: winner.lead, transport_recovered: true },
+      command
+    });
+  }
+
+  if (winner.type === 'deadline' || winner.type === 'verification_timeout' || winner.type === 'transport_error') {
+    controller.abort();
     const kind = 'network_error';
+    const timeoutFailure = winner.type !== 'transport_error' || text(winner.error?.name) === 'AbortError';
     return Object.freeze({
       ok: false,
       status: 0,
@@ -328,7 +340,7 @@ export async function invokeStagingLeadWorkflow({
     });
   }
 
-  const { response, data } = transport;
+  const { response, data } = winner;
   if (!response.ok || data.ok !== true) {
     const details = responseErrorDetails(data, response.status);
     const kind = classifyError(details.code);
