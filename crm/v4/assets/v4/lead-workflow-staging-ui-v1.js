@@ -190,6 +190,33 @@ function refreshAfterResult(action, leadId) {
   else refreshCard(leadId);
 }
 
+function dispatchWorkflowUpdated({ lead, result, action }) {
+  document.dispatchEvent(new CustomEvent('leader-v4:lead-workflow-updated', {
+    detail: {
+      lead,
+      requestId: result.requestId,
+      replay: result.replay === true,
+      source: action.context === 'list' ? 'lead_list' : 'lead_card'
+    }
+  }));
+}
+
+function reconcileSuccessfulWorkflow({ serverLead, result, action, fallbackLead }) {
+  let merged = serverLead;
+  try {
+    merged = mergeLeadState(serverLead);
+    toast(result.message);
+    setStatus(result.message, 'good');
+  } catch (error) {
+    // The server command is already committed. A local renderer failure must not
+    // turn that authoritative success into a false persistence error for the user.
+    console.error('[leader-crm] lead workflow persisted but local reconciliation failed', error);
+    toast('Изменение заявки сохранено. Обновляю карточку.');
+    setStatus('Изменение сохранено, обновляю интерфейс', 'warn');
+  }
+  refreshAfterResult(action, merged?.id || serverLead?.id || fallbackLead?.id);
+}
+
 async function saveWorkflow(rawAction) {
   let action;
   try {
@@ -247,18 +274,15 @@ async function saveWorkflow(rawAction) {
       return;
     }
 
-    const merged = mergeLeadState(result.data?.lead);
-    document.dispatchEvent(new CustomEvent('leader-v4:lead-workflow-updated', {
-      detail: {
-        lead: merged,
-        requestId: result.requestId,
-        replay: result.replay === true,
-        source: action.context === 'list' ? 'lead_list' : 'lead_card'
-      }
-    }));
-    toast(result.message);
-    setStatus(result.message, 'good');
-    refreshAfterResult(action, merged?.id || lead.id);
+    const serverLead = result.data?.lead && typeof result.data.lead === 'object'
+      ? result.data.lead
+      : lead;
+
+    // This event means the protected server command has succeeded. Dispatch it
+    // before any secondary local rendering so authoritative persistence cannot
+    // be hidden by an unrelated UI exception.
+    dispatchWorkflowUpdated({ lead: serverLead, result, action });
+    reconcileSuccessfulWorkflow({ serverLead, result, action, fallbackLead: lead });
   } catch (_) {
     toast('Не удалось сохранить рабочий маршрут заявки.');
     setStatus('Ошибка защищённого сохранения заявки', 'error');
