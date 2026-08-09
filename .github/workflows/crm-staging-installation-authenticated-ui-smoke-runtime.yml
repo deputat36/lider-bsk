@@ -215,7 +215,10 @@ jobs:
           rm -f "${OIDC_FILE}"
           HTTP_CODE="$(curl -sS -o "${PREPARE_FILE}" -w '%{http_code}' -X POST "${BOOTSTRAP_URL}" -H "Authorization: Bearer ${OIDC_TOKEN}" -H 'Content-Type: application/json' --data '{"action":"prepare"}')"
           unset OIDC_TOKEN
-          test "${HTTP_CODE}" = '201'
+          if [ "${HTTP_CODE}" != '201' ]; then
+            jq -r '{ok,error}' "${PREPARE_FILE}" >&2 || true
+            exit 1
+          fi
           jq -e '.ok == true and .action == "prepare" and (.run_key | test("^[0-9]+:[0-9]+$")) and (.marker | test("^SYNTH-CRM-E2E-[A-Za-z0-9-]+$")) and (.lead_id | test("^[0-9a-f-]{36}$")) and .role == "manager"' "${PREPARE_FILE}" >/dev/null
           TEST_EMAIL="$(jq -er '.email' "${PREPARE_FILE}")"
           TEST_PASSWORD="$(jq -er '.password' "${PREPARE_FILE}")"
