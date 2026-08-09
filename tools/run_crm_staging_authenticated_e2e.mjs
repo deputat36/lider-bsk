@@ -212,9 +212,39 @@ async function findChrome() {
 function runChrome(binary, args) {
   return new Promise((resolve, reject) => {
     const child = spawn(binary, args, { stdio: ['ignore', 'pipe', 'pipe'] }); let stdout = ''; let stderr = '';
-    const timer = setTimeout(() => { child.kill('SIGTERM'); setTimeout(() => child.kill('SIGKILL'), 5000).unref(); }, 300000);
+    let settled = false; let connecting = false; let socket;
+    const stop = () => { child.kill('SIGTERM'); setTimeout(() => child.kill('SIGKILL'), 5000).unref(); };
+    const finish = (value, error) => { if (settled) return; settled = true; clearTimeout(timer); try { socket?.close(); } catch (_) { /* noop */ } stop(); if (error) reject(error); else resolve(value); };
+    const connect = async (browserWebSocketUrl) => {
+      const parsed = new URL(browserWebSocketUrl); const listUrl = `http://${parsed.host}/json/list`;
+      let pageTarget;
+      for (let attempt = 0; attempt < 60 && !pageTarget; attempt += 1) {
+        const targets = await fetch(listUrl).then((response) => response.json()).catch(() => []);
+        pageTarget = targets.find((target) => target.type === 'page' && target.webSocketDebuggerUrl);
+        if (!pageTarget) await new Promise((done) => setTimeout(done, 100));
+      }
+      if (!pageTarget) throw new Error('chrome_page_target_missing');
+      socket = new WebSocket(pageTarget.webSocketDebuggerUrl);
+      await new Promise((opened, failed) => { socket.addEventListener('open', opened, { once: true }); socket.addEventListener('error', () => failed(new Error('chrome_devtools_socket_failed')), { once: true }); });
+      let sequence = 0; const pending = new Map();
+      socket.addEventListener('message', (event) => { const message = JSON.parse(String(event.data)); const callback = pending.get(message.id); if (!callback) return; pending.delete(message.id); if (message.error) callback.reject(new Error(`chrome_cdp_error:${message.error.message}`)); else callback.resolve(message.result); });
+      const command = (method, params = {}) => new Promise((resolveCommand, rejectCommand) => { const id = ++sequence; pending.set(id, { resolve: resolveCommand, reject: rejectCommand }); socket.send(JSON.stringify({ id, method, params })); });
+      await command('Runtime.enable');
+      const deadline = Date.now() + 360000;
+      while (Date.now() < deadline) {
+        const state = await command('Runtime.evaluate', { expression: `document.body?.dataset?.crmAuthenticatedE2eFinished==='true'`, returnByValue: true });
+        if (state?.result?.value === true) {
+          const dom = await command('Runtime.evaluate', { expression: 'document.documentElement.outerHTML', returnByValue: true });
+          finish({ code: 0, stdout: String(dom?.result?.value || ''), stderr }); return;
+        }
+        await new Promise((done) => setTimeout(done, 200));
+      }
+      throw new Error('chrome_browser_scenario_timeout');
+    };
+    const timer = setTimeout(() => finish(null, new Error('chrome_devtools_start_timeout')), 20000);
     child.stdout.on('data', (chunk) => { stdout += chunk; }); child.stderr.on('data', (chunk) => { stderr += chunk; });
-    child.once('error', (error) => { clearTimeout(timer); reject(error); }); child.once('close', (code) => { clearTimeout(timer); resolve({ code, stdout, stderr }); });
+    child.stderr.on('data', (chunk) => { const match = String(chunk).match(/DevTools listening on (ws:\/\/[^\s]+)/); if (match && !connecting) { connecting = true; connect(match[1]).catch((error) => finish(null, error)); } });
+    child.once('error', (error) => finish(null, error)); child.once('close', (code) => { if (!settled) finish({ code, stdout, stderr }); });
   });
 }
 function decodeHtml(value) { return value.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&'); }
@@ -236,7 +266,7 @@ async function run(env = process.env, roleUi = '') {
     const indexPath = path.join(tempV4, 'index.html'); const html = await readFile(indexPath, 'utf8');
     await writeFile(indexPath, html.replace('</body>', '<script src="./assets/vendor/supabase-v2.112.2.js"></script><pre id="crmAuthenticatedE2eResult" data-status="running" hidden>running</pre><script type="module" src="./crm-authenticated-e2e-page.mjs"></script></body>'), { mode: 0o600 });
     const local = await localServer(tempV4); server = local.server;
-    const chromeResult = await runChrome(chrome, ['--headless', '--disable-gpu', '--no-sandbox', '--hide-scrollbars', '--disable-sync', '--no-first-run', '--disable-background-networking', '--virtual-time-budget=220000', '--dump-dom', local.url]);
+    const chromeResult = await runChrome(chrome, ['--headless', '--disable-gpu', '--no-sandbox', '--hide-scrollbars', '--disable-sync', '--no-first-run', '--disable-background-networking', '--remote-debugging-port=0', `--user-data-dir=${path.join(tempRoot, 'chrome-profile')}`, local.url]);
     if (chromeResult.code !== 0) throw new Error(`headless_chrome_failed:${chromeResult.code}`);
     const evidence = evidenceFromDom(chromeResult.stdout); const target = path.resolve(config.evidencePath); await mkdir(path.dirname(target), { recursive: true }); await writeFile(target, `${JSON.stringify(evidence, null, 2)}\n`, { mode: 0o600 }); return { evidence, target };
   } finally { if (server) await new Promise((resolve) => server.close(resolve)); await rm(tempRoot, { recursive: true, force: true }); }
