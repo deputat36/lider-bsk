@@ -125,7 +125,7 @@ const recovered = await invokeStagingLeadWorkflow({
   patch: { assigned_to: actorId, status: 'В работе' },
   idempotencyKey: `lead-workflow:${leadId}:${randomId}`,
   cryptoObject: { randomUUID: () => requestId },
-  requestTimeoutMs: 10,
+  requestTimeoutMs: 200,
   verificationTimeoutMs: 100,
   fetchImpl: async () => ({ status: 201, ok: true, json: async () => new Promise(() => {}) })
 });
@@ -149,7 +149,7 @@ const unresolvedTimeout = await invokeStagingLeadWorkflow({
   patch: { assigned_to: actorId, status: 'В работе' },
   idempotencyKey: `lead-workflow:${leadId}:${randomId}`,
   cryptoObject: { randomUUID: () => requestId },
-  requestTimeoutMs: 10,
+  requestTimeoutMs: 200,
   verificationTimeoutMs: 100,
   fetchImpl: async () => ({ status: 201, ok: true, json: async () => new Promise(() => {}) })
 });
