@@ -218,7 +218,7 @@ function runChrome(binary, args) {
     const connect = async (browserWebSocketUrl) => {
       const parsed = new URL(browserWebSocketUrl); const listUrl = `http://${parsed.host}/json/list`;
       let pageTarget;
-      for (let attempt = 0; attempt < 60 && !pageTarget; attempt += 1) {
+      for (let attempt = 0; attempt < 300 && !pageTarget; attempt += 1) {
         const targets = await fetch(listUrl).then((response) => response.json()).catch(() => []);
         pageTarget = targets.find((target) => target.type === 'page' && target.webSocketDebuggerUrl);
         if (!pageTarget) await new Promise((done) => setTimeout(done, 100));
@@ -241,7 +241,7 @@ function runChrome(binary, args) {
       }
       throw new Error('chrome_browser_scenario_timeout');
     };
-    const timer = setTimeout(() => finish(null, new Error('chrome_devtools_start_timeout')), 20000);
+    const timer = setTimeout(() => finish(null, new Error('chrome_devtools_start_timeout')), 35000);
     child.stdout.on('data', (chunk) => { stdout += chunk; }); child.stderr.on('data', (chunk) => { stderr += chunk; });
     child.stderr.on('data', () => { const match = stderr.match(/DevTools listening on (ws:\/\/[^\s]+)/); if (match && !connecting) { connecting = true; connect(match[1]).catch((error) => finish(null, error)); } });
     child.once('error', (error) => finish(null, error)); child.once('close', (code) => { if (!settled) finish({ code, stdout, stderr }); });
