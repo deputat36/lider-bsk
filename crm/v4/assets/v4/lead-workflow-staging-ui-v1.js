@@ -15,6 +15,20 @@ let busy = false;
 
 function text(value) { return String(value ?? '').trim(); }
 
+function e2eDiagnosticProbe(stage) {
+  if (route.mode !== 'staging_edge' || !['127.0.0.1', 'localhost'].includes(window.location.hostname)) return;
+  const safeStage = text(stage).toLowerCase().replace(/[^a-z0-9_-]/g, '_').slice(0, 64);
+  if (!safeStage) return;
+  const base = text(V4_CONFIG.supabaseUrl).replace(/\/+$/, '');
+  const key = text(V4_CONFIG.supabasePublishableKey);
+  if (!base || !key) return;
+  fetch(`${base}/rest/v1/rpc/crm_e2e_diag_${safeStage}`, {
+    method: 'POST',
+    headers: { apikey: key, 'Content-Type': 'application/json' },
+    body: '{}'
+  }).catch(() => undefined);
+}
+
 function nextContactDate(kind) {
   const date = new Date();
   if (kind === 'today17') date.setHours(17, 0, 0, 0);
@@ -255,6 +269,7 @@ async function saveWorkflow(rawAction) {
   busy = true;
   if (action.button) action.button.disabled = true;
   setStatus(action.label || 'Сохраняю рабочий маршрут...', 'warn');
+  e2eDiagnosticProbe('invoke_start');
 
   try {
     const result = await invokeStagingLeadWorkflow({
@@ -265,6 +280,7 @@ async function saveWorkflow(rawAction) {
       patch: action.patch,
       idempotencyKey
     });
+    e2eDiagnosticProbe(`invoke_returned_${result.kind || 'unknown'}`);
 
     if (!result.ok) {
       toast(result.message);
@@ -280,6 +296,7 @@ async function saveWorkflow(rawAction) {
     dispatchWorkflowUpdated({ lead: serverLead, result, action });
     reconcileSuccessfulWorkflow({ serverLead, result, action, fallbackLead: lead });
   } catch (_) {
+    e2eDiagnosticProbe('invoke_exception');
     toast('Не удалось сохранить рабочий маршрут заявки.');
     setStatus('Ошибка защищённого сохранения заявки', 'error');
     refreshAfterResult(action, lead.id);
@@ -293,9 +310,11 @@ function interceptStagingWorkflow(event) {
   if (route.mode !== 'staging_edge') return;
   const action = actionFromClick(event.target);
   if (!action) return;
+  e2eDiagnosticProbe('click_intercepted');
   event.preventDefault();
   event.stopImmediatePropagation();
   saveWorkflow(action);
 }
 
 document.addEventListener('click', interceptStagingWorkflow, true);
+e2eDiagnosticProbe('handler_ready');
