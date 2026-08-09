@@ -220,7 +220,9 @@ function runChrome(binary, args) {
       let pageTarget;
       for (let attempt = 0; attempt < 300 && !pageTarget; attempt += 1) {
         const targets = await fetch(listUrl).then((response) => response.json()).catch(() => []);
-        pageTarget = targets.find((target) => target.type === 'page' && target.webSocketDebuggerUrl);
+        pageTarget = targets.find((target) => target.type === 'page'
+          && /^http:\/\/127\.0\.0\.1:\d+\/index\.html\?tab=leads/.test(String(target.url || ''))
+          && target.webSocketDebuggerUrl);
         if (!pageTarget) await new Promise((done) => setTimeout(done, 100));
       }
       if (!pageTarget) throw new Error('chrome_page_target_missing');
