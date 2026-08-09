@@ -1,7 +1,7 @@
 {
   "contract": "crm-installation-production-frontend-candidate",
   "version": 1,
-  "captured_at": "2026-08-05",
+  "captured_at": "2026-08-09",
   "repository": "deputat36/lider-bsk",
   "issue": 423,
   "status": "source_only_not_switched",
@@ -27,7 +27,7 @@
     "crm/v4/assets/v4/installation-job-staging-transport-v1.js": "a4f265fe53c438095ebcbc7b58d22e90e551c057",
     "crm/v4/assets/v4/installation-job-staging-read-transport-v1.js": "b5ebf2a0b05404b639b63b7f8aae27c3574464ce",
     "crm/v4/assets/v4/installation-job-card-v2.js": "1c360e08ce954d7879bc075bc203d3fd406db0ae",
-    "crm/v4/assets/v4/crm-v4-tab-loader-v1.js": "d74d1a4ef67cabcaf2201f95432d2e27ff9e41dc",
+    "crm/v4/assets/v4/crm-v4-tab-loader-v1.js": "eca844104d1990fd18aa51789f66f070a4bb2846",
     "crm/v4/index.html": "dc4a800d1426c4056b5f9696e4e20938eca3eabd"
   },
   "generated_outputs": [

@@ -53,7 +53,7 @@ Generator останавливается при изменении любого 
 - staging write transport — `a4f265fe53c438095ebcbc7b58d22e90e551c057`;
 - staging read transport — `b5ebf2a0b05404b639b63b7f8aae27c3574464ce`;
 - card v2 — `1c360e08ce954d7879bc075bc203d3fd406db0ae`;
-- lazy tab loader — `d74d1a4ef67cabcaf2201f95432d2e27ff9e41dc`;
+- lazy tab loader — `eca844104d1990fd18aa51789f66f070a4bb2846`;
 - current index — `dc4a800d1426c4056b5f9696e4e20938eca3eabd`.
 
 При source drift пакет нужно пересобрать после отдельного review, а не обновлять SHA автоматически.
