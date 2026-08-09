@@ -182,7 +182,162 @@ jobs:
 
   authenticated-e2e:
     if: github.ref == 'refs/heads/agent/487-authenticated-staging-e2e'
-    permissions:
-      contents: read
-      id-token: write
-    uses: ./.github/workflows/crm-staging-authenticated-e2e.yml
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      STAGING_SUPABASE_URL: https://otulfnouybahfnsycxqn.supabase.co
+      STAGING_SUPABASE_PUBLISHABLE_KEY: sb_publishable_iRCLPHgRaI5SNo9h4efMQw_W7Kdby1D
+      BOOTSTRAP_URL: https://otulfnouybahfnsycxqn.supabase.co/functions/v1/leader-staging-authenticated-e2e-bootstrap
+      OIDC_AUDIENCE: leader-staging-authenticated-e2e
+      STAGING_CRM_E2E_CONFIRM: YES_CREATE_AND_DELETE_SYNTHETIC_STAGING_DATA
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate authenticated E2E source
+        run: |
+          set -euo pipefail
+          node --check tools/run_crm_staging_authenticated_e2e.mjs
+          node --check tools/run_crm_staging_role_permission_e2e.mjs
+          node --check crm/v4/assets/v4/installation-job-staging-create-v1.js
+          node tools/run_crm_staging_authenticated_e2e.mjs --mode=plan > "${RUNNER_TEMP}/crm-e2e-plan.json"
+          jq -e '.project_ref == "otulfnouybahfnsycxqn" and .production_enabled == false and .first_login_via_form == true and .external_cleanup_required == true' "${RUNNER_TEMP}/crm-e2e-plan.json" >/dev/null
+
+      - name: Prepare one temporary Auth user and synthetic lead
+        id: prepare
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          OIDC_FILE="${RUNNER_TEMP}/crm-e2e-oidc.json"
+          PREPARE_FILE="${RUNNER_TEMP}/crm-e2e-prepare.json"
+          curl -fsS -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${OIDC_AUDIENCE}" > "${OIDC_FILE}"
+          OIDC_TOKEN="$(jq -er '.value' "${OIDC_FILE}")"
+          rm -f "${OIDC_FILE}"
+          HTTP_CODE="$(curl -sS -o "${PREPARE_FILE}" -w '%{http_code}' -X POST "${BOOTSTRAP_URL}" -H "Authorization: Bearer ${OIDC_TOKEN}" -H 'Content-Type: application/json' --data '{"action":"prepare"}')"
+          unset OIDC_TOKEN
+          test "${HTTP_CODE}" = '201'
+          jq -e '.ok == true and .action == "prepare" and (.run_key | test("^[0-9]+:[0-9]+$")) and (.marker | test("^SYNTH-CRM-E2E-[A-Za-z0-9-]+$")) and (.lead_id | test("^[0-9a-f-]{36}$")) and .role == "manager"' "${PREPARE_FILE}" >/dev/null
+          TEST_EMAIL="$(jq -er '.email' "${PREPARE_FILE}")"
+          TEST_PASSWORD="$(jq -er '.password' "${PREPARE_FILE}")"
+          TEST_MARKER="$(jq -er '.marker' "${PREPARE_FILE}")"
+          TEST_LEAD_ID="$(jq -er '.lead_id' "${PREPARE_FILE}")"
+          TEST_RUN_KEY="$(jq -er '.run_key' "${PREPARE_FILE}")"
+          echo "::add-mask::${TEST_EMAIL}"
+          echo "::add-mask::${TEST_PASSWORD}"
+          echo "::add-mask::${TEST_MARKER}"
+          echo "::add-mask::${TEST_LEAD_ID}"
+          {
+            echo "STAGING_CRM_E2E_EMAIL=${TEST_EMAIL}"
+            echo "STAGING_CRM_E2E_PASSWORD=${TEST_PASSWORD}"
+            echo "STAGING_CRM_E2E_MARKER=${TEST_MARKER}"
+            echo "STAGING_CRM_E2E_LEAD_ID=${TEST_LEAD_ID}"
+            echo "STAGING_CRM_E2E_RUN_KEY=${TEST_RUN_KEY}"
+            echo "STAGING_CRM_E2E_EVIDENCE_PATH=${RUNNER_TEMP}/crm-authenticated-e2e/browser.json"
+          } >> "${GITHUB_ENV}"
+
+      - name: Run complete manager path in headless Chrome
+        id: browser
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/crm-authenticated-e2e"
+          node tools/run_crm_staging_authenticated_e2e.mjs --mode=run > "${RUNNER_TEMP}/crm-authenticated-e2e/browser.log" 2>&1
+          jq -e '.status == "passed" and .authenticated == true and .role == "manager" and .browser_actions == true and .refresh == true and .back_forward == true and .direct_orders == true and .review_guard == true and .production_replay == true and .stale_guard == true and .installation_replay == true and .projection_sync == true and .counts == {"needs":1,"calculations":2,"offers":1,"orders":1,"design_tasks":1,"production_jobs":1,"installation_jobs":1}' "${STAGING_CRM_E2E_EVIDENCE_PATH}" >/dev/null
+
+      - name: Verify manager direct API RBAC
+        id: manager_rbac
+        if: steps.browser.outcome == 'success'
+        env:
+          STAGING_CRM_E2E_EXPECTED_ROLE: manager
+        run: |
+          set -euo pipefail
+          node tools/run_crm_staging_role_permission_e2e.mjs > "${RUNNER_TEMP}/crm-authenticated-e2e/manager-rbac.json"
+          jq -e '.ok == true and .role == "manager" and .allowed_action_reached_server_contract == true and .forbidden_direct_api == "self_role_escalation_rejected" and .production_enabled == false' "${RUNNER_TEMP}/crm-authenticated-e2e/manager-rbac.json" >/dev/null
+
+      - name: Switch the same synthetic user to owner
+        id: owner_role
+        if: steps.manager_rbac.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          OIDC_FILE="${RUNNER_TEMP}/crm-e2e-owner-oidc.json"
+          RESPONSE_FILE="${RUNNER_TEMP}/crm-authenticated-e2e/owner-role.json"
+          curl -fsS -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${OIDC_AUDIENCE}" > "${OIDC_FILE}"
+          OIDC_TOKEN="$(jq -er '.value' "${OIDC_FILE}")"
+          rm -f "${OIDC_FILE}"
+          HTTP_CODE="$(curl -sS -o "${RESPONSE_FILE}" -w '%{http_code}' -X POST "${BOOTSTRAP_URL}" -H "Authorization: Bearer ${OIDC_TOKEN}" -H 'Content-Type: application/json' --data "{\"action\":\"set_role\",\"run_key\":\"${STAGING_CRM_E2E_RUN_KEY}\",\"marker\":\"${STAGING_CRM_E2E_MARKER}\",\"role\":\"owner\"}")"
+          unset OIDC_TOKEN
+          test "${HTTP_CODE}" = '200'
+          jq -e '.ok == true and .role == "owner"' "${RESPONSE_FILE}" >/dev/null
+
+      - name: Verify owner allowed API and UI controls
+        id: owner_checks
+        if: steps.owner_role.outcome == 'success'
+        env:
+          STAGING_CRM_E2E_EXPECTED_ROLE: owner
+          STAGING_CRM_E2E_EVIDENCE_PATH: ${{ runner.temp }}/crm-authenticated-e2e/owner-ui.json
+        run: |
+          set -euo pipefail
+          node tools/run_crm_staging_role_permission_e2e.mjs > "${RUNNER_TEMP}/crm-authenticated-e2e/owner-rbac.json"
+          jq -e '.ok == true and .role == "owner" and .allowed_action_reached_server_contract == true and .forbidden_direct_api == "not_applicable_full_access"' "${RUNNER_TEMP}/crm-authenticated-e2e/owner-rbac.json" >/dev/null
+          node tools/run_crm_staging_authenticated_e2e.mjs --mode=role-ui > "${RUNNER_TEMP}/crm-authenticated-e2e/owner-ui.log" 2>&1
+          jq -e '.status == "passed" and .role == "owner" and .ui_allowed_controls == true and .ui_forbidden_controls == "not_applicable_full_access"' "${RUNNER_TEMP}/crm-authenticated-e2e/owner-ui.json" >/dev/null
+
+      - name: Inspect synthetic fixture before cleanup
+        id: inspect
+        if: steps.owner_checks.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          OIDC_FILE="${RUNNER_TEMP}/crm-e2e-inspect-oidc.json"
+          RESPONSE_FILE="${RUNNER_TEMP}/crm-authenticated-e2e/inspect.json"
+          curl -fsS -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${OIDC_AUDIENCE}" > "${OIDC_FILE}"
+          OIDC_TOKEN="$(jq -er '.value' "${OIDC_FILE}")"
+          rm -f "${OIDC_FILE}"
+          HTTP_CODE="$(curl -sS -o "${RESPONSE_FILE}" -w '%{http_code}' -X POST "${BOOTSTRAP_URL}" -H "Authorization: Bearer ${OIDC_TOKEN}" -H 'Content-Type: application/json' --data "{\"action\":\"inspect\",\"run_key\":\"${STAGING_CRM_E2E_RUN_KEY}\",\"marker\":\"${STAGING_CRM_E2E_MARKER}\"}")"
+          unset OIDC_TOKEN
+          test "${HTTP_CODE}" = '200'
+          jq -e '.ok == true and .counts.needs == 1 and .counts.calculations == 2 and .counts.offers == 1 and .counts.orders == 1 and .counts.design_tasks == 1 and .counts.production_jobs == 1 and .counts.installation_jobs == 1' "${RESPONSE_FILE}" >/dev/null
+
+      - name: Cleanup all synthetic rows and Auth user
+        id: cleanup
+        if: always() && steps.prepare.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "${RUNNER_TEMP}/crm-authenticated-e2e"
+          OIDC_FILE="${RUNNER_TEMP}/crm-e2e-cleanup-oidc.json"
+          CLEANUP_FILE="${RUNNER_TEMP}/crm-authenticated-e2e/cleanup.json"
+          curl -fsS -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${OIDC_AUDIENCE}" > "${OIDC_FILE}"
+          OIDC_TOKEN="$(jq -er '.value' "${OIDC_FILE}")"
+          rm -f "${OIDC_FILE}"
+          HTTP_CODE="$(curl -sS -o "${CLEANUP_FILE}" -w '%{http_code}' -X POST "${BOOTSTRAP_URL}" -H "Authorization: Bearer ${OIDC_TOKEN}" -H 'Content-Type: application/json' --data "{\"action\":\"cleanup\",\"run_key\":\"${STAGING_CRM_E2E_RUN_KEY}\",\"marker\":\"${STAGING_CRM_E2E_MARKER}\"}")"
+          unset OIDC_TOKEN
+          rm -f "${RUNNER_TEMP}/crm-e2e-prepare.json"
+          test "${HTTP_CODE}" = '200'
+          jq -e '.ok == true and .action == "cleanup" and .auth_user_deleted == true and ([.residue[] | tonumber] | all(. == 0))' "${CLEANUP_FILE}" >/dev/null
+
+      - name: Upload privacy-safe evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crm-staging-authenticated-e2e
+          path: |
+            ${{ runner.temp }}/crm-authenticated-e2e/*.json
+            ${{ runner.temp }}/crm-authenticated-e2e/*.log
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Enforce E2E and cleanup success
+        if: always()
+        run: |
+          set -euo pipefail
+          test '${{ steps.prepare.outcome }}' = 'success'
+          test '${{ steps.browser.outcome }}' = 'success'
+          test '${{ steps.manager_rbac.outcome }}' = 'success'
+          test '${{ steps.owner_role.outcome }}' = 'success'
+          test '${{ steps.owner_checks.outcome }}' = 'success'
+          test '${{ steps.inspect.outcome }}' = 'success'
+          test '${{ steps.cleanup.outcome }}' = 'success'
