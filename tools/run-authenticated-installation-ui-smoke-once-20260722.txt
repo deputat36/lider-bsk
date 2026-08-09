@@ -11,4 +11,4 @@ Authenticated CRM E2E continuation trigger.
 Issue: #487
 Expected branch: agent/487-authenticated-staging-e2e
 Production enabled: false
-Reason: verify deterministic staging lead-workflow bootstrap after race fix ee018e247a56fe99f3322cab0f3f41b70634159c
+Reason: capture privacy-safe runtime stage after deterministic staging lead-workflow bootstrap fix; diagnostic relay 625b9e4b06466cb6768d312d2dbf67cb3cf57b25
