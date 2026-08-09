@@ -62,9 +62,11 @@ return {data:[],items:[],rows:[],orders:[],jobs:[],events:[],profiles:[],invites
 function instrumentationSource() {
   return `<script>
 window.__CRM_BROWSER_ERRORS__=[];
+window.__CRM_BROWSER_WARNINGS__=[];
 window.addEventListener('error',event=>window.__CRM_BROWSER_ERRORS__.push({type:'error',message:String(event.message||'error')}));
 window.addEventListener('unhandledrejection',event=>window.__CRM_BROWSER_ERRORS__.push({type:'unhandledrejection',message:String(event.reason?.message||event.reason||'rejection')}));
 const originalError=console.error.bind(console);console.error=(...args)=>{window.__CRM_BROWSER_ERRORS__.push({type:'console.error',message:args.map(String).join(' ').slice(0,240)});originalError(...args);};
+const originalWarn=console.warn.bind(console);console.warn=(...args)=>{window.__CRM_BROWSER_WARNINGS__.push({type:'console.warn',message:args.map(value=>value?.message||String(value)).join(' ').slice(0,500)});originalWarn(...args);};
 </script>`;
 }
 
@@ -109,7 +111,7 @@ await openTab('orders');await openTab('finance_control');history.back();await wa
 const layout=layoutEvidence();assert(!layout.horizontal_overflow,'horizontal_overflow');assert(!layout.button_overlap,'navigation_button_overlap');assert(document.body.innerText.trim().length>200,'blank_workspace');
 await sleep(200);assert(window.__CRM_BROWSER_ERRORS__.length===0,'browser_errors:'+JSON.stringify(window.__CRM_BROWSER_ERRORS__));
 finish('passed',{eager_entrypoints:eagerEntrypoints,initial_heavy_modules:initialHeavy,first,repeated,rapid,history:historyResult,layout,installation_imports:1,mock_mutations:0,console_errors:0});
-}catch(error){finish('failed',{error:String(error?.message||error||'lazy_browser_failed'),tab:document.body.dataset.v4Tab,layout:layoutEvidence(),browser_errors:window.__CRM_BROWSER_ERRORS__,mock_mutations:window.__CRM_BROWSER_MOCK__?.mutations||[]});}}
+}catch(error){const feedback=document.getElementById('v4TabLoadFeedback');finish('failed',{error:String(error?.message||error||'lazy_browser_failed'),tab:document.body.dataset.v4Tab,layout:layoutEvidence(),browser_errors:window.__CRM_BROWSER_ERRORS__,browser_warnings:window.__CRM_BROWSER_WARNINGS__,loader:{state:feedback?.dataset?.v4LoaderState||'',tab:feedback?.dataset?.v4LoaderTab||'',hidden:Boolean(feedback?.hidden),text:String(feedback?.innerText||'').slice(0,300)},managed_sections:[...document.querySelectorAll('[data-v4-managed-section]')].map(section=>({tab:section.dataset.v4ManagedSection,hidden:section.hidden})),production_resources:jsResources().filter(url=>url.includes('production')||url.includes('installation')).map(url=>url.split('/').pop()),mock_mutations:window.__CRM_BROWSER_MOCK__?.mutations||[]});}}
 run();
 `;
 }
@@ -181,8 +183,12 @@ function evidenceFromDump(html) {
       error: evidence.error || 'unknown',
       tab: evidence.tab || '',
       browser_errors: evidence.browser_errors || [],
+      browser_warnings: evidence.browser_warnings || [],
+      loader: evidence.loader || {},
+      managed_sections: evidence.managed_sections || [],
+      production_resources: evidence.production_resources || [],
       mock_mutations: evidence.mock_mutations || []
-    }).slice(0, 1400);
+    }).slice(0, 2200);
     throw new Error(`lazy_browser_failed:${evidence.viewport}:${detail}`);
   }
   return evidence;
