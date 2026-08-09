@@ -3,6 +3,7 @@ const STAGING_HOSTNAME = `${STAGING_PROJECT_REF}.supabase.co`;
 const FUNCTION_SLUG = 'leader-crm-leads-staging';
 const EDGE_ACTION = 'update';
 const PERMISSION = 'leads.update';
+const REQUEST_TIMEOUT_MS = 20000;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const WORKFLOW_FIELDS = Object.freeze(['status', 'next_contact_at', 'assigned_to']);
 const LEAD_STATUSES = new Set([
@@ -118,7 +119,7 @@ function secureRequestId(cryptoObject = globalThis.crypto) {
 function classifyError(code) {
   const key = text(code).toLowerCase() || 'workflow_update_failed';
   if (key === 'wrong_environment') return 'wrong_environment';
-  if (key === 'missing_or_invalid_jwt' || key === 'auth_required') return 'auth_required';
+  if (key === 'missing_or_invalid_jwt' || key === 'auth_required' || key === 'missing_token' || key === 'bad_token') return 'auth_required';
   if (key === 'forbidden') return 'forbidden';
   if (key === 'not_found') return 'not_found';
   if (key === 'conflict') return 'conflict';
@@ -128,7 +129,7 @@ function classifyError(code) {
   if (key === 'no_effect') return 'no_effect';
   if (key === 'workflow_fields_must_be_separate') return 'validation_error';
   if (key === 'validation_error' || key === 'unknown_action') return 'validation_error';
-  if (key === 'network_error') return 'network_error';
+  if (key === 'network_error' || key === 'request_timeout') return 'network_error';
   return 'persistence_failed';
 }
 
@@ -151,36 +152,61 @@ export function leadWorkflowResultMessage(kind, replay = false) {
   })[kind] || 'Staging вернул неизвестный результат.';
 }
 
-async function edgeErrorDetails(error) {
-  const context = error?.context;
-  let body = null;
-  if (context && typeof context.clone === 'function' && typeof context.json === 'function') {
-    try { body = await context.clone().json(); } catch (_) { body = null; }
-  } else if (object(error?.data)) {
-    body = error.data;
-  }
-  const root = object(body);
-  const nested = object(root?.error);
+function responseErrorDetails(body, status) {
+  const root = object(body) || {};
+  const nested = object(root.error);
   return {
-    status: Number(context?.status || error?.status || 0) || 0,
-    code: text(nested?.code || root?.error || error?.code || 'workflow_update_failed')
+    status: Number(status || 0) || 0,
+    code: text(nested?.code || root.error || 'workflow_update_failed')
   };
 }
 
+async function parseJsonResponse(response) {
+  try {
+    const value = await response.json();
+    return object(value) || {};
+  } catch (_) {
+    return {};
+  }
+}
+
+async function fetchWithTimeout(fetchImpl, url, init, timeoutMs = REQUEST_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timer = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetchImpl(url, { ...init, signal: controller.signal });
+  } finally {
+    globalThis.clearTimeout(timer);
+  }
+}
+
 export async function invokeStagingLeadWorkflow({
-  client, supabaseUrl = '', lead = null, patch = null, idempotencyKey = '', cryptoObject = globalThis.crypto
+  client,
+  supabaseUrl = '',
+  publishableKey = '',
+  lead = null,
+  patch = null,
+  idempotencyKey = '',
+  cryptoObject = globalThis.crypto,
+  fetchImpl = globalThis.fetch
 } = {}) {
   if (!isStagingLeadWorkflowEnvironment(supabaseUrl)) {
     return Object.freeze({ ok: false, status: 503, kind: 'wrong_environment', code: 'wrong_environment', message: leadWorkflowResultMessage('wrong_environment') });
   }
-  if (!client?.auth?.getSession || !client?.functions?.invoke) {
+  if (!client?.auth?.getSession || typeof fetchImpl !== 'function') {
     return Object.freeze({ ok: false, status: 500, kind: 'persistence_failed', code: 'client_unavailable', message: leadWorkflowResultMessage('persistence_failed') });
+  }
+
+  const publicKey = text(publishableKey);
+  if (!publicKey) {
+    return Object.freeze({ ok: false, status: 500, kind: 'persistence_failed', code: 'publishable_key_missing', message: leadWorkflowResultMessage('persistence_failed') });
   }
 
   let sessionResult;
   try { sessionResult = await client.auth.getSession(); }
   catch (_) { return Object.freeze({ ok: false, status: 0, kind: 'network_error', code: 'network_error', message: leadWorkflowResultMessage('network_error') }); }
-  if (sessionResult?.error || !sessionResult?.data?.session?.access_token) {
+  const accessToken = text(sessionResult?.data?.session?.access_token);
+  if (sessionResult?.error || !accessToken) {
     return Object.freeze({ ok: false, status: 401, kind: 'auth_required', code: 'auth_required', message: leadWorkflowResultMessage('auth_required') });
   }
 
@@ -202,17 +228,34 @@ export async function invokeStagingLeadWorkflow({
     });
   }
 
-  let invoked;
-  try { invoked = await client.functions.invoke(FUNCTION_SLUG, { body: command }); }
-  catch (_) {
-    return Object.freeze({ ok: false, status: 0, kind: 'network_error', code: 'network_error', message: leadWorkflowResultMessage('network_error'), command });
+  let response;
+  try {
+    response = await fetchWithTimeout(fetchImpl, `${supabaseUrl.replace(/\/+$/, '')}/functions/v1/${FUNCTION_SLUG}`, {
+      method: 'POST',
+      headers: {
+        apikey: publicKey,
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(command)
+    });
+  } catch (error) {
+    const timeoutFailure = text(error?.name) === 'AbortError';
+    const kind = 'network_error';
+    return Object.freeze({
+      ok: false,
+      status: 0,
+      kind,
+      code: timeoutFailure ? 'request_timeout' : 'network_error',
+      message: leadWorkflowResultMessage(kind),
+      requestId: command.request_id,
+      command
+    });
   }
 
-  if (invoked?.error || invoked?.data?.ok !== true) {
-    const details = invoked?.error ? await edgeErrorDetails(invoked.error) : {
-      status: 0,
-      code: text(invoked?.data?.error?.code || invoked?.data?.error)
-    };
+  const data = await parseJsonResponse(response);
+  if (!response.ok || data.ok !== true) {
+    const details = responseErrorDetails(data, response.status);
     const kind = classifyError(details.code);
     return Object.freeze({
       ok: false,
@@ -225,11 +268,10 @@ export async function invokeStagingLeadWorkflow({
     });
   }
 
-  const data = object(invoked.data) || {};
   const replay = data.idempotent_replay === true;
   return Object.freeze({
     ok: true,
-    status: replay ? 200 : 201,
+    status: Number(response.status || 0) || (replay ? 200 : 201),
     kind: replay ? 'replay' : 'updated',
     code: replay ? 'idempotent_replay' : 'updated',
     replay,
