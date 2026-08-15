@@ -56,7 +56,7 @@ export function operatorPlan() {
     actual_crm_index: true,
     first_login_via_form: true,
     browser_mode: 'xvfb_headed_chrome',
-    browser_transport_bridge: 'same_origin_beacon_to_exact_staging_rpc_and_direct_rls_readback',
+    browser_transport_bridge: 'same_origin_form_to_exact_staging_rpc_and_direct_rls_readback',
     browser_navigation: ['leads', 'lead_card', 'orders_direct', 'production', 'installation'],
     destructive_scope: 'unique_synthetic_marker_only',
     external_cleanup_required: true
@@ -87,7 +87,7 @@ const clean=(value)=>String(value??'').trim();
 function assert(value,code){if(!value)throw new Error(code);}
 function progress(name){try{navigator.sendBeacon('/__crm_e2e_progress',String(name).slice(0,80));}catch(_){}}
 function record(name,detail='pass'){steps.push({name,detail});progress(name);}
-function instrumentTransportProbe(){const nativeFetch=globalThis.fetch;if(typeof nativeFetch!=='function')return;globalThis.fetch=(input,init)=>{let requestUrl;try{requestUrl=new URL(String(input?.url||input||''));}catch(_){return nativeFetch(input,init);}const exactStaging=requestUrl.hostname==='${STAGING_REF}.supabase.co';const isWorkflowRpc=exactStaging&&requestUrl.pathname==='/rest/v1/rpc/leader_update_lead_workflow_browser_rpc';const readbackId=requestUrl.searchParams.get('id')||'';const isWorkflowReadback=exactStaging&&requestUrl.pathname==='/rest/v1/leader_leads'&&requestUrl.searchParams.get('select')==='id,status,assigned_to,next_contact_at,updated_at'&&requestUrl.searchParams.get('limit')==='1'&&readbackId.startsWith('eq.')&&/^[0-9a-f-]{36}$/i.test(readbackId.slice(3));if(!isWorkflowRpc&&!isWorkflowReadback)return nativeFetch(input,init);const headers=Object.fromEntries(new Headers(init?.headers||input?.headers||{}).entries());const method=clean(init?.method||input?.method||(isWorkflowRpc?'POST':'GET')).toUpperCase();if(isWorkflowRpc){const accepted=navigator.sendBeacon('/__crm_e2e_staging_rpc_proxy',JSON.stringify({path:requestUrl.pathname+requestUrl.search,method,headers,body:typeof init?.body==='string'?init.body:''}));if(!accepted)return Promise.reject(new Error('staging_rpc_bridge_rejected'));return Promise.resolve(new Response(null,{status:202,headers:{'Cache-Control':'no-store'}}));}const {signal:_signal,...readbackInit}=init||{};return nativeFetch(requestUrl.toString(),readbackInit);};}
+function instrumentTransportProbe(){const nativeFetch=globalThis.fetch;if(typeof nativeFetch!=='function')return;globalThis.fetch=(input,init)=>{let requestUrl;try{requestUrl=new URL(String(input?.url||input||''));}catch(_){return nativeFetch(input,init);}const exactStaging=requestUrl.hostname==='${STAGING_REF}.supabase.co';const isWorkflowRpc=exactStaging&&requestUrl.pathname==='/rest/v1/rpc/leader_update_lead_workflow_browser_rpc';const readbackId=requestUrl.searchParams.get('id')||'';const isWorkflowReadback=exactStaging&&requestUrl.pathname==='/rest/v1/leader_leads'&&requestUrl.searchParams.get('select')==='id,status,assigned_to,next_contact_at,updated_at'&&requestUrl.searchParams.get('limit')==='1'&&readbackId.startsWith('eq.')&&/^[0-9a-f-]{36}$/i.test(readbackId.slice(3));if(!isWorkflowRpc&&!isWorkflowReadback)return nativeFetch(input,init);const headers=Object.fromEntries(new Headers(init?.headers||input?.headers||{}).entries());const method=clean(init?.method||input?.method||(isWorkflowRpc?'POST':'GET')).toUpperCase();if(isWorkflowRpc){let frame=document.getElementById('crmE2eRpcBridgeFrame');if(!frame){frame=document.createElement('iframe');frame.id='crmE2eRpcBridgeFrame';frame.name='crmE2eRpcBridgeFrame';frame.hidden=true;document.body.append(frame);}const form=document.createElement('form');form.method='POST';form.action='/__crm_e2e_staging_rpc_proxy';form.target=frame.name;form.hidden=true;const field=document.createElement('input');field.type='hidden';field.name='payload';field.value=JSON.stringify({path:requestUrl.pathname+requestUrl.search,method,headers,body:typeof init?.body==='string'?init.body:''});form.append(field);document.body.append(form);form.submit();form.remove();return Promise.resolve(new Response(null,{status:202,headers:{'Cache-Control':'no-store'}}));}const {signal:_signal,...readbackInit}=init||{};return nativeFetch(requestUrl.toString(),readbackInit);};}
 async function waitFor(check,code,timeout=30000){const begin=Date.now();while(Date.now()-begin<timeout){const value=await check();if(value)return value;await sleep(50);}throw new Error(code);}
 function waitForDocumentEvent(name,code,timeout=30000){return new Promise((resolve,reject)=>{let timer=0;const done=(event)=>{clearTimeout(timer);document.removeEventListener(name,done);resolve(event?.detail||{});};timer=setTimeout(()=>{document.removeEventListener(name,done);reject(new Error(code));},timeout);document.addEventListener(name,done,{once:true});});}
 function setValue(selector,value,event='input'){const node=document.querySelector(selector);assert(node,'missing:'+selector);node.value=value;node.dispatchEvent(new Event(event,{bubbles:true}));return node;}
@@ -248,7 +248,9 @@ async function localServer(root) {
         lastProgress = 'workflow_rpc_proxy_received'; lastProgressAt = Date.now();
         const chunks = []; let size = 0;
         for await (const chunk of request) { size += chunk.length; if (size > 131072) throw new Error('proxy_request_too_large'); chunks.push(chunk); }
-        const payload = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+        const rawPayload = Buffer.concat(chunks).toString('utf8');
+        const contentType = text(request.headers['content-type']).toLowerCase();
+        const payload = JSON.parse(contentType.startsWith('application/x-www-form-urlencoded') ? new URLSearchParams(rawPayload).get('payload') || '' : rawPayload);
         const upstreamUrl = new URL(String(payload?.path || ''), STAGING_URL);
         const exactRpc = upstreamUrl.origin === STAGING_URL && upstreamUrl.pathname === '/rest/v1/rpc/leader_update_lead_workflow_browser_rpc' && payload?.method === 'POST' && !upstreamUrl.search;
         const exactReadback = upstreamUrl.origin === STAGING_URL && upstreamUrl.pathname === '/rest/v1/leader_leads' && payload?.method === 'GET' && upstreamUrl.searchParams.get('select') === 'id,status,assigned_to,next_contact_at,updated_at' && upstreamUrl.searchParams.get('limit') === '1' && /^eq\.[0-9a-f-]{36}$/i.test(upstreamUrl.searchParams.get('id') || '') && [...upstreamUrl.searchParams.keys()].length === 3;
@@ -266,7 +268,7 @@ async function localServer(root) {
           lastProgress = 'workflow_readback_proxy_responded'; lastProgressAt = Date.now();
           return;
         }
-        response.writeHead(202, { 'Content-Length': '0', 'Cache-Control': 'no-store' });
+        response.writeHead(204, { 'Cache-Control': 'no-store' });
         response.end();
         lastProgress = 'workflow_rpc_proxy_accepted'; lastProgressAt = Date.now();
         globalThis.setTimeout(() => {
