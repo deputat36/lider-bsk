@@ -11,4 +11,4 @@ Authenticated CRM E2E continuation trigger.
 Issue: #487
 Expected branch: agent/487-authenticated-staging-e2e
 Production enabled: false
-Reason: verify protected staging lead workflow Edge POST in Web Worker so ambiguous network response cannot block CRM UI thread; independent RLS confirmation remains enabled; production unchanged.
+Reason: verify Web Worker exact RLS confirmation returned through the normal transport protocol after protected Edge save; production unchanged.
