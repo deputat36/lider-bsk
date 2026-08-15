@@ -79,7 +79,7 @@ const result = await invokeStagingLeadWorkflow({
     const body = JSON.parse(init.body);
     return new FakeResponse(201, {
       ok: true,
-      request_id: body.request_id,
+      request_id: body.p_request.request_id,
       idempotent_replay: false,
       lead: { id: leadId, status: 'В работе', assigned_to: actorId, updated_at: '2026-07-23T18:01:00.000Z' }
     });
@@ -88,14 +88,18 @@ const result = await invokeStagingLeadWorkflow({
 assert.equal(result.ok, true);
 assert.equal(result.kind, 'updated');
 assert.equal(result.status, 201);
-assert.equal(invokedUrl, `${STAGING_URL}/functions/v1/leader-crm-leads-staging`);
+assert.equal(invokedUrl, `${STAGING_URL}/rest/v1/rpc/leader_update_lead_workflow_browser_rpc`);
 assert.equal(invokedInit.method, 'POST');
 assert.equal(invokedInit.headers.apikey, PUBLISHABLE_KEY);
 assert.equal(invokedInit.headers.Authorization, `Bearer ${ACCESS_TOKEN}`);
 const invokedBody = JSON.parse(invokedInit.body);
-assert.equal(invokedBody.action, 'update');
-assert.equal(invokedBody.assigned_to, actorId);
-assert.equal(invokedBody.expected_updated_at, expectedUpdatedAt);
+assert.equal(invokedBody.p_request.action, 'lead_workflow.update');
+assert.equal(invokedBody.p_request.request_id, requestId);
+assert.equal(invokedBody.p_request.expected_updated_at, expectedUpdatedAt);
+assert.equal(invokedBody.p_request.payload.lead_id, leadId);
+assert.equal(invokedBody.p_request.payload.patch.assigned_to, actorId);
+assert.equal(invokedBody.p_request.payload.patch.status, 'В работе');
+assert.equal(Object.prototype.hasOwnProperty.call(invokedBody, 'actor_id'), false);
 
 let explicitGetSessionCalled = false;
 let explicitAuthorization = '';
@@ -129,7 +133,7 @@ const explicitTokenResult = await invokeStagingLeadWorkflow({
     const body = JSON.parse(init.body);
     return new FakeResponse(201, {
       ok: true,
-      request_id: body.request_id,
+      request_id: body.p_request.request_id,
       idempotent_replay: false,
       lead: { id: leadId, status: 'В работе', assigned_to: actorId, updated_at: '2026-07-23T18:01:00.000Z' }
     });
@@ -138,71 +142,6 @@ const explicitTokenResult = await invokeStagingLeadWorkflow({
 assert.equal(explicitGetSessionCalled, false);
 assert.equal(explicitTokenResult.ok, true);
 assert.equal(explicitAuthorization, `Bearer ${ACCESS_TOKEN}`);
-
-let workerPayload = null;
-let workerBootstrapUrl = '';
-let workerBootstrapRevoked = false;
-let workerMainThreadFetchCalls = 0;
-let workerTerminated = false;
-const workerResult = await invokeStagingLeadWorkflow({
-  client,
-  supabaseUrl: STAGING_URL,
-  publishableKey: PUBLISHABLE_KEY,
-  accessToken: ACCESS_TOKEN,
-  lead: { id: leadId, updated_at: expectedUpdatedAt },
-  patch: { assigned_to: actorId, status: 'В работе' },
-  idempotencyKey: `lead-workflow:${leadId}:worker`,
-  cryptoObject: { randomUUID: () => requestId },
-  requestTimeoutMs: 2500,
-  verificationTimeoutMs: 1250,
-  fetchImpl: async () => {
-    workerMainThreadFetchCalls += 1;
-    throw new Error('worker transport must not duplicate verification on the main thread');
-  },
-  workerBootstrapFactory: ({ workerUrl, payload }) => {
-    workerPayload = payload;
-    assert.match(workerUrl.href, /lead-workflow-staging-worker-v1\.js$/);
-    return {
-      url: 'blob:test-worker-bootstrap',
-      revoke() { workerBootstrapRevoked = true; }
-    };
-  },
-  workerFactory: (url) => {
-    workerBootstrapUrl = String(url);
-    const worker = {
-    onmessage: null,
-    onerror: null,
-    terminate() { workerTerminated = true; }
-    };
-    queueMicrotask(() => worker.onmessage?.({
-        data: {
-          type: 'transport',
-          status: 201,
-          ok: true,
-          data: {
-            ok: true,
-            request_id: requestId,
-            lead: {
-              id: leadId,
-              status: 'В работе',
-              assigned_to: actorId,
-              updated_at: '2026-07-23T18:01:00.000Z'
-            }
-          }
-        }
-      }));
-    return worker;
-  }
-});
-assert.equal(workerResult.ok, true);
-assert.equal(workerResult.kind, 'updated');
-assert.equal(workerMainThreadFetchCalls, 0);
-assert.equal(workerBootstrapUrl, 'blob:test-worker-bootstrap');
-assert.equal(workerBootstrapRevoked, true);
-assert.equal(workerPayload.timeoutMs, 2500);
-assert.equal(workerPayload.verificationTimeoutMs, 1250);
-await new Promise((resolve) => setTimeout(resolve, 0));
-assert.equal(workerTerminated, true);
 
 let restReadSeen = false;
 const recovered = await invokeStagingLeadWorkflow({
@@ -216,7 +155,7 @@ const recovered = await invokeStagingLeadWorkflow({
   requestTimeoutMs: 300,
   verificationTimeoutMs: 200,
   fetchImpl: async (url) => {
-    if (String(url).includes('/functions/v1/')) {
+    if (String(url).includes('/rest/v1/rpc/')) {
       return { status: 201, ok: true, json: async () => new Promise(() => {}) };
     }
     restReadSeen = true;
@@ -248,7 +187,7 @@ const unresolvedTimeout = await invokeStagingLeadWorkflow({
   requestTimeoutMs: 250,
   verificationTimeoutMs: 120,
   fetchImpl: async (url) => {
-    if (String(url).includes('/functions/v1/')) {
+    if (String(url).includes('/rest/v1/rpc/')) {
       return { status: 201, ok: true, json: async () => new Promise(() => {}) };
     }
     return new FakeResponse(200, [{

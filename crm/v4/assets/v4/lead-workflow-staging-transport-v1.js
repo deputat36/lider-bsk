@@ -1,6 +1,7 @@
 const STAGING_PROJECT_REF = 'otulfnouybahfnsycxqn';
 const STAGING_HOSTNAME = `${STAGING_PROJECT_REF}.supabase.co`;
 const FUNCTION_SLUG = 'leader-crm-leads-staging';
+const BROWSER_RPC_SLUG = 'leader_update_lead_workflow_browser_rpc';
 const EDGE_ACTION = 'update';
 const PERMISSION = 'leads.update';
 const REQUEST_TIMEOUT_MS = 20000;
@@ -45,6 +46,7 @@ export function leadWorkflowPersistenceRoute(supabaseUrl = '') {
       atomic: true,
       browserDirectWrite: false,
       functionSlug: FUNCTION_SLUG,
+      browserRpcSlug: BROWSER_RPC_SLUG,
       permission: PERMISSION,
       title: 'Защищённый staging-маршрут',
       description: 'Статус, ответственный и следующий контакт сохраняются одной серверной командой.'
@@ -270,117 +272,22 @@ async function verifyPersistedWorkflow({
   return { type: 'verification_timeout' };
 }
 
-function parseJsonText(value) {
-  try {
-    const parsed = JSON.parse(String(value ?? ''));
-    return object(parsed) || {};
-  } catch (_) {
-    return {};
-  }
-}
-
-function createWorkerBootstrapUrl({ workerUrl, payload }) {
-  if (typeof globalThis.Blob !== 'function' || typeof globalThis.URL?.createObjectURL !== 'function') {
-    throw transportError('worker_bootstrap_unavailable');
-  }
-  const source = `importScripts(${JSON.stringify(workerUrl.href)});\nself.onmessage({data:${JSON.stringify(payload)}});`;
-  const objectUrl = globalThis.URL.createObjectURL(new globalThis.Blob([source], { type: 'text/javascript' }));
+function browserRpcPayload(command) {
   return {
-    url: objectUrl,
-    revoke: () => {
-      try { globalThis.URL.revokeObjectURL(objectUrl); } catch (_) { /* noop */ }
+    p_request: {
+      action: 'lead_workflow.update',
+      request_id: command.request_id,
+      expected_updated_at: command.expected_updated_at,
+      payload: {
+        lead_id: command.id,
+        idempotency_key: command.idempotency_key,
+        patch: expectedPatchFromCommand(command)
+      }
     }
   };
 }
 
-function createWorkerEdgeTransport({ workerFactory, workerBootstrapFactory, url, publicKey, accessToken, command, timeoutMs, verificationTimeoutMs }) {
-  let worker = null;
-  let settled = false;
-  const settle = (resolve, value) => {
-    if (settled) return;
-    settled = true;
-    resolve(value);
-  };
-
-  const promise = new Promise((resolve) => {
-    try {
-      const workerUrl = new URL('./lead-workflow-staging-worker-v1.js', import.meta.url);
-      const bootstrap = workerBootstrapFactory({
-        workerUrl,
-        payload: { url, publicKey, accessToken, command, timeoutMs, verificationTimeoutMs }
-      });
-      try { worker = workerFactory(bootstrap.url); }
-      finally { bootstrap.revoke(); }
-      worker.onmessage = (event) => {
-        const payload = object(event?.data) || {};
-        if (payload.type === 'transport') {
-          settle(resolve, {
-            type: 'transport',
-            response: { status: Number(payload.status || 0), ok: payload.ok === true },
-            data: object(payload.data) || {}
-          });
-          return;
-        }
-        settle(resolve, {
-          type: 'transport_error',
-          error: transportError(text(payload.code) || 'worker_transport_error', payload.code === 'request_timeout' ? 'AbortError' : 'Error')
-        });
-      };
-      worker.onerror = () => settle(resolve, { type: 'transport_error', error: transportError('worker_runtime_error') });
-    } catch (error) {
-      settle(resolve, { type: 'transport_error', error });
-    }
-  });
-
-  return {
-    promise,
-    abort: () => {
-      try { worker?.terminate?.(); } catch (_) { /* noop */ }
-    }
-  };
-}
-
-function createXhrEdgeTransport({ xhrFactory, url, publicKey, accessToken, command, timeoutMs }) {
-  let xhr = null;
-  let settled = false;
-  const settle = (resolve, value) => {
-    if (settled) return;
-    settled = true;
-    resolve(value);
-  };
-
-  const promise = new Promise((resolve) => {
-    try {
-      xhr = xhrFactory();
-      xhr.open('POST', url, true);
-      xhr.timeout = timeoutMs;
-      xhr.setRequestHeader('apikey', publicKey);
-      xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
-      xhr.setRequestHeader('Content-Type', 'application/json');
-      xhr.setRequestHeader('Accept', 'application/json');
-      xhr.onload = () => settle(resolve, {
-        type: 'transport',
-        response: { status: Number(xhr.status || 0), ok: xhr.status >= 200 && xhr.status < 300 },
-        data: parseJsonText(xhr.responseText)
-      });
-      xhr.onerror = () => settle(resolve, { type: 'transport_error', error: transportError('xhr_network_error') });
-      xhr.ontimeout = () => settle(resolve, { type: 'transport_error', error: transportError('request_timeout', 'AbortError') });
-      xhr.onabort = () => settle(resolve, { type: 'transport_error', error: transportError('request_aborted', 'AbortError') });
-      xhr.send(JSON.stringify(command));
-    } catch (error) {
-      settle(resolve, { type: 'transport_error', error });
-    }
-  });
-
-  return {
-    promise,
-    abort: () => {
-      try { if (xhr && xhr.readyState !== 4) xhr.abort(); } catch (_) { /* noop */ }
-    }
-  };
-}
-
-function createFetchEdgeTransport({ fetchImpl, url, publicKey, accessToken, command }) {
+function createFetchRpcTransport({ fetchImpl, url, publicKey, accessToken, command }) {
   const controller = new AbortController();
   const promise = (async () => {
     try {
@@ -392,7 +299,7 @@ function createFetchEdgeTransport({ fetchImpl, url, publicKey, accessToken, comm
           'Content-Type': 'application/json',
           Accept: 'application/json'
         },
-        body: JSON.stringify(command),
+        body: JSON.stringify(browserRpcPayload(command)),
         signal: controller.signal
       });
       const raw = await response.json();
@@ -420,9 +327,6 @@ export async function invokeStagingLeadWorkflow({
   idempotencyKey = '',
   cryptoObject = globalThis.crypto,
   fetchImpl = globalThis.fetch,
-  workerFactory = typeof globalThis.Worker === 'function' ? (url) => new globalThis.Worker(url) : null,
-  workerBootstrapFactory = createWorkerBootstrapUrl,
-  xhrFactory = typeof globalThis.XMLHttpRequest === 'function' ? () => new globalThis.XMLHttpRequest() : null,
   requestTimeoutMs = REQUEST_TIMEOUT_MS,
   verificationTimeoutMs = VERIFICATION_TIMEOUT_MS
 } = {}) {
@@ -471,48 +375,33 @@ export async function invokeStagingLeadWorkflow({
   }
 
   let finished = false;
-  const edgeEndpoint = `${supabaseUrl.replace(/\/+$/, '')}/functions/v1/${FUNCTION_SLUG}`;
-  const workerTransportEnabled = typeof workerFactory === 'function';
-  const edgeTransport = workerTransportEnabled
-    ? createWorkerEdgeTransport({
-        workerFactory,
-        workerBootstrapFactory,
-        url: edgeEndpoint,
-        publicKey,
-        accessToken: resolvedAccessToken,
-        command,
-        timeoutMs: requestTimeoutMs,
-        verificationTimeoutMs: Math.min(verificationTimeoutMs, requestTimeoutMs)
-      })
-    : typeof xhrFactory === 'function'
-      ? createXhrEdgeTransport({ xhrFactory, url: edgeEndpoint, publicKey, accessToken: resolvedAccessToken, command, timeoutMs: requestTimeoutMs })
-      : createFetchEdgeTransport({ fetchImpl, url: edgeEndpoint, publicKey, accessToken: resolvedAccessToken, command });
+  const rpcEndpoint = `${supabaseUrl.replace(/\/+$/, '')}/rest/v1/rpc/${BROWSER_RPC_SLUG}`;
+  const commandTransport = createFetchRpcTransport({
+    fetchImpl,
+    url: rpcEndpoint,
+    publicKey,
+    accessToken: resolvedAccessToken,
+    command
+  });
 
-  // The Worker owns both the Edge request and its bounded RLS verification.
-  // Starting the same verifier on the main thread duplicates protected GETs
-  // and can keep the renderer busy after the Worker has already committed.
-  const verificationPromise = workerTransportEnabled
-    ? null
-    : neverResolveOnVerificationTimeout(verifyPersistedWorkflow({
-        fetchImpl,
-        supabaseUrl,
-        publicKey,
-        accessToken: resolvedAccessToken,
-        command,
-        timeoutMs: Math.min(verificationTimeoutMs, requestTimeoutMs),
-        cancelled: () => finished
-      }));
+  const verificationPromise = neverResolveOnVerificationTimeout(verifyPersistedWorkflow({
+    fetchImpl,
+    supabaseUrl,
+    publicKey,
+    accessToken: resolvedAccessToken,
+    command,
+    timeoutMs: Math.min(verificationTimeoutMs, requestTimeoutMs),
+    cancelled: () => finished
+  }));
 
   const deadlinePromise = (async () => {
     await delay(requestTimeoutMs);
     return { type: 'deadline' };
   })();
 
-  const raceCandidates = [edgeTransport.promise, deadlinePromise];
-  if (verificationPromise) raceCandidates.splice(1, 0, verificationPromise);
-  const winner = await Promise.race(raceCandidates);
+  const winner = await Promise.race([commandTransport.promise, verificationPromise, deadlinePromise]);
   finished = true;
-  deferTransportAbort(edgeTransport);
+  deferTransportAbort(commandTransport);
 
   if (winner.type === 'verified') {
     const kind = 'verified_after_transport_error';
