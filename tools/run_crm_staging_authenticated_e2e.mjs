@@ -266,8 +266,8 @@ async function localServer(root) {
           lastProgress = 'workflow_readback_proxy_responded'; lastProgressAt = Date.now();
           return;
         }
-        response.writeHead(202, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-        response.end(JSON.stringify({ pending: true }));
+        response.writeHead(202, { 'Content-Length': '0', 'Cache-Control': 'no-store' });
+        response.end();
         lastProgress = 'workflow_rpc_proxy_accepted'; lastProgressAt = Date.now();
         globalThis.setTimeout(() => {
           exactStagingRequest({ url: upstreamUrl, method: 'POST', apikey, authorization, body: payload.body }).catch(() => undefined);
