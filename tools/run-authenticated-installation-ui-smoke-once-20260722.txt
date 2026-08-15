@@ -11,4 +11,4 @@ Authenticated CRM E2E continuation trigger.
 Issue: #487
 Expected branch: agent/487-authenticated-staging-e2e
 Production enabled: false
-Reason: verify concurrent Edge response and exact RLS persistence confirmation for staging lead workflow; transport commit 150c7249dbe1f34ea296b3c892482b41ea17b35a
+Reason: verify independent read-only PostgREST persistence confirmation during ambiguous staging Edge response; transport commit 7b25ba0f9cab5206c55137e6e319fea77ce470c5
