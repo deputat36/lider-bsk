@@ -396,6 +396,7 @@ export async function invokeStagingLeadWorkflow({
   client,
   supabaseUrl = '',
   publishableKey = '',
+  accessToken = '',
   lead = null,
   patch = null,
   idempotencyKey = '',
@@ -409,7 +410,7 @@ export async function invokeStagingLeadWorkflow({
   if (!isStagingLeadWorkflowEnvironment(supabaseUrl)) {
     return Object.freeze({ ok: false, status: 503, kind: 'wrong_environment', code: 'wrong_environment', message: leadWorkflowResultMessage('wrong_environment') });
   }
-  if (!client?.auth?.getSession || typeof fetchImpl !== 'function') {
+  if (typeof fetchImpl !== 'function') {
     return Object.freeze({ ok: false, status: 500, kind: 'persistence_failed', code: 'client_unavailable', message: leadWorkflowResultMessage('persistence_failed') });
   }
 
@@ -418,12 +419,18 @@ export async function invokeStagingLeadWorkflow({
     return Object.freeze({ ok: false, status: 500, kind: 'persistence_failed', code: 'publishable_key_missing', message: leadWorkflowResultMessage('persistence_failed') });
   }
 
-  let sessionResult;
-  try { sessionResult = await client.auth.getSession(); }
-  catch (_) { return Object.freeze({ ok: false, status: 0, kind: 'network_error', code: 'network_error', message: leadWorkflowResultMessage('network_error') }); }
-  const accessToken = text(sessionResult?.data?.session?.access_token);
-  if (sessionResult?.error || !accessToken) {
-    return Object.freeze({ ok: false, status: 401, kind: 'auth_required', code: 'auth_required', message: leadWorkflowResultMessage('auth_required') });
+  let resolvedAccessToken = text(accessToken);
+  if (!resolvedAccessToken) {
+    if (!client?.auth?.getSession) {
+      return Object.freeze({ ok: false, status: 500, kind: 'persistence_failed', code: 'client_unavailable', message: leadWorkflowResultMessage('persistence_failed') });
+    }
+    let sessionResult;
+    try { sessionResult = await client.auth.getSession(); }
+    catch (_) { return Object.freeze({ ok: false, status: 0, kind: 'network_error', code: 'network_error', message: leadWorkflowResultMessage('network_error') }); }
+    resolvedAccessToken = text(sessionResult?.data?.session?.access_token);
+    if (sessionResult?.error || !resolvedAccessToken) {
+      return Object.freeze({ ok: false, status: 401, kind: 'auth_required', code: 'auth_required', message: leadWorkflowResultMessage('auth_required') });
+    }
   }
 
   let command;
@@ -447,16 +454,16 @@ export async function invokeStagingLeadWorkflow({
   let finished = false;
   const edgeEndpoint = `${supabaseUrl.replace(/\/+$/, '')}/functions/v1/${FUNCTION_SLUG}`;
   const edgeTransport = typeof workerFactory === 'function'
-    ? createWorkerEdgeTransport({ workerFactory, url: edgeEndpoint, publicKey, accessToken, command, timeoutMs: requestTimeoutMs })
+    ? createWorkerEdgeTransport({ workerFactory, url: edgeEndpoint, publicKey, accessToken: resolvedAccessToken, command, timeoutMs: requestTimeoutMs })
     : typeof xhrFactory === 'function'
-      ? createXhrEdgeTransport({ xhrFactory, url: edgeEndpoint, publicKey, accessToken, command, timeoutMs: requestTimeoutMs })
-      : createFetchEdgeTransport({ fetchImpl, url: edgeEndpoint, publicKey, accessToken, command });
+      ? createXhrEdgeTransport({ xhrFactory, url: edgeEndpoint, publicKey, accessToken: resolvedAccessToken, command, timeoutMs: requestTimeoutMs })
+      : createFetchEdgeTransport({ fetchImpl, url: edgeEndpoint, publicKey, accessToken: resolvedAccessToken, command });
 
   const verificationPromise = neverResolveOnVerificationTimeout(verifyPersistedWorkflow({
     fetchImpl,
     supabaseUrl,
     publicKey,
-    accessToken,
+    accessToken: resolvedAccessToken,
     command,
     timeoutMs: Math.min(verificationTimeoutMs, requestTimeoutMs),
     cancelled: () => finished
@@ -469,9 +476,6 @@ export async function invokeStagingLeadWorkflow({
 
   const winner = await Promise.race([edgeTransport.promise, verificationPromise, deadlinePromise]);
   finished = true;
-  // Cleanup must never block delivery of the authoritative result to the UI.
-  // Worker.terminate(), XHR.abort(), and AbortController.abort() are therefore
-  // deferred until after this async function has had a chance to resolve.
   deferTransportAbort(edgeTransport);
 
   if (winner.type === 'verified') {
