@@ -11,4 +11,4 @@ Authenticated CRM E2E continuation trigger.
 Issue: #487
 Expected branch: agent/487-authenticated-staging-e2e
 Production enabled: false
-Reason: verify staging lead workflow uses the already verified v4State session access token and bypasses the redundant supabase auth getSession lock before Worker/Edge transport; production unchanged.
+Reason: verify exact-RLS Worker confirmation is handed to the UI before any localhost diagnostic fetch after a matched persisted lead workflow; production unchanged.
