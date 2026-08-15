@@ -18,6 +18,11 @@ function object(value) { return value && typeof value === 'object' && !Array.isA
 function uuid(value) { return UUID_PATTERN.test(text(value)); }
 function delay(ms) { return new Promise((resolve) => globalThis.setTimeout(resolve, ms)); }
 function transportError(code, name = 'Error') { const error = new Error(code); error.name = name; return error; }
+function deferTransportAbort(edgeTransport) {
+  globalThis.setTimeout(() => {
+    try { edgeTransport?.abort?.(); } catch (_) { /* noop */ }
+  }, 0);
+}
 
 export function projectRefFromLeadWorkflowUrl(value) {
   try {
@@ -464,9 +469,12 @@ export async function invokeStagingLeadWorkflow({
 
   const winner = await Promise.race([edgeTransport.promise, verificationPromise, deadlinePromise]);
   finished = true;
+  // Cleanup must never block delivery of the authoritative result to the UI.
+  // Worker.terminate(), XHR.abort(), and AbortController.abort() are therefore
+  // deferred until after this async function has had a chance to resolve.
+  deferTransportAbort(edgeTransport);
 
   if (winner.type === 'verified') {
-    edgeTransport.abort();
     const kind = 'verified_after_transport_error';
     return Object.freeze({
       ok: true,
@@ -482,7 +490,6 @@ export async function invokeStagingLeadWorkflow({
   }
 
   if (winner.type === 'deadline' || winner.type === 'transport_error') {
-    edgeTransport.abort();
     const kind = 'network_error';
     const timeoutFailure = winner.type !== 'transport_error' || text(winner.error?.name) === 'AbortError';
     return Object.freeze({
