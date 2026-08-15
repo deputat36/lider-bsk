@@ -15,14 +15,6 @@ let busy = false;
 
 function text(value) { return String(value ?? '').trim(); }
 
-function e2eProgress(stage) {
-  const hostname = text(globalThis.location?.hostname).toLowerCase();
-  if (!['127.0.0.1', 'localhost'].includes(hostname)) return;
-  const safeStage = text(stage).toLowerCase().replace(/[^a-z0-9_:-]/g, '_').slice(0, 80);
-  if (!safeStage) return;
-  try { navigator.sendBeacon('/__crm_e2e_progress', safeStage); } catch (_) { /* test-only */ }
-}
-
 function nextContactDate(kind) {
   const date = new Date();
   if (kind === 'today17') date.setHours(17, 0, 0, 0);
@@ -169,12 +161,10 @@ function mergeLeadState(partialLead) {
     ? mergedCurrent
     : mergedList.find((lead) => text(lead?.id) === id) || partial;
 
-  e2eProgress('ui_merge_state_before');
   setState({
     currentLead: mergedCurrent,
     leads: mergedList
   });
-  e2eProgress('ui_merge_state_after');
   return merged;
 }
 
@@ -201,7 +191,6 @@ function refreshAfterResult(action, leadId) {
 }
 
 function dispatchWorkflowUpdated({ lead, result, action }) {
-  e2eProgress('ui_event_dispatch_before');
   document.dispatchEvent(new CustomEvent('leader-v4:lead-workflow-updated', {
     detail: {
       lead,
@@ -210,15 +199,12 @@ function dispatchWorkflowUpdated({ lead, result, action }) {
       source: action.context === 'list' ? 'lead_list' : 'lead_card'
     }
   }));
-  e2eProgress('ui_event_dispatch_after');
 }
 
 function reconcileSuccessfulWorkflow({ serverLead, result, action, fallbackLead }) {
-  e2eProgress('ui_reconcile_before');
   let merged = serverLead;
   try {
     merged = mergeLeadState(serverLead);
-    e2eProgress('ui_reconcile_state_done');
     toast(result.message);
     setStatus(result.message, 'good');
   } catch (error) {
@@ -227,7 +213,6 @@ function reconcileSuccessfulWorkflow({ serverLead, result, action, fallbackLead 
     setStatus('Изменение сохранено, обновляю интерфейс', 'warn');
   }
   refreshAfterResult(action, merged?.id || serverLead?.id || fallbackLead?.id);
-  e2eProgress('ui_reconcile_after');
 }
 
 async function saveWorkflow(rawAction) {
@@ -272,7 +257,6 @@ async function saveWorkflow(rawAction) {
   setStatus(action.label || 'Сохраняю рабочий маршрут...', 'warn');
 
   try {
-    e2eProgress('ui_transport_invoke_before');
     const result = await invokeStagingLeadWorkflow({
       client: supabaseClient,
       supabaseUrl: V4_CONFIG.supabaseUrl,
@@ -282,17 +266,14 @@ async function saveWorkflow(rawAction) {
       patch: action.patch,
       idempotencyKey
     });
-    e2eProgress('ui_transport_invoke_after');
 
     if (!result.ok) {
-      e2eProgress(`ui_transport_error_${result.kind || 'unknown'}`);
       toast(result.message);
       setStatus(result.message, result.kind === 'no_effect' ? 'warn' : 'error');
       if (result.kind === 'conflict') refreshAfterResult(action, lead.id);
       return;
     }
 
-    e2eProgress('ui_transport_success');
     const serverLead = result.data?.lead && typeof result.data.lead === 'object'
       ? result.data.lead
       : lead;
@@ -300,14 +281,12 @@ async function saveWorkflow(rawAction) {
     dispatchWorkflowUpdated({ lead: serverLead, result, action });
     reconcileSuccessfulWorkflow({ serverLead, result, action, fallbackLead: lead });
   } catch (_) {
-    e2eProgress('ui_transport_exception');
     toast('Не удалось сохранить рабочий маршрут заявки.');
     setStatus('Ошибка защищённого сохранения заявки', 'error');
     refreshAfterResult(action, lead.id);
   } finally {
     busy = false;
     if (action.button?.isConnected) action.button.disabled = false;
-    e2eProgress('ui_transport_finally');
   }
 }
 
@@ -320,16 +299,4 @@ function interceptStagingWorkflow(event) {
   saveWorkflow(action);
 }
 
-function reportRenderedPrimaryAction(event) {
-  if (route.mode !== 'staging_edge') return;
-  const leadId = text(event?.detail?.lead?.id);
-  const currentId = text(v4State.currentLead?.id);
-  if (!leadId || leadId !== currentId) return;
-  const primary = document.querySelector('#leadPrimaryActionHost [data-lead-primary-action]');
-  const complete = document.querySelector('#leadPrimaryActionHost .v4-primary-action-complete');
-  const action = text(primary?.dataset?.leadPrimaryAction) || (complete ? 'complete' : 'missing');
-  e2eProgress(`lead_primary_${action}`);
-}
-
 document.addEventListener('click', interceptStagingWorkflow, true);
-document.addEventListener('leader-v4:lead-card-rendered', reportRenderedPrimaryAction);
