@@ -11,4 +11,4 @@ Authenticated CRM E2E continuation trigger.
 Issue: #487
 Expected branch: agent/487-authenticated-staging-e2e
 Production enabled: false
-Reason: verify eager versioned lead-card staging bootstrap removes lost route-change race and then exercises postOnce Worker confirmation; production unchanged.
+Reason: verify root bootstrap queues and replays a fast workflow click only after the protected staging handler is ready; postOnce Worker exact RLS confirmation remains enabled; production unchanged.
