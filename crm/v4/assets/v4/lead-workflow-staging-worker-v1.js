@@ -124,8 +124,8 @@ self.onmessage = (event) => {
   const verificationTimeoutMs = Math.max(1000, Math.min(timeoutMs, Number(payload.verificationTimeoutMs) || 8000));
 
   if (!url || !publicKey || !accessToken || !command.action || !command.id) {
-    e2eProgress('worker_payload_invalid');
     self.postMessage({ type: 'transport_error', code: 'worker_payload_invalid' });
+    setTimeout(() => e2eProgress('worker_payload_invalid'), 0);
     return;
   }
 
@@ -133,8 +133,8 @@ self.onmessage = (event) => {
   try {
     baseUrl = new URL(url).origin;
   } catch (_) {
-    e2eProgress('worker_url_invalid');
     self.postMessage({ type: 'transport_error', code: 'worker_url_invalid' });
+    setTimeout(() => e2eProgress('worker_url_invalid'), 0);
     return;
   }
   e2eProgress('worker_payload_valid');
@@ -147,12 +147,12 @@ self.onmessage = (event) => {
     if (settled) return false;
     settled = true;
     if (deadlineTimer) clearTimeout(deadlineTimer);
-    if (stage) e2eProgress(stage);
+    // The authoritative handoff must be the first potentially observable side
+    // effect. Local E2E diagnostics and cancellation are deliberately deferred:
+    // either can stall in headless Chrome while an Edge response body is open.
     self.postMessage(message);
-    // Deliver the authoritative result to the main thread before cancelling an
-    // ambiguous Edge fetch. In headless Chrome an abort while the response body
-    // is stalled can synchronously block the Worker before postMessage runs.
     setTimeout(() => {
+      if (stage) e2eProgress(stage);
       try { controller.abort(); } catch (_) { /* noop */ }
     }, 0);
     return true;
