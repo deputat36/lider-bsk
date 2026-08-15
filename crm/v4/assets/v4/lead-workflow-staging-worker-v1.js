@@ -165,9 +165,15 @@ self.onmessage = async (event) => {
   if (winner.type === 'verified') {
     controller.abort();
     self.postMessage({
-      type: 'verified',
-      lead: winner.lead,
-      request_id: text(command.request_id)
+      type: 'transport',
+      status: 202,
+      ok: true,
+      data: {
+        ok: true,
+        request_id: text(command.request_id),
+        lead: winner.lead,
+        transport_recovered: true
+      }
     });
     return;
   }
