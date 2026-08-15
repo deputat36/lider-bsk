@@ -10,6 +10,7 @@ on:
       - '.github/workflows/crm-staging-installation-authenticated-ui-smoke-runtime.yml'
       - '.github/workflows/crm-staging-authenticated-e2e.yml'
       - 'tools/run_crm_staging_authenticated_e2e.mjs'
+      - 'tools/test_crm_staging_authenticated_e2e_browser_launcher.mjs'
       - 'tools/run_crm_staging_role_permission_e2e.mjs'
       - 'supabase/staging-migrations/20260809*.sql'
       - 'supabase/staging-functions/leader-staging-authenticated-e2e-bootstrap/**'
@@ -201,10 +202,13 @@ jobs:
         run: |
           set -euo pipefail
           node --check tools/run_crm_staging_authenticated_e2e.mjs
+          node --check tools/test_crm_staging_authenticated_e2e_browser_launcher.mjs
+          node tools/test_crm_staging_authenticated_e2e_browser_launcher.mjs
           node --check tools/run_crm_staging_role_permission_e2e.mjs
           node --check crm/v4/assets/v4/installation-job-staging-create-v1.js
+          command -v xvfb-run >/dev/null
           node tools/run_crm_staging_authenticated_e2e.mjs --mode=plan > "${RUNNER_TEMP}/crm-e2e-plan.json"
-          jq -e '.project_ref == "otulfnouybahfnsycxqn" and .production_enabled == false and .first_login_via_form == true and .external_cleanup_required == true' "${RUNNER_TEMP}/crm-e2e-plan.json" >/dev/null
+          jq -e '.project_ref == "otulfnouybahfnsycxqn" and .production_enabled == false and .first_login_via_form == true and .browser_mode == "xvfb_headed_chrome" and .external_cleanup_required == true' "${RUNNER_TEMP}/crm-e2e-plan.json" >/dev/null
 
       - name: Pin browser Supabase dependency locally
         shell: bash
@@ -253,7 +257,7 @@ jobs:
             echo "STAGING_CRM_E2E_EVIDENCE_PATH=${RUNNER_TEMP}/crm-authenticated-e2e/browser.json"
           } >> "${GITHUB_ENV}"
 
-      - name: Run complete manager path in headless Chrome
+      - name: Run complete manager path in Xvfb Chrome
         id: browser
         continue-on-error: true
         shell: bash

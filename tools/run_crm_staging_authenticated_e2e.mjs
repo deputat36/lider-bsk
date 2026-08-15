@@ -54,6 +54,7 @@ export function operatorPlan() {
     production_enabled: false,
     actual_crm_index: true,
     first_login_via_form: true,
+    browser_mode: 'xvfb_headed_chrome',
     browser_navigation: ['leads', 'lead_card', 'orders_direct', 'production', 'installation'],
     destructive_scope: 'unique_synthetic_marker_only',
     external_cleanup_required: true
@@ -197,6 +198,7 @@ function mimeType(filePath) {
 async function localServer(root) {
   const safeRoot = path.resolve(root);
   let lastProgress = 'not_started';
+  let lastProgressAt = Date.now();
   let settleResult;
   const resultPromise = new Promise((resolve) => { settleResult = resolve; });
   const server = createServer(async (request, response) => {
@@ -204,7 +206,8 @@ async function localServer(root) {
       const url = new URL(request.url || '/', 'http://127.0.0.1');
       if (url.pathname === '/__crm_e2e_progress' && request.method === 'POST') {
         const chunks = []; let size = 0; for await (const chunk of request) { size += chunk.length; if (size > 256) throw new Error('progress_too_large'); chunks.push(chunk); }
-        const value = Buffer.concat(chunks).toString('utf8'); if (/^[a-z0-9_:-]{1,80}$/i.test(value)) lastProgress = value;
+        const value = Buffer.concat(chunks).toString('utf8');
+        if (/^[a-z0-9_:-]{1,80}$/i.test(value)) { lastProgress = value; lastProgressAt = Date.now(); }
         response.writeHead(204, { 'Cache-Control': 'no-store' }); response.end(); return;
       }
       if (url.pathname === '/__crm_e2e_result' && request.method === 'GET') {
@@ -226,23 +229,82 @@ async function localServer(root) {
   });
   await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
   const address = server.address(); if (!address || typeof address === 'string') throw new Error('server_address_invalid');
-  return { server, url: `http://127.0.0.1:${address.port}/index.html?tab=leads`, resultPromise, getProgress: () => lastProgress };
+  return {
+    server,
+    url: `http://127.0.0.1:${address.port}/index.html?tab=leads`,
+    resultPromise,
+    getProgressState: () => ({ name: lastProgress, at: lastProgressAt })
+  };
 }
 async function findChrome() {
   for (const candidate of ['/usr/bin/google-chrome', '/usr/bin/google-chrome-stable', '/usr/bin/chromium', '/usr/bin/chromium-browser']) {
     try { await access(candidate, fsConstants.X_OK); return candidate; } catch (_) { /* continue */ }
   }
-  throw new Error('headless_chrome_not_found');
+  throw new Error('browser_chrome_not_found');
 }
-function runChrome(binary, args, resultPromise, getProgress) {
+async function findXvfbRun() {
+  for (const candidate of ['/usr/bin/xvfb-run']) {
+    try { await access(candidate, fsConstants.X_OK); return candidate; } catch (_) { /* continue */ }
+  }
+  throw new Error('xvfb_run_not_found');
+}
+export function browserLaunchPlan({ xvfbRun, chrome, profileDir, url } = {}) {
+  if (!text(xvfbRun) || !text(chrome) || !text(profileDir) || !text(url)) throw new Error('browser_launch_input_invalid');
+  return Object.freeze({
+    binary: xvfbRun,
+    args: Object.freeze([
+      '-a',
+      '-s',
+      '-screen 0 1440x1000x24 -nolisten tcp',
+      chrome,
+      '--disable-gpu',
+      '--no-sandbox',
+      '--hide-scrollbars',
+      '--disable-sync',
+      '--no-first-run',
+      '--password-store=basic',
+      '--use-mock-keychain',
+      '--disable-background-networking',
+      '--disable-background-timer-throttling',
+      '--disable-backgrounding-occluded-windows',
+      '--disable-renderer-backgrounding',
+      '--disable-dev-shm-usage',
+      '--window-size=1366,900',
+      `--user-data-dir=${profileDir}`,
+      url
+    ])
+  });
+}
+function runChrome(binary, args, resultPromise, getProgressState) {
   return new Promise((resolve, reject) => {
-    const child = spawn(binary, args, { stdio: ['ignore', 'pipe', 'pipe'] }); let stdout = ''; let stderr = ''; let evidenceBody = ''; let failure;
-    const stop = () => { child.kill('SIGTERM'); setTimeout(() => child.kill('SIGKILL'), 5000).unref(); };
-    const timer = setTimeout(() => { failure = new Error(`chrome_browser_scenario_timeout:${getProgress()}`); stop(); }, 120000);
+    const child = spawn(binary, args, { stdio: ['ignore', 'pipe', 'pipe'], detached: process.platform !== 'win32' }); let stdout = ''; let stderr = ''; let evidenceBody = ''; let failure; let stopping = false;
+    const signal = (name) => {
+      try {
+        if (process.platform !== 'win32' && child.pid) process.kill(-child.pid, name);
+        else child.kill(name);
+      } catch (_) { /* already stopped */ }
+    };
+    const stop = () => {
+      if (stopping) return;
+      stopping = true;
+      signal('SIGTERM');
+      setTimeout(() => signal('SIGKILL'), 5000).unref();
+    };
+    const hardTimer = setTimeout(() => {
+      const progress = getProgressState();
+      failure = new Error(`chrome_browser_scenario_timeout:${progress.name}`);
+      stop();
+    }, 480000);
+    const stallTimer = setInterval(() => {
+      const progress = getProgressState();
+      if (Date.now() - progress.at < 90000) return;
+      failure = new Error(`chrome_browser_scenario_stalled:${progress.name}`);
+      stop();
+    }, 1000);
     child.stdout.on('data', (chunk) => { stdout += chunk; }); child.stderr.on('data', (chunk) => { stderr += chunk; });
     resultPromise.then((body) => { evidenceBody = body; stop(); }).catch((error) => { failure = error; stop(); });
-    child.once('error', (error) => { clearTimeout(timer); reject(error); });
-    child.once('close', (code) => { clearTimeout(timer); if (failure) reject(failure); else if (!evidenceBody) reject(new Error(`headless_chrome_failed:${code}`)); else resolve({ code: 0, stdout, stderr, evidenceBody }); });
+    child.once('error', (error) => { clearTimeout(hardTimer); clearInterval(stallTimer); reject(error); });
+    child.once('close', (code) => { clearTimeout(hardTimer); clearInterval(stallTimer); if (failure) reject(failure); else if (!evidenceBody) reject(new Error(`browser_process_failed:${code}`)); else resolve({ code: 0, stdout, stderr, evidenceBody }); });
   });
 }
 function decodeHtml(value) { return value.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&'); }
@@ -252,7 +314,7 @@ function evidenceFromDom(dom) {
 }
 
 async function run(env = process.env, roleUi = '') {
-  const config = loadConfig(env); const chrome = await findChrome(); const tempRoot = await mkdtemp(path.join(tmpdir(), 'lider-crm-authenticated-e2e-')); const tempV4 = path.join(tempRoot, 'v4'); let server;
+  const config = loadConfig(env); const chrome = await findChrome(); const xvfbRun = await findXvfbRun(); const tempRoot = await mkdtemp(path.join(tmpdir(), 'lider-crm-authenticated-e2e-')); const tempV4 = path.join(tempRoot, 'v4'); let server;
   try {
     await cp(path.resolve('crm/v4'), tempV4, { recursive: true });
     await mkdir(path.join(tempV4, 'assets/vendor'), { recursive: true });
@@ -264,8 +326,9 @@ async function run(env = process.env, roleUi = '') {
     const indexPath = path.join(tempV4, 'index.html'); const html = await readFile(indexPath, 'utf8');
     await writeFile(indexPath, html.replace('</body>', '<script src="./assets/vendor/supabase-v2.112.2.js"></script><pre id="crmAuthenticatedE2eResult" data-status="running" hidden>running</pre><script type="module" src="./crm-authenticated-e2e-page.mjs"></script></body>'), { mode: 0o600 });
     const local = await localServer(tempV4); server = local.server;
-    const chromeResult = await runChrome(chrome, ['--headless', '--disable-gpu', '--no-sandbox', '--hide-scrollbars', '--disable-sync', '--no-first-run', '--disable-background-networking', '--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding', '--disable-dev-shm-usage', `--user-data-dir=${path.join(tempRoot, 'chrome-profile')}`, local.url], local.resultPromise, local.getProgress);
-    if (chromeResult.code !== 0) throw new Error(`headless_chrome_failed:${chromeResult.code}`);
+    const launch = browserLaunchPlan({ xvfbRun, chrome, profileDir: path.join(tempRoot, 'chrome-profile'), url: local.url });
+    const chromeResult = await runChrome(launch.binary, launch.args, local.resultPromise, local.getProgressState);
+    if (chromeResult.code !== 0) throw new Error(`browser_process_failed:${chromeResult.code}`);
     const evidence = sanitize(JSON.parse(chromeResult.evidenceBody)); if (evidence.status !== 'passed') throw new Error(`browser_e2e_failed:${evidence.error || 'unknown'}`); const target = path.resolve(config.evidencePath); await mkdir(path.dirname(target), { recursive: true }); await writeFile(target, `${JSON.stringify(evidence, null, 2)}\n`, { mode: 0o600 }); return { evidence, target };
   } finally {
     if (server) await new Promise((resolve) => server.close(resolve));
