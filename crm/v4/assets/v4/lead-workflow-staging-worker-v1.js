@@ -86,7 +86,7 @@ async function readLead({ baseUrl, publicKey, accessToken, leadId, timeoutMs }) 
   }
 }
 
-async function verifyPersisted({ baseUrl, publicKey, accessToken, command, timeoutMs }) {
+async function verifyPersisted({ baseUrl, publicKey, accessToken, command, timeoutMs, onVerified }) {
   e2eProgress('worker_verification_started');
   const started = Date.now();
   await delay(Math.min(600, Math.max(80, Math.floor(timeoutMs / 5))));
@@ -103,29 +103,17 @@ async function verifyPersisted({ baseUrl, publicKey, accessToken, command, timeo
     });
     if (leadMatchesCommand(lead, command)) {
       e2eProgress('worker_verification_matched');
-      return { type: 'verified', lead };
+      onVerified(lead);
+      return;
     }
     e2eProgress('worker_verification_not_matched');
     await delay(Math.min(450, Math.max(80, Math.floor(timeoutMs / 6))));
   }
 
   e2eProgress('worker_verification_timeout');
-  return { type: 'verification_timeout' };
 }
 
-function onlyVerified(promise) {
-  return promise.then((result) => (
-    result?.type === 'verified' ? result : new Promise(() => {})
-  ));
-}
-
-function onlyHttpTransport(promise) {
-  return promise.then((result) => (
-    result?.type === 'transport' ? result : new Promise(() => {})
-  ));
-}
-
-self.onmessage = async (event) => {
+self.onmessage = (event) => {
   e2eProgress('worker_message_received');
   const payload = safeBody(event?.data);
   const url = text(payload.url);
@@ -152,7 +140,48 @@ self.onmessage = async (event) => {
   e2eProgress('worker_payload_valid');
 
   const controller = new AbortController();
-  const edgeAttempt = (async () => {
+  let settled = false;
+  let deadlineTimer = 0;
+
+  const postOnce = (message, stage) => {
+    if (settled) return false;
+    settled = true;
+    if (deadlineTimer) clearTimeout(deadlineTimer);
+    try { controller.abort(); } catch (_) { /* noop */ }
+    if (stage) e2eProgress(stage);
+    self.postMessage(message);
+    return true;
+  };
+
+  deadlineTimer = setTimeout(() => {
+    postOnce({ type: 'transport_error', code: 'request_timeout' }, 'worker_post_timeout');
+  }, timeoutMs);
+
+  // Exact RLS verification is authoritative when the browser cannot reliably
+  // consume the Edge response body. It posts success immediately when the
+  // committed patch is observed and cannot be pre-empted by a transport error.
+  verifyPersisted({
+    baseUrl,
+    publicKey,
+    accessToken,
+    command,
+    timeoutMs: verificationTimeoutMs,
+    onVerified: (lead) => {
+      postOnce({
+        type: 'transport',
+        status: 202,
+        ok: true,
+        data: {
+          ok: true,
+          request_id: text(command.request_id),
+          lead,
+          transport_recovered: true
+        }
+      }, 'worker_post_verified_transport');
+    }
+  }).catch(() => undefined);
+
+  (async () => {
     try {
       e2eProgress('worker_edge_fetch_start');
       const response = await fetch(url, {
@@ -170,67 +199,17 @@ self.onmessage = async (event) => {
 
       const parsed = await response.json();
       e2eProgress('worker_edge_json_done');
-      return {
+      postOnce({
         type: 'transport',
         status: Number(response.status || 0),
         ok: response.ok === true,
         data: safeBody(parsed)
-      };
+      }, 'worker_post_http_transport');
     } catch (error) {
       const code = error?.name === 'AbortError' ? 'request_timeout' : 'worker_network_error';
       e2eProgress(`worker_edge_error_${code}`);
-      return {
-        type: 'transport_error',
-        code
-      };
+      // Ambiguous browser transport errors do not complete the operation. The
+      // verifier still has a bounded chance to prove the server-side commit.
     }
   })();
-
-  const edgePromise = onlyHttpTransport(edgeAttempt);
-
-  const verificationPromise = onlyVerified(verifyPersisted({
-    baseUrl,
-    publicKey,
-    accessToken,
-    command,
-    timeoutMs: verificationTimeoutMs
-  }));
-
-  const deadlinePromise = (async () => {
-    await delay(timeoutMs);
-    return { type: 'deadline' };
-  })();
-
-  const winner = await Promise.race([edgePromise, verificationPromise, deadlinePromise]);
-  e2eProgress(`worker_race_${winner.type}`);
-
-  if (winner.type === 'verified') {
-    controller.abort();
-    e2eProgress('worker_post_verified_transport');
-    self.postMessage({
-      type: 'transport',
-      status: 202,
-      ok: true,
-      data: {
-        ok: true,
-        request_id: text(command.request_id),
-        lead: winner.lead,
-        transport_recovered: true
-      }
-    });
-    return;
-  }
-
-  if (winner.type === 'transport') {
-    e2eProgress('worker_post_http_transport');
-    self.postMessage(winner);
-    return;
-  }
-
-  controller.abort();
-  e2eProgress('worker_post_timeout');
-  self.postMessage({
-    type: 'transport_error',
-    code: 'request_timeout'
-  });
 };
