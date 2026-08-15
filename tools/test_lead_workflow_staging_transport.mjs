@@ -97,6 +97,48 @@ assert.equal(invokedBody.action, 'update');
 assert.equal(invokedBody.assigned_to, actorId);
 assert.equal(invokedBody.expected_updated_at, expectedUpdatedAt);
 
+let explicitGetSessionCalled = false;
+let explicitAuthorization = '';
+const explicitTokenResult = await invokeStagingLeadWorkflow({
+  client: {
+    auth: {
+      getSession: async () => {
+        explicitGetSessionCalled = true;
+        throw new Error('must_not_read_session_when_access_token_is_explicit');
+      }
+    }
+  },
+  supabaseUrl: STAGING_URL,
+  publishableKey: PUBLISHABLE_KEY,
+  accessToken: ACCESS_TOKEN,
+  lead: { id: leadId, updated_at: expectedUpdatedAt },
+  patch: { assigned_to: actorId, status: 'В работе' },
+  idempotencyKey: `lead-workflow:${leadId}:explicit-token`,
+  cryptoObject: { randomUUID: () => requestId },
+  fetchImpl: async (url, init) => {
+    if (String(url).includes('/rest/v1/leader_leads')) {
+      return new FakeResponse(200, [{
+        id: leadId,
+        status: 'В работе',
+        assigned_to: actorId,
+        next_contact_at: null,
+        updated_at: '2026-07-23T18:01:00.000Z'
+      }]);
+    }
+    explicitAuthorization = init.headers.Authorization;
+    const body = JSON.parse(init.body);
+    return new FakeResponse(201, {
+      ok: true,
+      request_id: body.request_id,
+      idempotent_replay: false,
+      lead: { id: leadId, status: 'В работе', assigned_to: actorId, updated_at: '2026-07-23T18:01:00.000Z' }
+    });
+  }
+});
+assert.equal(explicitGetSessionCalled, false);
+assert.equal(explicitTokenResult.ok, true);
+assert.equal(explicitAuthorization, `Bearer ${ACCESS_TOKEN}`);
+
 let restReadSeen = false;
 const recovered = await invokeStagingLeadWorkflow({
   client,
