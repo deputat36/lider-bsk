@@ -10,6 +10,19 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function e2eProgress(stage) {
+  const hostname = text(self.location?.hostname).toLowerCase();
+  if (!['127.0.0.1', 'localhost'].includes(hostname)) return;
+  const safeStage = text(stage).toLowerCase().replace(/[^a-z0-9_:-]/g, '_').slice(0, 80);
+  if (!safeStage) return;
+  fetch(new URL('/__crm_e2e_progress', self.location.origin), {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+    body: safeStage,
+    cache: 'no-store'
+  }).then((response) => response.arrayBuffer()).catch(() => undefined);
+}
+
 function sameTimestamp(left, right) {
   if (left === null || right === null) return left === right;
   const a = Date.parse(text(left));
@@ -42,6 +55,7 @@ function leadMatchesCommand(lead, command) {
 }
 
 async function readLead({ baseUrl, publicKey, accessToken, leadId, timeoutMs }) {
+  e2eProgress('worker_verification_read_start');
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -59,10 +73,13 @@ async function readLead({ baseUrl, publicKey, accessToken, leadId, timeoutMs }) 
       },
       signal: controller.signal
     });
+    e2eProgress(`worker_verification_headers_${response.status}`);
     if (!response.ok) return null;
     const rows = await response.json();
+    e2eProgress('worker_verification_json_done');
     return Array.isArray(rows) && rows.length === 1 ? rows[0] : null;
-  } catch (_) {
+  } catch (error) {
+    e2eProgress(error?.name === 'AbortError' ? 'worker_verification_read_timeout' : 'worker_verification_read_error');
     return null;
   } finally {
     clearTimeout(timer);
@@ -70,8 +87,10 @@ async function readLead({ baseUrl, publicKey, accessToken, leadId, timeoutMs }) 
 }
 
 async function verifyPersisted({ baseUrl, publicKey, accessToken, command, timeoutMs }) {
+  e2eProgress('worker_verification_started');
   const started = Date.now();
   await delay(Math.min(600, Math.max(80, Math.floor(timeoutMs / 5))));
+  e2eProgress('worker_verification_delay_done');
 
   while (Date.now() - started < timeoutMs) {
     const remaining = Math.max(200, timeoutMs - (Date.now() - started));
@@ -82,10 +101,15 @@ async function verifyPersisted({ baseUrl, publicKey, accessToken, command, timeo
       leadId: text(command.id),
       timeoutMs: Math.min(2000, remaining)
     });
-    if (leadMatchesCommand(lead, command)) return { type: 'verified', lead };
+    if (leadMatchesCommand(lead, command)) {
+      e2eProgress('worker_verification_matched');
+      return { type: 'verified', lead };
+    }
+    e2eProgress('worker_verification_not_matched');
     await delay(Math.min(450, Math.max(80, Math.floor(timeoutMs / 6))));
   }
 
+  e2eProgress('worker_verification_timeout');
   return { type: 'verification_timeout' };
 }
 
@@ -102,6 +126,7 @@ function onlyHttpTransport(promise) {
 }
 
 self.onmessage = async (event) => {
+  e2eProgress('worker_message_received');
   const payload = safeBody(event?.data);
   const url = text(payload.url);
   const publicKey = text(payload.publicKey);
@@ -111,6 +136,7 @@ self.onmessage = async (event) => {
   const verificationTimeoutMs = Math.max(1000, Math.min(timeoutMs, Number(payload.verificationTimeoutMs) || 8000));
 
   if (!url || !publicKey || !accessToken || !command.action || !command.id) {
+    e2eProgress('worker_payload_invalid');
     self.postMessage({ type: 'transport_error', code: 'worker_payload_invalid' });
     return;
   }
@@ -119,13 +145,16 @@ self.onmessage = async (event) => {
   try {
     baseUrl = new URL(url).origin;
   } catch (_) {
+    e2eProgress('worker_url_invalid');
     self.postMessage({ type: 'transport_error', code: 'worker_url_invalid' });
     return;
   }
+  e2eProgress('worker_payload_valid');
 
   const controller = new AbortController();
   const edgeAttempt = (async () => {
     try {
+      e2eProgress('worker_edge_fetch_start');
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -137,8 +166,10 @@ self.onmessage = async (event) => {
         body: JSON.stringify(command),
         signal: controller.signal
       });
+      e2eProgress(`worker_edge_headers_${response.status}`);
 
       const parsed = await response.json();
+      e2eProgress('worker_edge_json_done');
       return {
         type: 'transport',
         status: Number(response.status || 0),
@@ -146,16 +177,15 @@ self.onmessage = async (event) => {
         data: safeBody(parsed)
       };
     } catch (error) {
+      const code = error?.name === 'AbortError' ? 'request_timeout' : 'worker_network_error';
+      e2eProgress(`worker_edge_error_${code}`);
       return {
         type: 'transport_error',
-        code: error?.name === 'AbortError' ? 'request_timeout' : 'worker_network_error'
+        code
       };
     }
   })();
 
-  // A browser/network error after the POST was sent is ambiguous: the server may
-  // already have committed the command. Only a readable HTTP response may win
-  // immediately; transport errors wait for exact RLS verification or the deadline.
   const edgePromise = onlyHttpTransport(edgeAttempt);
 
   const verificationPromise = onlyVerified(verifyPersisted({
@@ -172,9 +202,11 @@ self.onmessage = async (event) => {
   })();
 
   const winner = await Promise.race([edgePromise, verificationPromise, deadlinePromise]);
+  e2eProgress(`worker_race_${winner.type}`);
 
   if (winner.type === 'verified') {
     controller.abort();
+    e2eProgress('worker_post_verified_transport');
     self.postMessage({
       type: 'transport',
       status: 202,
@@ -190,11 +222,13 @@ self.onmessage = async (event) => {
   }
 
   if (winner.type === 'transport') {
+    e2eProgress('worker_post_http_transport');
     self.postMessage(winner);
     return;
   }
 
   controller.abort();
+  e2eProgress('worker_post_timeout');
   self.postMessage({
     type: 'transport_error',
     code: 'request_timeout'
