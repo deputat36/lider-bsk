@@ -55,6 +55,7 @@ export function operatorPlan() {
     actual_crm_index: true,
     first_login_via_form: true,
     browser_mode: 'xvfb_headed_chrome',
+    browser_transport_bridge: 'same_origin_test_proxy_to_exact_staging_rpc',
     browser_navigation: ['leads', 'lead_card', 'orders_direct', 'production', 'installation'],
     destructive_scope: 'unique_synthetic_marker_only',
     external_cleanup_required: true
@@ -85,7 +86,7 @@ const clean=(value)=>String(value??'').trim();
 function assert(value,code){if(!value)throw new Error(code);}
 function progress(name){try{navigator.sendBeacon('/__crm_e2e_progress',String(name).slice(0,80));}catch(_){}}
 function record(name,detail='pass'){steps.push({name,detail});progress(name);}
-function instrumentTransportProbe(){const nativeFetch=globalThis.fetch;if(typeof nativeFetch!=='function'){progress('fetch_unavailable');return;}globalThis.fetch=(input,init)=>{const isWorkflowRpc=String(input?.url||input||'').includes('/rest/v1/rpc/leader_update_lead_workflow_browser_rpc');if(isWorkflowRpc)progress('workflow_rpc_fetch_before');const pending=nativeFetch(input,init);if(isWorkflowRpc){progress('workflow_rpc_fetch_started');pending.then((response)=>progress('workflow_rpc_headers_'+clean(response?.status||'0')),()=>progress('workflow_rpc_fetch_error'));}return pending;};}
+function instrumentTransportProbe(){const nativeFetch=globalThis.fetch;if(typeof nativeFetch!=='function'){progress('fetch_unavailable');return;}globalThis.fetch=(input,init)=>{let requestUrl;try{requestUrl=new URL(String(input?.url||input||''));}catch(_){return nativeFetch(input,init);}const isWorkflowRpc=requestUrl.hostname==='${STAGING_REF}.supabase.co'&&requestUrl.pathname==='/rest/v1/rpc/leader_update_lead_workflow_browser_rpc';if(!isWorkflowRpc)return nativeFetch(input,init);progress('workflow_rpc_proxy_before');const headers=Object.fromEntries(new Headers(init?.headers||input?.headers||{}).entries());const pending=nativeFetch('/__crm_e2e_staging_rpc_proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:requestUrl.pathname,method:clean(init?.method||input?.method||'POST').toUpperCase(),headers,body:typeof init?.body==='string'?init.body:''}),signal:init?.signal});progress('workflow_rpc_proxy_started');pending.then((response)=>progress('workflow_rpc_proxy_headers_'+clean(response?.status||'0')),()=>progress('workflow_rpc_proxy_error'));return pending;};}
 async function waitFor(check,code,timeout=30000){const begin=Date.now();while(Date.now()-begin<timeout){const value=await check();if(value)return value;await sleep(50);}throw new Error(code);}
 function waitForDocumentEvent(name,code,timeout=30000){return new Promise((resolve,reject)=>{let timer=0;const done=(event)=>{clearTimeout(timer);document.removeEventListener(name,done);resolve(event?.detail||{});};timer=setTimeout(()=>{document.removeEventListener(name,done);reject(new Error(code));},timeout);document.addEventListener(name,done,{once:true});});}
 function setValue(selector,value,event='input'){const node=document.querySelector(selector);assert(node,'missing:'+selector);node.value=value;node.dispatchEvent(new Event(event,{bubbles:true}));return node;}
@@ -221,6 +222,25 @@ async function localServer(root) {
         for await (const chunk of request) { size += chunk.length; if (size > 65536) throw new Error('evidence_too_large'); chunks.push(chunk); }
         const body = Buffer.concat(chunks).toString('utf8'); JSON.parse(body); settleResult(body);
         response.writeHead(204, { 'Cache-Control': 'no-store' }); response.end(); return;
+      }
+      if (url.pathname === '/__crm_e2e_staging_rpc_proxy' && request.method === 'POST') {
+        const chunks = []; let size = 0;
+        for await (const chunk of request) { size += chunk.length; if (size > 131072) throw new Error('proxy_request_too_large'); chunks.push(chunk); }
+        const payload = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+        if (payload?.path !== '/rest/v1/rpc/leader_update_lead_workflow_browser_rpc' || payload?.method !== 'POST') throw new Error('proxy_route_forbidden');
+        const incomingHeaders = payload?.headers && typeof payload.headers === 'object' ? payload.headers : {};
+        const authorization = text(incomingHeaders.authorization);
+        const apikey = text(incomingHeaders.apikey);
+        if (!authorization.startsWith('Bearer ') || !apikey || typeof payload.body !== 'string') throw new Error('proxy_auth_invalid');
+        const upstream = await fetch(`${STAGING_URL}${payload.path}`, {
+          method: 'POST',
+          headers: { apikey, Authorization: authorization, 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: payload.body
+        });
+        const upstreamBody = Buffer.from(await upstream.arrayBuffer());
+        if (upstreamBody.length > 262144) throw new Error('proxy_response_too_large');
+        response.writeHead(upstream.status, { 'Content-Type': upstream.headers.get('content-type') || 'application/json', 'Cache-Control': 'no-store' });
+        response.end(upstreamBody); return;
       }
       const relative = decodeURIComponent(url.pathname).replace(/^\/+/, '') || 'index.html';
       const target = path.resolve(safeRoot, relative);

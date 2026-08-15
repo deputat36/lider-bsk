@@ -26,6 +26,7 @@ assert.ok(plan.args.includes('http://127.0.0.1:43123/index.html?tab=leads'));
 assert.equal(plan.args.some((item) => String(item).startsWith('--headless')), false);
 
 assert.equal(operatorPlan().browser_mode, 'xvfb_headed_chrome');
+assert.equal(operatorPlan().browser_transport_bridge, 'same_origin_test_proxy_to_exact_staging_rpc');
 
 assert.throws(
   () => browserLaunchPlan({ chrome: '/usr/bin/google-chrome', profileDir: '/tmp/profile', url: 'http://127.0.0.1/' }),
