@@ -11,4 +11,4 @@ Authenticated CRM E2E continuation trigger.
 Issue: #487
 Expected branch: agent/487-authenticated-staging-e2e
 Production enabled: false
-Reason: capture localhost-only Worker progress stages without any diagnostic Supabase traffic; production unchanged.
+Reason: verify postOnce Worker orchestration sends verified transport immediately after exact RLS match; production unchanged.
