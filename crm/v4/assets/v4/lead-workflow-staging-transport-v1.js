@@ -18,21 +18,6 @@ function object(value) { return value && typeof value === 'object' && !Array.isA
 function uuid(value) { return UUID_PATTERN.test(text(value)); }
 function delay(ms) { return new Promise((resolve) => globalThis.setTimeout(resolve, ms)); }
 
-function transportDiagnosticProbe(stage, supabaseUrl, publicKey) {
-  const hostname = text(globalThis.location?.hostname).toLowerCase();
-  if (!['127.0.0.1', 'localhost'].includes(hostname)) return;
-  if (!isStagingLeadWorkflowEnvironment(supabaseUrl)) return;
-  const safeStage = text(stage).toLowerCase().replace(/[^a-z0-9_-]/g, '_').slice(0, 72);
-  const key = text(publicKey);
-  if (!safeStage || !key || typeof globalThis.fetch !== 'function') return;
-  const base = text(supabaseUrl).replace(/\/+$/, '');
-  globalThis.fetch(`${base}/rest/v1/rpc/crm_e2e_transport_${safeStage}`, {
-    method: 'POST',
-    headers: { apikey: key, 'Content-Type': 'application/json' },
-    body: '{}'
-  }).catch(() => undefined);
-}
-
 export function projectRefFromLeadWorkflowUrl(value) {
   try {
     const hostname = new URL(value).hostname.toLowerCase();
@@ -209,7 +194,6 @@ function leadMatchesCommand(lead, command) {
 }
 
 async function readLeadViaRest({ fetchImpl, supabaseUrl, publicKey, accessToken, leadId, timeoutMs = VERIFICATION_READ_TIMEOUT_MS }) {
-  transportDiagnosticProbe('verification_read_before', supabaseUrl, publicKey);
   const controller = new AbortController();
   let timer = 0;
   const timeoutPromise = new Promise((_, reject) => {
@@ -238,16 +222,13 @@ async function readLeadViaRest({ fetchImpl, supabaseUrl, publicKey, accessToken,
           },
           signal: controller.signal
         });
-        transportDiagnosticProbe(`verification_headers_${response.status}`, supabaseUrl, publicKey);
         if (!response.ok) return null;
         const rows = await response.json();
-        transportDiagnosticProbe('verification_json_done', supabaseUrl, publicKey);
         return Array.isArray(rows) && rows.length === 1 ? rows[0] : null;
       })(),
       timeoutPromise
     ]);
   } catch (_) {
-    transportDiagnosticProbe('verification_read_error', supabaseUrl, publicKey);
     return null;
   } finally {
     globalThis.clearTimeout(timer);
@@ -264,11 +245,9 @@ async function verifyPersistedWorkflow({
   cancelled = () => false
 }) {
   if (!uuid(command?.id)) return { type: 'verification_timeout' };
-  transportDiagnosticProbe('verification_started', supabaseUrl, publicKey);
   const started = Date.now();
   const initialDelay = Math.min(700, Math.max(50, Math.floor(timeoutMs / 5)));
   await delay(initialDelay);
-  transportDiagnosticProbe('verification_delay_done', supabaseUrl, publicKey);
 
   while (!cancelled() && Date.now() - started < timeoutMs) {
     const remaining = Math.max(200, timeoutMs - (Date.now() - started));
@@ -280,21 +259,15 @@ async function verifyPersistedWorkflow({
       leadId: command.id,
       timeoutMs: Math.min(VERIFICATION_READ_TIMEOUT_MS, remaining)
     });
-    if (leadMatchesCommand(lead, command)) {
-      transportDiagnosticProbe('verification_matched', supabaseUrl, publicKey);
-      return { type: 'verified', lead };
-    }
+    if (leadMatchesCommand(lead, command)) return { type: 'verified', lead };
     await delay(Math.min(500, Math.max(50, Math.floor(timeoutMs / 6))));
   }
 
-  transportDiagnosticProbe('verification_timeout', supabaseUrl, publicKey);
   return { type: 'verification_timeout' };
 }
 
-async function readTransportResponse(response, supabaseUrl, publicKey) {
-  transportDiagnosticProbe('edge_json_before', supabaseUrl, publicKey);
+async function readTransportResponse(response) {
   const raw = await response.json();
-  transportDiagnosticProbe('edge_json_done', supabaseUrl, publicKey);
   return { type: 'transport', response, data: object(raw) || {} };
 }
 
@@ -335,7 +308,6 @@ export async function invokeStagingLeadWorkflow({
   if (sessionResult?.error || !accessToken) {
     return Object.freeze({ ok: false, status: 401, kind: 'auth_required', code: 'auth_required', message: leadWorkflowResultMessage('auth_required') });
   }
-  transportDiagnosticProbe('session_ready', supabaseUrl, publicKey);
 
   let command;
   try {
@@ -354,14 +326,12 @@ export async function invokeStagingLeadWorkflow({
       message: leadWorkflowResultMessage('validation_error')
     });
   }
-  transportDiagnosticProbe('command_ready', supabaseUrl, publicKey);
 
   const controller = new AbortController();
   let finished = false;
   const edgeEndpoint = `${supabaseUrl.replace(/\/+$/, '')}/functions/v1/${FUNCTION_SLUG}`;
   const transportPromise = (async () => {
     try {
-      transportDiagnosticProbe('edge_fetch_before', supabaseUrl, publicKey);
       const response = await fetchImpl(edgeEndpoint, {
         method: 'POST',
         headers: {
@@ -372,15 +342,12 @@ export async function invokeStagingLeadWorkflow({
         body: JSON.stringify(command),
         signal: controller.signal
       });
-      transportDiagnosticProbe(`edge_headers_${response.status}`, supabaseUrl, publicKey);
-      return await readTransportResponse(response, supabaseUrl, publicKey);
+      return await readTransportResponse(response);
     } catch (error) {
-      transportDiagnosticProbe('edge_fetch_error', supabaseUrl, publicKey);
       return { type: 'transport_error', error };
     }
   })();
 
-  transportDiagnosticProbe('verification_scheduled', supabaseUrl, publicKey);
   const verificationPromise = neverResolveOnVerificationTimeout(verifyPersistedWorkflow({
     fetchImpl,
     supabaseUrl,
@@ -398,7 +365,6 @@ export async function invokeStagingLeadWorkflow({
 
   const winner = await Promise.race([transportPromise, verificationPromise, deadlinePromise]);
   finished = true;
-  transportDiagnosticProbe(`race_winner_${winner.type}`, supabaseUrl, publicKey);
 
   if (winner.type === 'verified') {
     controller.abort();
