@@ -212,7 +212,7 @@ jobs:
           node --check crm/v4/assets/v4/installation-job-staging-create-v1.js
           command -v xvfb-run >/dev/null
           node tools/run_crm_staging_authenticated_e2e.mjs --mode=plan > "${RUNNER_TEMP}/crm-e2e-plan.json"
-          jq -e '.project_ref == "otulfnouybahfnsycxqn" and .production_enabled == false and .first_login_via_form == true and .browser_mode == "xvfb_headed_chrome" and .browser_transport_bridge == "same_origin_test_proxy_to_exact_staging_rpc" and .external_cleanup_required == true' "${RUNNER_TEMP}/crm-e2e-plan.json" >/dev/null
+          jq -e '.project_ref == "otulfnouybahfnsycxqn" and .production_enabled == false and .first_login_via_form == true and .browser_mode == "xvfb_headed_chrome" and .browser_transport_bridge == "same_origin_test_proxy_to_exact_staging_rpc_and_rls_readback" and .external_cleanup_required == true' "${RUNNER_TEMP}/crm-e2e-plan.json" >/dev/null
 
       - name: Pin browser Supabase dependency locally
         shell: bash
