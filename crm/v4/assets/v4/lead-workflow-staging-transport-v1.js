@@ -302,8 +302,11 @@ function createFetchRpcTransport({ fetchImpl, url, publicKey, accessToken, comma
         body: JSON.stringify(browserRpcPayload(command)),
         signal: controller.signal
       });
+      if (response.status === 202) {
+        try { response.body?.cancel?.(); } catch (_) { /* noop */ }
+        return new Promise(() => {});
+      }
       const raw = await response.json();
-      if (response.status === 202 && raw?.pending === true) return new Promise(() => {});
       return { type: 'transport', response, data: object(raw) || {} };
     } catch (error) {
       return { type: 'transport_error', error };
