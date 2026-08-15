@@ -39,6 +39,8 @@ required_transport = [
     "expected_updated_at: expectedUpdatedAt",
     "idempotency_key: key",
     "client.auth.getSession",
+    "function deferTransportAbort(edgeTransport)",
+    "globalThis.setTimeout(() =>",
     "function createWorkerEdgeTransport(",
     "new URL('./lead-workflow-staging-worker-v1.js', import.meta.url)",
     "typeof globalThis.Worker === 'function'",
@@ -47,6 +49,7 @@ required_transport = [
     "createFetchEdgeTransport({ fetchImpl",
     "neverResolveOnVerificationTimeout(verifyPersistedWorkflow({",
     "Promise.race([edgeTransport.promise, verificationPromise, deadlinePromise])",
+    "deferTransportAbort(edgeTransport);",
     "kind = 'verified_after_transport_error'",
     "/functions/v1/${FUNCTION_SLUG}",
     "/rest/v1/leader_leads",
@@ -56,6 +59,9 @@ required_transport = [
 for marker in required_transport:
     if marker not in transport:
         raise SystemExit(f'transport marker missing: {marker}')
+
+if 'edgeTransport.abort();' in transport:
+    raise SystemExit('staging transport teardown must not synchronously abort before UI result delivery')
 
 required_worker = [
     'self.onmessage = (event) =>',
