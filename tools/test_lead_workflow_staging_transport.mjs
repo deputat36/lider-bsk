@@ -26,20 +26,9 @@ class FakeResponse {
   async json() { return this.body; }
 }
 
-function readClient(row) {
-  return {
-    auth: { getSession: async () => ({ data: { session: { access_token: ACCESS_TOKEN } }, error: null }) },
-    from(table) {
-      assert.equal(table, 'leader_leads');
-      const builder = {
-        select(fields) { assert.match(fields, /assigned_to/); return builder; },
-        eq(key, value) { assert.equal(key, 'id'); assert.equal(value, leadId); return builder; },
-        async maybeSingle() { return { data: row, error: null }; }
-      };
-      return builder;
-    }
-  };
-}
+const client = {
+  auth: { getSession: async () => ({ data: { session: { access_token: ACCESS_TOKEN } }, error: null }) }
+};
 
 assert.equal(projectRefFromLeadWorkflowUrl(STAGING_URL), 'otulfnouybahfnsycxqn');
 assert.equal(projectRefFromLeadWorkflowUrl('https://evil.otulfnouybahfnsycxqn.supabase.co'), '');
@@ -74,9 +63,6 @@ assert.throws(() => buildStagingLeadWorkflowCommand({
   lead: { id: leadId, updated_at: expectedUpdatedAt }, patch: { message: 'forbidden' }, requestId, idempotencyKey: 'key'
 }), /patch_field_not_allowed:message/);
 
-const client = {
-  auth: { getSession: async () => ({ data: { session: { access_token: ACCESS_TOKEN } }, error: null }) }
-};
 let invokedUrl = '';
 let invokedInit = null;
 const result = await invokeStagingLeadWorkflow({
@@ -111,24 +97,33 @@ assert.equal(invokedBody.action, 'update');
 assert.equal(invokedBody.assigned_to, actorId);
 assert.equal(invokedBody.expected_updated_at, expectedUpdatedAt);
 
+let restReadSeen = false;
 const recovered = await invokeStagingLeadWorkflow({
-  client: readClient({
-    id: leadId,
-    status: 'В работе',
-    assigned_to: actorId,
-    next_contact_at: null,
-    updated_at: '2026-07-23T18:01:00.000Z'
-  }),
+  client,
   supabaseUrl: STAGING_URL,
   publishableKey: PUBLISHABLE_KEY,
   lead: { id: leadId, updated_at: expectedUpdatedAt },
   patch: { assigned_to: actorId, status: 'В работе' },
   idempotencyKey: `lead-workflow:${leadId}:${randomId}`,
   cryptoObject: { randomUUID: () => requestId },
-  requestTimeoutMs: 200,
-  verificationTimeoutMs: 100,
-  fetchImpl: async () => ({ status: 201, ok: true, json: async () => new Promise(() => {}) })
+  requestTimeoutMs: 300,
+  verificationTimeoutMs: 200,
+  fetchImpl: async (url) => {
+    if (String(url).includes('/functions/v1/')) {
+      return { status: 201, ok: true, json: async () => new Promise(() => {}) };
+    }
+    restReadSeen = true;
+    assert.match(String(url), /\/rest\/v1\/leader_leads/);
+    return new FakeResponse(200, [{
+      id: leadId,
+      status: 'В работе',
+      assigned_to: actorId,
+      next_contact_at: null,
+      updated_at: '2026-07-23T18:01:00.000Z'
+    }]);
+  }
 });
+assert.equal(restReadSeen, true);
 assert.equal(recovered.ok, true);
 assert.equal(recovered.kind, 'verified_after_transport_error');
 assert.equal(recovered.status, 202);
@@ -136,22 +131,27 @@ assert.equal(recovered.data.transport_recovered, true);
 assert.equal(recovered.data.lead.assigned_to, actorId);
 
 const unresolvedTimeout = await invokeStagingLeadWorkflow({
-  client: readClient({
-    id: leadId,
-    status: 'Новая',
-    assigned_to: null,
-    next_contact_at: null,
-    updated_at: expectedUpdatedAt
-  }),
+  client,
   supabaseUrl: STAGING_URL,
   publishableKey: PUBLISHABLE_KEY,
   lead: { id: leadId, updated_at: expectedUpdatedAt },
   patch: { assigned_to: actorId, status: 'В работе' },
   idempotencyKey: `lead-workflow:${leadId}:${randomId}`,
   cryptoObject: { randomUUID: () => requestId },
-  requestTimeoutMs: 200,
-  verificationTimeoutMs: 100,
-  fetchImpl: async () => ({ status: 201, ok: true, json: async () => new Promise(() => {}) })
+  requestTimeoutMs: 250,
+  verificationTimeoutMs: 120,
+  fetchImpl: async (url) => {
+    if (String(url).includes('/functions/v1/')) {
+      return { status: 201, ok: true, json: async () => new Promise(() => {}) };
+    }
+    return new FakeResponse(200, [{
+      id: leadId,
+      status: 'Новая',
+      assigned_to: null,
+      next_contact_at: null,
+      updated_at: expectedUpdatedAt
+    }]);
+  }
 });
 assert.equal(unresolvedTimeout.ok, false);
 assert.equal(unresolvedTimeout.kind, 'network_error');
