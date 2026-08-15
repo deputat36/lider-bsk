@@ -1,3 +1,5 @@
+import './lead-workflow-staging-bootstrap-v1.js';
+
 const CRM_SESSION_KEY = 'leader_crm_v4_main_session';
 const LEGACY_SHARED_SESSION_KEY = 'leader_crm_v4_session';
 
