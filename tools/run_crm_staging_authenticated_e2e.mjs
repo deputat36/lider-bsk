@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { createServer } from 'node:http';
+import { request as httpsRequest } from 'node:https';
 import { spawn } from 'node:child_process';
 import { access, cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { constants as fsConstants } from 'node:fs';
@@ -198,6 +199,26 @@ output('passed',{authenticated:true,role:'${expectedRole}',ui_allowed_controls:t
 function mimeType(filePath) {
   return ({ '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp' })[path.extname(filePath).toLowerCase()] || 'application/octet-stream';
 }
+function exactStagingRequest({ url, method, apikey, authorization, body = '' }) {
+  const endpoint = url instanceof URL ? url : new URL(String(url));
+  if (endpoint.origin !== STAGING_URL || !['GET', 'POST'].includes(method)) return Promise.reject(new Error('staging_proxy_target_invalid'));
+  return new Promise((resolve, reject) => {
+    const headers = { apikey, Authorization: authorization, Accept: 'application/json' };
+    if (method === 'POST') {
+      headers['Content-Type'] = 'application/json';
+      headers['Content-Length'] = Buffer.byteLength(body);
+    }
+    const upstream = httpsRequest(endpoint, { method, headers }, (upstreamResponse) => {
+      const chunks = []; let size = 0;
+      upstreamResponse.on('data', (chunk) => { size += chunk.length; if (size > 262144) upstream.destroy(new Error('staging_proxy_response_too_large')); else chunks.push(chunk); });
+      upstreamResponse.once('end', () => resolve({ status: Number(upstreamResponse.statusCode || 0), contentType: text(upstreamResponse.headers['content-type']) || 'application/json', body: Buffer.concat(chunks) }));
+      upstreamResponse.once('error', reject);
+    });
+    upstream.setTimeout(25000, () => upstream.destroy(new Error('staging_proxy_timeout')));
+    upstream.once('error', reject);
+    upstream.end(method === 'POST' ? body : undefined);
+  });
+}
 async function localServer(root) {
   const safeRoot = path.resolve(root);
   let lastProgress = 'not_started';
@@ -238,11 +259,10 @@ async function localServer(root) {
         if (!authorization.startsWith('Bearer ') || !apikey || typeof payload.body !== 'string') throw new Error('proxy_auth_invalid');
         if (exactReadback) {
           lastProgress = 'workflow_readback_proxy_received'; lastProgressAt = Date.now();
-          const upstream = await fetch(upstreamUrl, { method: 'GET', headers: { apikey, Authorization: authorization, Accept: 'application/json' } });
-          const upstreamBody = Buffer.from(await upstream.arrayBuffer());
-          if (upstreamBody.length > 65536) throw new Error('proxy_response_too_large');
-          response.writeHead(upstream.status, { 'Content-Type': upstream.headers.get('content-type') || 'application/json', 'Cache-Control': 'no-store' });
-          response.end(upstreamBody);
+          const upstream = await exactStagingRequest({ url: upstreamUrl, method: 'GET', apikey, authorization });
+          if (upstream.body.length > 65536) throw new Error('proxy_response_too_large');
+          response.writeHead(upstream.status, { 'Content-Type': upstream.contentType, 'Cache-Control': 'no-store' });
+          response.end(upstream.body);
           lastProgress = 'workflow_readback_proxy_responded'; lastProgressAt = Date.now();
           return;
         }
@@ -250,11 +270,7 @@ async function localServer(root) {
         response.end(JSON.stringify({ pending: true }));
         lastProgress = 'workflow_rpc_proxy_accepted'; lastProgressAt = Date.now();
         globalThis.setTimeout(() => {
-          fetch(`${STAGING_URL}${payload.path}`, {
-            method: 'POST',
-            headers: { apikey, Authorization: authorization, 'Content-Type': 'application/json', Accept: 'application/json' },
-            body: payload.body
-          }).then((upstream) => upstream.body?.cancel()).catch(() => undefined);
+          exactStagingRequest({ url: upstreamUrl, method: 'POST', apikey, authorization, body: payload.body }).catch(() => undefined);
         }, 0);
         return;
       }
