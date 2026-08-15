@@ -58,16 +58,23 @@ for marker in required_transport:
         raise SystemExit(f'transport marker missing: {marker}')
 
 required_worker = [
-    'self.onmessage = async (event) =>',
+    'self.onmessage = (event) =>',
     "Authorization: `Bearer ${accessToken}`",
     "'Content-Type': 'application/json'",
     'body: JSON.stringify(command)',
-    "self.postMessage({\n      type: 'transport'",
+    "self.postMessage({ type: 'transport_error', code: 'worker_payload_invalid' })",
+    "self.postMessage(message);",
+    "worker_post_verified_transport",
     "type: 'transport_error'",
 ]
 for marker in required_worker:
     if marker not in worker:
         raise SystemExit(f'worker marker missing: {marker}')
+
+post_position = worker.find('self.postMessage(message);')
+abort_position = worker.find('try { controller.abort();', post_position)
+if post_position < 0 or abort_position < 0 or post_position >= abort_position:
+    raise SystemExit('Worker authoritative result must be posted before cancelling ambiguous Edge fetch')
 
 for forbidden in [
     'client.functions.invoke(FUNCTION_SLUG',
