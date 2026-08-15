@@ -95,6 +95,12 @@ function onlyVerified(promise) {
   ));
 }
 
+function onlyHttpTransport(promise) {
+  return promise.then((result) => (
+    result?.type === 'transport' ? result : new Promise(() => {})
+  ));
+}
+
 self.onmessage = async (event) => {
   const payload = safeBody(event?.data);
   const url = text(payload.url);
@@ -118,7 +124,7 @@ self.onmessage = async (event) => {
   }
 
   const controller = new AbortController();
-  const edgePromise = (async () => {
+  const edgeAttempt = (async () => {
     try {
       const response = await fetch(url, {
         method: 'POST',
@@ -146,6 +152,11 @@ self.onmessage = async (event) => {
       };
     }
   })();
+
+  // A browser/network error after the POST was sent is ambiguous: the server may
+  // already have committed the command. Only a readable HTTP response may win
+  // immediately; transport errors wait for exact RLS verification or the deadline.
+  const edgePromise = onlyHttpTransport(edgeAttempt);
 
   const verificationPromise = onlyVerified(verifyPersisted({
     baseUrl,
@@ -186,6 +197,6 @@ self.onmessage = async (event) => {
   controller.abort();
   self.postMessage({
     type: 'transport_error',
-    code: winner.type === 'deadline' ? 'request_timeout' : text(winner.code) || 'worker_network_error'
+    code: 'request_timeout'
   });
 };
