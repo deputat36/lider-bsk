@@ -279,7 +279,7 @@ function parseJsonText(value) {
   }
 }
 
-function createWorkerEdgeTransport({ workerFactory, url, publicKey, accessToken, command, timeoutMs }) {
+function createWorkerEdgeTransport({ workerFactory, url, publicKey, accessToken, command, timeoutMs, verificationTimeoutMs }) {
   let worker = null;
   let settled = false;
   const settle = (resolve, value) => {
@@ -308,7 +308,7 @@ function createWorkerEdgeTransport({ workerFactory, url, publicKey, accessToken,
         });
       };
       worker.onerror = () => settle(resolve, { type: 'transport_error', error: transportError('worker_runtime_error') });
-      worker.postMessage({ url, publicKey, accessToken, command, timeoutMs });
+      worker.postMessage({ url, publicKey, accessToken, command, timeoutMs, verificationTimeoutMs });
     } catch (error) {
       settle(resolve, { type: 'transport_error', error });
     }
@@ -453,28 +453,44 @@ export async function invokeStagingLeadWorkflow({
 
   let finished = false;
   const edgeEndpoint = `${supabaseUrl.replace(/\/+$/, '')}/functions/v1/${FUNCTION_SLUG}`;
-  const edgeTransport = typeof workerFactory === 'function'
-    ? createWorkerEdgeTransport({ workerFactory, url: edgeEndpoint, publicKey, accessToken: resolvedAccessToken, command, timeoutMs: requestTimeoutMs })
+  const workerTransportEnabled = typeof workerFactory === 'function';
+  const edgeTransport = workerTransportEnabled
+    ? createWorkerEdgeTransport({
+        workerFactory,
+        url: edgeEndpoint,
+        publicKey,
+        accessToken: resolvedAccessToken,
+        command,
+        timeoutMs: requestTimeoutMs,
+        verificationTimeoutMs: Math.min(verificationTimeoutMs, requestTimeoutMs)
+      })
     : typeof xhrFactory === 'function'
       ? createXhrEdgeTransport({ xhrFactory, url: edgeEndpoint, publicKey, accessToken: resolvedAccessToken, command, timeoutMs: requestTimeoutMs })
       : createFetchEdgeTransport({ fetchImpl, url: edgeEndpoint, publicKey, accessToken: resolvedAccessToken, command });
 
-  const verificationPromise = neverResolveOnVerificationTimeout(verifyPersistedWorkflow({
-    fetchImpl,
-    supabaseUrl,
-    publicKey,
-    accessToken: resolvedAccessToken,
-    command,
-    timeoutMs: Math.min(verificationTimeoutMs, requestTimeoutMs),
-    cancelled: () => finished
-  }));
+  // The Worker owns both the Edge request and its bounded RLS verification.
+  // Starting the same verifier on the main thread duplicates protected GETs
+  // and can keep the renderer busy after the Worker has already committed.
+  const verificationPromise = workerTransportEnabled
+    ? null
+    : neverResolveOnVerificationTimeout(verifyPersistedWorkflow({
+        fetchImpl,
+        supabaseUrl,
+        publicKey,
+        accessToken: resolvedAccessToken,
+        command,
+        timeoutMs: Math.min(verificationTimeoutMs, requestTimeoutMs),
+        cancelled: () => finished
+      }));
 
   const deadlinePromise = (async () => {
     await delay(requestTimeoutMs);
     return { type: 'deadline' };
   })();
 
-  const winner = await Promise.race([edgeTransport.promise, verificationPromise, deadlinePromise]);
+  const raceCandidates = [edgeTransport.promise, deadlinePromise];
+  if (verificationPromise) raceCandidates.splice(1, 0, verificationPromise);
+  const winner = await Promise.race(raceCandidates);
   finished = true;
   deferTransportAbort(edgeTransport);
 

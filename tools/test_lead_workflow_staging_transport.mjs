@@ -139,6 +139,58 @@ assert.equal(explicitGetSessionCalled, false);
 assert.equal(explicitTokenResult.ok, true);
 assert.equal(explicitAuthorization, `Bearer ${ACCESS_TOKEN}`);
 
+let workerPayload = null;
+let workerMainThreadFetchCalls = 0;
+let workerTerminated = false;
+const workerResult = await invokeStagingLeadWorkflow({
+  client,
+  supabaseUrl: STAGING_URL,
+  publishableKey: PUBLISHABLE_KEY,
+  accessToken: ACCESS_TOKEN,
+  lead: { id: leadId, updated_at: expectedUpdatedAt },
+  patch: { assigned_to: actorId, status: 'В работе' },
+  idempotencyKey: `lead-workflow:${leadId}:worker`,
+  cryptoObject: { randomUUID: () => requestId },
+  requestTimeoutMs: 2500,
+  verificationTimeoutMs: 1250,
+  fetchImpl: async () => {
+    workerMainThreadFetchCalls += 1;
+    throw new Error('worker transport must not duplicate verification on the main thread');
+  },
+  workerFactory: () => ({
+    onmessage: null,
+    onerror: null,
+    postMessage(payload) {
+      workerPayload = payload;
+      queueMicrotask(() => this.onmessage?.({
+        data: {
+          type: 'transport',
+          status: 201,
+          ok: true,
+          data: {
+            ok: true,
+            request_id: requestId,
+            lead: {
+              id: leadId,
+              status: 'В работе',
+              assigned_to: actorId,
+              updated_at: '2026-07-23T18:01:00.000Z'
+            }
+          }
+        }
+      }));
+    },
+    terminate() { workerTerminated = true; }
+  })
+});
+assert.equal(workerResult.ok, true);
+assert.equal(workerResult.kind, 'updated');
+assert.equal(workerMainThreadFetchCalls, 0);
+assert.equal(workerPayload.timeoutMs, 2500);
+assert.equal(workerPayload.verificationTimeoutMs, 1250);
+await new Promise((resolve) => setTimeout(resolve, 0));
+assert.equal(workerTerminated, true);
+
 let restReadSeen = false;
 const recovered = await invokeStagingLeadWorkflow({
   client,
