@@ -73,8 +73,8 @@ required_worker = [
     'body: JSON.stringify(command)',
     "self.postMessage({ type: 'transport_error', code: 'worker_payload_invalid' })",
     "self.postMessage(message);",
-    "worker_post_verified_transport",
     "type: 'transport_error'",
+    "transport_recovered: true",
 ]
 for marker in required_worker:
     if marker not in worker:
@@ -92,6 +92,8 @@ for forbidden in [
     'SUPABASE_SERVICE_ROLE_KEY',
     'crm_e2e_diag_',
     'crm_e2e_transport_',
+    '/__crm_e2e_progress',
+    'navigator.sendBeacon',
 ]:
     if forbidden in transport or forbidden in worker or forbidden in ui or forbidden in bootstrap:
         raise SystemExit(f'forbidden frontend marker: {forbidden}')
