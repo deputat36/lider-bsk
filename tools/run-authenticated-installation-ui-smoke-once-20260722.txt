@@ -11,4 +11,4 @@ Authenticated CRM E2E continuation trigger.
 Issue: #487
 Expected branch: agent/487-authenticated-staging-e2e
 Production enabled: false
-Reason: verify root bootstrap queues and replays a fast workflow click only after the protected staging handler is ready; postOnce Worker exact RLS confirmation remains enabled; production unchanged.
+Reason: verify Worker posts authoritative exact-RLS confirmation to the main UI thread before cancelling the ambiguous Edge fetch; production unchanged.
