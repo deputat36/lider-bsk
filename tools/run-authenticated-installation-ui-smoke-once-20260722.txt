@@ -11,4 +11,4 @@ Authenticated CRM E2E continuation trigger.
 Issue: #487
 Expected branch: agent/487-authenticated-staging-e2e
 Production enabled: false
-Reason: localize browser transport around Edge fetch headers/body and independent RLS verification using localhost-only probes; transport probe commit 9c6ba2a8617086444a7844f0856cd44d8db0d441
+Reason: verify clean staging lead workflow transport with current DOM re-query fix and independent RLS confirmation; all localhost diagnostic probes removed before this run.
