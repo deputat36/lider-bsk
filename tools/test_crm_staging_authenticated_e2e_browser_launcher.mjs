@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import {
   browserLaunchPlan,
   operatorPlan
@@ -27,6 +28,10 @@ assert.equal(plan.args.some((item) => String(item).startsWith('--headless')), fa
 
 assert.equal(operatorPlan().browser_mode, 'xvfb_headed_chrome');
 assert.equal(operatorPlan().browser_transport_bridge, 'same_origin_test_proxy_to_exact_staging_rpc_and_rls_readback');
+
+const runnerSource = await readFile(new URL('./run_crm_staging_authenticated_e2e.mjs', import.meta.url), 'utf8');
+assert.match(runnerSource, /bridgeRequest\.catch\(\(\)=>undefined\);return Promise\.resolve\(new Response\(null,\{status:202/);
+assert.doesNotMatch(runnerSource, /__crm_e2e_staging_rpc_proxy[^\n]+signal:init\?\.signal/);
 
 assert.throws(
   () => browserLaunchPlan({ chrome: '/usr/bin/google-chrome', profileDir: '/tmp/profile', url: 'http://127.0.0.1/' }),
