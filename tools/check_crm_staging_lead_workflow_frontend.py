@@ -4,6 +4,7 @@ import json
 
 ROOT = Path(__file__).resolve().parents[1]
 TRANSPORT = ROOT / 'crm/v4/assets/v4/lead-workflow-staging-transport-v1.js'
+WORKER = ROOT / 'crm/v4/assets/v4/lead-workflow-staging-worker-v1.js'
 BOOTSTRAP = ROOT / 'crm/v4/assets/v4/lead-workflow-staging-bootstrap-v1.js'
 ROOT_BOOTSTRAP = ROOT / 'crm/v4/assets/v4/auth-session-reset-v1.js'
 UI = ROOT / 'crm/v4/assets/v4/lead-workflow-staging-ui-v1.js'
@@ -11,11 +12,12 @@ ASSIGNMENT = ROOT / 'crm/v4/assets/v4/lead-assignment-model-v1.js'
 EDGE = ROOT / 'supabase/staging-functions/leader-crm-leads-staging/index.ts'
 CONTRACT = ROOT / 'contracts/crm-staging-lead-workflow-frontend-v1.json'
 
-for path in (TRANSPORT, BOOTSTRAP, ROOT_BOOTSTRAP, UI, ASSIGNMENT, EDGE, CONTRACT):
+for path in (TRANSPORT, WORKER, BOOTSTRAP, ROOT_BOOTSTRAP, UI, ASSIGNMENT, EDGE, CONTRACT):
     if not path.exists():
         raise SystemExit(f'missing required file: {path.relative_to(ROOT)}')
 
 transport = TRANSPORT.read_text(encoding='utf-8')
+worker = WORKER.read_text(encoding='utf-8')
 bootstrap = BOOTSTRAP.read_text(encoding='utf-8')
 root_bootstrap = ROOT_BOOTSTRAP.read_text(encoding='utf-8')
 ui = UI.read_text(encoding='utf-8')
@@ -37,11 +39,11 @@ required_transport = [
     "expected_updated_at: expectedUpdatedAt",
     "idempotency_key: key",
     "client.auth.getSession",
+    "function createWorkerEdgeTransport(",
+    "new URL('./lead-workflow-staging-worker-v1.js', import.meta.url)",
+    "typeof globalThis.Worker === 'function'",
+    "worker.postMessage({ url, publicKey, accessToken, command, timeoutMs })",
     "function createXhrEdgeTransport(",
-    "xhr.open('POST', url, true)",
-    "xhr.timeout = timeoutMs",
-    "xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`)",
-    "typeof globalThis.XMLHttpRequest === 'function'",
     "createFetchEdgeTransport({ fetchImpl",
     "neverResolveOnVerificationTimeout(verifyPersistedWorkflow({",
     "Promise.race([edgeTransport.promise, verificationPromise, deadlinePromise])",
@@ -55,6 +57,18 @@ for marker in required_transport:
     if marker not in transport:
         raise SystemExit(f'transport marker missing: {marker}')
 
+required_worker = [
+    'self.onmessage = async (event) =>',
+    "Authorization: `Bearer ${accessToken}`",
+    "'Content-Type': 'application/json'",
+    'body: JSON.stringify(command)',
+    "self.postMessage({\n      type: 'transport'",
+    "type: 'transport_error'",
+]
+for marker in required_worker:
+    if marker not in worker:
+        raise SystemExit(f'worker marker missing: {marker}')
+
 for forbidden in [
     'client.functions.invoke(FUNCTION_SLUG',
     'ofewxuqfjhamgerwzull.supabase.co/functions/v1/leader-crm-leads-staging',
@@ -63,7 +77,7 @@ for forbidden in [
     'crm_e2e_diag_',
     'crm_e2e_transport_',
 ]:
-    if forbidden in transport or forbidden in ui or forbidden in bootstrap:
+    if forbidden in transport or forbidden in worker or forbidden in ui or forbidden in bootstrap:
         raise SystemExit(f'forbidden frontend marker: {forbidden}')
 
 required_ui = [
