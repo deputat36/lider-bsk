@@ -11,4 +11,4 @@ Authenticated CRM E2E continuation trigger.
 Issue: #487
 Expected branch: agent/487-authenticated-staging-e2e
 Production enabled: false
-Reason: verify authoritative lead workflow result reaches the UI before deferred Worker/XHR/fetch teardown; production unchanged.
+Reason: record the actual staging lead-card primary action before assignment, then verify deferred transport teardown if assign_self is rendered; production unchanged.
