@@ -147,9 +147,14 @@ self.onmessage = (event) => {
     if (settled) return false;
     settled = true;
     if (deadlineTimer) clearTimeout(deadlineTimer);
-    try { controller.abort(); } catch (_) { /* noop */ }
     if (stage) e2eProgress(stage);
     self.postMessage(message);
+    // Deliver the authoritative result to the main thread before cancelling an
+    // ambiguous Edge fetch. In headless Chrome an abort while the response body
+    // is stalled can synchronously block the Worker before postMessage runs.
+    setTimeout(() => {
+      try { controller.abort(); } catch (_) { /* noop */ }
+    }, 0);
     return true;
   };
 
