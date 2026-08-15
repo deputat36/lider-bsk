@@ -11,4 +11,4 @@ Authenticated CRM E2E continuation trigger.
 Issue: #487
 Expected branch: agent/487-authenticated-staging-e2e
 Production enabled: false
-Reason: verify exact-RLS Worker confirmation is handed to the UI before any localhost diagnostic fetch after a matched persisted lead workflow; production unchanged.
+Reason: verify the canonical staging lead workflow with all temporary localhost beacon/fetch diagnostics removed from product UI and Worker code; production unchanged.
