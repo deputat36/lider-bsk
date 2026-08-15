@@ -303,7 +303,6 @@ function createFetchRpcTransport({ fetchImpl, url, publicKey, accessToken, comma
         signal: controller.signal
       });
       if (response.status === 202) {
-        try { response.body?.cancel?.(); } catch (_) { /* noop */ }
         return new Promise(() => {});
       }
       const raw = await response.json();
