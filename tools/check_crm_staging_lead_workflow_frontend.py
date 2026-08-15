@@ -35,9 +35,14 @@ required_transport = [
     "expected_updated_at: expectedUpdatedAt",
     "idempotency_key: key",
     "client.auth.getSession",
-    "const transportPromise = (async () =>",
+    "function createXhrEdgeTransport(",
+    "xhr.open('POST', url, true)",
+    "xhr.timeout = timeoutMs",
+    "xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`)",
+    "typeof globalThis.XMLHttpRequest === 'function'",
+    "createFetchEdgeTransport({ fetchImpl",
     "neverResolveOnVerificationTimeout(verifyPersistedWorkflow({",
-    "Promise.race([transportPromise, verificationPromise, deadlinePromise])",
+    "Promise.race([edgeTransport.promise, verificationPromise, deadlinePromise])",
     "kind = 'verified_after_transport_error'",
     "/functions/v1/${FUNCTION_SLUG}",
     "/rest/v1/leader_leads",
@@ -53,6 +58,8 @@ for forbidden in [
     'ofewxuqfjhamgerwzull.supabase.co/functions/v1/leader-crm-leads-staging',
     'service_role',
     'SUPABASE_SERVICE_ROLE_KEY',
+    'crm_e2e_diag_',
+    'crm_e2e_transport_',
 ]:
     if forbidden in transport or forbidden in ui or forbidden in bootstrap:
         raise SystemExit(f'forbidden frontend marker: {forbidden}')
