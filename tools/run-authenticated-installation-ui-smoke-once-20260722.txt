@@ -11,4 +11,4 @@ Authenticated CRM E2E continuation trigger.
 Issue: #487
 Expected branch: agent/487-authenticated-staging-e2e
 Production enabled: false
-Reason: verify Worker posts authoritative exact-RLS confirmation to the main UI thread before cancelling the ambiguous Edge fetch; production unchanged.
+Reason: verify authoritative exact-RLS Worker postMessage is delivered before any localhost diagnostic fetch or Edge cancellation; production unchanged.
