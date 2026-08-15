@@ -274,6 +274,49 @@ function parseJsonText(value) {
   }
 }
 
+function createWorkerEdgeTransport({ workerFactory, url, publicKey, accessToken, command, timeoutMs }) {
+  let worker = null;
+  let settled = false;
+  const settle = (resolve, value) => {
+    if (settled) return;
+    settled = true;
+    resolve(value);
+  };
+
+  const promise = new Promise((resolve) => {
+    try {
+      const workerUrl = new URL('./lead-workflow-staging-worker-v1.js', import.meta.url);
+      worker = workerFactory(workerUrl);
+      worker.onmessage = (event) => {
+        const payload = object(event?.data) || {};
+        if (payload.type === 'transport') {
+          settle(resolve, {
+            type: 'transport',
+            response: { status: Number(payload.status || 0), ok: payload.ok === true },
+            data: object(payload.data) || {}
+          });
+          return;
+        }
+        settle(resolve, {
+          type: 'transport_error',
+          error: transportError(text(payload.code) || 'worker_transport_error', payload.code === 'request_timeout' ? 'AbortError' : 'Error')
+        });
+      };
+      worker.onerror = () => settle(resolve, { type: 'transport_error', error: transportError('worker_runtime_error') });
+      worker.postMessage({ url, publicKey, accessToken, command, timeoutMs });
+    } catch (error) {
+      settle(resolve, { type: 'transport_error', error });
+    }
+  });
+
+  return {
+    promise,
+    abort: () => {
+      try { worker?.terminate?.(); } catch (_) { /* noop */ }
+    }
+  };
+}
+
 function createXhrEdgeTransport({ xhrFactory, url, publicKey, accessToken, command, timeoutMs }) {
   let xhr = null;
   let settled = false;
@@ -353,6 +396,7 @@ export async function invokeStagingLeadWorkflow({
   idempotencyKey = '',
   cryptoObject = globalThis.crypto,
   fetchImpl = globalThis.fetch,
+  workerFactory = typeof globalThis.Worker === 'function' ? (url) => new globalThis.Worker(url) : null,
   xhrFactory = typeof globalThis.XMLHttpRequest === 'function' ? () => new globalThis.XMLHttpRequest() : null,
   requestTimeoutMs = REQUEST_TIMEOUT_MS,
   verificationTimeoutMs = VERIFICATION_TIMEOUT_MS
@@ -397,9 +441,11 @@ export async function invokeStagingLeadWorkflow({
 
   let finished = false;
   const edgeEndpoint = `${supabaseUrl.replace(/\/+$/, '')}/functions/v1/${FUNCTION_SLUG}`;
-  const edgeTransport = typeof xhrFactory === 'function'
-    ? createXhrEdgeTransport({ xhrFactory, url: edgeEndpoint, publicKey, accessToken, command, timeoutMs: requestTimeoutMs })
-    : createFetchEdgeTransport({ fetchImpl, url: edgeEndpoint, publicKey, accessToken, command });
+  const edgeTransport = typeof workerFactory === 'function'
+    ? createWorkerEdgeTransport({ workerFactory, url: edgeEndpoint, publicKey, accessToken, command, timeoutMs: requestTimeoutMs })
+    : typeof xhrFactory === 'function'
+      ? createXhrEdgeTransport({ xhrFactory, url: edgeEndpoint, publicKey, accessToken, command, timeoutMs: requestTimeoutMs })
+      : createFetchEdgeTransport({ fetchImpl, url: edgeEndpoint, publicKey, accessToken, command });
 
   const verificationPromise = neverResolveOnVerificationTimeout(verifyPersistedWorkflow({
     fetchImpl,
