@@ -27,10 +27,11 @@ assert.ok(plan.args.includes('http://127.0.0.1:43123/index.html?tab=leads'));
 assert.equal(plan.args.some((item) => String(item).startsWith('--headless')), false);
 
 assert.equal(operatorPlan().browser_mode, 'xvfb_headed_chrome');
-assert.equal(operatorPlan().browser_transport_bridge, 'same_origin_test_proxy_to_exact_staging_rpc_and_rls_readback');
+assert.equal(operatorPlan().browser_transport_bridge, 'same_origin_beacon_to_exact_staging_rpc_and_direct_rls_readback');
 
 const runnerSource = await readFile(new URL('./run_crm_staging_authenticated_e2e.mjs', import.meta.url), 'utf8');
-assert.match(runnerSource, /bridgeRequest\.catch\(\(\)=>undefined\);return Promise\.resolve\(new Response\(null,\{status:202/);
+assert.match(runnerSource, /navigator\.sendBeacon\('\/__crm_e2e_staging_rpc_proxy'/);
+assert.match(runnerSource, /const \{signal:_signal,\.\.\.readbackInit\}=init\|\|\{\};return nativeFetch\(requestUrl\.toString\(\),readbackInit\)/);
 assert.doesNotMatch(runnerSource, /__crm_e2e_staging_rpc_proxy[^\n]+signal:init\?\.signal/);
 
 assert.throws(
