@@ -15,6 +15,14 @@ let busy = false;
 
 function text(value) { return String(value ?? '').trim(); }
 
+function e2eProgress(stage) {
+  const hostname = text(globalThis.location?.hostname).toLowerCase();
+  if (!['127.0.0.1', 'localhost'].includes(hostname)) return;
+  const safeStage = text(stage).toLowerCase().replace(/[^a-z0-9_:-]/g, '_').slice(0, 80);
+  if (!safeStage) return;
+  try { navigator.sendBeacon('/__crm_e2e_progress', safeStage); } catch (_) { /* test-only */ }
+}
+
 function nextContactDate(kind) {
   const date = new Date();
   if (kind === 'today17') date.setHours(17, 0, 0, 0);
@@ -298,4 +306,16 @@ function interceptStagingWorkflow(event) {
   saveWorkflow(action);
 }
 
+function reportRenderedPrimaryAction(event) {
+  if (route.mode !== 'staging_edge') return;
+  const leadId = text(event?.detail?.lead?.id);
+  const currentId = text(v4State.currentLead?.id);
+  if (!leadId || leadId !== currentId) return;
+  const primary = document.querySelector('#leadPrimaryActionHost [data-lead-primary-action]');
+  const complete = document.querySelector('#leadPrimaryActionHost .v4-primary-action-complete');
+  const action = text(primary?.dataset?.leadPrimaryAction) || (complete ? 'complete' : 'missing');
+  e2eProgress(`lead_primary_${action}`);
+}
+
 document.addEventListener('click', interceptStagingWorkflow, true);
+document.addEventListener('leader-v4:lead-card-rendered', reportRenderedPrimaryAction);
