@@ -1,5 +1,3 @@
-import './lead-workflow-staging-bootstrap-v1.js';
-
 export const LEAD_ASSIGNABLE_ROLES = Object.freeze(['owner', 'admin', 'manager']);
 
 function clean(value) {
@@ -79,8 +77,5 @@ export function leadTakeButtonModel(lead = {}, context = {}) {
   if (responsibility.key === 'unassigned' && responsibility.canTake) {
     return Object.freeze({ visible: true, action: 'take', label: 'Взять в работу', disabled: false });
   }
-  if (responsibility.key === 'mine' && (clean(lead.status) || 'Новая') === 'Новая') {
-    return Object.freeze({ visible: true, action: 'work', label: 'Принять заявку', disabled: false });
-  }
-  return Object.freeze({ visible: false, action: '', label: '', disabled: false });
+  return Object.freeze({ visible: false, action: '', label: '', disabled: true });
 }
