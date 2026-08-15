@@ -102,8 +102,10 @@ async function verifyPersisted({ baseUrl, publicKey, accessToken, command, timeo
       timeoutMs: Math.min(2000, remaining)
     });
     if (leadMatchesCommand(lead, command)) {
-      e2eProgress('worker_verification_matched');
+      // Authoritative handoff first. The localhost-only diagnostic fetch must
+      // never be able to delay or block delivery of a confirmed server state.
       onVerified(lead);
+      setTimeout(() => e2eProgress('worker_verification_matched'), 0);
       return;
     }
     e2eProgress('worker_verification_not_matched');
