@@ -12,6 +12,10 @@ on:
       - 'tools/run_crm_staging_authenticated_e2e.mjs'
       - 'tools/test_crm_staging_authenticated_e2e_browser_launcher.mjs'
       - 'tools/run_crm_staging_role_permission_e2e.mjs'
+      - 'crm/v4/assets/v4/lead-workflow-staging-transport-v1.js'
+      - 'crm/v4/assets/v4/lead-workflow-staging-worker-v1.js'
+      - 'crm/v4/assets/v4/lead-workflow-staging-ui-v1.js'
+      - 'crm/v4/assets/v4/lead-workflow-staging-bootstrap-v1.js'
       - 'supabase/staging-migrations/20260809*.sql'
       - 'supabase/staging-functions/leader-staging-authenticated-e2e-bootstrap/**'
 
