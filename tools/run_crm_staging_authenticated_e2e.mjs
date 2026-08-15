@@ -224,6 +224,7 @@ async function localServer(root) {
         response.writeHead(204, { 'Cache-Control': 'no-store' }); response.end(); return;
       }
       if (url.pathname === '/__crm_e2e_staging_rpc_proxy' && request.method === 'POST') {
+        lastProgress = 'workflow_rpc_proxy_received'; lastProgressAt = Date.now();
         const chunks = []; let size = 0;
         for await (const chunk of request) { size += chunk.length; if (size > 131072) throw new Error('proxy_request_too_large'); chunks.push(chunk); }
         const payload = JSON.parse(Buffer.concat(chunks).toString('utf8'));
@@ -232,13 +233,17 @@ async function localServer(root) {
         const authorization = text(incomingHeaders.authorization);
         const apikey = text(incomingHeaders.apikey);
         if (!authorization.startsWith('Bearer ') || !apikey || typeof payload.body !== 'string') throw new Error('proxy_auth_invalid');
-        fetch(`${STAGING_URL}${payload.path}`, {
-          method: 'POST',
-          headers: { apikey, Authorization: authorization, 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: payload.body
-        }).then((upstream) => upstream.body?.cancel()).catch(() => undefined);
         response.writeHead(202, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-        response.end(JSON.stringify({ pending: true })); return;
+        response.end(JSON.stringify({ pending: true }));
+        lastProgress = 'workflow_rpc_proxy_accepted'; lastProgressAt = Date.now();
+        globalThis.setTimeout(() => {
+          fetch(`${STAGING_URL}${payload.path}`, {
+            method: 'POST',
+            headers: { apikey, Authorization: authorization, 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: payload.body
+          }).then((upstream) => upstream.body?.cancel()).catch(() => undefined);
+        }, 0);
+        return;
       }
       const relative = decodeURIComponent(url.pathname).replace(/^\/+/, '') || 'index.html';
       const target = path.resolve(safeRoot, relative);
