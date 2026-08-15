@@ -17,6 +17,7 @@ function text(value) { return String(value ?? '').trim(); }
 function object(value) { return value && typeof value === 'object' && !Array.isArray(value) ? value : null; }
 function uuid(value) { return UUID_PATTERN.test(text(value)); }
 function delay(ms) { return new Promise((resolve) => globalThis.setTimeout(resolve, ms)); }
+function transportError(code, name = 'Error') { const error = new Error(code); error.name = name; return error; }
 
 export function projectRefFromLeadWorkflowUrl(value) {
   try {
@@ -199,9 +200,7 @@ async function readLeadViaRest({ fetchImpl, supabaseUrl, publicKey, accessToken,
   const timeoutPromise = new Promise((_, reject) => {
     timer = globalThis.setTimeout(() => {
       controller.abort();
-      const error = new Error('verification_read_timeout');
-      error.name = 'AbortError';
-      reject(error);
+      reject(transportError('verification_read_timeout', 'AbortError'));
     }, timeoutMs);
   });
 
@@ -266,9 +265,77 @@ async function verifyPersistedWorkflow({
   return { type: 'verification_timeout' };
 }
 
-async function readTransportResponse(response) {
-  const raw = await response.json();
-  return { type: 'transport', response, data: object(raw) || {} };
+function parseJsonText(value) {
+  try {
+    const parsed = JSON.parse(String(value ?? ''));
+    return object(parsed) || {};
+  } catch (_) {
+    return {};
+  }
+}
+
+function createXhrEdgeTransport({ xhrFactory, url, publicKey, accessToken, command, timeoutMs }) {
+  let xhr = null;
+  let settled = false;
+  const settle = (resolve, value) => {
+    if (settled) return;
+    settled = true;
+    resolve(value);
+  };
+
+  const promise = new Promise((resolve) => {
+    try {
+      xhr = xhrFactory();
+      xhr.open('POST', url, true);
+      xhr.timeout = timeoutMs;
+      xhr.setRequestHeader('apikey', publicKey);
+      xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.setRequestHeader('Accept', 'application/json');
+      xhr.onload = () => settle(resolve, {
+        type: 'transport',
+        response: { status: Number(xhr.status || 0), ok: xhr.status >= 200 && xhr.status < 300 },
+        data: parseJsonText(xhr.responseText)
+      });
+      xhr.onerror = () => settle(resolve, { type: 'transport_error', error: transportError('xhr_network_error') });
+      xhr.ontimeout = () => settle(resolve, { type: 'transport_error', error: transportError('request_timeout', 'AbortError') });
+      xhr.onabort = () => settle(resolve, { type: 'transport_error', error: transportError('request_aborted', 'AbortError') });
+      xhr.send(JSON.stringify(command));
+    } catch (error) {
+      settle(resolve, { type: 'transport_error', error });
+    }
+  });
+
+  return {
+    promise,
+    abort: () => {
+      try { if (xhr && xhr.readyState !== 4) xhr.abort(); } catch (_) { /* noop */ }
+    }
+  };
+}
+
+function createFetchEdgeTransport({ fetchImpl, url, publicKey, accessToken, command }) {
+  const controller = new AbortController();
+  const promise = (async () => {
+    try {
+      const response = await fetchImpl(url, {
+        method: 'POST',
+        headers: {
+          apikey: publicKey,
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/json'
+        },
+        body: JSON.stringify(command),
+        signal: controller.signal
+      });
+      const raw = await response.json();
+      return { type: 'transport', response, data: object(raw) || {} };
+    } catch (error) {
+      return { type: 'transport_error', error };
+    }
+  })();
+  return { promise, abort: () => controller.abort() };
 }
 
 function neverResolveOnVerificationTimeout(promise) {
@@ -286,6 +353,7 @@ export async function invokeStagingLeadWorkflow({
   idempotencyKey = '',
   cryptoObject = globalThis.crypto,
   fetchImpl = globalThis.fetch,
+  xhrFactory = typeof globalThis.XMLHttpRequest === 'function' ? () => new globalThis.XMLHttpRequest() : null,
   requestTimeoutMs = REQUEST_TIMEOUT_MS,
   verificationTimeoutMs = VERIFICATION_TIMEOUT_MS
 } = {}) {
@@ -327,26 +395,11 @@ export async function invokeStagingLeadWorkflow({
     });
   }
 
-  const controller = new AbortController();
   let finished = false;
   const edgeEndpoint = `${supabaseUrl.replace(/\/+$/, '')}/functions/v1/${FUNCTION_SLUG}`;
-  const transportPromise = (async () => {
-    try {
-      const response = await fetchImpl(edgeEndpoint, {
-        method: 'POST',
-        headers: {
-          apikey: publicKey,
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(command),
-        signal: controller.signal
-      });
-      return await readTransportResponse(response);
-    } catch (error) {
-      return { type: 'transport_error', error };
-    }
-  })();
+  const edgeTransport = typeof xhrFactory === 'function'
+    ? createXhrEdgeTransport({ xhrFactory, url: edgeEndpoint, publicKey, accessToken, command, timeoutMs: requestTimeoutMs })
+    : createFetchEdgeTransport({ fetchImpl, url: edgeEndpoint, publicKey, accessToken, command });
 
   const verificationPromise = neverResolveOnVerificationTimeout(verifyPersistedWorkflow({
     fetchImpl,
@@ -363,11 +416,11 @@ export async function invokeStagingLeadWorkflow({
     return { type: 'deadline' };
   })();
 
-  const winner = await Promise.race([transportPromise, verificationPromise, deadlinePromise]);
+  const winner = await Promise.race([edgeTransport.promise, verificationPromise, deadlinePromise]);
   finished = true;
 
   if (winner.type === 'verified') {
-    controller.abort();
+    edgeTransport.abort();
     const kind = 'verified_after_transport_error';
     return Object.freeze({
       ok: true,
@@ -383,7 +436,7 @@ export async function invokeStagingLeadWorkflow({
   }
 
   if (winner.type === 'deadline' || winner.type === 'transport_error') {
-    controller.abort();
+    edgeTransport.abort();
     const kind = 'network_error';
     const timeoutFailure = winner.type !== 'transport_error' || text(winner.error?.name) === 'AbortError';
     return Object.freeze({
