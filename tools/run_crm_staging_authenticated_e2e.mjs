@@ -85,6 +85,7 @@ const clean=(value)=>String(value??'').trim();
 function assert(value,code){if(!value)throw new Error(code);}
 function progress(name){try{navigator.sendBeacon('/__crm_e2e_progress',String(name).slice(0,80));}catch(_){}}
 function record(name,detail='pass'){steps.push({name,detail});progress(name);}
+function instrumentWorkerTransport(){const NativeWorker=globalThis.Worker;if(typeof NativeWorker!=='function'){progress('worker_unavailable');return;}globalThis.Worker=new Proxy(NativeWorker,{construct(Target,args){const worker=new Target(...args);progress('worker_constructed');worker.addEventListener('message',(event)=>{const payload=event?.data&&typeof event.data==='object'?event.data:{};progress('worker_message_'+clean(payload.type||'unknown')+'_'+clean(payload.status||'0'));});worker.addEventListener('error',()=>progress('worker_error'));worker.addEventListener('messageerror',()=>progress('worker_message_error'));const post=worker.postMessage.bind(worker);worker.postMessage=(...postArgs)=>{progress('worker_request_posted');return post(...postArgs);};return worker;}});}
 async function waitFor(check,code,timeout=30000){const begin=Date.now();while(Date.now()-begin<timeout){const value=await check();if(value)return value;await sleep(50);}throw new Error(code);}
 function waitForDocumentEvent(name,code,timeout=30000){return new Promise((resolve,reject)=>{let timer=0;const done=(event)=>{clearTimeout(timer);document.removeEventListener(name,done);resolve(event?.detail||{});};timer=setTimeout(()=>{document.removeEventListener(name,done);reject(new Error(code));},timeout);document.addEventListener(name,done,{once:true});});}
 function setValue(selector,value,event='input'){const node=document.querySelector(selector);assert(node,'missing:'+selector);node.value=value;node.dispatchEvent(new Event(event,{bubbles:true}));return node;}
@@ -109,7 +110,7 @@ async function firstLoginAndLead(){
   const assignSelector='[data-lead-primary-action="assign_self"]';
   const cardState=await waitFor(()=>{const error=document.querySelector('#leadCardContent .v4-empty.is-error');if(error)return error;const assign=document.querySelector(assignSelector);return assign&&assign.isConnected&&!assign.disabled?assign:false;},'lead_card_open_timeout',45000);assert(!cardState.classList.contains('v4-empty'),'lead_card_render_error:'+clean(cardState.textContent).slice(0,120));assert(location.search.includes('lead='+R.leadId),'lead_card_route_missing');record('lead_card');
   const assignmentEvent=waitForDocumentEvent('leader-v4:lead-workflow-updated','lead_assignment_event_timeout',45000);progress('lead_assign_clicked');click(assignSelector);
-  const assignmentDetail=await assignmentEvent;assert(clean(assignmentDetail?.lead?.assigned_to),'lead_assignment_event_missing_assignee');assert(clean(assignmentDetail?.lead?.status)==='В работе','lead_assignment_event_status_sync_failed');
+  const wait5=setTimeout(()=>progress('lead_assignment_wait_5s'),5000);const wait40=setTimeout(()=>progress('lead_assignment_wait_40s'),40000);let assignmentDetail;try{assignmentDetail=await assignmentEvent;}finally{clearTimeout(wait5);clearTimeout(wait40);}assert(clean(assignmentDetail?.lead?.assigned_to),'lead_assignment_event_missing_assignee');assert(clean(assignmentDetail?.lead?.status)==='В работе','lead_assignment_event_status_sync_failed');
   const assigned=await one('leader_leads','id,status,assigned_to,updated_at',{id:R.leadId});assert(clean(assigned.assigned_to),'lead_assignment_db_missing_assignee');assert(assigned.status==='В работе','lead_assignment_status_sync_failed');record('lead_assignment');
 }
 
@@ -170,12 +171,13 @@ async function designProductionInstallation(orderId){
   output('passed',{authenticated:true,role:'manager',browser_actions:true,refresh:true,back_forward:true,direct_orders:true,review_guard:true,production_replay:true,stale_guard:true,installation_replay:true,projection_sync:true,counts,steps,duration_ms:Date.now()-started,cleanup_required:true});
 }
 
+instrumentWorkerTransport();
 try{
   ({supabaseClient}=await import('./assets/v4/supabase-client.js'));
   const resume=JSON.parse(sessionStorage.getItem('leaderCrmAuthenticatedE2eResume')||'null');
   if(resume?.stage==='after_refresh'){sessionStorage.removeItem('leaderCrmAuthenticatedE2eResume');await designProductionInstallation(resume.orderId);}
   else{await firstLoginAndLead();await createNeedAndCalculation();await createOfferAndOrder();await navigationAndRefresh();}
-}catch(error){output('failed',{error:clean(error?.message||'browser_e2e_failed').slice(0,240),steps,duration_ms:Date.now()-started,cleanup_required:true});}
+}catch(error){const code=clean(error?.message||'browser_e2e_failed');progress('failed:'+code.replace(/[^a-z0-9_:-]/gi,'_').slice(0,60));output('failed',{error:code.slice(0,240),steps,duration_ms:Date.now()-started,cleanup_required:true});}
 `;
 }
 
