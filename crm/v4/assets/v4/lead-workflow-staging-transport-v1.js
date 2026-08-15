@@ -279,7 +279,21 @@ function parseJsonText(value) {
   }
 }
 
-function createWorkerEdgeTransport({ workerFactory, url, publicKey, accessToken, command, timeoutMs, verificationTimeoutMs }) {
+function createWorkerBootstrapUrl({ workerUrl, payload }) {
+  if (typeof globalThis.Blob !== 'function' || typeof globalThis.URL?.createObjectURL !== 'function') {
+    throw transportError('worker_bootstrap_unavailable');
+  }
+  const source = `importScripts(${JSON.stringify(workerUrl.href)});\nself.onmessage({data:${JSON.stringify(payload)}});`;
+  const objectUrl = globalThis.URL.createObjectURL(new globalThis.Blob([source], { type: 'text/javascript' }));
+  return {
+    url: objectUrl,
+    revoke: () => {
+      try { globalThis.URL.revokeObjectURL(objectUrl); } catch (_) { /* noop */ }
+    }
+  };
+}
+
+function createWorkerEdgeTransport({ workerFactory, workerBootstrapFactory, url, publicKey, accessToken, command, timeoutMs, verificationTimeoutMs }) {
   let worker = null;
   let settled = false;
   const settle = (resolve, value) => {
@@ -291,7 +305,12 @@ function createWorkerEdgeTransport({ workerFactory, url, publicKey, accessToken,
   const promise = new Promise((resolve) => {
     try {
       const workerUrl = new URL('./lead-workflow-staging-worker-v1.js', import.meta.url);
-      worker = workerFactory(workerUrl);
+      const bootstrap = workerBootstrapFactory({
+        workerUrl,
+        payload: { url, publicKey, accessToken, command, timeoutMs, verificationTimeoutMs }
+      });
+      try { worker = workerFactory(bootstrap.url); }
+      finally { bootstrap.revoke(); }
       worker.onmessage = (event) => {
         const payload = object(event?.data) || {};
         if (payload.type === 'transport') {
@@ -308,7 +327,6 @@ function createWorkerEdgeTransport({ workerFactory, url, publicKey, accessToken,
         });
       };
       worker.onerror = () => settle(resolve, { type: 'transport_error', error: transportError('worker_runtime_error') });
-      worker.postMessage({ url, publicKey, accessToken, command, timeoutMs, verificationTimeoutMs });
     } catch (error) {
       settle(resolve, { type: 'transport_error', error });
     }
@@ -403,6 +421,7 @@ export async function invokeStagingLeadWorkflow({
   cryptoObject = globalThis.crypto,
   fetchImpl = globalThis.fetch,
   workerFactory = typeof globalThis.Worker === 'function' ? (url) => new globalThis.Worker(url) : null,
+  workerBootstrapFactory = createWorkerBootstrapUrl,
   xhrFactory = typeof globalThis.XMLHttpRequest === 'function' ? () => new globalThis.XMLHttpRequest() : null,
   requestTimeoutMs = REQUEST_TIMEOUT_MS,
   verificationTimeoutMs = VERIFICATION_TIMEOUT_MS
@@ -457,6 +476,7 @@ export async function invokeStagingLeadWorkflow({
   const edgeTransport = workerTransportEnabled
     ? createWorkerEdgeTransport({
         workerFactory,
+        workerBootstrapFactory,
         url: edgeEndpoint,
         publicKey,
         accessToken: resolvedAccessToken,

@@ -140,6 +140,8 @@ assert.equal(explicitTokenResult.ok, true);
 assert.equal(explicitAuthorization, `Bearer ${ACCESS_TOKEN}`);
 
 let workerPayload = null;
+let workerBootstrapUrl = '';
+let workerBootstrapRevoked = false;
 let workerMainThreadFetchCalls = 0;
 let workerTerminated = false;
 const workerResult = await invokeStagingLeadWorkflow({
@@ -157,12 +159,22 @@ const workerResult = await invokeStagingLeadWorkflow({
     workerMainThreadFetchCalls += 1;
     throw new Error('worker transport must not duplicate verification on the main thread');
   },
-  workerFactory: () => ({
+  workerBootstrapFactory: ({ workerUrl, payload }) => {
+    workerPayload = payload;
+    assert.match(workerUrl.href, /lead-workflow-staging-worker-v1\.js$/);
+    return {
+      url: 'blob:test-worker-bootstrap',
+      revoke() { workerBootstrapRevoked = true; }
+    };
+  },
+  workerFactory: (url) => {
+    workerBootstrapUrl = String(url);
+    const worker = {
     onmessage: null,
     onerror: null,
-    postMessage(payload) {
-      workerPayload = payload;
-      queueMicrotask(() => this.onmessage?.({
+    terminate() { workerTerminated = true; }
+    };
+    queueMicrotask(() => worker.onmessage?.({
         data: {
           type: 'transport',
           status: 201,
@@ -179,13 +191,14 @@ const workerResult = await invokeStagingLeadWorkflow({
           }
         }
       }));
-    },
-    terminate() { workerTerminated = true; }
-  })
+    return worker;
+  }
 });
 assert.equal(workerResult.ok, true);
 assert.equal(workerResult.kind, 'updated');
 assert.equal(workerMainThreadFetchCalls, 0);
+assert.equal(workerBootstrapUrl, 'blob:test-worker-bootstrap');
+assert.equal(workerBootstrapRevoked, true);
 assert.equal(workerPayload.timeoutMs, 2500);
 assert.equal(workerPayload.verificationTimeoutMs, 1250);
 await new Promise((resolve) => setTimeout(resolve, 0));

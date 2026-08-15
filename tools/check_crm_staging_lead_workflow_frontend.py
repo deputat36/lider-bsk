@@ -45,9 +45,13 @@ required_transport = [
     "function deferTransportAbort(edgeTransport)",
     "globalThis.setTimeout(() =>",
     "function createWorkerEdgeTransport(",
+    "function createWorkerBootstrapUrl(",
     "new URL('./lead-workflow-staging-worker-v1.js', import.meta.url)",
     "typeof globalThis.Worker === 'function'",
-    "worker.postMessage({ url, publicKey, accessToken, command, timeoutMs, verificationTimeoutMs })",
+    "globalThis.URL.createObjectURL(new globalThis.Blob([source]",
+    "self.onmessage({data:${JSON.stringify(payload)}})",
+    "worker = workerFactory(bootstrap.url)",
+    "bootstrap.revoke()",
     "function createXhrEdgeTransport(",
     "createFetchEdgeTransport({ fetchImpl",
     "const workerTransportEnabled = typeof workerFactory === 'function';",
@@ -69,6 +73,8 @@ for marker in required_transport:
 
 if 'edgeTransport.abort();' in transport:
     raise SystemExit('staging transport teardown must not synchronously abort before UI result delivery')
+if 'worker.postMessage(' in transport:
+    raise SystemExit('main-thread Worker.postMessage is forbidden: bootstrap the command inside the Worker URL')
 
 required_worker = [
     'self.onmessage = (event) =>',
