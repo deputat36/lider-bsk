@@ -156,7 +156,7 @@ const recovered = await invokeStagingLeadWorkflow({
   verificationTimeoutMs: 200,
   fetchImpl: async (url) => {
     if (String(url).includes('/rest/v1/rpc/')) {
-      return { status: 201, ok: true, json: async () => new Promise(() => {}) };
+      return new FakeResponse(202, { pending: true });
     }
     restReadSeen = true;
     assert.match(String(url), /\/rest\/v1\/leader_leads/);

@@ -232,15 +232,13 @@ async function localServer(root) {
         const authorization = text(incomingHeaders.authorization);
         const apikey = text(incomingHeaders.apikey);
         if (!authorization.startsWith('Bearer ') || !apikey || typeof payload.body !== 'string') throw new Error('proxy_auth_invalid');
-        const upstream = await fetch(`${STAGING_URL}${payload.path}`, {
+        fetch(`${STAGING_URL}${payload.path}`, {
           method: 'POST',
           headers: { apikey, Authorization: authorization, 'Content-Type': 'application/json', Accept: 'application/json' },
           body: payload.body
-        });
-        const upstreamBody = Buffer.from(await upstream.arrayBuffer());
-        if (upstreamBody.length > 262144) throw new Error('proxy_response_too_large');
-        response.writeHead(upstream.status, { 'Content-Type': upstream.headers.get('content-type') || 'application/json', 'Cache-Control': 'no-store' });
-        response.end(upstreamBody); return;
+        }).then((upstream) => upstream.body?.cancel()).catch(() => undefined);
+        response.writeHead(202, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+        response.end(JSON.stringify({ pending: true })); return;
       }
       const relative = decodeURIComponent(url.pathname).replace(/^\/+/, '') || 'index.html';
       const target = path.resolve(safeRoot, relative);

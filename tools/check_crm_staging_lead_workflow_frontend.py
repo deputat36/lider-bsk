@@ -51,6 +51,7 @@ required_transport = [
     "lead_id: command.id",
     "patch: expectedPatchFromCommand(command)",
     "function createFetchRpcTransport(",
+    "response.status === 202 && raw?.pending === true",
     "neverResolveOnVerificationTimeout(verifyPersistedWorkflow({",
     "Promise.race([commandTransport.promise, verificationPromise, deadlinePromise])",
     "deferTransportAbort(commandTransport);",
