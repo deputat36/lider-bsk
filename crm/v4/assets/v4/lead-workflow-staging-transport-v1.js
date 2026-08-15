@@ -5,6 +5,7 @@ const EDGE_ACTION = 'update';
 const PERMISSION = 'leads.update';
 const REQUEST_TIMEOUT_MS = 20000;
 const VERIFICATION_TIMEOUT_MS = 8000;
+const VERIFICATION_READ_TIMEOUT_MS = 2500;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const WORKFLOW_FIELDS = Object.freeze(['status', 'next_contact_at', 'assigned_to']);
 const LEAD_STATUSES = new Set([
@@ -192,36 +193,88 @@ function leadMatchesCommand(lead, command) {
   return Number.isFinite(before) && Number.isFinite(after) && after !== before;
 }
 
-async function readLead(client, leadId) {
-  const response = await client
-    .from('leader_leads')
-    .select('id,status,assigned_to,next_contact_at,updated_at')
-    .eq('id', leadId)
-    .maybeSingle();
-  if (response?.error || !response?.data) return null;
-  return response.data;
+async function readLeadViaRest({ fetchImpl, supabaseUrl, publicKey, accessToken, leadId, timeoutMs = VERIFICATION_READ_TIMEOUT_MS }) {
+  const controller = new AbortController();
+  let timer = 0;
+  const timeoutPromise = new Promise((_, reject) => {
+    timer = globalThis.setTimeout(() => {
+      controller.abort();
+      const error = new Error('verification_read_timeout');
+      error.name = 'AbortError';
+      reject(error);
+    }, timeoutMs);
+  });
+
+  const endpoint = new URL(`${supabaseUrl.replace(/\/+$/, '')}/rest/v1/leader_leads`);
+  endpoint.searchParams.set('select', 'id,status,assigned_to,next_contact_at,updated_at');
+  endpoint.searchParams.set('id', `eq.${leadId}`);
+  endpoint.searchParams.set('limit', '1');
+
+  try {
+    return await Promise.race([
+      (async () => {
+        const response = await fetchImpl(endpoint.toString(), {
+          method: 'GET',
+          headers: {
+            apikey: publicKey,
+            Authorization: `Bearer ${accessToken}`,
+            Accept: 'application/json'
+          },
+          signal: controller.signal
+        });
+        if (!response.ok) return null;
+        const rows = await response.json();
+        return Array.isArray(rows) && rows.length === 1 ? rows[0] : null;
+      })(),
+      timeoutPromise
+    ]);
+  } catch (_) {
+    return null;
+  } finally {
+    globalThis.clearTimeout(timer);
+  }
 }
 
-async function verifyPersistedWorkflow(client, command, timeoutMs = VERIFICATION_TIMEOUT_MS, cancelled = () => false) {
-  if (!client?.from || !uuid(command?.id)) return { type: 'verification_timeout' };
+async function verifyPersistedWorkflow({
+  fetchImpl,
+  supabaseUrl,
+  publicKey,
+  accessToken,
+  command,
+  timeoutMs = VERIFICATION_TIMEOUT_MS,
+  cancelled = () => false
+}) {
+  if (!uuid(command?.id)) return { type: 'verification_timeout' };
   const started = Date.now();
-  const initialDelay = Math.min(700, Math.max(20, Math.floor(timeoutMs / 4)));
+  const initialDelay = Math.min(700, Math.max(50, Math.floor(timeoutMs / 5)));
   await delay(initialDelay);
+
   while (!cancelled() && Date.now() - started < timeoutMs) {
-    try {
-      const lead = await readLead(client, command.id);
-      if (leadMatchesCommand(lead, command)) return { type: 'verified', lead };
-    } catch (_) {
-      // A transient read failure is retried until the bounded verification deadline.
-    }
-    await delay(Math.min(500, Math.max(20, Math.floor(timeoutMs / 5))));
+    const remaining = Math.max(200, timeoutMs - (Date.now() - started));
+    const lead = await readLeadViaRest({
+      fetchImpl,
+      supabaseUrl,
+      publicKey,
+      accessToken,
+      leadId: command.id,
+      timeoutMs: Math.min(VERIFICATION_READ_TIMEOUT_MS, remaining)
+    });
+    if (leadMatchesCommand(lead, command)) return { type: 'verified', lead };
+    await delay(Math.min(500, Math.max(50, Math.floor(timeoutMs / 6))));
   }
+
   return { type: 'verification_timeout' };
 }
 
 async function readTransportResponse(response) {
   const raw = await response.json();
   return { type: 'transport', response, data: object(raw) || {} };
+}
+
+function neverResolveOnVerificationTimeout(promise) {
+  return promise.then((result) => (
+    result?.type === 'verified' ? result : new Promise(() => {})
+  ));
 }
 
 export async function invokeStagingLeadWorkflow({
@@ -242,6 +295,7 @@ export async function invokeStagingLeadWorkflow({
   if (!client?.auth?.getSession || typeof fetchImpl !== 'function') {
     return Object.freeze({ ok: false, status: 500, kind: 'persistence_failed', code: 'client_unavailable', message: leadWorkflowResultMessage('persistence_failed') });
   }
+
   const publicKey = text(publishableKey);
   if (!publicKey) {
     return Object.freeze({ ok: false, status: 500, kind: 'persistence_failed', code: 'publishable_key_missing', message: leadWorkflowResultMessage('persistence_failed') });
@@ -275,10 +329,10 @@ export async function invokeStagingLeadWorkflow({
 
   const controller = new AbortController();
   let finished = false;
-  const endpoint = `${supabaseUrl.replace(/\/+$/, '')}/functions/v1/${FUNCTION_SLUG}`;
+  const edgeEndpoint = `${supabaseUrl.replace(/\/+$/, '')}/functions/v1/${FUNCTION_SLUG}`;
   const transportPromise = (async () => {
     try {
-      const response = await fetchImpl(endpoint, {
+      const response = await fetchImpl(edgeEndpoint, {
         method: 'POST',
         headers: {
           apikey: publicKey,
@@ -294,12 +348,15 @@ export async function invokeStagingLeadWorkflow({
     }
   })();
 
-  const verificationPromise = verifyPersistedWorkflow(
-    client,
+  const verificationPromise = neverResolveOnVerificationTimeout(verifyPersistedWorkflow({
+    fetchImpl,
+    supabaseUrl,
+    publicKey,
+    accessToken,
     command,
-    Math.min(verificationTimeoutMs, requestTimeoutMs),
-    () => finished
-  );
+    timeoutMs: Math.min(verificationTimeoutMs, requestTimeoutMs),
+    cancelled: () => finished
+  }));
 
   const deadlinePromise = (async () => {
     await delay(requestTimeoutMs);
@@ -325,7 +382,7 @@ export async function invokeStagingLeadWorkflow({
     });
   }
 
-  if (winner.type === 'deadline' || winner.type === 'verification_timeout' || winner.type === 'transport_error') {
+  if (winner.type === 'deadline' || winner.type === 'transport_error') {
     controller.abort();
     const kind = 'network_error';
     const timeoutFailure = winner.type !== 'transport_error' || text(winner.error?.name) === 'AbortError';
