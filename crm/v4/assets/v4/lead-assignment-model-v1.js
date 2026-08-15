@@ -77,5 +77,8 @@ export function leadTakeButtonModel(lead = {}, context = {}) {
   if (responsibility.key === 'unassigned' && responsibility.canTake) {
     return Object.freeze({ visible: true, action: 'take', label: 'Взять в работу', disabled: false });
   }
-  return Object.freeze({ visible: false, action: '', label: '', disabled: true });
+  if (responsibility.key === 'mine' && (clean(lead.status) || 'Новая') === 'Новая') {
+    return Object.freeze({ visible: true, action: 'work', label: 'Принять заявку', disabled: false });
+  }
+  return Object.freeze({ visible: false, action: '', label: '', disabled: false });
 }
