@@ -277,6 +277,7 @@ async function saveWorkflow(rawAction) {
       client: supabaseClient,
       supabaseUrl: V4_CONFIG.supabaseUrl,
       publishableKey: V4_CONFIG.supabasePublishableKey,
+      accessToken: v4State.session?.access_token,
       lead,
       patch: action.patch,
       idempotencyKey
