@@ -11,4 +11,4 @@ Authenticated CRM E2E continuation trigger.
 Issue: #487
 Expected branch: agent/487-authenticated-staging-e2e
 Production enabled: false
-Reason: verify Web Worker exact RLS confirmation returned through the normal transport protocol after protected Edge save; production unchanged.
+Reason: verify worker ignores ambiguous browser transport error until exact RLS verification can confirm protected Edge commit; production unchanged.
