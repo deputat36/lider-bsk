@@ -37,6 +37,7 @@ assert.match(runnerSource, /requestHeaders: incomingHeaders/);
 assert.match(runnerSource, /rpcObject\?\.ok === true/);
 assert.match(runnerSource, /lead_assignment_db_persistence_timeout/);
 assert.match(runnerSource, /progress\('lead_assign_dispatched'\)/);
+assert.match(runnerSource, /await sleep\(2000\);progress\('lead_assignment_readback_ready'\)/);
 assert.match(runnerSource, /progress\('read_start:'\+tableName\)/);
 assert.match(runnerSource, /progress\('read_done:'\+tableName\)/);
 assert.match(runnerSource, /progress\('read_headers:'\+tableName\)/);

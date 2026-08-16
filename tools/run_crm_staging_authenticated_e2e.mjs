@@ -118,7 +118,7 @@ async function openSyntheticLead(){
 async function assignLead(){
   const assignSelector='[data-lead-primary-action="assign_self"]';
   const cardState=await waitFor(()=>{const error=document.querySelector('#leadCardContent .v4-empty.is-error');if(error)return error;const assign=document.querySelector(assignSelector);return assign&&assign.isConnected&&!assign.disabled?assign:false;},'lead_card_open_timeout',45000);assert(!cardState.classList.contains('v4-empty'),'lead_card_render_error:'+clean(cardState.textContent).slice(0,120));assert(location.search.includes('lead='+R.leadId),'lead_card_route_missing');record('lead_card');
-  progress('lead_assign_clicked');click(assignSelector);progress('lead_assign_dispatched');
+  progress('lead_assign_clicked');click(assignSelector);progress('lead_assign_dispatched');await sleep(2000);progress('lead_assignment_readback_ready');
   const persisted=await waitFor(async()=>{try{const row=await one('leader_leads','id,status,assigned_to,updated_at',{id:R.leadId});return clean(row.assigned_to)&&row.status==='В работе'?row:false;}catch(_){return false;}},'lead_assignment_db_persistence_timeout',45000);assert(clean(persisted.assigned_to)&&persisted.status==='В работе','lead_assignment_db_persistence_failed');record('lead_assignment_db_persisted');
   await waitFor(()=>{const responsibility=document.querySelector('[data-lead-responsibility]');return !document.querySelector(assignSelector)&&responsibility&&clean(responsibility.dataset.leadResponsibility)!=='unassigned'?responsibility:false;},'lead_assignment_ui_reconciliation_timeout',45000);record('lead_assignment_ui_confirmed');
 }
