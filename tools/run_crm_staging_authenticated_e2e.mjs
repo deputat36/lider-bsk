@@ -90,7 +90,6 @@ function progress(name){try{navigator.sendBeacon('/__crm_e2e_progress',String(na
 function record(name,detail='pass'){steps.push({name,detail});progress(name);}
 function instrumentTransportProbe(){const nativeFetch=globalThis.fetch;if(typeof nativeFetch!=='function')return;globalThis.fetch=async(input,init)=>{let requestUrl;try{requestUrl=new URL(String(input?.url||input||''));}catch(_){return nativeFetch(input,init);}const exactStaging=requestUrl.hostname==='${STAGING_REF}.supabase.co';if(!exactStaging)return nativeFetch(input,init);const headers=Object.fromEntries(new Headers(init?.headers||input?.headers||{}).entries());const method=clean(init?.method||input?.method||'GET').toUpperCase();const requestBody=typeof init?.body==='string'?init.body:'';const proxyable=requestUrl.pathname.startsWith('/rest/v1/leader_')||requestUrl.pathname.startsWith('/rest/v1/rpc/leader_')||requestUrl.pathname.startsWith('/functions/v1/leader-');if(!proxyable||!['GET','POST','PATCH','DELETE'].includes(method))return nativeFetch(input,init);return nativeFetch('/__crm_e2e_staging_request_proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:requestUrl.pathname+requestUrl.search,method,headers,body:requestBody})});};}
 async function waitFor(check,code,timeout=30000){const begin=Date.now();while(Date.now()-begin<timeout){const value=await check();if(value)return value;await sleep(50);}throw new Error(code);}
-function waitForDocumentEvent(name,code,timeout=30000){return new Promise((resolve,reject)=>{let timer=0;const done=(event)=>{clearTimeout(timer);document.removeEventListener(name,done);resolve(event?.detail||{});};timer=setTimeout(()=>{document.removeEventListener(name,done);reject(new Error(code));},timeout);document.addEventListener(name,done,{once:true});});}
 function setValue(selector,value,event='input'){const node=document.querySelector(selector);assert(node,'missing:'+selector);node.value=value;node.dispatchEvent(new Event(event,{bubbles:true}));return node;}
 function setChecked(selector,value=true){const node=document.querySelector(selector);assert(node,'missing:'+selector);node.checked=value;node.dispatchEvent(new Event('change',{bubbles:true}));return node;}
 function click(selector){const node=document.querySelector(selector);assert(node,'missing:'+selector);assert(node.isConnected,'detached:'+selector);assert(!node.disabled,'disabled:'+selector);node.click();return node;}
@@ -117,9 +116,9 @@ async function openSyntheticLead(){
 async function assignLead(){
   const assignSelector='[data-lead-primary-action="assign_self"]';
   const cardState=await waitFor(()=>{const error=document.querySelector('#leadCardContent .v4-empty.is-error');if(error)return error;const assign=document.querySelector(assignSelector);return assign&&assign.isConnected&&!assign.disabled?assign:false;},'lead_card_open_timeout',45000);assert(!cardState.classList.contains('v4-empty'),'lead_card_render_error:'+clean(cardState.textContent).slice(0,120));assert(location.search.includes('lead='+R.leadId),'lead_card_route_missing');record('lead_card');
-  const assignmentEvent=waitForDocumentEvent('leader-v4:lead-workflow-updated','lead_assignment_event_timeout',45000);progress('lead_assign_clicked');click(assignSelector);
-  const wait5=setTimeout(()=>progress('lead_assignment_wait_5s'),5000);const wait40=setTimeout(()=>progress('lead_assignment_wait_40s'),40000);let assignmentDetail;try{assignmentDetail=await assignmentEvent;}finally{clearTimeout(wait5);clearTimeout(wait40);}assert(clean(assignmentDetail?.lead?.assigned_to),'lead_assignment_event_missing_assignee');assert(clean(assignmentDetail?.lead?.status)==='В работе','lead_assignment_event_status_sync_failed');record('lead_assignment');
-  record('lead_assignment_ui_confirmed');
+  progress('lead_assign_clicked');click(assignSelector);
+  const persisted=await waitFor(async()=>{try{const row=await one('leader_leads','id,status,assigned_to,updated_at',{id:R.leadId});return clean(row.assigned_to)&&row.status==='В работе'?row:false;}catch(_){return false;}},'lead_assignment_db_persistence_timeout',45000);assert(clean(persisted.assigned_to)&&persisted.status==='В работе','lead_assignment_db_persistence_failed');record('lead_assignment_db_persisted');
+  await waitFor(()=>{const responsibility=document.querySelector('[data-lead-responsibility]');return !document.querySelector(assignSelector)&&responsibility&&clean(responsibility.dataset.leadResponsibility)!=='unassigned'?responsibility:false;},'lead_assignment_ui_reconciliation_timeout',45000);record('lead_assignment_ui_confirmed');
 }
 
 async function createNeedAndCalculation(){
@@ -300,7 +299,7 @@ async function localServer(root) {
     server,
     url: `http://127.0.0.1:${address.port}/index.html?tab=leads`,
     resultPromise,
-    getProgressState: () => ({ name: `${lastProgress}:net:${lastTransport}`.slice(0, 180), at: lastProgressAt, networkAt: lastTransportAt }),
+    getProgressState: () => ({ name: `${lastProgress}:net:${lastTransport}:rpc:${workflowRpcState.state}:${workflowRpcState.code || 'none'}`.slice(0, 220), at: lastProgressAt, networkAt: lastTransportAt }),
     getWorkflowRpcState: () => workflowRpcState
   };
 }
