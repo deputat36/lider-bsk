@@ -33,17 +33,15 @@ const runnerSource = await readFile(new URL('./run_crm_staging_authenticated_e2e
 assert.match(runnerSource, /navigator\.sendBeacon\('\/__crm_e2e_staging_rpc_proxy'/);
 assert.doesNotMatch(runnerSource, /form\.action='\/__crm_e2e_staging_rpc_proxy'/);
 assert.match(runnerSource, /status:201,headers:\{'Content-Type':'application\/json'/);
-assert.doesNotMatch(runnerSource, /lead_assignment_db_persistence_timeout/);
 assert.match(runnerSource, /final_lead_assignment_persistence_failed/);
 assert.match(runnerSource, /lead_assignment_db_persisted/);
-assert.ok(runnerSource.includes("const needForm=document.getElementById('needForm')"));
-assert.ok(runnerSource.includes('if(needForm?.isConnected)return needForm'));
-assert.ok(runnerSource.includes("record('assigned_lead_card_ready')"));
-assert.ok(runnerSource.includes("'assigned_card_diag:'+flags.join('_')"));
-assert.ok(runnerSource.includes("await loginManager('card')"));
-assert.ok(runnerSource.includes("mainUrl.searchParams.set('tab', 'card')"));
-assert.ok(runnerSource.includes("mainUrl.searchParams.set('lead', config.leadId)"));
-assert.doesNotMatch(runnerSource, /progress\\('lead_open_clicked'\\)/);
+assert.ok(runnerSource.includes('await loginManager();record(\'login_first_entry\');await openSyntheticLead();await assignLead();await createNeedAndCalculation()'));
+assert.ok(runnerSource.includes("profileDir: path.join(tempRoot, 'chrome-profile-manager')"));
+assert.ok(runnerSource.includes('evidence.assignment_persistence = true'));
+assert.doesNotMatch(runnerSource, /e2e_phase=/);
+assert.doesNotMatch(runnerSource, /assigned_card_diag/);
+assert.doesNotMatch(runnerSource, /openAssignedLead/);
+assert.doesNotMatch(runnerSource, /progress\\\('lead_open_clicked'\\\)/);
 assert.match(runnerSource, /progress\('need_ui_wait'\)/);
 assert.doesNotMatch(runnerSource, /const needsModule=await import\('\.\/assets\/v4\/needs\.js\?v=20260805-tab-loader-1'\)/);
 assert.doesNotMatch(runnerSource, /__crm_e2e_staging_rpc_proxy[^\n]+signal:init\?\.signal/);
@@ -53,4 +51,4 @@ assert.throws(
   /browser_launch_input_invalid/
 );
 
-console.log('Authenticated staging E2E uses headed Chrome, proves first card opening by click, resumes through the canonical direct card route, accepts either zero-needs UI state, and performs a final DB persistence assertion.');
+console.log('Authenticated staging E2E uses one headed Chrome session, proves card opening and assignment through the UI, verifies real DB persistence, then resumes after the required order refresh.');

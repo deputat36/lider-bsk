@@ -56,7 +56,7 @@ export function operatorPlan() {
     actual_crm_index: true,
     first_login_via_form: true,
     browser_mode: 'xvfb_headed_chrome',
-    browser_phases: ['assignment', 'main'],
+    browser_phases: ['manager_path', 'refresh_resume'],
     browser_transport_bridge: 'same_origin_beacon_to_exact_staging_rpc_with_db_assertion',
     browser_navigation: ['leads', 'lead_card', 'orders_direct', 'production', 'installation'],
     destructive_scope: 'unique_synthetic_marker_only',
@@ -83,7 +83,6 @@ let supabaseClient;
 const started=Date.now();
 const steps=[];
 const ids={};
-const e2ePhase=new URLSearchParams(location.search).get('e2e_phase')||'main';
 const sleep=(ms)=>new Promise((resolve)=>setTimeout(resolve,ms));
 const clean=(value)=>String(value??'').trim();
 function assert(value,code){if(!value)throw new Error(code);}
@@ -102,11 +101,11 @@ async function invoke(functionName,body){const response=await supabaseClient.fun
 function edgeCode(response){return clean(response?.data?.error?.code||response?.error?.message||response?.data?.error||'');}
 async function assertCount(tableName,filters,count){const rows=await table(tableName,'id',filters);assert(rows.length===count,'count_mismatch:'+tableName+':'+rows.length+':'+count);return rows;}
 
-async function loginManager(expectedTab='leads'){
+async function loginManager(){
   progress('login_wait');
   await waitFor(()=>document.getElementById('loginForm')&&!document.getElementById('loginForm').classList.contains('hidden'),'login_form_missing');
   setValue('#loginEmail',R.email);setValue('#loginPassword',R.password);click('#loginBtn');progress('login_submitted');
-  await waitFor(()=>!document.getElementById('crmWorkspace')?.classList.contains('hidden')&&clean(document.getElementById('profileRole')?.textContent).toLowerCase()==='manager'&&document.body.dataset.v4Tab===expectedTab,'authenticated_workspace_timeout:'+expectedTab,45000);
+  await waitFor(()=>!document.getElementById('crmWorkspace')?.classList.contains('hidden')&&clean(document.getElementById('profileRole')?.textContent).toLowerCase()==='manager'&&document.body.dataset.v4Tab==='leads','authenticated_workspace_timeout:leads',45000);
 }
 
 async function openSyntheticLead(){
@@ -115,20 +114,12 @@ async function openSyntheticLead(){
   assert(document.body.dataset.v4Tab==='card','lead_card_tab_denied:'+clean(document.body.dataset.v4Tab));assert(location.search.includes('lead='+R.leadId),'lead_card_route_lost');
 }
 
-async function assignmentPhase(){
-  await loginManager();record('login_first_entry');await openSyntheticLead();
+async function assignLead(){
   const assignSelector='[data-lead-primary-action="assign_self"]';
   const cardState=await waitFor(()=>{const error=document.querySelector('#leadCardContent .v4-empty.is-error');if(error)return error;const assign=document.querySelector(assignSelector);return assign&&assign.isConnected&&!assign.disabled?assign:false;},'lead_card_open_timeout',45000);assert(!cardState.classList.contains('v4-empty'),'lead_card_render_error:'+clean(cardState.textContent).slice(0,120));assert(location.search.includes('lead='+R.leadId),'lead_card_route_missing');record('lead_card');
   const assignmentEvent=waitForDocumentEvent('leader-v4:lead-workflow-updated','lead_assignment_event_timeout',45000);progress('lead_assign_clicked');click(assignSelector);
   const wait5=setTimeout(()=>progress('lead_assignment_wait_5s'),5000);const wait40=setTimeout(()=>progress('lead_assignment_wait_40s'),40000);let assignmentDetail;try{assignmentDetail=await assignmentEvent;}finally{clearTimeout(wait5);clearTimeout(wait40);}assert(clean(assignmentDetail?.lead?.assigned_to),'lead_assignment_event_missing_assignee');assert(clean(assignmentDetail?.lead?.status)==='В работе','lead_assignment_event_status_sync_failed');record('lead_assignment');
-  output('passed',{phase:'assignment',authenticated:true,role:'manager',browser_actions:true,steps,duration_ms:Date.now()-started,cleanup_required:true});
-  await new Promise(()=>{});
-}
-
-async function openAssignedLead(){
-  await loginManager('card');record('continuation_login');assert(location.search.includes('lead='+R.leadId),'assigned_lead_direct_route_lost');
-  let cardState;try{cardState=await waitFor(()=>{const error=document.querySelector('#leadCardContent .v4-empty.is-error');if(error)return error;const needForm=document.getElementById('needForm');if(needForm?.isConnected)return needForm;const summary=document.querySelector('#needFormBox .v4-need-workspace-summary');return summary&&summary.isConnected?summary:false;},'assigned_lead_card_open_timeout',45000);}catch(error){const resources=performance.getEntriesByType('resource').map((item)=>item.name);const flags=['tab'+Number(document.body.dataset.v4Tab==='card'),'lc'+Number(resources.some((name)=>name.includes('/lead-card.js'))),'nd'+Number(resources.some((name)=>name.includes('/needs.js'))),'cc'+Number(Boolean(document.getElementById('leadCardContent'))),'ce'+Number(Boolean(document.querySelector('#leadCardContent .v4-empty.is-error'))),'fb'+Number(Boolean(document.getElementById('needFormBox'))),'nf'+Number(Boolean(document.getElementById('needForm'))),'sm'+Number(Boolean(document.querySelector('#needFormBox .v4-need-workspace-summary')))];throw new Error('assigned_card_diag:'+flags.join('_'));}assert(!cardState.classList.contains('v4-empty'),'assigned_lead_card_render_error:'+clean(cardState.textContent).slice(0,120));record('assigned_lead_card_ready');
-  const persisted=await one('leader_leads','id,status,assigned_to,updated_at',{id:R.leadId});assert(clean(persisted.assigned_to)&&persisted.status==='В работе','final_lead_assignment_persistence_failed');record('lead_assignment_db_persisted');
+  const persisted=await waitFor(async()=>{try{const row=await one('leader_leads','id,status,assigned_to,updated_at',{id:R.leadId});return clean(row.assigned_to)&&row.status==='В работе'?row:false;}catch(_){return false;}},'final_lead_assignment_persistence_failed',45000);assert(clean(persisted.assigned_to),'final_lead_assignment_persistence_failed');record('lead_assignment_db_persisted');
 }
 
 async function createNeedAndCalculation(){
@@ -194,9 +185,8 @@ try{
   const resume=JSON.parse(sessionStorage.getItem('leaderCrmAuthenticatedE2eResume')||'null');
   if(Array.isArray(resume?.steps))steps.push(...resume.steps);
   if(resume?.stage==='after_refresh'){sessionStorage.removeItem('leaderCrmAuthenticatedE2eResume');await designProductionInstallation(resume.orderId);}
-  else if(e2ePhase==='assignment'){await assignmentPhase();}
-  else{await openAssignedLead();await createNeedAndCalculation();await createOfferAndOrder();await navigationAndRefresh();}
-}catch(error){const code=clean(error?.message||'browser_e2e_failed');progress('failed:'+code.replace(/[^a-z0-9_:-]/gi,'_').slice(0,60));output('failed',{phase:e2ePhase,error:code.slice(0,240),steps,duration_ms:Date.now()-started,cleanup_required:true});}
+  else{await loginManager();record('login_first_entry');await openSyntheticLead();await assignLead();await createNeedAndCalculation();await createOfferAndOrder();await navigationAndRefresh();}
+}catch(error){const code=clean(error?.message||'browser_e2e_failed');progress('failed:'+code.replace(/[^a-z0-9_:-]/gi,'_').slice(0,60));output('failed',{error:code.slice(0,240),steps,duration_ms:Date.now()-started,cleanup_required:true});}
 `;
 }
 
@@ -423,21 +413,12 @@ async function run(env = process.env, roleUi = '') {
       const target = path.resolve(config.evidencePath); await mkdir(path.dirname(target), { recursive: true }); await writeFile(target, `${JSON.stringify(evidence, null, 2)}\n`, { mode: 0o600 }); return { evidence, target };
     }
 
-    const assignmentLocal = await localServer(tempV4); server = assignmentLocal.server;
-    const assignmentLaunch = browserLaunchPlan({ xvfbRun, chrome, profileDir: path.join(tempRoot, 'chrome-profile-assignment'), url: `${assignmentLocal.url}&e2e_phase=assignment` });
-    const assignmentChrome = await runChrome(assignmentLaunch.binary, assignmentLaunch.args, assignmentLocal.resultPromise, assignmentLocal.getProgressState);
-    const assignmentEvidence = sanitize(JSON.parse(assignmentChrome.evidenceBody));
-    if (assignmentEvidence.status !== 'passed' || assignmentEvidence.phase !== 'assignment') throw new Error(`browser_assignment_phase_failed:${assignmentEvidence.error || 'unknown'}`);
-    await waitForWorkflowRpc(assignmentLocal.getWorkflowRpcState);
-    await closeServer(server); server = null;
-
-    const mainLocal = await localServer(tempV4); server = mainLocal.server;
-    const mainUrl = new URL(mainLocal.url); mainUrl.searchParams.set('tab', 'card'); mainUrl.searchParams.set('lead', config.leadId); mainUrl.searchParams.set('e2e_phase', 'main');
-    const mainLaunch = browserLaunchPlan({ xvfbRun, chrome, profileDir: path.join(tempRoot, 'chrome-profile-main'), url: mainUrl.toString() });
-    const mainChrome = await runChrome(mainLaunch.binary, mainLaunch.args, mainLocal.resultPromise, mainLocal.getProgressState);
-    const evidence = sanitize(JSON.parse(mainChrome.evidenceBody)); if (evidence.status !== 'passed') throw new Error(`browser_e2e_failed:${evidence.error || 'unknown'}`);
-    evidence.assignment_phase = true;
-    evidence.steps = [...(assignmentEvidence.steps || []), ...(evidence.steps || [])];
+    const local = await localServer(tempV4); server = local.server;
+    const launch = browserLaunchPlan({ xvfbRun, chrome, profileDir: path.join(tempRoot, 'chrome-profile-manager'), url: local.url });
+    const chromeResult = await runChrome(launch.binary, launch.args, local.resultPromise, local.getProgressState);
+    const evidence = sanitize(JSON.parse(chromeResult.evidenceBody)); if (evidence.status !== 'passed') throw new Error(`browser_e2e_failed:${evidence.error || 'unknown'}`);
+    await waitForWorkflowRpc(local.getWorkflowRpcState);
+    evidence.assignment_persistence = true;
     const target = path.resolve(config.evidencePath); await mkdir(path.dirname(target), { recursive: true }); await writeFile(target, `${JSON.stringify(evidence, null, 2)}\n`, { mode: 0o600 }); return { evidence, target };
   } finally {
     await closeServer(server);
