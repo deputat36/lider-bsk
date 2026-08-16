@@ -81,6 +81,7 @@ function browserSource() {
 const result=document.getElementById('crmAuthenticatedE2eResult');
 let supabaseClient;
 let v4Config;
+let v4RuntimeState;
 const started=Date.now();
 const steps=[];
 const ids={};
@@ -94,7 +95,7 @@ async function waitFor(check,code,timeout=30000){const begin=Date.now();while(Da
 function setValue(selector,value,event='input'){const node=document.querySelector(selector);assert(node,'missing:'+selector);node.value=value;node.dispatchEvent(new Event(event,{bubbles:true}));return node;}
 function setChecked(selector,value=true){const node=document.querySelector(selector);assert(node,'missing:'+selector);node.checked=value;node.dispatchEvent(new Event('change',{bubbles:true}));return node;}
 function click(selector){const node=document.querySelector(selector);assert(node,'missing:'+selector);assert(node.isConnected,'detached:'+selector);assert(!node.disabled,'disabled:'+selector);node.click();return node;}
-async function table(tableName,fields,filters={}){progress('read_start:'+tableName);assert(/^leader_[a-z0-9_]+$/.test(tableName),'read_table_forbidden');const session=(await supabaseClient.auth.getSession())?.data?.session;assert(session?.access_token,'read_session_missing');const readBase=v4Config.supabaseUrl.endsWith('/')?v4Config.supabaseUrl.slice(0,-1):v4Config.supabaseUrl;const endpoint=new URL(readBase+'/rest/v1/'+tableName);endpoint.searchParams.set('select',fields);for(const [key,value] of Object.entries(filters)){assert(/^[a-z0-9_]+$/i.test(key),'read_filter_forbidden');endpoint.searchParams.set(key,'eq.'+String(value));}const response=await Promise.race([fetch(endpoint.toString(),{method:'GET',headers:{apikey:v4Config.supabasePublishableKey,Authorization:'Bearer '+session.access_token,Accept:'application/json'}}),sleep(20000).then(()=>{throw new Error('read_timeout:'+tableName);})]);progress('read_headers:'+tableName);if(!response.ok)throw new Error('read_failed:'+tableName+':'+response.status);const raw=await response.text();progress('read_body:'+tableName);const data=JSON.parse(raw);assert(Array.isArray(data),'read_shape_invalid:'+tableName);progress('read_done:'+tableName);return data;}
+async function table(tableName,fields,filters={}){progress('read_start:'+tableName);assert(/^leader_[a-z0-9_]+$/.test(tableName),'read_table_forbidden');const session=v4RuntimeState?.session;assert(session?.access_token,'read_session_missing');const readBase=v4Config.supabaseUrl.endsWith('/')?v4Config.supabaseUrl.slice(0,-1):v4Config.supabaseUrl;const endpoint=new URL(readBase+'/rest/v1/'+tableName);endpoint.searchParams.set('select',fields);for(const [key,value] of Object.entries(filters)){assert(/^[a-z0-9_]+$/i.test(key),'read_filter_forbidden');endpoint.searchParams.set(key,'eq.'+String(value));}const response=await Promise.race([fetch(endpoint.toString(),{method:'GET',headers:{apikey:v4Config.supabasePublishableKey,Authorization:'Bearer '+session.access_token,Accept:'application/json'}}),sleep(20000).then(()=>{throw new Error('read_timeout:'+tableName);})]);progress('read_headers:'+tableName);if(!response.ok)throw new Error('read_failed:'+tableName+':'+response.status);const raw=await response.text();progress('read_body:'+tableName);const data=JSON.parse(raw);assert(Array.isArray(data),'read_shape_invalid:'+tableName);progress('read_done:'+tableName);return data;}
 async function one(tableName,fields,filters={}){const rows=await table(tableName,fields,filters);assert(rows.length===1,'expected_one:'+tableName+':'+rows.length);return rows[0];}
 function output(status,payload){result.dataset.status=status;result.textContent=JSON.stringify({evidence_version:'${EVIDENCE_VERSION}',status,project_ref:'${STAGING_REF}',production_enabled:false,...payload},null,2);document.body.dataset.crmAuthenticatedE2eFinished='true';document.title=status==='passed'?'CRM authenticated E2E PASSED':'CRM authenticated E2E FAILED';if(!navigator.sendBeacon('/__crm_e2e_result',result.textContent))location.replace('/__crm_e2e_result?payload='+encodeURIComponent(result.textContent));}
 async function invoke(functionName,body){const response=await supabaseClient.functions.invoke(functionName,{body});return response;}
@@ -183,6 +184,7 @@ instrumentTransportProbe();
 try{
   ({supabaseClient}=await import('./assets/v4/supabase-client.js'));
   ({V4_CONFIG:v4Config}=await import('./assets/v4/config.js'));
+  ({v4State:v4RuntimeState}=await import('./assets/v4/state.js'));
   const resume=JSON.parse(sessionStorage.getItem('leaderCrmAuthenticatedE2eResume')||'null');
   if(Array.isArray(resume?.steps))steps.push(...resume.steps);
   if(resume?.stage==='after_refresh'){sessionStorage.removeItem('leaderCrmAuthenticatedE2eResume');await designProductionInstallation(resume.orderId);}
