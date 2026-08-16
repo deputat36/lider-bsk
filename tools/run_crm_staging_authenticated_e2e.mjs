@@ -88,7 +88,7 @@ const clean=(value)=>String(value??'').trim();
 function assert(value,code){if(!value)throw new Error(code);}
 function progress(name){try{navigator.sendBeacon('/__crm_e2e_progress',String(name).slice(0,80));}catch(_){}}
 function record(name,detail='pass'){steps.push({name,detail});progress(name);}
-function instrumentTransportProbe(){const nativeFetch=globalThis.fetch;if(typeof nativeFetch!=='function')return;globalThis.fetch=(input,init)=>{let requestUrl;try{requestUrl=new URL(String(input?.url||input||''));}catch(_){return nativeFetch(input,init);}const exactStaging=requestUrl.hostname==='${STAGING_REF}.supabase.co';const isWorkflowRpc=exactStaging&&requestUrl.pathname==='/rest/v1/rpc/leader_update_lead_workflow_browser_rpc';if(!isWorkflowRpc)return nativeFetch(input,init);const headers=Object.fromEntries(new Headers(init?.headers||input?.headers||{}).entries());const method=clean(init?.method||input?.method||'POST').toUpperCase();const rpcBody=JSON.parse(typeof init?.body==='string'?init.body:'{}');const accepted=navigator.sendBeacon('/__crm_e2e_staging_rpc_proxy',JSON.stringify({path:requestUrl.pathname+requestUrl.search,method,headers,body:JSON.stringify(rpcBody)}));if(!accepted)return Promise.reject(new Error('staging_rpc_bridge_rejected'));const command=rpcBody.p_request||{};const payload=command.payload||{};const lead={id:payload.lead_id,updated_at:new Date(Date.now()+1000).toISOString(),...(payload.patch||{})};return Promise.resolve(new Response(JSON.stringify({ok:true,request_id:command.request_id,idempotent_replay:false,lead}),{status:201,headers:{'Content-Type':'application/json','Cache-Control':'no-store'}}));};}
+function instrumentTransportProbe(){const nativeFetch=globalThis.fetch;if(typeof nativeFetch!=='function')return;globalThis.fetch=async(input,init)=>{let requestUrl;try{requestUrl=new URL(String(input?.url||input||''));}catch(_){return nativeFetch(input,init);}const exactStaging=requestUrl.hostname==='${STAGING_REF}.supabase.co';if(!exactStaging)return nativeFetch(input,init);const headers=Object.fromEntries(new Headers(init?.headers||input?.headers||{}).entries());const method=clean(init?.method||input?.method||'GET').toUpperCase();const requestBody=typeof init?.body==='string'?init.body:'';const isWorkflowRpc=requestUrl.pathname==='/rest/v1/rpc/leader_update_lead_workflow_browser_rpc';if(isWorkflowRpc){const rpcBody=JSON.parse(requestBody||'{}');const accepted=navigator.sendBeacon('/__crm_e2e_staging_rpc_proxy',JSON.stringify({path:requestUrl.pathname+requestUrl.search,method,headers,body:JSON.stringify(rpcBody)}));if(!accepted)return Promise.reject(new Error('staging_rpc_bridge_rejected'));const command=rpcBody.p_request||{};const payload=command.payload||{};const lead={id:payload.lead_id,updated_at:new Date(Date.now()+1000).toISOString(),...(payload.patch||{})};return new Response(JSON.stringify({ok:true,request_id:command.request_id,idempotent_replay:false,lead}),{status:201,headers:{'Content-Type':'application/json','Cache-Control':'no-store'}});}const proxyable=/^\/rest\/v1\/(?:leader_|rpc\/leader_)/.test(requestUrl.pathname)||/^\/functions\/v1\/leader-/.test(requestUrl.pathname);if(!proxyable||!['GET','POST','PATCH','DELETE'].includes(method))return nativeFetch(input,init);return nativeFetch('/__crm_e2e_staging_request_proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:requestUrl.pathname+requestUrl.search,method,headers,body:requestBody})});};}
 async function waitFor(check,code,timeout=30000){const begin=Date.now();while(Date.now()-begin<timeout){const value=await check();if(value)return value;await sleep(50);}throw new Error(code);}
 function waitForDocumentEvent(name,code,timeout=30000){return new Promise((resolve,reject)=>{let timer=0;const done=(event)=>{clearTimeout(timer);document.removeEventListener(name,done);resolve(event?.detail||{});};timer=setTimeout(()=>{document.removeEventListener(name,done);reject(new Error(code));},timeout);document.addEventListener(name,done,{once:true});});}
 function setValue(selector,value,event='input'){const node=document.querySelector(selector);assert(node,'missing:'+selector);node.value=value;node.dispatchEvent(new Event(event,{bubbles:true}));return node;}
@@ -206,13 +206,16 @@ output('passed',{authenticated:true,role:'${expectedRole}',ui_allowed_controls:t
 function mimeType(filePath) {
   return ({ '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp' })[path.extname(filePath).toLowerCase()] || 'application/octet-stream';
 }
-function exactStagingRequest({ url, method, apikey, authorization, body = '' }) {
+function exactStagingRequest({ url, method, apikey, authorization, body = '', requestHeaders = {} }) {
   const endpoint = url instanceof URL ? url : new URL(String(url));
-  if (endpoint.origin !== STAGING_URL || !['GET', 'POST'].includes(method)) return Promise.reject(new Error('staging_proxy_target_invalid'));
+  if (endpoint.origin !== STAGING_URL || !['GET', 'POST', 'PATCH', 'DELETE'].includes(method)) return Promise.reject(new Error('staging_proxy_target_invalid'));
   return new Promise((resolve, reject) => {
-    const headers = { apikey, Authorization: authorization, Accept: 'application/json' };
-    if (method === 'POST') {
-      headers['Content-Type'] = 'application/json';
+    const headers = { apikey, Authorization: authorization, Accept: text(requestHeaders.accept) || 'application/json' };
+    for (const name of ['content-type', 'prefer', 'accept-profile', 'content-profile', 'range']) {
+      const value = text(requestHeaders[name]); if (value) headers[name] = value;
+    }
+    if (method !== 'GET' && body) {
+      if (!headers['content-type']) headers['content-type'] = 'application/json';
       headers['Content-Length'] = Buffer.byteLength(body);
     }
     const upstream = httpsRequest(endpoint, { method, headers }, (upstreamResponse) => {
@@ -223,7 +226,7 @@ function exactStagingRequest({ url, method, apikey, authorization, body = '' }) 
     });
     upstream.setTimeout(25000, () => upstream.destroy(new Error('staging_proxy_timeout')));
     upstream.once('error', reject);
-    upstream.end(method === 'POST' ? body : undefined);
+    upstream.end(method !== 'GET' && body ? body : undefined);
   });
 }
 async function localServer(root) {
@@ -251,6 +254,26 @@ async function localServer(root) {
         for await (const chunk of request) { size += chunk.length; if (size > 65536) throw new Error('evidence_too_large'); chunks.push(chunk); }
         const body = Buffer.concat(chunks).toString('utf8'); JSON.parse(body); settleResult(body);
         response.writeHead(204, { 'Cache-Control': 'no-store' }); response.end(); return;
+      }
+      if (url.pathname === '/__crm_e2e_staging_request_proxy' && request.method === 'POST') {
+        lastProgress = 'staging_request_proxy_received'; lastProgressAt = Date.now();
+        const chunks = []; let size = 0;
+        for await (const chunk of request) { size += chunk.length; if (size > 262144) throw new Error('staging_request_proxy_too_large'); chunks.push(chunk); }
+        const payload = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+        const upstreamUrl = new URL(String(payload?.path || ''), STAGING_URL);
+        const allowedPath = /^\/rest\/v1\/(?:leader_|rpc\/leader_)/.test(upstreamUrl.pathname) || /^\/functions\/v1\/leader-/.test(upstreamUrl.pathname);
+        const method = text(payload?.method).toUpperCase();
+        if (upstreamUrl.origin !== STAGING_URL || !allowedPath || !['GET', 'POST', 'PATCH', 'DELETE'].includes(method)) throw new Error('staging_request_proxy_route_forbidden');
+        const incomingHeaders = payload?.headers && typeof payload.headers === 'object' ? payload.headers : {};
+        const authorization = text(incomingHeaders.authorization);
+        const apikey = text(incomingHeaders.apikey);
+        if (!authorization.startsWith('Bearer ') || !apikey || typeof payload.body !== 'string') throw new Error('staging_request_proxy_auth_invalid');
+        const upstream = await exactStagingRequest({ url: upstreamUrl, method, apikey, authorization, body: payload.body, requestHeaders: incomingHeaders });
+        if (upstream.body.length > 262144) throw new Error('staging_request_proxy_response_too_large');
+        response.writeHead(upstream.status, { 'Content-Type': upstream.contentType, 'Cache-Control': 'no-store' });
+        response.end(upstream.body);
+        lastProgress = 'staging_request_proxy_responded'; lastProgressAt = Date.now();
+        return;
       }
       if (url.pathname === '/__crm_e2e_staging_rpc_proxy' && request.method === 'POST') {
         lastProgress = 'workflow_rpc_proxy_received'; lastProgressAt = Date.now();

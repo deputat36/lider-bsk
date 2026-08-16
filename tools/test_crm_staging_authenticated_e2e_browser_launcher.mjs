@@ -31,6 +31,9 @@ assert.equal(operatorPlan().browser_transport_bridge, 'same_origin_beacon_to_exa
 
 const runnerSource = await readFile(new URL('./run_crm_staging_authenticated_e2e.mjs', import.meta.url), 'utf8');
 assert.match(runnerSource, /navigator\.sendBeacon\('\/__crm_e2e_staging_rpc_proxy'/);
+assert.match(runnerSource, /__crm_e2e_staging_request_proxy/);
+assert.match(runnerSource, /staging_request_proxy_route_forbidden/);
+assert.match(runnerSource, /requestHeaders: incomingHeaders/);
 assert.doesNotMatch(runnerSource, /form\.action='\/__crm_e2e_staging_rpc_proxy'/);
 assert.match(runnerSource, /status:201,headers:\{'Content-Type':'application\/json'/);
 assert.match(runnerSource, /final_lead_assignment_persistence_failed/);
@@ -53,4 +56,4 @@ assert.throws(
   /browser_launch_input_invalid/
 );
 
-console.log('Authenticated staging E2E uses one headed Chrome session, proves card opening and assignment through the UI, verifies real DB persistence, then resumes after the required order refresh.');
+console.log('Authenticated staging E2E uses one headed Chrome session and a same-origin, user-JWT-only transport bridge for allowlisted CRM staging calls, then resumes after the required order refresh.');
