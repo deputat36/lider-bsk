@@ -56,6 +56,7 @@ export function operatorPlan() {
     actual_crm_index: true,
     first_login_via_form: true,
     browser_mode: 'xvfb_headed_chrome',
+    browser_phases: ['assignment', 'main'],
     browser_transport_bridge: 'same_origin_beacon_to_exact_staging_rpc_with_db_assertion',
     browser_navigation: ['leads', 'lead_card', 'orders_direct', 'production', 'installation'],
     destructive_scope: 'unique_synthetic_marker_only',
@@ -82,6 +83,7 @@ let supabaseClient;
 const started=Date.now();
 const steps=[];
 const ids={};
+const e2ePhase=new URLSearchParams(location.search).get('e2e_phase')||'main';
 const sleep=(ms)=>new Promise((resolve)=>setTimeout(resolve,ms));
 const clean=(value)=>String(value??'').trim();
 function assert(value,code){if(!value)throw new Error(code);}
@@ -100,22 +102,34 @@ async function invoke(functionName,body){const response=await supabaseClient.fun
 function edgeCode(response){return clean(response?.data?.error?.code||response?.error?.message||response?.data?.error||'');}
 async function assertCount(tableName,filters,count){const rows=await table(tableName,'id',filters);assert(rows.length===count,'count_mismatch:'+tableName+':'+rows.length+':'+count);return rows;}
 
-async function firstLoginAndLead(){
+async function loginManager(){
   progress('login_wait');
   await waitFor(()=>document.getElementById('loginForm')&&!document.getElementById('loginForm').classList.contains('hidden'),'login_form_missing');
   setValue('#loginEmail',R.email);setValue('#loginPassword',R.password);click('#loginBtn');progress('login_submitted');
   await waitFor(()=>!document.getElementById('crmWorkspace')?.classList.contains('hidden')&&clean(document.getElementById('profileRole')?.textContent).toLowerCase()==='manager','authenticated_workspace_timeout',45000);
-  assert(document.body.dataset.v4Tab==='leads','initial_leads_tab_missing');record('login_first_entry');
+  assert(document.body.dataset.v4Tab==='leads','initial_leads_tab_missing');
+}
+
+async function openSyntheticLead(){
   setValue('#leadSearch',R.marker);await waitFor(()=>document.querySelector('.v4-lead-card[data-id="'+R.leadId+'"]'),'synthetic_lead_not_listed');
   click('.v4-lead-card[data-id="'+R.leadId+'"] button[data-action="open"]');progress('lead_open_clicked');
   assert(document.body.dataset.v4Tab==='card','lead_card_tab_denied:'+clean(document.body.dataset.v4Tab));assert(location.search.includes('lead='+R.leadId),'lead_card_route_lost');
+}
+
+async function assignmentPhase(){
+  await loginManager();record('login_first_entry');await openSyntheticLead();
   const assignSelector='[data-lead-primary-action="assign_self"]';
   const cardState=await waitFor(()=>{const error=document.querySelector('#leadCardContent .v4-empty.is-error');if(error)return error;const assign=document.querySelector(assignSelector);return assign&&assign.isConnected&&!assign.disabled?assign:false;},'lead_card_open_timeout',45000);assert(!cardState.classList.contains('v4-empty'),'lead_card_render_error:'+clean(cardState.textContent).slice(0,120));assert(location.search.includes('lead='+R.leadId),'lead_card_route_missing');record('lead_card');
   const assignmentEvent=waitForDocumentEvent('leader-v4:lead-workflow-updated','lead_assignment_event_timeout',45000);progress('lead_assign_clicked');click(assignSelector);
   const wait5=setTimeout(()=>progress('lead_assignment_wait_5s'),5000);const wait40=setTimeout(()=>progress('lead_assignment_wait_40s'),40000);let assignmentDetail;try{assignmentDetail=await assignmentEvent;}finally{clearTimeout(wait5);clearTimeout(wait40);}assert(clean(assignmentDetail?.lead?.assigned_to),'lead_assignment_event_missing_assignee');assert(clean(assignmentDetail?.lead?.status)==='В работе','lead_assignment_event_status_sync_failed');record('lead_assignment');
-  sessionStorage.setItem('leaderCrmAuthenticatedE2eResume',JSON.stringify({stage:'after_assignment',steps}));
-  location.reload();
+  output('passed',{phase:'assignment',authenticated:true,role:'manager',browser_actions:true,steps,duration_ms:Date.now()-started,cleanup_required:true});
   await new Promise(()=>{});
+}
+
+async function openAssignedLead(){
+  await loginManager();record('continuation_login');await openSyntheticLead();
+  const cardState=await waitFor(()=>{const error=document.querySelector('#leadCardContent .v4-empty.is-error');if(error)return error;const summary=document.querySelector('#needFormBox .v4-need-workspace-summary');return summary&&summary.isConnected?summary:false;},'assigned_lead_card_open_timeout',45000);assert(!cardState.classList.contains('v4-empty'),'assigned_lead_card_render_error:'+clean(cardState.textContent).slice(0,120));
+  const persisted=await one('leader_leads','id,status,assigned_to,updated_at',{id:R.leadId});assert(clean(persisted.assigned_to)&&persisted.status==='В работе','final_lead_assignment_persistence_failed');record('lead_assignment_db_persisted');
 }
 
 async function createNeedAndCalculation(){
@@ -168,22 +182,22 @@ async function designProductionInstallation(orderId){
   const installation=await waitFor(async()=>{try{const rows=await table('leader_installation_jobs','id,order_id,production_job_id,install_status,updated_at',{order_id:orderId});return rows.length===1?rows[0]:false;}catch(_){return false;}},'installation_create_timeout',45000);ids.installation=installation.id;await assertCount('leader_installation_jobs',{order_id:orderId},1);record('installation_create_idempotent_replay');
   await waitFor(()=>document.querySelector('[data-production-light-kind="installation"]'),'installation_tab_missing');click('[data-production-light-kind="installation"]');await waitFor(()=>document.querySelector('[data-open-installation-job-card="'+installation.id+'"]'),'installation_board_missing');click('[data-open-installation-job-card="'+installation.id+'"]');await waitFor(()=>document.getElementById('installJobStatus'),'installation_card_missing');record('installation_card');
   const finalOrder=await one('leader_orders','id,production_status,installation_status,layout_status,status,updated_at',{id:orderId});assert(finalOrder.production_status==='Готово'&&finalOrder.installation_status,'final_order_projection_failed');
-  const finalLead=await one('leader_leads','id,status,assigned_to,updated_at',{id:R.leadId});assert(clean(finalLead.assigned_to)&&finalLead.status==='В работе','final_lead_assignment_persistence_failed');record('lead_assignment_db_persisted');
+  const finalLead=await one('leader_leads','id,status,assigned_to,updated_at',{id:R.leadId});assert(clean(finalLead.assigned_to)&&finalLead.status==='В работе','final_lead_assignment_persistence_failed');record('lead_assignment_db_persisted_final');
   const counts={needs:(await table('leader_lead_needs','id',{lead_id:R.leadId})).length,calculations:(await table('leader_lead_calculations','id',{lead_id:R.leadId})).length,offers:(await table('leader_commercial_offers','id',{lead_id:R.leadId})).length,orders:(await table('leader_orders','id',{lead_id:R.leadId})).length,design_tasks:(await table('leader_design_tasks','id',{order_id:orderId})).length,production_jobs:(await table('leader_production_jobs','id',{order_id:orderId})).length,installation_jobs:(await table('leader_installation_jobs','id',{order_id:orderId})).length};
   assert(JSON.stringify(counts)===JSON.stringify({needs:1,calculations:2,offers:1,orders:1,design_tasks:1,production_jobs:1,installation_jobs:1}),'final_counts_mismatch');
   const productionRequests=performance.getEntriesByType('resource').map((item)=>item.name).filter((name)=>name.includes('${PRODUCTION_REF}'));assert(productionRequests.length===0,'production_network_request_detected');
-  output('passed',{authenticated:true,role:'manager',browser_actions:true,refresh:true,back_forward:true,direct_orders:true,review_guard:true,production_replay:true,stale_guard:true,installation_replay:true,projection_sync:true,counts,steps,duration_ms:Date.now()-started,cleanup_required:true});
+  output('passed',{phase:'main',authenticated:true,role:'manager',browser_actions:true,refresh:true,back_forward:true,direct_orders:true,review_guard:true,production_replay:true,stale_guard:true,installation_replay:true,projection_sync:true,counts,steps,duration_ms:Date.now()-started,cleanup_required:true});
 }
 
 instrumentTransportProbe();
-try {
-  ({ supabaseClient } = await import('./assets/v4/supabase-client.js'));
-  const resume = JSON.parse(sessionStorage.getItem('leaderCrmAuthenticatedE2eResume') || 'null');
-  if (Array.isArray(resume?.steps)) steps.push(...resume.steps);
-  if (resume?.stage === 'after_refresh') { sessionStorage.removeItem('leaderCrmAuthenticatedE2eResume'); await designProductionInstallation(resume.orderId); }
-  else if (resume?.stage === 'after_assignment') { sessionStorage.removeItem('leaderCrmAuthenticatedE2eResume'); await createNeedAndCalculation(); await createOfferAndOrder(); await navigationAndRefresh(); }
-  else { await firstLoginAndLead(); }
-} catch (error) { const code = clean(error?.message || 'browser_e2e_failed'); progress('failed:' + code.replace(/[^a-z0-9_:-]/gi, '_').slice(0, 60)); output('failed', { error: code.slice(0, 240), steps, duration_ms: Date.now() - started, cleanup_required: true }); }
+try{
+  ({supabaseClient}=await import('./assets/v4/supabase-client.js'));
+  const resume=JSON.parse(sessionStorage.getItem('leaderCrmAuthenticatedE2eResume')||'null');
+  if(Array.isArray(resume?.steps))steps.push(...resume.steps);
+  if(resume?.stage==='after_refresh'){sessionStorage.removeItem('leaderCrmAuthenticatedE2eResume');await designProductionInstallation(resume.orderId);}
+  else if(e2ePhase==='assignment'){await assignmentPhase();}
+  else{await openAssignedLead();await createNeedAndCalculation();await createOfferAndOrder();await navigationAndRefresh();}
+}catch(error){const code=clean(error?.message||'browser_e2e_failed');progress('failed:'+code.replace(/[^a-z0-9_:-]/gi,'_').slice(0,60));output('failed',{phase:e2ePhase,error:code.slice(0,240),steps,duration_ms:Date.now()-started,cleanup_required:true});}
 `;
 }
 
@@ -227,6 +241,7 @@ async function localServer(root) {
   const safeRoot = path.resolve(root);
   let lastProgress = 'not_started';
   let lastProgressAt = Date.now();
+  let workflowRpcState = Object.freeze({ state: 'idle', status: 0 });
   let settleResult;
   const resultPromise = new Promise((resolve) => { settleResult = resolve; });
   const server = createServer(async (request, response) => {
@@ -272,11 +287,19 @@ async function localServer(root) {
           lastProgress = 'workflow_readback_proxy_responded'; lastProgressAt = Date.now();
           return;
         }
-        response.writeHead(204, { 'Cache-Control': 'no-store' });
-        response.end();
+        response.writeHead(204, { 'Cache-Control': 'no-store' }); response.end();
+        workflowRpcState = Object.freeze({ state: 'pending', status: 0 });
         lastProgress = 'workflow_rpc_proxy_accepted'; lastProgressAt = Date.now();
-        globalThis.setTimeout(() => {
-          exactStagingRequest({ url: upstreamUrl, method: 'POST', apikey, authorization, body: payload.body }).catch(() => undefined);
+        globalThis.setTimeout(async () => {
+          try {
+            const upstream = await exactStagingRequest({ url: upstreamUrl, method: 'POST', apikey, authorization, body: payload.body });
+            const success = upstream.status >= 200 && upstream.status < 300;
+            workflowRpcState = Object.freeze({ state: success ? 'success' : 'failed', status: upstream.status });
+            lastProgress = success ? 'workflow_rpc_upstream_completed' : 'workflow_rpc_upstream_failed'; lastProgressAt = Date.now();
+          } catch (_) {
+            workflowRpcState = Object.freeze({ state: 'failed', status: 0 });
+            lastProgress = 'workflow_rpc_upstream_failed'; lastProgressAt = Date.now();
+          }
         }, 0);
         return;
       }
@@ -293,9 +316,21 @@ async function localServer(root) {
     server,
     url: `http://127.0.0.1:${address.port}/index.html?tab=leads`,
     resultPromise,
-    getProgressState: () => ({ name: lastProgress, at: lastProgressAt })
+    getProgressState: () => ({ name: lastProgress, at: lastProgressAt }),
+    getWorkflowRpcState: () => workflowRpcState
   };
 }
+async function waitForWorkflowRpc(getState, timeout = 30000) {
+  const started = Date.now();
+  while (Date.now() - started < timeout) {
+    const state = getState();
+    if (state?.state === 'success') return state;
+    if (state?.state === 'failed') throw new Error(`staging_workflow_rpc_failed:${state.status || 0}`);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  throw new Error('staging_workflow_rpc_timeout');
+}
+async function closeServer(server) { if (server) await new Promise((resolve) => server.close(resolve)); }
 async function findChrome() {
   for (const candidate of ['/usr/bin/google-chrome', '/usr/bin/google-chrome-stable', '/usr/bin/chromium', '/usr/bin/chromium-browser']) {
     try { await access(candidate, fsConstants.X_OK); return candidate; } catch (_) { /* continue */ }
@@ -351,15 +386,10 @@ function runChrome(binary, args, resultPromise, getProgressState) {
       setTimeout(() => signal('SIGKILL'), 5000).unref();
     };
     const hardTimer = setTimeout(() => {
-      const progress = getProgressState();
-      failure = new Error(`chrome_browser_scenario_timeout:${progress.name}`);
-      stop();
+      const progress = getProgressState(); failure = new Error(`chrome_browser_scenario_timeout:${progress.name}`); stop();
     }, 480000);
     const stallTimer = setInterval(() => {
-      const progress = getProgressState();
-      if (Date.now() - progress.at < 90000) return;
-      failure = new Error(`chrome_browser_scenario_stalled:${progress.name}`);
-      stop();
+      const progress = getProgressState(); if (Date.now() - progress.at < 90000) return; failure = new Error(`chrome_browser_scenario_stalled:${progress.name}`); stop();
     }, 1000);
     child.stdout.on('data', (chunk) => { stdout += chunk; }); child.stderr.on('data', (chunk) => { stderr += chunk; });
     resultPromise.then((body) => { evidenceBody = body; stop(); }).catch((error) => { failure = error; stop(); });
@@ -385,13 +415,32 @@ async function run(env = process.env, roleUi = '') {
     await writeFile(path.join(tempV4, 'crm-authenticated-e2e-page.mjs'), roleUi ? roleBrowserSource(roleUi) : browserSource(), { mode: 0o600 });
     const indexPath = path.join(tempV4, 'index.html'); const html = await readFile(indexPath, 'utf8');
     await writeFile(indexPath, html.replace('</body>', '<script src="./assets/vendor/supabase-v2.112.2.js"></script><pre id="crmAuthenticatedE2eResult" data-status="running" hidden>running</pre><script type="module" src="./crm-authenticated-e2e-page.mjs"></script></body>'), { mode: 0o600 });
-    const local = await localServer(tempV4); server = local.server;
-    const launch = browserLaunchPlan({ xvfbRun, chrome, profileDir: path.join(tempRoot, 'chrome-profile'), url: local.url });
-    const chromeResult = await runChrome(launch.binary, launch.args, local.resultPromise, local.getProgressState);
-    if (chromeResult.code !== 0) throw new Error(`browser_process_failed:${chromeResult.code}`);
-    const evidence = sanitize(JSON.parse(chromeResult.evidenceBody)); if (evidence.status !== 'passed') throw new Error(`browser_e2e_failed:${evidence.error || 'unknown'}`); const target = path.resolve(config.evidencePath); await mkdir(path.dirname(target), { recursive: true }); await writeFile(target, `${JSON.stringify(evidence, null, 2)}\n`, { mode: 0o600 }); return { evidence, target };
+
+    if (roleUi) {
+      const local = await localServer(tempV4); server = local.server;
+      const launch = browserLaunchPlan({ xvfbRun, chrome, profileDir: path.join(tempRoot, 'chrome-profile-role'), url: local.url });
+      const chromeResult = await runChrome(launch.binary, launch.args, local.resultPromise, local.getProgressState);
+      const evidence = sanitize(JSON.parse(chromeResult.evidenceBody)); if (evidence.status !== 'passed') throw new Error(`browser_e2e_failed:${evidence.error || 'unknown'}`);
+      const target = path.resolve(config.evidencePath); await mkdir(path.dirname(target), { recursive: true }); await writeFile(target, `${JSON.stringify(evidence, null, 2)}\n`, { mode: 0o600 }); return { evidence, target };
+    }
+
+    const assignmentLocal = await localServer(tempV4); server = assignmentLocal.server;
+    const assignmentLaunch = browserLaunchPlan({ xvfbRun, chrome, profileDir: path.join(tempRoot, 'chrome-profile-assignment'), url: `${assignmentLocal.url}&e2e_phase=assignment` });
+    const assignmentChrome = await runChrome(assignmentLaunch.binary, assignmentLaunch.args, assignmentLocal.resultPromise, assignmentLocal.getProgressState);
+    const assignmentEvidence = sanitize(JSON.parse(assignmentChrome.evidenceBody));
+    if (assignmentEvidence.status !== 'passed' || assignmentEvidence.phase !== 'assignment') throw new Error(`browser_assignment_phase_failed:${assignmentEvidence.error || 'unknown'}`);
+    await waitForWorkflowRpc(assignmentLocal.getWorkflowRpcState);
+    await closeServer(server); server = null;
+
+    const mainLocal = await localServer(tempV4); server = mainLocal.server;
+    const mainLaunch = browserLaunchPlan({ xvfbRun, chrome, profileDir: path.join(tempRoot, 'chrome-profile-main'), url: `${mainLocal.url}&e2e_phase=main` });
+    const mainChrome = await runChrome(mainLaunch.binary, mainLaunch.args, mainLocal.resultPromise, mainLocal.getProgressState);
+    const evidence = sanitize(JSON.parse(mainChrome.evidenceBody)); if (evidence.status !== 'passed') throw new Error(`browser_e2e_failed:${evidence.error || 'unknown'}`);
+    evidence.assignment_phase = true;
+    evidence.steps = [...(assignmentEvidence.steps || []), ...(evidence.steps || [])];
+    const target = path.resolve(config.evidencePath); await mkdir(path.dirname(target), { recursive: true }); await writeFile(target, `${JSON.stringify(evidence, null, 2)}\n`, { mode: 0o600 }); return { evidence, target };
   } finally {
-    if (server) await new Promise((resolve) => server.close(resolve));
+    await closeServer(server);
     for (let attempt = 0; attempt < 30; attempt += 1) {
       try { await rm(tempRoot, { recursive: true, force: true }); break; }
       catch (error) { if (attempt === 29) throw error; await new Promise((resolve) => setTimeout(resolve, 100)); }
