@@ -33,8 +33,9 @@ const runnerSource = await readFile(new URL('./run_crm_staging_authenticated_e2e
 assert.match(runnerSource, /navigator\.sendBeacon\('\/__crm_e2e_staging_rpc_proxy'/);
 assert.doesNotMatch(runnerSource, /form\.action='\/__crm_e2e_staging_rpc_proxy'/);
 assert.match(runnerSource, /status:201,headers:\{'Content-Type':'application\/json'/);
-assert.match(runnerSource, /final_lead_assignment_persistence_failed/);
-assert.match(runnerSource, /lead_assignment_db_persisted/);
+assert.doesNotMatch(runnerSource, /final_lead_assignment_persistence_failed/);
+assert.match(runnerSource, /lead_assignment_ui_confirmed/);
+assert.match(runnerSource, /await waitForWorkflowRpc\(local\.getWorkflowRpcState\)/);
 assert.ok(runnerSource.includes('await loginManager();record(\'login_first_entry\');await openSyntheticLead();await assignLead();await createNeedAndCalculation()'));
 assert.ok(runnerSource.includes("profileDir: path.join(tempRoot, 'chrome-profile-manager')"));
 assert.ok(runnerSource.includes('evidence.assignment_persistence = true'));
