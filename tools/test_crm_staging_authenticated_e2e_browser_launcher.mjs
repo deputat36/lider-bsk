@@ -52,6 +52,7 @@ assert.match(runnerSource, /rpc_\$\{workflowCode\}/);
 assert.match(runnerSource, /proxyResponse\.text\(\)/);
 assert.doesNotMatch(runnerSource, /new TextEncoder/);
 assert.match(runnerSource, /'Content-Length': String\(upstream\.body\.length\)/);
+assert.match(runnerSource, /Connection: 'close'/);
 assert.match(runnerSource, /lastTransport/);
 assert.match(runnerSource, /networkAt: lastTransportAt/);
 assert.match(runnerSource, /pathname\.startsWith\('\/rest\/v1\/leader_'\)/);

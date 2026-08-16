@@ -283,7 +283,7 @@ async function localServer(root) {
           workflowRpcState = Object.freeze({ state: rpcOk ? 'success' : 'failed', status: upstream.status, code: workflowCode });
         }
         if (upstream.body.length > 262144) throw new Error('staging_request_proxy_response_too_large');
-        response.writeHead(upstream.status, { 'Content-Type': upstream.contentType, 'Content-Length': String(upstream.body.length), 'Cache-Control': 'no-store' });
+        response.writeHead(upstream.status, { 'Content-Type': upstream.contentType, 'Content-Length': String(upstream.body.length), 'Cache-Control': 'no-store', Connection: 'close' });
         response.end(upstream.body);
         lastTransport = `staging_request_proxy_responded:${method.toLowerCase()}:${upstreamUrl.pathname.split('/').pop()?.replace(/[^a-z0-9_-]/gi, '_').slice(0, 36) || 'unknown'}:${upstream.status}${workflowRpc ? `:rpc_${workflowCode}` : ''}`; lastTransportAt = Date.now();
         return;
