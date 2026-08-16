@@ -281,6 +281,9 @@ function bootTabLoader() {
     }
     if (TAB_REGISTRY[tab]) loadV4Tab(tab, { force: event.detail?.force === true });
   });
+  const currentTab = String(document.body?.dataset?.v4Tab || '');
+  if (currentTab === 'card') loadLeadCardBundle();
+  else if (TAB_REGISTRY[currentTab]) loadV4Tab(currentTab);
 }
 
 export { TAB_REGISTRY };

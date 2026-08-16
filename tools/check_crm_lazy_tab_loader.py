@@ -83,7 +83,7 @@ def main() -> int:
                 f"installation card may only be referenced by crm-v4-tab-loader-v1.js: {path.relative_to(ROOT)}"
             )
 
-    require(index, "crm-v4-tab-loader-v1.js?v=20260805-lazy-tabs-1", INDEX)
+    require(index, "crm-v4-tab-loader-v1.js?v=20260816-direct-card-1", INDEX)
     for tab in TABS:
         require(loader, f"{tab}: Object.freeze({{", LOADER)
         require(loader, f"requiredPermission: '{tab}'", LOADER)
@@ -97,6 +97,8 @@ def main() -> int:
         "showError(tab",
         "canOpenV4Tab(config.requiredPermission)",
         "leader-v4:tab-section-ready",
+        "const currentTab = String(document.body?.dataset?.v4Tab || '')",
+        "if (currentTab === 'card') loadLeadCardBundle()",
         "import('./lead-card.js?v=20260805-tab-loader-1')",
     ):
         require(loader, marker, LOADER)

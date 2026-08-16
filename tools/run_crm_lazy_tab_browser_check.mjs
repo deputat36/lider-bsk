@@ -22,6 +22,7 @@ function assert(value, code) { if (!value) throw new Error(code); }
 function mockSupabaseSource() {
   return `const user={id:'11111111-1111-4111-8111-111111111111',email:'lazy-browser@example.invalid'};
 const profile={user_id:user.id,email:user.email,role:'owner',is_active:true,full_name:'Lazy Browser Check'};
+const lead={id:'22222222-2222-4222-8222-222222222222',status:'В работе',name:'Direct Card Synthetic',phone:null,source:'Synthetic',message:'Synthetic lead card',assigned_to:user.id,created_at:'2026-08-16T00:00:00.000Z',updated_at:'2026-08-16T00:00:00.000Z'};
 window.__CRM_BROWSER_MOCK__={reads:[],mutations:[],functionCalls:[]};
 const pause=()=>new Promise(resolve=>setTimeout(resolve,55));
 class Query{
@@ -34,7 +35,7 @@ class Query{
   update(){window.__CRM_BROWSER_MOCK__.mutations.push({table:this.table,method:'update'});return this;}
   delete(){window.__CRM_BROWSER_MOCK__.mutations.push({table:this.table,method:'delete'});return this;}
   upsert(){window.__CRM_BROWSER_MOCK__.mutations.push({table:this.table,method:'upsert'});return this;}
-  async result(single=false){await pause();window.__CRM_BROWSER_MOCK__.reads.push(this.table);if(single&&this.table==='leader_user_profiles')return {data:profile,error:null,count:1};return {data:single?null:[],error:null,count:0};}
+  async result(single=false){await pause();window.__CRM_BROWSER_MOCK__.reads.push(this.table);if(single&&this.table==='leader_user_profiles')return {data:profile,error:null,count:1};if(single&&this.table==='leader_leads')return {data:lead,error:null,count:1};return {data:single?null:[],error:null,count:0};}
   maybeSingle(){return this.result(true);} single(){return this.result(true);}
   then(resolve,reject){return this.result(false).then(resolve,reject);}
 }
@@ -76,6 +77,7 @@ const HEAVY=['management-dashboard-v3.js','orders-fast-loader-v1.js','order-cont
 const out=document.getElementById('lazyBrowserCheckResult');
 const params=new URL(location.href).searchParams;
 const full=params.get('full')==='1';
+const directCard=params.get('direct_card')==='1';
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const assert=(value,code)=>{if(!value)throw new Error(code);};
 async function waitFor(check,code,timeoutMs=9000){const started=Date.now();while(Date.now()-started<timeoutMs){if(check())return;await sleep(25);}throw new Error(code);}
@@ -86,6 +88,15 @@ function layoutEvidence(){const buttons=[...document.querySelectorAll('#v4Layout
 function finish(status,payload){const result={evidence_version:'${EVIDENCE_VERSION}',status,viewport:params.get('viewport')||'',full,...payload};out.dataset.status=status;out.textContent=JSON.stringify(result);document.title=status==='passed'?'LAZY TAB BROWSER PASSED':'LAZY TAB BROWSER FAILED';document.body.dataset.lazyBrowserCheckFinished='true';}
 async function run(){try{
 await waitFor(()=>!document.getElementById('crmWorkspace')?.classList.contains('hidden'),'workspace_timeout');
+if(directCard){
+await waitFor(()=>document.body.dataset.v4Tab==='card','direct_card_tab_timeout');
+await waitFor(()=>document.querySelector('#needFormBox .v4-need-workspace-summary'),'direct_card_content_timeout');
+const directResources=jsResources();
+assert(directResources.filter(url=>url.includes('lead-card.js')).length===1,'direct_card_module_count');
+assert(directResources.filter(url=>url.includes('needs.js')).length===1,'direct_needs_module_count');
+await sleep(200);assert(window.__CRM_BROWSER_ERRORS__.length===0,'direct_card_browser_errors:'+JSON.stringify(window.__CRM_BROWSER_ERRORS__));
+finish('passed',{direct_card:true,layout:layoutEvidence(),loaded_modules:directResources.map(url=>url.split('/').pop()),mock_mutations:window.__CRM_BROWSER_MOCK__.mutations.length,console_errors:0});return;
+}
 await waitFor(()=>document.body.dataset.v4Tab==='leads','initial_leads_timeout');
 await sleep(250);
 const eagerEntrypoints=document.querySelectorAll('script[type="module"][src]:not([src$="lazy-tab-browser-controller.mjs"])').length;
@@ -303,6 +314,17 @@ export async function runLazyTabBrowserCheck({ repoRoot = path.resolve('.') } = 
         evidence.push(result);
       } finally { await rm(profileDir, { recursive: true, force: true }); }
     }
+    const directProfileDir = await mkdtemp(path.join(tmpdir(), 'lider-lazy-tab-direct-card-'));
+    let directCardEvidence;
+    try {
+      const directUrl = `${local.baseUrl}?tab=card&lead=22222222-2222-4222-8222-222222222222&viewport=direct-card&full=0&direct_card=1`;
+      directCardEvidence = validateEvidence(await runChromeViewport(chrome, {
+        profileDir: directProfileDir, url: directUrl, width: 1366, height: 900
+      }));
+    } finally { await rm(directProfileDir, { recursive: true, force: true }); }
+    assert(directCardEvidence?.direct_card === true, 'direct_card_route_not_proved');
+    assert(directCardEvidence.loaded_modules.filter(name => name.startsWith('lead-card.js')).length === 1, 'direct_card_module_regression');
+    assert(directCardEvidence.loaded_modules.filter(name => name.startsWith('needs.js')).length === 1, 'direct_needs_module_regression');
     assert(evidence.length === VIEWPORTS.length, 'viewport_count_invalid');
     assert(evidence.every(item => item.eager_entrypoints <= 11), 'eager_entrypoint_regression');
     assert(evidence.every(item => item.initial_heavy_modules.length === 0), 'hidden_module_regression');
@@ -311,7 +333,7 @@ export async function runLazyTabBrowserCheck({ repoRoot = path.resolve('.') } = 
     const desktop = evidence.find(item => item.viewport === 'desktop');
     assert(desktop?.rapid?.final_tab === 'public_lead_audit', 'rapid_navigation_not_proved');
     assert(desktop?.history?.back === 'orders' && desktop?.history?.forward === 'finance_control', 'history_not_proved');
-    return { evidence_version: EVIDENCE_VERSION, viewports: evidence, no_external_network: true, no_real_credentials: true, no_database_writes: true };
+    return { evidence_version: EVIDENCE_VERSION, viewports: evidence, direct_card: directCardEvidence, no_external_network: true, no_real_credentials: true, no_database_writes: true };
   } finally {
     if (server) await new Promise(resolve => server.close(resolve));
     await rm(tempRoot, { recursive: true, force: true });
