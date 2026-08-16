@@ -10,6 +10,7 @@ INDEX = ROOT / "crm/v4/index.html"
 LOADER = ROOT / "crm/v4/assets/v4/crm-v4-tab-loader-v1.js"
 AUTH = ROOT / "crm/v4/assets/v4/auth.js"
 BADGES = ROOT / "crm/v4/assets/v4/lead-analytics-badges-v1.js"
+LEAD_CARD = ROOT / "crm/v4/assets/v4/lead-card.js"
 
 HEAVY_EAGER = {
     "management-dashboard-v3.js",
@@ -65,6 +66,7 @@ def main() -> int:
     loader = LOADER.read_text(encoding="utf-8")
     auth = AUTH.read_text(encoding="utf-8")
     badges = BADGES.read_text(encoding="utf-8")
+    lead_card = LEAD_CARD.read_text(encoding="utf-8")
 
     parser = ModuleScriptParser()
     parser.feed(index)
@@ -99,7 +101,7 @@ def main() -> int:
         "leader-v4:tab-section-ready",
         "const currentTab = String(document.body?.dataset?.v4Tab || '')",
         "if (currentTab === 'card') loadLeadCardBundle()",
-        "import('./lead-card.js?v=20260805-tab-loader-1')",
+        "import('./lead-card.js?v=20260816-direct-card-1')",
     ):
         require(loader, marker, LOADER)
 
@@ -118,6 +120,9 @@ def main() -> int:
     require(badges, "import('./lead-operational-quality-v1.js?v=20260718-deferred-1')", BADGES)
     require(badges, "import('./lead-attribution-funnel-panel-v1.js?v=20260718-deferred-1')", BADGES)
     require(badges, "button.addEventListener('click', async () =>", BADGES)
+    require(lead_card, "const routedLeadId = v4State.route.leadId || readCrmLeadRoute(window.location.href)", LEAD_CARD)
+    require(lead_card, "setRoute({ leadId: routedLeadId })", LEAD_CARD)
+    require(lead_card, "leader-v4:route-change", LEAD_CARD)
 
     print(f"CRM lazy tab loader contract: OK ({len(parser.sources)} eager entrypoints)")
     return 0

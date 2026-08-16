@@ -233,7 +233,7 @@ async function loadLeadCardBundle() {
   showLoading('card', 'Загружаю карточку заявки…');
   if (!cardBundlePromise) {
     cardBundlePromise = Promise.all([
-      import('./lead-card.js?v=20260805-tab-loader-1'),
+      import('./lead-card.js?v=20260816-direct-card-1'),
       import('./lead-timeline.js?v=20260805-tab-loader-1'),
       import('./lead-timeline-hooks.js?v=20260805-tab-loader-1'),
       import('./needs.js?v=20260805-tab-loader-1'),
