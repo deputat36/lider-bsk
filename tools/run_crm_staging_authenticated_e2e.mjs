@@ -233,6 +233,8 @@ async function localServer(root) {
   const safeRoot = path.resolve(root);
   let lastProgress = 'not_started';
   let lastProgressAt = Date.now();
+  let lastTransport = 'none';
+  let lastTransportAt = Date.now();
   let workflowRpcState = Object.freeze({ state: 'idle', status: 0 });
   let settleResult;
   const resultPromise = new Promise((resolve) => { settleResult = resolve; });
@@ -256,7 +258,7 @@ async function localServer(root) {
         response.writeHead(204, { 'Cache-Control': 'no-store' }); response.end(); return;
       }
       if (url.pathname === '/__crm_e2e_staging_request_proxy' && request.method === 'POST') {
-        lastProgress = 'staging_request_proxy_received'; lastProgressAt = Date.now();
+        lastTransport = 'staging_request_proxy_received'; lastTransportAt = Date.now();
         const chunks = []; let size = 0;
         for await (const chunk of request) { size += chunk.length; if (size > 262144) throw new Error('staging_request_proxy_too_large'); chunks.push(chunk); }
         const payload = JSON.parse(Buffer.concat(chunks).toString('utf8'));
@@ -272,11 +274,11 @@ async function localServer(root) {
         if (upstream.body.length > 262144) throw new Error('staging_request_proxy_response_too_large');
         response.writeHead(upstream.status, { 'Content-Type': upstream.contentType, 'Cache-Control': 'no-store' });
         response.end(upstream.body);
-        lastProgress = 'staging_request_proxy_responded'; lastProgressAt = Date.now();
+        lastTransport = `staging_request_proxy_responded:${method.toLowerCase()}:${upstreamUrl.pathname.split('/').pop()?.replace(/[^a-z0-9_-]/gi, '_').slice(0, 36) || 'unknown'}:${upstream.status}`; lastTransportAt = Date.now();
         return;
       }
       if (url.pathname === '/__crm_e2e_staging_rpc_proxy' && request.method === 'POST') {
-        lastProgress = 'workflow_rpc_proxy_received'; lastProgressAt = Date.now();
+        lastTransport = 'workflow_rpc_proxy_received'; lastTransportAt = Date.now();
         const chunks = []; let size = 0;
         for await (const chunk of request) { size += chunk.length; if (size > 131072) throw new Error('proxy_request_too_large'); chunks.push(chunk); }
         const rawPayload = Buffer.concat(chunks).toString('utf8');
@@ -291,26 +293,26 @@ async function localServer(root) {
         const apikey = text(incomingHeaders.apikey);
         if (!authorization.startsWith('Bearer ') || !apikey || typeof payload.body !== 'string') throw new Error('proxy_auth_invalid');
         if (exactReadback) {
-          lastProgress = 'workflow_readback_proxy_received'; lastProgressAt = Date.now();
+          lastTransport = 'workflow_readback_proxy_received'; lastTransportAt = Date.now();
           const upstream = await exactStagingRequest({ url: upstreamUrl, method: 'GET', apikey, authorization });
           if (upstream.body.length > 65536) throw new Error('proxy_response_too_large');
           response.writeHead(upstream.status, { 'Content-Type': upstream.contentType, 'Cache-Control': 'no-store' });
           response.end(upstream.body);
-          lastProgress = 'workflow_readback_proxy_responded'; lastProgressAt = Date.now();
+          lastTransport = 'workflow_readback_proxy_responded'; lastTransportAt = Date.now();
           return;
         }
         response.writeHead(204, { 'Cache-Control': 'no-store' }); response.end();
         workflowRpcState = Object.freeze({ state: 'pending', status: 0 });
-        lastProgress = 'workflow_rpc_proxy_accepted'; lastProgressAt = Date.now();
+        lastTransport = 'workflow_rpc_proxy_accepted'; lastTransportAt = Date.now();
         globalThis.setTimeout(async () => {
           try {
             const upstream = await exactStagingRequest({ url: upstreamUrl, method: 'POST', apikey, authorization, body: payload.body });
             const success = upstream.status >= 200 && upstream.status < 300;
             workflowRpcState = Object.freeze({ state: success ? 'success' : 'failed', status: upstream.status });
-            lastProgress = success ? 'workflow_rpc_upstream_completed' : 'workflow_rpc_upstream_failed'; lastProgressAt = Date.now();
+            lastTransport = success ? 'workflow_rpc_upstream_completed' : 'workflow_rpc_upstream_failed'; lastTransportAt = Date.now();
           } catch (_) {
             workflowRpcState = Object.freeze({ state: 'failed', status: 0 });
-            lastProgress = 'workflow_rpc_upstream_failed'; lastProgressAt = Date.now();
+            lastTransport = 'workflow_rpc_upstream_failed'; lastTransportAt = Date.now();
           }
         }, 0);
         return;
@@ -328,7 +330,7 @@ async function localServer(root) {
     server,
     url: `http://127.0.0.1:${address.port}/index.html?tab=leads`,
     resultPromise,
-    getProgressState: () => ({ name: lastProgress, at: lastProgressAt }),
+    getProgressState: () => ({ name: `${lastProgress}:net:${lastTransport}`.slice(0, 180), at: lastProgressAt, networkAt: lastTransportAt }),
     getWorkflowRpcState: () => workflowRpcState
   };
 }

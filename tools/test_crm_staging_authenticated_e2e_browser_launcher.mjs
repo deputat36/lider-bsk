@@ -34,6 +34,8 @@ assert.match(runnerSource, /navigator\.sendBeacon\('\/__crm_e2e_staging_rpc_prox
 assert.match(runnerSource, /__crm_e2e_staging_request_proxy/);
 assert.match(runnerSource, /staging_request_proxy_route_forbidden/);
 assert.match(runnerSource, /requestHeaders: incomingHeaders/);
+assert.match(runnerSource, /lastTransport/);
+assert.match(runnerSource, /networkAt: lastTransportAt/);
 assert.match(runnerSource, /pathname\.startsWith\('\/rest\/v1\/leader_'\)/);
 assert.doesNotMatch(runnerSource, /form\.action='\/__crm_e2e_staging_rpc_proxy'/);
 assert.match(runnerSource, /status:201,headers:\{'Content-Type':'application\/json'/);
