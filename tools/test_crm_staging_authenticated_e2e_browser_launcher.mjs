@@ -39,6 +39,7 @@ assert.match(runnerSource, /lead_assignment_db_persisted/);
 assert.ok(runnerSource.includes("const needForm=document.getElementById('needForm')"));
 assert.ok(runnerSource.includes('if(needForm?.isConnected)return needForm'));
 assert.ok(runnerSource.includes("record('assigned_lead_card_ready')"));
+assert.ok(runnerSource.includes("'assigned_card_diag:'+flags.join('_')"));
 assert.ok(runnerSource.includes("await loginManager('card')"));
 assert.ok(runnerSource.includes("mainUrl.searchParams.set('tab', 'card')"));
 assert.ok(runnerSource.includes("mainUrl.searchParams.set('lead', config.leadId)"));
