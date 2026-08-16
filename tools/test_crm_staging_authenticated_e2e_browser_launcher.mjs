@@ -36,6 +36,8 @@ assert.match(runnerSource, /status:201,headers:\{'Content-Type':'application\/js
 assert.doesNotMatch(runnerSource, /lead_assignment_db_persistence_timeout/);
 assert.match(runnerSource, /final_lead_assignment_persistence_failed/);
 assert.match(runnerSource, /lead_assignment_db_persisted/);
+assert.match(runnerSource, /progress\('need_ui_wait'\)/);
+assert.doesNotMatch(runnerSource, /const needsModule=await import\('\.\/assets\/v4\/needs\.js\?v=20260805-tab-loader-1'\)/);
 assert.doesNotMatch(runnerSource, /__crm_e2e_staging_rpc_proxy[^\n]+signal:init\?\.signal/);
 
 assert.throws(
@@ -43,4 +45,4 @@ assert.throws(
   /browser_launch_input_invalid/
 );
 
-console.log('Authenticated staging E2E browser launcher uses headed Chrome in isolated Xvfb; assignment persistence is asserted after the race-sensitive initial UI event.');
+console.log('Authenticated staging E2E uses headed Chrome, waits for the already-loaded need UI, and asserts assignment persistence after the race-sensitive initial event.');
