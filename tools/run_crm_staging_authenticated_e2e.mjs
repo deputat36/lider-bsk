@@ -57,7 +57,7 @@ export function operatorPlan() {
     first_login_via_form: true,
     browser_mode: 'xvfb_headed_chrome',
     browser_phases: ['manager_path', 'refresh_resume'],
-    browser_transport_bridge: 'same_origin_beacon_to_exact_staging_rpc_with_db_assertion',
+    browser_transport_bridge: 'same_origin_user_jwt_exact_staging_proxy_with_db_assertion',
     browser_navigation: ['leads', 'lead_card', 'orders_direct', 'production', 'installation'],
     destructive_scope: 'unique_synthetic_marker_only',
     external_cleanup_required: true
@@ -88,7 +88,7 @@ const clean=(value)=>String(value??'').trim();
 function assert(value,code){if(!value)throw new Error(code);}
 function progress(name){try{navigator.sendBeacon('/__crm_e2e_progress',String(name).slice(0,80));}catch(_){}}
 function record(name,detail='pass'){steps.push({name,detail});progress(name);}
-function instrumentTransportProbe(){const nativeFetch=globalThis.fetch;if(typeof nativeFetch!=='function')return;globalThis.fetch=async(input,init)=>{let requestUrl;try{requestUrl=new URL(String(input?.url||input||''));}catch(_){return nativeFetch(input,init);}const exactStaging=requestUrl.hostname==='${STAGING_REF}.supabase.co';if(!exactStaging)return nativeFetch(input,init);const headers=Object.fromEntries(new Headers(init?.headers||input?.headers||{}).entries());const method=clean(init?.method||input?.method||'GET').toUpperCase();const requestBody=typeof init?.body==='string'?init.body:'';const isWorkflowRpc=requestUrl.pathname==='/rest/v1/rpc/leader_update_lead_workflow_browser_rpc';if(isWorkflowRpc){const rpcBody=JSON.parse(requestBody||'{}');const accepted=navigator.sendBeacon('/__crm_e2e_staging_rpc_proxy',JSON.stringify({path:requestUrl.pathname+requestUrl.search,method,headers,body:JSON.stringify(rpcBody)}));if(!accepted)return Promise.reject(new Error('staging_rpc_bridge_rejected'));const command=rpcBody.p_request||{};const payload=command.payload||{};const lead={id:payload.lead_id,updated_at:new Date(Date.now()+1000).toISOString(),...(payload.patch||{})};return new Response(JSON.stringify({ok:true,request_id:command.request_id,idempotent_replay:false,lead}),{status:201,headers:{'Content-Type':'application/json','Cache-Control':'no-store'}});}const proxyable=requestUrl.pathname.startsWith('/rest/v1/leader_')||requestUrl.pathname.startsWith('/rest/v1/rpc/leader_')||requestUrl.pathname.startsWith('/functions/v1/leader-');if(!proxyable||!['GET','POST','PATCH','DELETE'].includes(method))return nativeFetch(input,init);return nativeFetch('/__crm_e2e_staging_request_proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:requestUrl.pathname+requestUrl.search,method,headers,body:requestBody})});};}
+function instrumentTransportProbe(){const nativeFetch=globalThis.fetch;if(typeof nativeFetch!=='function')return;globalThis.fetch=async(input,init)=>{let requestUrl;try{requestUrl=new URL(String(input?.url||input||''));}catch(_){return nativeFetch(input,init);}const exactStaging=requestUrl.hostname==='${STAGING_REF}.supabase.co';if(!exactStaging)return nativeFetch(input,init);const headers=Object.fromEntries(new Headers(init?.headers||input?.headers||{}).entries());const method=clean(init?.method||input?.method||'GET').toUpperCase();const requestBody=typeof init?.body==='string'?init.body:'';const proxyable=requestUrl.pathname.startsWith('/rest/v1/leader_')||requestUrl.pathname.startsWith('/rest/v1/rpc/leader_')||requestUrl.pathname.startsWith('/functions/v1/leader-');if(!proxyable||!['GET','POST','PATCH','DELETE'].includes(method))return nativeFetch(input,init);return nativeFetch('/__crm_e2e_staging_request_proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:requestUrl.pathname+requestUrl.search,method,headers,body:requestBody})});};}
 async function waitFor(check,code,timeout=30000){const begin=Date.now();while(Date.now()-begin<timeout){const value=await check();if(value)return value;await sleep(50);}throw new Error(code);}
 function waitForDocumentEvent(name,code,timeout=30000){return new Promise((resolve,reject)=>{let timer=0;const done=(event)=>{clearTimeout(timer);document.removeEventListener(name,done);resolve(event?.detail||{});};timer=setTimeout(()=>{document.removeEventListener(name,done);reject(new Error(code));},timeout);document.addEventListener(name,done,{once:true});});}
 function setValue(selector,value,event='input'){const node=document.querySelector(selector);assert(node,'missing:'+selector);node.value=value;node.dispatchEvent(new Event(event,{bubbles:true}));return node;}
@@ -270,51 +270,14 @@ async function localServer(root) {
         const authorization = text(incomingHeaders.authorization);
         const apikey = text(incomingHeaders.apikey);
         if (!authorization.startsWith('Bearer ') || !apikey || typeof payload.body !== 'string') throw new Error('staging_request_proxy_auth_invalid');
+        const workflowRpc = upstreamUrl.pathname === '/rest/v1/rpc/leader_update_lead_workflow_browser_rpc';
+        if (workflowRpc) workflowRpcState = Object.freeze({ state: 'pending', status: 0 });
         const upstream = await exactStagingRequest({ url: upstreamUrl, method, apikey, authorization, body: payload.body, requestHeaders: incomingHeaders });
+        if (workflowRpc) workflowRpcState = Object.freeze({ state: upstream.status >= 200 && upstream.status < 300 ? 'success' : 'failed', status: upstream.status });
         if (upstream.body.length > 262144) throw new Error('staging_request_proxy_response_too_large');
         response.writeHead(upstream.status, { 'Content-Type': upstream.contentType, 'Cache-Control': 'no-store' });
         response.end(upstream.body);
         lastTransport = `staging_request_proxy_responded:${method.toLowerCase()}:${upstreamUrl.pathname.split('/').pop()?.replace(/[^a-z0-9_-]/gi, '_').slice(0, 36) || 'unknown'}:${upstream.status}`; lastTransportAt = Date.now();
-        return;
-      }
-      if (url.pathname === '/__crm_e2e_staging_rpc_proxy' && request.method === 'POST') {
-        lastTransport = 'workflow_rpc_proxy_received'; lastTransportAt = Date.now();
-        const chunks = []; let size = 0;
-        for await (const chunk of request) { size += chunk.length; if (size > 131072) throw new Error('proxy_request_too_large'); chunks.push(chunk); }
-        const rawPayload = Buffer.concat(chunks).toString('utf8');
-        const contentType = text(request.headers['content-type']).toLowerCase();
-        const payload = JSON.parse(contentType.startsWith('application/x-www-form-urlencoded') ? new URLSearchParams(rawPayload).get('payload') || '' : rawPayload);
-        const upstreamUrl = new URL(String(payload?.path || ''), STAGING_URL);
-        const exactRpc = upstreamUrl.origin === STAGING_URL && upstreamUrl.pathname === '/rest/v1/rpc/leader_update_lead_workflow_browser_rpc' && payload?.method === 'POST' && !upstreamUrl.search;
-        const exactReadback = upstreamUrl.origin === STAGING_URL && upstreamUrl.pathname === '/rest/v1/leader_leads' && payload?.method === 'GET' && upstreamUrl.searchParams.get('select') === 'id,status,assigned_to,next_contact_at,updated_at' && upstreamUrl.searchParams.get('limit') === '1' && /^eq\.[0-9a-f-]{36}$/i.test(upstreamUrl.searchParams.get('id') || '') && [...upstreamUrl.searchParams.keys()].length === 3;
-        if (!exactRpc && !exactReadback) throw new Error('proxy_route_forbidden');
-        const incomingHeaders = payload?.headers && typeof payload.headers === 'object' ? payload.headers : {};
-        const authorization = text(incomingHeaders.authorization);
-        const apikey = text(incomingHeaders.apikey);
-        if (!authorization.startsWith('Bearer ') || !apikey || typeof payload.body !== 'string') throw new Error('proxy_auth_invalid');
-        if (exactReadback) {
-          lastTransport = 'workflow_readback_proxy_received'; lastTransportAt = Date.now();
-          const upstream = await exactStagingRequest({ url: upstreamUrl, method: 'GET', apikey, authorization });
-          if (upstream.body.length > 65536) throw new Error('proxy_response_too_large');
-          response.writeHead(upstream.status, { 'Content-Type': upstream.contentType, 'Cache-Control': 'no-store' });
-          response.end(upstream.body);
-          lastTransport = 'workflow_readback_proxy_responded'; lastTransportAt = Date.now();
-          return;
-        }
-        response.writeHead(204, { 'Cache-Control': 'no-store' }); response.end();
-        workflowRpcState = Object.freeze({ state: 'pending', status: 0 });
-        lastTransport = 'workflow_rpc_proxy_accepted'; lastTransportAt = Date.now();
-        globalThis.setTimeout(async () => {
-          try {
-            const upstream = await exactStagingRequest({ url: upstreamUrl, method: 'POST', apikey, authorization, body: payload.body });
-            const success = upstream.status >= 200 && upstream.status < 300;
-            workflowRpcState = Object.freeze({ state: success ? 'success' : 'failed', status: upstream.status });
-            lastTransport = success ? 'workflow_rpc_upstream_completed' : 'workflow_rpc_upstream_failed'; lastTransportAt = Date.now();
-          } catch (_) {
-            workflowRpcState = Object.freeze({ state: 'failed', status: 0 });
-            lastTransport = 'workflow_rpc_upstream_failed'; lastTransportAt = Date.now();
-          }
-        }, 0);
         return;
       }
       const relative = decodeURIComponent(url.pathname).replace(/^\/+/, '') || 'index.html';
