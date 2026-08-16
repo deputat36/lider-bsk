@@ -27,11 +27,11 @@ assert.ok(plan.args.includes('http://127.0.0.1:43123/index.html?tab=leads'));
 assert.equal(plan.args.some((item) => String(item).startsWith('--headless')), false);
 
 assert.equal(operatorPlan().browser_mode, 'xvfb_headed_chrome');
-assert.equal(operatorPlan().browser_transport_bridge, 'same_origin_form_to_exact_staging_rpc_with_db_assertion');
+assert.equal(operatorPlan().browser_transport_bridge, 'same_origin_beacon_to_exact_staging_rpc_with_db_assertion');
 
 const runnerSource = await readFile(new URL('./run_crm_staging_authenticated_e2e.mjs', import.meta.url), 'utf8');
-assert.match(runnerSource, /form\.action='\/__crm_e2e_staging_rpc_proxy';form\.target=frame\.name/);
-assert.match(runnerSource, /application\/x-www-form-urlencoded/);
+assert.match(runnerSource, /navigator\.sendBeacon\('\/__crm_e2e_staging_rpc_proxy'/);
+assert.doesNotMatch(runnerSource, /form\.action='\/__crm_e2e_staging_rpc_proxy'/);
 assert.match(runnerSource, /status:201,headers:\{'Content-Type':'application\/json'/);
 assert.doesNotMatch(runnerSource, /lead_assignment_db_persistence_timeout/);
 assert.match(runnerSource, /final_lead_assignment_persistence_failed/);
@@ -45,4 +45,4 @@ assert.throws(
   /browser_launch_input_invalid/
 );
 
-console.log('Authenticated staging E2E uses headed Chrome, waits for the already-loaded need UI, and asserts assignment persistence after the race-sensitive initial event.');
+console.log('Authenticated staging E2E uses headed Chrome, a non-blocking beacon bridge, the already-loaded need UI, and a final DB persistence assertion.');
