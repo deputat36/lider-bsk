@@ -113,6 +113,9 @@ async function firstLoginAndLead(){
   const cardState=await waitFor(()=>{const error=document.querySelector('#leadCardContent .v4-empty.is-error');if(error)return error;const assign=document.querySelector(assignSelector);return assign&&assign.isConnected&&!assign.disabled?assign:false;},'lead_card_open_timeout',45000);assert(!cardState.classList.contains('v4-empty'),'lead_card_render_error:'+clean(cardState.textContent).slice(0,120));assert(location.search.includes('lead='+R.leadId),'lead_card_route_missing');record('lead_card');
   const assignmentEvent=waitForDocumentEvent('leader-v4:lead-workflow-updated','lead_assignment_event_timeout',45000);progress('lead_assign_clicked');click(assignSelector);
   const wait5=setTimeout(()=>progress('lead_assignment_wait_5s'),5000);const wait40=setTimeout(()=>progress('lead_assignment_wait_40s'),40000);let assignmentDetail;try{assignmentDetail=await assignmentEvent;}finally{clearTimeout(wait5);clearTimeout(wait40);}assert(clean(assignmentDetail?.lead?.assigned_to),'lead_assignment_event_missing_assignee');assert(clean(assignmentDetail?.lead?.status)==='В работе','lead_assignment_event_status_sync_failed');record('lead_assignment');
+  sessionStorage.setItem('leaderCrmAuthenticatedE2eResume',JSON.stringify({stage:'after_assignment',steps}));
+  location.reload();
+  await new Promise(()=>{});
 }
 
 async function createNeedAndCalculation(){
@@ -144,7 +147,7 @@ async function createOfferAndOrder(){
 async function navigationAndRefresh(){
   click('[data-v4-tab-button="orders"]');await waitFor(()=>document.body.dataset.v4Tab==='orders'&&location.search.includes('tab=orders'),'orders_direct_route_missing');await waitFor(()=>document.querySelector('.v4-orders-fast-card')?.textContent.includes(R.marker),'direct_orders_data_missing',30000);record('direct_orders');
   click('[data-v4-tab-button="leads"]');await waitFor(()=>document.body.dataset.v4Tab==='leads','leads_reopen_failed');history.back();await waitFor(()=>document.body.dataset.v4Tab==='orders','history_back_failed');history.forward();await waitFor(()=>document.body.dataset.v4Tab==='leads','history_forward_failed');click('[data-v4-tab-button="orders"]');await waitFor(()=>document.body.dataset.v4Tab==='orders','orders_second_open_failed');record('back_forward_reopen');
-  sessionStorage.setItem('leaderCrmAuthenticatedE2eResume',JSON.stringify({stage:'after_refresh',orderId:ids.order}));location.reload();
+  sessionStorage.setItem('leaderCrmAuthenticatedE2eResume',JSON.stringify({stage:'after_refresh',orderId:ids.order,steps}));location.reload();
   await new Promise(()=>{});
 }
 
@@ -176,8 +179,10 @@ instrumentTransportProbe();
 try {
   ({ supabaseClient } = await import('./assets/v4/supabase-client.js'));
   const resume = JSON.parse(sessionStorage.getItem('leaderCrmAuthenticatedE2eResume') || 'null');
+  if (Array.isArray(resume?.steps)) steps.push(...resume.steps);
   if (resume?.stage === 'after_refresh') { sessionStorage.removeItem('leaderCrmAuthenticatedE2eResume'); await designProductionInstallation(resume.orderId); }
-  else { await firstLoginAndLead(); await createNeedAndCalculation(); await createOfferAndOrder(); await navigationAndRefresh(); }
+  else if (resume?.stage === 'after_assignment') { sessionStorage.removeItem('leaderCrmAuthenticatedE2eResume'); await createNeedAndCalculation(); await createOfferAndOrder(); await navigationAndRefresh(); }
+  else { await firstLoginAndLead(); }
 } catch (error) { const code = clean(error?.message || 'browser_e2e_failed'); progress('failed:' + code.replace(/[^a-z0-9_:-]/gi, '_').slice(0, 60)); output('failed', { error: code.slice(0, 240), steps, duration_ms: Date.now() - started, cleanup_required: true }); }
 `;
 }
