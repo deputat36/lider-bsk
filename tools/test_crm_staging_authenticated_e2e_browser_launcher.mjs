@@ -33,7 +33,9 @@ const runnerSource = await readFile(new URL('./run_crm_staging_authenticated_e2e
 assert.match(runnerSource, /form\.action='\/__crm_e2e_staging_rpc_proxy';form\.target=frame\.name/);
 assert.match(runnerSource, /application\/x-www-form-urlencoded/);
 assert.match(runnerSource, /status:201,headers:\{'Content-Type':'application\/json'/);
-assert.match(runnerSource, /lead_assignment_db_persistence_timeout/);
+assert.doesNotMatch(runnerSource, /lead_assignment_db_persistence_timeout/);
+assert.match(runnerSource, /final_lead_assignment_persistence_failed/);
+assert.match(runnerSource, /lead_assignment_db_persisted/);
 assert.doesNotMatch(runnerSource, /__crm_e2e_staging_rpc_proxy[^\n]+signal:init\?\.signal/);
 
 assert.throws(
@@ -41,4 +43,4 @@ assert.throws(
   /browser_launch_input_invalid/
 );
 
-console.log('Authenticated staging E2E browser launcher uses headed Chrome in isolated Xvfb with no headless flag.');
+console.log('Authenticated staging E2E browser launcher uses headed Chrome in isolated Xvfb; assignment persistence is asserted after the race-sensitive initial UI event.');
