@@ -37,6 +37,8 @@ assert.match(runnerSource, /requestHeaders: incomingHeaders/);
 assert.match(runnerSource, /rpcObject\?\.ok === true/);
 assert.match(runnerSource, /lead_assignment_db_persistence_timeout/);
 assert.match(runnerSource, /progress\('lead_assign_dispatched'\)/);
+assert.match(runnerSource, /progress\('read_start:'\+tableName\)/);
+assert.match(runnerSource, /progress\('read_done:'\+tableName\)/);
 assert.match(runnerSource, /lead_assignment_ui_reconciliation_timeout/);
 assert.doesNotMatch(runnerSource, /waitForDocumentEvent/);
 assert.match(runnerSource, /rpc_\$\{workflowCode\}/);
