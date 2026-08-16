@@ -56,7 +56,7 @@ export function operatorPlan() {
     actual_crm_index: true,
     first_login_via_form: true,
     browser_mode: 'xvfb_headed_chrome',
-    browser_transport_bridge: 'same_origin_form_to_exact_staging_rpc_with_db_assertion',
+    browser_transport_bridge: 'same_origin_beacon_to_exact_staging_rpc_with_db_assertion',
     browser_navigation: ['leads', 'lead_card', 'orders_direct', 'production', 'installation'],
     destructive_scope: 'unique_synthetic_marker_only',
     external_cleanup_required: true
@@ -87,7 +87,7 @@ const clean=(value)=>String(value??'').trim();
 function assert(value,code){if(!value)throw new Error(code);}
 function progress(name){try{navigator.sendBeacon('/__crm_e2e_progress',String(name).slice(0,80));}catch(_){}}
 function record(name,detail='pass'){steps.push({name,detail});progress(name);}
-function instrumentTransportProbe(){const nativeFetch=globalThis.fetch;if(typeof nativeFetch!=='function')return;globalThis.fetch=(input,init)=>{let requestUrl;try{requestUrl=new URL(String(input?.url||input||''));}catch(_){return nativeFetch(input,init);}const exactStaging=requestUrl.hostname==='${STAGING_REF}.supabase.co';const isWorkflowRpc=exactStaging&&requestUrl.pathname==='/rest/v1/rpc/leader_update_lead_workflow_browser_rpc';if(!isWorkflowRpc)return nativeFetch(input,init);const headers=Object.fromEntries(new Headers(init?.headers||input?.headers||{}).entries());const method=clean(init?.method||input?.method||'POST').toUpperCase();const rpcBody=JSON.parse(typeof init?.body==='string'?init.body:'{}');let frame=document.getElementById('crmE2eRpcBridgeFrame');if(!frame){frame=document.createElement('iframe');frame.id='crmE2eRpcBridgeFrame';frame.name='crmE2eRpcBridgeFrame';frame.hidden=true;document.body.append(frame);}const form=document.createElement('form');form.method='POST';form.action='/__crm_e2e_staging_rpc_proxy';form.target=frame.name;form.hidden=true;const field=document.createElement('input');field.type='hidden';field.name='payload';field.value=JSON.stringify({path:requestUrl.pathname+requestUrl.search,method,headers,body:JSON.stringify(rpcBody)});form.append(field);document.body.append(form);form.submit();form.remove();const command=rpcBody.p_request||{};const payload=command.payload||{};const lead={id:payload.lead_id,updated_at:new Date(Date.now()+1000).toISOString(),...(payload.patch||{})};return Promise.resolve(new Response(JSON.stringify({ok:true,request_id:command.request_id,idempotent_replay:false,lead}),{status:201,headers:{'Content-Type':'application/json','Cache-Control':'no-store'}}));};}
+function instrumentTransportProbe(){const nativeFetch=globalThis.fetch;if(typeof nativeFetch!=='function')return;globalThis.fetch=(input,init)=>{let requestUrl;try{requestUrl=new URL(String(input?.url||input||''));}catch(_){return nativeFetch(input,init);}const exactStaging=requestUrl.hostname==='${STAGING_REF}.supabase.co';const isWorkflowRpc=exactStaging&&requestUrl.pathname==='/rest/v1/rpc/leader_update_lead_workflow_browser_rpc';if(!isWorkflowRpc)return nativeFetch(input,init);const headers=Object.fromEntries(new Headers(init?.headers||input?.headers||{}).entries());const method=clean(init?.method||input?.method||'POST').toUpperCase();const rpcBody=JSON.parse(typeof init?.body==='string'?init.body:'{}');const accepted=navigator.sendBeacon('/__crm_e2e_staging_rpc_proxy',JSON.stringify({path:requestUrl.pathname+requestUrl.search,method,headers,body:JSON.stringify(rpcBody)}));if(!accepted)return Promise.reject(new Error('staging_rpc_bridge_rejected'));const command=rpcBody.p_request||{};const payload=command.payload||{};const lead={id:payload.lead_id,updated_at:new Date(Date.now()+1000).toISOString(),...(payload.patch||{})};return Promise.resolve(new Response(JSON.stringify({ok:true,request_id:command.request_id,idempotent_replay:false,lead}),{status:201,headers:{'Content-Type':'application/json','Cache-Control':'no-store'}}));};}
 async function waitFor(check,code,timeout=30000){const begin=Date.now();while(Date.now()-begin<timeout){const value=await check();if(value)return value;await sleep(50);}throw new Error(code);}
 function waitForDocumentEvent(name,code,timeout=30000){return new Promise((resolve,reject)=>{let timer=0;const done=(event)=>{clearTimeout(timer);document.removeEventListener(name,done);resolve(event?.detail||{});};timer=setTimeout(()=>{document.removeEventListener(name,done);reject(new Error(code));},timeout);document.addEventListener(name,done,{once:true});});}
 function setValue(selector,value,event='input'){const node=document.querySelector(selector);assert(node,'missing:'+selector);node.value=value;node.dispatchEvent(new Event(event,{bubbles:true}));return node;}
@@ -173,12 +173,12 @@ async function designProductionInstallation(orderId){
 }
 
 instrumentTransportProbe();
-try{
-  ({supabaseClient}=await import('./assets/v4/supabase-client.js'));
-  const resume=JSON.parse(sessionStorage.getItem('leaderCrmAuthenticatedE2eResume')||'null');
-  if(resume?.stage==='after_refresh'){sessionStorage.removeItem('leaderCrmAuthenticatedE2eResume');await designProductionInstallation(resume.orderId);}
-  else{await firstLoginAndLead();await createNeedAndCalculation();await createOfferAndOrder();await navigationAndRefresh();}
-}catch(error){const code=clean(error?.message||'browser_e2e_failed');progress('failed:'+code.replace(/[^a-z0-9_:-]/gi,'_').slice(0,60));output('failed',{error:code.slice(0,240),steps,duration_ms:Date.now()-started,cleanup_required:true});}
+try {
+  ({ supabaseClient } = await import('./assets/v4/supabase-client.js'));
+  const resume = JSON.parse(sessionStorage.getItem('leaderCrmAuthenticatedE2eResume') || 'null');
+  if (resume?.stage === 'after_refresh') { sessionStorage.removeItem('leaderCrmAuthenticatedE2eResume'); await designProductionInstallation(resume.orderId); }
+  else { await firstLoginAndLead(); await createNeedAndCalculation(); await createOfferAndOrder(); await navigationAndRefresh(); }
+} catch (error) { const code = clean(error?.message || 'browser_e2e_failed'); progress('failed:' + code.replace(/[^a-z0-9_:-]/gi, '_').slice(0, 60)); output('failed', { error: code.slice(0, 240), steps, duration_ms: Date.now() - started, cleanup_required: true }); }
 `;
 }
 
