@@ -39,6 +39,9 @@ assert.match(runnerSource, /lead_assignment_db_persisted/);
 assert.ok(runnerSource.includes("const needForm=document.getElementById('needForm')"));
 assert.ok(runnerSource.includes('if(needForm?.isConnected)return needForm'));
 assert.ok(runnerSource.includes("record('assigned_lead_card_ready')"));
+assert.ok(runnerSource.includes("await loginManager('card')"));
+assert.ok(runnerSource.includes("mainUrl.searchParams.set('tab', 'card')"));
+assert.ok(runnerSource.includes("mainUrl.searchParams.set('lead', config.leadId)"));
 assert.doesNotMatch(runnerSource, /progress\\('lead_open_clicked'\\)/);
 assert.match(runnerSource, /progress\('need_ui_wait'\)/);
 assert.doesNotMatch(runnerSource, /const needsModule=await import\('\.\/assets\/v4\/needs\.js\?v=20260805-tab-loader-1'\)/);
@@ -49,4 +52,4 @@ assert.throws(
   /browser_launch_input_invalid/
 );
 
-console.log('Authenticated staging E2E uses headed Chrome, keeps progress beacons outside card-loading races, accepts either zero-needs UI state, and performs a final DB persistence assertion.');
+console.log('Authenticated staging E2E uses headed Chrome, proves first card opening by click, resumes through the canonical direct card route, accepts either zero-needs UI state, and performs a final DB persistence assertion.');

@@ -102,12 +102,11 @@ async function invoke(functionName,body){const response=await supabaseClient.fun
 function edgeCode(response){return clean(response?.data?.error?.code||response?.error?.message||response?.data?.error||'');}
 async function assertCount(tableName,filters,count){const rows=await table(tableName,'id',filters);assert(rows.length===count,'count_mismatch:'+tableName+':'+rows.length+':'+count);return rows;}
 
-async function loginManager(){
+async function loginManager(expectedTab='leads'){
   progress('login_wait');
   await waitFor(()=>document.getElementById('loginForm')&&!document.getElementById('loginForm').classList.contains('hidden'),'login_form_missing');
   setValue('#loginEmail',R.email);setValue('#loginPassword',R.password);click('#loginBtn');progress('login_submitted');
-  await waitFor(()=>!document.getElementById('crmWorkspace')?.classList.contains('hidden')&&clean(document.getElementById('profileRole')?.textContent).toLowerCase()==='manager','authenticated_workspace_timeout',45000);
-  assert(document.body.dataset.v4Tab==='leads','initial_leads_tab_missing');
+  await waitFor(()=>!document.getElementById('crmWorkspace')?.classList.contains('hidden')&&clean(document.getElementById('profileRole')?.textContent).toLowerCase()==='manager'&&document.body.dataset.v4Tab===expectedTab,'authenticated_workspace_timeout:'+expectedTab,45000);
 }
 
 async function openSyntheticLead(){
@@ -127,7 +126,7 @@ async function assignmentPhase(){
 }
 
 async function openAssignedLead(){
-  await loginManager();record('continuation_login');await openSyntheticLead();
+  await loginManager('card');record('continuation_login');assert(location.search.includes('lead='+R.leadId),'assigned_lead_direct_route_lost');
   const cardState=await waitFor(()=>{const error=document.querySelector('#leadCardContent .v4-empty.is-error');if(error)return error;const needForm=document.getElementById('needForm');if(needForm?.isConnected)return needForm;const summary=document.querySelector('#needFormBox .v4-need-workspace-summary');return summary&&summary.isConnected?summary:false;},'assigned_lead_card_open_timeout',45000);assert(!cardState.classList.contains('v4-empty'),'assigned_lead_card_render_error:'+clean(cardState.textContent).slice(0,120));record('assigned_lead_card_ready');
   const persisted=await one('leader_leads','id,status,assigned_to,updated_at',{id:R.leadId});assert(clean(persisted.assigned_to)&&persisted.status==='В работе','final_lead_assignment_persistence_failed');record('lead_assignment_db_persisted');
 }
@@ -433,7 +432,8 @@ async function run(env = process.env, roleUi = '') {
     await closeServer(server); server = null;
 
     const mainLocal = await localServer(tempV4); server = mainLocal.server;
-    const mainLaunch = browserLaunchPlan({ xvfbRun, chrome, profileDir: path.join(tempRoot, 'chrome-profile-main'), url: `${mainLocal.url}&e2e_phase=main` });
+    const mainUrl = new URL(mainLocal.url); mainUrl.searchParams.set('tab', 'card'); mainUrl.searchParams.set('lead', config.leadId); mainUrl.searchParams.set('e2e_phase', 'main');
+    const mainLaunch = browserLaunchPlan({ xvfbRun, chrome, profileDir: path.join(tempRoot, 'chrome-profile-main'), url: mainUrl.toString() });
     const mainChrome = await runChrome(mainLaunch.binary, mainLaunch.args, mainLocal.resultPromise, mainLocal.getProgressState);
     const evidence = sanitize(JSON.parse(mainChrome.evidenceBody)); if (evidence.status !== 'passed') throw new Error(`browser_e2e_failed:${evidence.error || 'unknown'}`);
     evidence.assignment_phase = true;
