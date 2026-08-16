@@ -43,6 +43,8 @@ assert.match(runnerSource, /progress\('read_body:'\+tableName\)/);
 assert.match(runnerSource, /read_table_forbidden/);
 assert.match(runnerSource, /authorization:'Bearer '\+session\.access_token/);
 assert.match(runnerSource, /proxyEvidenceRead\(\{path:endpoint\.pathname\+endpoint\.search/);
+assert.match(runnerSource, /requestUrl\.pathname==='\/rest\/v1\/leader_lead_needs'/);
+assert.match(runnerSource, /if\(isNeedRead\)return proxyEvidenceRead/);
 assert.match(runnerSource, /v4State:v4RuntimeState/);
 assert.match(runnerSource, /const session=v4RuntimeState\?\.session/);
 assert.doesNotMatch(runnerSource, /await supabaseClient\.auth\.getSession\(\)/);
