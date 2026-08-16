@@ -36,6 +36,7 @@ assert.match(runnerSource, /staging_request_proxy_route_forbidden/);
 assert.match(runnerSource, /requestHeaders: incomingHeaders/);
 assert.match(runnerSource, /rpcObject\?\.ok === true/);
 assert.match(runnerSource, /lead_assignment_db_persistence_timeout/);
+assert.match(runnerSource, /progress\('lead_assign_dispatched'\)/);
 assert.match(runnerSource, /lead_assignment_ui_reconciliation_timeout/);
 assert.doesNotMatch(runnerSource, /waitForDocumentEvent/);
 assert.match(runnerSource, /rpc_\$\{workflowCode\}/);
