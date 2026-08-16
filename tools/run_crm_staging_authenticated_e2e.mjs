@@ -112,7 +112,7 @@ async function loginManager(){
 
 async function openSyntheticLead(){
   setValue('#leadSearch',R.marker);await waitFor(()=>document.querySelector('.v4-lead-card[data-id="'+R.leadId+'"]'),'synthetic_lead_not_listed');
-  click('.v4-lead-card[data-id="'+R.leadId+'"] button[data-action="open"]');progress('lead_open_clicked');
+  click('.v4-lead-card[data-id="'+R.leadId+'"] button[data-action="open"]');
   assert(document.body.dataset.v4Tab==='card','lead_card_tab_denied:'+clean(document.body.dataset.v4Tab));assert(location.search.includes('lead='+R.leadId),'lead_card_route_lost');
 }
 
