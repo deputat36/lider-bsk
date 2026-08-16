@@ -50,6 +50,8 @@ assert.doesNotMatch(runnerSource, /supabaseClient\.from\(tableName\)/);
 assert.match(runnerSource, /v4Config\.supabaseUrl\.endsWith\('\/'\)/);
 assert.doesNotMatch(runnerSource, /v4Config\.supabaseUrl\.replace/);
 assert.match(runnerSource, /lead_assignment_event_timeout/);
+assert.match(runnerSource, /lead_assignment_card_refresh_timeout/);
+assert.match(runnerSource, /lead_assignment_card_refreshed/);
 assert.match(runnerSource, /waitForDocumentEvent/);
 assert.match(runnerSource, /rpc_\$\{workflowCode\}/);
 assert.match(runnerSource, /function proxyEvidenceRead/);
