@@ -128,7 +128,7 @@ async function assignmentPhase(){
 
 async function openAssignedLead(){
   await loginManager();record('continuation_login');await openSyntheticLead();
-  const cardState=await waitFor(()=>{const error=document.querySelector('#leadCardContent .v4-empty.is-error');if(error)return error;const summary=document.querySelector('#needFormBox .v4-need-workspace-summary');return summary&&summary.isConnected?summary:false;},'assigned_lead_card_open_timeout',45000);assert(!cardState.classList.contains('v4-empty'),'assigned_lead_card_render_error:'+clean(cardState.textContent).slice(0,120));
+  const cardState=await waitFor(()=>{const error=document.querySelector('#leadCardContent .v4-empty.is-error');if(error)return error;const needForm=document.getElementById('needForm');if(needForm?.isConnected)return needForm;const summary=document.querySelector('#needFormBox .v4-need-workspace-summary');return summary&&summary.isConnected?summary:false;},'assigned_lead_card_open_timeout',45000);assert(!cardState.classList.contains('v4-empty'),'assigned_lead_card_render_error:'+clean(cardState.textContent).slice(0,120));record('assigned_lead_card_ready');
   const persisted=await one('leader_leads','id,status,assigned_to,updated_at',{id:R.leadId});assert(clean(persisted.assigned_to)&&persisted.status==='В работе','final_lead_assignment_persistence_failed');record('lead_assignment_db_persisted');
 }
 

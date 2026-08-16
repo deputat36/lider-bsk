@@ -36,6 +36,9 @@ assert.match(runnerSource, /status:201,headers:\{'Content-Type':'application\/js
 assert.doesNotMatch(runnerSource, /lead_assignment_db_persistence_timeout/);
 assert.match(runnerSource, /final_lead_assignment_persistence_failed/);
 assert.match(runnerSource, /lead_assignment_db_persisted/);
+assert.match(runnerSource, /const needForm=document\\.getElementById\\('needForm'\\)/);
+assert.match(runnerSource, /if\\(needForm\\?\\.isConnected\\)return needForm/);
+assert.match(runnerSource, /record\\('assigned_lead_card_ready'\\)/);
 assert.match(runnerSource, /progress\('need_ui_wait'\)/);
 assert.doesNotMatch(runnerSource, /const needsModule=await import\('\.\/assets\/v4\/needs\.js\?v=20260805-tab-loader-1'\)/);
 assert.doesNotMatch(runnerSource, /__crm_e2e_staging_rpc_proxy[^\n]+signal:init\?\.signal/);
@@ -45,4 +48,4 @@ assert.throws(
   /browser_launch_input_invalid/
 );
 
-console.log('Authenticated staging E2E uses headed Chrome, a non-blocking beacon bridge, the already-loaded need UI, and a final DB persistence assertion.');
+console.log('Authenticated staging E2E uses headed Chrome, a non-blocking beacon bridge, either zero-needs UI state, and a final DB persistence assertion.');
