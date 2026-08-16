@@ -42,6 +42,8 @@ assert.match(runnerSource, /progress\('read_done:'\+tableName\)/);
 assert.match(runnerSource, /read_table_forbidden/);
 assert.match(runnerSource, /Authorization:'Bearer '\+session\.access_token/);
 assert.doesNotMatch(runnerSource, /supabaseClient\.from\(tableName\)/);
+assert.match(runnerSource, /v4Config\.supabaseUrl\.endsWith\('\/'\)/);
+assert.doesNotMatch(runnerSource, /v4Config\.supabaseUrl\.replace/);
 assert.match(runnerSource, /lead_assignment_ui_reconciliation_timeout/);
 assert.doesNotMatch(runnerSource, /waitForDocumentEvent/);
 assert.match(runnerSource, /rpc_\$\{workflowCode\}/);
