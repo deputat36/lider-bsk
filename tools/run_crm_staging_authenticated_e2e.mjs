@@ -88,7 +88,7 @@ const clean=(value)=>String(value??'').trim();
 function assert(value,code){if(!value)throw new Error(code);}
 function progress(name){try{navigator.sendBeacon('/__crm_e2e_progress',String(name).slice(0,80));}catch(_){}}
 function record(name,detail='pass'){steps.push({name,detail});progress(name);}
-function instrumentTransportProbe(){const nativeFetch=globalThis.fetch;if(typeof nativeFetch!=='function')return;globalThis.fetch=async(input,init)=>{let requestUrl;try{requestUrl=new URL(String(input?.url||input||''));}catch(_){return nativeFetch(input,init);}const exactStaging=requestUrl.hostname==='${STAGING_REF}.supabase.co';if(!exactStaging)return nativeFetch(input,init);const headers=Object.fromEntries(new Headers(init?.headers||input?.headers||{}).entries());const method=clean(init?.method||input?.method||'GET').toUpperCase();const requestBody=typeof init?.body==='string'?init.body:'';const proxyable=requestUrl.pathname.startsWith('/rest/v1/leader_')||requestUrl.pathname.startsWith('/rest/v1/rpc/leader_')||requestUrl.pathname.startsWith('/functions/v1/leader-');if(!proxyable||!['GET','POST','PATCH','DELETE'].includes(method))return nativeFetch(input,init);const proxyResponse=await nativeFetch('/__crm_e2e_staging_request_proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:requestUrl.pathname+requestUrl.search,method,headers,body:requestBody})});const proxyBody=await proxyResponse.text();return new Response(proxyBody,{status:proxyResponse.status,headers:{'Content-Type':proxyResponse.headers.get('content-type')||'application/json','Content-Length':String(new TextEncoder().encode(proxyBody).byteLength),'Cache-Control':'no-store'}});};}
+function instrumentTransportProbe(){const nativeFetch=globalThis.fetch;if(typeof nativeFetch!=='function')return;globalThis.fetch=async(input,init)=>{let requestUrl;try{requestUrl=new URL(String(input?.url||input||''));}catch(_){return nativeFetch(input,init);}const exactStaging=requestUrl.hostname==='${STAGING_REF}.supabase.co';if(!exactStaging)return nativeFetch(input,init);const headers=Object.fromEntries(new Headers(init?.headers||input?.headers||{}).entries());const method=clean(init?.method||input?.method||'GET').toUpperCase();const requestBody=typeof init?.body==='string'?init.body:'';const proxyable=requestUrl.pathname.startsWith('/rest/v1/leader_')||requestUrl.pathname.startsWith('/rest/v1/rpc/leader_')||requestUrl.pathname.startsWith('/functions/v1/leader-');if(!proxyable||!['GET','POST','PATCH','DELETE'].includes(method))return nativeFetch(input,init);return nativeFetch('/__crm_e2e_staging_request_proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:requestUrl.pathname+requestUrl.search,method,headers,body:requestBody})});};}
 async function waitFor(check,code,timeout=30000){const begin=Date.now();while(Date.now()-begin<timeout){const value=await check();if(value)return value;await sleep(50);}throw new Error(code);}
 function waitForDocumentEvent(name,code,timeout=30000){return new Promise((resolve,reject)=>{let timer=0;const done=(event)=>{clearTimeout(timer);document.removeEventListener(name,done);resolve(event?.detail||{});};timer=setTimeout(()=>{document.removeEventListener(name,done);reject(new Error(code));},timeout);document.addEventListener(name,done,{once:true});});}
 function setValue(selector,value,event='input'){const node=document.querySelector(selector);assert(node,'missing:'+selector);node.value=value;node.dispatchEvent(new Event(event,{bubbles:true}));return node;}
@@ -271,13 +271,20 @@ async function localServer(root) {
         const apikey = text(incomingHeaders.apikey);
         if (!authorization.startsWith('Bearer ') || !apikey || typeof payload.body !== 'string') throw new Error('staging_request_proxy_auth_invalid');
         const workflowRpc = upstreamUrl.pathname === '/rest/v1/rpc/leader_update_lead_workflow_browser_rpc';
-        if (workflowRpc) workflowRpcState = Object.freeze({ state: 'pending', status: 0 });
+        if (workflowRpc) workflowRpcState = Object.freeze({ state: 'pending', status: 0, code: 'pending' });
         const upstream = await exactStagingRequest({ url: upstreamUrl, method, apikey, authorization, body: payload.body, requestHeaders: incomingHeaders });
-        if (workflowRpc) workflowRpcState = Object.freeze({ state: upstream.status >= 200 && upstream.status < 300 ? 'success' : 'failed', status: upstream.status });
+        let workflowCode = '';
+        if (workflowRpc) {
+          let rpcBody = null; try { rpcBody = JSON.parse(upstream.body.toString('utf8')); } catch (_) { /* classified below */ }
+          const rpcObject = rpcBody && typeof rpcBody === 'object' && !Array.isArray(rpcBody) ? rpcBody : null;
+          const rpcOk = upstream.status >= 200 && upstream.status < 300 && rpcObject?.ok === true;
+          workflowCode = rpcOk ? 'ok' : text(rpcObject?.error?.code || rpcObject?.error || (Array.isArray(rpcBody) ? 'array' : 'invalid_body')).replace(/[^a-z0-9_-]/gi, '_').slice(0, 36);
+          workflowRpcState = Object.freeze({ state: rpcOk ? 'success' : 'failed', status: upstream.status, code: workflowCode });
+        }
         if (upstream.body.length > 262144) throw new Error('staging_request_proxy_response_too_large');
         response.writeHead(upstream.status, { 'Content-Type': upstream.contentType, 'Content-Length': String(upstream.body.length), 'Cache-Control': 'no-store' });
         response.end(upstream.body);
-        lastTransport = `staging_request_proxy_responded:${method.toLowerCase()}:${upstreamUrl.pathname.split('/').pop()?.replace(/[^a-z0-9_-]/gi, '_').slice(0, 36) || 'unknown'}:${upstream.status}`; lastTransportAt = Date.now();
+        lastTransport = `staging_request_proxy_responded:${method.toLowerCase()}:${upstreamUrl.pathname.split('/').pop()?.replace(/[^a-z0-9_-]/gi, '_').slice(0, 36) || 'unknown'}:${upstream.status}${workflowRpc ? `:rpc_${workflowCode}` : ''}`; lastTransportAt = Date.now();
         return;
       }
       const relative = decodeURIComponent(url.pathname).replace(/^\/+/, '') || 'index.html';

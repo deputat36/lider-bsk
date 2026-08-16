@@ -34,7 +34,9 @@ assert.doesNotMatch(runnerSource, /navigator\.sendBeacon\('\/__crm_e2e_staging_r
 assert.match(runnerSource, /__crm_e2e_staging_request_proxy/);
 assert.match(runnerSource, /staging_request_proxy_route_forbidden/);
 assert.match(runnerSource, /requestHeaders: incomingHeaders/);
-assert.match(runnerSource, /proxyResponse\.text\(\)/);
+assert.match(runnerSource, /rpcObject\?\.ok === true/);
+assert.match(runnerSource, /rpc_\$\{workflowCode\}/);
+assert.doesNotMatch(runnerSource, /proxyResponse\.text\(\)/);
 assert.match(runnerSource, /'Content-Length': String\(upstream\.body\.length\)/);
 assert.match(runnerSource, /lastTransport/);
 assert.match(runnerSource, /networkAt: lastTransportAt/);
