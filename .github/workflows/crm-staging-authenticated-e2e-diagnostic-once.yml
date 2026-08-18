@@ -29,6 +29,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Apply diagnostic lead-card race probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('tools/run_crm_staging_authenticated_e2e.mjs')
+          source = path.read_text()
+          old = "await waitFor(()=>document.getElementById('needForm')||document.querySelector('#needFormBox .v4-need-workspace-summary'),'need_ui_before_assignment_timeout',45000);record('need_ui_ready_before_assignment');"
+          new = "progress('need_ui_preassignment_bypassed');"
+          if source.count(old) != 1:
+              raise SystemExit('diagnostic_probe_anchor_mismatch')
+          path.write_text(source.replace(old, new))
+          PY
+          node --check tools/run_crm_staging_authenticated_e2e.mjs
+
       - name: Pin browser Supabase dependency locally
         shell: bash
         run: |
