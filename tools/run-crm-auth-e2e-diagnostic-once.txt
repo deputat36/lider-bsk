@@ -1,6 +1,6 @@
 Issue: #487
 Branch: agent/487-authenticated-staging-e2e
 Production enabled: false
-Purpose: verify the current staging authenticated needs.read policy by removing the harness proxy for leader_lead_needs and using the original Supabase request.
+Purpose: test whether reloading needs on the actual lead-card-rendered lifecycle resolves the lazy bundle race while keeping native authenticated staging reads.
 Cleanup required: true
-Attempt: 11
+Attempt: 12
