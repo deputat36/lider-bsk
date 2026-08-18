@@ -45,6 +45,22 @@ jobs:
           PY
           node --check tools/run_crm_staging_authenticated_e2e.mjs
 
+      - name: Apply diagnostic card-rendered needs reload probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('crm/v4/assets/v4/needs.js')
+          source = path.read_text()
+          old = "document.addEventListener('leader-v4:lead-card-rendered', () => renderNeeds());"
+          new = "document.addEventListener('leader-v4:lead-card-rendered', (event) => { const id = event.detail?.lead?.id || v4State.route.leadId || null; if (id && v4State.route.leadId === id && v4State.leadNeedsBusy) loadNeeds(id); else renderNeeds(); });"
+          if source.count(old) != 1:
+              raise SystemExit('diagnostic_card_rendered_reload_anchor_mismatch')
+          path.write_text(source.replace(old, new))
+          PY
+          node --check crm/v4/assets/v4/needs.js
+
       - name: Pin browser Supabase dependency locally
         shell: bash
         run: |
