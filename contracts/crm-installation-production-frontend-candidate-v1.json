@@ -1,7 +1,7 @@
 {
   "contract": "crm-installation-production-frontend-candidate",
   "version": 1,
-  "captured_at": "2026-08-09",
+  "captured_at": "2026-08-18",
   "repository": "deputat36/lider-bsk",
   "issue": 423,
   "status": "source_only_not_switched",
@@ -27,8 +27,8 @@
     "crm/v4/assets/v4/installation-job-staging-transport-v1.js": "a4f265fe53c438095ebcbc7b58d22e90e551c057",
     "crm/v4/assets/v4/installation-job-staging-read-transport-v1.js": "b5ebf2a0b05404b639b63b7f8aae27c3574464ce",
     "crm/v4/assets/v4/installation-job-card-v2.js": "1c360e08ce954d7879bc075bc203d3fd406db0ae",
-    "crm/v4/assets/v4/crm-v4-tab-loader-v1.js": "cc7a175bb491eefddfe660a6efef2c828526be41",
-    "crm/v4/index.html": "dc4a800d1426c4056b5f9696e4e20938eca3eabd"
+    "crm/v4/assets/v4/crm-v4-tab-loader-v1.js": "1aa0cf179fd28b0b7278600c7dbd650274a70391",
+    "crm/v4/index.html": "971efe7840c3086890c434aa087615023876fab9"
   },
   "generated_outputs": [
     "crm/v4/assets/v4/installation-job-save-route-v2.js",
@@ -75,9 +75,11 @@
   },
   "loader": {
     "source": "crm/v4/assets/v4/crm-v4-tab-loader-v1.js",
-    "index_entrypoint": "assets/v4/crm-v4-tab-loader-v1.js?v=20260805-lazy-tabs-1",
+    "index_entrypoint": "assets/v4/crm-v4-tab-loader-v1.js?v=20260816-direct-card-1",
     "current_script": "assets/v4/installation-job-card-v2.js?v=20260805-tab-loader-1",
+    "staging_only_script": "assets/v4/installation-job-staging-create-v1.js?v=20260809-auth-e2e-1",
     "candidate_script": "assets/v4/installation-job-card-v3.js?v=20260723-production-edge-candidate-1",
+    "candidate_removes_staging_only_script": true,
     "switch_surface": "lazy_loader_only",
     "working_index_eager_installation_script": false,
     "working_loader_switched": false
