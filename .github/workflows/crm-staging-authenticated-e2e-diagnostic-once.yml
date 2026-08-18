@@ -6,7 +6,6 @@ on:
       - agent/487-authenticated-staging-e2e
     paths:
       - 'tools/run-crm-auth-e2e-diagnostic-once.txt'
-      - '.github/workflows/crm-staging-authenticated-e2e-diagnostic-once.yml'
 
 permissions:
   contents: read
