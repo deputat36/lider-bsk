@@ -11,5 +11,5 @@ Authenticated CRM E2E continuation trigger.
 Issue: #487
 Expected branch: agent/487-authenticated-staging-e2e
 Production enabled: false
-Reason: run the canonical authenticated CRM E2E runtime after production-candidate guards are green; capture full privacy-safe browser/runtime evidence and cleanup proof for the remaining needs UI blocker. Production remains unchanged.
-Attempt: 17
+Reason: run the canonical authenticated CRM E2E runtime with explicit success/failure relay to issue #487; all production-candidate guards are green and production remains unchanged.
+Attempt: 18
