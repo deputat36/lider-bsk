@@ -1,6 +1,6 @@
 Issue: #487
 Branch: agent/487-authenticated-staging-e2e
 Production enabled: false
-Purpose: isolate whether the needs loader stalls because v4State.route.leadId differs from the active lead after a successful native staging read; keep request-sequence stale protection intact.
+Purpose: repeat the stale-route guard isolation with both success and catch guards patched; keep request-sequence stale protection intact and use native authenticated staging needs reads.
 Cleanup required: true
-Attempt: 13
+Attempt: 14
