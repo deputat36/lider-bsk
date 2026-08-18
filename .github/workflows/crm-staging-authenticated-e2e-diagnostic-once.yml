@@ -45,7 +45,7 @@ jobs:
           PY
           node --check tools/run_crm_staging_authenticated_e2e.mjs
 
-      - name: Apply diagnostic needs stale-route guard probe
+      - name: Instrument needs lifecycle heartbeats
         shell: bash
         run: |
           set -euo pipefail
@@ -53,11 +53,95 @@ jobs:
           from pathlib import Path
           path = Path('crm/v4/assets/v4/needs.js')
           source = path.read_text()
-          old = "if (requestSequence !== needsLoadSequence || v4State.route.leadId !== leadId) return [];"
-          new = "if (requestSequence !== needsLoadSequence) return [];"
-          if source.count(old) != 2:
-              raise SystemExit('diagnostic_needs_stale_route_anchor_mismatch')
-          path.write_text(source.replace(old, new))
+          marker = "export async function loadNeeds(leadId = v4State.route.leadId) {"
+          helper = """function e2eNeedsProbe(name) {
+            try {
+              if (!navigator?.sendBeacon) return;
+              const safe = String(name || '').replace(/[^a-z0-9:_-]/gi, '_').slice(0, 120);
+              navigator.sendBeacon('/__crm_e2e_progress', new Blob([safe], { type: 'text/plain' }));
+            } catch (_) {}
+          }
+
+          export async function loadNeeds(leadId = v4State.route.leadId) {
+            e2eNeedsProbe('needs_enter');"""
+          if source.count(marker) != 1:
+              raise SystemExit('needs_probe_function_anchor_mismatch')
+          source = source.replace(marker, helper, 1)
+
+          old = """  setState({ leadNeedsBusy: true, leadNeedsError: null });
+  renderNeeds();
+  try {
+    const response = await timeout("""
+          new = """  setState({ leadNeedsBusy: true, leadNeedsError: null });
+  renderNeeds();
+  e2eNeedsProbe('needs_before_query');
+  try {
+    const response = await timeout("""
+          if source.count(old) != 1:
+              raise SystemExit('needs_probe_before_query_anchor_mismatch')
+          source = source.replace(old, new, 1)
+
+          old = """    );
+    if (response.error) throw response.error;
+    if (requestSequence !== needsLoadSequence || v4State.route.leadId !== leadId) return [];
+    const needs = response.data || [];
+    settleWorkspaceAfterLoad(leadId, needs);
+    setState({ leadNeeds: needs, leadNeedsBusy: false, leadNeedsError: null });
+    renderNeeds();
+    emitNeedsLoaded(leadId);
+    return needs;
+  } catch (error) {
+    if (requestSequence !== needsLoadSequence || v4State.route.leadId !== leadId) return [];
+    const message = friendlyError(error);
+    settleWorkspaceAfterLoad(leadId, []);
+    setState({ leadNeeds: [], leadNeedsBusy: false, leadNeedsError: message });
+    renderNeeds();
+    emitNeedsLoaded(leadId);
+    setStatus(`Ошибка потребностей: ${message}`, 'error');
+    return [];
+  }
+}"""
+          new = """    );
+    e2eNeedsProbe('needs_after_query');
+    if (response.error) throw response.error;
+    e2eNeedsProbe('needs_after_error_check');
+    if (requestSequence !== needsLoadSequence || v4State.route.leadId !== leadId) {
+      e2eNeedsProbe('needs_stale_success');
+      return [];
+    }
+    e2eNeedsProbe('needs_fresh_success');
+    const needs = response.data || [];
+    settleWorkspaceAfterLoad(leadId, needs);
+    e2eNeedsProbe('needs_after_settle');
+    setState({ leadNeeds: needs, leadNeedsBusy: false, leadNeedsError: null });
+    e2eNeedsProbe('needs_after_state');
+    renderNeeds();
+    e2eNeedsProbe('needs_after_render');
+    emitNeedsLoaded(leadId);
+    e2eNeedsProbe('needs_after_emit');
+    return needs;
+  } catch (error) {
+    e2eNeedsProbe('needs_catch');
+    if (requestSequence !== needsLoadSequence || v4State.route.leadId !== leadId) {
+      e2eNeedsProbe('needs_stale_catch');
+      return [];
+    }
+    e2eNeedsProbe('needs_fresh_catch');
+    const message = friendlyError(error);
+    settleWorkspaceAfterLoad(leadId, []);
+    e2eNeedsProbe('needs_catch_after_settle');
+    setState({ leadNeeds: [], leadNeedsBusy: false, leadNeedsError: message });
+    e2eNeedsProbe('needs_catch_after_state');
+    renderNeeds();
+    e2eNeedsProbe('needs_catch_after_render');
+    emitNeedsLoaded(leadId);
+    setStatus(`Ошибка потребностей: ${message}`, 'error');
+    return [];
+  }
+}"""
+          if source.count(old) != 1:
+              raise SystemExit('needs_probe_result_anchor_mismatch')
+          path.write_text(source.replace(old, new, 1))
           PY
           node --check crm/v4/assets/v4/needs.js
 
