@@ -93,7 +93,7 @@ jobs:
           LOG="${RUNNER_TEMP}/diag/browser.log"
           CODE='authenticated_e2e_failed_without_safe_code'
           if [ -f "${LOG}" ]; then
-            CANDIDATE="$(grep -Eo 'chrome_browser_scenario_timeout:[A-Za-z0-9_:-]+|browser_e2e_failed:[A-Za-z0-9_:-]+|lead_assignment_[A-Za-z0-9_:-]+|need_[A-Za-z0-9_:-]+|missing:[A-Za-z0-9_:#.\[\]="-]+' "${LOG}" | tail -n 1 || true)"
+            CANDIDATE="$(grep -Eo 'chrome_browser_scenario_timeout:[A-Za-z0-9_:-]+|chrome_browser_scenario_stalled:[A-Za-z0-9_:-]+|browser_e2e_failed:[A-Za-z0-9_:-]+|lead_assignment_[A-Za-z0-9_:-]+|need_[A-Za-z0-9_:-]+|missing:[A-Za-z0-9_:#.\[\]="-]+' "${LOG}" | tail -n 1 || true)"
             if [[ "${CANDIDATE}" =~ ^[A-Za-z0-9_:.\[\]=\"-]{1,180}$ ]]; then CODE="${CANDIDATE}"; fi
           fi
           if [ '${{ steps.browser.outcome }}' = 'success' ]; then CODE='authenticated_e2e_browser_passed'; fi
