@@ -1,6 +1,6 @@
 Issue: #487
 Branch: agent/487-authenticated-staging-e2e
 Production enabled: false
-Purpose: capture one allowlisted browser failure code after deterministic staging lead transport changes.
+Purpose: capture one allowlisted authenticated browser result after the needs-read proxy fix on head 5bfafdd2.
 Cleanup required: true
-Attempt: 2
+Attempt: 3
