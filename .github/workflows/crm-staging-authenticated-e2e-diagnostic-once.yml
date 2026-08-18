@@ -29,19 +29,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Apply diagnostic lead-card race probe
+      - name: Apply diagnostic needs-read fetch bridge probe
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
+          import re
           path = Path('tools/run_crm_staging_authenticated_e2e.mjs')
           source = path.read_text()
-          old = "await waitFor(()=>document.getElementById('needForm')||document.querySelector('#needFormBox .v4-need-workspace-summary'),'need_ui_before_assignment_timeout',45000);record('need_ui_ready_before_assignment');"
-          new = "progress('need_ui_preassignment_bypassed');"
-          if source.count(old) != 1:
-              raise SystemExit('diagnostic_probe_anchor_mismatch')
-          path.write_text(source.replace(old, new))
+          pattern = r"function proxyEvidenceRead\(payload\)\{return new Promise\(\(resolve,reject\)=>\{.*?xhr\.send\(JSON\.stringify\(payload\)\);\}\);\}"
+          replacement = "function proxyEvidenceRead(payload){return fetch('/__crm_e2e_staging_request_proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),cache:'no-store'});}"
+          patched, count = re.subn(pattern, replacement, source, count=1)
+          if count != 1:
+              raise SystemExit('diagnostic_fetch_bridge_anchor_mismatch')
+          path.write_text(patched)
           PY
           node --check tools/run_crm_staging_authenticated_e2e.mjs
 
