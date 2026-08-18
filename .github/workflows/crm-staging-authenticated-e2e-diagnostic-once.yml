@@ -93,8 +93,15 @@ jobs:
           LOG="${RUNNER_TEMP}/diag/browser.log"
           CODE='authenticated_e2e_failed_without_safe_code'
           if [ -f "${LOG}" ]; then
-            CANDIDATE="$(grep -Eo 'chrome_browser_scenario_timeout:[A-Za-z0-9_:-]+|chrome_browser_scenario_stalled:[A-Za-z0-9_:-]+|browser_e2e_failed:[A-Za-z0-9_:-]+|lead_assignment_[A-Za-z0-9_:-]+|need_[A-Za-z0-9_:-]+|missing:[A-Za-z0-9_:#.\[\]="-]+' "${LOG}" | tail -n 1 || true)"
-            if [[ "${CANDIDATE}" =~ ^[A-Za-z0-9_:.\[\]=\"-]{1,180}$ ]]; then CODE="${CANDIDATE}"; fi
+            RAW="$(tail -n 30 "${LOG}" | jq -Rr 'fromjson? | .error? // empty' | tail -n 1 || true)"
+            if [ -z "${RAW}" ]; then
+              RAW="$(grep -Eo '(chrome_browser_scenario_timeout|chrome_browser_scenario_stalled|browser_e2e_failed|browser_process_failed):[^"[:space:]]+|browser_evidence_missing' "${LOG}" | tail -n 1 || true)"
+            fi
+            case "${RAW}" in
+              chrome_browser_scenario_timeout:*|chrome_browser_scenario_stalled:*|browser_e2e_failed:*|browser_process_failed:*|browser_evidence_missing)
+                CODE="$(printf '%s' "${RAW}" | python3 -c "import re,sys; s=sys.stdin.read(); sys.stdout.write(re.sub(r'[^A-Za-z0-9_:.=\\-]', '_', s)[:180])")"
+                ;;
+            esac
           fi
           if [ '${{ steps.browser.outcome }}' = 'success' ]; then CODE='authenticated_e2e_browser_passed'; fi
           echo "code=${CODE}" >> "${GITHUB_OUTPUT}"
