@@ -1,6 +1,6 @@
 Issue: #487
 Branch: agent/487-authenticated-staging-e2e
 Production enabled: false
-Purpose: capture one allowlisted authenticated browser result after the needs-read proxy fix on head 5bfafdd2.
+Purpose: capture one allowlisted authenticated browser result after synchronizing the diagnostic OIDC allowlist in staging bootstrap v7.
 Cleanup required: true
-Attempt: 3
+Attempt: 4
