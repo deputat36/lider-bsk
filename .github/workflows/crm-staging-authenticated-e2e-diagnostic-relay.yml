@@ -36,8 +36,8 @@ jobs:
           LOG_DIR="${RUNNER_TEMP}/crm-e2e-evidence"
           FAILURE='authenticated_e2e_failed_without_safe_code'
           if [ -f "${LOG_DIR}/browser.log" ]; then
-            CANDIDATE="$(grep -Eo 'chrome_browser_scenario_timeout:[A-Za-z0-9_:-]+|browser_e2e_failed:[A-Za-z0-9_:-]+' "${LOG_DIR}/browser.log" | tail -n 1 || true)"
-            if [[ "${CANDIDATE}" =~ ^(chrome_browser_scenario_timeout|browser_e2e_failed):[A-Za-z0-9_:-]{1,180}$ ]]; then
+            CANDIDATE="$(grep -Eo 'chrome_browser_scenario_timeout:[A-Za-z0-9_:-]+|chrome_browser_scenario_stalled:[A-Za-z0-9_:-]+|browser_e2e_failed:[A-Za-z0-9_:-]+' "${LOG_DIR}/browser.log" | tail -n 1 || true)"
+            if [[ "${CANDIDATE}" =~ ^(chrome_browser_scenario_timeout|chrome_browser_scenario_stalled|browser_e2e_failed):[A-Za-z0-9_:-]{1,180}$ ]]; then
               FAILURE="${CANDIDATE}"
             fi
           fi
