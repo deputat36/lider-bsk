@@ -11,6 +11,8 @@ const ACTOR_ID='203537570'
 const BRANCH_REF='refs/heads/agent/487-authenticated-staging-e2e'
 const E2E_WORKFLOW_REF=`${REPOSITORY}/.github/workflows/crm-staging-authenticated-e2e.yml@${BRANCH_REF}`
 const CALLER_WORKFLOW_REF=`${REPOSITORY}/.github/workflows/crm-staging-installation-authenticated-ui-smoke-runtime.yml@${BRANCH_REF}`
+const DIAGNOSTIC_WORKFLOW_REF=`${REPOSITORY}/.github/workflows/crm-staging-authenticated-e2e-diagnostic-once.yml@${BRANCH_REF}`
+const ALLOWED_WORKFLOW_REFS=new Set([E2E_WORKFLOW_REF,CALLER_WORKFLOW_REF,DIAGNOSTIC_WORKFLOW_REF])
 const SUBJECT=`repo:${REPOSITORY}:ref:${BRANCH_REF}`
 const JWKS=createRemoteJWKSet(new URL(`${ISSUER}/.well-known/jwks`))
 type JsonObject=Record<string,unknown>
@@ -25,9 +27,9 @@ async function claims(req:Request){
   const expected:Record<string,string>={repository:REPOSITORY,repository_id:REPOSITORY_ID,repository_owner_id:OWNER_ID,actor_id:ACTOR_ID,ref:BRANCH_REF,ref_type:'branch',event_name:'push',runner_environment:'github-hosted',repository_visibility:'public',sub:SUBJECT}
   for(const [key,wanted] of Object.entries(expected))if(text(value[key])!==wanted)throw new Error(`github_claim_rejected:${key}`)
   const workflowRef=text(value.workflow_ref)
-  if(workflowRef!==E2E_WORKFLOW_REF&&workflowRef!==CALLER_WORKFLOW_REF)throw new Error('github_claim_rejected:workflow_ref')
+  if(!ALLOWED_WORKFLOW_REFS.has(workflowRef))throw new Error('github_claim_rejected:workflow_ref')
   const jobWorkflowRef=text(value.job_workflow_ref)
-  if(jobWorkflowRef&&jobWorkflowRef!==E2E_WORKFLOW_REF&&jobWorkflowRef!==CALLER_WORKFLOW_REF)throw new Error('github_claim_rejected:job_workflow_ref')
+  if(jobWorkflowRef&&!ALLOWED_WORKFLOW_REFS.has(jobWorkflowRef))throw new Error('github_claim_rejected:job_workflow_ref')
   if(!/^[0-9a-f]{40}$/i.test(text(value.sha)))throw new Error('github_sha_claim_invalid')
   return {runKey:runKey(value)}
 }
