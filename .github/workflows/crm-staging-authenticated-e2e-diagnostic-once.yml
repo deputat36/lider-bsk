@@ -55,7 +55,7 @@ jobs:
           source = path.read_text()
           old = "if (requestSequence !== needsLoadSequence || v4State.route.leadId !== leadId) return [];"
           new = "if (requestSequence !== needsLoadSequence) return [];"
-          if source.count(old) != 1:
+          if source.count(old) != 2:
               raise SystemExit('diagnostic_needs_stale_route_anchor_mismatch')
           path.write_text(source.replace(old, new))
           PY
