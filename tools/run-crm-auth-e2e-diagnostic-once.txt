@@ -1,6 +1,6 @@
 Issue: #487
 Branch: agent/487-authenticated-staging-e2e
 Production enabled: false
-Purpose: test whether reloading needs on the actual lead-card-rendered lifecycle resolves the lazy bundle race while keeping native authenticated staging reads.
+Purpose: isolate whether the needs loader stalls because v4State.route.leadId differs from the active lead after a successful native staging read; keep request-sequence stale protection intact.
 Cleanup required: true
-Attempt: 12
+Attempt: 13
