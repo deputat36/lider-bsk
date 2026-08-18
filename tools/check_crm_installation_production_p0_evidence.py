@@ -129,7 +129,7 @@ if frontend.get("status") != "source_only_not_switched":
 
 index_text = texts.get("index", "")
 loader_text = texts.get("loader", "")
-if 'assets/v4/crm-v4-tab-loader-v1.js?v=20260805-lazy-tabs-1' not in index_text:
+if 'assets/v4/crm-v4-tab-loader-v1.js?v=20260816-direct-card-1' not in index_text:
     errors.append("working_lazy_loader_entrypoint_missing")
 if re.search(r'<script\b[^>]*\bsrc=["\'][^"\']*installation-job-card-[^"\']*["\']', index_text, re.I):
     errors.append("working_index_eager_installation_script")
@@ -157,7 +157,6 @@ if "ofewxuqfjhamgerwzull" not in sql_text:
 if "missing_required_columns" not in sql_text or "installation_p0_snapshot" not in sql_text:
     errors.append("readonly_sql_evidence_markers_missing")
 
-# Strip comments and string literals before checking for mutating SQL statements.
 sanitized = re.sub(r"/\*.*?\*/", " ", sql_text, flags=re.S)
 sanitized = re.sub(r"--[^\n]*", " ", sanitized)
 sanitized = re.sub(r"'(?:''|[^'])*'", "''", sanitized)
