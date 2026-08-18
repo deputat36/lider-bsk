@@ -1,6 +1,6 @@
 Issue: #487
 Branch: agent/487-authenticated-staging-e2e
 Production enabled: false
-Purpose: capture one exact privacy-safe stalled/timeout browser stage after JSON error extraction fix.
+Purpose: controlled single authenticated browser diagnostic after removing workflow-file self-trigger races.
 Cleanup required: true
-Attempt: 6
+Attempt: 7
