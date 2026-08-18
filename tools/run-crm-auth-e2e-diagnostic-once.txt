@@ -1,6 +1,6 @@
 Issue: #487
 Branch: agent/487-authenticated-staging-e2e
 Production enabled: false
-Purpose: repeat the stale-route guard isolation with both success and catch guards patched; keep request-sequence stale protection intact and use native authenticated staging needs reads.
+Purpose: pinpoint the exact loadNeeds lifecycle stage after a successful native authenticated staging read using fixed privacy-safe browser heartbeats.
 Cleanup required: true
-Attempt: 14
+Attempt: 15
