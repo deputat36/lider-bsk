@@ -1,6 +1,6 @@
 Issue: #487
 Branch: agent/487-authenticated-staging-e2e
 Production enabled: false
-Purpose: probe whether lead assignment proceeds when the harness does not wait for needs UI before clicking assign_self.
+Purpose: probe same-origin fetch for proxied needs reads while keeping the original pre-assignment UI readiness check.
 Cleanup required: true
-Attempt: 8
+Attempt: 9
