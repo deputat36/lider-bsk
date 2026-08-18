@@ -29,7 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Apply diagnostic native-fetch needs bridge probe
+      - name: Apply diagnostic native staging needs-read probe
         shell: bash
         run: |
           set -euo pipefail
@@ -38,9 +38,9 @@ jobs:
           path = Path('tools/run_crm_staging_authenticated_e2e.mjs')
           source = path.read_text()
           old = "if(isNeedRead)return proxyEvidenceRead({path:requestUrl.pathname+requestUrl.search,method,headers,body:''});"
-          new = "if(isNeedRead){progress('need_proxy_native_start');return nativeFetch('/__crm_e2e_staging_request_proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:requestUrl.pathname+requestUrl.search,method,headers,body:''}),cache:'no-store'}).then((response)=>{progress('need_proxy_native_done');return response;});}"
+          new = "if(isNeedRead){progress('need_native_staging');return nativeFetch(input,init);}"
           if source.count(old) != 1:
-              raise SystemExit('diagnostic_native_fetch_anchor_mismatch')
+              raise SystemExit('diagnostic_native_staging_anchor_mismatch')
           path.write_text(source.replace(old, new))
           PY
           node --check tools/run_crm_staging_authenticated_e2e.mjs
