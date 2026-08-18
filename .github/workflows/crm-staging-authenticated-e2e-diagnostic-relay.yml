@@ -14,12 +14,25 @@ permissions:
 
 jobs:
   relay:
-    if: >-
-      github.event.workflow_run.head_branch == 'agent/487-authenticated-staging-e2e' &&
-      github.event.workflow_run.conclusion != 'success'
+    if: github.event.workflow_run.head_branch == 'agent/487-authenticated-staging-e2e'
     runs-on: ubuntu-latest
     steps:
+      - name: Report successful authenticated runtime
+        if: github.event.workflow_run.conclusion == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          SHORT_SHA="${HEAD_SHA:0:12}"
+          gh issue comment 487 --repo "${GITHUB_REPOSITORY}" --body "Authenticated staging E2E runtime: **PASS**. Runtime: ${RUN_URL}. Head: \`${SHORT_SHA}\`. Workflow completed successfully; synthetic cleanup remains enforced by the runtime job."
+
       - name: Download privacy-safe E2E evidence
+        if: github.event.workflow_run.conclusion != 'success'
+        id: download
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: crm-staging-authenticated-e2e
@@ -29,28 +42,36 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
 
       - name: Extract allowlisted failure code
+        if: github.event.workflow_run.conclusion != 'success'
         id: failure
         shell: bash
         run: |
           set -euo pipefail
-          LOG_DIR="${RUNNER_TEMP}/crm-e2e-evidence"
+          LOG="${RUNNER_TEMP}/crm-e2e-evidence/browser.log"
           FAILURE='authenticated_e2e_failed_without_safe_code'
-          if [ -f "${LOG_DIR}/browser.log" ]; then
-            CANDIDATE="$(grep -Eo 'chrome_browser_scenario_timeout:[A-Za-z0-9_:-]+|chrome_browser_scenario_stalled:[A-Za-z0-9_:-]+|browser_e2e_failed:[A-Za-z0-9_:-]+' "${LOG_DIR}/browser.log" | tail -n 1 || true)"
-            if [[ "${CANDIDATE}" =~ ^(chrome_browser_scenario_timeout|chrome_browser_scenario_stalled|browser_e2e_failed):[A-Za-z0-9_:-]{1,180}$ ]]; then
-              FAILURE="${CANDIDATE}"
+          if [ -f "${LOG}" ]; then
+            RAW="$(tail -n 40 "${LOG}" | jq -Rr 'fromjson? | .error? // empty' | tail -n 1 || true)"
+            if [ -z "${RAW}" ]; then
+              RAW="$(grep -Eo '(chrome_browser_scenario_timeout|chrome_browser_scenario_stalled|browser_e2e_failed|browser_process_failed):[^\"[:space:]]+|browser_evidence_missing' "${LOG}" | tail -n 1 || true)"
             fi
+            case "${RAW}" in
+              chrome_browser_scenario_timeout:*|chrome_browser_scenario_stalled:*|browser_e2e_failed:*|browser_process_failed:*|browser_evidence_missing)
+                FAILURE="$(printf '%s' "${RAW}" | python3 -c "import re,sys; s=sys.stdin.read(); sys.stdout.write(re.sub(r'[^A-Za-z0-9_:.=\\-]', '_', s)[:180])")"
+                ;;
+            esac
           fi
           echo "code=${FAILURE}" >> "${GITHUB_OUTPUT}"
 
       - name: Report sanitized failure to issue 487
+        if: github.event.workflow_run.conclusion != 'success'
         env:
           GH_TOKEN: ${{ github.token }}
           FAILURE_CODE: ${{ steps.failure.outputs.code }}
           RUN_URL: ${{ github.event.workflow_run.html_url }}
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
         shell: bash
         run: |
           set -euo pipefail
           SHORT_SHA="${HEAD_SHA:0:12}"
-          gh issue comment 487 --repo "${GITHUB_REPOSITORY}" --body "Authenticated staging E2E diagnostic: \`${FAILURE_CODE}\`. Runtime: ${RUN_URL}. Head: \`${SHORT_SHA}\`. Сообщение содержит только allowlisted stage/error code; credentials и synthetic marker не публикуются."
+          gh issue comment 487 --repo "${GITHUB_REPOSITORY}" --body "Authenticated staging E2E runtime: **${RUN_CONCLUSION}**. Diagnostic: \`${FAILURE_CODE}\`. Runtime: ${RUN_URL}. Head: \`${SHORT_SHA}\`. Сообщение содержит только allowlisted stage/error code; credentials и synthetic marker не публикуются."
