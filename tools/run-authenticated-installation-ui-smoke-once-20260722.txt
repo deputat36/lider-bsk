@@ -11,4 +11,5 @@ Authenticated CRM E2E continuation trigger.
 Issue: #487
 Expected branch: agent/487-authenticated-staging-e2e
 Production enabled: false
-Reason: verify the canonical staging lead workflow with all temporary localhost beacon/fetch diagnostics removed from product UI and Worker code; production unchanged.
+Reason: run the canonical authenticated CRM E2E runtime after production-candidate guards are green; capture full privacy-safe browser/runtime evidence and cleanup proof for the remaining needs UI blocker. Production remains unchanged.
+Attempt: 17
