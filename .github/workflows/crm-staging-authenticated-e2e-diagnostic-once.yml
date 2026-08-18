@@ -29,21 +29,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Apply diagnostic needs-read fetch bridge probe
+      - name: Apply diagnostic native-fetch needs bridge probe
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          import re
           path = Path('tools/run_crm_staging_authenticated_e2e.mjs')
           source = path.read_text()
-          pattern = r"function proxyEvidenceRead\(payload\)\{return new Promise\(\(resolve,reject\)=>\{.*?xhr\.send\(JSON\.stringify\(payload\)\);\}\);\}"
-          replacement = "function proxyEvidenceRead(payload){return fetch('/__crm_e2e_staging_request_proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),cache:'no-store'});}"
-          patched, count = re.subn(pattern, replacement, source, count=1)
-          if count != 1:
-              raise SystemExit('diagnostic_fetch_bridge_anchor_mismatch')
-          path.write_text(patched)
+          old = "if(isNeedRead)return proxyEvidenceRead({path:requestUrl.pathname+requestUrl.search,method,headers,body:''});"
+          new = "if(isNeedRead){progress('need_proxy_native_start');return nativeFetch('/__crm_e2e_staging_request_proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:requestUrl.pathname+requestUrl.search,method,headers,body:''}),cache:'no-store'}).then((response)=>{progress('need_proxy_native_done');return response;});}"
+          if source.count(old) != 1:
+              raise SystemExit('diagnostic_native_fetch_anchor_mismatch')
+          path.write_text(source.replace(old, new))
           PY
           node --check tools/run_crm_staging_authenticated_e2e.mjs
 
