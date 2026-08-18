@@ -71,7 +71,7 @@ if approval.get('approved') is not False:
 
 current_index = read(CURRENT_INDEX)
 require(current_index, [
-    'assets/v4/crm-v4-tab-loader-v1.js?v=20260805-lazy-tabs-1',
+    'assets/v4/crm-v4-tab-loader-v1.js?v=20260816-direct-card-1',
 ], 'working index')
 if re.search(r'<script\b[^>]*\bsrc=["\'][^"\']*installation-job-card-[^"\']*["\']', current_index, re.I):
     fail('working index: eager installation card script is forbidden')
@@ -79,6 +79,7 @@ if re.search(r'<script\b[^>]*\bsrc=["\'][^"\']*installation-job-card-[^"\']*["\'
 current_loader = read(CURRENT_LOADER)
 require(current_loader, [
     "() => import('./installation-job-card-v2.js?v=20260805-tab-loader-1')",
+    "() => import('./installation-job-staging-create-v1.js?v=20260809-auth-e2e-1')",
 ], 'working lazy loader')
 forbid(current_loader, [
     "() => import('./installation-job-card-v3.js?v=20260723-production-edge-candidate-1')",
@@ -233,6 +234,7 @@ require(candidate_loader, [
 ], 'generated lazy loader')
 forbid(candidate_loader, [
     "() => import('./installation-job-card-v2.js?v=20260805-tab-loader-1')",
+    "() => import('./installation-job-staging-create-v1.js?v=20260809-auth-e2e-1')",
 ], 'generated lazy loader')
 
 backend_contracts = [
