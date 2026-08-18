@@ -1,6 +1,6 @@
 Issue: #487
 Branch: agent/487-authenticated-staging-e2e
 Production enabled: false
-Purpose: capture one allowlisted authenticated browser result after synchronizing the diagnostic OIDC allowlist in staging bootstrap v7.
+Purpose: capture one exact stalled/timeout authenticated browser code with the corrected privacy-safe diagnostic extractor.
 Cleanup required: true
-Attempt: 4
+Attempt: 5
