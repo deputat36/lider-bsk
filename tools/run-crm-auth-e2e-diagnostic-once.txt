@@ -1,6 +1,6 @@
 Issue: #487
 Branch: agent/487-authenticated-staging-e2e
 Production enabled: false
-Purpose: probe same-origin fetch for proxied needs reads while keeping the original pre-assignment UI readiness check.
+Purpose: probe needs UI through captured nativeFetch inside the exact staging interceptor, preserving the original UI readiness check.
 Cleanup required: true
-Attempt: 9
+Attempt: 10
