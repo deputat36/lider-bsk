@@ -1,0 +1,5 @@
+Issue: #487
+Branch: agent/487-authenticated-staging-e2e
+Production enabled: false
+Purpose: apply the exact post-assignment need-form readiness race fix to the authenticated E2E harness and its launcher contract.
+Expected files changed by the one-shot job: 2
