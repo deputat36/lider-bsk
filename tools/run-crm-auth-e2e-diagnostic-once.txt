@@ -1,6 +1,6 @@
 Issue: #487
 Branch: agent/487-authenticated-staging-e2e
 Production enabled: false
-Purpose: pinpoint the exact loadNeeds lifecycle stage after a successful native authenticated staging read using fixed privacy-safe browser heartbeats; production candidate guards are now green.
+Purpose: verify the final harness hypothesis: use native authenticated staging GET for leader_lead_needs and assign the unassigned manager lead immediately after card readiness, before waiting for the needs workspace.
 Cleanup required: true
-Attempt: 16
+Attempt: 19
