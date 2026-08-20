@@ -82,6 +82,9 @@ assert.doesNotMatch(runnerSource, /assigned_card_diag/);
 assert.doesNotMatch(runnerSource, /openAssignedLead/);
 assert.doesNotMatch(runnerSource, /progress\\\('lead_open_clicked'\\\)/);
 assert.match(runnerSource, /progress\('need_ui_wait'\)/);
+assert.match(runnerSource, /const form=document\.getElementById\('needForm'\);if\(form\)return form/);
+assert.match(runnerSource, /entry\?\.id!==\'needForm\'/);
+assert.doesNotMatch(runnerSource, /#needFormBox \.v4-need-workspace-summary/);
 assert.doesNotMatch(runnerSource, /const needsModule=await import\('\.\/assets\/v4\/needs\.js\?v=20260805-tab-loader-1'\)/);
 assert.doesNotMatch(runnerSource, /__crm_e2e_staging_rpc_proxy[^\n]+signal:init\?\.signal/);
 
