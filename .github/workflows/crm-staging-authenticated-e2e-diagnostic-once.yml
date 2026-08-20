@@ -29,7 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Apply diagnostic native staging needs-read probe
+      - name: Apply diagnostic native needs-read and assignment-order probe
         shell: bash
         run: |
           set -euo pipefail
@@ -41,7 +41,12 @@ jobs:
           new = "if(isNeedRead){progress('need_native_staging');return nativeFetch(input,init);}"
           if source.count(old) != 1:
               raise SystemExit('diagnostic_native_staging_anchor_mismatch')
-          path.write_text(source.replace(old, new))
+          source = source.replace(old, new, 1)
+          old = "  await waitFor(()=>document.getElementById('needForm')||document.querySelector('#needFormBox .v4-need-workspace-summary'),'need_ui_before_assignment_timeout',45000);record('need_ui_ready_before_assignment');\n"
+          new = "  progress('assignment_before_need_ui');\n"
+          if source.count(old) != 1:
+              raise SystemExit('diagnostic_assignment_order_anchor_mismatch')
+          path.write_text(source.replace(old, new, 1))
           PY
           node --check tools/run_crm_staging_authenticated_e2e.mjs
 
