@@ -1,0 +1,68 @@
+name: CRM authenticated E2E need-form race fix once
+
+on:
+  push:
+    branches:
+      - agent/487-authenticated-staging-e2e
+    paths:
+      - 'tools/run-crm-auth-e2e-need-form-race-fix-once.txt'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: crm-auth-e2e-need-form-race-fix-once
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply exact harness race fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          runner = Path('tools/run_crm_staging_authenticated_e2e.mjs')
+          source = runner.read_text()
+          old = "if(!document.getElementById('needForm')){await waitFor(()=>{const node=document.querySelector('button[data-action=\"open-create-need\"]');return document.body.dataset.v4Tab==='card'&&location.search.includes('lead='+R.leadId)&&document.querySelector('#needFormBox .v4-need-workspace-summary')&&node&&node.isConnected&&!node.disabled;},'need_create_entry_missing',45000);click('button[data-action=\"open-create-need\"]');}"
+          new = "if(!document.getElementById('needForm')){const entry=await waitFor(()=>{const form=document.getElementById('needForm');if(form)return form;const node=document.querySelector('button[data-action=\"open-create-need\"]');return document.body.dataset.v4Tab==='card'&&location.search.includes('lead='+R.leadId)&&node&&node.isConnected&&!node.disabled?node:false;},'need_create_entry_missing',45000);if(entry?.id!=='needForm'&&!document.getElementById('needForm'))click('button[data-action=\"open-create-need\"]');}"
+          if source.count(old) != 1:
+              raise SystemExit('need_form_race_runner_anchor_mismatch')
+          runner.write_text(source.replace(old, new, 1))
+
+          test = Path('tools/test_crm_staging_authenticated_e2e_browser_launcher.mjs')
+          test_source = test.read_text()
+          anchor = "assert.match(runnerSource, /progress\\('need_ui_wait'\\)/);\n"
+          addition = (
+              anchor
+              + "assert.match(runnerSource, /const form=document\\.getElementById\\('needForm'\\);if\\(form\\)return form/);\n"
+              + "assert.match(runnerSource, /entry\\?\\.id!==\\'needForm\\'/);\n"
+              + "assert.doesNotMatch(runnerSource, /#needFormBox \\.v4-need-workspace-summary/);\n"
+          )
+          if test_source.count(anchor) != 1:
+              raise SystemExit('need_form_race_test_anchor_mismatch')
+          test.write_text(test_source.replace(anchor, addition, 1))
+          PY
+
+          node --check tools/run_crm_staging_authenticated_e2e.mjs
+          node --check tools/test_crm_staging_authenticated_e2e_browser_launcher.mjs
+          node tools/test_crm_staging_authenticated_e2e_browser_launcher.mjs
+          git diff --check
+
+      - name: Commit exact fix to branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tools/run_crm_staging_authenticated_e2e.mjs tools/test_crm_staging_authenticated_e2e_browser_launcher.mjs
+          git diff --cached --quiet && { echo 'No patch to commit' >&2; exit 1; }
+          git commit -m 'Fix authenticated E2E need-form readiness race'
+          git push origin HEAD:agent/487-authenticated-staging-e2e
