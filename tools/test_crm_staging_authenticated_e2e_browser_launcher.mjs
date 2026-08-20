@@ -44,7 +44,7 @@ assert.match(runnerSource, /read_table_forbidden/);
 assert.match(runnerSource, /authorization:'Bearer '\+session\.access_token/);
 assert.match(runnerSource, /proxyEvidenceRead\(\{path:endpoint\.pathname\+endpoint\.search/);
 assert.match(runnerSource, /requestUrl\.pathname==='\/rest\/v1\/leader_lead_needs'/);
-assert.match(runnerSource, /if\(isNeedRead\)return proxyEvidenceRead/);
+assert.match(runnerSource, /if\(isNeedRead\)\{progress\('need_native_staging'\);return nativeFetch\(input,init\);\}/);
 assert.match(runnerSource, /v4State:v4RuntimeState/);
 assert.match(runnerSource, /const session=v4RuntimeState\?\.session/);
 assert.doesNotMatch(runnerSource, /await supabaseClient\.auth\.getSession\(\)/);
@@ -52,8 +52,11 @@ assert.doesNotMatch(runnerSource, /supabaseClient\.from\(tableName\)/);
 assert.match(runnerSource, /v4Config\.supabaseUrl\.endsWith\('\/'\)/);
 assert.doesNotMatch(runnerSource, /v4Config\.supabaseUrl\.replace/);
 assert.match(runnerSource, /lead_assignment_event_timeout/);
-assert.match(runnerSource, /need_ui_before_assignment_timeout/);
-assert.match(runnerSource, /need_ui_ready_before_assignment/);
+assert.match(runnerSource, /lead_card_render_event_timeout/);
+assert.match(runnerSource, /lead_card_render_event_wrong_lead/);
+assert.match(runnerSource, /assignment_before_need_ui/);
+assert.doesNotMatch(runnerSource, /need_ui_before_assignment_timeout/);
+assert.doesNotMatch(runnerSource, /need_ui_ready_before_assignment/);
 assert.match(runnerSource, /waitForDocumentEvent/);
 assert.match(runnerSource, /rpc_\$\{workflowCode\}/);
 assert.match(runnerSource, /function proxyEvidenceRead/);
@@ -87,4 +90,4 @@ assert.throws(
   /browser_launch_input_invalid/
 );
 
-console.log('Authenticated staging E2E uses one headed Chrome session and a same-origin, user-JWT-only transport bridge for allowlisted CRM staging calls, then resumes after the required order refresh.');
+console.log('Authenticated staging E2E uses one headed Chrome session, native authenticated needs reads, and a same-origin user-JWT bridge for exact staging workflow RPC, then resumes after the required order refresh.');
