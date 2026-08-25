@@ -42,6 +42,7 @@ assert.match(runnerSource, /progress\('read_headers:'\+tableName\)/);
 assert.match(runnerSource, /progress\('read_body:'\+tableName\)/);
 assert.match(runnerSource, /microtask_hot:/);
 assert.match(runnerSource, /count===25\|\|count===250\|\|count===2500/);
+assert.ok(runnerSource.includes(String.raw`split('\\n')`));
 assert.match(runnerSource, /progress\('read_error:'\+tableName\+':'\+code\)/);
 assert.match(runnerSource, /read_table_forbidden/);
 assert.match(runnerSource, /Authorization:'Bearer '\+session\.access_token/);
