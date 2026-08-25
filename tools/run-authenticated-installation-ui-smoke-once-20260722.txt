@@ -12,4 +12,5 @@ Issue: #487
 Expected branch: agent/487-authenticated-staging-e2e
 Production enabled: false
 Reason: run canonical authenticated CRM E2E with workflow-event dispatch enter/exit boundary markers after settled synthetic JSON response. Production remains unchanged.
-Attempt: 26
+Attempt: 27
+Reason: verify idempotent followup note reconciliation prevents MutationObserver microtask starvation after assignment.

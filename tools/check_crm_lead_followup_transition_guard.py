@@ -65,6 +65,7 @@ require("ui", [
     "subscribeState",
     "evaluateLeadFollowupTransition",
     "evaluateOfferFollowupAction",
+    "if (note.textContent !== message) note.textContent = message;",
 ])
 
 require("loader", [
