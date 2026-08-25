@@ -1,4 +1,4 @@
-name: CRM authenticated E2E need-form race fix once
+name: CRM authenticated E2E transport response fix once
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: crm-auth-e2e-need-form-race-fix-once
+  group: crm-auth-e2e-transport-response-fix-once
   cancel-in-progress: false
 
 jobs:
@@ -22,7 +22,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Apply exact post-assignment render race fix
+      - name: Replace native Response body stream in exact RPC interception
         shell: bash
         run: |
           set -euo pipefail
@@ -31,35 +31,24 @@ jobs:
 
           runner = Path('tools/run_crm_staging_authenticated_e2e.mjs')
           source = runner.read_text()
-          old = (
-              "  progress('assignment_before_need_ui');\n"
-              "  const assignmentEvent=waitForDocumentEvent('leader-v4:lead-workflow-updated','lead_assignment_event_timeout',45000);progress('lead_assign_clicked');click(assignSelector);progress('lead_assign_dispatched');\n"
-              "  const assignmentDetail=await assignmentEvent;assert(clean(assignmentDetail?.lead?.assigned_to),'lead_assignment_event_missing_assignee');assert(clean(assignmentDetail?.lead?.status)==='В работе','lead_assignment_event_status_sync_failed');record('lead_assignment_ui_confirmed');\n"
-          )
-          new = (
-              "  progress('assignment_before_need_ui');\n"
-              "  const refreshedCard=waitForDocumentEvent('leader-v4:lead-card-rendered','lead_card_refresh_after_assignment_timeout',45000);\n"
-              "  const assignmentEvent=waitForDocumentEvent('leader-v4:lead-workflow-updated','lead_assignment_event_timeout',45000);progress('lead_assign_clicked');click(assignSelector);progress('lead_assign_dispatched');\n"
-              "  const assignmentDetail=await assignmentEvent;assert(clean(assignmentDetail?.lead?.assigned_to),'lead_assignment_event_missing_assignee');assert(clean(assignmentDetail?.lead?.status)==='В работе','lead_assignment_event_status_sync_failed');\n"
-              "  const refreshDetail=await refreshedCard;assert(clean(refreshDetail?.lead?.id)===R.leadId,'lead_card_refresh_after_assignment_wrong_lead');\n"
-              "  await waitFor(()=>document.body.dataset.v4Tab==='card'&&location.search.includes('lead='+R.leadId),'lead_card_route_after_assignment_timeout',45000);record('lead_assignment_ui_confirmed');\n"
-          )
+          old = "return Promise.resolve(new Response(JSON.stringify({ok:true,request_id:command.request_id,idempotent_replay:false,lead}),{status:201,headers:{'Content-Type':'application/json','Cache-Control':'no-store'}}));"
+          new = "const synthetic={ok:true,request_id:command.request_id,idempotent_replay:false,lead};progress('workflow_rpc_synthetic_ready');return Promise.resolve({ok:true,status:201,json:async()=>{progress('workflow_rpc_synthetic_json');return synthetic;}});"
           if source.count(old) != 1:
-              raise SystemExit('post_assignment_runner_anchor_mismatch')
+              raise SystemExit('synthetic_response_runner_anchor_mismatch')
           runner.write_text(source.replace(old, new, 1))
 
           test = Path('tools/test_crm_staging_authenticated_e2e_browser_launcher.mjs')
           test_source = test.read_text()
-          anchor = "assert.match(runnerSource, /assignment_before_need_ui/);\n"
-          addition = (
-              anchor
-              + "assert.match(runnerSource, /lead_card_refresh_after_assignment_timeout/);\n"
-              + "assert.match(runnerSource, /lead_card_refresh_after_assignment_wrong_lead/);\n"
-              + "assert.match(runnerSource, /lead_card_route_after_assignment_timeout/);\n"
+          old_test = "assert.match(runnerSource, /status:201,headers:\\{'Content-Type':'application\\/json'/);\n"
+          new_test = (
+              "assert.doesNotMatch(runnerSource, /new Response\\(JSON\\.stringify\\(\\{ok:true,request_id:command\\.request_id/);\n"
+              "assert.match(runnerSource, /workflow_rpc_synthetic_ready/);\n"
+              "assert.match(runnerSource, /workflow_rpc_synthetic_json/);\n"
+              "assert.match(runnerSource, /status:201,json:async/);\n"
           )
-          if test_source.count(anchor) != 1:
-              raise SystemExit('post_assignment_test_anchor_mismatch')
-          test.write_text(test_source.replace(anchor, addition, 1))
+          if test_source.count(old_test) != 1:
+              raise SystemExit('synthetic_response_test_anchor_mismatch')
+          test.write_text(test_source.replace(old_test, new_test, 1))
           PY
 
           node --check tools/run_crm_staging_authenticated_e2e.mjs
@@ -67,7 +56,7 @@ jobs:
           node tools/test_crm_staging_authenticated_e2e_browser_launcher.mjs
           git diff --check
 
-      - name: Commit exact fix to branch
+      - name: Commit exact transport response fix to branch
         shell: bash
         run: |
           set -euo pipefail
@@ -75,5 +64,5 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add tools/run_crm_staging_authenticated_e2e.mjs tools/test_crm_staging_authenticated_e2e_browser_launcher.mjs
           git diff --cached --quiet && { echo 'No patch to commit' >&2; exit 1; }
-          git commit -m 'Wait for post-assignment card render in authenticated E2E'
+          git commit -m 'Use settled JSON response in authenticated E2E bridge'
           git push origin HEAD:agent/487-authenticated-staging-e2e
