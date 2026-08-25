@@ -11,5 +11,5 @@ Authenticated CRM E2E continuation trigger.
 Issue: #487
 Expected branch: agent/487-authenticated-staging-e2e
 Production enabled: false
-Reason: run the canonical authenticated CRM E2E after fixing need-form readiness race in addition to card-render synchronization, assignment-before-needs ordering, and native authenticated leader_lead_needs reads. Production remains unchanged.
-Attempt: 21
+Reason: run canonical authenticated CRM E2E after waiting for the post-assignment lead-card render before need UI interaction. Production remains unchanged.
+Attempt: 22
