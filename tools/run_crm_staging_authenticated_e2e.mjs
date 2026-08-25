@@ -257,7 +257,7 @@ async function localServer(root) {
       if (url.pathname === '/__crm_e2e_progress' && request.method === 'POST') {
         const chunks = []; let size = 0; for await (const chunk of request) { size += chunk.length; if (size > 256) throw new Error('progress_too_large'); chunks.push(chunk); }
         const value = Buffer.concat(chunks).toString('utf8');
-        const match = /^(\\d{4}):([a-z0-9_:-]{1,75})$/i.exec(value);
+        const match = /^(\d{4}):([a-z0-9_:-]{1,75})$/i.exec(value);
         const sequence = Number(match?.[1] || 0);
         if (match && sequence > lastProgressSequence) { lastProgressSequence = sequence; lastProgress = match[2]; lastProgressAt = Date.now(); }
         response.writeHead(204, { 'Cache-Control': 'no-store' }); response.end(); return;

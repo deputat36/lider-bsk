@@ -80,6 +80,7 @@ assert.match(runnerSource, /workflow_event_dispatch_exit/);
 assert.match(runnerSource, /nativeDocumentDispatch/);
 assert.match(runnerSource, /progressSequence/);
 assert.match(runnerSource, /lastProgressSequence/);
+assert.ok(runnerSource.includes("const match = /^(\\d{4}):"));
 assert.match(runnerSource, /lead_assignment_event_resolved/);
 assert.match(runnerSource, /lead_assignment_event_validated/);
 assert.match(runnerSource, /lead_refresh_click_observed/);
