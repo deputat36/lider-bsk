@@ -12,4 +12,4 @@ Issue: #487
 Expected branch: agent/487-authenticated-staging-e2e
 Production enabled: false
 Reason: run canonical authenticated CRM E2E after waiting for the post-assignment lead-card render before need UI interaction. Production remains unchanged.
-Attempt: 22
+Attempt: 23
