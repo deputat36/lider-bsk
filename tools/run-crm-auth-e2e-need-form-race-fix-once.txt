@@ -1,6 +1,6 @@
 Issue: #487
 Branch: agent/487-authenticated-staging-e2e
 Production enabled: false
-Purpose: replace the exact RPC interception native Response body stream with a settled JSON response-like object and add safe progress markers.
+Purpose: add exact browser progress markers before and after leader-v4:lead-workflow-updated dispatch to isolate the remaining synchronous boundary.
 Expected files changed by the one-shot job: 2
-Attempt: 5
+Attempt: 6
