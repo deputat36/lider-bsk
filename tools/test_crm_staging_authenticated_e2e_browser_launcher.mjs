@@ -40,6 +40,8 @@ assert.match(runnerSource, /progress\('read_start:'\+tableName\)/);
 assert.match(runnerSource, /progress\('read_done:'\+tableName\)/);
 assert.match(runnerSource, /progress\('read_headers:'\+tableName\)/);
 assert.match(runnerSource, /progress\('read_body:'\+tableName\)/);
+assert.match(runnerSource, /microtask_hot:/);
+assert.match(runnerSource, /count===25\|\|count===250\|\|count===2500/);
 assert.match(runnerSource, /read_table_forbidden/);
 assert.match(runnerSource, /Authorization:'Bearer '\+session\.access_token/);
 assert.match(runnerSource, /requestUrl\.pathname==='\/rest\/v1\/leader_lead_needs'/);

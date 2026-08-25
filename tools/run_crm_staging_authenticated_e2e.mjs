@@ -90,6 +90,7 @@ const clean=(value)=>String(value??'').trim();
 const nativeFetch=globalThis.fetch.bind(globalThis);
 function assert(value,code){if(!value)throw new Error(code);}
 let progressSequence=0;function progress(name){try{const sequence=String(++progressSequence).padStart(4,'0');navigator.sendBeacon('/__crm_e2e_progress',sequence+':'+String(name).slice(0,75));}catch(_){}}
+const nativeQueueMicrotask=globalThis.queueMicrotask.bind(globalThis);const microtaskCounts=new Map();globalThis.queueMicrotask=(callback)=>{const stackLine=clean(new Error().stack?.split('\n')[2]||callback?.name||'anonymous');const label=clean(stackLine.split('/').pop()).replace(/[^a-z0-9_-]/gi,'_').slice(0,44)||'anonymous';const count=(microtaskCounts.get(label)||0)+1;microtaskCounts.set(label,count);if(count===25||count===250||count===2500)progress('microtask_hot:'+label+':'+count);return nativeQueueMicrotask(callback);};
 function record(name,detail='pass'){steps.push({name,detail});progress(name);}
 document.addEventListener('click',(event)=>{if(event.target?.closest?.('#refreshLeadBtn'))progress('lead_refresh_click_observed');},true);document.addEventListener('leader-v4:lead-card-rendered',()=>progress('lead_card_render_event_observed'));
 const nativeDocumentDispatch=document.dispatchEvent.bind(document);document.dispatchEvent=(event)=>{const workflow=event?.type==='leader-v4:lead-workflow-updated';if(workflow)progress('workflow_event_dispatch_enter');const dispatched=nativeDocumentDispatch(event);if(workflow)progress('workflow_event_dispatch_exit');return dispatched;};
