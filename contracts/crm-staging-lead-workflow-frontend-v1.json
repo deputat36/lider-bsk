@@ -18,7 +18,7 @@
     "browser_direct_write_on_staging": false,
     "browser_server_action": "public.leader_update_lead_workflow_browser_rpc(jsonb)",
     "browser_manual_event_on_staging": false,
-    "server_readback": "existing card refresh after success",
+    "server_readback": "authoritative RPC lead merged and rendered on success; explicit refresh retained for conflicts and recovery",
     "optimistic_concurrency": true,
     "idempotency": true
   },

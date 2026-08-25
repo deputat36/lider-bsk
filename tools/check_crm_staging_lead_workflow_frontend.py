@@ -111,18 +111,27 @@ required_ui = [
     "assigned_to: userId",
     "status: currentStatus === 'Новая' ? 'Ждём ответ' : currentStatus",
     "document.dispatchEvent(new CustomEvent('leader-v4:lead-workflow-updated'",
-    'dispatchWorkflowUpdated({ lead: serverLead, result, action })',
-    'reconcileSuccessfulWorkflow({ serverLead, result, action, fallbackLead: lead })',
+    'const reconciledLead = reconcileSuccessfulWorkflow({ serverLead, result, action, fallbackLead: lead })',
+    'dispatchWorkflowUpdated({ lead: reconciledLead, result, action })',
     'lead workflow persisted but local reconciliation failed',
 ]
 for marker in required_ui:
     if marker not in ui:
         raise SystemExit(f'ui marker missing: {marker}')
 
-ack_position = ui.find('dispatchWorkflowUpdated({ lead: serverLead, result, action })')
-reconcile_position = ui.find('reconcileSuccessfulWorkflow({ serverLead, result, action, fallbackLead: lead })')
-if ack_position < 0 or reconcile_position < 0 or ack_position >= reconcile_position:
-    raise SystemExit('authoritative server acknowledgement must precede local UI reconciliation')
+reconcile_position = ui.find('const reconciledLead = reconcileSuccessfulWorkflow({ serverLead, result, action, fallbackLead: lead })')
+ack_position = ui.find('dispatchWorkflowUpdated({ lead: reconciledLead, result, action })')
+if ack_position < 0 or reconcile_position < 0 or reconcile_position >= ack_position:
+    raise SystemExit('local state must be reconciled before the workflow-updated render event')
+
+lead_card = (ROOT / 'crm/v4/assets/v4/lead-card.js').read_text(encoding='utf-8')
+for marker in [
+    'function renderWorkflowUpdatedLead(event)',
+    "document.addEventListener('leader-v4:lead-workflow-updated', renderWorkflowUpdatedLead)",
+    'renderLead({ ...(v4State.currentLead || {}), ...updatedLead })',
+]:
+    if marker not in lead_card:
+        raise SystemExit(f'lead card reconciliation marker missing: {marker}')
 
 if 'leaderAddLeadEvent' in ui:
     raise SystemExit('staging sidecar must not create a second browser lead event')

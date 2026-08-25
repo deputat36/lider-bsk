@@ -212,7 +212,10 @@ function reconcileSuccessfulWorkflow({ serverLead, result, action, fallbackLead 
     toast('Изменение заявки сохранено. Обновляю карточку.');
     setStatus('Изменение сохранено, обновляю интерфейс', 'warn');
   }
-  refreshAfterResult(action, merged?.id || serverLead?.id || fallbackLead?.id);
+  if (action.context === 'list') {
+    refreshList({ openLeadId: merged?.id || serverLead?.id || fallbackLead?.id });
+  }
+  return merged;
 }
 
 async function saveWorkflow(rawAction) {
@@ -278,8 +281,8 @@ async function saveWorkflow(rawAction) {
       ? result.data.lead
       : lead;
 
-    dispatchWorkflowUpdated({ lead: serverLead, result, action });
-    reconcileSuccessfulWorkflow({ serverLead, result, action, fallbackLead: lead });
+    const reconciledLead = reconcileSuccessfulWorkflow({ serverLead, result, action, fallbackLead: lead });
+    dispatchWorkflowUpdated({ lead: reconciledLead, result, action });
   } catch (_) {
     toast('Не удалось сохранить рабочий маршрут заявки.');
     setStatus('Ошибка защищённого сохранения заявки', 'error');

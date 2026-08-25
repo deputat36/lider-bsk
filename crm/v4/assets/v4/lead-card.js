@@ -246,6 +246,13 @@ function renderLead(lead) {
   document.dispatchEvent(new CustomEvent('leader-v4:lead-card-rendered', { detail: { lead } }));
 }
 
+function renderWorkflowUpdatedLead(event) {
+  const updatedLead = event.detail?.lead;
+  const leadId = String(updatedLead?.id || '').trim();
+  if (!leadId || leadId !== String(v4State.route.leadId || '').trim()) return;
+  renderLead({ ...(v4State.currentLead || {}), ...updatedLead });
+}
+
 async function loadLead(id) {
   if (!id || !v4State.crmReady) return;
   const requestSequence = ++leadLoadSequence;
@@ -479,6 +486,7 @@ function bindLeadCardEvents() {
     if (v4State.route.leadId) loadLead(v4State.route.leadId);
   });
   document.addEventListener('leader-v4:needs-loaded', () => renderPrimaryAction());
+  document.addEventListener('leader-v4:lead-workflow-updated', renderWorkflowUpdatedLead);
 }
 
 function bootLeadCard() {
