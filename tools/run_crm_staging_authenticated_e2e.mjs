@@ -123,8 +123,11 @@ async function assignLead(){
   const assignSelector='[data-lead-primary-action="assign_self"]';
   const cardState=await waitFor(()=>{const error=document.querySelector('#leadCardContent .v4-empty.is-error');if(error)return error;const assign=document.querySelector(assignSelector);return assign&&assign.isConnected&&!assign.disabled?assign:false;},'lead_card_open_timeout',45000);assert(!cardState.classList.contains('v4-empty'),'lead_card_render_error:'+clean(cardState.textContent).slice(0,120));assert(location.search.includes('lead='+R.leadId),'lead_card_route_missing');record('lead_card');
   progress('assignment_before_need_ui');
+  const refreshedCard=waitForDocumentEvent('leader-v4:lead-card-rendered','lead_card_refresh_after_assignment_timeout',45000);
   const assignmentEvent=waitForDocumentEvent('leader-v4:lead-workflow-updated','lead_assignment_event_timeout',45000);progress('lead_assign_clicked');click(assignSelector);progress('lead_assign_dispatched');
-  const assignmentDetail=await assignmentEvent;assert(clean(assignmentDetail?.lead?.assigned_to),'lead_assignment_event_missing_assignee');assert(clean(assignmentDetail?.lead?.status)==='В работе','lead_assignment_event_status_sync_failed');record('lead_assignment_ui_confirmed');
+  const assignmentDetail=await assignmentEvent;assert(clean(assignmentDetail?.lead?.assigned_to),'lead_assignment_event_missing_assignee');assert(clean(assignmentDetail?.lead?.status)==='В работе','lead_assignment_event_status_sync_failed');
+  const refreshDetail=await refreshedCard;assert(clean(refreshDetail?.lead?.id)===R.leadId,'lead_card_refresh_after_assignment_wrong_lead');
+  await waitFor(()=>document.body.dataset.v4Tab==='card'&&location.search.includes('lead='+R.leadId),'lead_card_route_after_assignment_timeout',45000);record('lead_assignment_ui_confirmed');
 }
 
 async function createNeedAndCalculation(){
