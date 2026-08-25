@@ -22,7 +22,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Apply exact harness race fix
+      - name: Apply exact post-assignment render race fix
         shell: bash
         run: |
           set -euo pipefail
@@ -31,23 +31,32 @@ jobs:
 
           runner = Path('tools/run_crm_staging_authenticated_e2e.mjs')
           source = runner.read_text()
-          old = "if(!document.getElementById('needForm')){await waitFor(()=>{const node=document.querySelector('button[data-action=\"open-create-need\"]');return document.body.dataset.v4Tab==='card'&&location.search.includes('lead='+R.leadId)&&document.querySelector('#needFormBox .v4-need-workspace-summary')&&node&&node.isConnected&&!node.disabled;},'need_create_entry_missing',45000);click('button[data-action=\"open-create-need\"]');}"
-          new = "if(!document.getElementById('needForm')){const entry=await waitFor(()=>{const form=document.getElementById('needForm');if(form)return form;const node=document.querySelector('button[data-action=\"open-create-need\"]');return document.body.dataset.v4Tab==='card'&&location.search.includes('lead='+R.leadId)&&node&&node.isConnected&&!node.disabled?node:false;},'need_create_entry_missing',45000);if(entry?.id!=='needForm'&&!document.getElementById('needForm'))click('button[data-action=\"open-create-need\"]');}"
+          old = """  progress('assignment_before_need_ui');
+  const assignmentEvent=waitForDocumentEvent('leader-v4:lead-workflow-updated','lead_assignment_event_timeout',45000);progress('lead_assign_clicked');click(assignSelector);progress('lead_assign_dispatched');
+  const assignmentDetail=await assignmentEvent;assert(clean(assignmentDetail?.lead?.assigned_to),'lead_assignment_event_missing_assignee');assert(clean(assignmentDetail?.lead?.status)==='В работе','lead_assignment_event_status_sync_failed');record('lead_assignment_ui_confirmed');
+"""
+          new = """  progress('assignment_before_need_ui');
+  const refreshedCard=waitForDocumentEvent('leader-v4:lead-card-rendered','lead_card_refresh_after_assignment_timeout',45000);
+  const assignmentEvent=waitForDocumentEvent('leader-v4:lead-workflow-updated','lead_assignment_event_timeout',45000);progress('lead_assign_clicked');click(assignSelector);progress('lead_assign_dispatched');
+  const assignmentDetail=await assignmentEvent;assert(clean(assignmentDetail?.lead?.assigned_to),'lead_assignment_event_missing_assignee');assert(clean(assignmentDetail?.lead?.status)==='В работе','lead_assignment_event_status_sync_failed');
+  const refreshDetail=await refreshedCard;assert(clean(refreshDetail?.lead?.id)===R.leadId,'lead_card_refresh_after_assignment_wrong_lead');
+  await waitFor(()=>document.body.dataset.v4Tab==='card'&&location.search.includes('lead='+R.leadId),'lead_card_route_after_assignment_timeout',45000);record('lead_assignment_ui_confirmed');
+"""
           if source.count(old) != 1:
-              raise SystemExit('need_form_race_runner_anchor_mismatch')
+              raise SystemExit('post_assignment_runner_anchor_mismatch')
           runner.write_text(source.replace(old, new, 1))
 
           test = Path('tools/test_crm_staging_authenticated_e2e_browser_launcher.mjs')
           test_source = test.read_text()
-          anchor = "assert.match(runnerSource, /progress\\('need_ui_wait'\\)/);\n"
+          anchor = "assert.match(runnerSource, /assignment_before_need_ui/);\n"
           addition = (
               anchor
-              + "assert.match(runnerSource, /const form=document\\.getElementById\\('needForm'\\);if\\(form\\)return form/);\n"
-              + "assert.match(runnerSource, /entry\\?\\.id!==\\'needForm\\'/);\n"
-              + "assert.doesNotMatch(runnerSource, /#needFormBox \\.v4-need-workspace-summary/);\n"
+              + "assert.match(runnerSource, /lead_card_refresh_after_assignment_timeout/);\n"
+              + "assert.match(runnerSource, /lead_card_refresh_after_assignment_wrong_lead/);\n"
+              + "assert.match(runnerSource, /lead_card_route_after_assignment_timeout/);\n"
           )
           if test_source.count(anchor) != 1:
-              raise SystemExit('need_form_race_test_anchor_mismatch')
+              raise SystemExit('post_assignment_test_anchor_mismatch')
           test.write_text(test_source.replace(anchor, addition, 1))
           PY
 
@@ -64,5 +73,5 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add tools/run_crm_staging_authenticated_e2e.mjs tools/test_crm_staging_authenticated_e2e_browser_launcher.mjs
           git diff --cached --quiet && { echo 'No patch to commit' >&2; exit 1; }
-          git commit -m 'Fix authenticated E2E need-form readiness race'
+          git commit -m 'Wait for post-assignment card render in authenticated E2E'
           git push origin HEAD:agent/487-authenticated-staging-e2e
