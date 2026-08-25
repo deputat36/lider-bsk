@@ -75,6 +75,9 @@ assert.doesNotMatch(runnerSource, /form\.action='\/__crm_e2e_staging_rpc_proxy'/
 assert.doesNotMatch(runnerSource, /new Response\(JSON\.stringify\(\{ok:true,request_id:command\.request_id/);
 assert.match(runnerSource, /workflow_rpc_synthetic_ready/);
 assert.match(runnerSource, /workflow_rpc_synthetic_json/);
+assert.match(runnerSource, /workflow_event_dispatch_enter/);
+assert.match(runnerSource, /workflow_event_dispatch_exit/);
+assert.match(runnerSource, /nativeDocumentDispatch/);
 assert.match(runnerSource, /status:201,json:async/);
 assert.match(runnerSource, /final_lead_assignment_persistence_failed/);
 assert.match(runnerSource, /lead_assignment_db_persisted_final/);
