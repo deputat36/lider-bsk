@@ -88,8 +88,9 @@ const ids={};
 const sleep=(ms)=>new Promise((resolve)=>setTimeout(resolve,ms));
 const clean=(value)=>String(value??'').trim();
 function assert(value,code){if(!value)throw new Error(code);}
-function progress(name){try{navigator.sendBeacon('/__crm_e2e_progress',String(name).slice(0,80));}catch(_){}}
+let progressSequence=0;function progress(name){try{const sequence=String(++progressSequence).padStart(4,'0');navigator.sendBeacon('/__crm_e2e_progress',sequence+':'+String(name).slice(0,75));}catch(_){}}
 function record(name,detail='pass'){steps.push({name,detail});progress(name);}
+document.addEventListener('click',(event)=>{if(event.target?.closest?.('#refreshLeadBtn'))progress('lead_refresh_click_observed');},true);document.addEventListener('leader-v4:lead-card-rendered',()=>progress('lead_card_render_event_observed'));
 const nativeDocumentDispatch=document.dispatchEvent.bind(document);document.dispatchEvent=(event)=>{const workflow=event?.type==='leader-v4:lead-workflow-updated';if(workflow)progress('workflow_event_dispatch_enter');const dispatched=nativeDocumentDispatch(event);if(workflow)progress('workflow_event_dispatch_exit');return dispatched;};
 function proxyEvidenceRead(payload){return new Promise((resolve,reject)=>{const xhr=new XMLHttpRequest();xhr.open('POST','/__crm_e2e_staging_request_proxy',true);xhr.timeout=25000;xhr.setRequestHeader('Content-Type','application/json');xhr.onload=()=>resolve(new Response(xhr.responseText||'',{status:xhr.status,headers:{'Content-Type':xhr.getResponseHeader('content-type')||'application/json','Cache-Control':'no-store'}}));xhr.onerror=()=>reject(new Error('evidence_read_xhr_network_error'));xhr.ontimeout=()=>reject(new Error('evidence_read_xhr_timeout'));xhr.send(JSON.stringify(payload));});}
 function instrumentTransportProbe(){const nativeFetch=globalThis.fetch;if(typeof nativeFetch!=='function')return;globalThis.fetch=(input,init)=>{let requestUrl;try{requestUrl=new URL(String(input?.url||input||''));}catch(_){return nativeFetch(input,init);}const exactStaging=requestUrl.hostname==='${STAGING_REF}.supabase.co';const headers=Object.fromEntries(new Headers(init?.headers||input?.headers||{}).entries());const method=clean(init?.method||input?.method||'GET').toUpperCase();const isNeedRead=exactStaging&&requestUrl.pathname==='/rest/v1/leader_lead_needs'&&method==='GET';if(isNeedRead){progress('need_native_staging');return nativeFetch(input,init);}const isWorkflowRpc=exactStaging&&requestUrl.pathname==='/rest/v1/rpc/leader_update_lead_workflow_browser_rpc';if(!isWorkflowRpc)return nativeFetch(input,init);const rpcBody=JSON.parse(typeof init?.body==='string'?init.body:'{}');const accepted=navigator.sendBeacon('/__crm_e2e_staging_request_proxy',JSON.stringify({path:requestUrl.pathname+requestUrl.search,method,headers,body:JSON.stringify(rpcBody)}));if(!accepted)return Promise.reject(new Error('staging_rpc_bridge_rejected'));const command=rpcBody.p_request||{};const payload=command.payload||{};const lead={id:payload.lead_id,updated_at:new Date(Date.now()+1000).toISOString(),...(payload.patch||{})};const synthetic={ok:true,request_id:command.request_id,idempotent_replay:false,lead};progress('workflow_rpc_synthetic_ready');return Promise.resolve({ok:true,status:201,json:async()=>{progress('workflow_rpc_synthetic_json');return synthetic;}});};}
@@ -126,8 +127,8 @@ async function assignLead(){
   progress('assignment_before_need_ui');
   const refreshedCard=waitForDocumentEvent('leader-v4:lead-card-rendered','lead_card_refresh_after_assignment_timeout',45000);
   const assignmentEvent=waitForDocumentEvent('leader-v4:lead-workflow-updated','lead_assignment_event_timeout',45000);progress('lead_assign_clicked');click(assignSelector);progress('lead_assign_dispatched');
-  const assignmentDetail=await assignmentEvent;assert(clean(assignmentDetail?.lead?.assigned_to),'lead_assignment_event_missing_assignee');assert(clean(assignmentDetail?.lead?.status)==='В работе','lead_assignment_event_status_sync_failed');
-  const refreshDetail=await refreshedCard;assert(clean(refreshDetail?.lead?.id)===R.leadId,'lead_card_refresh_after_assignment_wrong_lead');
+  const assignmentDetail=await assignmentEvent;progress('lead_assignment_event_resolved');assert(clean(assignmentDetail?.lead?.assigned_to),'lead_assignment_event_missing_assignee');assert(clean(assignmentDetail?.lead?.status)==='В работе','lead_assignment_event_status_sync_failed');progress('lead_assignment_event_validated');
+  const refreshDetail=await refreshedCard;progress('lead_card_refresh_event_resolved');assert(clean(refreshDetail?.lead?.id)===R.leadId,'lead_card_refresh_after_assignment_wrong_lead');
   await waitFor(()=>document.body.dataset.v4Tab==='card'&&location.search.includes('lead='+R.leadId),'lead_card_route_after_assignment_timeout',45000);record('lead_assignment_ui_confirmed');
 }
 
@@ -243,6 +244,7 @@ function exactStagingRequest({ url, method, apikey, authorization, body = '', re
 async function localServer(root) {
   const safeRoot = path.resolve(root);
   let lastProgress = 'not_started';
+  let lastProgressSequence = 0;
   let lastProgressAt = Date.now();
   let lastTransport = 'none';
   let lastTransportAt = Date.now();
@@ -255,7 +257,9 @@ async function localServer(root) {
       if (url.pathname === '/__crm_e2e_progress' && request.method === 'POST') {
         const chunks = []; let size = 0; for await (const chunk of request) { size += chunk.length; if (size > 256) throw new Error('progress_too_large'); chunks.push(chunk); }
         const value = Buffer.concat(chunks).toString('utf8');
-        if (/^[a-z0-9_:-]{1,80}$/i.test(value)) { lastProgress = value; lastProgressAt = Date.now(); }
+        const match = /^(\\d{4}):([a-z0-9_:-]{1,75})$/i.exec(value);
+        const sequence = Number(match?.[1] || 0);
+        if (match && sequence > lastProgressSequence) { lastProgressSequence = sequence; lastProgress = match[2]; lastProgressAt = Date.now(); }
         response.writeHead(204, { 'Cache-Control': 'no-store' }); response.end(); return;
       }
       if (url.pathname === '/__crm_e2e_result' && request.method === 'GET') {
