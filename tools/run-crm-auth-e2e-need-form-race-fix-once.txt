@@ -1,6 +1,6 @@
 Issue: #487
 Branch: agent/487-authenticated-staging-e2e
 Production enabled: false
-Purpose: apply the exact post-assignment card-render wait before need UI in authenticated E2E.
+Purpose: replace the exact RPC interception native Response body stream with a settled JSON response-like object and add safe progress markers.
 Expected files changed by the one-shot job: 2
-Attempt: 3
+Attempt: 4
