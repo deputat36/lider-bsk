@@ -12,4 +12,4 @@ Issue: #487
 Expected branch: agent/487-authenticated-staging-e2e
 Production enabled: false
 Reason: run canonical authenticated CRM E2E after replacing the exact RPC interception Response body stream with a settled JSON response-like object. Production remains unchanged.
-Attempt: 24
+Attempt: 25
