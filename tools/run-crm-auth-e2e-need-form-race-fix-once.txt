@@ -3,4 +3,4 @@ Branch: agent/487-authenticated-staging-e2e
 Production enabled: false
 Purpose: replace the exact RPC interception native Response body stream with a settled JSON response-like object and add safe progress markers.
 Expected files changed by the one-shot job: 2
-Attempt: 4
+Attempt: 5
