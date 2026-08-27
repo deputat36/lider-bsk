@@ -83,7 +83,7 @@ const createdClient = clientWith({
     ok: true,
     request_id: ids.request,
     idempotent_replay: false,
-    job: { id: ids.job, production_status: 'В очереди', contractor_cost: 9000, client_total: 14000 },
+    entity: { id: ids.job, production_status: 'В очереди', contractor_cost: 9000, client_total: 14000 },
     order: { id: ids.order, production_status: 'В очереди', client_phone: '+70000000000', profit: 5000 }
   },
   error: null
@@ -116,7 +116,7 @@ assert.equal(JSON.stringify(created.data).includes('client_phone'), false);
 assert.equal(JSON.stringify(created.data).includes('profit'), false);
 
 const replay = await invokeStagingProductionJob({
-  client: clientWith({ data: { ok: true, request_id: ids.request, idempotent_replay: true, job: { id: ids.job } }, error: null }),
+  client: clientWith({ data: { ok: true, request_id: ids.request, idempotent_replay: true, entity: { id: ids.job } }, error: null }),
   supabaseUrl: stagingUrl,
   canWrite: true,
   draft,
@@ -126,6 +126,7 @@ const replay = await invokeStagingProductionJob({
 assert.equal(replay.ok, true);
 assert.equal(replay.status, 200);
 assert.equal(replay.replay, true);
+assert.equal(replay.jobId, ids.job);
 assert.match(replay.message, /без дубликата/i);
 
 async function edgeFailure(message) {

@@ -463,3 +463,5 @@ Supabase baseline РА «Лидер»: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-
 - 2026-08-27 (#487/#488): authenticated Chrome reached approved offer and order creation. Corrected E2E order read to real columns; related offer order card now uses existing role-filtered staging orders list, preserving restricted browser grants. Production unchanged.
 
 - 2026-08-27 (#487/#488): Chrome confirmed order, direct orders, Back/Forward/reopen and authenticated Refresh. Design create conflict traced to draft-model timestamp truncation; preserve opaque PostgreSQL revision in design/production models with microsecond tests.
+
+- 2026-08-27 (#487/#488): real production create succeeds; corrected frontend entity/job response mismatch and replay checks, related-order staging read now uses role-filtered Edge. Installation create replay now requires a nonempty matching entity ID.

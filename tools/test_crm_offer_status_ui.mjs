@@ -74,3 +74,15 @@ assert.equal(await fetchStagingOrder(null), null);
 assert.equal((await fetchStagingOrder('order-1')).status, 'Новый');
 assert.equal(await fetchStagingOrder('missing'), null);
 assert.equal(serverReads, 2);
+
+const ordersSource = readFileSync(new URL('../crm/v4/assets/v4/orders.js', import.meta.url), 'utf8');
+const loadOrdersFunction = ordersSource.slice(ordersSource.indexOf('async function loadOrders('), ordersSource.indexOf('async function loadOrderBundle('));
+const loadRelatedOrders = runInNewContext(loadOrdersFunction + ';loadOrders', {
+  URL, V4_CONFIG: { supabaseUrl: 'https://otulfnouybahfnsycxqn.supabase.co' },
+  ensureHost() {}, linkedOrderIds: () => ['order-1'], v4State: { route: { leadId: 'lead-1' }, crmReady: true },
+  renderOrders() {}, orders: [], ordersBusy: false, ordersError: null,
+  friendlyError: (error) => { throw error; },
+  supabaseClient: { from() { throw new Error('direct_staging_related_order_read_forbidden'); } },
+  invokeLeaderFunction: async () => ({ orders: [{id:'order-1'}, {id:'unrelated'}] })
+});
+assert.deepEqual(JSON.parse(JSON.stringify(await loadRelatedOrders())), [{ id: 'order-1' }]);

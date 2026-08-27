@@ -134,7 +134,7 @@ const TAB_REGISTRY = Object.freeze({
         () => import('./production-alerts-v1.js?v=20260805-tab-loader-1'),
         () => import('./production-job-card-v2.js?v=20260827-order-read-1'),
         () => import('./installation-job-card-v2.js?v=20260805-tab-loader-1'),
-        () => import('./installation-job-staging-create-v1.js?v=20260809-auth-e2e-1')
+        () => import('./installation-job-staging-create-v1.js?v=20260827-entity-1')
       ]
     ),
     mount: (module) => module.mount?.(),
@@ -242,7 +242,7 @@ async function loadLeadCardBundle() {
       import('./calculation-draft-review-v1.js?v=20260805-tab-loader-1'),
       import('./calculation-contractor-quote-v1.js?v=20260805-tab-loader-1'),
       import('./offers.js?v=20260805-tab-loader-1'),
-      import('./orders.js?v=20260805-tab-loader-1'),
+      import('./orders.js?v=20260827-order-read-1'),
       import('./offer-card-v1.js?v=20260827-order-read-1'),
       import('./offer-print.js?v=20260805-tab-loader-1'),
       import('./offer-order-create-v1.js?v=20260805-tab-loader-1'),

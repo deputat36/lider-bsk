@@ -30,7 +30,7 @@ SOURCES = {
     },
     'loader': {
         'path': ROOT / 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js',
-        'blob_sha': '768bf45186c632b610a410e223546f5ff3586c2a',
+        'blob_sha': '43f5e029236199ad7022032a6215c04282f5f40a',
     },
     'index': {
         'path': ROOT / 'crm/v4/index.html',
@@ -352,7 +352,7 @@ def candidate_loader(source: str) -> str:
     )
     text = replace_once(
         text,
-        "\n        () => import('./installation-job-staging-create-v1.js?v=20260809-auth-e2e-1')",
+        "\n        () => import('./installation-job-staging-create-v1.js?v=20260827-entity-1')",
         '',
         'remove staging-only installation create entrypoint',
     )

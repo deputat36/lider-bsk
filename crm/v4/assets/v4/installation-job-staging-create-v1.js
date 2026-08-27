@@ -66,12 +66,14 @@ async function create() {
     };
     const result = await supabaseClient.functions.invoke('leader-crm-installation-create', { body: command });
     if (result.error || result.data?.ok !== true) throw new Error(result.data?.error?.code || result.error?.message || 'installation_create_failed');
+    const createdJobId = result.data?.entity?.id || result.data?.job?.id;
+    if (!createdJobId) throw new Error('installation_response_entity_missing');
     const replay = await supabaseClient.functions.invoke('leader-crm-installation-create', { body: {
       ...command,
       request_id: globalThis.crypto.randomUUID()
     } });
     if (replay.error || replay.data?.ok !== true || replay.data?.idempotent_replay !== true
-      || replay.data?.job?.id !== result.data?.job?.id) {
+      || (replay.data?.entity?.id || replay.data?.job?.id) !== createdJobId) {
       throw new Error(replay.data?.error?.code || replay.error?.message || 'installation_replay_verification_failed');
     }
     toast(result.data.idempotent_replay ? 'Монтаж уже существует — дубль не создан' : 'Монтаж создан, безопасный повтор подтверждён');
