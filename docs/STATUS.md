@@ -465,3 +465,5 @@ Supabase baseline РА «Лидер»: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-
 - 2026-08-27 (#487/#488): Chrome confirmed order, direct orders, Back/Forward/reopen and authenticated Refresh. Design create conflict traced to draft-model timestamp truncation; preserve opaque PostgreSQL revision in design/production models with microsecond tests.
 
 - 2026-08-27 (#487/#488): real production create succeeds; corrected frontend entity/job response mismatch and replay checks, related-order staging read now uses role-filtered Edge. Installation create replay now requires a nonempty matching entity ID.
+
+- 2026-08-27 (#487/#488): Chrome passed canonical layout rejection, approval, production creation/replay and stale guard. Production card staging reads/controls aligned to existing narrow ACL; unread internal notes are never overwritten by status saves. Added order replay and premature-installation negative evidence.

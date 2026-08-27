@@ -22,6 +22,7 @@ let currentBundle = null;
 
 function jobFields() {
   const fields = [...JOB_FIELDS_SAFE];
+  if (isStagingProductionEnvironment(V4_CONFIG.supabaseUrl)) return fields.join(',');
   if (canViewV4Costs()) fields.push('contractor_cost');
   if (canViewV4InternalNotes()) fields.push('internal_comment');
   return fields.join(',');
@@ -39,6 +40,7 @@ function itemFields() {
 }
 function eventFields() {
   const fields = [...EVENT_FIELDS_SAFE];
+  if (isStagingProductionEnvironment(V4_CONFIG.supabaseUrl)) return fields.join(',');
   if (canViewV4InternalNotes()) fields.push('created_by_email');
   return fields.join(',');
 }
@@ -136,8 +138,8 @@ function renderCard(bundle) {
   currentBundle = bundle;
   const { job, order, items, events } = bundle;
   const data = canViewV4InternalNotes() ? dataObject(order?.data) : {};
-  const costStat = canViewV4Costs() ? `<div data-v4-cost-sensitive><span>Себестоимость</span><b>${money(job.contractor_cost)}</b></div>` : '';
-  const internalField = canViewV4InternalNotes() ? `<label class="wide" data-v4-internal-sensitive>Внутренний комментарий<textarea id="prodJobInternalComment">${esc(job.internal_comment || '')}</textarea></label>` : '';
+  const costStat = !isStagingProductionEnvironment(V4_CONFIG.supabaseUrl) && canViewV4Costs() ? `<div data-v4-cost-sensitive><span>Себестоимость</span><b>${money(job.contractor_cost)}</b></div>` : '';
+  const internalField = !isStagingProductionEnvironment(V4_CONFIG.supabaseUrl) && canViewV4InternalNotes() ? `<label class="wide" data-v4-internal-sensitive>Внутренний комментарий<textarea id="prodJobInternalComment">${esc(job.internal_comment || '')}</textarea></label>` : '';
   const orderButton = order && canOpenV4Tab('orders') ? `<button type="button" data-open-order="${esc(order.id)}">Открыть заказ</button>` : '';
   const statusModel = productionStatusUiModel(job.production_status);
   const statusDisplay = statusModel.known && statusModel.legacy ? `${statusModel.raw} (legacy: ${statusModel.label})` : statusModel.raw;
@@ -177,7 +179,7 @@ async function saveJob(jobId) {
       updated_at: nowIso(),
       ...productionStatusTimestampPatch(transition, old, nowIso())
     };
-    if (canViewV4InternalNotes()) patch.internal_comment = field('prodJobInternalComment') || null;
+    if (!isStagingProductionEnvironment(V4_CONFIG.supabaseUrl) && canViewV4InternalNotes()) patch.internal_comment = field('prodJobInternalComment') || null;
     if (isStagingProductionEnvironment(V4_CONFIG.supabaseUrl)) {
       const result = await supabaseClient.functions.invoke('leader-crm-production', { body: {
         action: 'production_job.update',
