@@ -84,6 +84,7 @@ let v4Config;
 let v4RuntimeState;
 const started=Date.now();
 const steps=[];
+const networkErrors=[];
 const ids={};
 const sleep=(ms)=>new Promise((resolve)=>setTimeout(resolve,ms));
 const clean=(value)=>String(value??'').trim();
@@ -94,7 +95,18 @@ const nativeQueueMicrotask=globalThis.queueMicrotask.bind(globalThis);const micr
 function record(name,detail='pass'){steps.push({name,detail});progress(name);}
 document.addEventListener('click',(event)=>{if(event.target?.closest?.('#refreshLeadBtn'))progress('lead_refresh_click_observed');},true);document.addEventListener('leader-v4:lead-card-rendered',()=>progress('lead_card_render_event_observed'));
 const nativeDocumentDispatch=document.dispatchEvent.bind(document);document.dispatchEvent=(event)=>{const workflow=event?.type==='leader-v4:lead-workflow-updated';if(workflow)progress('workflow_event_dispatch_enter');const dispatched=nativeDocumentDispatch(event);if(workflow)progress('workflow_event_dispatch_exit');return dispatched;};
-function instrumentTransportProbe(){globalThis.fetch=(input,init)=>{let requestUrl;try{requestUrl=new URL(String(input?.url||input||''));}catch(_){return nativeFetch(input,init);}const isWorkflowRpc=requestUrl.origin==='${STAGING_URL}'&&requestUrl.pathname==='/rest/v1/rpc/leader_update_lead_workflow_browser_rpc';if(!isWorkflowRpc)return nativeFetch(input,init);const headers=Object.fromEntries(new Headers(init?.headers||input?.headers||{}).entries());return nativeFetch('/__crm_e2e_staging_request_proxy',{method:'POST',headers:{'Content-Type':'application/json'},signal:init?.signal,body:JSON.stringify({path:requestUrl.pathname+requestUrl.search,method:clean(init?.method||input?.method||'POST').toUpperCase(),headers,body:typeof init?.body==='string'?init.body:''})});};}
+function instrumentTransportProbe(){
+  globalThis.fetch=async(input,init)=>{
+    let requestUrl;try{requestUrl=new URL(String(input?.url||input||''));}catch(_){return nativeFetch(input,init);}
+    const exactStaging=requestUrl.origin==='${STAGING_URL}';
+    const isWorkflowRpc=exactStaging&&requestUrl.pathname==='/rest/v1/rpc/leader_update_lead_workflow_browser_rpc';
+    let response;
+    if(isWorkflowRpc){const headers=Object.fromEntries(new Headers(init?.headers||input?.headers||{}).entries());response=await nativeFetch('/__crm_e2e_staging_request_proxy',{method:'POST',headers:{'Content-Type':'application/json'},signal:init?.signal,body:JSON.stringify({path:requestUrl.pathname+requestUrl.search,method:clean(init?.method||input?.method||'POST').toUpperCase(),headers,body:typeof init?.body==='string'?init.body:''})});}
+    else response=await nativeFetch(input,init);
+    if(exactStaging&&!response.ok){let data={};try{data=await response.clone().json();}catch(_){}const raw=data?.error?.code||data?.code||data?.error;const code=typeof raw==='string'&&/^[a-z0-9_]+$/i.test(raw)?raw:'http_error';const path=requestUrl.pathname.split('/').pop();networkErrors.push({path,status:response.status,code});progress('http_error:'+path+':'+response.status+':'+code);}
+    return response;
+  };
+}
 async function waitFor(check,code,timeout=30000){const begin=Date.now();while(Date.now()-begin<timeout){const value=await check();if(value)return value;await sleep(50);}throw new Error(code);}
 function waitForDocumentEvent(name,code,timeout=30000){return new Promise((resolve,reject)=>{let timer=0;const done=(event)=>{clearTimeout(timer);document.removeEventListener(name,done);resolve(event?.detail||{});};timer=setTimeout(()=>{document.removeEventListener(name,done);reject(new Error(code));},timeout);document.addEventListener(name,done,{once:true});});}
 function setValue(selector,value,event='input'){const node=document.querySelector(selector);assert(node,'missing:'+selector);node.value=value;node.dispatchEvent(new Event(event,{bubbles:true}));return node;}
@@ -146,7 +158,7 @@ async function createNeedAndCalculation(){
   const calculation=await waitFor(async()=>{try{const rows=await table('leader_lead_calculations','id,lead_id,need_id,title,version_number,client_total,contractor_cost,profit,status,updated_at',{lead_id:R.leadId});return rows.length===1?rows[0]:false;}catch(_){return false;}},'calculation_create_timeout',45000);ids.calculation=calculation.id;assert(Number(calculation.client_total)===1600&&Number(calculation.contractor_cost)===1000&&Number(calculation.profit)===600,'calculation_server_totals_failed');await assertCount('leader_lead_calculation_items',{calculation_id:calculation.id},1);record('calculation_create_atomic');
   await waitFor(()=>document.querySelector('[data-calc-version-source="'+calculation.id+'"]'),'calculation_version_entry_missing');click('[data-calc-version-source="'+calculation.id+'"]');await waitFor(()=>document.getElementById('calculationVersionEditor'),'calculation_version_editor_missing');
   setValue('[data-version-field="title"]',R.marker+' calculation v2');setValue('[data-version-row-field="client_price"][data-index="0"]','1700');click('[data-version-save]');
-  const versions=await waitFor(async()=>{try{const rows=await table('leader_lead_calculations','id,version_number,is_current,client_total,profit,updated_at',{lead_id:R.leadId});return rows.length===2?rows:false;}catch(_){return false;}},'calculation_version_timeout',45000);const current=versions.find((row)=>row.is_current===true)||versions.sort((a,b)=>Number(b.version_number)-Number(a.version_number))[0];ids.calculation=current.id;assert(Number(current.version_number)===2&&Number(current.client_total)===1700,'calculation_version_projection_failed');record('calculation_version');
+  const versions=await waitFor(async()=>{try{const rows=await table('leader_lead_calculations','id,version_number,is_current_revision,client_total,profit,updated_at',{lead_id:R.leadId});return rows.length===2?rows:false;}catch(_){return false;}},'calculation_version_timeout',45000);const current=versions.find((row)=>row.is_current_revision===true)||versions.sort((a,b)=>Number(b.version_number)-Number(a.version_number))[0];ids.calculation=current.id;assert(Number(current.version_number)===2&&Number(current.client_total)===1700,'calculation_version_projection_failed');record('calculation_version');
 }
 
 async function createOfferAndOrder(){
@@ -163,7 +175,7 @@ async function createOfferAndOrder(){
 async function navigationAndRefresh(){
   click('[data-v4-tab-button="orders"]');await waitFor(()=>document.body.dataset.v4Tab==='orders'&&location.search.includes('tab=orders'),'orders_direct_route_missing');await waitFor(()=>document.querySelector('.v4-orders-fast-card')?.textContent.includes(R.marker),'direct_orders_data_missing',30000);record('direct_orders');
   click('[data-v4-tab-button="leads"]');await waitFor(()=>document.body.dataset.v4Tab==='leads','leads_reopen_failed');history.back();await waitFor(()=>document.body.dataset.v4Tab==='orders','history_back_failed');history.forward();await waitFor(()=>document.body.dataset.v4Tab==='leads','history_forward_failed');click('[data-v4-tab-button="orders"]');await waitFor(()=>document.body.dataset.v4Tab==='orders','orders_second_open_failed');record('back_forward_reopen');
-  sessionStorage.setItem('leaderCrmAuthenticatedE2eResume',JSON.stringify({stage:'after_refresh',orderId:ids.order,steps}));location.reload();
+  sessionStorage.setItem('leaderCrmAuthenticatedE2eResume',JSON.stringify({stage:'after_refresh',orderId:ids.order,steps,networkErrors}));location.reload();
   await new Promise(()=>{});
 }
 
@@ -184,11 +196,12 @@ async function designProductionInstallation(orderId){
   const installation=await waitFor(async()=>{try{const rows=await table('leader_installation_jobs','id,order_id,production_job_id,install_status,updated_at',{order_id:orderId});return rows.length===1?rows[0]:false;}catch(_){return false;}},'installation_create_timeout',45000);ids.installation=installation.id;await assertCount('leader_installation_jobs',{order_id:orderId},1);record('installation_create_idempotent_replay');
   await waitFor(()=>document.querySelector('[data-production-light-kind="installation"]'),'installation_tab_missing');click('[data-production-light-kind="installation"]');await waitFor(()=>document.querySelector('[data-open-installation-job-card="'+installation.id+'"]'),'installation_board_missing');click('[data-open-installation-job-card="'+installation.id+'"]');await waitFor(()=>document.getElementById('installJobStatus'),'installation_card_missing');record('installation_card');
   const finalOrder=await one('leader_orders','id,production_status,installation_status,layout_status,status,updated_at',{id:orderId});assert(finalOrder.production_status==='Готово'&&finalOrder.installation_status,'final_order_projection_failed');
-  const finalLead=await one('leader_leads','id,status,assigned_to,updated_at',{id:R.leadId});assert(clean(finalLead.assigned_to)&&finalLead.status==='В работе','final_lead_assignment_persistence_failed');record('lead_assignment_db_persisted_final');
+  const finalLead=await one('leader_leads','id,status,assigned_to,converted_order_id,updated_at',{id:R.leadId});assert(clean(finalLead.assigned_to)===clean(v4RuntimeState.user?.id)&&finalLead.status==='Создан заказ'&&finalLead.converted_order_id===orderId,'final_lead_assignment_persistence_failed');record('lead_assignment_db_persisted_final');
   const counts={needs:(await table('leader_lead_needs','id',{lead_id:R.leadId})).length,calculations:(await table('leader_lead_calculations','id',{lead_id:R.leadId})).length,offers:(await table('leader_commercial_offers','id',{lead_id:R.leadId})).length,orders:(await table('leader_orders','id',{lead_id:R.leadId})).length,design_tasks:(await table('leader_design_tasks','id',{order_id:orderId})).length,production_jobs:(await table('leader_production_jobs','id',{order_id:orderId})).length,installation_jobs:(await table('leader_installation_jobs','id',{order_id:orderId})).length};
   assert(JSON.stringify(counts)===JSON.stringify({needs:1,calculations:2,offers:1,orders:1,design_tasks:1,production_jobs:1,installation_jobs:1}),'final_counts_mismatch');
   const productionRequests=performance.getEntriesByType('resource').map((item)=>item.name).filter((name)=>name.includes('${PRODUCTION_REF}'));assert(productionRequests.length===0,'production_network_request_detected');
-  output('passed',{phase:'main',authenticated:true,role:'manager',browser_actions:true,refresh:true,back_forward:true,direct_orders:true,review_guard:true,production_replay:true,stale_guard:true,installation_replay:true,projection_sync:true,counts,steps,duration_ms:Date.now()-started,cleanup_required:true});
+  assert(networkErrors.every((e)=>e.path==='leader-crm-production-create'&&[400,409].includes(e.status)),'unexpected_crm_http_error');assert((globalThis.__crmE2eFatalErrors||[]).length===0,'fatal_browser_errors');
+  output('passed',{network_errors:networkErrors,fatal_errors:globalThis.__crmE2eFatalErrors||[],phase:'main',authenticated:true,role:'manager',browser_actions:true,refresh:true,back_forward:true,direct_orders:true,review_guard:true,production_replay:true,stale_guard:true,installation_replay:true,projection_sync:true,counts,steps,duration_ms:Date.now()-started,cleanup_required:true});
 }
 
 instrumentTransportProbe();
@@ -197,10 +210,10 @@ try{
   ({V4_CONFIG:v4Config}=await import('./assets/v4/config.js'));
   ({v4State:v4RuntimeState}=await import('./assets/v4/state.js'));
   const resume=JSON.parse(sessionStorage.getItem('leaderCrmAuthenticatedE2eResume')||'null');
-  if(Array.isArray(resume?.steps))steps.push(...resume.steps);
+  if(Array.isArray(resume?.steps))steps.push(...resume.steps);if(Array.isArray(resume?.networkErrors))networkErrors.push(...resume.networkErrors);
   if(resume?.stage==='after_refresh'){sessionStorage.removeItem('leaderCrmAuthenticatedE2eResume');await designProductionInstallation(resume.orderId);}
   else{await loginManager();record('login_first_entry');await openSyntheticLead();await assignLead();await createNeedAndCalculation();await createOfferAndOrder();await navigationAndRefresh();}
-}catch(error){const code=clean(error?.message||'browser_e2e_failed');progress('failed:'+code.replace(/[^a-z0-9_:-]/gi,'_').slice(0,60));output('failed',{error:code.slice(0,240),steps,duration_ms:Date.now()-started,cleanup_required:true});}
+}catch(error){const code=clean(error?.message||'browser_e2e_failed');progress('failed:'+code.replace(/[^a-z0-9_:-]/gi,'_').slice(0,60));output('failed',{error:code.slice(0,180)+(networkErrors.length?':'+networkErrors[networkErrors.length-1].path+':'+networkErrors[networkErrors.length-1].code:''),network_errors:networkErrors,steps,duration_ms:Date.now()-started,cleanup_required:true});}
 `;
 }
 
@@ -415,20 +428,20 @@ async function run(env = process.env, roleUi = '') {
     await writeFile(path.join(tempV4, 'crm-authenticated-e2e-runtime.mjs'), runtimeSource(config), { mode: 0o600 });
     await writeFile(path.join(tempV4, 'crm-authenticated-e2e-page.mjs'), roleUi ? roleBrowserSource(roleUi) : browserSource(), { mode: 0o600 });
     const indexPath = path.join(tempV4, 'index.html'); const html = await readFile(indexPath, 'utf8');
-    await writeFile(indexPath, html.replace('</body>', '<script src="./assets/vendor/supabase-v2.112.2.js"></script><pre id="crmAuthenticatedE2eResult" data-status="running" hidden>running</pre><script type="module" src="./crm-authenticated-e2e-page.mjs"></script></body>'), { mode: 0o600 });
+    await writeFile(indexPath, html.replace('<head>', '<head><script>globalThis.__crmE2eFatalErrors=[];for(const kind of ["error","unhandledrejection"])addEventListener(kind,()=>globalThis.__crmE2eFatalErrors.push(kind));</script>').replace('</body>', '<script src="./assets/vendor/supabase-v2.112.2.js"></script><pre id="crmAuthenticatedE2eResult" data-status="running" hidden>running</pre><script type="module" src="./crm-authenticated-e2e-page.mjs"></script></body>'), { mode: 0o600 });
 
     if (roleUi) {
       const local = await localServer(tempV4); server = local.server;
       const launch = browserLaunchPlan({ xvfbRun, chrome, profileDir: path.join(tempRoot, 'chrome-profile-role'), url: local.url });
       const chromeResult = await runChrome(launch.binary, launch.args, local.resultPromise, local.getProgressState);
-      const evidence = sanitize(JSON.parse(chromeResult.evidenceBody)); if (evidence.status !== 'passed') throw new Error(`browser_e2e_failed:${evidence.error || 'unknown'}`);
+      const evidence = sanitize(JSON.parse(chromeResult.evidenceBody)); if (evidence.status !== 'passed') { await mkdir(path.dirname(path.resolve(config.evidencePath)), { recursive: true }); await writeFile(path.resolve(config.evidencePath), JSON.stringify(evidence, null, 2), { mode: 0o600 }); throw new Error(`browser_e2e_failed:${evidence.error || 'unknown'}`); }
       const target = path.resolve(config.evidencePath); await mkdir(path.dirname(target), { recursive: true }); await writeFile(target, `${JSON.stringify(evidence, null, 2)}\n`, { mode: 0o600 }); return { evidence, target };
     }
 
     const local = await localServer(tempV4); server = local.server;
     const launch = browserLaunchPlan({ xvfbRun, chrome, profileDir: path.join(tempRoot, 'chrome-profile-manager'), url: local.url });
     const chromeResult = await runChrome(launch.binary, launch.args, local.resultPromise, local.getProgressState);
-    const evidence = sanitize(JSON.parse(chromeResult.evidenceBody)); if (evidence.status !== 'passed') throw new Error(`browser_e2e_failed:${evidence.error || 'unknown'}`);
+    const evidence = sanitize(JSON.parse(chromeResult.evidenceBody)); if (evidence.status !== 'passed') { await mkdir(path.dirname(path.resolve(config.evidencePath)), { recursive: true }); await writeFile(path.resolve(config.evidencePath), JSON.stringify(evidence, null, 2), { mode: 0o600 }); throw new Error(`browser_e2e_failed:${evidence.error || 'unknown'}`); }
     await waitForWorkflowRpc(local.getWorkflowRpcState);
     evidence.assignment_persistence = true;
     const target = path.resolve(config.evidencePath); await mkdir(path.dirname(target), { recursive: true }); await writeFile(target, `${JSON.stringify(evidence, null, 2)}\n`, { mode: 0o600 }); return { evidence, target };

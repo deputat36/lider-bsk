@@ -183,3 +183,9 @@ assert.equal(locked.kind, 'wrong_environment');
 assert.equal(lockedClient.calls.length, 0);
 
 console.log('CRM production job staging transport is environment-locked, minimized and replay-safe.');
+
+// PostgreSQL revision tokens are opaque timestamps; preserve all six decimals.
+for (const precise of ['2026-08-27T15:00:00.123456+00:00', '2026-08-27T18:00:00.123456+03:00']) {
+  const preciseCommand = buildStagingProductionCommand({ draft, expectedUpdatedAt: precise, requestId: ids.request });
+  assert.equal(preciseCommand.expected_updated_at, precise);
+}

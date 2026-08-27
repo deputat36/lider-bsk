@@ -127,7 +127,8 @@ export function buildStagingCalculationVersionCommand({
   return Object.freeze({
     action: ACTION,
     request_id: text(requestId),
-    expected_updated_at: new Date(expectedUpdatedAt).toISOString(),
+    // Preserve the server timestamp: JS Date truncates PostgreSQL microseconds.
+    expected_updated_at: text(expectedUpdatedAt),
     payload: Object.freeze({
       source_calculation_id: text(source.id),
       idempotency_key: key,

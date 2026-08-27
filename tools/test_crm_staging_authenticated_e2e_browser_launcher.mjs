@@ -117,7 +117,14 @@ console.log('Authenticated staging E2E uses one headed Chrome session, native au
 const syntax = spawnSync(process.execPath, ['--input-type=module', '--check'], { input: browserSource(), encoding: 'utf8' });
 assert.equal(syntax.status, 0, syntax.stderr);
 assert.doesNotMatch(browserSource(), /const synthetic=|workflow_rpc_synthetic|status:201,json:async/);
-assert.ok(browserSource().includes("return nativeFetch('/__crm_e2e_staging_request_proxy'"));
+assert.ok(browserSource().includes("response=await nativeFetch('/__crm_e2e_staging_request_proxy'"));
 
 assert.ok(browserSource().includes('calculation_need_not_selected'));
 assert.ok(browserSource().includes('response.error.context.json()'));
+
+assert.ok(browserSource().includes('is_current_revision'));
+assert.ok(browserSource().includes("finalLead.status==='Создан заказ'"));
+assert.ok(browserSource().includes('finalLead.converted_order_id===orderId'));
+
+assert.ok(browserSource().includes("unexpected_crm_http_error"));
+assert.ok(browserSource().includes("fatal_browser_errors"));

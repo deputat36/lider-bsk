@@ -123,7 +123,8 @@ export function buildStagingProductionCommand({ draft, expectedUpdatedAt, reques
   return Object.freeze({
     action: ACTION,
     request_id: text(requestId),
-    expected_updated_at: new Date(expectedUpdatedAt).toISOString(),
+    // Preserve the server timestamp: JS Date truncates PostgreSQL microseconds.
+    expected_updated_at: text(expectedUpdatedAt),
     payload: Object.freeze({
       order_id: text(source.order_id),
       design_task_id: optionalUuid(source.design_task_id, 'design_task_id_invalid'),
