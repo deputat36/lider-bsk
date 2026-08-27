@@ -136,6 +136,7 @@ function offerIdFromCard(card) {
   return card?.querySelector('[data-open-offer-card]')?.dataset.openOfferCard
     || card?.querySelector('[data-edit-type="offer"][data-edit-id]')?.dataset.editId
     || card?.dataset.offerId
+    || card?.dataset.id
     || '';
 }
 

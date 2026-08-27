@@ -98,7 +98,7 @@ jobs:
         run: |
           set -euo pipefail
           node tools/run_crm_staging_role_permission_e2e.mjs > "${RUNNER_TEMP}/crm-authenticated-e2e/manager-rbac.json"
-          jq -e '.ok == true and .role == "manager" and .allowed_action_reached_server_contract == true and .forbidden_direct_api == "self_role_escalation_rejected" and .production_enabled == false' "${RUNNER_TEMP}/crm-authenticated-e2e/manager-rbac.json" >/dev/null
+          jq -e '.ok == true and .role == "manager" and .allowed_action_reached_server_contract == true and .allowed_fixture_read == true and .service_only_rpc_denied == true and .forbidden_direct_api == "self_role_escalation_rejected" and .production_enabled == false' "${RUNNER_TEMP}/crm-authenticated-e2e/manager-rbac.json" >/dev/null
 
       - name: Switch the same synthetic user to owner
         id: owner_role
@@ -125,7 +125,7 @@ jobs:
         run: |
           set -euo pipefail
           node tools/run_crm_staging_role_permission_e2e.mjs > "${RUNNER_TEMP}/crm-authenticated-e2e/owner-rbac.json"
-          jq -e '.ok == true and .role == "owner" and .allowed_action_reached_server_contract == true and .forbidden_direct_api == "not_applicable_full_access"' "${RUNNER_TEMP}/crm-authenticated-e2e/owner-rbac.json" >/dev/null
+          jq -e '.ok == true and .role == "owner" and .allowed_action_reached_server_contract == true and .allowed_fixture_read == true and .service_only_rpc_denied == true and .forbidden_direct_api == "service_only_rpc_rejected"' "${RUNNER_TEMP}/crm-authenticated-e2e/owner-rbac.json" >/dev/null
           node tools/run_crm_staging_authenticated_e2e.mjs --mode=role-ui > "${RUNNER_TEMP}/crm-authenticated-e2e/owner-ui.log" 2>&1
           jq -e '.status == "passed" and .role == "owner" and .ui_allowed_controls == true and .ui_forbidden_controls == "not_applicable_full_access"' "${RUNNER_TEMP}/crm-authenticated-e2e/owner-ui.json" >/dev/null
 

@@ -48,3 +48,13 @@ assert.equal(leadStatusForOfferStatus('Отправлено'), 'КП отпра�
 assert.equal(calculationStatusForOfferStatus('Согласовано'), 'Согласован');
 
 console.log('CRM offer status UI registry behavior is valid.');
+
+// Lead-card offers use data-id; list cards keep their older aliases.
+const { readFileSync } = await import('node:fs');
+const { runInNewContext } = await import('node:vm');
+const offerCardSource = readFileSync(new URL('../crm/v4/assets/v4/offer-card-v1.js', import.meta.url), 'utf8');
+const offerIdFunction = offerCardSource.slice(offerCardSource.indexOf('function offerIdFromCard('), offerCardSource.indexOf('function addButtonsInOffersList('));
+const resolveOfferId = runInNewContext(offerIdFunction + ';offerIdFromCard');
+assert.equal(resolveOfferId({ dataset: { id: 'lead-card-offer' }, querySelector: () => null }), 'lead-card-offer');
+assert.equal(resolveOfferId({ dataset: { offerId: 'list-offer' }, querySelector: () => null }), 'list-offer');
+assert.equal(resolveOfferId(null), '');
