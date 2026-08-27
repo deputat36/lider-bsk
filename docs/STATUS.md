@@ -10,6 +10,8 @@
 - E2E больше не подставляет synthetic success вместо ответа RPC: UI получает реальный staging response через существующий user-JWT bridge.
 - Перед повторным запуском напрямую подтверждены пустые staging business tables, profiles, command receipts и Auth users. Production не изменялся.
 - Полный пользовательский путь и роли пока НЕ подтверждены; PR остаётся Draft до runtime PASS и cleanup.
+- Runtime после исправлений прошёл вход, назначение, потребность, первичный расчёт и новую версию (1600 → 1700). Исправлена потеря микросекунд optimistic-lock timestamp в transports расчёта, дизайна и производства.
+- Следующий сбой КП воспроизведён как `42501`: `FOR SHARE` над позициями требует UPDATE хотя бы одной колонки. Staging migration `20260827150706_authenticated_offer_item_row_lock` выдаёт только `UPDATE(id)` служебной роли; у `anon`/`authenticated` UPDATE по-прежнему отсутствует. Проверка той же блокировки после миграции PASS.
 
 ## Staging frontend «заказ → производство»
 
