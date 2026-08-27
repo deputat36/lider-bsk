@@ -10,6 +10,7 @@ const source = readFileSync(new URL('../crm/v4/assets/v4/calculation-version-edi
 const queued = [];
 const listeners = [];
 const section = {};
+const hosts = new Map([['leadCardSection', section]]);
 let observerCallback;
 let observerCount = 0;
 const context = vm.createContext({
@@ -17,7 +18,7 @@ const context = vm.createContext({
     querySelector: () => ({}),
     addEventListener: (name) => listeners.push(name)
   },
-  byId: (id) => id === 'leadCardSection' ? section : null,
+  byId: (id) => hosts.get(id) || null,
   window: { queueMicrotask: (callback) => queued.push(callback) },
   MutationObserver: class {
     constructor(callback) { observerCallback = callback; observerCount += 1; }
@@ -44,4 +45,11 @@ queued.shift()();
 observerCallback([{ target: { closest: () => ({}) } }, external]);
 assert.equal(queued.length, 1, 'mixed mutation batches must preserve external updates');
 queued.shift()();
+const legacySnapshot = {};
+const currentSnapshot = {};
+hosts.set('savedCalculationsSnapshot', legacySnapshot);
+assert.equal(vm.runInContext('savedSnapshotHost()', context), legacySnapshot);
+hosts.set('savedCalculationsBox', currentSnapshot);
+assert.equal(vm.runInContext('savedSnapshotHost()', context), currentSnapshot,
+  'version entrypoints must decorate the actual saved calculation cards');
 console.log('Calculation version editor lifecycle: PASS (no self-reconciliation, external updates preserved).');

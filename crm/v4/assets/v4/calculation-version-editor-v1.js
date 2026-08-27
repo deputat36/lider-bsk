@@ -87,7 +87,9 @@ function ensureWorkspace() {
 }
 
 function savedSnapshotHost() {
-  return byId('savedCalculationsSnapshot');
+  // The lead card now has its own saved-calculations section. Keep the older
+  // workspace fallback for layouts that still share the builder container.
+  return byId('savedCalculationsBox') || byId('savedCalculationsSnapshot');
 }
 
 function editorHost() {
@@ -365,7 +367,7 @@ async function startVersionDraft(calculationId) {
 
 async function refreshSavedCalculations(leadId) {
   await loadCalculations(leadId);
-  document.querySelector('#savedCalculationsSnapshot [data-v2-calc-refresh]')?.click();
+  savedSnapshotHost()?.querySelector('[data-v2-calc-refresh]')?.click();
   return true;
 }
 

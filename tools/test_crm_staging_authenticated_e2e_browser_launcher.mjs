@@ -118,3 +118,6 @@ const syntax = spawnSync(process.execPath, ['--input-type=module', '--check'], {
 assert.equal(syntax.status, 0, syntax.stderr);
 assert.doesNotMatch(browserSource(), /const synthetic=|workflow_rpc_synthetic|status:201,json:async/);
 assert.ok(browserSource().includes("return nativeFetch('/__crm_e2e_staging_request_proxy'"));
+
+assert.ok(browserSource().includes('calculation_need_not_selected'));
+assert.ok(browserSource().includes('response.error.context.json()'));
