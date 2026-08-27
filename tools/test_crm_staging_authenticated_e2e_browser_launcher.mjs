@@ -139,3 +139,5 @@ assert.ok(browserSource().includes("getElementById('productionJobStagingPreviewV
 
 assert.ok(browserSource().includes('order_duplicate_prevention'));
 assert.ok(browserSource().includes('installation_not_ready_rollback'));
+
+assert.ok(browserSource().includes("functionName==='leader-crm-leads'?'leader-crm-leads-staging':functionName"));
