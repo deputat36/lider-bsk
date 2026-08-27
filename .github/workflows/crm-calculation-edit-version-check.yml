@@ -11,6 +11,7 @@ on:
       - 'crm/v4/assets/v4/calculation-version-editor-v1.js'
       - 'crm/v4/assets/v4/calculation-version-editor-v1.css'
       - 'tools/test_calculation_version_edit_model.mjs'
+      - 'tools/test_calculation_version_editor_lifecycle.mjs'
       - 'tools/test_calculation_version_save_route.mjs'
       - 'tools/check_calculation_edit_as_new_version.py'
       - 'tools/check_crm_v4_backend_write_inventory.py'
@@ -28,6 +29,7 @@ on:
       - 'crm/v4/assets/v4/calculation-version-editor-v1.js'
       - 'crm/v4/assets/v4/calculation-version-editor-v1.css'
       - 'tools/test_calculation_version_edit_model.mjs'
+      - 'tools/test_calculation_version_editor_lifecycle.mjs'
       - 'tools/test_calculation_version_save_route.mjs'
       - 'tools/check_calculation_edit_as_new_version.py'
       - 'tools/check_crm_v4_backend_write_inventory.py'
@@ -52,6 +54,8 @@ jobs:
         run: node --check crm/v4/assets/v4/calculation-version-editor-v1.js
       - name: Test version edit model
         run: node tools/test_calculation_version_edit_model.mjs
+      - name: Test editor observer lifecycle
+        run: node tools/test_calculation_version_editor_lifecycle.mjs
       - name: Test save route title intent
         run: node tools/test_calculation_version_save_route.mjs
       - name: Compile source checker

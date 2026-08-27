@@ -57,7 +57,7 @@ export function operatorPlan() {
     first_login_via_form: true,
     browser_mode: 'xvfb_headed_chrome',
     browser_phases: ['manager_path', 'refresh_resume'],
-    browser_transport_bridge: 'nonblocking_same_origin_beacon_to_exact_staging_rpc_with_db_assertion',
+    browser_transport_bridge: 'same_origin_exact_staging_rpc_real_response',
     browser_navigation: ['leads', 'lead_card', 'orders_direct', 'production', 'installation'],
     destructive_scope: 'unique_synthetic_marker_only',
     external_cleanup_required: true
@@ -75,7 +75,7 @@ function runtimeSource(config) {
   return `export const CRM_E2E_RUNTIME=Object.freeze(${jsonScript({ email: config.email, password: config.password, marker: config.marker, leadId: config.leadId })});\n`;
 }
 
-function browserSource() {
+export function browserSource() {
   return `import {CRM_E2E_RUNTIME as R} from './crm-authenticated-e2e-runtime.mjs';
 
 const result=document.getElementById('crmAuthenticatedE2eResult');
@@ -94,7 +94,7 @@ const nativeQueueMicrotask=globalThis.queueMicrotask.bind(globalThis);const micr
 function record(name,detail='pass'){steps.push({name,detail});progress(name);}
 document.addEventListener('click',(event)=>{if(event.target?.closest?.('#refreshLeadBtn'))progress('lead_refresh_click_observed');},true);document.addEventListener('leader-v4:lead-card-rendered',()=>progress('lead_card_render_event_observed'));
 const nativeDocumentDispatch=document.dispatchEvent.bind(document);document.dispatchEvent=(event)=>{const workflow=event?.type==='leader-v4:lead-workflow-updated';if(workflow)progress('workflow_event_dispatch_enter');const dispatched=nativeDocumentDispatch(event);if(workflow)progress('workflow_event_dispatch_exit');return dispatched;};
-function instrumentTransportProbe(){globalThis.fetch=(input,init)=>{let requestUrl;try{requestUrl=new URL(String(input?.url||input||''));}catch(_){return nativeFetch(input,init);}const exactStaging=requestUrl.hostname==='${STAGING_REF}.supabase.co';const headers=Object.fromEntries(new Headers(init?.headers||input?.headers||{}).entries());const method=clean(init?.method||input?.method||'GET').toUpperCase();const isNeedRead=exactStaging&&requestUrl.pathname==='/rest/v1/leader_lead_needs'&&method==='GET';if(isNeedRead){progress('need_native_staging');return nativeFetch(input,init);}const isWorkflowRpc=exactStaging&&requestUrl.pathname==='/rest/v1/rpc/leader_update_lead_workflow_browser_rpc';if(!isWorkflowRpc)return nativeFetch(input,init);const rpcBody=JSON.parse(typeof init?.body==='string'?init.body:'{}');const accepted=navigator.sendBeacon('/__crm_e2e_staging_request_proxy',JSON.stringify({path:requestUrl.pathname+requestUrl.search,method,headers,body:JSON.stringify(rpcBody)}));if(!accepted)return Promise.reject(new Error('staging_rpc_bridge_rejected'));const command=rpcBody.p_request||{};const payload=command.payload||{};const lead={id:payload.lead_id,updated_at:new Date(Date.now()+1000).toISOString(),...(payload.patch||{})};const synthetic={ok:true,request_id:command.request_id,idempotent_replay:false,lead};progress('workflow_rpc_synthetic_ready');return Promise.resolve({ok:true,status:201,json:async()=>{progress('workflow_rpc_synthetic_json');return synthetic;}});};}
+function instrumentTransportProbe(){globalThis.fetch=(input,init)=>{let requestUrl;try{requestUrl=new URL(String(input?.url||input||''));}catch(_){return nativeFetch(input,init);}const isWorkflowRpc=requestUrl.origin==='${STAGING_URL}'&&requestUrl.pathname==='/rest/v1/rpc/leader_update_lead_workflow_browser_rpc';if(!isWorkflowRpc)return nativeFetch(input,init);const headers=Object.fromEntries(new Headers(init?.headers||input?.headers||{}).entries());return nativeFetch('/__crm_e2e_staging_request_proxy',{method:'POST',headers:{'Content-Type':'application/json'},signal:init?.signal,body:JSON.stringify({path:requestUrl.pathname+requestUrl.search,method:clean(init?.method||input?.method||'POST').toUpperCase(),headers,body:typeof init?.body==='string'?init.body:''})});};}
 async function waitFor(check,code,timeout=30000){const begin=Date.now();while(Date.now()-begin<timeout){const value=await check();if(value)return value;await sleep(50);}throw new Error(code);}
 function waitForDocumentEvent(name,code,timeout=30000){return new Promise((resolve,reject)=>{let timer=0;const done=(event)=>{clearTimeout(timer);document.removeEventListener(name,done);resolve(event?.detail||{});};timer=setTimeout(()=>{document.removeEventListener(name,done);reject(new Error(code));},timeout);document.addEventListener(name,done,{once:true});});}
 function setValue(selector,value,event='input'){const node=document.querySelector(selector);assert(node,'missing:'+selector);node.value=value;node.dispatchEvent(new Event(event,{bubbles:true}));return node;}

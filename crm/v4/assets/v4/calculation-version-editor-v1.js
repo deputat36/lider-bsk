@@ -94,7 +94,13 @@ function editorHost() {
   return byId('calculationVersionEditorHost');
 }
 
-function scheduleReconcile() {
+function scheduleReconcile(records) {
+  // Our editor and builder decorations must not observe their own DOM writes.
+  // In particular, rewriting headings/innerHTML would starve timers and fetch
+  // continuations in an endless MutationObserver -> microtask loop.
+  if (Array.isArray(records) && records.length && records.every((record) =>
+    record.target?.closest?.('#savedCalculationsWorkspace, .v4-calc-form')
+  )) return;
   if (reconcileQueued) return;
   reconcileQueued = true;
   window.queueMicrotask(reconcileLayout);
@@ -141,11 +147,12 @@ function enhanceBuilder() {
   const heading = form.querySelector('.v4-calc-wizard-head h4');
   const copy = form.querySelector('.v4-calc-wizard-head p');
   const route = persistenceRoute();
-  if (heading) heading.textContent = 'Новый расчёт';
+  if (heading && heading.textContent !== 'Новый расчёт') heading.textContent = 'Новый расчёт';
   if (copy) {
-    copy.textContent = route.enabled
+    const description = route.enabled
       ? 'Создайте новый расчёт в этой же заявке или используйте кнопку «Изменить / новая версия» у сохранённого варианта.'
       : 'Создайте новый расчёт в этой же заявке. Безопасное создание версии из сохранённого варианта временно отключено.';
+    if (copy.textContent !== description) copy.textContent = description;
   }
 }
 
@@ -222,7 +229,7 @@ function renderVersionEditor() {
     return;
   }
   if (!versionDraft) {
-    host.innerHTML = '';
+    if (host.childNodes.length) host.innerHTML = '';
     return;
   }
 
@@ -515,7 +522,7 @@ function bindEvents() {
 }
 
 export function bootCalculationVersionEditor() {
-  if (typeof document === 'undefined') return;
+  if (typeof document === 'undefined' || layoutObserver) return;
   ensureStyles();
   const section = byId('leadCardSection');
   if (!section) return;

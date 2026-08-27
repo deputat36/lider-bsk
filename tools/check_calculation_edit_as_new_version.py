@@ -41,7 +41,7 @@ require('bootstrap', [
     'CRM_V4_ACTIONS.CALCULATIONS_WRITE',
     'canPerformV4Action',
     "document.addEventListener('leader-v4:crm-ready'",
-    "import('./calculation-version-editor-v1.js?v=20260716-production-lock-1')",
+    "import('./calculation-version-editor-v1.js?v=20260827-observer-fix-1')",
     'bootCalculationVersionEditor',
 ])
 

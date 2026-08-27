@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import {
   browserLaunchPlan,
+  browserSource,
   operatorPlan
 } from './run_crm_staging_authenticated_e2e.mjs';
 
@@ -27,10 +29,9 @@ assert.ok(plan.args.includes('http://127.0.0.1:43123/index.html?tab=leads'));
 assert.equal(plan.args.some((item) => String(item).startsWith('--headless')), false);
 
 assert.equal(operatorPlan().browser_mode, 'xvfb_headed_chrome');
-assert.equal(operatorPlan().browser_transport_bridge, 'nonblocking_same_origin_beacon_to_exact_staging_rpc_with_db_assertion');
+assert.equal(operatorPlan().browser_transport_bridge, 'same_origin_exact_staging_rpc_real_response');
 
 const runnerSource = await readFile(new URL('./run_crm_staging_authenticated_e2e.mjs', import.meta.url), 'utf8');
-assert.match(runnerSource, /navigator\.sendBeacon\('\/__crm_e2e_staging_request_proxy'/);
 assert.match(runnerSource, /__crm_e2e_staging_request_proxy/);
 assert.match(runnerSource, /staging_request_proxy_route_forbidden/);
 assert.match(runnerSource, /requestHeaders: incomingHeaders/);
@@ -46,8 +47,6 @@ assert.ok(runnerSource.includes(String.raw`split('\\n')`));
 assert.match(runnerSource, /progress\('read_error:'\+tableName\+':'\+code\)/);
 assert.match(runnerSource, /read_table_forbidden/);
 assert.match(runnerSource, /Authorization:'Bearer '\+session\.access_token/);
-assert.match(runnerSource, /requestUrl\.pathname==='\/rest\/v1\/leader_lead_needs'/);
-assert.match(runnerSource, /if\(isNeedRead\)\{progress\('need_native_staging'\);return nativeFetch\(input,init\);\}/);
 assert.match(runnerSource, /v4State:v4RuntimeState/);
 assert.match(runnerSource, /const session=v4RuntimeState\?\.session/);
 assert.doesNotMatch(runnerSource, /await supabaseClient\.auth\.getSession\(\)/);
@@ -78,8 +77,6 @@ assert.match(runnerSource, /lastTransport/);
 assert.match(runnerSource, /networkAt: lastTransportAt/);
 assert.doesNotMatch(runnerSource, /form\.action='\/__crm_e2e_staging_rpc_proxy'/);
 assert.doesNotMatch(runnerSource, /new Response\(JSON\.stringify\(\{ok:true,request_id:command\.request_id/);
-assert.match(runnerSource, /workflow_rpc_synthetic_ready/);
-assert.match(runnerSource, /workflow_rpc_synthetic_json/);
 assert.match(runnerSource, /workflow_event_dispatch_enter/);
 assert.match(runnerSource, /workflow_event_dispatch_exit/);
 assert.match(runnerSource, /nativeDocumentDispatch/);
@@ -91,7 +88,6 @@ assert.match(runnerSource, /lead_assignment_event_validated/);
 assert.match(runnerSource, /lead_refresh_click_observed/);
 assert.match(runnerSource, /lead_card_render_event_observed/);
 assert.match(runnerSource, /lead_card_refresh_event_resolved/);
-assert.match(runnerSource, /status:201,json:async/);
 assert.match(runnerSource, /final_lead_assignment_persistence_failed/);
 assert.match(runnerSource, /lead_assignment_db_persisted_final/);
 assert.match(runnerSource, /lead_assignment_ui_confirmed/);
@@ -116,3 +112,9 @@ assert.throws(
 );
 
 console.log('Authenticated staging E2E uses one headed Chrome session, native authenticated needs reads, and a same-origin user-JWT bridge for exact staging workflow RPC, then resumes after the required order refresh.');
+
+// Compile the generated browser module, not only its surrounding Node template.
+const syntax = spawnSync(process.execPath, ['--input-type=module', '--check'], { input: browserSource(), encoding: 'utf8' });
+assert.equal(syntax.status, 0, syntax.stderr);
+assert.doesNotMatch(browserSource(), /const synthetic=|workflow_rpc_synthetic|status:201,json:async/);
+assert.ok(browserSource().includes("return nativeFetch('/__crm_e2e_staging_request_proxy'"));

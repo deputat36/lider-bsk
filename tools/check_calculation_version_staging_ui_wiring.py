@@ -44,7 +44,7 @@ require('config', [
 ])
 
 require('bootstrap', [
-    "import('./calculation-version-editor-v1.js?v=20260716-production-lock-1')",
+    "import('./calculation-version-editor-v1.js?v=20260827-observer-fix-1')",
     'CRM_V4_ACTIONS.CALCULATIONS_WRITE',
 ])
 
