@@ -243,7 +243,7 @@ async function loadLeadCardBundle() {
       import('./calculation-contractor-quote-v1.js?v=20260805-tab-loader-1'),
       import('./offers.js?v=20260805-tab-loader-1'),
       import('./orders.js?v=20260805-tab-loader-1'),
-      import('./offer-card-v1.js?v=20260827-card-id-1'),
+      import('./offer-card-v1.js?v=20260827-order-read-1'),
       import('./offer-print.js?v=20260805-tab-loader-1'),
       import('./offer-order-create-v1.js?v=20260805-tab-loader-1'),
       import('./need-readiness-panel-v1.js?v=20260713-readiness-1')

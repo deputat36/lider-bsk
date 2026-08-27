@@ -58,3 +58,19 @@ const resolveOfferId = runInNewContext(offerIdFunction + ';offerIdFromCard');
 assert.equal(resolveOfferId({ dataset: { id: 'lead-card-offer' }, querySelector: () => null }), 'lead-card-offer');
 assert.equal(resolveOfferId({ dataset: { offerId: 'list-offer' }, querySelector: () => null }), 'list-offer');
 assert.equal(resolveOfferId(null), '');
+
+// Exact staging must use the existing role-filtered server read, never a grant fallback.
+const fetchOrderFunction = offerCardSource.slice(offerCardSource.indexOf('async function fetchOrder('), offerCardSource.indexOf('async function fetchEvents('));
+let serverReads = 0;
+const fetchStagingOrder = runInNewContext(fetchOrderFunction + ';fetchOrder', {
+  URL, V4_CONFIG: { supabaseUrl: 'https://otulfnouybahfnsycxqn.supabase.co' },
+  supabaseClient: { from() { throw new Error('direct_staging_read_forbidden'); } },
+  invokeLeaderFunction: async (slug, payload) => {
+    assert.equal(slug, 'leader-crm-orders'); assert.equal(payload.action, 'list'); serverReads++;
+    return { orders: [{ id: 'order-1', status: 'Новый' }] };
+  }
+});
+assert.equal(await fetchStagingOrder(null), null);
+assert.equal((await fetchStagingOrder('order-1')).status, 'Новый');
+assert.equal(await fetchStagingOrder('missing'), null);
+assert.equal(serverReads, 2);

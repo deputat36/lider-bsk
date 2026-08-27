@@ -459,3 +459,5 @@ Supabase baseline РА «Лидер»: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-
 - Контрольные страницы: `srochnaya-reklama-borisoglebsk.html`, `reklama-dlya-servisa-masterskoy-borisoglebsk.html`, `tablichki-borisoglebsk.html`, `oformlenie-vitrin-borisoglebsk.html`, `pechat-na-plenke-borisoglebsk.html`.
 - Исторический статус пакета: первые два пакета из 8 страниц услуг уже закрыты.
 - CRM access cache marker: `20260628-access-label-1`.
+
+- 2026-08-27 (#487/#488): authenticated Chrome reached approved offer and order creation. Corrected E2E order read to real columns; related offer order card now uses existing role-filtered staging orders list, preserving restricted browser grants. Production unchanged.

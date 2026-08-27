@@ -131,3 +131,6 @@ assert.ok(browserSource().includes("fatal_browser_errors"));
 
 assert.ok(browserSource().includes('next_contact_not_saved'));
 assert.ok(browserSource().includes('manager_forbidden_tab_visible'));
+
+assert.ok(!browserSource().includes('id,lead_id,offer_id,calculation_id,project_name'));
+assert.ok(browserSource().includes('order_source_links_failed'));

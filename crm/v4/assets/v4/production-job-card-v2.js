@@ -27,7 +27,7 @@ function jobFields() {
   return fields.join(',');
 }
 function orderFields() {
-  if (isStagingProductionEnvironment(V4_CONFIG.supabaseUrl)) return 'id,order_number,project_name,status,layout_status,layout_link,production_status';
+  if (isStagingProductionEnvironment(V4_CONFIG.supabaseUrl)) return 'id,order_number,project_name,status,layout_status,layout_link';
   const fields = [...ORDER_FIELDS_SAFE];
   if (canViewV4InternalNotes()) fields.push('data');
   return fields.join(',');
