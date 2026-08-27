@@ -5,12 +5,12 @@ import {
   requireV4Action
 } from './action-permissions-v1.js';
 import { V4_CONFIG } from './config.js';
-import { buildProductionJobStagingDraft } from './production-job-staging-draft-model-v1.js';
+import { buildProductionJobStagingDraft } from './production-job-staging-draft-model-v1.js?v=20260827-revision-1';
 import {
   invokeStagingProductionJob,
   isStagingProductionEnvironment,
   productionStagingTransportAvailability
-} from './production-job-staging-transport-v1.js';
+} from './production-job-staging-transport-v1.js?v=20260827-revision-1';
 import { supabaseClient } from './supabase-client.js';
 import { toast } from './ui.js';
 

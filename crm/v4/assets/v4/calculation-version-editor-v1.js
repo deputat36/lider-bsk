@@ -10,7 +10,7 @@ import {
 } from './action-permissions-v1.js';
 import {
   invokeStagingCalculationVersion
-} from './calculation-version-staging-transport-v1.js';
+} from './calculation-version-staging-transport-v1.js?v=20260827-revision-1';
 import {
   buildCalculationVersionTransportDraft,
   calculationVersionPersistenceRoute,

@@ -87,7 +87,7 @@ def main() -> None:
 
     require(source['preview'], [
         "import { V4_CONFIG } from './config.js'",
-        "from './production-job-staging-transport-v1.js'",
+        "from './production-job-staging-transport-v1.js?v=20260827-revision-1'",
         'isStagingProductionEnvironment(V4_CONFIG.supabaseUrl)',
         'requireV4Action(CRM_V4_ACTIONS.PRODUCTION_READ)',
         'requireV4Action(CRM_V4_ACTIONS.PRODUCTION_WRITE)',
@@ -114,9 +114,9 @@ def main() -> None:
 
     orders_group = source['loader'].split('orders: Object.freeze({', 1)[1].split('order_control: Object.freeze({', 1)[0]
     require(orders_group, [
-        "import('./design-task-draft-preview-v1.js?v=20260714-design-staging-1')",
+        "import('./design-task-draft-preview-v1.js?v=20260827-revision-1')",
         "import('./design-task-draft-entrypoints-v1.js?v=20260714-design-staging-1')",
-        "import('./production-job-staging-preview-v1.js?v=20260809-production-staging-1')",
+        "import('./production-job-staging-preview-v1.js?v=20260827-revision-1')",
     ], 'orders lazy group')
 
     require(source['permissions'], [

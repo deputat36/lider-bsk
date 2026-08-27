@@ -461,3 +461,5 @@ Supabase baseline РА «Лидер»: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-
 - CRM access cache marker: `20260628-access-label-1`.
 
 - 2026-08-27 (#487/#488): authenticated Chrome reached approved offer and order creation. Corrected E2E order read to real columns; related offer order card now uses existing role-filtered staging orders list, preserving restricted browser grants. Production unchanged.
+
+- 2026-08-27 (#487/#488): Chrome confirmed order, direct orders, Back/Forward/reopen and authenticated Refresh. Design create conflict traced to draft-model timestamp truncation; preserve opaque PostgreSQL revision in design/production models with microsecond tests.

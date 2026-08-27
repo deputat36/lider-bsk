@@ -49,7 +49,7 @@ require('bootstrap', [
 ])
 
 require('route', [
-    "from './calculation-version-staging-transport-v1.js'",
+    "from './calculation-version-staging-transport-v1.js?v=20260827-revision-1'",
     "mode: 'staging_edge'",
     'enabled: true',
     'atomic: true',

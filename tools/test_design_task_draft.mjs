@@ -138,3 +138,6 @@ assert.equal(closedOrder.state, 'order_unavailable');
 assert.equal(closedOrder.draft, null);
 
 console.log('Design task draft preview model behavior is valid.');
+
+const preciseRevision = '2026-08-27T15:00:00.123456+00:00';
+assert.equal(buildDesignTaskDraftPreview({ order: { ...order, updated_at: preciseRevision }, needs, canRead: true, canWrite: true }).order.updatedAt, preciseRevision);

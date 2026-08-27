@@ -5,11 +5,11 @@ import {
   requireV4Action
 } from './action-permissions-v1.js';
 import { V4_CONFIG } from './config.js';
-import { buildDesignTaskDraftPreview } from './design-task-draft-model-v1.js';
+import { buildDesignTaskDraftPreview } from './design-task-draft-model-v1.js?v=20260827-revision-1';
 import {
   designStagingTransportAvailability,
   invokeStagingDesignTask
-} from './design-task-staging-transport-v1.js';
+} from './design-task-staging-transport-v1.js?v=20260827-revision-1';
 import { supabaseClient } from './supabase-client.js';
 import { toast } from './ui.js';
 import { invokeStagingWorkflow, isStagingWorkflowEnvironment } from './workflow-staging-transport-v1.js';

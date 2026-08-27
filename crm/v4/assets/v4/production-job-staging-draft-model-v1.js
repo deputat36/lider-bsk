@@ -40,7 +40,7 @@ function designTaskModel(task = {}) {
     key: definition?.key || '',
     approved: APPROVED_DESIGN_STATUSES.has(definition?.key || ''),
     layoutLink: text(task.layout_link),
-    updatedAt: dateIso(task.updated_at || task.created_at)
+    updatedAt: safeDate(task.updated_at || task.created_at) ? text(task.updated_at || task.created_at) : null
   });
 }
 
@@ -111,7 +111,7 @@ export function buildProductionJobStagingDraft({
     statusRaw: orderStatus.raw,
     statusLabel: orderStatus.label,
     statusKnown: orderStatus.known,
-    updatedAt: dateIso(order.updated_at),
+    updatedAt: safeDate(order.updated_at) ? text(order.updated_at) : null,
     deadline: dateIso(order.deadline),
     priority: priority(order.priority),
     layoutStatus: text(order.layout_status),

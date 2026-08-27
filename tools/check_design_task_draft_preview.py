@@ -143,7 +143,7 @@ def main() -> None:
     require(
         loader,
         [
-            "import('./design-task-draft-preview-v1.js?v=20260714-design-staging-1')",
+            "import('./design-task-draft-preview-v1.js?v=20260827-revision-1')",
             "import('./design-task-draft-entrypoints-v1.js?v=20260714-design-staging-1')",
         ],
         "loader",
