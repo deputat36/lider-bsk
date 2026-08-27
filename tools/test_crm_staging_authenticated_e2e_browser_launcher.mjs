@@ -128,3 +128,6 @@ assert.ok(browserSource().includes('finalLead.converted_order_id===orderId'));
 
 assert.ok(browserSource().includes("unexpected_crm_http_error"));
 assert.ok(browserSource().includes("fatal_browser_errors"));
+
+assert.ok(browserSource().includes('next_contact_not_saved'));
+assert.ok(browserSource().includes('manager_forbidden_tab_visible'));

@@ -124,6 +124,7 @@ async function loginManager(){
   await waitFor(()=>document.getElementById('loginForm')&&!document.getElementById('loginForm').classList.contains('hidden'),'login_form_missing');
   setValue('#loginEmail',R.email);setValue('#loginPassword',R.password);click('#loginBtn');progress('login_submitted');
   await waitFor(()=>!document.getElementById('crmWorkspace')?.classList.contains('hidden')&&clean(document.getElementById('profileRole')?.textContent).toLowerCase()==='manager'&&document.body.dataset.v4Tab==='leads','authenticated_workspace_timeout:leads',45000);
+  for(const tab of ['finance_control','user_admin']){const node=document.querySelector('[data-v4-tab-button="'+tab+'"]');assert(!node||node.getClientRects().length===0||node.disabled,'manager_forbidden_tab_visible:'+tab);}record('manager_ui_permissions');
 }
 
 async function openSyntheticLead(){
@@ -143,6 +144,11 @@ async function assignLead(){
   const assignmentDetail=await assignmentEvent;progress('lead_assignment_event_resolved');assert(clean(assignmentDetail?.lead?.assigned_to),'lead_assignment_event_missing_assignee');assert(clean(assignmentDetail?.lead?.status)==='В работе','lead_assignment_event_status_sync_failed');progress('lead_assignment_event_validated');
   const refreshDetail=await refreshedCard;progress('lead_card_refresh_event_resolved');assert(clean(refreshDetail?.lead?.id)===R.leadId,'lead_card_refresh_after_assignment_wrong_lead');
   await waitFor(()=>document.body.dataset.v4Tab==='card'&&location.search.includes('lead='+R.leadId),'lead_card_route_after_assignment_timeout',45000);record('lead_assignment_ui_confirmed');
+  // Sending an offer requires a future follow-up; use the real card action.
+  const contactSaved=waitForDocumentEvent('leader-v4:lead-card-rendered','next_contact_card_refresh_timeout',45000);
+  const details=document.getElementById('leadNextContactDetails');if(details&&!details.open)click('#leadNextContactDetails summary');
+  click('[data-next-contact="tomorrow"]');await contactSaved;
+  const scheduled=await one('leader_leads','id,next_contact_at',{id:R.leadId});assert(Date.parse(scheduled.next_contact_at)>Date.now(),'next_contact_not_saved');record('next_contact_scheduled');
 }
 
 async function createNeedAndCalculation(){

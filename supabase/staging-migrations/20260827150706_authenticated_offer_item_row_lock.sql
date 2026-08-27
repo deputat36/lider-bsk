@@ -10,4 +10,3 @@ $guard$;
 -- The service-only offer RPC locks immutable item snapshots while calculating.
 -- Do not grant browser roles UPDATE or broaden the function to SECURITY DEFINER.
 grant update (id) on public.leader_lead_calculation_items to service_role;
-
