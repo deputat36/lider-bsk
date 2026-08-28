@@ -14,3 +14,8 @@ Production enabled: false
 Reason: run canonical authenticated CRM E2E with workflow-event dispatch enter/exit boundary markers after settled synthetic JSON response. Production remains unchanged.
 Attempt: 27
 Reason: verify idempotent followup note reconciliation prevents MutationObserver microtask starvation after assignment.
+
+Attempt: 28
+Date: 2026-08-28
+Reason: full cumulative authenticated staging E2E after Work limit interruption; verify real staging RPC responses, lead-to-order, design, production, installation, refresh/navigation, manager/owner RBAC and zero-residue cleanup on current branch head.
+Production enabled: false
