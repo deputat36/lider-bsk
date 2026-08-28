@@ -1,5 +1,6 @@
-Trigger owner-role authenticated staging E2E harness heartbeat patch.
+Trigger owner-role authenticated staging E2E CRM-ready listener tracing.
 Issue: #487
 Branch: agent/487-authenticated-staging-e2e
 Date: 2026-08-28
 Production enabled: false
+Attempt: listener-boundary-1
