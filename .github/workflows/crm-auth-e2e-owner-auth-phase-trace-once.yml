@@ -1,0 +1,89 @@
+name: CRM authenticated E2E owner auth phase trace once
+
+on:
+  push:
+    branches:
+      - agent/487-authenticated-staging-e2e
+    paths:
+      - 'tools/run-crm-auth-e2e-owner-auth-phase-trace-once.txt'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: crm-auth-e2e-owner-auth-phase-trace-once
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Replace invasive listener tracing with isolated auth phase tracing
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          runner = Path('tools/run_crm_staging_authenticated_e2e.mjs')
+          source = runner.read_text()
+
+          # Remove the global addEventListener monkey-patch. Keep only a tiny E2E progress helper.
+          pattern = re.compile(r"html\.replace\('<head>', '<head><script>globalThis\.__crmE2eFatalErrors=\[\];globalThis\.__crmE2eProgressSequence=0;.*?</script>'\)\.replace\('</body>'")
+          replacement = "html.replace('<head>', '<head><script>globalThis.__crmE2eFatalErrors=[];globalThis.__crmE2eProgressSequence=0;globalThis.__crmE2eProgress=(name)=>{try{const sequence=String(globalThis.__crmE2eProgressSequence=(globalThis.__crmE2eProgressSequence||0)+1).padStart(4,\\\"0\\\");navigator.sendBeacon(\\\"/__crm_e2e_progress\\\",sequence+\\\":\\\"+String(name).slice(0,75));}catch(_){}};for(const kind of [\\\"error\\\",\\\"unhandledrejection\\\"])addEventListener(kind,()=>globalThis.__crmE2eFatalErrors.push(kind));</script>').replace('</body>'"
+          source, count = pattern.subn(replacement, source, count=1)
+          if count != 1:
+              raise SystemExit('head_listener_trace_anchor_mismatch')
+
+          copy_anchor = "    await cp(path.resolve('crm/v4'), tempV4, { recursive: true });\n"
+          if source.count(copy_anchor) != 1:
+              raise SystemExit('role_auth_trace_copy_anchor_mismatch')
+          instrumentation = copy_anchor + """    if (roleUi) {
+      const authTracePath = path.join(tempV4, 'assets/v4/auth.js');
+      let authTraceSource = await readFile(authTracePath, 'utf8');
+      const activateStart = \"function activateCrm(session, profile, statusText) {\\n  setState({\";
+      const activateStartPatched = \"function activateCrm(session, profile, statusText) {\\n  globalThis.__crmE2eProgress?.('auth_activate_enter');\\n  setState({\";
+      if (!authTraceSource.includes(activateStart)) throw new Error('role_auth_trace_activate_anchor_missing');
+      authTraceSource = authTraceSource.replace(activateStart, activateStartPatched);
+      const stateDone = \"    status: statusText\\n  });\\n  renderProfile(profile);\";
+      const stateDonePatched = \"    status: statusText\\n  });\\n  globalThis.__crmE2eProgress?.('auth_state_done');\\n  renderProfile(profile);\\n  globalThis.__crmE2eProgress?.('auth_profile_rendered');\";
+      if (!authTraceSource.includes(stateDone)) throw new Error('role_auth_trace_state_anchor_missing');
+      authTraceSource = authTraceSource.replace(stateDone, stateDonePatched);
+      const workspaceDone = \"  showWorkspace();\\n  setProfileNotice('');\\n  setStatus(statusText, 'good');\\n  emitCrmReady();\";
+      const workspaceDonePatched = \"  showWorkspace();\\n  globalThis.__crmE2eProgress?.('auth_workspace_shown');\\n  setProfileNotice('');\\n  setStatus(statusText, 'good');\\n  globalThis.__crmE2eProgress?.('auth_crm_ready_enter');\\n  emitCrmReady();\\n  globalThis.__crmE2eProgress?.('auth_crm_ready_exit');\";
+      if (!authTraceSource.includes(workspaceDone)) throw new Error('role_auth_trace_ready_anchor_missing');
+      authTraceSource = authTraceSource.replace(workspaceDone, workspaceDonePatched);
+      await writeFile(authTracePath, authTraceSource, { mode: 0o600 });
+    }
+"""
+          source = source.replace(copy_anchor, instrumentation, 1)
+          runner.write_text(source)
+          PY
+
+          node --check tools/run_crm_staging_authenticated_e2e.mjs
+          node --check tools/test_crm_staging_authenticated_e2e_browser_launcher.mjs
+          node tools/test_crm_staging_authenticated_e2e_browser_launcher.mjs
+          grep -q "auth_activate_enter" tools/run_crm_staging_authenticated_e2e.mjs
+          grep -q "auth_state_done" tools/run_crm_staging_authenticated_e2e.mjs
+          grep -q "auth_crm_ready_enter" tools/run_crm_staging_authenticated_e2e.mjs
+          if grep -q "EventTarget.prototype.addEventListener=function" tools/run_crm_staging_authenticated_e2e.mjs; then
+            echo 'invasive listener override still present' >&2
+            exit 1
+          fi
+          git diff --check
+
+      - name: Commit isolated owner auth tracing
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tools/run_crm_staging_authenticated_e2e.mjs
+          git diff --cached --quiet && { echo 'No patch to commit' >&2; exit 1; }
+          git commit -m 'Trace owner auth phases in isolated E2E copy'
+          git push origin HEAD:agent/487-authenticated-staging-e2e
