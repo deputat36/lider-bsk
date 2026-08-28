@@ -24,3 +24,8 @@ Attempt: 29
 Date: 2026-08-28
 Reason: rerun full authenticated staging E2E after owner-role UI heartbeat/progress hardening; require manager path, owner UI, RBAC and zero-residue cleanup.
 Production enabled: false
+
+Attempt: 30
+Date: 2026-08-28
+Reason: trace exact leader-v4:crm-ready listener boundary during owner login freeze, while re-verifying full manager path, RBAC and zero-residue cleanup.
+Production enabled: false
