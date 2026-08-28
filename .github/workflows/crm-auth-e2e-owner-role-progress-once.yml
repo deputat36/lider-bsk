@@ -22,7 +22,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Add owner role UI progress heartbeat
+      - name: Trace CRM ready listener boundaries in owner UI E2E
         shell: bash
         run: |
           set -euo pipefail
@@ -32,64 +32,34 @@ jobs:
           runner = Path('tools/run_crm_staging_authenticated_e2e.mjs')
           source = runner.read_text()
 
-          old = "function roleBrowserSource(expectedRole) {"
-          new = "export function roleBrowserSource(expectedRole) {"
+          old = "let progressSequence=0;function progress(name){try{const sequence=String(++progressSequence).padStart(4,'0');navigator.sendBeacon('/__crm_e2e_progress',sequence+':'+String(name).slice(0,75));}catch(_){}}progress('role_ui_boot');"
+          new = "function progress(name){try{const sequence=String(globalThis.__crmE2eProgressSequence=(globalThis.__crmE2eProgressSequence||0)+1).padStart(4,'0');navigator.sendBeacon('/__crm_e2e_progress',sequence+':'+String(name).slice(0,75));}catch(_){}}progress('role_ui_boot');"
           if source.count(old) != 1:
-              raise SystemExit('owner_role_export_anchor_mismatch')
+              raise SystemExit('role_progress_sequence_anchor_mismatch')
           source = source.replace(old, new, 1)
 
-          old = "const clean=(value)=>String(value??'').trim();function assert(value,code){if(!value)throw new Error(code);}async function waitFor(check,code,timeout=45000){const started=Date.now();while(Date.now()-started<timeout){const value=await check();if(value)return value;await sleep(50);}throw new Error(code);}"
-          new = "const clean=(value)=>String(value??'').trim();function assert(value,code){if(!value)throw new Error(code);}let progressSequence=0;function progress(name){try{const sequence=String(++progressSequence).padStart(4,'0');navigator.sendBeacon('/__crm_e2e_progress',sequence+':'+String(name).slice(0,75));}catch(_){}}progress('role_ui_boot');async function waitFor(check,code,timeout=45000){const started=Date.now();let heartbeatAt=started;while(Date.now()-started<timeout){const value=await check();if(value)return value;if(Date.now()-heartbeatAt>=5000){progress('role_ui_wait:'+code);heartbeatAt=Date.now();}await sleep(50);}throw new Error(code);}"
+          old = "<head><script>globalThis.__crmE2eFatalErrors=[];for(const kind of [\"error\",\"unhandledrejection\"])addEventListener(kind,()=>globalThis.__crmE2eFatalErrors.push(kind));</script>"
+          new = "<head><script>globalThis.__crmE2eFatalErrors=[];globalThis.__crmE2eProgressSequence=0;globalThis.__crmE2eProgress=(name)=>{try{const sequence=String(globalThis.__crmE2eProgressSequence=(globalThis.__crmE2eProgressSequence||0)+1).padStart(4,\"0\");navigator.sendBeacon(\"/__crm_e2e_progress\",sequence+\":\"+String(name).slice(0,75));}catch(_){}};for(const kind of [\"error\",\"unhandledrejection\"])addEventListener(kind,()=>globalThis.__crmE2eFatalErrors.push(kind));const __crmNativeAdd=EventTarget.prototype.addEventListener;let __crmReadyListenerSeq=0;EventTarget.prototype.addEventListener=function(type,listener,options){if(type===\"leader-v4:crm-ready\"&&typeof listener===\"function\"){const index=++__crmReadyListenerSeq;const stack=String(new Error().stack||\"\").split(\"\\n\")[2]||\"\";const match=stack.match(/\\/([^/?#]+\\.js)(?:[?:]|$)/);const label=String(match?.[1]||\"listener_\"+index).replace(/[^a-z0-9_.-]/gi,\"_\").slice(0,42);const wrapped=function(...args){globalThis.__crmE2eProgress?.(\"crm_ready_enter:\"+index+\":\"+label);const result=listener.apply(this,args);globalThis.__crmE2eProgress?.(\"crm_ready_exit:\"+index+\":\"+label);return result;};return __crmNativeAdd.call(this,type,wrapped,options);}return __crmNativeAdd.call(this,type,listener,options);};</script>"
           if source.count(old) != 1:
-              raise SystemExit('owner_role_wait_anchor_mismatch')
-          source = source.replace(old, new, 1)
-
-          old = "try{await waitFor(()=>document.getElementById('loginForm')&&!document.getElementById('loginForm').classList.contains('hidden'),'login_form_missing');const email=document.getElementById('loginEmail'),password=document.getElementById('loginPassword');"
-          new = "try{progress('role_ui_login_wait');await waitFor(()=>document.getElementById('loginForm')&&!document.getElementById('loginForm').classList.contains('hidden'),'login_form_missing');progress('role_ui_login_form');const email=document.getElementById('loginEmail'),password=document.getElementById('loginPassword');"
-          if source.count(old) != 1:
-              raise SystemExit('owner_role_login_anchor_mismatch')
-          source = source.replace(old, new, 1)
-
-          old = "document.getElementById('loginBtn').click();await waitFor(()=>!document.getElementById('crmWorkspace')?.classList.contains('hidden')&&clean(document.getElementById('profileRole')?.textContent).toLowerCase()==='${expectedRole}','role_workspace_timeout');"
-          new = "document.getElementById('loginBtn').click();progress('role_ui_login_submitted');await waitFor(()=>!document.getElementById('crmWorkspace')?.classList.contains('hidden')&&clean(document.getElementById('profileRole')?.textContent).toLowerCase()==='${expectedRole}','role_workspace_timeout');progress('role_ui_workspace:${expectedRole}');"
-          if source.count(old) != 1:
-              raise SystemExit('owner_role_workspace_anchor_mismatch')
-          source = source.replace(old, new, 1)
-
-          old = "for(const tab of ['leads','orders','order_control','finance_control','production','user_admin'])assert(visible(tab),'owner_tab_hidden:'+tab);document.querySelector('[data-v4-tab-button=\\\"user_admin\\\"]').click();await waitFor(()=>document.body.dataset.v4Tab==='user_admin','owner_user_admin_open_failed');"
-          new = "for(const tab of ['leads','orders','order_control','finance_control','production','user_admin'])assert(visible(tab),'owner_tab_hidden:'+tab);progress('owner_tabs_visible');document.querySelector('[data-v4-tab-button=\\\"user_admin\\\"]').click();progress('owner_user_admin_clicked');await waitFor(()=>document.body.dataset.v4Tab==='user_admin','owner_user_admin_open_failed');progress('owner_user_admin_opened');"
-          if source.count(old) != 1:
-              raise SystemExit('owner_role_admin_anchor_mismatch')
+              raise SystemExit('early_instrumentation_anchor_mismatch')
           source = source.replace(old, new, 1)
           runner.write_text(source)
-
-          test = Path('tools/test_crm_staging_authenticated_e2e_browser_launcher.mjs')
-          test_source = test.read_text()
-          old = "  browserSource,\n  operatorPlan"
-          new = "  browserSource,\n  roleBrowserSource,\n  operatorPlan"
-          if test_source.count(old) != 1:
-              raise SystemExit('owner_role_test_import_anchor_mismatch')
-          test_source = test_source.replace(old, new, 1)
-
-          anchor = "const syntax = spawnSync(process.execPath, ['--input-type=module', '--check'], { input: browserSource(), encoding: 'utf8' });\nassert.equal(syntax.status, 0, syntax.stderr);\n"
-          addition = anchor + "const ownerRoleSource = roleBrowserSource('owner');\nconst ownerSyntax = spawnSync(process.execPath, ['--input-type=module', '--check'], { input: ownerRoleSource, encoding: 'utf8' });\nassert.equal(ownerSyntax.status, 0, ownerSyntax.stderr);\nassert.ok(ownerRoleSource.includes(\"progress('role_ui_boot')\"));\nassert.ok(ownerRoleSource.includes(\"progress('role_ui_login_submitted')\"));\nassert.ok(ownerRoleSource.includes(\"progress('owner_user_admin_clicked')\"));\nassert.ok(ownerRoleSource.includes(\"progress('owner_user_admin_opened')\"));\nassert.ok(ownerRoleSource.includes(\"progress('role_ui_wait:'+code)\"));\n"
-          if test_source.count(anchor) != 1:
-              raise SystemExit('owner_role_test_syntax_anchor_mismatch')
-          test.write_text(test_source.replace(anchor, addition, 1))
           PY
 
           node --check tools/run_crm_staging_authenticated_e2e.mjs
           node --check tools/test_crm_staging_authenticated_e2e_browser_launcher.mjs
           node tools/test_crm_staging_authenticated_e2e_browser_launcher.mjs
+          grep -q 'crm_ready_enter' tools/run_crm_staging_authenticated_e2e.mjs
+          grep -q '__crmE2eProgressSequence' tools/run_crm_staging_authenticated_e2e.mjs
           git diff --check
 
-      - name: Commit owner role harness fix
+      - name: Commit CRM ready listener tracing
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add tools/run_crm_staging_authenticated_e2e.mjs tools/test_crm_staging_authenticated_e2e_browser_launcher.mjs
+          git add tools/run_crm_staging_authenticated_e2e.mjs
           git diff --cached --quiet && { echo 'No patch to commit' >&2; exit 1; }
-          git commit -m 'Harden owner role UI E2E heartbeat'
+          git commit -m 'Trace owner CRM ready listener boundaries'
           git push origin HEAD:agent/487-authenticated-staging-e2e
