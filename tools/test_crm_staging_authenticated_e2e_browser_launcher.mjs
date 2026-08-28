@@ -6,6 +6,7 @@ import { readFile } from 'node:fs/promises';
 import {
   browserLaunchPlan,
   browserSource,
+  roleBrowserSource,
   operatorPlan
 } from './run_crm_staging_authenticated_e2e.mjs';
 
@@ -116,6 +117,14 @@ console.log('Authenticated staging E2E uses one headed Chrome session, native au
 // Compile the generated browser module, not only its surrounding Node template.
 const syntax = spawnSync(process.execPath, ['--input-type=module', '--check'], { input: browserSource(), encoding: 'utf8' });
 assert.equal(syntax.status, 0, syntax.stderr);
+const ownerRoleSource = roleBrowserSource('owner');
+const ownerSyntax = spawnSync(process.execPath, ['--input-type=module', '--check'], { input: ownerRoleSource, encoding: 'utf8' });
+assert.equal(ownerSyntax.status, 0, ownerSyntax.stderr);
+assert.ok(ownerRoleSource.includes("progress('role_ui_boot')"));
+assert.ok(ownerRoleSource.includes("progress('role_ui_login_submitted')"));
+assert.ok(ownerRoleSource.includes("progress('owner_user_admin_clicked')"));
+assert.ok(ownerRoleSource.includes("progress('owner_user_admin_opened')"));
+assert.ok(ownerRoleSource.includes("progress('role_ui_wait:'+code)"));
 assert.doesNotMatch(browserSource(), /const synthetic=|workflow_rpc_synthetic|status:201,json:async/);
 assert.ok(browserSource().includes("response=await nativeFetch('/__crm_e2e_staging_request_proxy'"));
 
