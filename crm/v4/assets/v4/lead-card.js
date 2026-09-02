@@ -1,8 +1,9 @@
 import { supabaseClient } from './supabase-client.js';
 import { timeout, friendlyError } from './api.js';
-import { v4State, setState } from './state.js';
+import { v4State, setState, setRoute } from './state.js';
 import { byId, setStatus, toast } from './ui.js';
 import { clearLeadUrl } from './router.js';
+import { readCrmLeadRoute } from './crm-navigation-route-v1.js';
 import { leadPrimaryAction } from './lead-status-ui-model-v1.js?v=20260721-assignment-1';
 import { buildFirstContactDraft, buildFirstContactQuestions } from './lead-first-contact-model-v1.js?v=20260717-1';
 import { buildLeadSelfAssignment, leadResponsibilityState } from './lead-assignment-model-v1.js';
@@ -245,6 +246,13 @@ function renderLead(lead) {
   document.dispatchEvent(new CustomEvent('leader-v4:lead-card-rendered', { detail: { lead } }));
 }
 
+function renderWorkflowUpdatedLead(event) {
+  const updatedLead = event.detail?.lead;
+  const leadId = String(updatedLead?.id || '').trim();
+  if (!leadId || leadId !== String(v4State.route.leadId || '').trim()) return;
+  renderLead({ ...(v4State.currentLead || {}), ...updatedLead });
+}
+
 async function loadLead(id) {
   if (!id || !v4State.crmReady) return;
   const requestSequence = ++leadLoadSequence;
@@ -478,11 +486,19 @@ function bindLeadCardEvents() {
     if (v4State.route.leadId) loadLead(v4State.route.leadId);
   });
   document.addEventListener('leader-v4:needs-loaded', () => renderPrimaryAction());
+  document.addEventListener('leader-v4:lead-workflow-updated', renderWorkflowUpdatedLead);
 }
 
 function bootLeadCard() {
   bindLeadCardEvents();
-  if (v4State.crmReady && v4State.route.leadId) loadLead(v4State.route.leadId);
+  const routedLeadId = v4State.route.leadId || readCrmLeadRoute(window.location.href);
+  if (!v4State.crmReady || !routedLeadId) return;
+  if (v4State.route.leadId === routedLeadId) {
+    loadLead(routedLeadId);
+    return;
+  }
+  setRoute({ leadId: routedLeadId });
+  document.dispatchEvent(new CustomEvent('leader-v4:route-change', { detail: { leadId: routedLeadId } }));
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootLeadCard);

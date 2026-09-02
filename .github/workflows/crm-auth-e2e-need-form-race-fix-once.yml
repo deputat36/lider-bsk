@@ -1,0 +1,72 @@
+name: CRM authenticated E2E workflow-event boundary once
+
+on:
+  push:
+    branches:
+      - agent/487-authenticated-staging-e2e
+    paths:
+      - 'tools/run-crm-auth-e2e-need-form-race-fix-once.txt'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: crm-auth-e2e-workflow-event-boundary-once
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Add exact workflow event dispatch boundary markers
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          runner = Path('tools/run_crm_staging_authenticated_e2e.mjs')
+          source = runner.read_text()
+          old = "function record(name,detail='pass'){steps.push({name,detail});progress(name);}\nfunction proxyEvidenceRead"
+          new = (
+              "function record(name,detail='pass'){steps.push({name,detail});progress(name);}\n"
+              "const nativeDocumentDispatch=document.dispatchEvent.bind(document);document.dispatchEvent=(event)=>{const workflow=event?.type==='leader-v4:lead-workflow-updated';if(workflow)progress('workflow_event_dispatch_enter');const dispatched=nativeDocumentDispatch(event);if(workflow)progress('workflow_event_dispatch_exit');return dispatched;};\n"
+              "function proxyEvidenceRead"
+          )
+          if source.count(old) != 1:
+              raise SystemExit('workflow_event_boundary_runner_anchor_mismatch')
+          runner.write_text(source.replace(old, new, 1))
+
+          test = Path('tools/test_crm_staging_authenticated_e2e_browser_launcher.mjs')
+          test_source = test.read_text()
+          anchor = "assert.match(runnerSource, /workflow_rpc_synthetic_json/);\n"
+          addition = (
+              anchor
+              + "assert.match(runnerSource, /workflow_event_dispatch_enter/);\n"
+              + "assert.match(runnerSource, /workflow_event_dispatch_exit/);\n"
+              + "assert.match(runnerSource, /nativeDocumentDispatch/);\n"
+          )
+          if test_source.count(anchor) != 1:
+              raise SystemExit('workflow_event_boundary_test_anchor_mismatch')
+          test.write_text(test_source.replace(anchor, addition, 1))
+          PY
+
+          node --check tools/run_crm_staging_authenticated_e2e.mjs
+          node --check tools/test_crm_staging_authenticated_e2e_browser_launcher.mjs
+          node tools/test_crm_staging_authenticated_e2e_browser_launcher.mjs
+          git diff --check
+
+      - name: Commit workflow event boundary markers to branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tools/run_crm_staging_authenticated_e2e.mjs tools/test_crm_staging_authenticated_e2e_browser_launcher.mjs
+          git diff --cached --quiet && { echo 'No patch to commit' >&2; exit 1; }
+          git commit -m 'Trace workflow event dispatch in authenticated E2E'
+          git push origin HEAD:agent/487-authenticated-staging-e2e

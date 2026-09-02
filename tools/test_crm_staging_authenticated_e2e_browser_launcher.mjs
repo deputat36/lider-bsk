@@ -1,0 +1,152 @@
+#!/usr/bin/env node
+
+import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { readFile } from 'node:fs/promises';
+import {
+  browserLaunchPlan,
+  browserSource,
+  roleBrowserSource,
+  operatorPlan
+} from './run_crm_staging_authenticated_e2e.mjs';
+
+const plan = browserLaunchPlan({
+  xvfbRun: '/usr/bin/xvfb-run',
+  chrome: '/usr/bin/google-chrome',
+  profileDir: '/tmp/leader-crm-e2e-profile',
+  url: 'http://127.0.0.1:43123/index.html?tab=leads'
+});
+
+assert.equal(plan.binary, '/usr/bin/xvfb-run');
+assert.equal(plan.args[0], '-a');
+assert.equal(plan.args[1], '-s');
+assert.match(plan.args[2], /1440x1000x24/);
+assert.ok(plan.args.includes('/usr/bin/google-chrome'));
+assert.ok(plan.args.includes('--disable-background-timer-throttling'));
+assert.ok(plan.args.includes('--disable-renderer-backgrounding'));
+assert.ok(plan.args.includes('--window-size=1366,900'));
+assert.ok(plan.args.includes('--user-data-dir=/tmp/leader-crm-e2e-profile'));
+assert.ok(plan.args.includes('http://127.0.0.1:43123/index.html?tab=leads'));
+assert.equal(plan.args.some((item) => String(item).startsWith('--headless')), false);
+
+assert.equal(operatorPlan().browser_mode, 'xvfb_headed_chrome');
+assert.equal(operatorPlan().browser_transport_bridge, 'same_origin_exact_staging_rpc_real_response');
+
+const runnerSource = await readFile(new URL('./run_crm_staging_authenticated_e2e.mjs', import.meta.url), 'utf8');
+assert.match(runnerSource, /__crm_e2e_staging_request_proxy/);
+assert.match(runnerSource, /staging_request_proxy_route_forbidden/);
+assert.match(runnerSource, /requestHeaders: incomingHeaders/);
+assert.match(runnerSource, /rpcObject\?\.ok === true/);
+assert.match(runnerSource, /progress\('lead_assign_dispatched'\)/);
+assert.match(runnerSource, /progress\('read_start:'\+tableName\)/);
+assert.match(runnerSource, /progress\('read_done:'\+tableName\)/);
+assert.match(runnerSource, /progress\('read_headers:'\+tableName\)/);
+assert.match(runnerSource, /progress\('read_body:'\+tableName\)/);
+assert.match(runnerSource, /microtask_hot:/);
+assert.match(runnerSource, /count===25\|\|count===250\|\|count===2500/);
+assert.ok(runnerSource.includes(String.raw`split('\\n')`));
+assert.match(runnerSource, /progress\('read_error:'\+tableName\+':'\+code\)/);
+assert.match(runnerSource, /read_table_forbidden/);
+assert.match(runnerSource, /Authorization:'Bearer '\+session\.access_token/);
+assert.match(runnerSource, /v4State:v4RuntimeState/);
+assert.match(runnerSource, /const session=v4RuntimeState\?\.session/);
+assert.doesNotMatch(runnerSource, /await supabaseClient\.auth\.getSession\(\)/);
+assert.doesNotMatch(runnerSource, /supabaseClient\.from\(tableName\)/);
+assert.match(runnerSource, /v4Config\.supabaseUrl\.endsWith\('\/'\)/);
+assert.doesNotMatch(runnerSource, /v4Config\.supabaseUrl\.replace/);
+assert.match(runnerSource, /lead_assignment_event_timeout/);
+assert.match(runnerSource, /lead_card_render_event_timeout/);
+assert.match(runnerSource, /lead_card_render_event_wrong_lead/);
+assert.match(runnerSource, /assignment_before_need_ui/);
+assert.match(runnerSource, /lead_card_refresh_after_assignment_timeout/);
+assert.match(runnerSource, /lead_card_refresh_after_assignment_wrong_lead/);
+assert.match(runnerSource, /lead_card_route_after_assignment_timeout/);
+assert.doesNotMatch(runnerSource, /need_ui_before_assignment_timeout/);
+assert.doesNotMatch(runnerSource, /need_ui_ready_before_assignment/);
+assert.match(runnerSource, /waitForDocumentEvent/);
+assert.match(runnerSource, /rpc_\$\{workflowCode\}/);
+assert.match(runnerSource, /const nativeFetch=globalThis\.fetch\.bind\(globalThis\)/);
+assert.match(runnerSource, /nativeFetch\(endpoint\.toString\(\),\{method:'GET'/);
+assert.match(runnerSource, /const need=await waitFor\(async\(\)=>\{const rows=await table\('leader_lead_needs'/);
+assert.doesNotMatch(runnerSource, /proxyEvidenceRead/);
+assert.doesNotMatch(runnerSource, /new XMLHttpRequest\(\)/);
+assert.doesNotMatch(runnerSource, /proxyResponse\.text\(\)/);
+assert.doesNotMatch(runnerSource, /new TextEncoder/);
+assert.match(runnerSource, /'Content-Length': String\(upstream\.body\.length\)/);
+assert.match(runnerSource, /Connection: 'close'/);
+assert.match(runnerSource, /lastTransport/);
+assert.match(runnerSource, /networkAt: lastTransportAt/);
+assert.doesNotMatch(runnerSource, /form\.action='\/__crm_e2e_staging_rpc_proxy'/);
+assert.doesNotMatch(runnerSource, /new Response\(JSON\.stringify\(\{ok:true,request_id:command\.request_id/);
+assert.match(runnerSource, /workflow_event_dispatch_enter/);
+assert.match(runnerSource, /workflow_event_dispatch_exit/);
+assert.match(runnerSource, /nativeDocumentDispatch/);
+assert.match(runnerSource, /progressSequence/);
+assert.match(runnerSource, /lastProgressSequence/);
+assert.ok(runnerSource.includes("const match = /^(\\d{4}):"));
+assert.match(runnerSource, /lead_assignment_event_resolved/);
+assert.match(runnerSource, /lead_assignment_event_validated/);
+assert.match(runnerSource, /lead_refresh_click_observed/);
+assert.match(runnerSource, /lead_card_render_event_observed/);
+assert.match(runnerSource, /lead_card_refresh_event_resolved/);
+assert.match(runnerSource, /final_lead_assignment_persistence_failed/);
+assert.match(runnerSource, /lead_assignment_db_persisted_final/);
+assert.match(runnerSource, /lead_assignment_ui_confirmed/);
+assert.match(runnerSource, /await waitForWorkflowRpc\(local\.getWorkflowRpcState\)/);
+assert.ok(runnerSource.includes('await loginManager();record(\'login_first_entry\');await openSyntheticLead();await assignLead();await createNeedAndCalculation()'));
+assert.ok(runnerSource.includes("profileDir: path.join(tempRoot, 'chrome-profile-manager')"));
+assert.ok(runnerSource.includes('evidence.assignment_persistence = true'));
+assert.doesNotMatch(runnerSource, /e2e_phase=/);
+assert.doesNotMatch(runnerSource, /assigned_card_diag/);
+assert.doesNotMatch(runnerSource, /openAssignedLead/);
+assert.doesNotMatch(runnerSource, /progress\\\('lead_open_clicked'\\\)/);
+assert.match(runnerSource, /progress\('need_ui_wait'\)/);
+assert.match(runnerSource, /const form=document\.getElementById\('needForm'\);if\(form\)return form/);
+assert.match(runnerSource, /entry\?\.id!==\'needForm\'/);
+assert.doesNotMatch(runnerSource, /#needFormBox \.v4-need-workspace-summary/);
+assert.doesNotMatch(runnerSource, /const needsModule=await import\('\.\/assets\/v4\/needs\.js\?v=20260805-tab-loader-1'\)/);
+assert.doesNotMatch(runnerSource, /__crm_e2e_staging_rpc_proxy[^\n]+signal:init\?\.signal/);
+
+assert.throws(
+  () => browserLaunchPlan({ chrome: '/usr/bin/google-chrome', profileDir: '/tmp/profile', url: 'http://127.0.0.1/' }),
+  /browser_launch_input_invalid/
+);
+
+console.log('Authenticated staging E2E uses one headed Chrome session, native authenticated needs reads, and a same-origin user-JWT bridge for exact staging workflow RPC, then resumes after the required order refresh.');
+
+// Compile the generated browser module, not only its surrounding Node template.
+const syntax = spawnSync(process.execPath, ['--input-type=module', '--check'], { input: browserSource(), encoding: 'utf8' });
+assert.equal(syntax.status, 0, syntax.stderr);
+const ownerRoleSource = roleBrowserSource('owner');
+const ownerSyntax = spawnSync(process.execPath, ['--input-type=module', '--check'], { input: ownerRoleSource, encoding: 'utf8' });
+assert.equal(ownerSyntax.status, 0, ownerSyntax.stderr);
+assert.ok(ownerRoleSource.includes("progress('role_ui_boot')"));
+assert.ok(ownerRoleSource.includes("progress('role_ui_login_submitted')"));
+assert.ok(ownerRoleSource.includes("progress('owner_user_admin_clicked')"));
+assert.ok(ownerRoleSource.includes("progress('owner_user_admin_opened')"));
+assert.ok(ownerRoleSource.includes("progress('role_ui_wait:'+code)"));
+assert.doesNotMatch(browserSource(), /const synthetic=|workflow_rpc_synthetic|status:201,json:async/);
+assert.ok(browserSource().includes("response=await nativeFetch('/__crm_e2e_staging_request_proxy'"));
+
+assert.ok(browserSource().includes('calculation_need_not_selected'));
+assert.ok(browserSource().includes('response.error.context.json()'));
+
+assert.ok(browserSource().includes('is_current_revision'));
+assert.ok(browserSource().includes("finalLead.status==='Создан заказ'"));
+assert.ok(browserSource().includes('finalLead.converted_order_id===orderId'));
+
+assert.ok(browserSource().includes("unexpected_crm_http_error"));
+assert.ok(browserSource().includes("fatal_browser_errors"));
+
+assert.ok(browserSource().includes('next_contact_not_saved'));
+assert.ok(browserSource().includes('manager_forbidden_tab_visible'));
+
+assert.ok(!browserSource().includes('id,lead_id,offer_id,calculation_id,project_name'));
+assert.ok(browserSource().includes('order_source_links_failed'));
+
+assert.ok(browserSource().includes("getElementById('productionJobStagingPreviewV1')"));
+
+assert.ok(browserSource().includes('order_duplicate_prevention'));
+assert.ok(browserSource().includes('installation_not_ready_rollback'));
+
+assert.ok(browserSource().includes("functionName==='leader-crm-leads'?'leader-crm-leads-staging':functionName"));

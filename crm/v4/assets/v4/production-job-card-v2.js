@@ -9,6 +9,8 @@ import {
   validateProductionStatusTransition
 } from './production-status-ui-model-v1.js';
 import { setStatus, toast } from './ui.js';
+import { V4_CONFIG } from './config.js';
+import { isStagingProductionEnvironment } from './production-job-staging-transport-v1.js';
 
 const JOB_FIELDS_SAFE = ['id','order_id','title','production_status','layout_status','priority','deadline','sent_to_contractor_at','ready_at','issued_at','file_url','technical_task','contractor_comment','created_at','updated_at'];
 const ORDER_FIELDS_SAFE = ['id','order_number','project_name','status','layout_status','layout_link','production_status','installation_address'];
@@ -20,11 +22,13 @@ let currentBundle = null;
 
 function jobFields() {
   const fields = [...JOB_FIELDS_SAFE];
+  if (isStagingProductionEnvironment(V4_CONFIG.supabaseUrl)) return fields.join(',');
   if (canViewV4Costs()) fields.push('contractor_cost');
   if (canViewV4InternalNotes()) fields.push('internal_comment');
   return fields.join(',');
 }
 function orderFields() {
+  if (isStagingProductionEnvironment(V4_CONFIG.supabaseUrl)) return 'id,order_number,project_name,status,layout_status,layout_link';
   const fields = [...ORDER_FIELDS_SAFE];
   if (canViewV4InternalNotes()) fields.push('data');
   return fields.join(',');
@@ -36,6 +40,7 @@ function itemFields() {
 }
 function eventFields() {
   const fields = [...EVENT_FIELDS_SAFE];
+  if (isStagingProductionEnvironment(V4_CONFIG.supabaseUrl)) return fields.join(',');
   if (canViewV4InternalNotes()) fields.push('created_by_email');
   return fields.join(',');
 }
@@ -51,7 +56,8 @@ function dataObject(value) { if (!value) return {}; if (typeof value === 'object
 function layoutStatus(job, order) { return job?.layout_status || order?.layout_status || '—'; }
 function layoutApproved(status) {
   const text = String(status || '').toLowerCase();
-  return text.includes('соглас') || text.includes('утверж') || text.includes('готов');
+  if (text.includes('на согласовании') || text.includes('согласовани') || text.includes('правк')) return false;
+  return text.includes('согласован') || text.includes('утверж') || text.includes('готов');
 }
 function layoutNeedsCheck(job, order) {
   const text = String(layoutStatus(job, order)).toLowerCase();
@@ -110,7 +116,7 @@ async function fetchBundle(jobId) {
   const job = jobResponse.data;
   const [orderResponse, itemsResponse, eventsResponse] = await Promise.all([
     job.order_id ? supabaseClient.from('leader_orders').select(orderFields()).eq('id', job.order_id).single() : Promise.resolve({ data: null, error: null }),
-    supabaseClient.from('leader_production_job_items').select(itemFields()).eq('job_id', jobId).order('created_at', { ascending: true }).limit(120),
+    isStagingProductionEnvironment(V4_CONFIG.supabaseUrl) ? Promise.resolve({ data: [], error: null }) : supabaseClient.from('leader_production_job_items').select(itemFields()).eq('job_id', jobId).order('created_at', { ascending: true }).limit(120),
     supabaseClient.from('leader_production_events').select(eventFields()).eq('job_id', jobId).order('created_at', { ascending: false }).limit(30)
   ]);
   if (itemsResponse.error) throw itemsResponse.error;
@@ -132,8 +138,8 @@ function renderCard(bundle) {
   currentBundle = bundle;
   const { job, order, items, events } = bundle;
   const data = canViewV4InternalNotes() ? dataObject(order?.data) : {};
-  const costStat = canViewV4Costs() ? `<div data-v4-cost-sensitive><span>Себестоимость</span><b>${money(job.contractor_cost)}</b></div>` : '';
-  const internalField = canViewV4InternalNotes() ? `<label class="wide" data-v4-internal-sensitive>Внутренний комментарий<textarea id="prodJobInternalComment">${esc(job.internal_comment || '')}</textarea></label>` : '';
+  const costStat = !isStagingProductionEnvironment(V4_CONFIG.supabaseUrl) && canViewV4Costs() ? `<div data-v4-cost-sensitive><span>Себестоимость</span><b>${money(job.contractor_cost)}</b></div>` : '';
+  const internalField = !isStagingProductionEnvironment(V4_CONFIG.supabaseUrl) && canViewV4InternalNotes() ? `<label class="wide" data-v4-internal-sensitive>Внутренний комментарий<textarea id="prodJobInternalComment">${esc(job.internal_comment || '')}</textarea></label>` : '';
   const orderButton = order && canOpenV4Tab('orders') ? `<button type="button" data-open-order="${esc(order.id)}">Открыть заказ</button>` : '';
   const statusModel = productionStatusUiModel(job.production_status);
   const statusDisplay = statusModel.known && statusModel.legacy ? `${statusModel.raw} (legacy: ${statusModel.label})` : statusModel.raw;
@@ -173,7 +179,28 @@ async function saveJob(jobId) {
       updated_at: nowIso(),
       ...productionStatusTimestampPatch(transition, old, nowIso())
     };
-    if (canViewV4InternalNotes()) patch.internal_comment = field('prodJobInternalComment') || null;
+    if (!isStagingProductionEnvironment(V4_CONFIG.supabaseUrl) && canViewV4InternalNotes()) patch.internal_comment = field('prodJobInternalComment') || null;
+    if (isStagingProductionEnvironment(V4_CONFIG.supabaseUrl)) {
+      const result = await supabaseClient.functions.invoke('leader-crm-production', { body: {
+        action: 'production_job.update',
+        request_id: globalThis.crypto.randomUUID(),
+        expected_updated_at: old.updated_at,
+        payload: {
+          job_id: jobId,
+          idempotency_key: `production_job.update:${jobId}:${status}:v1`,
+          patch: Object.fromEntries(Object.entries(patch).filter(([key]) => [
+            'title','production_status','layout_status','priority','deadline','file_url',
+            'technical_task','contractor_comment','internal_comment'
+          ].includes(key)))
+        }
+      } });
+      if (result.error || result.data?.ok !== true) throw new Error(result.data?.error?.code || result.error?.message || 'production_update_failed');
+      toast(result.data.idempotent_replay ? 'Безопасный повтор сохранения производства' : 'Производственное задание сохранено атомарно в staging');
+      setStatus('Производственное задание сохранено через staging Edge', 'good');
+      document.dispatchEvent(new CustomEvent('leader-v4-order-updated', { detail: { order: result.data.order } }));
+      renderCard(await fetchBundle(jobId));
+      return;
+    }
     const response = await supabaseClient.from('leader_production_jobs').update(patch).eq('id', jobId);
     if (response.error) throw response.error;
     if (old.order_id) {

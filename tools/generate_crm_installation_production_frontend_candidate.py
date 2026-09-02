@@ -30,11 +30,11 @@ SOURCES = {
     },
     'loader': {
         'path': ROOT / 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js',
-        'blob_sha': 'd456e0497a2c2909d27537bc5da12458786f4cd6',
+        'blob_sha': '43f5e029236199ad7022032a6215c04282f5f40a',
     },
     'index': {
         'path': ROOT / 'crm/v4/index.html',
-        'blob_sha': 'dc4a800d1426c4056b5f9696e4e20938eca3eabd',
+        'blob_sha': '971efe7840c3086890c434aa087615023876fab9',
     },
 }
 
@@ -344,14 +344,24 @@ def production_card(source: str) -> str:
 
 
 def candidate_loader(source: str) -> str:
-    old = "() => import('./installation-job-card-v2.js?v=20260805-tab-loader-1')"
-    new = "() => import('./installation-job-card-v3.js?v=20260723-production-edge-candidate-1')"
-    return replace_once(source, old, new, 'lazy installation loader')
+    text = replace_once(
+        source,
+        "() => import('./installation-job-card-v2.js?v=20260805-tab-loader-1')",
+        "() => import('./installation-job-card-v3.js?v=20260723-production-edge-candidate-1')",
+        'lazy installation loader',
+    )
+    text = replace_once(
+        text,
+        "\n        () => import('./installation-job-staging-create-v1.js?v=20260827-entity-1')",
+        '',
+        'remove staging-only installation create entrypoint',
+    )
+    return text
 
 
 def main() -> int:
     sources = load_sources()
-    if 'crm-v4-tab-loader-v1.js?v=20260805-lazy-tabs-1' not in sources['index']:
+    if 'crm-v4-tab-loader-v1.js?v=20260816-direct-card-1' not in sources['index']:
         raise SystemExit('index: approved lazy tab loader entrypoint missing')
     if '<script type="module" src="assets/v4/installation-job-card-' in sources['index']:
         raise SystemExit('index: eager installation card script is forbidden')

@@ -83,7 +83,7 @@ def main() -> int:
         "modules[6].bootCalculationDraftReview?.()",
         "modules[8].bootOffers?.()",
         "modules[9].bootOrders?.()",
-        "import('./orders.js?v=20260805-tab-loader-1')",
+        "import('./orders.js?v=",
     ):
         require(loader, marker, LOADER)
 

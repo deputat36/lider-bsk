@@ -4,6 +4,9 @@ import { setStatus } from './ui.js';
 import { openLeadRoute } from './router.js';
 import { isActiveOrderStatus, orderStatusUiModel } from './order-status-ui-model-v1.js';
 import { describeOrderListState, loadOrderListPreferences, paymentNeedsAttention, resetOrderListPreferences, saveOrderListPreferences, selectOrderRows } from './order-list-preferences-v1.js';
+import { invokeLeaderFunction } from './functions-client.js';
+import { V4_CONFIG } from './config.js';
+import { CRM_V4_ACTIONS, canPerformV4Action } from './action-permissions-v1.js';
 
 const ORDER_FIELDS = 'id,order_number,project_name,status,deadline,client_name,client_phone,client_total,payment_status,created_at,layout_status,lead_id';
 let busy = false;
@@ -32,7 +35,8 @@ function layoutStatus(order) {
 
 function designClass(order) {
   const text = String(layoutStatus(order)).toLowerCase();
-  if (text.includes('соглас') || text.includes('утверж') || text.includes('готов')) return 'is-good';
+  if (text.includes('на согласовании') || text.includes('согласовани') || text.includes('правк')) return 'is-warn';
+  if (text.includes('согласован') || text.includes('утверж') || text.includes('готов')) return 'is-good';
   if (text.includes('нет') || text.includes('не треб')) return 'is-muted';
   if (text.includes('правк') || text.includes('работ') || text.includes('дизайн') || text.includes('согласован')) return 'is-warn';
   return 'is-warn';
@@ -99,7 +103,9 @@ function host() {
 function renderOrderFastCard(order) {
   const statusModel = orderStatusUiModel(order.status);
   const warning = statusModel.known ? '' : `<div class="v4-orders-fast-warning" data-unknown-order-status="${esc(statusModel.raw)}">${esc(statusModel.warning)}</div>`;
-  return `<article class="v4-orders-fast-card"><div class="v4-orders-fast-head"><h3>№${esc(order.order_number || String(order.id || '').slice(0, 8))} — ${esc(order.project_name || 'Заказ')}</h3><span class="v4-crm-badge ${esc(statusModel.cssClass)}" title="${esc(statusModel.known ? `Registry: ${statusModel.key}` : statusModel.warning)}">${esc(statusModel.label)}</span></div>${warning}<div class="v4-orders-fast-meta"><span><b>Клиент:</b> ${esc(order.client_name || '—')}</span><span><b>Телефон:</b> ${esc(order.client_phone || '—')}</span><span><b>Срок:</b> ${dateRu(order.deadline)}</span><span><b>Оплата:</b> ${esc(order.payment_status || 'Не указана')}</span><span><b>Сумма:</b> ${money(order.client_total)}</span>${renderDesignBadge(order)}</div><div class="v4-orders-fast-actions"><button type="button" class="v4-primary" data-open-order="${esc(order.id)}">Карточка заказа</button>${order.lead_id ? `<button type="button" data-order-open-lead="${esc(order.lead_id)}">Открыть заявку</button>` : ''}</div></article>`;
+  const design = canPerformV4Action(CRM_V4_ACTIONS.DESIGN_READ) ? `<button type="button" data-design-task-draft-order="${esc(order.id)}">Дизайн</button>` : '';
+  const production = canPerformV4Action(CRM_V4_ACTIONS.PRODUCTION_READ) ? `<button type="button" data-production-staging-order="${esc(order.id)}">Производство</button>` : '';
+  return `<article class="v4-orders-fast-card"><div class="v4-orders-fast-head"><h3>№${esc(order.order_number || String(order.id || '').slice(0, 8))} — ${esc(order.project_name || 'Заказ')}</h3><span class="v4-crm-badge ${esc(statusModel.cssClass)}" title="${esc(statusModel.known ? `Registry: ${statusModel.key}` : statusModel.warning)}">${esc(statusModel.label)}</span></div>${warning}<div class="v4-orders-fast-meta"><span><b>Клиент:</b> ${esc(order.client_name || '—')}</span><span><b>Телефон:</b> ${esc(order.client_phone || '—')}</span><span><b>Срок:</b> ${dateRu(order.deadline)}</span><span><b>Оплата:</b> ${esc(order.payment_status || 'Не указана')}</span><span><b>Сумма:</b> ${money(order.client_total)}</span>${renderDesignBadge(order)}</div><div class="v4-orders-fast-actions"><button type="button" class="v4-primary" data-open-order="${esc(order.id)}">Карточка заказа</button>${design}${production}${order.lead_id ? `<button type="button" data-order-open-lead="${esc(order.lead_id)}">Открыть заявку</button>` : ''}</div></article>`;
 }
 
 function render() {
@@ -137,11 +143,15 @@ async function loadOrdersFast(force = false) {
   if (box) box.innerHTML = '<div class="v4-empty">Загружаю быстрый список заказов...</div>';
   try {
     setStatus('Загружаю список заказов...', 'warn');
-    const response = await supabaseClient
-      .from('leader_orders')
-      .select(ORDER_FIELDS)
-      .order('created_at', { ascending: false })
-      .limit(40);
+    let response;
+    try {
+      const host = new URL(V4_CONFIG.supabaseUrl).hostname;
+      if (host === 'otulfnouybahfnsycxqn.supabase.co') {
+        const result = await invokeLeaderFunction('leader-crm-orders', { action: 'list' });
+        response = { data: result.orders || [], error: null };
+      }
+    } catch (_) { response = null; }
+    if (!response) response = await supabaseClient.from('leader_orders').select(ORDER_FIELDS).order('created_at', { ascending: false }).limit(40);
     if (response.error) throw response.error;
     rows = response.data || [];
     setStatus('Список заказов загружен', 'good');

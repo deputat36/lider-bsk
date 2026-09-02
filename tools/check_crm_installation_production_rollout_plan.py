@@ -67,7 +67,7 @@ require_text("workflow", [
     "installation-production-rollout-plan-package",
     "installation-production-rollout-plan-diagnostics",
 ])
-require_text("index", ['assets/v4/crm-v4-tab-loader-v1.js?v=20260805-lazy-tabs-1'])
+require_text("index", ['assets/v4/crm-v4-tab-loader-v1.js?v=20260816-direct-card-1'])
 if re.search(r'<script\b[^>]*\bsrc=["\'][^"\']*installation-job-card-[^"\']*["\']', texts["index"], re.I):
     errors.append("working_index_eager_installation_script")
 require_text("loader", ["() => import('./installation-job-card-v2.js?v=20260805-tab-loader-1')"])

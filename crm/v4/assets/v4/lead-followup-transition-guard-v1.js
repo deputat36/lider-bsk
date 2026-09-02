@@ -34,7 +34,7 @@ function ensureNote(id, host, message, before = null) {
     if (before && before.parentElement === host) host.insertBefore(note, before);
     else host.appendChild(note);
   }
-  note.textContent = message;
+  if (note.textContent !== message) note.textContent = message;
   return note;
 }
 

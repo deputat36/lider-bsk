@@ -91,9 +91,9 @@ const TAB_REGISTRY = Object.freeze({
       [
         () => import('./order-card-v1.js?v=20260805-tab-loader-1'),
         () => import('./order-act-preview-v1.js?v=20260805-tab-loader-1'),
-        () => import('./design-task-draft-preview-v1.js?v=20260714-design-staging-1'),
+        () => import('./design-task-draft-preview-v1.js?v=20260827-revision-1'),
         () => import('./design-task-draft-entrypoints-v1.js?v=20260714-design-staging-1'),
-        () => import('./production-job-staging-preview-v1.js?v=20260809-production-staging-1')
+        () => import('./production-job-staging-preview-v1.js?v=20260827-revision-1')
       ]
     ),
     mount: (module) => module.mount?.(),
@@ -132,8 +132,9 @@ const TAB_REGISTRY = Object.freeze({
       () => import('./production-board-v3.js?v=20260805-tab-loader-1'),
       [
         () => import('./production-alerts-v1.js?v=20260805-tab-loader-1'),
-        () => import('./production-job-card-v2.js?v=20260805-tab-loader-1'),
-        () => import('./installation-job-card-v2.js?v=20260805-tab-loader-1')
+        () => import('./production-job-card-v2.js?v=20260827-order-read-1'),
+        () => import('./installation-job-card-v2.js?v=20260805-tab-loader-1'),
+        () => import('./installation-job-staging-create-v1.js?v=20260827-entity-1')
       ]
     ),
     mount: (module) => module.mount?.(),
@@ -232,7 +233,7 @@ async function loadLeadCardBundle() {
   showLoading('card', 'Загружаю карточку заявки…');
   if (!cardBundlePromise) {
     cardBundlePromise = Promise.all([
-      import('./lead-card.js?v=20260805-tab-loader-1'),
+      import('./lead-card.js?v=20260816-direct-card-1'),
       import('./lead-timeline.js?v=20260805-tab-loader-1'),
       import('./lead-timeline-hooks.js?v=20260805-tab-loader-1'),
       import('./needs.js?v=20260805-tab-loader-1'),
@@ -241,8 +242,8 @@ async function loadLeadCardBundle() {
       import('./calculation-draft-review-v1.js?v=20260805-tab-loader-1'),
       import('./calculation-contractor-quote-v1.js?v=20260805-tab-loader-1'),
       import('./offers.js?v=20260805-tab-loader-1'),
-      import('./orders.js?v=20260805-tab-loader-1'),
-      import('./offer-card-v1.js?v=20260805-tab-loader-1'),
+      import('./orders.js?v=20260827-order-read-1'),
+      import('./offer-card-v1.js?v=20260827-order-read-1'),
       import('./offer-print.js?v=20260805-tab-loader-1'),
       import('./offer-order-create-v1.js?v=20260805-tab-loader-1'),
       import('./need-readiness-panel-v1.js?v=20260713-readiness-1')
@@ -280,6 +281,9 @@ function bootTabLoader() {
     }
     if (TAB_REGISTRY[tab]) loadV4Tab(tab, { force: event.detail?.force === true });
   });
+  const currentTab = String(document.body?.dataset?.v4Tab || '');
+  if (currentTab === 'card') loadLeadCardBundle();
+  else if (TAB_REGISTRY[currentTab]) loadV4Tab(currentTab);
 }
 
 export { TAB_REGISTRY };

@@ -92,3 +92,6 @@ const terminal = buildProductionJobStagingDraft({
 assert.equal(terminal.state, 'order_unavailable');
 
 console.log('CRM production job staging draft is guarded, minimal and status-registry aware.');
+
+const preciseRevision = '2026-08-27T15:00:00.123456+00:00';
+assert.equal(buildProductionJobStagingDraft({ order: { ...order, updated_at: preciseRevision }, canRead: true, canWrite: true }).order.updatedAt, preciseRevision);

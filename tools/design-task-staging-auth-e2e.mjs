@@ -22,7 +22,7 @@ export const SAFE_PROJECTIONS = Object.freeze({
   ]),
   leader_design_tasks: Object.freeze([
     'id', 'order_id', 'task_status', 'layout_status', 'designer_name',
-    'deadline', 'layout_link', 'created_at'
+    'deadline', 'layout_link', 'created_at', 'updated_at'
   ])
 });
 

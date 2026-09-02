@@ -1,0 +1,12 @@
+name: CRM staging authenticated E2E dispatch
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  authenticated-e2e:
+    uses: ./.github/workflows/crm-staging-authenticated-e2e.yml

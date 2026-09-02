@@ -1,0 +1,6 @@
+Issue: #487
+Branch: agent/487-authenticated-staging-e2e
+Production enabled: false
+Purpose: verify the final harness hypothesis: use native authenticated staging GET for leader_lead_needs and assign the unassigned manager lead immediately after card readiness, before waiting for the needs workspace.
+Cleanup required: true
+Attempt: 19

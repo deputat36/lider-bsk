@@ -37,7 +37,16 @@ const subscribers = new Set();
 
 export function setState(patch) {
   Object.assign(v4State, patch);
-  subscribers.forEach((subscriber) => subscriber(v4State));
+  subscribers.forEach((subscriber) => {
+    try {
+      subscriber(v4State);
+    } catch (error) {
+      // A secondary renderer must never make an already-applied state update look
+      // like a failed business command. Keep the failure observable for QA while
+      // allowing the remaining subscribers and the initiating workflow to finish.
+      console.error('[leader-crm] state subscriber failed', error);
+    }
+  });
 }
 
 export function setLeadFilters(patch) {

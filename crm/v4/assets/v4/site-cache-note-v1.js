@@ -20,7 +20,7 @@ function bootSiteCacheNote() {
   import('./crm-ui-selfcheck-v1.js?v=20260630-selfcheck-2').catch(() => {});
   import('./crm-training-scenario-v1.js?v=20260712-training-3').catch(() => {});
   import('./need-readiness-panel-v1.js?v=20260713-readiness-1').catch(() => {});
-  import('./design-task-draft-preview-v1.js?v=20260714-design-staging-1').catch(() => {});
+  import('./design-task-draft-preview-v1.js?v=20260827-revision-1').catch(() => {});
   import('./design-task-draft-entrypoints-v1.js?v=20260714-design-staging-1').catch(() => {});
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootSiteCacheNote); else bootSiteCacheNote();

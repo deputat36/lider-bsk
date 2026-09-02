@@ -79,7 +79,7 @@ def main() -> None:
 
     require(preview, [
         "import { V4_CONFIG } from './config.js'",
-        "from './design-task-staging-transport-v1.js'",
+        "from './design-task-staging-transport-v1.js?v=20260827-revision-1'",
         'canPerformV4Action(CRM_V4_ACTIONS.DESIGN_WRITE)',
         "const ORDER_FIELDS = 'id,order_number,lead_id,project_name,status,priority,deadline,layout_status,layout_link,is_archived,updated_at'",
         'Создать тестовую задачу в staging',

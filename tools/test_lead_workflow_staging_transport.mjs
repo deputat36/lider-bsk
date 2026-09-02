@@ -9,14 +9,29 @@ import {
 
 const STAGING_URL = 'https://otulfnouybahfnsycxqn.supabase.co';
 const PRODUCTION_URL = 'https://ofewxuqfjhamgerwzull.supabase.co';
+const PUBLISHABLE_KEY = 'sb_publishable_TEST_ONLY_DO_NOT_USE';
+const ACCESS_TOKEN = 'TEST_ACCESS_TOKEN';
 const leadId = '11111111-1111-4111-8111-111111111111';
 const actorId = '22222222-2222-4222-8222-222222222222';
 const requestId = '33333333-3333-4333-8333-333333333333';
 const randomId = '44444444-4444-4444-8444-444444444444';
 const expectedUpdatedAt = '2026-07-23T18:00:00.000Z';
 
+class FakeResponse {
+  constructor(status, body = null) {
+    this.status = status;
+    this.ok = status >= 200 && status < 300;
+    this.body = body;
+  }
+  async json() { return this.body; }
+}
+
+const client = {
+  auth: { getSession: async () => ({ data: { session: { access_token: ACCESS_TOKEN } }, error: null }) }
+};
+
 assert.equal(projectRefFromLeadWorkflowUrl(STAGING_URL), 'otulfnouybahfnsycxqn');
-assert.equal(projectRefFromLeadWorkflowUrl(`https://evil.otulfnouybahfnsycxqn.supabase.co`), '');
+assert.equal(projectRefFromLeadWorkflowUrl('https://evil.otulfnouybahfnsycxqn.supabase.co'), '');
 assert.equal(leadWorkflowPersistenceRoute(STAGING_URL).mode, 'staging_edge');
 assert.equal(leadWorkflowPersistenceRoute(STAGING_URL).browserDirectWrite, false);
 assert.equal(leadWorkflowPersistenceRoute(PRODUCTION_URL).mode, 'production_legacy');
@@ -48,75 +63,191 @@ assert.throws(() => buildStagingLeadWorkflowCommand({
   lead: { id: leadId, updated_at: expectedUpdatedAt }, patch: { message: 'forbidden' }, requestId, idempotencyKey: 'key'
 }), /patch_field_not_allowed:message/);
 
-let invokedSlug = '';
-let invokedBody = null;
-const client = {
-  auth: { getSession: async () => ({ data: { session: { access_token: 'test-jwt' } }, error: null }) },
-  functions: {
-    invoke: async (slug, options) => {
-      invokedSlug = slug;
-      invokedBody = options.body;
-      return {
-        data: {
-          ok: true,
-          request_id: options.body.request_id,
-          idempotent_replay: false,
-          lead: { id: leadId, status: 'В работе', assigned_to: actorId, updated_at: '2026-07-23T18:01:00.000Z' }
-        },
-        error: null
-      };
-    }
-  }
-};
+let invokedUrl = '';
+let invokedInit = null;
 const result = await invokeStagingLeadWorkflow({
   client,
   supabaseUrl: STAGING_URL,
+  publishableKey: PUBLISHABLE_KEY,
   lead: { id: leadId, updated_at: expectedUpdatedAt },
   patch: { assigned_to: actorId, status: 'В работе' },
   idempotencyKey: `lead-workflow:${leadId}:${randomId}`,
-  cryptoObject: { randomUUID: () => requestId }
+  cryptoObject: { randomUUID: () => requestId },
+  fetchImpl: async (url, init) => {
+    invokedUrl = url;
+    invokedInit = init;
+    const body = JSON.parse(init.body);
+    return new FakeResponse(201, {
+      ok: true,
+      request_id: body.p_request.request_id,
+      idempotent_replay: false,
+      lead: { id: leadId, status: 'В работе', assigned_to: actorId, updated_at: '2026-07-23T18:01:00.000Z' }
+    });
+  }
 });
 assert.equal(result.ok, true);
 assert.equal(result.kind, 'updated');
-assert.equal(invokedSlug, 'leader-crm-leads-staging');
-assert.equal(invokedBody.action, 'update');
-assert.equal(invokedBody.assigned_to, actorId);
-assert.equal(invokedBody.expected_updated_at, expectedUpdatedAt);
+assert.equal(result.status, 201);
+assert.equal(invokedUrl, `${STAGING_URL}/rest/v1/rpc/leader_update_lead_workflow_browser_rpc`);
+assert.equal(invokedInit.method, 'POST');
+assert.equal(invokedInit.headers.apikey, PUBLISHABLE_KEY);
+assert.equal(invokedInit.headers.Authorization, `Bearer ${ACCESS_TOKEN}`);
+const invokedBody = JSON.parse(invokedInit.body);
+assert.equal(invokedBody.p_request.action, 'lead_workflow.update');
+assert.equal(invokedBody.p_request.request_id, requestId);
+assert.equal(invokedBody.p_request.expected_updated_at, expectedUpdatedAt);
+assert.equal(invokedBody.p_request.payload.lead_id, leadId);
+assert.equal(invokedBody.p_request.payload.patch.assigned_to, actorId);
+assert.equal(invokedBody.p_request.payload.patch.status, 'В работе');
+assert.equal(Object.prototype.hasOwnProperty.call(invokedBody, 'actor_id'), false);
 
-const unauthenticated = await invokeStagingLeadWorkflow({
+let explicitGetSessionCalled = false;
+let explicitAuthorization = '';
+const explicitTokenResult = await invokeStagingLeadWorkflow({
   client: {
-    auth: { getSession: async () => ({ data: { session: null }, error: null }) },
-    functions: { invoke: async () => { throw new Error('must not invoke'); } }
+    auth: {
+      getSession: async () => {
+        explicitGetSessionCalled = true;
+        throw new Error('must_not_read_session_when_access_token_is_explicit');
+      }
+    }
   },
   supabaseUrl: STAGING_URL,
+  publishableKey: PUBLISHABLE_KEY,
+  accessToken: ACCESS_TOKEN,
+  lead: { id: leadId, updated_at: expectedUpdatedAt },
+  patch: { assigned_to: actorId, status: 'В работе' },
+  idempotencyKey: `lead-workflow:${leadId}:explicit-token`,
+  cryptoObject: { randomUUID: () => requestId },
+  fetchImpl: async (url, init) => {
+    if (String(url).includes('/rest/v1/leader_leads')) {
+      return new FakeResponse(200, [{
+        id: leadId,
+        status: 'В работе',
+        assigned_to: actorId,
+        next_contact_at: null,
+        updated_at: '2026-07-23T18:01:00.000Z'
+      }]);
+    }
+    explicitAuthorization = init.headers.Authorization;
+    const body = JSON.parse(init.body);
+    return new FakeResponse(201, {
+      ok: true,
+      request_id: body.p_request.request_id,
+      idempotent_replay: false,
+      lead: { id: leadId, status: 'В работе', assigned_to: actorId, updated_at: '2026-07-23T18:01:00.000Z' }
+    });
+  }
+});
+assert.equal(explicitGetSessionCalled, false);
+assert.equal(explicitTokenResult.ok, true);
+assert.equal(explicitAuthorization, `Bearer ${ACCESS_TOKEN}`);
+
+let restReadSeen = false;
+const recovered = await invokeStagingLeadWorkflow({
+  client,
+  supabaseUrl: STAGING_URL,
+  publishableKey: PUBLISHABLE_KEY,
+  lead: { id: leadId, updated_at: expectedUpdatedAt },
+  patch: { assigned_to: actorId, status: 'В работе' },
+  idempotencyKey: `lead-workflow:${leadId}:${randomId}`,
+  cryptoObject: { randomUUID: () => requestId },
+  requestTimeoutMs: 300,
+  verificationTimeoutMs: 200,
+  fetchImpl: async (url) => {
+    if (String(url).includes('/rest/v1/rpc/')) {
+      return new FakeResponse(202, { pending: true });
+    }
+    restReadSeen = true;
+    assert.match(String(url), /\/rest\/v1\/leader_leads/);
+    return new FakeResponse(200, [{
+      id: leadId,
+      status: 'В работе',
+      assigned_to: actorId,
+      next_contact_at: null,
+      updated_at: '2026-07-23T18:01:00.000Z'
+    }]);
+  }
+});
+assert.equal(restReadSeen, true);
+assert.equal(recovered.ok, true);
+assert.equal(recovered.kind, 'verified_after_transport_error');
+assert.equal(recovered.status, 202);
+assert.equal(recovered.data.transport_recovered, true);
+assert.equal(recovered.data.lead.assigned_to, actorId);
+
+const unresolvedTimeout = await invokeStagingLeadWorkflow({
+  client,
+  supabaseUrl: STAGING_URL,
+  publishableKey: PUBLISHABLE_KEY,
+  lead: { id: leadId, updated_at: expectedUpdatedAt },
+  patch: { assigned_to: actorId, status: 'В работе' },
+  idempotencyKey: `lead-workflow:${leadId}:${randomId}`,
+  cryptoObject: { randomUUID: () => requestId },
+  requestTimeoutMs: 250,
+  verificationTimeoutMs: 120,
+  fetchImpl: async (url) => {
+    if (String(url).includes('/rest/v1/rpc/')) {
+      return { status: 201, ok: true, json: async () => new Promise(() => {}) };
+    }
+    return new FakeResponse(200, [{
+      id: leadId,
+      status: 'Новая',
+      assigned_to: null,
+      next_contact_at: null,
+      updated_at: expectedUpdatedAt
+    }]);
+  }
+});
+assert.equal(unresolvedTimeout.ok, false);
+assert.equal(unresolvedTimeout.kind, 'network_error');
+assert.equal(unresolvedTimeout.code, 'request_timeout');
+
+const unauthenticated = await invokeStagingLeadWorkflow({
+  client: { auth: { getSession: async () => ({ data: { session: null }, error: null }) } },
+  supabaseUrl: STAGING_URL,
+  publishableKey: PUBLISHABLE_KEY,
   lead: { id: leadId, updated_at: expectedUpdatedAt },
   patch: { status: 'В работе' },
   idempotencyKey: 'key',
-  cryptoObject: { randomUUID: () => requestId }
+  cryptoObject: { randomUUID: () => requestId },
+  fetchImpl: async () => { throw new Error('must not fetch'); }
 });
 assert.equal(unauthenticated.kind, 'auth_required');
 
 const rejected = await invokeStagingLeadWorkflow({
-  client: {
-    auth: { getSession: async () => ({ data: { session: { access_token: 'test-jwt' } }, error: null }) },
-    functions: { invoke: async () => ({ data: { ok: false, error: { code: 'assignee_required' } }, error: null }) }
-  },
+  client,
   supabaseUrl: STAGING_URL,
+  publishableKey: PUBLISHABLE_KEY,
   lead: { id: leadId, updated_at: expectedUpdatedAt },
   patch: { status: 'В работе' },
   idempotencyKey: 'key',
-  cryptoObject: { randomUUID: () => requestId }
+  cryptoObject: { randomUUID: () => requestId },
+  fetchImpl: async () => new FakeResponse(409, { ok: false, error: { code: 'assignee_required' } })
 });
 assert.equal(rejected.kind, 'assignee_required');
 assert.match(rejected.message, /ответственного/i);
 
-const wrongEnvironment = await invokeStagingLeadWorkflow({
+const missingKey = await invokeStagingLeadWorkflow({
   client,
-  supabaseUrl: PRODUCTION_URL,
+  supabaseUrl: STAGING_URL,
   lead: { id: leadId, updated_at: expectedUpdatedAt },
   patch: { status: 'В работе' },
   idempotencyKey: 'key',
-  cryptoObject: { randomUUID: () => requestId }
+  cryptoObject: { randomUUID: () => requestId },
+  fetchImpl: async () => { throw new Error('must not fetch'); }
+});
+assert.equal(missingKey.code, 'publishable_key_missing');
+
+const wrongEnvironment = await invokeStagingLeadWorkflow({
+  client,
+  supabaseUrl: PRODUCTION_URL,
+  publishableKey: PUBLISHABLE_KEY,
+  lead: { id: leadId, updated_at: expectedUpdatedAt },
+  patch: { status: 'В работе' },
+  idempotencyKey: 'key',
+  cryptoObject: { randomUUID: () => requestId },
+  fetchImpl: async () => { throw new Error('must not fetch'); }
 });
 assert.equal(wrongEnvironment.kind, 'wrong_environment');
 

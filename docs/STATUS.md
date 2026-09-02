@@ -1,6 +1,17 @@
 # Статус проекта РА «Лидер»
 
-Дата обновления: 2026-08-09.
+Дата обновления: 2026-08-27.
+
+## Продолжение authenticated staging E2E (#487 / #488)
+
+- Восстановлен head `7c46ff4`; 65 checks PASS, обязательный browser runtime FAIL.
+- Последняя диагностика указала бесконечное самонаблюдение DOM редактором версии расчёта после назначения заявки.
+- Observer игнорирует собственные изменения редактора/конструктора; повторный boot не создаёт второй observer. Добавлен regression test жизненного цикла.
+- E2E больше не подставляет synthetic success вместо ответа RPC: UI получает реальный staging response через существующий user-JWT bridge.
+- Перед повторным запуском напрямую подтверждены пустые staging business tables, profiles, command receipts и Auth users. Production не изменялся.
+- Полный пользовательский путь и роли пока НЕ подтверждены; PR остаётся Draft до runtime PASS и cleanup.
+- Runtime после исправлений прошёл вход, назначение, потребность, первичный расчёт и новую версию (1600 → 1700). Исправлена потеря микросекунд optimistic-lock timestamp в transports расчёта, дизайна и производства.
+- Следующий сбой КП воспроизведён как `42501`: `FOR SHARE` над позициями требует UPDATE хотя бы одной колонки. Staging migration `20260827150706_authenticated_offer_item_row_lock` выдаёт только `UPDATE(id)` служебной роли; у `anon`/`authenticated` UPDATE по-прежнему отсутствует. Проверка той же блокировки после миграции PASS.
 
 ## Staging frontend «заказ → производство»
 
@@ -448,3 +459,11 @@ Supabase baseline РА «Лидер»: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-
 - Контрольные страницы: `srochnaya-reklama-borisoglebsk.html`, `reklama-dlya-servisa-masterskoy-borisoglebsk.html`, `tablichki-borisoglebsk.html`, `oformlenie-vitrin-borisoglebsk.html`, `pechat-na-plenke-borisoglebsk.html`.
 - Исторический статус пакета: первые два пакета из 8 страниц услуг уже закрыты.
 - CRM access cache marker: `20260628-access-label-1`.
+
+- 2026-08-27 (#487/#488): authenticated Chrome reached approved offer and order creation. Corrected E2E order read to real columns; related offer order card now uses existing role-filtered staging orders list, preserving restricted browser grants. Production unchanged.
+
+- 2026-08-27 (#487/#488): Chrome confirmed order, direct orders, Back/Forward/reopen and authenticated Refresh. Design create conflict traced to draft-model timestamp truncation; preserve opaque PostgreSQL revision in design/production models with microsecond tests.
+
+- 2026-08-27 (#487/#488): real production create succeeds; corrected frontend entity/job response mismatch and replay checks, related-order staging read now uses role-filtered Edge. Installation create replay now requires a nonempty matching entity ID.
+
+- 2026-08-27 (#487/#488): Chrome passed canonical layout rejection, approval, production creation/replay and stale guard. Production card staging reads/controls aligned to existing narrow ACL; unread internal notes are never overwritten by status saves. Added order replay and premature-installation negative evidence.

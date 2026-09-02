@@ -5,6 +5,8 @@ import { byId, setStatus, toast } from './ui.js';
 import { marginPercentFromMarkup, markupPercentForSubtotal, priceWithMarkup, repriceAutomaticItems } from './calculation-pricing-model-v1.js';
 import { needCalculationPrefill } from './need-calculation-prefill-v1.js';
 import { circleAreaSquareMeters, parseCalculationDiameters, parseCalculationPairs } from './calculation-spec-model-v1.js';
+import { V4_CONFIG } from './config.js';
+import { isStagingWorkflowEnvironment } from './workflow-staging-transport-v1.js';
 
 const CALC_FIELDS = 'id,lead_id,need_id,client_id,title,status,version_number,client_total,contractor_cost,profit,margin_percent,warning_level,warnings,public_comment,internal_comment,commercial_offer_id,order_id,created_by,updated_by,created_at,updated_at';
 const ITEM_FIELDS = 'id,calculation_id,lead_id,catalog_id,category,item_type,name,unit,qty,contractor_price,contractor_sum,markup_percent,client_price,client_sum,profit,margin_percent,comment,data,sort_order,created_at,updated_at';
@@ -845,6 +847,38 @@ async function saveCalculation() {
   if (saveButton) saveButton.disabled = true;
   try {
     setStatus('Сохраняю расчёт...', 'warn');
+    if (isStagingWorkflowEnvironment(V4_CONFIG.supabaseUrl)) {
+      const leadUpdatedAt = v4State.currentLead?.updated_at;
+      if (!leadUpdatedAt) throw new Error('lead_optimistic_lock_missing');
+      const itemPayloads = result.rawItems.map((raw, index) => calcItem(raw, index));
+      const invoked = await supabaseClient.functions.invoke('leader-crm-workflow', { body: {
+        action: 'calculation.create_initial',
+        request_id: globalThis.crypto.randomUUID(),
+        expected_updated_at: leadUpdatedAt,
+        payload: {
+          lead_id: calcPayload.lead_id,
+          need_id: calcPayload.need_id,
+          idempotency_key: `calculation.create_initial:${calcPayload.lead_id}:${calcPayload.need_id}:v1`,
+          title: calcPayload.title,
+          public_comment: calcPayload.public_comment || null,
+          internal_comment: null,
+          items: itemPayloads
+        }
+      } });
+      if (invoked.error || invoked.data?.ok !== true) throw new Error(invoked.data?.error?.code || invoked.error?.message || 'calculation_create_failed');
+      const calc = invoked.data.calculation;
+      const updatedLead = invoked.data.lead;
+      setState({
+        calculations: [calc, ...(v4State.calculations || []).filter((item) => item.id !== calc.id)],
+        currentLead: updatedLead ? { ...(v4State.currentLead || {}), ...updatedLead } : v4State.currentLead,
+        leads: updatedLead ? (v4State.leads || []).map((lead) => lead.id === updatedLead.id ? { ...lead, ...updatedLead } : lead) : v4State.leads
+      });
+      draftItems = [];
+      renderCalculations();
+      setStatus(invoked.data.idempotent_replay ? 'Расчёт восстановлен без дубля' : 'Расчёт сохранён атомарно. Теперь можно создать версию или КП.', 'good');
+      toast(invoked.data.idempotent_replay ? 'Расчёт уже существовал' : 'Расчёт сохранён');
+      return;
+    }
     const calcResponse = await timeout(
       supabaseClient
         .from('leader_lead_calculations')

@@ -44,12 +44,12 @@ require('config', [
 ])
 
 require('bootstrap', [
-    "import('./calculation-version-editor-v1.js?v=20260716-production-lock-1')",
+    "import('./calculation-version-editor-v1.js?v=20260827-observer-fix-1')",
     'CRM_V4_ACTIONS.CALCULATIONS_WRITE',
 ])
 
 require('route', [
-    "from './calculation-version-staging-transport-v1.js'",
+    "from './calculation-version-staging-transport-v1.js?v=20260827-revision-1'",
     "mode: 'staging_edge'",
     'enabled: true',
     'atomic: true',

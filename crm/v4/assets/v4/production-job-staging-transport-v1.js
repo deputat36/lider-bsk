@@ -30,7 +30,7 @@ function safeServerProjection(value) {
     ok: source.ok === true,
     request_id: text(source.request_id),
     idempotent_replay: source.idempotent_replay === true,
-    job: pick(source.job, [
+    job: pick(source.entity || source.job, [
       'id', 'order_id', 'title', 'production_status', 'priority', 'deadline',
       'layout_status', 'file_url', 'technical_task', 'sent_to_contractor_at',
       'created_at', 'updated_at'
@@ -123,7 +123,8 @@ export function buildStagingProductionCommand({ draft, expectedUpdatedAt, reques
   return Object.freeze({
     action: ACTION,
     request_id: text(requestId),
-    expected_updated_at: new Date(expectedUpdatedAt).toISOString(),
+    // Preserve the server timestamp: JS Date truncates PostgreSQL microseconds.
+    expected_updated_at: text(expectedUpdatedAt),
     payload: Object.freeze({
       order_id: text(source.order_id),
       design_task_id: optionalUuid(source.design_task_id, 'design_task_id_invalid'),

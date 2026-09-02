@@ -1,0 +1,28 @@
+name: CRM state subscriber isolation check
+
+on:
+  pull_request:
+    paths:
+      - 'crm/v4/assets/v4/state.js'
+      - 'tools/test_crm_state_subscriber_isolation.mjs'
+      - '.github/workflows/crm-state-subscriber-isolation-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/state.js'
+      - 'tools/test_crm_state_subscriber_isolation.mjs'
+      - '.github/workflows/crm-state-subscriber-isolation-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify subscriber isolation
+        run: node tools/test_crm_state_subscriber_isolation.mjs

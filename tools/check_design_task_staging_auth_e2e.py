@@ -31,7 +31,7 @@ EXPECTED_PROJECTIONS = {
     ],
     'leader_design_tasks': [
         'id', 'order_id', 'task_status', 'layout_status', 'designer_name',
-        'deadline', 'layout_link', 'created_at',
+        'deadline', 'layout_link', 'created_at', 'updated_at',
     ],
 }
 

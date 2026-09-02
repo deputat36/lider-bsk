@@ -1,6 +1,7 @@
 import { supabaseClient } from './supabase-client.js';
 import { invokeLeaderFunction } from './functions-client.js';
 import { friendlyError } from './api.js';
+import { V4_CONFIG } from './config.js';
 import { v4State, setState, subscribeState } from './state.js';
 import { byId, setStatus, toast } from './ui.js';
 import { isActiveOrderStatus, orderStageFlags, orderStatusUiModel } from './order-status-ui-model-v1.js';
@@ -129,11 +130,13 @@ export async function loadOrders() {
   ordersError = null;
   renderOrders();
   try {
-    const response = await supabaseClient
-      .from('leader_orders')
-      .select(ORDER_FIELDS)
-      .in('id', ids)
-      .limit(30);
+    let response;
+    if (new URL(V4_CONFIG.supabaseUrl).hostname === 'otulfnouybahfnsycxqn.supabase.co') {
+      const result = await invokeLeaderFunction('leader-crm-orders', { action: 'list' });
+      response = { data: (result.orders || []).filter((order) => ids.includes(order.id)), error: null };
+    } else {
+      response = await supabaseClient.from('leader_orders').select(ORDER_FIELDS).in('id', ids).limit(30);
+    }
     if (response.error) throw response.error;
     orders = response.data || [];
     ordersBusy = false;

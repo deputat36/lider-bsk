@@ -189,7 +189,14 @@ for marker in [
 ]:
     if marker not in texts['ui']:
         errors.append(f'Frontend baseline changed without rollout approval: {marker}')
-forbid('ui', ['leader-crm-production', 'leader_update_production_job_rpc'])
+require('ui', [
+    'isStagingProductionEnvironment(V4_CONFIG.supabaseUrl)',
+    "supabaseClient.functions.invoke('leader-crm-production'",
+    "action: 'production_job.update'",
+    'expected_updated_at: old.updated_at',
+    'idempotent_replay',
+])
+forbid('ui', ['leader_update_production_job_rpc'])
 
 require('doc', [
     'Staging Production command Edge v2',

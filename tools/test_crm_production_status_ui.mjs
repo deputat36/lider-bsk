@@ -70,3 +70,20 @@ assert.deepEqual(productionStatusTimestampPatch(validateProductionStatusTransiti
 assert.equal('started_at' in productionStatusTimestampPatch(start, {}, now), false);
 
 console.log('CRM production status UI registry behavior is valid.');
+
+// Staging's column ACL is intentionally narrower than production's role projection.
+const { readFileSync } = await import('node:fs');
+const { runInNewContext } = await import('node:vm');
+const cardSource = readFileSync(new URL('../crm/v4/assets/v4/production-job-card-v2.js', import.meta.url), 'utf8');
+const fieldFunctions = cardSource.slice(cardSource.indexOf('const JOB_FIELDS_SAFE'), cardSource.indexOf('function esc('));
+const fieldContext = {
+  V4_CONFIG: { supabaseUrl: 'staging' }, isStagingProductionEnvironment: (url) => url === 'staging',
+  canViewV4Costs: () => true, canViewV4InternalNotes: () => true
+};
+const fields = runInNewContext(fieldFunctions + ';({jobFields,eventFields})', fieldContext);
+assert.equal(fields.jobFields().includes('internal_comment'), false);
+assert.equal(fields.jobFields().includes('contractor_cost'), false);
+assert.equal(fields.eventFields().includes('created_by_email'), false);
+fieldContext.V4_CONFIG.supabaseUrl = 'production';
+assert.equal(fields.jobFields().includes('internal_comment'), true);
+assert.equal(fields.jobFields().includes('contractor_cost'), true);
