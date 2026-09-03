@@ -7,6 +7,7 @@ on:
       - 'crm/v4/assets/v4/calculations.js'
       - 'crm/v4/assets/v4/calculation-catalog-source-v1.js'
       - 'crm/v4/assets/v4/catalog-pricing-v1.js'
+      - 'crm/v4/assets/v4/calculation-pricing-model-v1.js'
       - 'tools/test_calculation_catalog_source_v1.mjs'
       - 'tools/check_calculation_catalog_ui_mode.py'
       - '.github/workflows/crm-calculation-catalog-source-check.yml'
@@ -16,6 +17,7 @@ on:
       - 'crm/v4/assets/v4/calculations.js'
       - 'crm/v4/assets/v4/calculation-catalog-source-v1.js'
       - 'crm/v4/assets/v4/catalog-pricing-v1.js'
+      - 'crm/v4/assets/v4/calculation-pricing-model-v1.js'
       - 'tools/test_calculation_catalog_source_v1.mjs'
       - 'tools/check_calculation_catalog_ui_mode.py'
       - '.github/workflows/crm-calculation-catalog-source-check.yml'
@@ -36,6 +38,8 @@ jobs:
       - name: Syntax check
         run: |
           node --check crm/v4/assets/v4/calculation-catalog-source-v1.js
+          node --check crm/v4/assets/v4/catalog-pricing-v1.js
+          node --check crm/v4/assets/v4/calculation-pricing-model-v1.js
           node --check crm/v4/assets/v4/calculations.js
       - name: Catalog source behavior tests
         run: node tools/test_calculation_catalog_source_v1.mjs
