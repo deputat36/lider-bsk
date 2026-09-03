@@ -1,103 +1,105 @@
 # CRM contractor quote persistence — 2026-07-01
 
-Scope: CRM РА «Лидер», first implementation without schema migration.
+Scope: CRM РА «Лидер», implementation without schema migration.
 Related issues: #143, #144.
+Status updated: 2026-09-03.
 
-## Current UI state
+## Implemented UI state
 
-`crm/v4/assets/v4/calculation-contractor-quote-v1.js` provides the first visible contractor quote shell.
+Подрядный расчёт больше не является отдельным параллельным калькулятором.
 
-It calculates:
+Он встроен в `crm/v4/assets/v4/calculations.js` как режим `contractor_quote` с пользовательским названием «Подрядчик / готовая смета».
 
-- contractor/base cost;
-- delivery;
-- installation;
-- design;
-- other costs;
-- markup;
-- manual client total;
-- profit;
-- margin.
+Менеджер указывает:
+
+- подрядчика;
+- цену подрядчика;
+- доставку;
+- монтаж;
+- дизайн;
+- прочие расходы;
+- при необходимости итог клиенту вручную;
+- комментарий к позиции.
+
+Наценка не дублируется внутри этого режима: используются общие настройки наценки единого конструктора. Если итог клиенту не введён вручную, `applyAutoPrice()` применяет текущую общую наценку и правила округления.
+
+Клиентская часть остаётся одной строкой, а внутренние компоненты себестоимости сохраняются в JSON snapshot.
+
+## Persistence
+
+Используется тот же save-flow, что и для остальных режимов единого конструктора:
+
+- `leader_lead_calculations` хранит итог расчёта;
+- `leader_lead_calculation_items` хранит одну позицию подрядного расчёта;
+- production использует существующую browser/RLS запись;
+- exact staging использует существующий server action `calculation.create_initial`.
+
+Отдельный endpoint, новая таблица и отдельная логика сохранения для подрядного режима не создаются.
 
 ## Supabase read-only finding
 
-The existing tables already contain the fields needed for first persistence:
+Повторная проверка production и staging 2026-09-03 подтвердила: существующие таблицы уже содержат все поля, нужные для сохранения подрядного расчёта.
 
-- `leader_lead_calculations`;
-- `leader_lead_calculation_items`.
+Схема Supabase не изменяется.
 
-No first-stage migration is required.
+## Calculation item
 
-RLS policies for calculation tables allow authenticated CRM users through `leader_private.leader_has_access()`.
+Одна позиция сохраняется с базовыми полями:
 
-## First persistence target
-
-Create one row in `leader_lead_calculations`:
-
-- `lead_id`;
-- `need_id` optional;
-- `client_id` optional;
-- `title`;
-- `status = Черновик`;
-- `version_number`;
-- `client_total`;
-- `contractor_cost`;
-- `profit`;
-- `margin_percent`;
-- `warning_level`;
-- `warnings`;
-- `public_comment`;
-- `internal_comment`.
-
-Create one row in `leader_lead_calculation_items`:
-
-- `calculation_id`;
-- `lead_id`;
 - `category = Подрядный расчёт`;
-- `item_type = Готовое изделие`;
-- `name`;
+- `item_type = Изготовление`;
+- `name` — клиентское название;
 - `unit = комплект`;
 - `qty = 1`;
-- `contractor_price`;
-- `contractor_sum`;
-- `markup_percent`;
-- `client_price`;
-- `client_sum`;
-- `profit`;
-- `margin_percent`;
-- `comment`;
-- `data`;
-- `sort_order = 1`.
+- `contractor_price` — сумма внутренних затрат;
+- `client_price` — рассчитанная или введённая вручную цена;
+- остальные финансовые поля вычисляются общим `calcItem()`;
+- `data` содержит immutable snapshot состава и режима.
 
-## Required JSON data
+## JSON snapshot
 
-The `data` field should include:
+`data` содержит:
 
 ```json
 {
   "builder_version": "calc-builder-v2",
   "mode": "contractor_quote",
+  "calculation_mode": "contractor_quote",
   "visibility": "single_line",
-  "client_title": "Client-facing title",
+  "client_visible": true,
+  "vendor": "Vendor",
   "contractor": { "id": null, "name": "Vendor" },
+  "contractor_quote": {
+    "base": 0,
+    "delivery": 0,
+    "installation": 0,
+    "design": 0,
+    "other": 0,
+    "total_cost": 0
+  },
   "components": [],
-  "pricing": {}
+  "pricing": { "manual_client_price": null },
+  "price_source": "auto"
 }
 ```
 
-## Rollback rule
+После автоматического ценообразования общий calculation builder также фиксирует `applied_markup_percent`.
 
-If calculation insert succeeds but item insert fails, delete the created calculation row.
+## Failure and lead-state rules
 
-## Lead state
+Сохраняются существующие правила единого конструктора:
 
-After successful save:
+- production при ошибке вставки позиций откатывает созданный расчёт;
+- staging выполняет атомарный server action;
+- после успешного расчёта ранний статус заявки может перейти в `Расчёт подготовлен`;
+- сохранённые расчёты продолжают использовать текущий механизм версий/ревизий.
 
-- reload calculations with `loadCalculations(leadId)`;
-- keep lead status unchanged or move it to `Расчёт подготовлен` only if the current status is still early-stage.
+## Legacy shell retirement
+
+`calculation-contractor-quote-v1.js` больше не должен загружаться карточкой заявки и удаляется как устаревший UI shell. CI запрещает повторное подключение этого файла рядом с `calculations.js`.
 
 ## Security rule
 
-Do not expose service role keys in browser assets.
-
-Do not deploy Edge Functions or change production schema without explicit owner approval.
+- не использовать `service_role` или secret keys в браузере;
+- не ослаблять RLS ради подрядного режима;
+- не менять production schema или Edge Functions для этой задачи.
