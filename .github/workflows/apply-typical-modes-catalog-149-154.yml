@@ -1,0 +1,40 @@
+name: Apply typical modes catalog 149 154
+
+on:
+  push:
+    branches: [agent/149-154-typical-modes-catalog]
+    paths:
+      - 'tools/patch_typical_modes_catalog_149_154.py'
+      - '.github/workflows/apply-typical-modes-catalog-149-154.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/149-154-typical-modes-catalog
+          fetch-depth: 0
+      - name: Apply deterministic patch
+        run: python3 tools/patch_typical_modes_catalog_149_154.py
+      - name: Validate syntax and catalog behavior
+        run: |
+          node --check crm/v4/assets/v4/calculation-catalog-source-v1.js
+          node --check crm/v4/assets/v4/calculations.js
+          node tools/test_calculation_catalog_source_v1.mjs
+      - name: Commit generated integration
+        run: |
+          if git diff --quiet; then
+            echo 'No generated changes'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add crm/v4/assets/v4/calculations.js
+          git commit -m 'Back typical calculation modes with leader_catalog'
+          git push origin HEAD:agent/149-154-typical-modes-catalog
