@@ -7,6 +7,7 @@ import { needCalculationPrefill } from './need-calculation-prefill-v1.js';
 import { circleAreaSquareMeters, parseCalculationDiameters, parseCalculationPairs } from './calculation-spec-model-v1.js';
 import { V4_CONFIG } from './config.js';
 import { isStagingWorkflowEnvironment } from './workflow-staging-transport-v1.js';
+import { catalogRowToDraftItem, legacyCatalogFallbackRows, loadCalculationCatalog } from './calculation-catalog-source-v1.js';
 
 const CALC_FIELDS = 'id,lead_id,need_id,client_id,title,status,version_number,client_total,contractor_cost,profit,margin_percent,warning_level,warnings,public_comment,internal_comment,commercial_offer_id,order_id,created_by,updated_by,created_at,updated_at';
 const ITEM_FIELDS = 'id,calculation_id,lead_id,catalog_id,category,item_type,name,unit,qty,contractor_price,contractor_sum,markup_percent,client_price,client_sum,profit,margin_percent,comment,data,sort_order,created_at,updated_at';
@@ -34,7 +35,12 @@ const CATALOG = [
   { category: 'Печать фото', name: 'A4 ламинация', unit: 'шт', price: 40 }
 ];
 
+let calculationCatalogRows = legacyCatalogFallbackRows(CATALOG);
+let calculationCatalogSource = 'fallback';
+let calculationCatalogLoadPromise = null;
+
 const MODES = [
+  ['catalog', 'Из каталога'],
   ['banner', 'Баннер'],
   ['film', 'Плёнка / наклейки'],
   ['sheet', 'ПВХ / листовой материал'],
@@ -80,6 +86,29 @@ function catalogByName(name) {
 
 function catalogOptions(filter, selected = '') {
   return CATALOG.filter(filter).map((item) => `<option value="${esc(item.name)}" ${item.name === selected ? 'selected' : ''}>${esc(item.name)} · ${money(item.price)} / ${esc(item.unit)}</option>`).join('');
+}
+
+function catalogBackedOptions(selected = '') {
+  return calculationCatalogRows.map((row) => `<option value="${esc(row.id || row.name)}" ${(row.id || row.name) === selected ? 'selected' : ''}>${esc(row.category)} · ${esc(row.name)} · ${esc(row.unit)}</option>`).join('');
+}
+
+function catalogBackedRow(value) {
+  return calculationCatalogRows.find((row) => (row.id || row.name) === value) || calculationCatalogRows[0] || null;
+}
+
+function catalogSourceLabel() {
+  return calculationCatalogSource === 'remote' ? 'Каталог CRM' : 'Встроенный резервный каталог';
+}
+
+async function ensureCalculationCatalog() {
+  if (calculationCatalogLoadPromise) return calculationCatalogLoadPromise;
+  calculationCatalogLoadPromise = loadCalculationCatalog({ supabaseClient, fallbackRows: CATALOG }).then((result) => {
+    calculationCatalogRows = result.rows;
+    calculationCatalogSource = result.source;
+    if (val('calcSmartMode') === 'catalog') setCalcMode('catalog');
+    return result;
+  });
+  return calculationCatalogLoadPromise;
 }
 
 function calcSettings() {
@@ -247,6 +276,19 @@ function renderModeButtons(selected = 'banner') {
 }
 
 function renderModeFields(mode = 'banner') {
+  if (mode === 'catalog') {
+    return `
+      <div class="v4-calc-mode-help"><b>Позиция из справочника:</b> выберите готовую услугу или материал. Цена и правила берутся из ${esc(catalogSourceLabel())}; в сохранённом расчёте фиксируется snapshot.</div>
+      <div class="v4-form-grid">
+        <label>Позиция
+          <select id="calcCatalogBackedItem">${catalogBackedOptions()}</select>
+        </label>
+        <label>Количество
+          <input id="calcCatalogBackedQty" type="number" min="0.01" step="0.01" value="1">
+        </label>
+      </div>
+    `;
+  }
   if (mode === 'banner') {
     return `
       <div class="v4-form-grid">
@@ -438,6 +480,11 @@ function perimeterTotal() {
 function currentModeItems() {
   const mode = val('calcSmartMode') || 'banner';
   const rows = [];
+  if (mode === 'catalog') {
+    const row = catalogBackedRow(val('calcCatalogBackedItem'));
+    if (!row) return [];
+    return [catalogRowToDraftItem(row, num('calcCatalogBackedQty') || 1, { catalog_source: calculationCatalogSource })];
+  }
   if (mode === 'banner') {
     const material = catalogByName(val('calcCatalogItem')) || catalogByName('Баннер 340/440 — стандарт');
     const units = area();
@@ -1028,6 +1075,7 @@ function bindCalculationEvents() {
 export function bootCalculations() {
   if (window.LeaderV4CalculationsBooted) return;
   window.LeaderV4CalculationsBooted = true;
+  ensureCalculationCatalog();
   bindCalculationEvents();
   renderCalculations();
   if (v4State.crmReady && v4State.route.leadId) loadCalculations(v4State.route.leadId);
