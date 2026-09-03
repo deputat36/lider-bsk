@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {
   CATALOG_SELECT_FIELDS,
   catalogRowToDraftItem,
+  catalogRowToTypicalDraftItem,
   legacyCatalogFallbackRows,
   loadCalculationCatalog,
   normalizeCatalogRows
@@ -102,6 +103,63 @@ const fallback = [
   });
   assert.equal(repriced[0].client_price, 450, 'global markup must not overwrite catalog pricing');
   assert.equal(repriced[0].data.price_source, 'catalog');
+}
+
+{
+  const row = {
+    id: 'banner-standard',
+    category: 'Широкоформатная печать',
+    name: 'Баннер 340/440 — стандарт',
+    unit: 'м²',
+    item_type: 'Изготовление',
+    contractor_price: 350,
+    markup_percent: 30,
+    min_client_price: 0,
+    calculation_mode: 'area',
+    is_active: true
+  };
+  const item = catalogRowToTypicalDraftItem(row, {
+    qty: 6,
+    itemType: 'Баннер',
+    name: 'Баннер 340/440 — стандарт · 3×2 м · 1 шт',
+    calculationMode: 'banner',
+    catalogSource: 'remote',
+    data: { width: 3, height: 2, pieces: 1 }
+  });
+  assert.equal(item.catalog_id, 'banner-standard');
+  assert.equal(item.contractor_price, 350);
+  assert.equal(item.client_price, 0, 'typical mode must delegate client price to shared workspace markup');
+  assert.equal(item.data.mode, 'standard');
+  assert.equal(item.data.calculation_mode, 'banner');
+  assert.equal(item.data.visibility, 'single_line');
+  assert.equal(item.data.price_source, 'auto');
+  assert.equal(item.data.catalog_client_reference_price, 455);
+  assert.equal(item.data.catalog_snapshot.id, 'banner-standard');
+  assert.equal(item.data.width, 3);
+
+  const repriced = repriceAutomaticItems([item], { fixedMarkup: 20, roundStep: 10 });
+  assert.equal(repriced[0].client_price, 420);
+  assert.equal(repriced[0].data.price_source, 'auto');
+}
+
+{
+  const item = catalogRowToTypicalDraftItem({
+    id: 'hem',
+    category: 'Услуги по баннерам',
+    name: 'Проклейка баннера по краю',
+    unit: 'м',
+    contractor_price: 30,
+    markup_percent: 30,
+    calculation_mode: 'length'
+  }, {
+    qty: 10,
+    contractorPrice: 45,
+    calculationMode: 'banner_hemming'
+  });
+  assert.equal(item.catalog_id, 'hem');
+  assert.equal(item.contractor_price, 45);
+  assert.equal(item.data.catalog_cost_override, true);
+  assert.equal(item.data.catalog_cost_reference_price, 30);
 }
 
 console.log('calculation catalog source v1 tests: PASS');
