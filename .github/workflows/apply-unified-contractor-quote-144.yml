@@ -22,7 +22,7 @@ jobs:
           fetch-depth: 0
       - name: Apply deterministic patch
         run: python3 tools/patch_unified_contractor_quote_144.py
-      - name: Validate syntax
+      - name: Validate syntax and model
         run: |
           node --check crm/v4/assets/v4/calculation-contractor-quote-model-v1.js
           node --check crm/v4/assets/v4/calculations.js
