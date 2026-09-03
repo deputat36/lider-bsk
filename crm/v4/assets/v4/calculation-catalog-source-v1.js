@@ -1,6 +1,6 @@
 import { catalogDraftItem } from './catalog-pricing-v1.js';
 
-export const CALCULATION_CATALOG_SOURCE_V1 = 'calculation-catalog-source-v1-20260903';
+export const CALCULATION_CATALOG_SOURCE_V1 = 'calculation-catalog-source-v1-20260903-price-lock-1';
 
 export const CATALOG_SELECT_FIELDS = [
   'id',
@@ -110,8 +110,16 @@ export async function loadCalculationCatalog({ supabaseClient, fallbackRows = []
 }
 
 export function catalogRowToDraftItem(row, qty = 1, extraData = {}) {
-  return catalogDraftItem(normalizeCatalogRow(row), qty, {
+  const draft = catalogDraftItem(normalizeCatalogRow(row), qty, {
     ...extraData,
     catalog_source_version: CALCULATION_CATALOG_SOURCE_V1
   });
+  return {
+    ...draft,
+    data: {
+      ...(draft.data || {}),
+      price_source: 'catalog',
+      catalog_client_price: draft.client_price
+    }
+  };
 }
