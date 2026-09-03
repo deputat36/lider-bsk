@@ -32,7 +32,10 @@ export function repriceAutomaticItems(items, settings = {}) {
   const subtotal = (items || []).reduce((sum, item) => sum + Number(item.qty || 0) * Number(item.contractor_price || 0), 0);
   const markup = markupPercentForSubtotal(subtotal, settings);
   return (items || []).map((item) => {
-    if (item?.data?.price_source === 'manual') return { ...item, data: { ...(item.data || {}) } };
+    const source = item?.data?.price_source;
+    if (source === 'manual' || source === 'catalog') {
+      return { ...item, data: { ...(item.data || {}) } };
+    }
     return {
       ...item,
       client_price: priceWithMarkup(item.contractor_price, markup, settings.roundStep),
