@@ -10,6 +10,7 @@ on:
       - 'crm/v4/assets/v4/calculation-pricing-model-v1.js'
       - 'tools/test_calculation_catalog_source_v1.mjs'
       - 'tools/check_calculation_catalog_ui_mode.py'
+      - 'tools/check_calculation_typical_catalog_backing.py'
       - '.github/workflows/crm-calculation-catalog-source-check.yml'
   pull_request:
     branches: [main]
@@ -20,6 +21,7 @@ on:
       - 'crm/v4/assets/v4/calculation-pricing-model-v1.js'
       - 'tools/test_calculation_catalog_source_v1.mjs'
       - 'tools/check_calculation_catalog_ui_mode.py'
+      - 'tools/check_calculation_typical_catalog_backing.py'
       - '.github/workflows/crm-calculation-catalog-source-check.yml'
   workflow_dispatch:
 
@@ -45,3 +47,5 @@ jobs:
         run: node tools/test_calculation_catalog_source_v1.mjs
       - name: Catalog UI source contract
         run: python3 tools/check_calculation_catalog_ui_mode.py
+      - name: Typical modes catalog backing contract
+        run: python3 tools/check_calculation_typical_catalog_backing.py

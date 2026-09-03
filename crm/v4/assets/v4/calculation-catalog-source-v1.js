@@ -1,6 +1,6 @@
 import { catalogDraftItem } from './catalog-pricing-v1.js';
 
-export const CALCULATION_CATALOG_SOURCE_V1 = 'calculation-catalog-source-v1-20260903-price-lock-1';
+export const CALCULATION_CATALOG_SOURCE_V1 = 'calculation-catalog-source-v1-20260903-typical-1';
 
 export const CATALOG_SELECT_FIELDS = [
   'id',
@@ -120,6 +120,45 @@ export function catalogRowToDraftItem(row, qty = 1, extraData = {}) {
       ...(draft.data || {}),
       price_source: 'catalog',
       catalog_client_price: draft.client_price
+    }
+  };
+}
+
+export function catalogRowToTypicalDraftItem(row, options = {}) {
+  const normalized = normalizeCatalogRow(row);
+  const quantity = Math.max(0, number(options.qty, 1) || 1);
+  const reference = catalogRowToDraftItem(normalized, quantity, {
+    calculation_mode: text(options.calculationMode, normalized.calculation_mode || 'catalog'),
+    visibility: options.visibility || 'single_line',
+    catalog_source: options.catalogSource || (normalized.settings?.legacy_fallback ? 'fallback' : 'remote')
+  });
+  const contractorPrice = options.contractorPrice === undefined
+    ? normalized.contractor_price
+    : Math.max(0, number(options.contractorPrice));
+  const clientPrice = Math.max(0, number(options.clientPrice));
+  const costOverride = contractorPrice !== normalized.contractor_price;
+
+  return {
+    ...reference,
+    category: text(options.category, normalized.category),
+    item_type: text(options.itemType, normalized.item_type),
+    name: text(options.name, normalized.name),
+    unit: text(options.unit, normalized.unit),
+    qty: quantity,
+    contractor_price: contractorPrice,
+    client_price: clientPrice,
+    comment: options.comment === undefined ? normalized.description : text(options.comment),
+    data: {
+      ...(reference.data || {}),
+      ...(options.data || {}),
+      builder_version: 'calc-builder-v2',
+      mode: 'standard',
+      calculation_mode: text(options.calculationMode, normalized.calculation_mode || 'catalog'),
+      visibility: options.visibility || 'single_line',
+      price_source: clientPrice > 0 ? 'manual' : 'auto',
+      catalog_client_reference_price: reference.client_price,
+      catalog_cost_override: costOverride,
+      catalog_cost_reference_price: normalized.contractor_price
     }
   };
 }
