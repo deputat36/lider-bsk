@@ -1,0 +1,35 @@
+name: CRM calculation catalog source check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/calculation-catalog-source-v1.js'
+      - 'crm/v4/assets/v4/catalog-pricing-v1.js'
+      - 'tools/test_calculation_catalog_source_v1.mjs'
+      - '.github/workflows/crm-calculation-catalog-source-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/calculation-catalog-source-v1.js'
+      - 'crm/v4/assets/v4/catalog-pricing-v1.js'
+      - 'tools/test_calculation_catalog_source_v1.mjs'
+      - '.github/workflows/crm-calculation-catalog-source-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  catalog-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check
+        run: node --check crm/v4/assets/v4/calculation-catalog-source-v1.js
+      - name: Catalog source behavior tests
+        run: node tools/test_calculation_catalog_source_v1.mjs
