@@ -41,6 +41,7 @@ export function contractorQuoteDraftItem(input = {}) {
       visibility: 'single_line',
       client_visible: true,
       vendor: vendor || null,
+      contractor: { id: null, name: vendor || null },
       contractor_quote: {
         base,
         delivery,
@@ -49,6 +50,14 @@ export function contractorQuoteDraftItem(input = {}) {
         other,
         total_cost: contractorPrice
       },
+      components: [
+        { code: 'base', label: 'Цена подрядчика', amount: base },
+        { code: 'delivery', label: 'Доставка', amount: delivery },
+        { code: 'installation', label: 'Монтаж', amount: installation },
+        { code: 'design', label: 'Дизайн', amount: design },
+        { code: 'other', label: 'Прочие расходы', amount: other }
+      ],
+      pricing: { manual_client_price: clientPrice > 0 ? clientPrice : null },
       price_source: clientPrice > 0 ? 'manual' : 'auto',
       model_version: CONTRACTOR_QUOTE_MODEL_V1
     }
