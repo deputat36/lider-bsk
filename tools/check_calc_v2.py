@@ -4,9 +4,11 @@ import sys
 
 root = Path(__file__).resolve().parents[1]
 doc = root / 'docs' / 'CRM_CALCULATION_BUILDER_V2_2026-07-01.md'
-shell = root / 'crm' / 'v4' / 'assets' / 'v4' / 'calculation-contractor-quote-v1.js'
+calculations = root / 'crm' / 'v4' / 'assets' / 'v4' / 'calculations.js'
+contractor_model = root / 'crm' / 'v4' / 'assets' / 'v4' / 'calculation-contractor-quote-model-v1.js'
 visibility = root / 'crm' / 'v4' / 'assets' / 'v4' / 'offer-visibility-v1.js'
 index = root / 'crm' / 'v4' / 'index.html'
+loader = root / 'crm' / 'v4' / 'assets' / 'v4' / 'crm-v4-tab-loader-v1.js'
 saved_model = root / 'crm' / 'v4' / 'assets' / 'v4' / 'calculation-saved-review-model-v1.js'
 saved_tools = root / 'crm' / 'v4' / 'assets' / 'v4' / 'calculations-saved-tools-v2.js'
 saved_css = root / 'crm' / 'v4' / 'assets' / 'v4' / 'calculations-saved-tools.css'
@@ -26,13 +28,26 @@ checks = {
         'leader_contractors',
         'Commercial offer rules',
     ],
-    shell: [
-        'contractor-quote-v1-20260701',
-        'Подрядный расчёт v2',
-        'contractorQuotePrepareBtn',
-        'contractorQuoteBase',
-        'contractorQuoteInstallation',
-        'contractorQuoteClient',
+    calculations: [
+        "['contractor_quote', 'Подрядчик / готовая смета']",
+        'calcContractorVendor',
+        'calcContractorBase',
+        'calcContractorDelivery',
+        'calcContractorInstallation',
+        'calcContractorDesign',
+        'calcContractorOther',
+        'calcContractorClient',
+        'contractorQuoteDraftItem',
+        'Общая наценка задаётся выше',
+    ],
+    contractor_model: [
+        'contractor-quote-model-v1-20260903',
+        "builder_version: 'calc-builder-v2'",
+        "mode: 'contractor_quote'",
+        "calculation_mode: 'contractor_quote'",
+        "visibility: 'single_line'",
+        'contractor_quote:',
+        'price_source:',
     ],
     visibility: [
         'offer-visibility-v1-20260701',
@@ -44,9 +59,14 @@ checks = {
         'client_visible',
     ],
     index: [
-        'calculation-contractor-quote-v1.js?v=20260701-shell-1',
         'calculations-saved-tools.css?v=20260715-review-1',
         'calculations-saved-tools-v2.js?v=20260717-load-integrity-1',
+    ],
+    loader: [
+        "import('./calculations.js?v=20260805-tab-loader-1')",
+        "modules[5].bootCalculations?.()",
+        "modules[7].bootOffers?.()",
+        "modules[8].bootOrders?.()",
     ],
     saved_model: [
         'savedCalculationPositionLabel',
@@ -96,6 +116,13 @@ for path, markers in checks.items():
             print(f'Missing marker in {path.relative_to(root)}: {marker}')
             sys.exit(1)
 
+index_text = index.read_text(encoding='utf-8')
+loader_text = loader.read_text(encoding='utf-8')
+for legacy in ['calculation-contractor-quote-v1.js?v=', 'contractorQuotePrepareBtn']:
+    if legacy in index_text or legacy in loader_text:
+        print(f'Legacy contractor quote shell still wired: {legacy}')
+        sys.exit(1)
+
 saved_model_text = saved_model.read_text(encoding='utf-8')
 saved_tools_text = saved_tools.read_text(encoding='utf-8')
 for forbidden in [".from('", '.insert(', '.update(', '.delete(', 'service_role', 'sb_secret_']:
@@ -110,4 +137,4 @@ if 'сначала типовой, затем нестандартный' in sav
     print('Obsolete two-calculator copy remains in saved calculations')
     sys.exit(1)
 
-print('CRM calc v2 markers and saved calculation review are valid.')
+print('CRM calc v2 markers and unified contractor quote are valid.')
