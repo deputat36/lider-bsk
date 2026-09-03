@@ -25,7 +25,6 @@ checks = {
         'leader_lead_calculations',
         'leader_lead_calculation_items',
         'leader_catalog',
-        'leader_contractors',
         'Commercial offer rules',
     ],
     calculations: [
