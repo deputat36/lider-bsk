@@ -7,7 +7,7 @@ import { needCalculationPrefill } from './need-calculation-prefill-v1.js';
 import { circleAreaSquareMeters, parseCalculationDiameters, parseCalculationPairs } from './calculation-spec-model-v1.js';
 import { V4_CONFIG } from './config.js';
 import { isStagingWorkflowEnvironment } from './workflow-staging-transport-v1.js';
-import { catalogRowToDraftItem, legacyCatalogFallbackRows, loadCalculationCatalog } from './calculation-catalog-source-v1.js';
+import { catalogRowToDraftItem, catalogRowToTypicalDraftItem, legacyCatalogFallbackRows, loadCalculationCatalog } from './calculation-catalog-source-v1.js';
 import { contractorQuoteDraftItem } from './calculation-contractor-quote-model-v1.js';
 
 const CALC_FIELDS = 'id,lead_id,need_id,client_id,title,status,version_number,client_total,contractor_cost,profit,margin_percent,warning_level,warnings,public_comment,internal_comment,commercial_offer_id,order_id,created_by,updated_by,created_at,updated_at';
@@ -36,7 +36,8 @@ const CATALOG = [
   { category: 'Печать фото', name: 'A4 ламинация', unit: 'шт', price: 40 }
 ];
 
-let calculationCatalogRows = legacyCatalogFallbackRows(CATALOG);
+const LEGACY_CATALOG_ROWS = legacyCatalogFallbackRows(CATALOG);
+let calculationCatalogRows = LEGACY_CATALOG_ROWS;
 let calculationCatalogSource = 'fallback';
 let calculationCatalogLoadPromise = null;
 
@@ -83,11 +84,13 @@ function checked(id) {
 }
 
 function catalogByName(name) {
-  return CATALOG.find((item) => item.name === name) || null;
+  return calculationCatalogRows.find((item) => item.name === name)
+    || LEGACY_CATALOG_ROWS.find((item) => item.name === name)
+    || null;
 }
 
 function catalogOptions(filter, selected = '') {
-  return CATALOG.filter(filter).map((item) => `<option value="${esc(item.name)}" ${item.name === selected ? 'selected' : ''}>${esc(item.name)} · ${money(item.price)} / ${esc(item.unit)}</option>`).join('');
+  return calculationCatalogRows.filter(filter).map((item) => `<option value="${esc(item.name)}" ${item.name === selected ? 'selected' : ''}>${esc(item.name)} · ${money(item.contractor_price)} / ${esc(item.unit)}</option>`).join('');
 }
 
 function catalogBackedOptions(selected = '') {
@@ -100,6 +103,14 @@ function catalogBackedRow(value) {
 
 function catalogSourceLabel() {
   return calculationCatalogSource === 'remote' ? 'Каталог CRM' : 'Встроенный резервный каталог';
+}
+
+function makeCatalogRawItem(row, options = {}) {
+  if (!row) return null;
+  return catalogRowToTypicalDraftItem(row, {
+    ...options,
+    catalogSource: row.settings?.legacy_fallback ? 'fallback' : calculationCatalogSource
+  });
 }
 
 async function ensureCalculationCatalog() {
@@ -524,24 +535,22 @@ function currentModeItems() {
     const per = perimeterTotal();
     const step = num('calcGrommetStep') || 0.3;
     if (units <= 0) return [];
-    rows.push(makeRawItem({
-      category: material.category,
+    rows.push(makeCatalogRawItem(material, {
       itemType: 'Баннер',
       name: `${material.name} · ${num('calcWidth')}×${num('calcHeight')} м · ${num('calcQty') || 1} шт`,
-      unit: material.unit,
       qty: units,
-      contractorPrice: material.price,
       comment: `Площадь: ${units.toFixed(2)} м²`,
-      data: { calculation_mode: 'banner', width: num('calcWidth'), height: num('calcHeight'), pieces: num('calcQty') || 1 }
+      calculationMode: 'banner',
+      data: { width: num('calcWidth'), height: num('calcHeight'), pieces: num('calcQty') || 1 }
     }));
     if (checked('calcNeedHemming') && per > 0) {
       const hem = catalogByName('Проклейка баннера по краю');
-      rows.push(makeRawItem({ category: hem.category, itemType: 'Доп. услуга', name: 'Проклейка баннера по периметру', unit: hem.unit, qty: per, contractorPrice: num('calcHemmingCost'), comment: `Периметр всего: ${per.toFixed(2)} м`, data: { calculation_mode: 'banner_hemming' } }));
+      rows.push(makeCatalogRawItem(hem, { itemType: 'Доп. услуга', name: 'Проклейка баннера по периметру', qty: per, contractorPrice: num('calcHemmingCost'), comment: `Периметр всего: ${per.toFixed(2)} м`, calculationMode: 'banner_hemming' }));
     }
     if (checked('calcNeedGrommets') && per > 0) {
       const grommet = catalogByName('Установка люверсов');
       const count = Math.ceil(per / step);
-      rows.push(makeRawItem({ category: grommet.category, itemType: 'Доп. услуга', name: `Люверсы по периметру, шаг ${step} м`, unit: grommet.unit, qty: count, contractorPrice: num('calcGrommetCost'), comment: `Расчёт: ${per.toFixed(2)} м / ${step} м = ${count} шт`, data: { calculation_mode: 'banner_grommets', step } }));
+      rows.push(makeCatalogRawItem(grommet, { itemType: 'Доп. услуга', name: `Люверсы по периметру, шаг ${step} м`, qty: count, contractorPrice: num('calcGrommetCost'), comment: `Расчёт: ${per.toFixed(2)} м / ${step} м = ${count} шт`, calculationMode: 'banner_grommets', data: { step } }));
     }
     return applyAutoPrice(rows);
   }
@@ -549,10 +558,10 @@ function currentModeItems() {
     const material = catalogByName(val('calcCatalogItem')) || catalogByName('Самоклеящаяся пленка (мат/гл/прозр.)');
     const units = area();
     if (units <= 0) return [];
-    rows.push(makeRawItem({ category: material.category, itemType: 'Плёнка', name: `${material.name} · ${num('calcWidth')}×${num('calcHeight')} м · ${num('calcQty') || 1} шт`, unit: material.unit, qty: units, contractorPrice: material.price, comment: `Площадь: ${units.toFixed(2)} м²`, data: { calculation_mode: 'film', width: num('calcWidth'), height: num('calcHeight'), pieces: num('calcQty') || 1 } }));
+    rows.push(makeCatalogRawItem(material, { itemType: 'Плёнка', name: `${material.name} · ${num('calcWidth')}×${num('calcHeight')} м · ${num('calcQty') || 1} шт`, qty: units, comment: `Площадь: ${units.toFixed(2)} м²`, calculationMode: 'film', data: { width: num('calcWidth'), height: num('calcHeight'), pieces: num('calcQty') || 1 } }));
     if (checked('calcNeedMountFilm')) {
       const mount = catalogByName('Монтажная пленка');
-      rows.push(makeRawItem({ category: mount.category, itemType: 'Доп. материал', name: 'Монтажная плёнка', unit: mount.unit, qty: units, contractorPrice: num('calcMountFilmCost'), comment: `Площадь: ${units.toFixed(2)} м²`, data: { calculation_mode: 'mount_film' } }));
+      rows.push(makeCatalogRawItem(mount, { itemType: 'Доп. материал', name: 'Монтажная плёнка', qty: units, contractorPrice: num('calcMountFilmCost'), comment: `Площадь: ${units.toFixed(2)} м²`, calculationMode: 'mount_film' }));
     }
     if (checked('calcNeedPlotterCut')) rows.push(makeRawItem({ category: 'Обработка плёнки', itemType: 'Доп. услуга', name: 'Плоттерная резка и выборка', unit: 'м²', qty: units, contractorPrice: num('calcPlotterCutCost'), comment: `Площадь: ${units.toFixed(2)} м²`, data: { calculation_mode: 'plotter_cut' } }));
     return applyAutoPrice(rows);
@@ -561,10 +570,10 @@ function currentModeItems() {
     const material = catalogByName(val('calcCatalogItem')) || catalogByName('ПВХ вспененный 3 мм');
     const units = area();
     if (units <= 0) return [];
-    rows.push(makeRawItem({ category: material.category, itemType: 'Листовой материал', name: `${material.name} · ${num('calcWidth')}×${num('calcHeight')} м · ${num('calcQty') || 1} шт`, unit: material.unit, qty: units, contractorPrice: material.price, comment: `Площадь: ${units.toFixed(2)} м²`, data: { calculation_mode: 'sheet', width: num('calcWidth'), height: num('calcHeight'), pieces: num('calcQty') || 1 } }));
+    rows.push(makeCatalogRawItem(material, { itemType: 'Листовой материал', name: `${material.name} · ${num('calcWidth')}×${num('calcHeight')} м · ${num('calcQty') || 1} шт`, qty: units, comment: `Площадь: ${units.toFixed(2)} м²`, calculationMode: 'sheet', data: { width: num('calcWidth'), height: num('calcHeight'), pieces: num('calcQty') || 1 } }));
     if (checked('calcNeedSheetPrint')) {
       const film = catalogByName(val('calcSheetPrintMaterial')) || catalogByName('Самоклеящаяся пленка (мат/гл/прозр.)');
-      rows.push(makeRawItem({ category: film.category, itemType: 'Печать', name: `Печать: ${film.name}`, unit: 'м²', qty: units, contractorPrice: film.price, comment: `Площадь: ${units.toFixed(2)} м²`, data: { calculation_mode: 'sheet_print' } }));
+      rows.push(makeCatalogRawItem(film, { itemType: 'Печать', name: `Печать: ${film.name}`, unit: 'м²', qty: units, comment: `Площадь: ${units.toFixed(2)} м²`, calculationMode: 'sheet_print' }));
     }
     if (checked('calcNeedSheetLamination')) rows.push(makeRawItem({ category: 'Обработка листа', itemType: 'Доп. услуга', name: 'Накатка / ламинация', unit: 'м²', qty: units, contractorPrice: num('calcSheetLaminationCost'), data: { calculation_mode: 'sheet_lamination' } }));
     if (checked('calcNeedSheetCut')) rows.push(makeRawItem({ category: 'Обработка листа', itemType: 'Доп. услуга', name: 'Резка деталей', unit: 'шт', qty: num('calcQty') || 1, contractorPrice: num('calcSheetCutCost'), data: { calculation_mode: 'sheet_cut' } }));
@@ -573,10 +582,10 @@ function currentModeItems() {
   if (mode === 'photo') {
     const item = catalogByName(val('calcCatalogItem')) || catalogByName('A4 фото (одна сторона)');
     const qty = num('calcQty') || 1;
-    rows.push(makeRawItem({ category: item.category, itemType: 'Фото', name: item.name, unit: item.unit, qty, contractorPrice: item.price, comment: `${qty} шт`, data: { calculation_mode: 'photo' } }));
+    rows.push(makeCatalogRawItem(item, { itemType: 'Фото', name: item.name, qty, comment: `${qty} шт`, calculationMode: 'photo' }));
     if (checked('calcNeedLamination')) {
       const lam = catalogByName('A4 ламинация');
-      rows.push(makeRawItem({ category: lam.category, itemType: 'Доп. услуга', name: lam.name, unit: lam.unit, qty, contractorPrice: lam.price, comment: `${qty} шт`, data: { calculation_mode: 'photo_lamination' } }));
+      rows.push(makeCatalogRawItem(lam, { itemType: 'Доп. услуга', name: lam.name, qty, comment: `${qty} шт`, calculationMode: 'photo_lamination' }));
     }
     return applyAutoPrice(rows);
   }
