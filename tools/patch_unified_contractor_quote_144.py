@@ -67,7 +67,6 @@ required = [
     'calcContractorVendor',
     'calcContractorBase',
     'calcContractorClient',
-    "mode: 'contractor_quote'",
     'contractorQuoteDraftItem',
     "modules[7].bootOffers?.()",
     "modules[8].bootOrders?.()"
