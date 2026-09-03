@@ -6,6 +6,7 @@ import {
   loadCalculationCatalog,
   normalizeCatalogRows
 } from '../crm/v4/assets/v4/calculation-catalog-source-v1.js';
+import { repriceAutomaticItems } from '../crm/v4/assets/v4/calculation-pricing-model-v1.js';
 
 function fakeClient({ data = [], error = null } = {}) {
   const calls = [];
@@ -91,7 +92,16 @@ const fallback = [
   assert.equal(item.contractor_price, 300);
   assert.equal(item.client_price, 450);
   assert.equal(item.data.mode, 'catalog');
+  assert.equal(item.data.price_source, 'catalog');
+  assert.equal(item.data.catalog_client_price, 450);
   assert.ok(item.data.catalog_source_version);
+
+  const repriced = repriceAutomaticItems([item], {
+    fixedMarkup: 10,
+    roundStep: 10
+  });
+  assert.equal(repriced[0].client_price, 450, 'global markup must not overwrite catalog pricing');
+  assert.equal(repriced[0].data.price_source, 'catalog');
 }
 
 console.log('calculation catalog source v1 tests: PASS');
