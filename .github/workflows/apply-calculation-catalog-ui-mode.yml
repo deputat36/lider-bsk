@@ -1,0 +1,37 @@
+name: Apply calculation catalog UI mode
+
+on:
+  push:
+    branches: [agent/148-catalog-ui-mode]
+    paths:
+      - 'tools/patch_calculation_catalog_ui_mode.py'
+      - '.github/workflows/apply-calculation-catalog-ui-mode.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/148-catalog-ui-mode
+          fetch-depth: 0
+      - name: Apply deterministic patch
+        run: python3 tools/patch_calculation_catalog_ui_mode.py
+      - name: Validate syntax
+        run: node --check crm/v4/assets/v4/calculations.js
+      - name: Commit generated wiring
+        run: |
+          if git diff --quiet; then
+            echo 'No generated changes'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add crm/v4/assets/v4/calculations.js
+          git commit -m 'Wire catalog-backed mode into calculation builder'
+          git push origin HEAD:agent/148-catalog-ui-mode
