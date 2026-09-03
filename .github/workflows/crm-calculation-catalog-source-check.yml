@@ -4,16 +4,20 @@ on:
   push:
     branches: [main]
     paths:
+      - 'crm/v4/assets/v4/calculations.js'
       - 'crm/v4/assets/v4/calculation-catalog-source-v1.js'
       - 'crm/v4/assets/v4/catalog-pricing-v1.js'
       - 'tools/test_calculation_catalog_source_v1.mjs'
+      - 'tools/check_calculation_catalog_ui_mode.py'
       - '.github/workflows/crm-calculation-catalog-source-check.yml'
   pull_request:
     branches: [main]
     paths:
+      - 'crm/v4/assets/v4/calculations.js'
       - 'crm/v4/assets/v4/calculation-catalog-source-v1.js'
       - 'crm/v4/assets/v4/catalog-pricing-v1.js'
       - 'tools/test_calculation_catalog_source_v1.mjs'
+      - 'tools/check_calculation_catalog_ui_mode.py'
       - '.github/workflows/crm-calculation-catalog-source-check.yml'
   workflow_dispatch:
 
@@ -30,6 +34,10 @@ jobs:
         with:
           node-version: '22'
       - name: Syntax check
-        run: node --check crm/v4/assets/v4/calculation-catalog-source-v1.js
+        run: |
+          node --check crm/v4/assets/v4/calculation-catalog-source-v1.js
+          node --check crm/v4/assets/v4/calculations.js
       - name: Catalog source behavior tests
         run: node tools/test_calculation_catalog_source_v1.mjs
+      - name: Catalog UI source contract
+        run: python3 tools/check_calculation_catalog_ui_mode.py
