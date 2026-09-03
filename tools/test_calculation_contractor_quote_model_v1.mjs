@@ -27,8 +27,12 @@ assert.equal(auto.data.builder_version, 'calc-builder-v2');
 assert.equal(auto.data.mode, 'contractor_quote');
 assert.equal(auto.data.visibility, 'single_line');
 assert.equal(auto.data.vendor, 'Подрядчик №1');
+assert.deepEqual(auto.data.contractor, { id: null, name: 'Подрядчик №1' });
 assert.equal(auto.data.contractor_quote.installation, 2000);
 assert.equal(auto.data.contractor_quote.total_cost, 13750);
+assert.equal(auto.data.components.length, 5);
+assert.equal(auto.data.components.find((part) => part.code === 'delivery')?.amount, 1000);
+assert.equal(auto.data.pricing.manual_client_price, null);
 assert.equal(auto.data.price_source, 'auto');
 assert.equal(auto.data.model_version, CONTRACTOR_QUOTE_MODEL_V1);
 
@@ -36,5 +40,6 @@ const manual = contractorQuoteDraftItem({ base: 5000, clientPrice: 8000 });
 assert.equal(manual.contractor_price, 5000);
 assert.equal(manual.client_price, 8000);
 assert.equal(manual.data.price_source, 'manual');
+assert.equal(manual.data.pricing.manual_client_price, 8000);
 
 console.log('contractor quote model v1 tests: PASS');
