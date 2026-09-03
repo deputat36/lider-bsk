@@ -5,6 +5,7 @@ on:
     branches: [agent/148-catalog-ui-mode]
     paths:
       - 'tools/patch_calculation_catalog_ui_mode.py'
+      - 'tools/patch_calculation_catalog_staging_no_network.py'
       - '.github/workflows/apply-calculation-catalog-ui-mode.yml'
 
 permissions:
@@ -20,8 +21,10 @@ jobs:
         with:
           ref: agent/148-catalog-ui-mode
           fetch-depth: 0
-      - name: Apply deterministic patch
-        run: python3 tools/patch_calculation_catalog_ui_mode.py
+      - name: Apply deterministic patches
+        run: |
+          python3 tools/patch_calculation_catalog_ui_mode.py
+          python3 tools/patch_calculation_catalog_staging_no_network.py
       - name: Validate syntax
         run: node --check crm/v4/assets/v4/calculations.js
       - name: Commit generated wiring
@@ -33,5 +36,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add crm/v4/assets/v4/calculations.js
-          git commit -m 'Wire catalog-backed mode into calculation builder'
+          git commit -m 'Guard catalog read in staging'
           git push origin HEAD:agent/148-catalog-ui-mode
