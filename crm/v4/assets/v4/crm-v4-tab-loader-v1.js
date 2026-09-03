@@ -240,7 +240,6 @@ async function loadLeadCardBundle() {
       import('./calculations-saved-tools-v2.js?v=20260805-tab-loader-1'),
       import('./calculations.js?v=20260805-tab-loader-1'),
       import('./calculation-draft-review-v1.js?v=20260805-tab-loader-1'),
-      import('./calculation-contractor-quote-v1.js?v=20260805-tab-loader-1'),
       import('./offers.js?v=20260805-tab-loader-1'),
       import('./orders.js?v=20260827-order-read-1'),
       import('./offer-card-v1.js?v=20260827-order-read-1'),
@@ -250,8 +249,8 @@ async function loadLeadCardBundle() {
     ]).then((modules) => {
       modules[5].bootCalculations?.();
       modules[6].bootCalculationDraftReview?.();
-      modules[8].bootOffers?.();
-      modules[9].bootOrders?.();
+      modules[7].bootOffers?.();
+      modules[8].bootOrders?.();
       return modules;
     }).catch((error) => {
       cardBundlePromise = null;

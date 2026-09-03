@@ -81,11 +81,14 @@ def main() -> int:
         "await (modules[0].refresh || modules[0].load)?.()",
         "modules[5].bootCalculations?.()",
         "modules[6].bootCalculationDraftReview?.()",
-        "modules[8].bootOffers?.()",
-        "modules[9].bootOrders?.()",
+        "modules[7].bootOffers?.()",
+        "modules[8].bootOrders?.()",
         "import('./orders.js?v=",
     ):
         require(loader, marker, LOADER)
+
+    if "calculation-contractor-quote-v1.js?v=" in loader:
+        raise AssertionError("legacy contractor quote shell must not be loaded beside unified calculations")
 
     for filename in HIDDEN_TAB_IMPORTS:
         executable_lines = [line for line in site_cache.splitlines() if not line.lstrip().startswith("//")]

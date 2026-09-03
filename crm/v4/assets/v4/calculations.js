@@ -8,6 +8,7 @@ import { circleAreaSquareMeters, parseCalculationDiameters, parseCalculationPair
 import { V4_CONFIG } from './config.js';
 import { isStagingWorkflowEnvironment } from './workflow-staging-transport-v1.js';
 import { catalogRowToDraftItem, legacyCatalogFallbackRows, loadCalculationCatalog } from './calculation-catalog-source-v1.js';
+import { contractorQuoteDraftItem } from './calculation-contractor-quote-model-v1.js';
 
 const CALC_FIELDS = 'id,lead_id,need_id,client_id,title,status,version_number,client_total,contractor_cost,profit,margin_percent,warning_level,warnings,public_comment,internal_comment,commercial_offer_id,order_id,created_by,updated_by,created_at,updated_at';
 const ITEM_FIELDS = 'id,calculation_id,lead_id,catalog_id,category,item_type,name,unit,qty,contractor_price,contractor_sum,markup_percent,client_price,client_sum,profit,margin_percent,comment,data,sort_order,created_at,updated_at';
@@ -41,6 +42,7 @@ let calculationCatalogLoadPromise = null;
 
 const MODES = [
   ['catalog', 'Из каталога'],
+  ['contractor_quote', 'Подрядчик / готовая смета'],
   ['banner', 'Баннер'],
   ['film', 'Плёнка / наклейки'],
   ['sheet', 'ПВХ / листовой материал'],
@@ -290,6 +292,21 @@ function renderModeFields(mode = 'banner') {
       </div>
     `;
   }
+  if (mode === 'contractor_quote') {
+    return `
+      <div class="v4-calc-mode-help"><b>Готовая смета подрядчика:</b> внесите внутренние затраты. Общая наценка задаётся выше — отдельного второго калькулятора больше нет. Клиент увидит одну итоговую строку, внутренние расходы останутся в snapshot расчёта.</div>
+      <div class="v4-form-grid">
+        <label>Подрядчик<input id="calcContractorVendor" placeholder="Кто изготовит / выполнил расчёт"></label>
+        <label>Цена подрядчика, ₽<input id="calcContractorBase" type="number" min="0" step="1" value="0"></label>
+        <label>Доставка, ₽<input id="calcContractorDelivery" type="number" min="0" step="1" value="0"></label>
+        <label>Монтаж, ₽<input id="calcContractorInstallation" type="number" min="0" step="1" value="0"></label>
+        <label>Дизайн, ₽<input id="calcContractorDesign" type="number" min="0" step="1" value="0"></label>
+        <label>Прочие расходы, ₽<input id="calcContractorOther" type="number" min="0" step="1" value="0"></label>
+        <label>Итог клиенту вручную, ₽<input id="calcContractorClient" type="number" min="0" step="1" placeholder="Пусто = по общей наценке"></label>
+        <label>Комментарий к позиции<input id="calcContractorComment" placeholder="Что входит в готовую стоимость"></label>
+      </div>
+    `;
+  }
   if (mode === 'banner') {
     return `
       <div class="v4-form-grid">
@@ -485,6 +502,21 @@ function currentModeItems() {
     const row = catalogBackedRow(val('calcCatalogBackedItem'));
     if (!row) return [];
     return [catalogRowToDraftItem(row, num('calcCatalogBackedQty') || 1, { catalog_source: calculationCatalogSource })];
+  }
+  if (mode === 'contractor_quote') {
+    const item = contractorQuoteDraftItem({
+      title: val('calcTitle') || 'Подрядный заказ',
+      vendor: val('calcContractorVendor'),
+      base: num('calcContractorBase'),
+      delivery: num('calcContractorDelivery'),
+      installation: num('calcContractorInstallation'),
+      design: num('calcContractorDesign'),
+      other: num('calcContractorOther'),
+      clientPrice: num('calcContractorClient'),
+      comment: val('calcContractorComment')
+    });
+    if (item.contractor_price <= 0) return [];
+    return applyAutoPrice([item]);
   }
   if (mode === 'banner') {
     const material = catalogByName(val('calcCatalogItem')) || catalogByName('Баннер 340/440 — стандарт');
