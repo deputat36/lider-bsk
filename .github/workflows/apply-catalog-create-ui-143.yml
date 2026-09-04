@@ -1,0 +1,41 @@
+name: Apply catalog create UI 143
+
+on:
+  push:
+    branches: [agent/143-catalog-create-from-calculation]
+    paths:
+      - 'tools/patch_calculation_catalog_create_ui_143.py'
+      - '.github/workflows/apply-catalog-create-ui-143.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/143-catalog-create-from-calculation
+          fetch-depth: 0
+      - name: Apply deterministic patch
+        run: python3 tools/patch_calculation_catalog_create_ui_143.py
+      - name: Validate calculation catalog integration
+        run: |
+          node --check crm/v4/assets/v4/calculation-catalog-create-v1.js
+          node --check crm/v4/assets/v4/calculations.js
+          node tools/test_calculation_catalog_create_v1.mjs
+          python3 tools/check_calculation_catalog_create_ui.py
+      - name: Commit generated integration
+        run: |
+          if git diff --quiet; then
+            echo 'No generated changes'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add crm/v4/assets/v4/calculations.js
+          git commit -m 'Add catalog creation inside calculation workspace'
+          git push origin HEAD:agent/143-catalog-create-from-calculation
