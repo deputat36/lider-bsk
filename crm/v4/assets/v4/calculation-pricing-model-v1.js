@@ -7,6 +7,20 @@ export function normalizeMarkupPercent(value, fallback = null) {
   return Number.isFinite(number) && number >= 0 ? number : fallback;
 }
 
+export function normalizeMarginPercent(value, fallback = null) {
+  const text = String(value ?? '').trim().replace(',', '.');
+  if (!text) return fallback;
+  const number = Number(text);
+  return Number.isFinite(number) && number >= 0 && number < 100 ? number : fallback;
+}
+
+export function markupPercentFromMargin(marginPercent, fallback = null) {
+  const margin = normalizeMarginPercent(marginPercent, fallback);
+  if (margin === null || margin === undefined) return fallback;
+  if (margin === 0) return 0;
+  return (margin / (100 - margin)) * 100;
+}
+
 export function markupPercentForSubtotal(subtotal, settings = {}) {
   const fixed = normalizeMarkupPercent(settings.fixedMarkup, null);
   if (fixed !== null) return fixed;
