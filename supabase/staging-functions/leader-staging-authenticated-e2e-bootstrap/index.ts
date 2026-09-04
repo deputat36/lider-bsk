@@ -35,23 +35,13 @@ async function claims(req:Request){
   const token=bearer(req);if(!token)throw new Error('github_oidc_missing')
   const verified=await jwtVerify(token,JWKS,{issuer:ISSUER,audience:AUDIENCE,algorithms:['RS256']})
   const value=verified.payload as JsonObject
-  const expected:Record<string,string>={
-    repository:REPOSITORY,
-    repository_id:REPOSITORY_ID,
-    repository_owner_id:OWNER_ID,
-    actor_id:ACTOR_ID,
-    ref_type:'branch',
-    runner_environment:'github-hosted',
-    repository_visibility:'public',
-  }
+  const expected:Record<string,string>={repository:REPOSITORY,repository_id:REPOSITORY_ID,repository_owner_id:OWNER_ID,actor_id:ACTOR_ID,ref_type:'branch',runner_environment:'github-hosted',repository_visibility:'public'}
   for(const [key,wanted] of Object.entries(expected))if(text(value[key])!==wanted)throw new Error(`github_claim_rejected:${key}`)
-
   const ref=text(value.ref)
   const context=TRUSTED_CONTEXTS.get(ref)
   if(!context)throw new Error('github_claim_rejected:ref')
   if(text(value.event_name)!==context.eventName)throw new Error('github_claim_rejected:event_name')
   if(text(value.sub)!==`repo:${REPOSITORY}:ref:${ref}`)throw new Error('github_claim_rejected:sub')
-
   const workflowRef=text(value.workflow_ref)
   if(!context.workflowRefs.has(workflowRef))throw new Error('github_claim_rejected:workflow_ref')
   const jobWorkflowRef=text(value.job_workflow_ref)
@@ -67,37 +57,9 @@ async function rpc(name:string,args:JsonObject){return await service(`/rest/v1/r
 function password(){const bytes=new Uint8Array(32);crypto.getRandomValues(bytes);return `E2e!${Array.from(bytes,v=>v.toString(16).padStart(2,'0')).join('')}Z9`}
 async function createUser(email:string,passwordValue:string,key:string){return await service('/auth/v1/admin/users',{method:'POST',body:JSON.stringify({email,password:passwordValue,email_confirm:true,app_metadata:{staging_crm_e2e:true,run_key:key},user_metadata:{synthetic:true}})})}
 async function deleteUser(id:string){return await service(`/auth/v1/admin/users/${encodeURIComponent(id)}`,{method:'DELETE'})}
-async function prepare(key:string){
-  const suffix=crypto.randomUUID().replaceAll('-','').slice(0,12);const marker=`SYNTH-CRM-E2E-${key.replace(':','-')}-${suffix}`;const email=`crm-e2e-${key.replace(':','-')}-${suffix}@example.invalid`;const pass=password()
-  const created=await createUser(email,pass,key);const userId=text(created.body.id||(created.body.user as JsonObject|undefined)?.id);if(!created.ok||!userId)throw new Error(`auth_create_failed:${created.status}`)
-  try{const fixture=await rpc('leader_prepare_authenticated_e2e_rpc',{p_run_key:key,p_user_id:userId,p_email:email,p_marker:marker});if(!fixture.ok||fixture.body.ok!==true)throw new Error(`fixture_prepare_failed:${fixture.status}`);return{ok:true,action:'prepare',run_key:key,marker,email,password:pass,user_id:userId,lead_id:fixture.body.lead_id,role:'manager'}}catch(error){await deleteUser(userId).catch(()=>undefined);throw error}
-}
-async function inspect(marker:string){const result=await rpc('leader_inspect_authenticated_e2e_rpc',{p_marker:marker});if(!result.ok||result.body.ok!==true)throw new Error(`fixture_inspect_failed:${result.status}`);return{ok:true,action:'inspect',marker,...result.body}}
+async function prepare(key:string){const suffix=crypto.randomUUID().replaceAll('-','').slice(0,12);const marker=`SYNTH-CRM-E2E-${key.replace(':','-')}-${suffix}`;const email=`crm-e2e-${key.replace(':','-')}-${suffix}@example.invalid`;const pass=password();const created=await createUser(email,pass,key);const userId=text(created.body.id||(created.body.user as JsonObject|undefined)?.id);if(!created.ok||!userId)throw new Error(`auth_create_failed:${created.status}`);try{const fixture=await rpc('leader_prepare_authenticated_e2e_rpc',{p_run_key:key,p_user_id:userId,p_email:email,p_marker:marker});if(!fixture.ok||fixture.body.ok!==true)throw new Error(`fixture_prepare_failed:${fixture.status}`);return{ok:true,action:'prepare',run_key:key,marker,email,password:pass,user_id:userId,lead_id:fixture.body.lead_id,role:'manager'}}catch(error){await deleteUser(userId).catch(()=>undefined);throw error}}
+async function inspect(marker:string):Promise<JsonObject>{const result=await rpc('leader_inspect_authenticated_e2e_rpc',{p_marker:marker});if(!result.ok||result.body.ok!==true)throw new Error(`fixture_inspect_failed:${result.status}`);return{ok:true,action:'inspect',marker,...result.body}}
 async function setRole(marker:string,role:string){const inspected=await inspect(marker);const userId=text(inspected.user_id);if(!userId)throw new Error('fixture_user_not_found');const result=await rpc('leader_set_authenticated_e2e_role_rpc',{p_user_id:userId,p_marker:marker,p_role:role});if(!result.ok||result.body.ok!==true)throw new Error(`fixture_role_failed:${result.status}`);return{ok:true,action:'set_role',role:text(result.body.role)}}
-async function cleanup(marker:string){
-  const cleaned=await rpc('leader_cleanup_authenticated_e2e_rpc',{p_marker:marker});if(!cleaned.ok||cleaned.body.ok!==true)throw new Error(`fixture_cleanup_failed:${cleaned.status}`)
-  const userId=text(cleaned.body.auth_user_id);if(userId){const deleted=await deleteUser(userId);if(!deleted.ok&&deleted.status!==404)throw new Error(`auth_delete_failed:${deleted.status}`)}
-  const residue=(cleaned.body.residue||{}) as JsonObject;for(const count of Object.values(residue))if(Number(count)!==0)throw new Error('fixture_cleanup_residue')
-  return{ok:true,action:'cleanup',marker,residue,auth_user_deleted:true}
-}
+async function cleanup(marker:string){const cleaned=await rpc('leader_cleanup_authenticated_e2e_rpc',{p_marker:marker});if(!cleaned.ok||cleaned.body.ok!==true)throw new Error(`fixture_cleanup_failed:${cleaned.status}`);const userId=text(cleaned.body.auth_user_id);if(userId){const deleted=await deleteUser(userId);if(!deleted.ok&&deleted.status!==404)throw new Error(`auth_delete_failed:${deleted.status}`)}const residue=(cleaned.body.residue||{}) as JsonObject;for(const count of Object.values(residue))if(Number(count)!==0)throw new Error('fixture_cleanup_residue');return{ok:true,action:'cleanup',marker,residue,auth_user_deleted:true}}
 
-Deno.serve(async(req:Request)=>{
-  if(req.method!=='POST')return response(405,{ok:false,error:'method_not_allowed'})
-  try{
-    const verified=await claims(req)
-    const body=await req.json().catch(()=>({})) as JsonObject
-    const action=text(body.action)
-    console.log('authenticated_e2e_bootstrap',action,verified.runKey,verified.ref,verified.workflowRef)
-    const supplied=text(body.run_key);if(supplied&&supplied!==verified.runKey)throw new Error('run_key_claim_mismatch')
-    if(action==='prepare')return response(201,await prepare(verified.runKey))
-    const marker=text(body.marker);if(!/^SYNTH-CRM-E2E-[A-Za-z0-9-]+$/.test(marker))throw new Error('marker_invalid')
-    if(action==='inspect')return response(200,await inspect(marker))
-    if(action==='set_role')return response(200,await setRole(marker,text(body.role)))
-    if(action==='cleanup')return response(200,await cleanup(marker))
-    return response(400,{ok:false,error:'unknown_action'})
-  }catch(error){
-    const message=text((error as Error)?.message||'oidc_bootstrap_failed').slice(0,180)
-    console.error('authenticated_e2e_bootstrap',message)
-    return response(403,{ok:false,error:message})
-  }
-})
+Deno.serve(async(req:Request)=>{if(req.method!=='POST')return response(405,{ok:false,error:'method_not_allowed'});try{const verified=await claims(req);const body=await req.json().catch(()=>({})) as JsonObject;const action=text(body.action);console.log('authenticated_e2e_bootstrap',action,verified.runKey,verified.ref,verified.workflowRef);const supplied=text(body.run_key);if(supplied&&supplied!==verified.runKey)throw new Error('run_key_claim_mismatch');if(action==='prepare')return response(201,await prepare(verified.runKey));const marker=text(body.marker);if(!/^SYNTH-CRM-E2E-[A-Za-z0-9-]+$/.test(marker))throw new Error('marker_invalid');if(action==='inspect')return response(200,await inspect(marker));if(action==='set_role')return response(200,await setRole(marker,text(body.role)));if(action==='cleanup')return response(200,await cleanup(marker));return response(400,{ok:false,error:'unknown_action'})}catch(error){const message=text((error as Error)?.message||'oidc_bootstrap_failed').slice(0,180);console.error('authenticated_e2e_bootstrap',message);return response(403,{ok:false,error:message})}})
