@@ -20,9 +20,19 @@ Production сейчас не готов к catalog write rollout, потому �
 - `leader_private.leader_role_action_matrix_v1`;
 - `leader_private.leader_command_receipts`;
 - `leader_private.leader_actor_has_crm_action(uuid,text)`;
-- `public.leader_actor_has_crm_action_rpc(uuid,text)`.
+- `public.leader_actor_has_crm_action_rpc(uuid,text)`;
 
 При этом production уже содержит рабочие `leader_catalog` и `leader_catalog_price_logs`.
+
+Фактический production preflight на 2026-09-04:
+
+- 69 позиций каталога;
+- 0 записей в `leader_catalog_price_logs`;
+- активные типы профилей в production: `owner/admin/manager` (2 owner, 1 admin, 1 manager);
+- `pgcrypto` установлен в схеме `extensions`;
+- `leader_catalog` имеет `trg_leader_catalog_updated_at`;
+- `leader_catalog_price_logs.catalog_id` связан с `leader_catalog(id) ON DELETE CASCADE`;
+- `public.leader_manage_catalog_rpc(jsonb)` отсутствует.
 
 Production Supabase не изменялся: выполнены только SELECT/introspection запросы. DDL/DML/Auth/Edge deploy в `ofewxuqfjhamgerwzull` не выполнялись.
 
@@ -50,7 +60,35 @@ Production Supabase не изменялся: выполнены только SEL
 4. production Edge contract;
 5. `manifest.json`.
 
+Production Edge генерируется из staging-proven реализации, но обязательно заменяет:
+
+- staging project ref → `ofewxuqfjhamgerwzull`;
+- `STAGING_PROJECT_REF` → `PRODUCTION_PROJECT_REF`;
+- wrong-environment marker `expected: 'staging'` → `expected: 'production'`.
+
+Checker запрещает оставшиеся staging project ref/constant/expected marker.
+
 Кандидат намеренно не включает frontend cutover: frontend остаётся read-only, пока production backend не установлен и не пройдёт authenticated smoke.
+
+## Security contract
+
+Catalog business RPC:
+
+- `SECURITY INVOKER`;
+- `EXECUTE` отозван у `public`, `anon`, `authenticated`;
+- `EXECUTE` разрешён только `service_role`;
+- RPC повторно проверяет `leader_private.leader_actor_has_crm_action(actor_id, 'catalog.manage')`;
+- create/update, price log и idempotency receipt находятся в одной транзакции;
+- update использует row lock и `expected_updated_at` для stale guard.
+
+Edge candidate:
+
+- production project-ref fail-closed;
+- должен деплоиться только с `verify_jwt=true`;
+- проверяет реальный пользовательский JWT;
+- проверяет canonical `catalog.manage` через service-role bridge;
+- только после этого вызывает service-role-only business RPC;
+- service role не передаётся в browser/frontend.
 
 ## Preflight database rollout
 
