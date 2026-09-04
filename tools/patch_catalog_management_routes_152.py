@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from pathlib import Path
 
+# One-shot deterministic route integration for issue #152.
 ROOT = Path(__file__).resolve().parents[1]
 
 
