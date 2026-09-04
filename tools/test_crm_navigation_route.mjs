@@ -9,13 +9,15 @@ import {
 
 assert.deepEqual(CRM_NAVIGATION_TABS, [
   'management_dashboard', 'leads', 'orders', 'order_control', 'finance_control',
-  'production', 'contact_control', 'public_lead_audit', 'user_admin'
+  'production', 'contact_control', 'catalog', 'public_lead_audit', 'user_admin'
 ]);
 assert.equal(normalizeCrmNavigationTab(' orders '), 'orders');
+assert.equal(normalizeCrmNavigationTab(' catalog '), 'catalog');
 assert.equal(normalizeCrmNavigationTab('card'), '');
 assert.equal(normalizeCrmNavigationTab('unknown'), '');
 
 assert.equal(readCrmNavigationTab('https://example.test/crm/v4/?tab=finance_control'), 'finance_control');
+assert.equal(readCrmNavigationTab('https://example.test/crm/v4/?tab=catalog'), 'catalog');
 assert.equal(readCrmNavigationTab('https://example.test/crm/v4/#production'), 'production');
 assert.equal(readCrmNavigationTab('https://example.test/crm/v4/?tab=unknown#orders'), 'orders');
 
@@ -37,6 +39,10 @@ assert.equal(
 assert.equal(
   crmNavigationUrl('https://example.test/crm/v4/?tab=orders#help', 'finance_control'),
   '/crm/v4/?tab=finance_control#help'
+);
+assert.equal(
+  crmNavigationUrl('https://example.test/crm/v4/?tab=orders', 'catalog'),
+  '/crm/v4/?tab=catalog'
 );
 
 console.log('CRM navigation URL and direct lead-route behavior are valid.');
