@@ -2,7 +2,7 @@ import { supabaseClient } from './supabase-client.js';
 import { timeout, friendlyError } from './api.js';
 import { v4State, setState } from './state.js';
 import { byId, setStatus, toast } from './ui.js';
-import { marginPercentFromMarkup, markupPercentForSubtotal, priceWithMarkup, repriceAutomaticItems } from './calculation-pricing-model-v1.js';
+import { marginPercentFromMarkup, markupPercentForSubtotal, markupPercentFromMargin, normalizeMarginPercent, priceWithMarkup, repriceAutomaticItems } from './calculation-pricing-model-v1.js';
 import { needCalculationPrefill } from './need-calculation-prefill-v1.js';
 import { circleAreaSquareMeters, parseCalculationDiameters, parseCalculationPairs } from './calculation-spec-model-v1.js';
 import { V4_CONFIG } from './config.js';
@@ -221,9 +221,21 @@ async function ensureCalculationCatalog() {
   return calculationCatalogLoadPromise;
 }
 
+function targetMarginState() {
+  const raw = String(byId('calcTargetMargin')?.value ?? '').trim();
+  if (!raw) return { active: false, valid: true, margin: null, markup: null };
+  const margin = normalizeMarginPercent(raw, null);
+  const markup = markupPercentFromMargin(raw, null);
+  return { active: true, valid: margin !== null && markup !== null, margin, markup };
+}
+
 function calcSettings() {
+  const targetMargin = targetMarginState();
   return {
-    fixedMarkup: byId('calcMarkup')?.value ?? '',
+    fixedMarkup: targetMargin.active && targetMargin.valid ? targetMargin.markup : (byId('calcMarkup')?.value ?? ''),
+    targetMargin: targetMargin.margin,
+    targetMarginActive: targetMargin.active,
+    targetMarginValid: targetMargin.valid,
     smallLimit: num('calcSmallLimit') || 3000,
     smallMarkup: num('calcSmallMarkup') || 30,
     medLimit: num('calcMedLimit') || 10000,
@@ -253,6 +265,10 @@ function makeRawItem({ category, itemType, name, unit, qty, contractorPrice, cli
 
 function applyAutoPrice(rows) {
   const settings = calcSettings();
+  if (settings.targetMarginActive && !settings.targetMarginValid) {
+    calculationModeError = 'Целевая маржа должна быть меньше 100% и не может быть отрицательной';
+    return rows;
+  }
   const currentContractor = draftItems.reduce((sum, item) => sum + Number(item.qty || 0) * Number(item.contractor_price || 0), 0);
   const newContractor = rows.reduce((sum, item) => sum + Number(item.qty || 0) * Number(item.contractor_price || 0), 0);
   const markup = autoMarkupBySubtotal(currentContractor + newContractor, settings);
@@ -888,9 +904,19 @@ function renderCalcForm() {
         </label>
       </div>
       <section class="v4-pricing-control" aria-label="Управление ценой расчёта">
-        <div><h4>Наценка к себестоимости</h4><p>Наценка 20% означает: себестоимость 1 000 ₽ → клиенту 1 200 ₽. Итоговая маржа при этом 16,7%.</p></div>
-        <div class="v4-markup-presets" role="group" aria-label="Быстрый выбор наценки"><button type="button" data-calc-markup="auto" class="is-active">Авто 10–30%</button><button type="button" data-calc-markup="10">10%</button><button type="button" data-calc-markup="20">20%</button><button type="button" data-calc-markup="30">30%</button></div>
-        <label class="v4-markup-input">Своя наценка, %<input id="calcMarkup" type="number" min="0" step="1" placeholder="Автоматически"></label>
+        <div><h4>Цена и прибыль</h4><p>Можно управлять либо наценкой к себестоимости, либо целевой маржой. Заполняйте только один способ — CRM сама пересчитает второй показатель.</p></div>
+        <div class="v4-pricing-choice">
+          <div>
+            <b>Наценка к себестоимости</b>
+            <div class="v4-markup-presets" role="group" aria-label="Быстрый выбор наценки"><button type="button" data-calc-markup="auto" class="is-active">Авто 10–30%</button><button type="button" data-calc-markup="10">10%</button><button type="button" data-calc-markup="20">20%</button><button type="button" data-calc-markup="30">30%</button></div>
+            <label class="v4-markup-input">Своя наценка, %<input id="calcMarkup" type="number" min="0" step="0.1" placeholder="Автоматически"></label>
+          </div>
+          <div>
+            <b>Целевая маржа</b>
+            <div class="v4-markup-presets" role="group" aria-label="Быстрый выбор целевой маржи"><button type="button" data-calc-margin="15">15%</button><button type="button" data-calc-margin="20">20%</button><button type="button" data-calc-margin="30">30%</button><button type="button" data-calc-margin="40">40%</button></div>
+            <label class="v4-markup-input">Своя маржа, %<input id="calcTargetMargin" type="number" min="0" max="95" step="0.1" placeholder="Не задана"></label>
+          </div>
+        </div>
         <div id="calcPricingExplanation" class="v4-pricing-explanation" aria-live="polite"></div>
       </section>
       <div class="v4-calc-auto-box">
@@ -1018,6 +1044,11 @@ export function loadCalculations(leadId = v4State.route.leadId) {
 }
 
 function addSmartItems() {
+  const targetMargin = targetMarginState();
+  if (targetMargin.active && !targetMargin.valid) {
+    toast('Целевая маржа должна быть меньше 100% и не может быть отрицательной');
+    return;
+  }
   const items = currentModeItems();
   if (!items.length) {
     toast(calculationModeError || 'Заполните поля расчёта позиции');
@@ -1042,16 +1073,32 @@ function renderPricingExplanation() {
   const box = byId('calcPricingExplanation');
   if (!box) return;
   const settings = calcSettings();
+  const targetMargin = targetMarginState();
+  const fixed = String(byId('calcMarkup')?.value || '').trim();
+  if (targetMargin.active && !targetMargin.valid) {
+    box.innerHTML = '<b>Проверьте целевую маржу</b><span>Целевая маржа должна быть меньше 100% и не может быть отрицательной. Цена не пересчитывается, пока значение не исправлено.</span>';
+    document.querySelectorAll('[data-calc-markup]').forEach((button) => button.classList.remove('is-active'));
+    document.querySelectorAll('[data-calc-margin]').forEach((button) => button.classList.remove('is-active'));
+    return;
+  }
   const subtotal = draftItems.reduce((sum, item) => sum + Number(item.qty || 0) * Number(item.contractor_price || 0), 0);
   const markup = markupPercentForSubtotal(subtotal, { ...settings, mediumLimit: settings.medLimit });
   const margin = marginPercentFromMarkup(markup);
-  const fixed = String(byId('calcMarkup')?.value || '').trim();
-  box.innerHTML = `<b>${fixed ? `Фиксированная наценка ${Math.round(markup)}%` : `Автоматическая наценка ${Math.round(markup)}%`}</b><span>Ориентировочная маржа ${margin.toLocaleString('ru-RU', { maximumFractionDigits: 1 })}% до округления. Ручные цены позиций не изменяются.</span>`;
-  document.querySelectorAll('[data-calc-markup]').forEach((button) => button.classList.toggle('is-active', button.dataset.calcMarkup === 'auto' ? !fixed : fixed === button.dataset.calcMarkup));
+  if (targetMargin.active) {
+    box.innerHTML = `<b>Целевая маржа ${targetMargin.margin.toLocaleString('ru-RU', { maximumFractionDigits: 1 })}%</b><span>Эквивалентная наценка ${markup.toLocaleString('ru-RU', { maximumFractionDigits: 1 })}%. Ручные цены позиций не изменяются.</span>`;
+  } else {
+    box.innerHTML = `<b>${fixed ? `Фиксированная наценка ${markup.toLocaleString('ru-RU', { maximumFractionDigits: 1 })}%` : `Автоматическая наценка ${Math.round(markup)}%`}</b><span>Ориентировочная маржа ${margin.toLocaleString('ru-RU', { maximumFractionDigits: 1 })}% до округления. Ручные цены позиций не изменяются.</span>`;
+  }
+  document.querySelectorAll('[data-calc-markup]').forEach((button) => button.classList.toggle('is-active', !targetMargin.active && (button.dataset.calcMarkup === 'auto' ? !fixed : fixed === button.dataset.calcMarkup)));
+  document.querySelectorAll('[data-calc-margin]').forEach((button) => button.classList.toggle('is-active', targetMargin.active && String(targetMargin.margin) === button.dataset.calcMargin));
 }
 
 function refreshDraftPricing() {
   const settings = calcSettings();
+  if (settings.targetMarginActive && !settings.targetMarginValid) {
+    renderPricingExplanation();
+    return;
+  }
   draftItems = repriceAutomaticItems(draftItems, { ...settings, mediumLimit: settings.medLimit });
   renderDraftItems();
   renderPricingExplanation();
@@ -1231,7 +1278,18 @@ function bindCalculationEvents() {
     const markupButton = event.target.closest('button[data-calc-markup]');
     if (markupButton) {
       const input = byId('calcMarkup');
+      const marginInput = byId('calcTargetMargin');
+      if (marginInput) marginInput.value = '';
       if (input) input.value = markupButton.dataset.calcMarkup === 'auto' ? '' : markupButton.dataset.calcMarkup;
+      refreshDraftPricing();
+      return;
+    }
+    const marginButton = event.target.closest('button[data-calc-margin]');
+    if (marginButton) {
+      const input = byId('calcTargetMargin');
+      const markupInput = byId('calcMarkup');
+      if (markupInput) markupInput.value = '';
+      if (input) input.value = marginButton.dataset.calcMargin;
       refreshDraftPricing();
       return;
     }
@@ -1300,7 +1358,22 @@ function bindCalculationEvents() {
     if (event.target.closest('#calculationsBox')) renderSmartPreview();
   });
   byId('leadCardSection')?.addEventListener('input', (event) => {
-    if (event.target?.id === 'calcMarkup') { refreshDraftPricing(); return; }
+    if (event.target?.id === 'calcMarkup') {
+      if (String(event.target.value || '').trim()) {
+        const marginInput = byId('calcTargetMargin');
+        if (marginInput) marginInput.value = '';
+      }
+      refreshDraftPricing();
+      return;
+    }
+    if (event.target?.id === 'calcTargetMargin') {
+      if (String(event.target.value || '').trim()) {
+        const markupInput = byId('calcMarkup');
+        if (markupInput) markupInput.value = '';
+      }
+      refreshDraftPricing();
+      return;
+    }
     if (event.target.closest('#calculationsBox')) renderSmartPreview();
   });
   document.addEventListener('leader-v4:lead-card-rendered', () => renderCalculations());
