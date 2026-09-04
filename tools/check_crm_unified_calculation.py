@@ -82,6 +82,11 @@ for marker in [
 for marker in [
     'CLEAR_CONFIRMATION_WINDOW_MS',
     'calculationDraftClearDecision',
+    'calculationDraftEconomics',
+    'profitPerUnit',
+    'markupPercent',
+    'marginPercent',
+    'isLoss',
     'calculationDraftRowLabels',
     'calculationDraftReviewDescriptor',
     'reconcileCalculationDraftReview',
@@ -92,6 +97,9 @@ for marker in [
     'v4-calc-draft-review-head',
     'v4-calc-row-review-meta',
     'v4-calc-row-characteristics',
+    'v4-calc-row-economics',
+    'decorateRowEconomics',
+    'Экономика позиции:',
     'aria-label',
     'Нажмите «Очистить» ещё раз в течение 4 секунд',
     'stopImmediatePropagation',
@@ -107,6 +115,8 @@ for marker in [
     '.v4-calc-remove-row',
     '.v4-calc-draft-count',
     '.v4-calc-row-characteristics',
+    '.v4-calc-row-economics',
+    '.v4-calc-row-economics.is-loss',
 ]:
     if marker not in review_css: errors.append('Missing responsive draft review style: ' + marker)
 for source_name, source in [('pricing model', model), ('contractor quote model', contractor_model), ('draft review model', review_model), ('draft review module', review)]:
@@ -115,4 +125,4 @@ for source_name, source in [('pricing model', model), ('contractor quote model',
 
 if errors:
     print('\n'.join(errors)); sys.exit(1)
-print('CRM uses one calculation workspace with direct markup/target-margin pricing; legacy calculators remain retired.')
+print('CRM uses one calculation workspace with target-margin pricing and per-position economics; legacy calculators remain retired.')
