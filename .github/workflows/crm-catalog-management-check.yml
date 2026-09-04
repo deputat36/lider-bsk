@@ -14,16 +14,22 @@ on:
       - 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
       - 'contracts/crm-installation-production-frontend-candidate-v1.json'
       - 'supabase/functions/leader-crm-catalog/**'
+      - 'supabase/staging-functions/leader-staging-authenticated-e2e-bootstrap/**'
       - 'supabase/staging-migrations/20260904_02_catalog_management_write_harness.sql'
+      - 'supabase/staging-migrations/20260904_03_authenticated_e2e_catalog_cleanup.sql'
+      - 'supabase/staging-migrations/20260904_04_catalog_receipt_cleanup_helper.sql'
       - 'supabase/staging-tests/20260904_catalog_management_write_acceptance.sql'
       - 'tools/test_catalog_management_model_v1.mjs'
       - 'tools/test_catalog_management_staging_transport_v1.mjs'
+      - 'tools/run_crm_staging_catalog_authenticated_e2e.mjs'
       - 'tools/test_crm_navigation_route.mjs'
       - 'tools/check_catalog_management_v1.py'
       - 'tools/check_catalog_management_write_staging_v1.py'
+      - 'tools/check_crm_staging_catalog_authenticated_e2e.py'
       - 'tools/check_crm_lazy_tab_loader.py'
       - 'tools/generate_crm_installation_production_frontend_candidate.py'
       - 'tools/check_crm_installation_production_frontend_candidate.py'
+      - '.github/workflows/crm-staging-catalog-authenticated-e2e.yml'
       - '.github/workflows/crm-catalog-management-check.yml'
   pull_request:
     branches: [main]
@@ -38,16 +44,22 @@ on:
       - 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
       - 'contracts/crm-installation-production-frontend-candidate-v1.json'
       - 'supabase/functions/leader-crm-catalog/**'
+      - 'supabase/staging-functions/leader-staging-authenticated-e2e-bootstrap/**'
       - 'supabase/staging-migrations/20260904_02_catalog_management_write_harness.sql'
+      - 'supabase/staging-migrations/20260904_03_authenticated_e2e_catalog_cleanup.sql'
+      - 'supabase/staging-migrations/20260904_04_catalog_receipt_cleanup_helper.sql'
       - 'supabase/staging-tests/20260904_catalog_management_write_acceptance.sql'
       - 'tools/test_catalog_management_model_v1.mjs'
       - 'tools/test_catalog_management_staging_transport_v1.mjs'
+      - 'tools/run_crm_staging_catalog_authenticated_e2e.mjs'
       - 'tools/test_crm_navigation_route.mjs'
       - 'tools/check_catalog_management_v1.py'
       - 'tools/check_catalog_management_write_staging_v1.py'
+      - 'tools/check_crm_staging_catalog_authenticated_e2e.py'
       - 'tools/check_crm_lazy_tab_loader.py'
       - 'tools/generate_crm_installation_production_frontend_candidate.py'
       - 'tools/check_crm_installation_production_frontend_candidate.py'
+      - '.github/workflows/crm-staging-catalog-authenticated-e2e.yml'
       - '.github/workflows/crm-catalog-management-check.yml'
   workflow_dispatch:
 
@@ -76,8 +88,12 @@ jobs:
           node --check crm/v4/assets/v4/crm-v4-tabs-lite.js
           node --check crm/v4/assets/v4/crm-navigation-route-v1.js
           node --check crm/v4/assets/v4/crm-v4-tab-loader-v1.js
-      - name: Type-check catalog Edge
-        run: deno check supabase/functions/leader-crm-catalog/index.ts
+          node --check tools/run_crm_staging_catalog_authenticated_e2e.mjs
+          python3 -m py_compile tools/check_crm_staging_catalog_authenticated_e2e.py
+      - name: Type-check catalog Edge and E2E bootstrap
+        run: |
+          deno check supabase/functions/leader-crm-catalog/index.ts
+          deno check supabase/staging-functions/leader-staging-authenticated-e2e-bootstrap/index.ts
       - name: Catalog management model tests
         run: node tools/test_catalog_management_model_v1.mjs
       - name: Catalog staging transport tests
@@ -88,6 +104,8 @@ jobs:
         run: python3 tools/check_catalog_management_v1.py
       - name: Catalog staging write source contract
         run: python3 tools/check_catalog_management_write_staging_v1.py
+      - name: Catalog authenticated E2E source contract
+        run: python3 tools/check_crm_staging_catalog_authenticated_e2e.py
       - name: Lazy loader regression contract
         run: python3 tools/check_crm_lazy_tab_loader.py
       - name: Installation candidate loader pin regression

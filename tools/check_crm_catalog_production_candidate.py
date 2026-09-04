@@ -19,11 +19,9 @@ required = [
     OUT / 'edge/leader-crm-catalog/contract.ts',
 ]
 for path in required:
-    if not path.exists():
-        errors.append(f'missing: {path.relative_to(ROOT)}')
+    if not path.exists(): errors.append(f'missing: {path.relative_to(ROOT)}')
 if errors:
-    print('\n'.join(errors), file=sys.stderr)
-    sys.exit(1)
+    print('\n'.join(errors), file=sys.stderr); sys.exit(1)
 
 manifest = json.loads((OUT / 'manifest.json').read_text(encoding='utf-8'))
 rpc = (OUT / '20260904_01_catalog_management_rpc_candidate.sql').read_text(encoding='utf-8')
@@ -36,6 +34,8 @@ if manifest.get('production_project_ref') != 'ofewxuqfjhamgerwzull': errors.appe
 if manifest.get('source_only') is not True or manifest.get('production_mutated') is not False: errors.append('manifest must remain source-only')
 if manifest.get('frontend_switch_included') is not False: errors.append('frontend switch must remain excluded')
 if manifest.get('edge_verify_jwt_required') is not True: errors.append('production Edge candidate must require verify_jwt=true')
+if manifest.get('receipt_cleanup_strategy') != 'private_service_only_helper_no_table_delete_grant': errors.append('receipt cleanup strategy mismatch')
+if manifest.get('staging_authenticated_e2e_required') is not True: errors.append('authenticated staging E2E must remain prerequisite')
 
 for marker in [
     'SOURCE-ONLY PRODUCTION CANDIDATE',
@@ -47,9 +47,17 @@ for marker in [
     'leader_private.leader_command_receipts',
     "role = 'owner' and 'catalog.manage' = any(allowed_actions)",
     "role = 'admin' and 'catalog.manage' = any(allowed_actions)",
+    'create or replace function leader_private.leader_discard_catalog_command_receipt(',
+    'security definer',
+    "and action = 'catalog.manage'",
+    "and state = 'in_progress'",
+    'revoke all on function leader_private.leader_discard_catalog_command_receipt(uuid, uuid)',
+    'grant execute on function leader_private.leader_discard_catalog_command_receipt(uuid, uuid)',
+    'to service_role',
     'create or replace function public.leader_manage_catalog_rpc(p_payload jsonb)',
     'security invoker',
     "leader_private.leader_actor_has_crm_action(v_actor_id, 'catalog.manage')",
+    'leader_private.leader_discard_catalog_command_receipt(v_receipt.id, v_actor_id)',
     'insert into leader_private.leader_command_receipts',
     'insert into public.leader_catalog_price_logs',
     'for update',
@@ -58,19 +66,22 @@ for marker in [
 ]:
     if marker not in rpc: errors.append('RPC candidate missing: ' + marker)
 
+public_rpc = rpc.split('create or replace function public.leader_manage_catalog_rpc(p_payload jsonb)', 1)[1]
 for forbidden in [
     "grant execute on function public.leader_manage_catalog_rpc(jsonb) to authenticated",
     "grant execute on function public.leader_manage_catalog_rpc(jsonb) to anon",
-    'security definer',
+    'delete from leader_private.leader_command_receipts where id = v_receipt.id',
     'otulfnouybahfnsycxqn',
 ]:
-    if forbidden in rpc.lower() if forbidden == 'security definer' else forbidden in rpc:
-        errors.append('RPC candidate contains forbidden marker: ' + forbidden)
+    if forbidden in rpc: errors.append('RPC candidate contains forbidden marker: ' + forbidden)
+if 'security definer' in public_rpc.lower(): errors.append('public catalog business RPC must not be SECURITY DEFINER')
+if 'grant delete on table leader_private.leader_command_receipts' in rpc.lower(): errors.append('candidate must not grant receipt table DELETE')
 
 for marker in [
     'SOURCE-ONLY PRODUCTION ROLLBACK CANDIDATE',
     'catalog_production_rollback_rejected_on_staging',
     'drop function public.leader_manage_catalog_rpc(jsonb)',
+    'drop function leader_private.leader_discard_catalog_command_receipt(uuid, uuid)',
 ]:
     if marker not in rollback: errors.append('rollback missing: ' + marker)
 
@@ -85,13 +96,8 @@ for marker in [
 ]:
     if marker not in edge and marker not in contract: errors.append('production Edge missing: ' + marker)
 
-for forbidden in [
-    'otulfnouybahfnsycxqn',
-    'STAGING_PROJECT_REF',
-    "expected: 'staging'",
-]:
-    if forbidden in edge or forbidden in contract:
-        errors.append('production Edge still contains staging marker: ' + forbidden)
+for forbidden in ['otulfnouybahfnsycxqn', 'STAGING_PROJECT_REF', "expected: 'staging'"]:
+    if forbidden in edge or forbidden in contract: errors.append('production Edge still contains staging marker: ' + forbidden)
 
 for marker in [
     'Production сейчас не готов к catalog write rollout',
@@ -101,10 +107,11 @@ for marker in [
     'rollback',
     '69 позиций каталога',
     'owner/admin/manager',
+    'authenticated staging E2E',
+    'leader_discard_catalog_command_receipt',
 ]:
     if marker not in doc: errors.append('readiness doc missing: ' + marker)
 
 if errors:
-    print('\n'.join(errors), file=sys.stderr)
-    sys.exit(1)
-print('CRM catalog production candidate is source-only, prerequisite-gated, rollbackable, JWT-gated and excludes frontend cutover: PASS')
+    print('\n'.join(errors), file=sys.stderr); sys.exit(1)
+print('CRM catalog production candidate is source-only, prerequisite-gated, uses a private service-only receipt helper, keeps business RPC SECURITY INVOKER, and excludes frontend cutover: PASS')
