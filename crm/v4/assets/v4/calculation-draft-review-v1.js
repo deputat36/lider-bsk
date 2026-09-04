@@ -1,6 +1,7 @@
 import { toast } from './ui.js';
 import {
   calculationDraftClearDecision,
+  calculationDraftEconomics,
   calculationDraftReviewDescriptor,
   calculationDraftRowLabels,
   calculationPositionCountLabel,
@@ -33,6 +34,33 @@ function rowName(row, index) {
 
 function fieldValue(id) {
   return text(document.getElementById(id)?.value);
+}
+
+function money(value) {
+  return `${Math.round(Number(value || 0)).toLocaleString('ru-RU')} ₽`;
+}
+
+function percent(value) {
+  return value === null || value === undefined
+    ? '—'
+    : `${Number(value).toLocaleString('ru-RU', { maximumFractionDigits: 1 })}%`;
+}
+
+function decorateRowEconomics(row) {
+  const contractor = row?.querySelector('[data-calc-row-field="contractor_price"]');
+  const client = row?.querySelector('[data-calc-row-field="client_price"]');
+  const clientCell = client?.closest('td');
+  clientCell?.querySelector('.v4-calc-row-economics')?.remove();
+  if (!contractor || !client || !clientCell) return;
+  const economics = calculationDraftEconomics({
+    contractorPrice: contractor.value,
+    clientPrice: client.value
+  });
+  const details = document.createElement('small');
+  details.className = `v4-calc-row-economics${economics.isLoss ? ' is-loss' : ''}`;
+  details.textContent = `Прибыль ${money(economics.profitPerUnit)} / ед. · Наценка ${percent(economics.markupPercent)} · Маржа ${percent(economics.marginPercent)}`;
+  details.setAttribute('aria-label', `Экономика позиции: прибыль ${money(economics.profitPerUnit)} на единицу, наценка ${percent(economics.markupPercent)}, маржа ${percent(economics.marginPercent)}`);
+  clientCell.append(details);
 }
 
 function capturePendingReview() {
@@ -170,6 +198,7 @@ function decorateDraftRows() {
       }
       state.textContent = autoButton.disabled ? 'Автоматическая цена' : 'Ручная цена';
     }
+    decorateRowEconomics(row);
     if (removeButton) {
       removeButton.textContent = 'Удалить';
       removeButton.classList.add('v4-calc-remove-row');
@@ -189,6 +218,12 @@ function scheduleDecoration() {
 }
 
 function bindDraftReviewEvents(section) {
+  section.addEventListener('input', (event) => {
+    const field = event.target.closest('[data-calc-row-field="contractor_price"], [data-calc-row-field="client_price"]');
+    if (!field) return;
+    decorateRowEconomics(field.closest('tr'));
+  });
+
   section.addEventListener('click', (event) => {
     const addButton = event.target.closest('#addSmartCalcItemBtn');
     if (addButton) {

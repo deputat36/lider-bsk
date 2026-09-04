@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import {
   CLEAR_CONFIRMATION_WINDOW_MS,
   calculationDraftClearDecision,
+  calculationDraftEconomics,
   calculationDraftReviewDescriptor,
   calculationDraftRowLabels,
   calculationPositionCountLabel,
@@ -20,6 +21,25 @@ assert.equal(calculationPositionCountLabel(5), '5 позиций');
 assert.equal(calculationPositionCountLabel(11), '11 позиций');
 assert.equal(calculationPositionCountLabel(21), '21 позиция');
 assert.equal(calculationPositionCountLabel(24), '24 позиции');
+
+const economics = calculationDraftEconomics({ contractorPrice: 1000, clientPrice: 1500 });
+assert.equal(economics.profitPerUnit, 500);
+assert.equal(economics.markupPercent, 50);
+assert.equal(Math.round(economics.marginPercent * 10) / 10, 33.3);
+assert.equal(economics.isLoss, false);
+
+const zeroEconomics = calculationDraftEconomics({ contractorPrice: 0, clientPrice: 0 });
+assert.equal(zeroEconomics.profitPerUnit, 0);
+assert.equal(zeroEconomics.markupPercent, null);
+assert.equal(zeroEconomics.marginPercent, null);
+assert.equal(zeroEconomics.isLoss, false);
+assert.ok(!Object.values(zeroEconomics).some((value) => typeof value === 'number' && !Number.isFinite(value)));
+
+const lossEconomics = calculationDraftEconomics({ contractorPrice: 1000, clientPrice: 800 });
+assert.equal(lossEconomics.profitPerUnit, -200);
+assert.equal(lossEconomics.markupPercent, -20);
+assert.equal(lossEconomics.marginPercent, -25);
+assert.equal(lossEconomics.isLoss, true);
 
 assert.deepEqual(
   calculationDraftClearDecision({ rowCount: 0, armedUntil: 0, now: 1000 }),
@@ -82,4 +102,4 @@ assert.equal(reconciled[3].previewName, 'Резка');
 assert.equal(reconcileCalculationDraftReview(reconciled, [], 4, 2).length, 2);
 assert.equal(reconcileCalculationDraftReview([], [], 0, 1)[0].category, 'Позиция расчёта');
 
-console.log('Calculation draft review model keeps clear confirmation, labels, metadata and row reconciliation deterministic.');
+console.log('Calculation draft review model keeps clear confirmation, row economics, labels, metadata and row reconciliation deterministic.');
