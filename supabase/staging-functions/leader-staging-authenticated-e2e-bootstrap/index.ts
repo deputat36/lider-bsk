@@ -8,31 +8,58 @@ const REPOSITORY='deputat36/lider-bsk'
 const REPOSITORY_ID='1236281954'
 const OWNER_ID='203537570'
 const ACTOR_ID='203537570'
-const BRANCH_REF='refs/heads/agent/487-authenticated-staging-e2e'
-const E2E_WORKFLOW_REF=`${REPOSITORY}/.github/workflows/crm-staging-authenticated-e2e.yml@${BRANCH_REF}`
-const CALLER_WORKFLOW_REF=`${REPOSITORY}/.github/workflows/crm-staging-installation-authenticated-ui-smoke-runtime.yml@${BRANCH_REF}`
-const DIAGNOSTIC_WORKFLOW_REF=`${REPOSITORY}/.github/workflows/crm-staging-authenticated-e2e-diagnostic-once.yml@${BRANCH_REF}`
-const ALLOWED_WORKFLOW_REFS=new Set([E2E_WORKFLOW_REF,CALLER_WORKFLOW_REF,DIAGNOSTIC_WORKFLOW_REF])
-const SUBJECT=`repo:${REPOSITORY}:ref:${BRANCH_REF}`
+
+const LEGACY_BRANCH_REF='refs/heads/agent/487-authenticated-staging-e2e'
+const CATALOG_BRANCH_REF='refs/heads/agent/152-catalog-authenticated-e2e-v1'
+const LEGACY_WORKFLOW_REFS=new Set([
+  `${REPOSITORY}/.github/workflows/crm-staging-authenticated-e2e.yml@${LEGACY_BRANCH_REF}`,
+  `${REPOSITORY}/.github/workflows/crm-staging-installation-authenticated-ui-smoke-runtime.yml@${LEGACY_BRANCH_REF}`,
+  `${REPOSITORY}/.github/workflows/crm-staging-authenticated-e2e-diagnostic-once.yml@${LEGACY_BRANCH_REF}`,
+])
+const CATALOG_WORKFLOW_REFS=new Set([
+  `${REPOSITORY}/.github/workflows/crm-staging-catalog-authenticated-e2e.yml@${CATALOG_BRANCH_REF}`,
+])
+const TRUSTED_CONTEXTS=new Map<string,{eventName:string,workflowRefs:Set<string>}>([
+  [LEGACY_BRANCH_REF,{eventName:'push',workflowRefs:LEGACY_WORKFLOW_REFS}],
+  [CATALOG_BRANCH_REF,{eventName:'push',workflowRefs:CATALOG_WORKFLOW_REFS}],
+])
+
 const JWKS=createRemoteJWKSet(new URL(`${ISSUER}/.well-known/jwks`))
 type JsonObject=Record<string,unknown>
 const text=(value:unknown)=>String(value??'').trim()
 const response=(status:number,value:JsonObject)=>new Response(JSON.stringify(value),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}})
 function bearer(req:Request){const value=text(req.headers.get('authorization'));return value.toLowerCase().startsWith('bearer ')?value.slice(7).trim():''}
 function runKey(payload:JsonObject){const id=text(payload.run_id),attempt=text(payload.run_attempt);if(!/^\d+$/.test(id)||!/^\d+$/.test(attempt))throw new Error('github_run_claim_invalid');return `${id}:${attempt}`}
+
 async function claims(req:Request){
   const token=bearer(req);if(!token)throw new Error('github_oidc_missing')
   const verified=await jwtVerify(token,JWKS,{issuer:ISSUER,audience:AUDIENCE,algorithms:['RS256']})
   const value=verified.payload as JsonObject
-  const expected:Record<string,string>={repository:REPOSITORY,repository_id:REPOSITORY_ID,repository_owner_id:OWNER_ID,actor_id:ACTOR_ID,ref:BRANCH_REF,ref_type:'branch',event_name:'push',runner_environment:'github-hosted',repository_visibility:'public',sub:SUBJECT}
+  const expected:Record<string,string>={
+    repository:REPOSITORY,
+    repository_id:REPOSITORY_ID,
+    repository_owner_id:OWNER_ID,
+    actor_id:ACTOR_ID,
+    ref_type:'branch',
+    runner_environment:'github-hosted',
+    repository_visibility:'public',
+  }
   for(const [key,wanted] of Object.entries(expected))if(text(value[key])!==wanted)throw new Error(`github_claim_rejected:${key}`)
+
+  const ref=text(value.ref)
+  const context=TRUSTED_CONTEXTS.get(ref)
+  if(!context)throw new Error('github_claim_rejected:ref')
+  if(text(value.event_name)!==context.eventName)throw new Error('github_claim_rejected:event_name')
+  if(text(value.sub)!==`repo:${REPOSITORY}:ref:${ref}`)throw new Error('github_claim_rejected:sub')
+
   const workflowRef=text(value.workflow_ref)
-  if(!ALLOWED_WORKFLOW_REFS.has(workflowRef))throw new Error('github_claim_rejected:workflow_ref')
+  if(!context.workflowRefs.has(workflowRef))throw new Error('github_claim_rejected:workflow_ref')
   const jobWorkflowRef=text(value.job_workflow_ref)
-  if(jobWorkflowRef&&!ALLOWED_WORKFLOW_REFS.has(jobWorkflowRef))throw new Error('github_claim_rejected:job_workflow_ref')
+  if(jobWorkflowRef&&!context.workflowRefs.has(jobWorkflowRef))throw new Error('github_claim_rejected:job_workflow_ref')
   if(!/^[0-9a-f]{40}$/i.test(text(value.sha)))throw new Error('github_sha_claim_invalid')
-  return {runKey:runKey(value)}
+  return {runKey:runKey(value),ref,workflowRef}
 }
+
 function environment(){const url=text(Deno.env.get('SUPABASE_URL')).replace(/\/$/,'');const key=text(Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'));if(url!==`https://${STAGING_REF}.supabase.co`||!key)throw new Error('staging_service_environment_invalid');return{url,key}}
 function headers(key:string){const value:Record<string,string>={apikey:key,'Content-Type':'application/json',Accept:'application/json'};if(key.split('.').length===3)value.Authorization=`Bearer ${key}`;return value}
 async function service(path:string,init:RequestInit={}){const env=environment();const result=await fetch(env.url+path,{...init,headers:{...headers(env.key),...(init.headers||{})}});const body=await result.json().catch(()=>({})) as JsonObject;return{ok:result.ok,status:result.status,body}}
@@ -53,4 +80,24 @@ async function cleanup(marker:string){
   const residue=(cleaned.body.residue||{}) as JsonObject;for(const count of Object.values(residue))if(Number(count)!==0)throw new Error('fixture_cleanup_residue')
   return{ok:true,action:'cleanup',marker,residue,auth_user_deleted:true}
 }
-Deno.serve(async(req:Request)=>{if(req.method!=='POST')return response(405,{ok:false,error:'method_not_allowed'});try{const verified=await claims(req);const body=await req.json().catch(()=>({})) as JsonObject;const action=text(body.action);console.log('authenticated_e2e_bootstrap',action,verified.runKey);const supplied=text(body.run_key);if(supplied&&supplied!==verified.runKey)throw new Error('run_key_claim_mismatch');if(action==='prepare')return response(201,await prepare(verified.runKey));const marker=text(body.marker);if(!/^SYNTH-CRM-E2E-[A-Za-z0-9-]+$/.test(marker))throw new Error('marker_invalid');if(action==='inspect')return response(200,await inspect(marker));if(action==='set_role')return response(200,await setRole(marker,text(body.role)));if(action==='cleanup')return response(200,await cleanup(marker));return response(400,{ok:false,error:'unknown_action'})}catch(error){const message=text((error as Error)?.message||'oidc_bootstrap_failed').slice(0,180);console.error('authenticated_e2e_bootstrap',message);return response(403,{ok:false,error:message})}})
+
+Deno.serve(async(req:Request)=>{
+  if(req.method!=='POST')return response(405,{ok:false,error:'method_not_allowed'})
+  try{
+    const verified=await claims(req)
+    const body=await req.json().catch(()=>({})) as JsonObject
+    const action=text(body.action)
+    console.log('authenticated_e2e_bootstrap',action,verified.runKey,verified.ref,verified.workflowRef)
+    const supplied=text(body.run_key);if(supplied&&supplied!==verified.runKey)throw new Error('run_key_claim_mismatch')
+    if(action==='prepare')return response(201,await prepare(verified.runKey))
+    const marker=text(body.marker);if(!/^SYNTH-CRM-E2E-[A-Za-z0-9-]+$/.test(marker))throw new Error('marker_invalid')
+    if(action==='inspect')return response(200,await inspect(marker))
+    if(action==='set_role')return response(200,await setRole(marker,text(body.role)))
+    if(action==='cleanup')return response(200,await cleanup(marker))
+    return response(400,{ok:false,error:'unknown_action'})
+  }catch(error){
+    const message=text((error as Error)?.message||'oidc_bootstrap_failed').slice(0,180)
+    console.error('authenticated_e2e_bootstrap',message)
+    return response(403,{ok:false,error:message})
+  }
+})
