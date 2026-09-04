@@ -1,0 +1,150 @@
+name: CRM staging catalog authenticated E2E
+
+on:
+  push:
+    branches:
+      - agent/152-catalog-authenticated-e2e-v1
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: crm-staging-catalog-authenticated-e2e
+  cancel-in-progress: false
+
+jobs:
+  catalog-authenticated-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      STAGING_SUPABASE_URL: https://otulfnouybahfnsycxqn.supabase.co
+      STAGING_SUPABASE_PUBLISHABLE_KEY: sb_publishable_iRCLPHgRaI5SNo9h4efMQw_W7Kdby1D
+      BOOTSTRAP_URL: https://otulfnouybahfnsycxqn.supabase.co/functions/v1/leader-staging-authenticated-e2e-bootstrap
+      OIDC_AUDIENCE: leader-staging-authenticated-e2e
+      STAGING_CRM_E2E_CONFIRM: YES_CREATE_AND_DELETE_SYNTHETIC_STAGING_DATA
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate catalog authenticated E2E source
+        run: |
+          set -euo pipefail
+          node --check tools/run_crm_staging_catalog_authenticated_e2e.mjs
+          python3 -m py_compile tools/check_crm_staging_catalog_authenticated_e2e.py
+          python3 tools/check_crm_staging_catalog_authenticated_e2e.py
+
+      - name: Prepare one temporary Auth user and synthetic fixture
+        id: prepare
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "${RUNNER_TEMP}/catalog-authenticated-e2e"
+          OIDC_FILE="${RUNNER_TEMP}/catalog-e2e-oidc.json"
+          PREPARE_FILE="${RUNNER_TEMP}/catalog-authenticated-e2e/prepare.json"
+          curl -fsS -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${OIDC_AUDIENCE}" > "${OIDC_FILE}"
+          OIDC_TOKEN="$(jq -er '.value' "${OIDC_FILE}")"
+          rm -f "${OIDC_FILE}"
+          HTTP_CODE="$(curl -sS -o "${PREPARE_FILE}" -w '%{http_code}' -X POST "${BOOTSTRAP_URL}" -H "Authorization: Bearer ${OIDC_TOKEN}" -H 'Content-Type: application/json' --data '{"action":"prepare"}')"
+          unset OIDC_TOKEN
+          test "${HTTP_CODE}" = '201'
+          jq -e '.ok == true and .action == "prepare" and .role == "manager" and (.run_key | test("^[0-9]+:[0-9]+$")) and (.marker | test("^SYNTH-CRM-E2E-[A-Za-z0-9-]+$"))' "${PREPARE_FILE}" >/dev/null
+          TEST_EMAIL="$(jq -er '.email' "${PREPARE_FILE}")"
+          TEST_PASSWORD="$(jq -er '.password' "${PREPARE_FILE}")"
+          TEST_MARKER="$(jq -er '.marker' "${PREPARE_FILE}")"
+          TEST_RUN_KEY="$(jq -er '.run_key' "${PREPARE_FILE}")"
+          echo "::add-mask::${TEST_EMAIL}"
+          echo "::add-mask::${TEST_PASSWORD}"
+          echo "::add-mask::${TEST_MARKER}"
+          {
+            echo "STAGING_CRM_E2E_EMAIL=${TEST_EMAIL}"
+            echo "STAGING_CRM_E2E_PASSWORD=${TEST_PASSWORD}"
+            echo "STAGING_CRM_E2E_MARKER=${TEST_MARKER}"
+            echo "STAGING_CRM_E2E_RUN_KEY=${TEST_RUN_KEY}"
+          } >> "${GITHUB_ENV}"
+
+      - name: Verify manager catalog.manage is forbidden
+        id: manager_catalog
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          node tools/run_crm_staging_catalog_authenticated_e2e.mjs --mode=manager-forbidden > "${RUNNER_TEMP}/catalog-authenticated-e2e/manager.json"
+          jq -e '.ok == true and .mode == "manager-forbidden" and .role == "manager" and .forbidden == true and .status == 403 and .action == "catalog.manage"' "${RUNNER_TEMP}/catalog-authenticated-e2e/manager.json" >/dev/null
+
+      - name: Switch synthetic user to owner
+        id: owner_role
+        if: steps.manager_catalog.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          OIDC_FILE="${RUNNER_TEMP}/catalog-e2e-owner-oidc.json"
+          RESPONSE_FILE="${RUNNER_TEMP}/catalog-authenticated-e2e/owner-role.json"
+          curl -fsS -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${OIDC_AUDIENCE}" > "${OIDC_FILE}"
+          OIDC_TOKEN="$(jq -er '.value' "${OIDC_FILE}")"
+          rm -f "${OIDC_FILE}"
+          HTTP_CODE="$(curl -sS -o "${RESPONSE_FILE}" -w '%{http_code}' -X POST "${BOOTSTRAP_URL}" -H "Authorization: Bearer ${OIDC_TOKEN}" -H 'Content-Type: application/json' --data "{\"action\":\"set_role\",\"run_key\":\"${STAGING_CRM_E2E_RUN_KEY}\",\"marker\":\"${STAGING_CRM_E2E_MARKER}\",\"role\":\"owner\"}")"
+          unset OIDC_TOKEN
+          test "${HTTP_CODE}" = '200'
+          jq -e '.ok == true and .role == "owner"' "${RESPONSE_FILE}" >/dev/null
+
+      - name: Run owner create replay update stale and readback
+        id: owner_catalog
+        if: steps.owner_role.outcome == 'success'
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          node tools/run_crm_staging_catalog_authenticated_e2e.mjs --mode=owner-full > "${RUNNER_TEMP}/catalog-authenticated-e2e/owner.json"
+          jq -e '.ok == true and .mode == "owner-full" and .role == "owner" and .create == true and .replay == true and .update == true and .stale_guard == true and .authenticated_readback == true and .price_logs == 2 and .final_projection.contractor_price == 321 and .final_projection.markup_percent == 35 and .final_projection.default_client_price == 500 and .final_projection.calculation_mode == "fixed" and .final_projection.is_active == false' "${RUNNER_TEMP}/catalog-authenticated-e2e/owner.json" >/dev/null
+
+      - name: Inspect catalog fixture before cleanup
+        id: inspect
+        if: steps.owner_catalog.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          OIDC_FILE="${RUNNER_TEMP}/catalog-e2e-inspect-oidc.json"
+          RESPONSE_FILE="${RUNNER_TEMP}/catalog-authenticated-e2e/inspect.json"
+          curl -fsS -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${OIDC_AUDIENCE}" > "${OIDC_FILE}"
+          OIDC_TOKEN="$(jq -er '.value' "${OIDC_FILE}")"
+          rm -f "${OIDC_FILE}"
+          HTTP_CODE="$(curl -sS -o "${RESPONSE_FILE}" -w '%{http_code}' -X POST "${BOOTSTRAP_URL}" -H "Authorization: Bearer ${OIDC_TOKEN}" -H 'Content-Type: application/json' --data "{\"action\":\"inspect\",\"run_key\":\"${STAGING_CRM_E2E_RUN_KEY}\",\"marker\":\"${STAGING_CRM_E2E_MARKER}\"}")"
+          unset OIDC_TOKEN
+          test "${HTTP_CODE}" = '200'
+          jq -e '.ok == true and .counts.catalog == 1 and .counts.catalog_logs == 2 and .counts.catalog_receipts == 2' "${RESPONSE_FILE}" >/dev/null
+
+      - name: Cleanup all synthetic rows and Auth user
+        id: cleanup
+        if: always() && steps.prepare.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          OIDC_FILE="${RUNNER_TEMP}/catalog-e2e-cleanup-oidc.json"
+          CLEANUP_FILE="${RUNNER_TEMP}/catalog-authenticated-e2e/cleanup.json"
+          curl -fsS -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${OIDC_AUDIENCE}" > "${OIDC_FILE}"
+          OIDC_TOKEN="$(jq -er '.value' "${OIDC_FILE}")"
+          rm -f "${OIDC_FILE}"
+          HTTP_CODE="$(curl -sS -o "${CLEANUP_FILE}" -w '%{http_code}' -X POST "${BOOTSTRAP_URL}" -H "Authorization: Bearer ${OIDC_TOKEN}" -H 'Content-Type: application/json' --data "{\"action\":\"cleanup\",\"run_key\":\"${STAGING_CRM_E2E_RUN_KEY}\",\"marker\":\"${STAGING_CRM_E2E_MARKER}\"}")"
+          unset OIDC_TOKEN
+          rm -f "${RUNNER_TEMP}/catalog-authenticated-e2e/prepare.json"
+          test "${HTTP_CODE}" = '200'
+          jq -e '.ok == true and .action == "cleanup" and .auth_user_deleted == true and ([.residue[] | tonumber] | all(. == 0))' "${CLEANUP_FILE}" >/dev/null
+
+      - name: Upload privacy-safe evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crm-staging-catalog-authenticated-e2e
+          path: ${{ runner.temp }}/catalog-authenticated-e2e/*.json
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Enforce authenticated catalog E2E and cleanup
+        if: always()
+        run: |
+          set -euo pipefail
+          test '${{ steps.prepare.outcome }}' = 'success'
+          test '${{ steps.manager_catalog.outcome }}' = 'success'
+          test '${{ steps.owner_role.outcome }}' = 'success'
+          test '${{ steps.owner_catalog.outcome }}' = 'success'
+          test '${{ steps.inspect.outcome }}' = 'success'
+          test '${{ steps.cleanup.outcome }}' = 'success'
