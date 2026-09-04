@@ -4,7 +4,7 @@ Issue: #152
 
 ## Текущее состояние
 
-Staging write-path доказан и находится в `main` после PR #502:
+Staging write-path находится в `main` после PR #502:
 
 - atomic create/update каталога;
 - `leader_catalog_price_logs`;
@@ -15,6 +15,22 @@ Staging write-path доказан и находится в `main` после PR 
 - owner/admin UI в exact staging;
 - production UI остаётся read-only.
 
+Дополнительно 2026-09-04 выполнен отдельный authenticated staging E2E через реального временного Auth user:
+
+- manager login → `catalog.manage` через Edge → `403 forbidden`;
+- тот же synthetic user переключён bootstrap-механизмом в owner;
+- owner login → create → idempotent replay → update;
+- authenticated read-back `leader_catalog` подтвердил сохранённые поля;
+- authenticated read-back `leader_catalog_price_logs` подтвердил `created` + `price_update`;
+- stale update с исходным `expected_updated_at` → `409 source_changed`;
+- inspect перед cleanup: `catalog=1`, `catalog_logs=2`, `catalog_receipts=2`;
+- cleanup удалил catalog/log/receipt fixture и временного Auth user;
+- финальный run `33874631100` — success по всем шагам.
+
+Первый authenticated run выявил реальный дефект stale-path: `permission denied for table leader_command_receipts`. Причина — business RPC была `SECURITY INVOKER`, а canonical receipts layer намеренно не выдаёт `DELETE` на таблицу `service_role`. Исправление не расширяет table grants: добавлен узкий `leader_private.leader_discard_catalog_command_receipt(uuid,uuid)` — `SECURITY DEFINER`, service-role-only helper, удаляющий только `in_progress` receipt действия `catalog.manage` указанного actor. Публичная `leader_manage_catalog_rpc(jsonb)` остаётся `SECURITY INVOKER`; authenticated/anon не могут выполнять ни helper, ни business RPC; `service_role` по-прежнему не имеет table-level DELETE на `leader_command_receipts`.
+
+## Production preflight
+
 Production сейчас не готов к catalog write rollout, потому что read-only introspection 2026-09-04 подтвердил отсутствие:
 
 - `leader_private.leader_role_action_matrix_v1`;
@@ -24,11 +40,11 @@ Production сейчас не готов к catalog write rollout, потому �
 
 При этом production уже содержит рабочие `leader_catalog` и `leader_catalog_price_logs`.
 
-Фактический production preflight на 2026-09-04:
+Фактический production preflight:
 
 - 69 позиций каталога;
 - 0 записей в `leader_catalog_price_logs`;
-- активные типы профилей в production: `owner/admin/manager` (2 owner, 1 admin, 1 manager);
+- активные типы профилей: `owner/admin/manager` (2 owner, 1 admin, 1 manager);
 - `pgcrypto` установлен в схеме `extensions`;
 - `leader_catalog` имеет `trg_leader_catalog_updated_at`;
 - `leader_catalog_price_logs.catalog_id` связан с `leader_catalog(id) ON DELETE CASCADE`;
@@ -60,13 +76,15 @@ Production Supabase не изменялся: выполнены только SEL
 4. production Edge contract;
 5. `manifest.json`.
 
+Database candidate теперь включает staging-proven узкий private receipt helper `leader_discard_catalog_command_receipt` и заменяет прямые `DELETE` receipt внутри business RPC вызовом helper. Candidate специально не выдаёт table-level DELETE на `leader_private.leader_command_receipts`.
+
 Production Edge генерируется из staging-proven реализации, но обязательно заменяет:
 
 - staging project ref → `ofewxuqfjhamgerwzull`;
 - `STAGING_PROJECT_REF` → `PRODUCTION_PROJECT_REF`;
 - wrong-environment marker `expected: 'staging'` → `expected: 'production'`.
 
-Checker запрещает оставшиеся staging project ref/constant/expected marker.
+Checker запрещает оставшиеся staging project ref/constant/expected marker и прямой receipt DELETE внутри публичной business RPC.
 
 Кандидат намеренно не включает frontend cutover: frontend остаётся read-only, пока production backend не установлен и не пройдёт authenticated smoke.
 
@@ -79,7 +97,17 @@ Catalog business RPC:
 - `EXECUTE` разрешён только `service_role`;
 - RPC повторно проверяет `leader_private.leader_actor_has_crm_action(actor_id, 'catalog.manage')`;
 - create/update, price log и idempotency receipt находятся в одной транзакции;
-- update использует row lock и `expected_updated_at` для stale guard.
+- update использует row lock и `expected_updated_at` для stale guard;
+- typed failure очищает только свой `in_progress catalog.manage` receipt через private helper.
+
+Receipt helper:
+
+- находится в `leader_private`;
+- `SECURITY DEFINER` используется только для минимальной операции удаления своего `in_progress catalog.manage` receipt;
+- принимает receipt id + actor id и проверяет action/state/actor;
+- `EXECUTE` отозван у `public`, `anon`, `authenticated`;
+- доступен только `service_role`;
+- table-level DELETE на receipts не требуется и не выдаётся.
 
 Edge candidate:
 
@@ -99,7 +127,7 @@ Edge candidate:
 - наличие `leader_catalog` и `leader_catalog_price_logs`;
 - наличие canonical RBAC/receipts prerequisite;
 - owner/admin действительно имеют `catalog.manage`;
-- `public.leader_manage_catalog_rpc(jsonb)` ещё не установлен;
+- `public.leader_manage_catalog_rpc(jsonb)` и private catalog receipt helper ещё не установлены;
 - production backup/rollback window согласован.
 
 Если любой пункт не подтверждён, rollout прекращается без изменений.
@@ -109,9 +137,9 @@ Edge candidate:
 1. Получить отдельное явное разрешение владельца на production database change.
 2. Применить canonical RBAC/receipts candidate, если он всё ещё отсутствует.
 3. Выполнить его postflight и security advisors.
-4. Получить отдельное разрешение на catalog RPC.
+4. Получить отдельное разрешение на catalog RPC/helper.
 5. Применить сгенерированный catalog RPC candidate.
-6. Проверить, что authenticated/anon не имеют EXECUTE на business RPC, а service_role имеет.
+6. Проверить: business RPC `SECURITY INVOKER`; authenticated/anon не имеют EXECUTE; private helper service-role-only; service_role не получил table-level DELETE на receipts.
 7. Проверить atomic create/replay/update/stale/forbidden на synthetic production fixture только при отдельном разрешении на такие production test data.
 8. Получить отдельное разрешение на production Edge deploy.
 9. Deploy `leader-crm-catalog` с `verify_jwt=true`.
@@ -121,7 +149,12 @@ Edge candidate:
 
 ## Rollback
 
-RPC rollback удаляет только `public.leader_manage_catalog_rpc(jsonb)` и не удаляет:
+RPC rollback удаляет:
+
+- `public.leader_manage_catalog_rpc(jsonb)`;
+- `leader_private.leader_discard_catalog_command_receipt(uuid,uuid)`.
+
+Rollback не удаляет:
 
 - каталог;
 - историю цен;
@@ -134,4 +167,4 @@ Frontend rollback до момента cutover не требуется: productio
 
 ## Решение на текущем этапе
 
-Production rollout не выполнять автоматически. Source-only candidate можно проверять и сливать в репозиторий; применение production database/Edge/frontend требует отдельных явных approvals.
+Authenticated staging E2E для catalog write-path теперь пройден. Production rollout не выполнять автоматически. Source-only candidate можно проверять и сливать в репозиторий; применение production database/Edge/frontend требует отдельных явных approvals.
