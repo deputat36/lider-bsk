@@ -11,6 +11,7 @@ import { catalogRowToDraftItem, catalogRowToTypicalDraftItem, legacyCatalogFallb
 import { createCalculationCatalogItem } from './calculation-catalog-create-v1.js';
 import { canPerformV4Action, CRM_V4_ACTIONS } from './action-permissions-v1.js';
 import { contractorQuoteDraftItem } from './calculation-contractor-quote-model-v1.js';
+import { compositeDraftValidation } from './calculation-composite-model-v1.js';
 
 const CALC_FIELDS = 'id,lead_id,need_id,client_id,title,status,version_number,client_total,contractor_cost,profit,margin_percent,warning_level,warnings,public_comment,internal_comment,commercial_offer_id,order_id,created_by,updated_by,created_at,updated_at';
 const ITEM_FIELDS = 'id,calculation_id,lead_id,catalog_id,category,item_type,name,unit,qty,contractor_price,contractor_sum,markup_percent,client_price,client_sum,profit,margin_percent,comment,data,sort_order,created_at,updated_at';
@@ -46,6 +47,7 @@ let calculationCatalogLoadPromise = null;
 const MODES = [
   ['catalog', 'Из каталога'],
   ['contractor_quote', 'Подрядчик / готовая смета'],
+  ['composite', 'Составное изделие'],
   ['banner', 'Баннер'],
   ['film', 'Плёнка / наклейки'],
   ['sheet', 'ПВХ / листовой материал'],
@@ -59,6 +61,7 @@ const MODES = [
 let draftItems = [];
 const calculationLoads = new Map();
 let saveBusy = false;
+let calculationModeError = '';
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
@@ -382,6 +385,61 @@ function renderModeButtons(selected = 'banner') {
   return MODES.map(([value, label]) => `<button type="button" class="${value === selected ? 'is-active' : ''}" data-calc-mode="${esc(value)}">${esc(label)}</button>`).join('');
 }
 
+function renderCompositeComponentRow(index = 0) {
+  const numberLabel = Number(index || 0) + 1;
+  return `
+    <div class="v4-subcard" data-composite-component>
+      <div class="v4-subcard-head"><div><b>Компонент ${numberLabel}</b></div><button type="button" data-action="remove-composite-component">Убрать</button></div>
+      <div class="v4-form-grid">
+        <label>Название<input data-composite-field="title" placeholder="Например: ПВХ 3 мм"></label>
+        <label>Количество<input data-composite-field="qty" type="number" min="0.01" step="0.01" value="1"></label>
+        <label>Ед.
+          <select data-composite-field="unit"><option>шт</option><option>м²</option><option>м</option><option>комплект</option><option>услуга</option></select>
+        </label>
+        <label>Себестоимость за ед., ₽<input data-composite-field="contractor_price" type="number" min="0" step="0.01" value="0"></label>
+        <label>Цена клиенту за ед., ₽<input data-composite-field="client_price" type="number" min="0" step="0.01" value="0"></label>
+        <label>Комментарий<input data-composite-field="comment" placeholder="Материал, размер, работа"></label>
+      </div>
+      <div class="v4-option-row"><label><input data-composite-field="client_visible" type="checkbox" checked> Показывать этот компонент в подробном КП</label></div>
+    </div>`;
+}
+
+function compositeComponentsFromForm() {
+  return [...document.querySelectorAll('#calcCompositeComponents [data-composite-component]')].map((row) => {
+    const field = (name) => row.querySelector(`[data-composite-field="${name}"]`);
+    return {
+      title: field('title')?.value || '',
+      qty: parseNum(field('qty')?.value || 1),
+      unit: field('unit')?.value || 'шт',
+      contractor_price: parseNum(field('contractor_price')?.value || 0),
+      client_price: parseNum(field('client_price')?.value || 0),
+      client_visible: Boolean(field('client_visible')?.checked),
+      comment: field('comment')?.value || ''
+    };
+  });
+}
+
+function compositeInputFromForm() {
+  return {
+    title: val('calcCompositeTitle'),
+    category: 'Составное изделие',
+    item_type: 'Изготовление',
+    unit: 'комплект',
+    visibility: val('calcCompositeVisibility') || 'single_line',
+    client_price: num('calcCompositeClient'),
+    comment: val('calcCompositeComment'),
+    components: compositeComponentsFromForm()
+  };
+}
+
+function compositeValidationMessage(errors = []) {
+  if (errors.includes('composite_title_required')) return 'Укажите название составного изделия';
+  if (errors.includes('composite_components_required')) return 'Добавьте хотя бы один компонент';
+  if (errors.includes('composite_visible_component_required')) return 'Для подробного КП отметьте хотя бы один клиентский компонент';
+  if (errors.includes('composite_visible_component_price_required')) return 'Для видимых компонентов подробного КП укажите цену клиенту';
+  return 'Проверьте состав изделия';
+}
+
 function renderModeFields(mode = 'banner') {
   if (mode === 'catalog') {
     return `
@@ -603,6 +661,18 @@ function perimeterTotal() {
 function currentModeItems() {
   const mode = val('calcSmartMode') || 'banner';
   const rows = [];
+  calculationModeError = '';
+  if (mode === 'composite') {
+    const prepared = compositeDraftValidation(compositeInputFromForm());
+    if (!prepared.ok) {
+      calculationModeError = compositeValidationMessage(prepared.errors);
+      return [];
+    }
+    if (prepared.item.data.visibility === 'single_line' && Number(prepared.item.client_price || 0) <= 0) {
+      return applyAutoPrice([prepared.item]);
+    }
+    return [prepared.item];
+  }
   if (mode === 'catalog') {
     const row = catalogBackedRow(val('calcCatalogBackedItem'));
     if (!row) return [];
@@ -722,7 +792,7 @@ function renderSmartPreview() {
   const rows = currentModeItems();
   if (!rows.length) {
     box.className = 'v4-calc-live is-warn';
-    box.innerHTML = '<em>Заполните размеры, количество или стоимость — расчёт появится автоматически.</em>';
+    box.innerHTML = `<em>${esc(calculationModeError || 'Заполните размеры, количество или стоимость — расчёт появится автоматически.')}</em>`;
     return;
   }
   const calculated = rows.map(calcItem);
@@ -931,7 +1001,7 @@ export function loadCalculations(leadId = v4State.route.leadId) {
 function addSmartItems() {
   const items = currentModeItems();
   if (!items.length) {
-    toast('Заполните поля расчёта позиции');
+    toast(calculationModeError || 'Заполните поля расчёта позиции');
     return;
   }
   const invalid = items.map(calcItem).filter((item) => item.client_sum <= 0 || item.profit < 0 || item.qty <= 0);
@@ -1146,6 +1216,25 @@ function bindCalculationEvents() {
       refreshDraftPricing();
       return;
     }
+    if (event.target.closest('#calcCompositeAddComponentBtn')) {
+      const container = byId('calcCompositeComponents');
+      const index = container?.querySelectorAll('[data-composite-component]').length || 0;
+      container?.insertAdjacentHTML('beforeend', renderCompositeComponentRow(index));
+      renderSmartPreview();
+      return;
+    }
+    const removeComposite = event.target.closest('button[data-action="remove-composite-component"]');
+    if (removeComposite) {
+      const container = byId('calcCompositeComponents');
+      const components = container?.querySelectorAll('[data-composite-component]') || [];
+      if (components.length <= 1) {
+        toast('В составном изделии нужен хотя бы один компонент');
+        return;
+      }
+      removeComposite.closest('[data-composite-component]')?.remove();
+      renderSmartPreview();
+      return;
+    }
     if (event.target.closest('#calcCreateCatalogItemBtn')) {
       createCatalogItemFromCalculation();
       return;
@@ -1174,6 +1263,11 @@ function bindCalculationEvents() {
       const index = Number(rowInput.dataset.index);
       const field = rowInput.dataset.calcRowField;
       if (draftItems[index] && ['qty', 'contractor_price', 'client_price'].includes(field)) {
+        if (field === 'client_price' && draftItems[index].data?.mode === 'composite' && draftItems[index].data?.visibility === 'detailed') {
+          toast('Для подробного составного изделия цена задаётся компонентами. Удалите позицию и добавьте её заново после правки состава.');
+          renderDraftItems();
+          return;
+        }
         draftItems[index][field] = Math.max(0, parseNum(rowInput.value));
         if (field === 'client_price') draftItems[index].data = { ...(draftItems[index].data || {}), price_source: 'manual' };
         if (field === 'contractor_price' && draftItems[index].data?.price_source !== 'manual') {

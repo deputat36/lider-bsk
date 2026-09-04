@@ -18,6 +18,7 @@ import {
 } from './offer-status-ui-model-v1.js';
 import { V4_CONFIG } from './config.js';
 import { invokeStagingWorkflow, isStagingWorkflowEnvironment } from './workflow-staging-transport-v1.js';
+import { offerVisibilityVersion, publicOfferRows, shortOfferItemNames } from './offer-visibility-v1.js';
 
 const OFFER_FIELDS = 'id,lead_id,calculation_id,client_id,order_id,offer_number,offer_type,title,short_text,full_text,total_sum,valid_until,status,sent_at,approved_at,rejected_at,created_by,updated_by,created_at,updated_at';
 const CALC_FIELDS = 'id,lead_id,need_id,client_id,title,status,version_number,client_total,contractor_cost,profit,margin_percent,warning_level,warnings,public_comment,internal_comment,commercial_offer_id,order_id,created_by,updated_by,created_at,updated_at';
@@ -75,19 +76,20 @@ function needDescription(need) {
 }
 
 function publicItems(items) {
-  return (items || []).filter((item) => Number(item.client_sum || 0) > 0);
+  return publicOfferRows(items);
 }
 
 function buildOfferTexts({ calculation, items, lead, need, validUntil, extraComment }) {
   const visibleItems = publicItems(items);
+  const shortNames = shortOfferItemNames(items, 8);
   const shortLines = [
     `Здравствуйте${lead?.name ? `, ${lead.name}` : ''}! Подготовили расчёт по вашей заявке.`,
     '',
     `${calculation.title || 'Работы по заявке'} — ${money(calculation.client_total)}.`
   ];
-  if (visibleItems.length) {
+  if (shortNames.length) {
     shortLines.push('', 'В стоимость входит:');
-    visibleItems.slice(0, 8).forEach((item) => shortLines.push(`— ${item.name}`));
+    shortNames.forEach((name) => shortLines.push(`— ${name}`));
   }
   shortLines.push('', 'Срок выполнения уточняется после согласования макета и предоплаты.');
   shortLines.push('Для запуска нужно подтвердить заказ и внести предоплату.');
@@ -172,7 +174,7 @@ function renderCreateForm() {
   const availability = offerCalculationAvailability(v4State.calculations || [], v4State.offers || []);
   if (!availability.available) return `<div class="v4-empty">${esc(availability.message)}</div>`;
   const selected = preferredOfferCalculationId(v4State.calculations || [], selectedCalculationId, v4State.offers || []);
-  return `<div id="offerCreateForm" class="v4-offer-form"><div class="v4-offer-form-head"><div><span>Следующее действие</span><h4>Сформировать КП из расчёта</h4></div><p>${esc(availability.message)}</p></div><div class="v4-form-grid"><label>Расчёт<select id="offerCalculationId">${calculationOptions(selected)}</select></label><label>Название КП<input id="offerTitle" placeholder="Например: КП на изготовление баннера"></label><label>Действует до<input id="offerValidUntil" type="date" value="${validUntilDefault()}"></label><label class="wide">Дополнительные условия для клиента<textarea id="offerExtraComment" rows="2" placeholder="Предоплата, доставка, сроки, особенности монтажа"></textarea></label></div><div class="v4-form-actions"><button id="createOfferBtn" type="button" class="v4-primary" ${selected && !createBusy ? '' : 'disabled'}>${createBusy ? 'Формирую КП...' : 'Сформировать КП'}</button></div><p class="v4-muted">В клиентском тексте не показываются себестоимость, прибыль, маржа и цены подрядчиков.</p></div>`;
+  return `<div id="offerCreateForm" class="v4-offer-form"><div class="v4-offer-form-head"><div><span>Следующее действие</span><h4>Сформировать КП из расчёта</h4></div><p>${esc(availability.message)}</p></div><div class="v4-form-grid"><label>Расчёт<select id="offerCalculationId">${calculationOptions(selected)}</select></label><label>Название КП<input id="offerTitle" placeholder="Например: КП на изготовление баннера"></label><label>Действует до<input id="offerValidUntil" type="date" value="${validUntilDefault()}"></label><label class="wide">Дополнительные условия для клиента<textarea id="offerExtraComment" rows="2" placeholder="Предоплата, доставка, сроки, особенности монтажа"></textarea></label></div><div class="v4-form-actions"><button id="createOfferBtn" type="button" class="v4-primary" ${selected && !createBusy ? '' : 'disabled'}>${createBusy ? 'Формирую КП...' : 'Сформировать КП'}</button></div><p class="v4-muted">В клиентском тексте не показываются себестоимость, прибыль, маржа и цены подрядчиков. Правила отображения: ${esc(offerVisibilityVersion())}.</p></div>`;
 }
 
 export function renderOffers() {
