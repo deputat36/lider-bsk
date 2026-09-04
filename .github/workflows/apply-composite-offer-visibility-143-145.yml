@@ -5,6 +5,7 @@ on:
     branches: [agent/143-145-composite-offer-visibility]
     paths:
       - 'tools/patch_composite_offer_visibility_143_145.py'
+      - 'tools/fix_composite_patcher_marker_143_145.py'
       - '.github/workflows/apply-composite-offer-visibility-143-145.yml'
 
 permissions:
@@ -20,6 +21,8 @@ jobs:
         with:
           ref: agent/143-145-composite-offer-visibility
           fetch-depth: 0
+      - name: Fix deterministic patch marker
+        run: python3 tools/fix_composite_patcher_marker_143_145.py
       - name: Apply deterministic patch
         run: python3 tools/patch_composite_offer_visibility_143_145.py
       - name: Validate composite and offer visibility
@@ -33,8 +36,8 @@ jobs:
           python3 tools/check_crm_composite_offer_visibility.py
       - name: Commit generated integration
         run: |
-          if git diff --quiet; then
-            echo 'No generated changes'
+          if git diff --quiet crm/v4/assets/v4/calculations.js crm/v4/assets/v4/offers.js; then
+            echo 'No generated runtime changes'
             exit 0
           fi
           git config user.name 'github-actions[bot]'
