@@ -1,0 +1,70 @@
+name: CRM catalog production candidate check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/generate_crm_catalog_production_candidate.py'
+      - 'tools/check_crm_catalog_production_candidate.py'
+      - 'docs/CRM_CATALOG_PRODUCTION_ROLLOUT_READINESS_2026-09-04.md'
+      - 'supabase/staging-migrations/20260904_02_catalog_management_write_harness.sql'
+      - 'supabase/functions/leader-crm-catalog/**'
+      - 'supabase/production-candidates/20260723_01_installation_rbac_receipts_candidate.sql'
+      - '.github/workflows/crm-catalog-production-candidate-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/generate_crm_catalog_production_candidate.py'
+      - 'tools/check_crm_catalog_production_candidate.py'
+      - 'docs/CRM_CATALOG_PRODUCTION_ROLLOUT_READINESS_2026-09-04.md'
+      - 'supabase/staging-migrations/20260904_02_catalog_management_write_harness.sql'
+      - 'supabase/functions/leader-crm-catalog/**'
+      - 'supabase/production-candidates/20260723_01_installation_rbac_receipts_candidate.sql'
+      - '.github/workflows/crm-catalog-production-candidate-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  catalog-production-candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Validate generator and checker syntax
+        run: |
+          python3 -m py_compile tools/generate_crm_catalog_production_candidate.py
+          python3 -m py_compile tools/check_crm_catalog_production_candidate.py
+
+      - name: Generate source-only production candidate
+        run: python3 tools/generate_crm_catalog_production_candidate.py
+
+      - name: Validate production candidate contract
+        run: python3 tools/check_crm_catalog_production_candidate.py
+
+      - name: Type-check generated production Edge
+        run: |
+          deno check build/crm-catalog-production-candidate/edge/leader-crm-catalog/index.ts
+
+      - name: Assert production-only environment markers
+        run: |
+          set -euo pipefail
+          ! grep -R --line-number --fixed-strings 'otulfnouybahfnsycxqn' build/crm-catalog-production-candidate
+          ! grep -R --line-number --fixed-strings 'STAGING_PROJECT_REF' build/crm-catalog-production-candidate/edge
+          ! grep -R --line-number --fixed-strings "expected: 'staging'" build/crm-catalog-production-candidate/edge
+          grep -R --line-number --fixed-strings 'ofewxuqfjhamgerwzull' build/crm-catalog-production-candidate
+          grep -R --line-number --fixed-strings "expected: 'production'" build/crm-catalog-production-candidate/edge/leader-crm-catalog/index.ts
+
+      - name: Assert source-only boundary
+        run: |
+          set -euo pipefail
+          jq -e '.source_only == true and .production_mutated == false and .frontend_switch_included == false and .edge_verify_jwt_required == true' build/crm-catalog-production-candidate/manifest.json >/dev/null
+          grep -F 'DO NOT APPLY without explicit production database approval' build/crm-catalog-production-candidate/20260904_01_catalog_management_rpc_candidate.sql
+          grep -F 'security invoker' build/crm-catalog-production-candidate/20260904_01_catalog_management_rpc_candidate.sql
+          grep -F 'grant execute on function public.leader_manage_catalog_rpc(jsonb) to service_role' build/crm-catalog-production-candidate/20260904_01_catalog_management_rpc_candidate.sql
+          ! grep -F 'grant execute on function public.leader_manage_catalog_rpc(jsonb) to authenticated' build/crm-catalog-production-candidate/20260904_01_catalog_management_rpc_candidate.sql
