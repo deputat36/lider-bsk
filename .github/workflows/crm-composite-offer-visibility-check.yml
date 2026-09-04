@@ -1,0 +1,53 @@
+name: CRM composite offer visibility check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/calculations.js'
+      - 'crm/v4/assets/v4/calculation-composite-model-v1.js'
+      - 'crm/v4/assets/v4/offers.js'
+      - 'crm/v4/assets/v4/offer-visibility-v1.js'
+      - 'tools/test_calculation_composite_model_v1.mjs'
+      - 'tools/test_offer_visibility_v1.mjs'
+      - 'tools/check_crm_composite_offer_visibility.py'
+      - 'docs/CRM_OFFER_VISIBILITY_INTEGRATION_2026-07-01.md'
+      - '.github/workflows/crm-composite-offer-visibility-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/calculations.js'
+      - 'crm/v4/assets/v4/calculation-composite-model-v1.js'
+      - 'crm/v4/assets/v4/offers.js'
+      - 'crm/v4/assets/v4/offer-visibility-v1.js'
+      - 'tools/test_calculation_composite_model_v1.mjs'
+      - 'tools/test_offer_visibility_v1.mjs'
+      - 'tools/check_crm_composite_offer_visibility.py'
+      - 'docs/CRM_OFFER_VISIBILITY_INTEGRATION_2026-07-01.md'
+      - '.github/workflows/crm-composite-offer-visibility-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  composite-offer-visibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check
+        run: |
+          node --check crm/v4/assets/v4/calculation-composite-model-v1.js
+          node --check crm/v4/assets/v4/calculations.js
+          node --check crm/v4/assets/v4/offer-visibility-v1.js
+          node --check crm/v4/assets/v4/offers.js
+      - name: Composite calculation behavior
+        run: node tools/test_calculation_composite_model_v1.mjs
+      - name: Offer visibility behavior
+        run: node tools/test_offer_visibility_v1.mjs
+      - name: Composite and privacy source contract
+        run: python3 tools/check_crm_composite_offer_visibility.py
