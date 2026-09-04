@@ -1,0 +1,41 @@
+name: Apply target margin 496
+
+on:
+  push:
+    branches: [agent/496-target-margin-pricing]
+    paths:
+      - 'tools/patch_target_margin_496.py'
+      - '.github/workflows/apply-target-margin-496.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/496-target-margin-pricing
+          fetch-depth: 0
+      - name: Apply deterministic target margin patch
+        run: python3 tools/patch_target_margin_496.py
+      - name: Validate target margin calculation
+        run: |
+          node --check crm/v4/assets/v4/calculation-pricing-model-v1.js
+          node --check crm/v4/assets/v4/calculations.js
+          node tools/test_calculation_pricing_model.mjs
+          python3 tools/check_crm_unified_calculation.py
+      - name: Commit generated integration
+        run: |
+          if git diff --quiet crm/v4/assets/v4/calculations.js; then
+            echo 'No generated runtime changes'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add crm/v4/assets/v4/calculations.js
+          git commit -m 'Integrate target margin pricing controls'
+          git push origin HEAD:agent/496-target-margin-pricing
