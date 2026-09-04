@@ -8,6 +8,7 @@ on:
       - 'tools/check_crm_catalog_production_candidate.py'
       - 'docs/CRM_CATALOG_PRODUCTION_ROLLOUT_READINESS_2026-09-04.md'
       - 'supabase/staging-migrations/20260904_02_catalog_management_write_harness.sql'
+      - 'supabase/staging-migrations/20260904_04_catalog_receipt_cleanup_helper.sql'
       - 'supabase/functions/leader-crm-catalog/**'
       - 'supabase/production-candidates/20260723_01_installation_rbac_receipts_candidate.sql'
       - '.github/workflows/crm-catalog-production-candidate-check.yml'
@@ -18,6 +19,7 @@ on:
       - 'tools/check_crm_catalog_production_candidate.py'
       - 'docs/CRM_CATALOG_PRODUCTION_ROLLOUT_READINESS_2026-09-04.md'
       - 'supabase/staging-migrations/20260904_02_catalog_management_write_harness.sql'
+      - 'supabase/staging-migrations/20260904_04_catalog_receipt_cleanup_helper.sql'
       - 'supabase/functions/leader-crm-catalog/**'
       - 'supabase/production-candidates/20260723_01_installation_rbac_receipts_candidate.sql'
       - '.github/workflows/crm-catalog-production-candidate-check.yml'
@@ -48,8 +50,7 @@ jobs:
         run: python3 tools/check_crm_catalog_production_candidate.py
 
       - name: Type-check generated production Edge
-        run: |
-          deno check build/crm-catalog-production-candidate/edge/leader-crm-catalog/index.ts
+        run: deno check build/crm-catalog-production-candidate/edge/leader-crm-catalog/index.ts
 
       - name: Assert production-only environment markers
         run: |
@@ -60,11 +61,18 @@ jobs:
           grep -R --line-number --fixed-strings 'ofewxuqfjhamgerwzull' build/crm-catalog-production-candidate
           grep -R --line-number --fixed-strings "expected: 'production'" build/crm-catalog-production-candidate/edge/leader-crm-catalog/index.ts
 
-      - name: Assert source-only boundary
+      - name: Assert source-only and receipt security boundary
         run: |
           set -euo pipefail
-          jq -e '.source_only == true and .production_mutated == false and .frontend_switch_included == false and .edge_verify_jwt_required == true' build/crm-catalog-production-candidate/manifest.json >/dev/null
-          grep -F 'DO NOT APPLY without explicit production database approval' build/crm-catalog-production-candidate/20260904_01_catalog_management_rpc_candidate.sql
-          grep -F 'security invoker' build/crm-catalog-production-candidate/20260904_01_catalog_management_rpc_candidate.sql
-          grep -F 'grant execute on function public.leader_manage_catalog_rpc(jsonb) to service_role' build/crm-catalog-production-candidate/20260904_01_catalog_management_rpc_candidate.sql
-          ! grep -F 'grant execute on function public.leader_manage_catalog_rpc(jsonb) to authenticated' build/crm-catalog-production-candidate/20260904_01_catalog_management_rpc_candidate.sql
+          jq -e '.source_only == true and .production_mutated == false and .frontend_switch_included == false and .edge_verify_jwt_required == true and .receipt_cleanup_strategy == "private_service_only_helper_no_table_delete_grant" and .staging_authenticated_e2e_required == true' build/crm-catalog-production-candidate/manifest.json >/dev/null
+          SQL=build/crm-catalog-production-candidate/20260904_01_catalog_management_rpc_candidate.sql
+          grep -F 'DO NOT APPLY without explicit production database approval' "$SQL"
+          grep -F 'create or replace function leader_private.leader_discard_catalog_command_receipt' "$SQL"
+          grep -F 'security definer' "$SQL"
+          grep -F 'leader_private.leader_discard_catalog_command_receipt(v_receipt.id, v_actor_id)' "$SQL"
+          grep -F 'create or replace function public.leader_manage_catalog_rpc' "$SQL"
+          grep -F 'security invoker' "$SQL"
+          grep -F 'grant execute on function public.leader_manage_catalog_rpc(jsonb) to service_role' "$SQL"
+          ! grep -F 'grant execute on function public.leader_manage_catalog_rpc(jsonb) to authenticated' "$SQL"
+          ! grep -F 'grant delete on table leader_private.leader_command_receipts' "$SQL"
+          ! grep -F 'delete from leader_private.leader_command_receipts where id = v_receipt.id' "$SQL"
