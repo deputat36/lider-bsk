@@ -6,7 +6,9 @@ root = Path(__file__).resolve().parents[1]
 doc = root / 'docs' / 'CRM_CALCULATION_BUILDER_V2_2026-07-01.md'
 calculations = root / 'crm' / 'v4' / 'assets' / 'v4' / 'calculations.js'
 contractor_model = root / 'crm' / 'v4' / 'assets' / 'v4' / 'calculation-contractor-quote-model-v1.js'
+composite_model = root / 'crm' / 'v4' / 'assets' / 'v4' / 'calculation-composite-model-v1.js'
 visibility = root / 'crm' / 'v4' / 'assets' / 'v4' / 'offer-visibility-v1.js'
+offers = root / 'crm' / 'v4' / 'assets' / 'v4' / 'offers.js'
 index = root / 'crm' / 'v4' / 'index.html'
 loader = root / 'crm' / 'v4' / 'assets' / 'v4' / 'crm-v4-tab-loader-v1.js'
 saved_model = root / 'crm' / 'v4' / 'assets' / 'v4' / 'calculation-saved-review-model-v1.js'
@@ -29,6 +31,7 @@ checks = {
     ],
     calculations: [
         "['contractor_quote', 'Подрядчик / готовая смета']",
+        "['composite', 'Составное изделие']",
         'calcContractorVendor',
         'calcContractorBase',
         'calcContractorDelivery',
@@ -37,6 +40,9 @@ checks = {
         'calcContractorOther',
         'calcContractorClient',
         'contractorQuoteDraftItem',
+        'compositeDraftValidation',
+        'calcCompositeComponents',
+        'calcCompositeVisibility',
         'Общая наценка задаётся выше',
     ],
     contractor_model: [
@@ -48,14 +54,29 @@ checks = {
         'contractor_quote:',
         'price_source:',
     ],
+    composite_model: [
+        'calculation-composite-model-v1-20260904',
+        "builder_version: 'calc-builder-v2'",
+        "mode: 'composite'",
+        "calculation_mode: 'composite'",
+        'components,',
+        'component_count:',
+        'visible_component_client_total',
+    ],
     visibility: [
-        'offer-visibility-v1-20260701',
+        'offer-visibility-v1-20260904',
         'publicOfferRows',
         'shortOfferItemNames',
         'single_line',
         'detailed',
         'internal_only',
         'client_visible',
+    ],
+    offers: [
+        "from './offer-visibility-v1.js'",
+        'return publicOfferRows(items);',
+        'shortOfferItemNames(items, 8)',
+        'offerVisibilityVersion()',
     ],
     index: [
         'calculations-saved-tools.css?v=20260715-review-1',
@@ -136,4 +157,4 @@ if 'сначала типовой, затем нестандартный' in sav
     print('Obsolete two-calculator copy remains in saved calculations')
     sys.exit(1)
 
-print('CRM calc v2 markers and unified contractor quote are valid.')
+print('CRM calc v2 markers, unified contractor/composite modes and offer visibility are valid.')

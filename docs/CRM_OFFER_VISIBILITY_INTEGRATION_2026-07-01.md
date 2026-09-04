@@ -3,22 +3,22 @@
 Scope: CRM РА «Лидер», frontend only, no Supabase production changes.
 Related issues: #143, #145.
 
-## Current state
+## Status
 
-`crm/v4/assets/v4/offers.js` currently builds commercial offers from all calculation items with `client_sum > 0`.
+Implemented in the unified calculation / commercial-offer flow.
 
-This is safe enough for old calculations because internal cost fields are not inserted into the client text. However, it does not yet support the new builder visibility modes.
+`crm/v4/assets/v4/offers.js` now builds client-facing short and full commercial-offer text from `offer-visibility-v1.js` instead of exposing every raw calculation item with `client_sum > 0`.
 
-Existing saved calculation items are backward-compatible: current production data does not use `data.visibility` or `data.builder_version` yet.
+Existing saved calculation items remain backward-compatible: when `data.visibility` is absent, the helper treats the item as `single_line`.
 
-## Target behavior
+## Active behavior
 
-Commercial offer text must use public rows instead of raw calculation items.
+Commercial offer text uses public rows only.
 
 Visibility rules:
 
-- `single_line`: show one final client-facing line.
-- `detailed`: show only components marked public/client-visible.
+- `single_line`: show one final client-facing line;
+- `detailed`: show only components marked `client_visible = true` and having a positive client sum;
 - `internal_only`: do not show the item in the commercial offer.
 
 Never show to the client:
@@ -27,11 +27,28 @@ Never show to the client:
 - supplier price;
 - internal cost;
 - profit;
-- margin.
+- margin;
+- markup percentage.
 
-## Existing helper
+`shortOfferItemNames()` and `publicOfferRows()` are both used by `offers.js`, so short and full offer variants use the same privacy rules.
 
-`crm/v4/assets/v4/offer-visibility-v1.js` already provides:
+## Composite calculation integration
+
+The unified calculation workspace now has a `composite` mode for products made from several materials or works.
+
+A composite product is persisted as one normal `leader_lead_calculation_items` row. Its internal composition is snapshotted inside `data.components`, so no new table or schema migration is required.
+
+Supported client presentation:
+
+- `single_line`: one parent product line; a manually entered parent total may be used, otherwise component totals or the common Calculation Workspace markup rule are used;
+- `detailed`: only explicitly client-visible components are emitted into the offer; the parent calculation total equals the sum of those visible components;
+- hidden components remain in the internal snapshot and never become public offer rows.
+
+For detailed composite products, the parent client price is protected from ad-hoc editing after the item enters the draft. To change the detailed price split, the user edits/rebuilds the component composition so the calculation total and client-visible rows cannot silently diverge.
+
+## Helper contract
+
+`crm/v4/assets/v4/offer-visibility-v1.js` provides:
 
 - `offerVisibilityVersion()`;
 - `itemVisibility(item)`;
@@ -39,52 +56,24 @@ Never show to the client:
 - `publicOfferRows(items)`;
 - `shortOfferItemNames(items, limit)`.
 
-## Required integration in offers.js
+`crm/v4/assets/v4/calculation-composite-model-v1.js` provides the pure composite normalization, totals and validation used by the UI.
 
-Add import near existing imports:
+## Safety
 
-```js
-import { publicOfferRows, shortOfferItemNames, offerVisibilityVersion } from './offer-visibility-v1.js';
-```
+No database schema migration is required.
 
-Replace `publicItems(items)` with a wrapper:
+The calculation builder stores extended metadata inside `leader_lead_calculation_items.data` and continues to use the existing calculation save/version routes.
 
-```js
-function publicItems(items) {
-  return publicOfferRows(items);
-}
-```
+Supabase production is not changed by this integration.
 
-In `buildOfferTexts`:
+## Automated checks
 
-- use `const visibleItems = publicItems(items);`
-- use `const shortNames = shortOfferItemNames(items, 8);`
-- short offer list should use `shortNames`;
-- full offer list should use `visibleItems`;
-- when row price is missing or zero, do not show a zero price for detailed component rows.
+Permanent CI covers:
 
-In `renderCreateForm`, mention the active offer visibility helper version so the UI self-documents which rules are active.
-
-## Why not change Supabase now
-
-No schema migration is required for this step.
-
-The new calculation builder can store extended metadata inside `leader_lead_calculation_items.data`.
-
-## Read-only Supabase findings
-
-RLS policies for these tables allow authenticated users with `leader_private.leader_has_access()`:
-
-- `leader_lead_calculations`;
-- `leader_lead_calculation_items`;
-- `leader_commercial_offers`.
-
-Therefore the current frontend direct-write approach can be preserved for the first implementation, but server-side Edge Function conversion remains the safer long-term option.
-
-## Manual test after integration
-
-1. Old calculation without `data.visibility` still creates a normal commercial offer.
-2. Item with `data.visibility = single_line` appears as one line.
-3. Item with `data.visibility = internal_only` is hidden.
-4. Item with `data.visibility = detailed` shows only public components.
-5. Contractor cost, profit and margin never appear in short or full offer text.
+1. old item without `data.visibility` still renders as one normal offer row;
+2. `single_line` renders one client-facing row;
+3. `internal_only` is hidden;
+4. `detailed` emits only positive, explicitly client-visible components;
+5. internal contractor cost, profit, margin and markup fields are absent from the client offer builder contract;
+6. composite totals and component visibility are covered by pure unit tests;
+7. the composite form must actually exist inside `renderModeFields`, not only in calculation logic.

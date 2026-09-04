@@ -7,6 +7,7 @@ path = root / 'docs' / 'CRM_OFFER_VISIBILITY_INTEGRATION_2026-07-01.md'
 markers = [
     'CRM offer visibility integration',
     'Related issues: #143, #145',
+    'Implemented in the unified calculation / commercial-offer flow',
     'single_line',
     'detailed',
     'internal_only',
@@ -14,7 +15,13 @@ markers = [
     'publicOfferRows',
     'shortOfferItemNames',
     'leader_lead_calculation_items.data',
-    'leader_private.leader_has_access()',
+    'calculation-composite-model-v1.js',
+    'data.components',
+    'Supabase production is not changed',
+    'contractor cost',
+    'profit',
+    'margin',
+    'markup',
 ]
 if not path.exists():
     print('Missing offer visibility integration doc')
@@ -24,4 +31,7 @@ for marker in markers:
     if marker not in text:
         print(f'Missing marker: {marker}')
         sys.exit(1)
-print('Offer visibility integration doc markers are valid.')
+if 'offers.js` still builds client text from all calculation items' in text:
+    print('Obsolete pre-integration offer visibility state remains in documentation')
+    sys.exit(1)
+print('Offer visibility integration doc reflects the active composite/privacy contract.')

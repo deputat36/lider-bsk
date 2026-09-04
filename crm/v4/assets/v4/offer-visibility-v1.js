@@ -1,4 +1,4 @@
-const VERSION = 'offer-visibility-v1-20260701';
+const VERSION = 'offer-visibility-v1-20260904';
 
 function asObject(value) {
   return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
@@ -36,14 +36,15 @@ export function publicOfferRows(items) {
     const visibility = itemVisibility(item);
     if (visibility === 'internal_only') return;
     if (visibility === 'detailed') {
-      const components = asArray(data.components).filter((component) => component?.client_visible);
+      const components = asArray(data.components)
+        .filter((component) => component?.client_visible && moneyNumber(component?.client_sum) > 0);
       if (components.length) {
         components.forEach((component) => {
           rows.push({
             name: component.title || itemClientTitle(item),
             qty: component.qty || 1,
             unit: component.unit || '',
-            client_sum: moneyNumber(component.client_sum || 0),
+            client_sum: moneyNumber(component.client_sum),
             parent_sum: clientSum,
             mode: 'detailed_component'
           });
