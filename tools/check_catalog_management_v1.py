@@ -44,7 +44,7 @@ for marker in [
     "CRM_V4_ACTIONS.CATALOG_MANAGE",
     ".from('leader_catalog')",
     ".from('leader_catalog_price_logs')",
-    "data.v4ManagedSection = 'catalog'",
+    "node.dataset.v4ManagedSection = 'catalog'",
     'catalogManagementSearch',
     'catalogManagementCategory',
     'catalogManagementStatus',
