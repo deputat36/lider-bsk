@@ -46,7 +46,19 @@ for marker in [
     'calculation-draft-review-v1.js?v=20260715-1',
 ]:
     if marker not in html: errors.append('Missing unified calculation asset: ' + marker)
-for marker in ['Наценка к себестоимости', 'data-calc-markup="auto"', 'Своя наценка', 'Ручные цены позиций не изменяются', 'repriceAutomaticItems']:
+for marker in [
+    'Цена и прибыль',
+    'data-calc-markup="auto"',
+    'Своя наценка',
+    'Целевая маржа',
+    'data-calc-margin="30"',
+    'calcTargetMargin',
+    'markupPercentFromMargin',
+    'targetMarginState',
+    'Целевая маржа должна быть меньше 100%',
+    'Ручные цены позиций не изменяются',
+    'repriceAutomaticItems',
+]:
     if marker not in calc: errors.append('Missing pricing UX marker: ' + marker)
 for marker in ['calcHemmingCost', 'calcGrommetCost', 'calcNeedPlotterCut', 'calcMountFilmCost', 'calcNeedSheetPrint', 'calcNeedSheetLamination', 'calcNeedSheetCut', 'ПВХ вспененный 20 мм', 'data-calc-row-field="contractor_price"', 'data-action="auto-calc-item"']:
     if marker not in calc: errors.append('Missing restored calculation setting: ' + marker)
@@ -58,7 +70,14 @@ for marker in ['contractor-quote-model-v1-20260903', "builder_version: 'calc-bui
     if marker not in contractor_model: errors.append('Missing contractor quote snapshot marker: ' + marker)
 for marker in ['parseCalculationPairs', 'parseCalculationDiameters', 'circleAreaSquareMeters']:
     if marker not in spec_model: errors.append('Missing specification model marker: ' + marker)
-for marker in ['marginPercentFromMarkup', 'price_source', 'manual', 'markupPercentForSubtotal']:
+for marker in [
+    'marginPercentFromMarkup',
+    'markupPercentFromMargin',
+    'normalizeMarginPercent',
+    'price_source',
+    'manual',
+    'markupPercentForSubtotal',
+]:
     if marker not in model: errors.append('Missing pricing model marker: ' + marker)
 for marker in [
     'CLEAR_CONFIRMATION_WINDOW_MS',
@@ -96,4 +115,4 @@ for source_name, source in [('pricing model', model), ('contractor quote model',
 
 if errors:
     print('\n'.join(errors)); sys.exit(1)
-print('CRM uses one calculation workspace; legacy standard/advanced calculators are retired and protected from reintroduction.')
+print('CRM uses one calculation workspace with direct markup/target-margin pricing; legacy calculators remain retired.')
