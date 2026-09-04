@@ -1,0 +1,41 @@
+name: Apply row economics 498
+
+on:
+  push:
+    branches: [agent/498-row-economics]
+    paths:
+      - 'tools/patch_row_economics_498.py'
+      - '.github/workflows/apply-row-economics-498.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/498-row-economics
+          fetch-depth: 0
+      - name: Apply deterministic row economics patch
+        run: python3 tools/patch_row_economics_498.py
+      - name: Validate row economics
+        run: |
+          node --check crm/v4/assets/v4/calculation-draft-review-model-v1.js
+          node --check crm/v4/assets/v4/calculation-draft-review-v1.js
+          node tools/test_calculation_draft_review_model.mjs
+          python3 tools/check_crm_unified_calculation.py
+      - name: Commit generated integration
+        run: |
+          if git diff --quiet crm/v4/assets/v4/calculation-draft-review-v1.js; then
+            echo 'No generated runtime changes'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add crm/v4/assets/v4/calculation-draft-review-v1.js
+          git commit -m 'Integrate per-position calculation economics'
+          git push origin HEAD:agent/498-row-economics
