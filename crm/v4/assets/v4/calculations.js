@@ -211,8 +211,7 @@ function makeCatalogRawItem(row, options = {}) {
 
 async function ensureCalculationCatalog() {
   if (calculationCatalogLoadPromise) return calculationCatalogLoadPromise;
-  const catalogClient = isStagingWorkflowEnvironment(V4_CONFIG.supabaseUrl) ? null : supabaseClient;
-  calculationCatalogLoadPromise = loadCalculationCatalog({ supabaseClient: catalogClient, fallbackRows: CATALOG }).then((result) => {
+  calculationCatalogLoadPromise = loadCalculationCatalog({ supabaseClient, fallbackRows: CATALOG }).then((result) => {
     calculationCatalogRows = result.rows;
     calculationCatalogSource = result.source;
     if (val('calcSmartMode') === 'catalog') setCalcMode('catalog');
