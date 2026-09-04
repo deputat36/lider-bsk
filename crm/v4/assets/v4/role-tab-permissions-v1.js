@@ -10,6 +10,7 @@ export const CRM_V4_TABS = Object.freeze([
   'finance_control',
   'production',
   'contact_control',
+  'catalog',
   'public_lead_audit',
   'user_admin'
 ]);

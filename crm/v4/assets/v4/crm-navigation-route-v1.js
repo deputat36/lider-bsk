@@ -6,6 +6,7 @@ export const CRM_NAVIGATION_TABS = Object.freeze([
   'finance_control',
   'production',
   'contact_control',
+  'catalog',
   'public_lead_audit',
   'user_admin'
 ]);

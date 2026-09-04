@@ -152,6 +152,15 @@ const TAB_REGISTRY = Object.freeze({
     loadingMessage: 'Загружаю контроль контактов…',
     errorMessage: 'Контроль контактов не загрузился.'
   }),
+  catalog: Object.freeze({
+    requiredPermission: 'catalog',
+    importModule: managedModule(() => import('./catalog-management-v1.js?v=20260904-read-1')),
+    mount: (module) => module.mount?.(),
+    load: (module) => module.load?.(),
+    refresh: (module) => module.refresh?.(),
+    loadingMessage: 'Загружаю каталог…',
+    errorMessage: 'Каталог не загрузился.'
+  }),
   public_lead_audit: Object.freeze({
     requiredPermission: 'public_lead_audit',
     importModule: managedModule(
