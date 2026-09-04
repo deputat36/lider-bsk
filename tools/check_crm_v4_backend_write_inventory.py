@@ -10,6 +10,7 @@ crm_dir = root / 'crm' / 'v4' / 'assets' / 'v4'
 
 errors = []
 known_direct_write_files = {
+    'calculation-catalog-create-v1.js',
     'calculations-advanced.js',
     'calculations-standard.js',
     'calculations.js',
@@ -63,9 +64,12 @@ else:
     required = [
         '`crm/v4/assets/v4/lead-create.js`',
         '`crm/v4/assets/v4/lead-timeline.js`',
+        '`crm/v4/assets/v4/calculation-catalog-create-v1.js`',
         '`crm/v4/assets/v4/calculation-version-editor-v1.js`',
         'canonical action: `leads.create`',
         'future dedicated `lead_events.write` key',
+        'canonical action: `catalog.manage`',
+        '`leader_catalog_insert_admin` RLS policy',
         'canonical permission: `calculations.write`',
         'server action: `calculation.create_version`',
         'production route: fail-closed',
@@ -88,6 +92,7 @@ else:
         'export const CRM_V4_ROLE_ACTIONS',
         "LEADS_TRANSITION: 'leads.transition'",
         "CALCULATIONS_WRITE: 'calculations.write'",
+        "CATALOG_MANAGE: 'catalog.manage'",
         "OFFERS_TRANSITION: 'offers.transition'",
         "ORDERS_TRANSITION: 'orders.transition'",
         "PRODUCTION_WRITE: 'production.write'",

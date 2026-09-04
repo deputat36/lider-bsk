@@ -38,6 +38,23 @@ Target classification:
 - event creation should be part of the same transaction as a status/next-contact transition when those fields change;
 - free-standing comments may remain a narrow direct insert only under role-scoped RLS.
 
+### `crm/v4/assets/v4/calculation-catalog-create-v1.js`
+
+Current write:
+
+- narrow direct insert into `leader_catalog` when owner/admin creates reusable nomenclature from the unified calculation workspace.
+
+Current classification:
+
+- canonical action: `catalog.manage` / `CRM_V4_ACTIONS.CATALOG_MANAGE`;
+- UI exposes the form only to active owner/admin profiles;
+- exact staging is fail-closed and performs no `leader_catalog` request because the staging compatibility schema intentionally has no catalog table;
+- production insert uses the ordinary authenticated browser client and existing `leader_catalog_insert_admin` RLS policy;
+- no service-role key, elevated browser credential, RPC bypass or Edge bypass is introduced;
+- duplicate names and RLS denial are surfaced as user-facing errors;
+- this narrow single-table write may remain direct while role-scoped RLS is the server enforcement boundary;
+- any future multi-table catalog mutation or audit-sensitive catalog workflow should move behind a versioned server action.
+
 ### `crm/v4/assets/v4/calculation-version-editor-v1.js`
 
 Purpose:
@@ -94,6 +111,7 @@ Current classification:
 
 The source checker classifies these CRM v4 files:
 
+- `calculation-catalog-create-v1.js`;
 - `calculations-advanced.js`;
 - `calculations-standard.js`;
 - `calculations.js`;

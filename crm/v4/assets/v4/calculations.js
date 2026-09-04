@@ -8,6 +8,8 @@ import { circleAreaSquareMeters, parseCalculationDiameters, parseCalculationPair
 import { V4_CONFIG } from './config.js';
 import { isStagingWorkflowEnvironment } from './workflow-staging-transport-v1.js';
 import { catalogRowToDraftItem, catalogRowToTypicalDraftItem, legacyCatalogFallbackRows, loadCalculationCatalog } from './calculation-catalog-source-v1.js';
+import { createCalculationCatalogItem } from './calculation-catalog-create-v1.js';
+import { canPerformV4Action, CRM_V4_ACTIONS } from './action-permissions-v1.js';
 import { contractorQuoteDraftItem } from './calculation-contractor-quote-model-v1.js';
 
 const CALC_FIELDS = 'id,lead_id,need_id,client_id,title,status,version_number,client_total,contractor_cost,profit,margin_percent,warning_level,warnings,public_comment,internal_comment,commercial_offer_id,order_id,created_by,updated_by,created_at,updated_at';
@@ -103,6 +105,97 @@ function catalogBackedRow(value) {
 
 function catalogSourceLabel() {
   return calculationCatalogSource === 'remote' ? 'Каталог CRM' : 'Встроенный резервный каталог';
+}
+
+function canManageCalculationCatalog() {
+  return !isStagingWorkflowEnvironment(V4_CONFIG.supabaseUrl)
+    && canPerformV4Action(CRM_V4_ACTIONS.CATALOG_MANAGE);
+}
+
+function renderCatalogCreatePanel() {
+  if (isStagingWorkflowEnvironment(V4_CONFIG.supabaseUrl)) {
+    return '<div class="v4-calc-mode-help">Добавление новой номенклатуры отключено в staging. Для проверки расчёта используйте резервный каталог или ручную позицию.</div>';
+  }
+  if (!canManageCalculationCatalog()) {
+    return '<div class="v4-calc-mode-help">Новой номенклатурой управляет руководитель. Разовую работу можно добавить режимом «Ручная позиция».</div>';
+  }
+  return `
+    <details class="v4-calc-settings">
+      <summary>+ Новая позиция каталога</summary>
+      <div class="v4-calc-mode-help">Добавьте повторно используемую услугу или материал. После сохранения позиция сразу будет выбрана в этом расчёте.</div>
+      <div class="v4-form-grid">
+        <label>Категория<input id="calcCatalogCreateCategory" placeholder="Например: Наружная реклама"></label>
+        <label>Название<input id="calcCatalogCreateName" placeholder="Например: Табличка ПВХ 3 мм"></label>
+        <label>Ед. измерения
+          <select id="calcCatalogCreateUnit"><option>шт</option><option>м²</option><option>м</option><option>комплект</option><option>услуга</option><option>100 шт</option></select>
+        </label>
+        <label>Тип
+          <select id="calcCatalogCreateType"><option>Изготовление</option><option>Материал</option><option>Услуга</option><option>Дизайн</option><option>Монтаж</option></select>
+        </label>
+        <label>Себестоимость за ед., ₽<input id="calcCatalogCreateCost" type="number" min="0" step="0.01" value="0"></label>
+        <label>Наценка по умолчанию, %<input id="calcCatalogCreateMarkup" type="number" min="0" step="0.1" value="30"></label>
+        <label>Минимальная цена клиенту, ₽<input id="calcCatalogCreateMin" type="number" min="0" step="0.01" value="0"></label>
+        <label>Фиксированная цена клиенту, ₽<input id="calcCatalogCreateClient" type="number" min="0" step="0.01" placeholder="Пусто = по наценке"></label>
+        <label>Описание<input id="calcCatalogCreateDescription" placeholder="Что входит в позицию"></label>
+      </div>
+      <div class="v4-form-actions">
+        <button id="calcCreateCatalogItemBtn" type="button">Добавить в каталог</button>
+      </div>
+    </details>`;
+}
+
+function catalogCreateInputFromForm() {
+  return {
+    category: val('calcCatalogCreateCategory'),
+    name: val('calcCatalogCreateName'),
+    unit: val('calcCatalogCreateUnit') || 'шт',
+    item_type: val('calcCatalogCreateType') || 'Изготовление',
+    contractor_price: num('calcCatalogCreateCost'),
+    markup_percent: num('calcCatalogCreateMarkup'),
+    min_client_price: num('calcCatalogCreateMin'),
+    default_client_price: num('calcCatalogCreateClient'),
+    description: val('calcCatalogCreateDescription')
+  };
+}
+
+async function createCatalogItemFromCalculation() {
+  if (!canManageCalculationCatalog()) {
+    toast('Добавлять номенклатуру могут только администратор или владелец');
+    return;
+  }
+  const button = byId('calcCreateCatalogItemBtn');
+  if (button) button.disabled = true;
+  try {
+    setStatus('Добавляю позицию в каталог...', 'warn');
+    const result = await timeout(createCalculationCatalogItem({
+      supabaseClient,
+      input: catalogCreateInputFromForm(),
+      allowWrite: canManageCalculationCatalog()
+    }), 10000, 'Каталог не ответил за 10 секунд');
+    if (!result.ok || !result.row) {
+      const message = result.error?.message || 'Не удалось добавить позицию в каталог.';
+      toast(message);
+      setStatus(message, 'error');
+      return;
+    }
+    const row = result.row;
+    calculationCatalogRows = [...calculationCatalogRows.filter((item) => item.id !== row.id && item.name !== row.name), row]
+      .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0) || String(a.category || '').localeCompare(String(b.category || ''), 'ru') || String(a.name || '').localeCompare(String(b.name || ''), 'ru'));
+    calculationCatalogSource = 'remote';
+    setCalcMode('catalog');
+    const select = byId('calcCatalogBackedItem');
+    if (select) select.value = row.id || row.name;
+    renderSmartPreview();
+    toast('Позиция добавлена в каталог и выбрана в расчёте');
+    setStatus('Новая позиция каталога готова к расчёту.', 'good');
+  } catch (error) {
+    const message = friendlyError(error);
+    toast(message);
+    setStatus(`Ошибка каталога: ${message}`, 'error');
+  } finally {
+    const currentButton = byId('calcCreateCatalogItemBtn');
+    if (currentButton) currentButton.disabled = false;
+  }
 }
 
 function makeCatalogRawItem(row, options = {}) {
@@ -301,6 +394,7 @@ function renderModeFields(mode = 'banner') {
           <input id="calcCatalogBackedQty" type="number" min="0.01" step="0.01" value="1">
         </label>
       </div>
+      ${renderCatalogCreatePanel()}
     `;
   }
   if (mode === 'contractor_quote') {
@@ -1050,6 +1144,10 @@ function bindCalculationEvents() {
       const input = byId('calcMarkup');
       if (input) input.value = markupButton.dataset.calcMarkup === 'auto' ? '' : markupButton.dataset.calcMarkup;
       refreshDraftPricing();
+      return;
+    }
+    if (event.target.closest('#calcCreateCatalogItemBtn')) {
+      createCatalogItemFromCalculation();
       return;
     }
     if (event.target.closest('#addSmartCalcItemBtn')) addSmartItems();
