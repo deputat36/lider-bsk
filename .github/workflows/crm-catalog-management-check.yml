@@ -11,9 +11,13 @@ on:
       - 'crm/v4/assets/v4/crm-v4-tabs-lite.js'
       - 'crm/v4/assets/v4/crm-navigation-route-v1.js'
       - 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
+      - 'contracts/crm-installation-production-frontend-candidate-v1.json'
       - 'tools/test_catalog_management_model_v1.mjs'
+      - 'tools/test_crm_navigation_route.mjs'
       - 'tools/check_catalog_management_v1.py'
       - 'tools/check_crm_lazy_tab_loader.py'
+      - 'tools/generate_crm_installation_production_frontend_candidate.py'
+      - 'tools/check_crm_installation_production_frontend_candidate.py'
       - '.github/workflows/crm-catalog-management-check.yml'
   pull_request:
     branches: [main]
@@ -25,9 +29,13 @@ on:
       - 'crm/v4/assets/v4/crm-v4-tabs-lite.js'
       - 'crm/v4/assets/v4/crm-navigation-route-v1.js'
       - 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
+      - 'contracts/crm-installation-production-frontend-candidate-v1.json'
       - 'tools/test_catalog_management_model_v1.mjs'
+      - 'tools/test_crm_navigation_route.mjs'
       - 'tools/check_catalog_management_v1.py'
       - 'tools/check_crm_lazy_tab_loader.py'
+      - 'tools/generate_crm_installation_production_frontend_candidate.py'
+      - 'tools/check_crm_installation_production_frontend_candidate.py'
       - '.github/workflows/crm-catalog-management-check.yml'
   workflow_dispatch:
 
@@ -54,7 +62,14 @@ jobs:
           node --check crm/v4/assets/v4/crm-v4-tab-loader-v1.js
       - name: Catalog management model tests
         run: node tools/test_catalog_management_model_v1.mjs
+      - name: Catalog navigation regression
+        run: node tools/test_crm_navigation_route.mjs
       - name: Catalog management source contract
         run: python3 tools/check_catalog_management_v1.py
       - name: Lazy loader regression contract
         run: python3 tools/check_crm_lazy_tab_loader.py
+      - name: Installation candidate loader pin regression
+        run: |
+          python3 -m py_compile tools/generate_crm_installation_production_frontend_candidate.py
+          python3 tools/generate_crm_installation_production_frontend_candidate.py
+          python3 tools/check_crm_installation_production_frontend_candidate.py
