@@ -6,6 +6,7 @@ on:
     paths:
       - 'tools/patch_composite_offer_visibility_143_145.py'
       - 'tools/fix_composite_patcher_marker_143_145.py'
+      - 'tools/insert_composite_mode_ui_143_145.py'
       - '.github/workflows/apply-composite-offer-visibility-143-145.yml'
 
 permissions:
@@ -25,6 +26,8 @@ jobs:
         run: python3 tools/fix_composite_patcher_marker_143_145.py
       - name: Apply deterministic patch
         run: python3 tools/patch_composite_offer_visibility_143_145.py
+      - name: Ensure composite form is in renderModeFields
+        run: python3 tools/insert_composite_mode_ui_143_145.py
       - name: Validate composite and offer visibility
         run: |
           node --check crm/v4/assets/v4/calculation-composite-model-v1.js
@@ -43,5 +46,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add crm/v4/assets/v4/calculations.js crm/v4/assets/v4/offers.js
-          git commit -m 'Integrate composite calculation and offer visibility'
+          git commit -m 'Complete composite calculation form integration'
           git push origin HEAD:agent/143-145-composite-offer-visibility
