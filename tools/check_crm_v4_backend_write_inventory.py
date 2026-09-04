@@ -11,8 +11,6 @@ crm_dir = root / 'crm' / 'v4' / 'assets' / 'v4'
 errors = []
 known_direct_write_files = {
     'calculation-catalog-create-v1.js',
-    'calculations-advanced.js',
-    'calculations-standard.js',
     'calculations.js',
     'contact-control-v1.js',
     'followups.js',
@@ -130,4 +128,4 @@ if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('All CRM v4 direct-write files are classified; calculation version editor is write-free and canonical actions are present.')
+print('All CRM v4 direct-write files are classified; retired calculators are absent and canonical actions are present.')
