@@ -17,11 +17,7 @@ errors = []
 for marker in [
     "from './calculation-composite-model-v1.js'",
     "['composite', 'Составное изделие']",
-    "mode === 'composite'",
-    'calcCompositeTitle',
-    'calcCompositeVisibility',
-    'calcCompositeComponents',
-    'calcCompositeAddComponentBtn',
+    'renderCompositeComponentRow',
     'data-composite-component',
     'data-composite-field',
     'remove-composite-component',
@@ -30,6 +26,40 @@ for marker in [
 ]:
     if marker not in calc:
         errors.append(f'Missing composite calculation marker: {marker}')
+
+render_start = calc.find("function renderModeFields(mode = 'banner') {")
+render_end = calc.find('\nfunction area()', render_start)
+if render_start < 0 or render_end < 0:
+    errors.append('Cannot isolate renderModeFields for composite UI check')
+else:
+    render_region = calc[render_start:render_end]
+    for marker in [
+        "if (mode === 'composite')",
+        '<b>Составное изделие:</b>',
+        'calcCompositeTitle',
+        'calcCompositeVisibility',
+        'calcCompositeClient',
+        'calcCompositeComponents',
+        'calcCompositeAddComponentBtn',
+        'renderCompositeComponentRow(0)',
+    ]:
+        if marker not in render_region:
+            errors.append(f'Missing composite render marker: {marker}')
+
+mode_start = calc.find('function currentModeItems()')
+mode_end = calc.find('\nfunction renderSmartPreview()', mode_start)
+if mode_start < 0 or mode_end < 0:
+    errors.append('Cannot isolate currentModeItems for composite calculation check')
+else:
+    mode_region = calc[mode_start:mode_end]
+    for marker in [
+        "if (mode === 'composite')",
+        'compositeDraftValidation(compositeInputFromForm())',
+        "prepared.item.data.visibility === 'single_line'",
+        'applyAutoPrice([prepared.item])',
+    ]:
+        if marker not in mode_region:
+            errors.append(f'Missing composite calculation-path marker: {marker}')
 
 for marker in [
     'CALCULATION_COMPOSITE_MODEL_V1',
