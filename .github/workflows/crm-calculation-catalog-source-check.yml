@@ -9,6 +9,8 @@ on:
       - 'crm/v4/assets/v4/calculation-catalog-create-v1.js'
       - 'crm/v4/assets/v4/catalog-pricing-v1.js'
       - 'crm/v4/assets/v4/calculation-pricing-model-v1.js'
+      - 'supabase/staging-migrations/20260904_01_calculation_catalog_harness.sql'
+      - 'supabase/staging-tests/20260904_calculation_catalog_id_acceptance.sql'
       - 'tools/test_calculation_catalog_source_v1.mjs'
       - 'tools/test_calculation_catalog_create_v1.mjs'
       - 'tools/check_calculation_catalog_ui_mode.py'
@@ -23,6 +25,8 @@ on:
       - 'crm/v4/assets/v4/calculation-catalog-create-v1.js'
       - 'crm/v4/assets/v4/catalog-pricing-v1.js'
       - 'crm/v4/assets/v4/calculation-pricing-model-v1.js'
+      - 'supabase/staging-migrations/20260904_01_calculation_catalog_harness.sql'
+      - 'supabase/staging-tests/20260904_calculation_catalog_id_acceptance.sql'
       - 'tools/test_calculation_catalog_source_v1.mjs'
       - 'tools/test_calculation_catalog_create_v1.mjs'
       - 'tools/check_calculation_catalog_ui_mode.py'
@@ -54,7 +58,7 @@ jobs:
         run: node tools/test_calculation_catalog_source_v1.mjs
       - name: Catalog create behavior tests
         run: node tools/test_calculation_catalog_create_v1.mjs
-      - name: Catalog UI source contract
+      - name: Catalog UI and staging compatibility contract
         run: python3 tools/check_calculation_catalog_ui_mode.py
       - name: Typical modes catalog backing contract
         run: python3 tools/check_calculation_typical_catalog_backing.py
