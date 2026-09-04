@@ -3,12 +3,11 @@
 
 This generator never connects to Supabase and never mutates production. It derives the
 business command from the staging-proven implementation while replacing only the
-environment gate for the Edge candidate.
+environment-specific Edge gate and user-facing environment marker.
 """
 from __future__ import annotations
 
 import json
-import shutil
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -101,6 +100,17 @@ commit;
 """
 
 
+def production_edge_text(name: str) -> str:
+    text = (STAGING_EDGE_DIR / name).read_text(encoding='utf-8')
+    text = text.replace(STAGING_REF, PRODUCTION_REF)
+    text = text.replace('STAGING_PROJECT_REF', 'PRODUCTION_PROJECT_REF')
+    if name == 'index.ts':
+        text = text.replace("expected: 'staging'", "expected: 'production'")
+    if STAGING_REF in text or 'STAGING_PROJECT_REF' in text or "expected: 'staging'" in text:
+        raise RuntimeError(f'Production Edge transform left staging marker in {name}')
+    return text
+
+
 def main() -> None:
     source = STAGING_MIGRATION.read_text(encoding='utf-8')
     rpc = extract_rpc(source)
@@ -108,15 +118,14 @@ def main() -> None:
     (OUT / '20260904_01_catalog_management_rpc_candidate.sql').write_text(
         production_preflight() + rpc + '\n\ncommit;\n', encoding='utf-8'
     )
-    (OUT / '20260904_01_catalog_management_rpc_candidate_rollback.sql').write_text(rollback_sql(), encoding='utf-8')
+    (OUT / '20260904_01_catalog_management_rpc_candidate_rollback.sql').write_text(
+        rollback_sql(), encoding='utf-8'
+    )
 
     edge_out = OUT / 'edge/leader-crm-catalog'
     edge_out.mkdir(parents=True, exist_ok=True)
     for name in ('index.ts', 'contract.ts'):
-        text = (STAGING_EDGE_DIR / name).read_text(encoding='utf-8')
-        text = text.replace(STAGING_REF, PRODUCTION_REF)
-        text = text.replace('STAGING_PROJECT_REF', 'PRODUCTION_PROJECT_REF')
-        (edge_out / name).write_text(text, encoding='utf-8')
+        (edge_out / name).write_text(production_edge_text(name), encoding='utf-8')
 
     manifest = {
         'contract': 'crm-catalog-production-candidate-v1',
@@ -125,6 +134,7 @@ def main() -> None:
         'production_mutated': False,
         'requires_explicit_database_approval': True,
         'requires_explicit_edge_approval': True,
+        'edge_verify_jwt_required': True,
         'prerequisites': [
             'supabase/production-candidates/20260723_01_installation_rbac_receipts_candidate.sql',
             'production postflight confirms canonical owner/admin catalog.manage',
