@@ -8,6 +8,7 @@ const CRM_V4_MENU = Object.freeze([
   { tab: 'finance_control', label: 'Финансы' },
   { tab: 'production', label: 'Производство' },
   { tab: 'contact_control', label: 'Контроль контактов' },
+  { tab: 'catalog', label: 'Каталог' },
   { tab: 'public_lead_audit', label: 'Аудит заявок' },
   { tab: 'user_admin', label: 'Доступ и роли' }
 ]);

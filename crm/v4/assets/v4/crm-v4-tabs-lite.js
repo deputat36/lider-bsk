@@ -8,7 +8,7 @@ import {
   readCrmNavigationTab
 } from './crm-navigation-route-v1.js';
 
-const MANAGED_TABS = new Set(['management_dashboard', 'orders', 'order_control', 'finance_control', 'production', 'public_lead_audit', 'contact_control', 'user_admin']);
+const MANAGED_TABS = new Set(['management_dashboard', 'orders', 'order_control', 'finance_control', 'production', 'contact_control', 'catalog', 'public_lead_audit', 'user_admin']);
 const SETTABLE_TABS = new Set([...MANAGED_TABS, 'leads', 'card']);
 const ROUTABLE_TABS = new Set(CRM_NAVIGATION_TABS);
 const DUPLICATE_TRANSITION_WINDOW_MS = 120;

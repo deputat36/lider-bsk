@@ -15,6 +15,7 @@ LEAD_CARD = ROOT / "crm/v4/assets/v4/lead-card.js"
 HEAVY_EAGER = {
     "management-dashboard-v3.js",
     "contact-control-v1.js",
+    "catalog-management-v1.js",
     "lead-card.js",
     "needs.js",
     "calculations.js",
@@ -40,6 +41,7 @@ TABS = (
     "finance_control",
     "production",
     "contact_control",
+    "catalog",
     "public_lead_audit",
     "user_admin",
 )
