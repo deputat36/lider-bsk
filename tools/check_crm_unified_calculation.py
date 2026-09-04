@@ -12,12 +12,34 @@ spec_model = (root / 'crm/v4/assets/v4/calculation-spec-model-v1.js').read_text(
 review_model = (root / 'crm/v4/assets/v4/calculation-draft-review-model-v1.js').read_text(encoding='utf-8')
 review = (root / 'crm/v4/assets/v4/calculation-draft-review-v1.js').read_text(encoding='utf-8')
 review_css = (root / 'crm/v4/assets/v4/calculations-unified.css').read_text(encoding='utf-8')
+retirement_doc_path = root / 'docs/CRM_LEGACY_CALCULATORS_RETIREMENT_2026-09-04.md'
+legacy_paths = [
+    root / 'crm/v4/assets/v4/calculations-standard.js',
+    root / 'crm/v4/assets/v4/calculations-advanced.js',
+]
 errors = []
 
 for forbidden in ['calculations-standard.js?', 'calculations-advanced.js?', 'calculation-contractor-quote-v1.js?v=']:
     if forbidden in html: errors.append('Duplicate calculator remains connected: ' + forbidden)
 if 'calculation-contractor-quote-v1.js?v=' in loader:
     errors.append('Legacy contractor calculator remains in lead-card bundle')
+for legacy_path in legacy_paths:
+    if legacy_path.exists():
+        errors.append('Retired legacy calculator must not exist: ' + str(legacy_path.relative_to(root)))
+if not retirement_doc_path.exists():
+    errors.append('Missing legacy calculator retirement decision record')
+else:
+    retirement_doc = retirement_doc_path.read_text(encoding='utf-8')
+    for marker in [
+        'Tracking issue: #150',
+        '`crm/v4/assets/v4/calculations-standard.js`',
+        '`crm/v4/assets/v4/calculations-advanced.js`',
+        'one active calculation workspace',
+        'Existing saved calculations are not changed or migrated',
+        'Production Supabase remains unchanged',
+    ]:
+        if marker not in retirement_doc:
+            errors.append('Missing retirement decision marker: ' + marker)
 for marker in [
     'calculations.js?v=20260717-module-singleton-1',
     'calculations-unified.css?v=20260715-draft-review-1',
@@ -74,4 +96,4 @@ for source_name, source in [('pricing model', model), ('contractor quote model',
 
 if errors:
     print('\n'.join(errors)); sys.exit(1)
-print('CRM uses one calculation workspace with catalog, contractor quote, explicit pricing and a responsive, accessible, clear-safe draft review.')
+print('CRM uses one calculation workspace; legacy standard/advanced calculators are retired and protected from reintroduction.')
