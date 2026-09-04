@@ -6,22 +6,28 @@ on:
     paths:
       - 'crm/v4/assets/v4/calculations.js'
       - 'crm/v4/assets/v4/calculation-catalog-source-v1.js'
+      - 'crm/v4/assets/v4/calculation-catalog-create-v1.js'
       - 'crm/v4/assets/v4/catalog-pricing-v1.js'
       - 'crm/v4/assets/v4/calculation-pricing-model-v1.js'
       - 'tools/test_calculation_catalog_source_v1.mjs'
+      - 'tools/test_calculation_catalog_create_v1.mjs'
       - 'tools/check_calculation_catalog_ui_mode.py'
       - 'tools/check_calculation_typical_catalog_backing.py'
+      - 'tools/check_calculation_catalog_create_ui.py'
       - '.github/workflows/crm-calculation-catalog-source-check.yml'
   pull_request:
     branches: [main]
     paths:
       - 'crm/v4/assets/v4/calculations.js'
       - 'crm/v4/assets/v4/calculation-catalog-source-v1.js'
+      - 'crm/v4/assets/v4/calculation-catalog-create-v1.js'
       - 'crm/v4/assets/v4/catalog-pricing-v1.js'
       - 'crm/v4/assets/v4/calculation-pricing-model-v1.js'
       - 'tools/test_calculation_catalog_source_v1.mjs'
+      - 'tools/test_calculation_catalog_create_v1.mjs'
       - 'tools/check_calculation_catalog_ui_mode.py'
       - 'tools/check_calculation_typical_catalog_backing.py'
+      - 'tools/check_calculation_catalog_create_ui.py'
       - '.github/workflows/crm-calculation-catalog-source-check.yml'
   workflow_dispatch:
 
@@ -40,12 +46,17 @@ jobs:
       - name: Syntax check
         run: |
           node --check crm/v4/assets/v4/calculation-catalog-source-v1.js
+          node --check crm/v4/assets/v4/calculation-catalog-create-v1.js
           node --check crm/v4/assets/v4/catalog-pricing-v1.js
           node --check crm/v4/assets/v4/calculation-pricing-model-v1.js
           node --check crm/v4/assets/v4/calculations.js
       - name: Catalog source behavior tests
         run: node tools/test_calculation_catalog_source_v1.mjs
+      - name: Catalog create behavior tests
+        run: node tools/test_calculation_catalog_create_v1.mjs
       - name: Catalog UI source contract
         run: python3 tools/check_calculation_catalog_ui_mode.py
       - name: Typical modes catalog backing contract
         run: python3 tools/check_calculation_typical_catalog_backing.py
+      - name: Catalog create UI contract
+        run: python3 tools/check_calculation_catalog_create_ui.py
