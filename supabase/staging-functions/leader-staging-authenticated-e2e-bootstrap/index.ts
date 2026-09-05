@@ -10,6 +10,12 @@ const OWNER_ID='203537570'
 const ACTOR_ID='203537570'
 
 const LEGACY_BRANCH_REF='refs/heads/agent/487-authenticated-staging-e2e'
+// Narrow test context for the explicitly authorized pricing iteration (#506).
+const PRICING_BRANCH_REF='refs/heads/agent/506-calculation-price-controls-v1'
+const PRICING_WORKFLOW_REFS=new Set([
+  `${REPOSITORY}/.github/workflows/crm-staging-authenticated-e2e-dispatch.yml@${PRICING_BRANCH_REF}`,
+  `${REPOSITORY}/.github/workflows/crm-staging-authenticated-e2e.yml@${PRICING_BRANCH_REF}`,
+])
 const CATALOG_BRANCH_REF='refs/heads/agent/152-catalog-authenticated-e2e-v1'
 const LEGACY_WORKFLOW_REFS=new Set([
   `${REPOSITORY}/.github/workflows/crm-staging-authenticated-e2e.yml@${LEGACY_BRANCH_REF}`,
@@ -20,6 +26,7 @@ const CATALOG_WORKFLOW_REFS=new Set([
   `${REPOSITORY}/.github/workflows/crm-staging-catalog-authenticated-e2e.yml@${CATALOG_BRANCH_REF}`,
 ])
 const TRUSTED_CONTEXTS=new Map<string,{eventName:string,workflowRefs:Set<string>}>([
+  [PRICING_BRANCH_REF,{eventName:'push',workflowRefs:PRICING_WORKFLOW_REFS}],
   [LEGACY_BRANCH_REF,{eventName:'push',workflowRefs:LEGACY_WORKFLOW_REFS}],
   [CATALOG_BRANCH_REF,{eventName:'push',workflowRefs:CATALOG_WORKFLOW_REFS}],
 ])
