@@ -103,7 +103,8 @@ else:
     expected_singletons = {
         './assets/v4/router.js': './assets/v4/router.js?v=20260717-module-singleton-1',
         './assets/v4/leads.js': './assets/v4/leads.js?v=20260721-followup-1',
-        './assets/v4/calculations.js': './assets/v4/calculations.js?v=20260717-module-singleton-1',
+        './assets/v4/calculations.js': './assets/v4/calculations.js?v=20260905-price-controls-1',
+        './assets/v4/calculations.js?v=20260717-module-singleton-1': './assets/v4/calculations.js?v=20260905-price-controls-1',
         './assets/v4/site-cache-note-v1.js': './assets/v4/site-cache-note-v1.js?v=20260718-deferred-1',
         './assets/v4/site-cache-note-v1.js?v=20260621-1': './assets/v4/site-cache-note-v1.js?v=20260718-deferred-1',
     }
