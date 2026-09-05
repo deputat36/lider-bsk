@@ -1,6 +1,15 @@
 # Статус проекта РА «Лидер»
 
-Дата обновления: 2026-08-27.
+Дата обновления: 2026-09-05.
+
+## Source-only catalog rollout probes (#152)
+
+- Продолжена `agent/152-catalog-production-postflight-v1` после #504; исправлен preflight, который падал при отсутствии role matrix несмотря на WHERE guard.
+- Preflight/postflight выполняются в read-only transaction; checker защищает SQL boundary и исходный дефект, подключён существующий catalog candidate CI.
+- Production preflight реально выполнен: 69 catalog, 0 price logs, prerequisite gate=false. DDL/DML/Auth/Edge/frontend cutover не выполнялись.
+- Staging postflight подтверждает invoker business RPC, private service-only helper и запрет manager manage / browser direct write; synthetic fixture не создавался.
+- Полный новый browser workflow ещё не проверен. Открытие опубликованной CRM показывает login; это не authenticated E2E.
+- Следующий приоритет: unified calculation workspace; production rollout остаётся отдельно заблокирован до явного разрешения.
 
 ## Продолжение authenticated staging E2E (#487 / #488)
 
