@@ -2,6 +2,14 @@
 
 Дата обновления: 2026-09-05.
 
+## Расчёт: explicit apply и ручные цены версий (#506)
+
+- В рабочей ветке подготовлены: кнопка применения цен только к auto-позициям; нулевая tier-наценка; сохранение manual provenance при правке клиентской цены новой версии.
+- Ручные нулевые/убыточные и каталоговые цены исключены из массового repricing; исторические source items не меняются. Это проверено behavior-тестами моделей и реального builder event handler.
+- Добавлены cache aliases без новых eager modules; прежние URL ведут к одному актуальному модулю.
+- Staging authenticated/browser E2E нового patch ещё не выполнен. Эти изменения нельзя считать опубликованными или проверенными в рабочем сценарии до отдельного runtime gate.
+- Production Supabase и backend routes не изменялись.
+
 ## Source-only catalog rollout probes (#152)
 
 - Продолжена `agent/152-catalog-production-postflight-v1` после #504; исправлен preflight, который падал при отсутствии role matrix несмотря на WHERE guard.
