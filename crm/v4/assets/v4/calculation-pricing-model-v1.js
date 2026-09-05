@@ -21,11 +21,20 @@ export function markupPercentFromMargin(marginPercent, fallback = null) {
   return (margin / (100 - margin)) * 100;
 }
 
+// Empty/invalid inputs use defaults; an explicit zero remains a valid business rule.
+export function normalizePricingSettings(settings = {}) {
+  const result = { ...settings };
+  for (const [key, fallback] of Object.entries(DEFAULT_PRICING)) {
+    result[key] = normalizeMarkupPercent(settings[key], fallback);
+  }
+  result.roundStep = Math.max(1, result.roundStep);
+  return result;
+}
+
 export function markupPercentForSubtotal(subtotal, settings = {}) {
   const fixed = normalizeMarkupPercent(settings.fixedMarkup, null);
   if (fixed !== null) return fixed;
-  const smallLimit = Number(settings.smallLimit || DEFAULT_PRICING.smallLimit);
-  const mediumLimit = Number(settings.mediumLimit || DEFAULT_PRICING.mediumLimit);
+  const { smallLimit, mediumLimit } = normalizePricingSettings(settings);
   if (subtotal <= smallLimit) return normalizeMarkupPercent(settings.smallMarkup, DEFAULT_PRICING.smallMarkup);
   if (subtotal <= mediumLimit) return normalizeMarkupPercent(settings.mediumMarkup, DEFAULT_PRICING.mediumMarkup);
   return normalizeMarkupPercent(settings.largeMarkup, DEFAULT_PRICING.largeMarkup);
