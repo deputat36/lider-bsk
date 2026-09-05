@@ -3,6 +3,8 @@
 -- Expected project ref: ofewxuqfjhamgerwzull.
 -- This file must not contain DDL or DML.
 
+BEGIN TRANSACTION READ ONLY;
+
 SELECT jsonb_build_object(
   'captured_at', clock_timestamp(),
   'objects', jsonb_build_object(
@@ -86,3 +88,14 @@ SELECT jsonb_build_object(
   'helper_service_execute', has_function_privilege('service_role','leader_private.leader_discard_catalog_command_receipt(uuid,uuid)','EXECUTE'),
   'service_receipt_table_delete', has_table_privilege('service_role','leader_private.leader_command_receipts','DELETE')
 ) AS catalog_security_postflight;
+
+-- Confirm Data API tables retain row security and report policy/grant drift.
+SELECT c.relname, c.relrowsecurity, c.relforcerowsecurity,
+  has_table_privilege('anon', c.oid, 'INSERT,UPDATE,DELETE') AS anon_write,
+  has_table_privilege('authenticated', c.oid, 'INSERT,UPDATE,DELETE') AS authenticated_write
+FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = 'public'
+  AND c.relname IN ('leader_catalog', 'leader_catalog_price_logs')
+ORDER BY c.relname;
+
+ROLLBACK;
