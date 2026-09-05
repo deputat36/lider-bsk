@@ -48,6 +48,9 @@ for marker in [
     if marker not in html: errors.append('Missing unified calculation asset: ' + marker)
 for marker in [
     'Цена и прибыль',
+    'applyAutomaticCalcPricesBtn',
+    'Применить к автоматическим позициям',
+    'normalizePricingSettings',
     'data-calc-markup="auto"',
     'Своя наценка',
     'Целевая маржа',
