@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {
   calculationVersionDraftTitle,
+  updateCalculationVersionItem,
   calculationVersionItem,
   calculationVersionLegacyPreflight,
   calculationVersionTotals,
@@ -171,3 +172,21 @@ assert.equal(draft.titleCustomized, false);
 assert.equal(draft.title, 'Баннер — правки v5');
 
 console.log('Calculation version edit model tests passed.');
+
+const autoSource = { qty: 1, contractor_price: 100, client_price: 150, data: { price_source: 'auto', nested: { preserved: true } } };
+for (const price of [0, 50, 180]) {
+  const edited = updateCalculationVersionItem(autoSource, 'client_price', price);
+  assert.equal(edited.client_price, price);
+  assert.equal(edited.data.price_source, 'manual');
+  assert.equal(autoSource.client_price, 150);
+  assert.equal(autoSource.data.price_source, 'auto');
+  assert.notEqual(edited.data.nested, autoSource.data.nested);
+  const { repriceAutomaticItems } = await import('../crm/v4/assets/v4/calculation-pricing-model-v1.js');
+  assert.equal(repriceAutomaticItems([edited], { fixedMarkup: 80 })[0].client_price, price);
+  assert.equal(copyCalculationItemsForVersion([edited])[0].data.price_source, 'manual');
+}
+for (const field of ['category', 'item_type', 'name', 'unit', 'comment']) {
+  assert.equal(updateCalculationVersionItem(autoSource, field, 'Новое значение')[field], 'Новое значение');
+}
+assert.equal(updateCalculationVersionItem(autoSource, 'contractor_price', 200).data.price_source, 'auto');
+console.log('Version manual price provenance and source immutability: PASS.');
