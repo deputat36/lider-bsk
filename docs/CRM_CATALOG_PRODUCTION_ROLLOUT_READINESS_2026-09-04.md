@@ -168,3 +168,25 @@ Frontend rollback до момента cutover не требуется: productio
 ## Решение на текущем этапе
 
 Authenticated staging E2E для catalog write-path теперь пройден. Production rollout не выполнять автоматически. Source-only candidate можно проверять и сливать в репозиторий; применение production database/Edge/frontend требует отдельных явных approvals.
+
+## Проверяемые SQL probes — 2026-09-05
+
+- `docs/PREFLIGHT_CATALOG_PRODUCTION_ROLLOUT_2026-09-04.sql`: выполнять перед rollout. Оба SQL-файла используют `BEGIN TRANSACTION READ ONLY` и `ROLLBACK`.
+- Preflight не читает optional private relations через FROM: PostgreSQL разбирает relation до WHERE, поэтому проверка `to_regclass` в WHERE не спасает от отсутствующей таблицы.
+- `docs/POSTFLIGHT_CATALOG_PRODUCTION_ROLLOUT_2026-09-04.sql`: выполнять только после установки prerequisites и catalog RPC/helper. Отсутствующий объект или ошибка SQL — STOP, а не успешный postflight.
+- Инструмент может возвращать только последний result set: для фиксации всех результатов запускать SELECT по отдельности, каждый внутри read-only transaction.
+- `tools/check_crm_catalog_rollout_probes.py` проверяет source contract, включая отрицательные проверки writable transaction, DML и исходного missing-relation дефекта. Это статическая проверка, она не заменяет SQL runtime.
+
+Фактически проверено 2026-09-05:
+
+- исправленный preflight целиком выполнен в production: catalog=69, price_logs=0, profiles=4; обе private tables, actor bridge, catalog RPC/helper отсутствуют; `rbac_receipts_prerequisite_ready=false`;
+- postflight целиком выполнен read-only в staging; отдельно получен security result: owner/admin manage=true, manager=false, business invoker=true, helper definer=true, authenticated execute=false, service execute=true, service receipt DELETE=false;
+- staging catalog и price logs: RLS=true, anon/authenticated write=false;
+- synthetic Auth users/profiles/catalog/price logs=0; fixtures в этой итерации не создавались;
+- опубликованная CRM открывает форму входа; authenticated browser E2E в этой итерации не выполнялся.
+
+Условия принятия postflight: все шесть объектов присутствуют; business RPC — invoker, helper — private definer с фиксированным search_path; anon/authenticated EXECUTE=false для обеих функций; service EXECUTE=true; receipt table DELETE=false для всех трёх ролей; owner/admin manage=true, manager=false; RLS=true и browser table writes=false. Сравнить definition hashes с согласованным артефактом. Ненулевые in_progress receipts требуют разбора, а не автоматического удаления.
+
+Граф prerequisites: отдельно согласованный canonical RBAC/receipts → его postflight → catalog SQL/helper → catalog SQL postflight/security advisors → отдельно согласованный JWT Edge deploy → authenticated smoke с явно разрешённым synthetic fixture и полным cleanup → отдельно согласованный frontend cutover. Source-only merge не разрешает ни один production write.
+
+Перед frontend cutover зафиксировать точный SHA текущего read-only frontend и Edge version. Переключать только catalog transport на проверенный production Edge, сохраняя canonical owner/admin gate. Frontend rollback: вернуть зафиксированный SHA/transport, дождаться публикации и проверить read-only каталог после reload; затем откатывать catalog Edge и RPC/helper по существующему rollback. Историю цен, каталог и общий RBAC не удалять. До отдельного approval текущий production frontend остаётся read-only.

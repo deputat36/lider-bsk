@@ -6,6 +6,9 @@ on:
     paths:
       - 'tools/generate_crm_catalog_production_candidate.py'
       - 'tools/check_crm_catalog_production_candidate.py'
+      - 'tools/check_crm_catalog_rollout_probes.py'
+      - 'docs/PREFLIGHT_CATALOG_PRODUCTION_ROLLOUT_2026-09-04.sql'
+      - 'docs/POSTFLIGHT_CATALOG_PRODUCTION_ROLLOUT_2026-09-04.sql'
       - 'docs/CRM_CATALOG_PRODUCTION_ROLLOUT_READINESS_2026-09-04.md'
       - 'supabase/staging-migrations/20260904_02_catalog_management_write_harness.sql'
       - 'supabase/staging-migrations/20260904_04_catalog_receipt_cleanup_helper.sql'
@@ -17,6 +20,9 @@ on:
     paths:
       - 'tools/generate_crm_catalog_production_candidate.py'
       - 'tools/check_crm_catalog_production_candidate.py'
+      - 'tools/check_crm_catalog_rollout_probes.py'
+      - 'docs/PREFLIGHT_CATALOG_PRODUCTION_ROLLOUT_2026-09-04.sql'
+      - 'docs/POSTFLIGHT_CATALOG_PRODUCTION_ROLLOUT_2026-09-04.sql'
       - 'docs/CRM_CATALOG_PRODUCTION_ROLLOUT_READINESS_2026-09-04.md'
       - 'supabase/staging-migrations/20260904_02_catalog_management_write_harness.sql'
       - 'supabase/staging-migrations/20260904_04_catalog_receipt_cleanup_helper.sql'
@@ -42,6 +48,9 @@ jobs:
         run: |
           python3 -m py_compile tools/generate_crm_catalog_production_candidate.py
           python3 -m py_compile tools/check_crm_catalog_production_candidate.py
+
+      - name: Validate read-only rollout probes
+        run: python3 tools/check_crm_catalog_rollout_probes.py
 
       - name: Generate source-only production candidate
         run: python3 tools/generate_crm_catalog_production_candidate.py
