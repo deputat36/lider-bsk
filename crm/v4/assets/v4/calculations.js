@@ -2,7 +2,7 @@ import { supabaseClient } from './supabase-client.js';
 import { timeout, friendlyError } from './api.js';
 import { v4State, setState } from './state.js';
 import { byId, setStatus, toast } from './ui.js';
-import { marginPercentFromMarkup, markupPercentForSubtotal, markupPercentFromMargin, normalizeMarginPercent, priceWithMarkup, repriceAutomaticItems } from './calculation-pricing-model-v1.js';
+import { marginPercentFromMarkup, markupPercentForSubtotal, markupPercentFromMargin, normalizeMarginPercent, normalizePricingSettings, priceWithMarkup, repriceAutomaticItems } from './calculation-pricing-model-v1.js';
 import { needCalculationPrefill } from './need-calculation-prefill-v1.js';
 import { circleAreaSquareMeters, parseCalculationDiameters, parseCalculationPairs } from './calculation-spec-model-v1.js';
 import { V4_CONFIG } from './config.js';
@@ -230,17 +230,21 @@ function targetMarginState() {
 
 function calcSettings() {
   const targetMargin = targetMarginState();
+  const pricing = normalizePricingSettings({
+    smallLimit: byId('calcSmallLimit')?.value,
+    smallMarkup: byId('calcSmallMarkup')?.value,
+    mediumLimit: byId('calcMedLimit')?.value,
+    mediumMarkup: byId('calcMedMarkup')?.value,
+    largeMarkup: byId('calcLargeMarkup')?.value,
+    roundStep: byId('calcRoundStep')?.value
+  });
   return {
+    ...pricing,
     fixedMarkup: targetMargin.active && targetMargin.valid ? targetMargin.markup : (byId('calcMarkup')?.value ?? ''),
     targetMargin: targetMargin.margin,
     targetMarginActive: targetMargin.active,
     targetMarginValid: targetMargin.valid,
-    smallLimit: num('calcSmallLimit') || 3000,
-    smallMarkup: num('calcSmallMarkup') || 30,
-    medLimit: num('calcMedLimit') || 10000,
-    mediumMarkup: num('calcMedMarkup') || 20,
-    largeMarkup: num('calcLargeMarkup') || 10,
-    roundStep: Math.max(1, num('calcRoundStep') || 10)
+    medLimit: pricing.mediumLimit
   };
 }
 
@@ -903,7 +907,7 @@ function renderCalcForm() {
         </label>
       </div>
       <section class="v4-pricing-control" aria-label="Управление ценой расчёта">
-        <div><h4>Цена и прибыль</h4><p>Можно управлять либо наценкой к себестоимости, либо целевой маржой. Заполняйте только один способ — CRM сама пересчитает второй показатель.</p></div>
+        <div><h4>Цена и прибыль</h4><p>Можно управлять либо наценкой к себестоимости, либо целевой маржой. Заполняйте только один способ — CRM покажет второй показатель. Для изменения добавленных автоматических позиций нажмите кнопку применения.</p></div>
         <div class="v4-pricing-choice">
           <div>
             <b>Наценка к себестоимости</b>
@@ -917,6 +921,8 @@ function renderCalcForm() {
           </div>
         </div>
         <div id="calcPricingExplanation" class="v4-pricing-explanation" aria-live="polite"></div>
+        <button id="applyAutomaticCalcPricesBtn" type="button">Применить к автоматическим позициям</button>
+        <p>Ручные цены и цены из каталога сохраняются. Правила округления и наценки по сумме заказа — ниже, в дополнительных настройках.</p>
       </section>
       <div class="v4-calc-auto-box">
         <h4>Тип позиции</h4>
@@ -1096,11 +1102,12 @@ function refreshDraftPricing() {
   const settings = calcSettings();
   if (settings.targetMarginActive && !settings.targetMarginValid) {
     renderPricingExplanation();
-    return;
+    return false;
   }
   draftItems = repriceAutomaticItems(draftItems, { ...settings, mediumLimit: settings.medLimit });
   renderDraftItems();
   renderPricingExplanation();
+  return true;
 }
 
 async function rollbackCalculation(id) {
@@ -1280,7 +1287,8 @@ function bindCalculationEvents() {
       const marginInput = byId('calcTargetMargin');
       if (marginInput) marginInput.value = '';
       if (input) input.value = markupButton.dataset.calcMarkup === 'auto' ? '' : markupButton.dataset.calcMarkup;
-      refreshDraftPricing();
+      renderSmartPreview();
+      renderPricingExplanation();
       return;
     }
     const marginButton = event.target.closest('button[data-calc-margin]');
@@ -1289,7 +1297,12 @@ function bindCalculationEvents() {
       const markupInput = byId('calcMarkup');
       if (markupInput) markupInput.value = '';
       if (input) input.value = marginButton.dataset.calcMargin;
-      refreshDraftPricing();
+      renderSmartPreview();
+      renderPricingExplanation();
+      return;
+    }
+    if (event.target.closest('#applyAutomaticCalcPricesBtn')) {
+      if (refreshDraftPricing()) toast('Автоматические цены пересчитаны. Ручные цены сохранены.');
       return;
     }
     if (event.target.closest('#calcCompositeAddComponentBtn')) {
@@ -1362,7 +1375,8 @@ function bindCalculationEvents() {
         const marginInput = byId('calcTargetMargin');
         if (marginInput) marginInput.value = '';
       }
-      refreshDraftPricing();
+      renderSmartPreview();
+      renderPricingExplanation();
       return;
     }
     if (event.target?.id === 'calcTargetMargin') {
@@ -1370,7 +1384,8 @@ function bindCalculationEvents() {
         const markupInput = byId('calcMarkup');
         if (markupInput) markupInput.value = '';
       }
-      refreshDraftPricing();
+      renderSmartPreview();
+      renderPricingExplanation();
       return;
     }
     if (event.target.closest('#calculationsBox')) renderSmartPreview();
