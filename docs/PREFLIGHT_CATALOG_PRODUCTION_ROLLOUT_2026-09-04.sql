@@ -2,6 +2,8 @@
 -- Expected project ref: ofewxuqfjhamgerwzull.
 -- This file must not contain DDL or DML.
 
+BEGIN TRANSACTION READ ONLY;
+
 SELECT jsonb_build_object(
   'captured_at', clock_timestamp(),
   'tables', jsonb_build_object(
@@ -69,11 +71,6 @@ SELECT jsonb_build_object(
   )
 ) AS catalog_production_preflight;
 
-SELECT
-  role,
-  ('catalog.read' = ANY(allowed_actions)) AS catalog_read,
-  ('catalog.manage' = ANY(allowed_actions)) AS catalog_manage,
-  contract_version
-FROM leader_private.leader_role_action_matrix_v1
-WHERE to_regclass('leader_private.leader_role_action_matrix_v1') IS NOT NULL
-ORDER BY role;
+-- Role/action rows are inspected by POSTFLIGHT after prerequisites exist.
+-- A WHERE to_regclass guard cannot protect FROM of a missing relation.
+ROLLBACK;
