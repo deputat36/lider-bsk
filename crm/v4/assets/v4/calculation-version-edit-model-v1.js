@@ -134,6 +134,17 @@ export function copyCalculationItemsForVersion(items = []) {
   }));
 }
 
+// Editing a copied version never mutates the saved source or leaves a manual price tagged auto.
+export function updateCalculationVersionItem(item, field, value) {
+  const allowed = ['qty', 'contractor_price', 'client_price', 'name', 'category', 'item_type', 'unit', 'comment'];
+  if (!allowed.includes(field)) return item;
+  const updated = { ...item, data: cloneData(item.data) };
+  updated[field] = ['qty', 'contractor_price', 'client_price'].includes(field)
+    ? Math.max(0, number(value)) : value;
+  if (field === 'client_price') updated.data.price_source = 'manual';
+  return updated;
+}
+
 export function calculationVersionItem(item = {}, index = 0) {
   const qty = Math.max(0, number(item.qty));
   const contractorPrice = Math.max(0, number(item.contractor_price));

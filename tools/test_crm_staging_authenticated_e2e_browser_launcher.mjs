@@ -117,6 +117,13 @@ console.log('Authenticated staging E2E uses one headed Chrome session, native au
 // Compile the generated browser module, not only its surrounding Node template.
 const syntax = spawnSync(process.execPath, ['--input-type=module', '--check'], { input: browserSource(), encoding: 'utf8' });
 assert.equal(syntax.status, 0, syntax.stderr);
+// Compile the actual inline HTML diagnostic script too: template syntax alone
+// does not catch a newline or regexp escape lost inside the emitted script.
+const inlineLiteral = runnerSource.match(/html\.replace\('<head>', ('[^\n]+?')\)\.replace\('<\/body>'/)[1];
+const inlineHtml = Function('return ' + inlineLiteral)();
+const inlineScript = inlineHtml.slice(inlineHtml.indexOf('<script>') + 8, inlineHtml.indexOf('</script>'));
+const inlineSyntax = spawnSync(process.execPath, ['--check'], { input: inlineScript, encoding: 'utf8' });
+assert.equal(inlineSyntax.status, 0, inlineSyntax.stderr);
 const ownerRoleSource = roleBrowserSource('owner');
 const ownerSyntax = spawnSync(process.execPath, ['--input-type=module', '--check'], { input: ownerRoleSource, encoding: 'utf8' });
 assert.equal(ownerSyntax.status, 0, ownerSyntax.stderr);

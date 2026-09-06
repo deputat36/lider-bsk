@@ -18,6 +18,7 @@ import {
 } from './calculation-version-save-route-v1.js';
 import {
   calculationVersionItem,
+  updateCalculationVersionItem,
   calculationVersionTotals,
   createCalculationVersionDraft
 } from './calculation-version-edit-model-v1.js';
@@ -503,9 +504,8 @@ function bindEvents() {
     const index = Number(rowField.dataset.index);
     const field = rowField.dataset.versionRowField;
     if (!versionDraft.items[index]) return;
-    versionDraft.items[index][field] = ['qty', 'contractor_price', 'client_price'].includes(field)
-      ? Math.max(0, number(rowField.value))
-      : rowField.value;
+    versionDraft.items[index] = updateCalculationVersionItem(versionDraft.items[index], field,
+      ['qty', 'contractor_price', 'client_price'].includes(field) ? number(rowField.value) : rowField.value);
     updateEditorComputed();
   });
 

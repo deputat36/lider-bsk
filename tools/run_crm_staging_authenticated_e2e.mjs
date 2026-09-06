@@ -160,11 +160,31 @@ async function createNeedAndCalculation(){
   await waitFor(()=>document.querySelector('button[data-action="calculate-need"]'),'need_calculate_entry_missing');click('button[data-action="calculate-need"]');await waitFor(()=>document.getElementById('calcNeedId')?.value===need.id,'calculation_need_not_selected');
   await waitFor(()=>document.querySelector('[data-calc-mode="custom"]')&&document.getElementById('calcTitle'),'calculation_builder_missing');
   click('[data-calc-mode="custom"]');setValue('#calcTitle',R.marker+' calculation');setValue('#calcCustomName',R.marker+' synthetic item');setValue('#calcCustomCost','1000');setValue('#calcCustomClient','1600');setValue('#calcCustomComment',R.marker);click('#addSmartCalcItemBtn');
-  await waitFor(()=>document.querySelector('#calcDraftItems [data-calc-row-field="client_price"]'),'calculation_item_not_added');click('#saveCalculationBtn');
+  await waitFor(()=>document.querySelector('#calcDraftItems [data-calc-row-field="client_price"]'),'calculation_item_not_added');
+  // Exercise explicit pricing through the real builder before persisting one item.
+  const draftPrice=(index)=>Number(document.querySelector('#calcDraftItems [data-calc-row-field="client_price"][data-index="'+index+'"]').value);
+  setValue('#calcCustomName',R.marker+' temporary automatic item');setValue('#calcCustomClient','');click('#addSmartCalcItemBtn');
+  await waitFor(()=>document.querySelector('#calcDraftItems [data-calc-row-field="client_price"][data-index="1"]'),'automatic_item_not_added');
+  const beforeApply=draftPrice(1);setValue('#calcTargetMargin','20');assert(draftPrice(1)===beforeApply,'target_margin_silently_repriced');
+  click('#applyAutomaticCalcPricesBtn');assert(draftPrice(0)===1600&&draftPrice(1)===1250,'explicit_margin_or_manual_guard_failed');
+  setValue('#calcDraftItems [data-calc-row-field="client_price"][data-index="1"]','0','change');
+  setValue('#calcTargetMargin','30');click('#applyAutomaticCalcPricesBtn');assert(draftPrice(1)===0,'manual_zero_overwritten');
+  setValue('#calcDraftItems [data-calc-row-field="client_price"][data-index="1"]','900','change');
+  click('#applyAutomaticCalcPricesBtn');assert(draftPrice(1)===900,'manual_loss_overwritten');
+  click('#calcDraftItems [data-action="auto-calc-item"][data-index="1"]');assert(draftPrice(1)===1430,'return_to_auto_failed');
+  setValue('#calcTargetMargin','');setValue('#calcMarkup','');setValue('#calcSmallMarkup','0');click('#applyAutomaticCalcPricesBtn');assert(draftPrice(1)===1000,'zero_tier_rule_lost');
+  click('#calcDraftItems [data-action="remove-calc-item"][data-index="1"]');
+  setValue('#calcMarkup','60');click('#calcDraftItems [data-action="auto-calc-item"][data-index="0"]');assert(draftPrice(0)===1600,'source_auto_price_setup_failed');
+  record('pricing_manual_auto_protection');click('#saveCalculationBtn');
   const calculation=await waitFor(async()=>{try{const rows=await table('leader_lead_calculations','id,lead_id,need_id,title,version_number,client_total,contractor_cost,profit,status,updated_at',{lead_id:R.leadId});return rows.length===1?rows[0]:false;}catch(_){return false;}},'calculation_create_timeout',45000);ids.calculation=calculation.id;assert(Number(calculation.client_total)===1600&&Number(calculation.contractor_cost)===1000&&Number(calculation.profit)===600,'calculation_server_totals_failed');await assertCount('leader_lead_calculation_items',{calculation_id:calculation.id},1);record('calculation_create_atomic');
   await waitFor(()=>document.querySelector('[data-calc-version-source="'+calculation.id+'"]'),'calculation_version_entry_missing');click('[data-calc-version-source="'+calculation.id+'"]');await waitFor(()=>document.getElementById('calculationVersionEditor'),'calculation_version_editor_missing');
   setValue('[data-version-field="title"]',R.marker+' calculation v2');setValue('[data-version-row-field="client_price"][data-index="0"]','1700');click('[data-version-save]');
   const versions=await waitFor(async()=>{try{const rows=await table('leader_lead_calculations','id,version_number,is_current_revision,client_total,profit,updated_at',{lead_id:R.leadId});return rows.length===2?rows:false;}catch(_){return false;}},'calculation_version_timeout',45000);const current=versions.find((row)=>Number(row.version_number)===2);assert(versions.some((row)=>row.id===calculation.id&&Number(row.client_total)===1600),'source_calculation_not_preserved');assert(current,'calculation_version_2_missing');ids.calculation=current.id;assert(Number(current.version_number)===2&&Number(current.client_total)===1700,'calculation_version_projection_failed');record('calculation_version');
+  const sourcePrice=await one('leader_lead_calculation_items','client_price,data',{calculation_id:calculation.id});
+  const versionPrice=await one('leader_lead_calculation_items','client_price,data',{calculation_id:current.id});
+  assert(Number(sourcePrice.client_price)===1600&&sourcePrice.data?.price_source==='auto','source_price_provenance_changed');
+  assert(Number(versionPrice.client_price)===1700&&versionPrice.data?.price_source==='manual','version_manual_provenance_not_persisted');
+  record('version_manual_price_persisted');
 }
 
 async function createOfferAndOrder(){
@@ -233,7 +253,7 @@ export function roleBrowserSource(expectedRole) {
 const result=document.getElementById('crmAuthenticatedE2eResult');const sleep=(ms)=>new Promise((resolve)=>setTimeout(resolve,ms));
 const clean=(value)=>String(value??'').trim();function assert(value,code){if(!value)throw new Error(code);}function progress(name){try{const sequence=String(globalThis.__crmE2eProgressSequence=(globalThis.__crmE2eProgressSequence||0)+1).padStart(4,'0');navigator.sendBeacon('/__crm_e2e_progress',sequence+':'+String(name).slice(0,75));}catch(_){}}progress('role_ui_boot');async function waitFor(check,code,timeout=45000){const started=Date.now();let heartbeatAt=started;while(Date.now()-started<timeout){const value=await check();if(value)return value;if(Date.now()-heartbeatAt>=5000){progress('role_ui_wait:'+code);heartbeatAt=Date.now();}await sleep(50);}throw new Error(code);}
 function output(status,payload){result.dataset.status=status;result.textContent=JSON.stringify({evidence_version:'${EVIDENCE_VERSION}',status,project_ref:'${STAGING_REF}',production_enabled:false,...payload},null,2);document.body.dataset.crmAuthenticatedE2eFinished='true';document.title=status==='passed'?'CRM role UI PASSED':'CRM role UI FAILED';if(!navigator.sendBeacon('/__crm_e2e_result',result.textContent))location.replace('/__crm_e2e_result?payload='+encodeURIComponent(result.textContent));}
-try{progress('role_ui_login_wait');await waitFor(()=>document.getElementById('loginForm')&&!document.getElementById('loginForm').classList.contains('hidden'),'login_form_missing');progress('role_ui_login_form');const email=document.getElementById('loginEmail'),password=document.getElementById('loginPassword');email.value=R.email;email.dispatchEvent(new Event('input',{bubbles:true}));password.value=R.password;password.dispatchEvent(new Event('input',{bubbles:true}));document.getElementById('loginBtn').click();progress('role_ui_login_submitted');await waitFor(()=>!document.getElementById('crmWorkspace')?.classList.contains('hidden')&&clean(document.getElementById('profileRole')?.textContent).toLowerCase()==='${expectedRole}','role_workspace_timeout');progress('role_ui_workspace:${expectedRole}');
+try{await new Promise((resolve)=>{if(document.readyState==='complete')resolve();else window.addEventListener('load',resolve,{once:true});});progress('role_ui_document_loaded');progress('role_ui_login_wait');await waitFor(()=>document.getElementById('loginForm')&&!document.getElementById('loginForm').classList.contains('hidden'),'login_form_missing');progress('role_ui_login_form');const email=document.getElementById('loginEmail'),password=document.getElementById('loginPassword');email.value=R.email;email.dispatchEvent(new Event('input',{bubbles:true}));password.value=R.password;password.dispatchEvent(new Event('input',{bubbles:true}));document.getElementById('loginBtn').click();progress('role_ui_login_submitted');await waitFor(()=>!document.getElementById('crmWorkspace')?.classList.contains('hidden')&&clean(document.getElementById('profileRole')?.textContent).toLowerCase()==='${expectedRole}','role_workspace_timeout');progress('role_ui_workspace:${expectedRole}');
 const visible=(tab)=>{const node=document.querySelector('[data-v4-tab-button="'+tab+'"]');return Boolean(node&&!node.hidden&&!node.disabled&&node.getAttribute('aria-hidden')!=='true');};
 ${expectedRole === 'owner'
     ? "for(const tab of ['leads','orders','order_control','finance_control','production','user_admin'])assert(visible(tab),'owner_tab_hidden:'+tab);progress('owner_tabs_visible');document.querySelector('[data-v4-tab-button=\"user_admin\"]').click();progress('owner_user_admin_clicked');await waitFor(()=>document.body.dataset.v4Tab==='user_admin','owner_user_admin_open_failed');progress('owner_user_admin_opened');"
@@ -432,6 +452,21 @@ async function run(env = process.env, roleUi = '') {
   const config = loadConfig(env); const chrome = await findChrome(); const xvfbRun = await findXvfbRun(); const tempRoot = await mkdtemp(path.join(tmpdir(), 'lider-crm-authenticated-e2e-')); const tempV4 = path.join(tempRoot, 'v4'); let server;
   try {
     await cp(path.resolve('crm/v4'), tempV4, { recursive: true });
+    if (roleUi) {
+      const authPath = path.join(tempV4, 'assets/v4/auth.js');
+      let authSource = await readFile(authPath, 'utf8');
+      for (const [anchor, label] of [
+        ["export async function login() {", 'login_enter'],
+        ["function beginProfileCheck(session) {", 'profile_check_enter'],
+        ["function activateCrm(session, profile, statusText) {", 'activate_enter'],
+        ["  renderProfile(profile);", 'profile_render'],
+        ["  emitCrmReady();", 'crm_ready_dispatch']
+      ]) {
+        if (!authSource.includes(anchor)) throw new Error('auth_trace_anchor_missing');
+        authSource = authSource.replace(anchor, anchor + "\n  globalThis.__crmE2eProgress?.('auth_" + label + "');");
+      }
+      await writeFile(authPath, authSource, { mode: 0o600 });
+    }
     await mkdir(path.join(tempV4, 'assets/vendor'), { recursive: true });
     await cp(config.supabaseUmdPath, path.join(tempV4, 'assets/vendor/supabase-v2.112.2.js'));
     await writeFile(path.join(tempV4, 'assets/v4/config.js'), temporaryConfigSource(config), { mode: 0o600 });
@@ -439,7 +474,7 @@ async function run(env = process.env, roleUi = '') {
     await writeFile(path.join(tempV4, 'crm-authenticated-e2e-runtime.mjs'), runtimeSource(config), { mode: 0o600 });
     await writeFile(path.join(tempV4, 'crm-authenticated-e2e-page.mjs'), roleUi ? roleBrowserSource(roleUi) : browserSource(), { mode: 0o600 });
     const indexPath = path.join(tempV4, 'index.html'); const html = await readFile(indexPath, 'utf8');
-    await writeFile(indexPath, html.replace('<head>', '<head><script>globalThis.__crmE2eFatalErrors=[];globalThis.__crmE2eProgressSequence=0;globalThis.__crmE2eProgress=(name)=>{try{const sequence=String(globalThis.__crmE2eProgressSequence=(globalThis.__crmE2eProgressSequence||0)+1).padStart(4,"0");navigator.sendBeacon("/__crm_e2e_progress",sequence+":"+String(name).slice(0,75));}catch(_){}};for(const kind of ["error","unhandledrejection"])addEventListener(kind,()=>globalThis.__crmE2eFatalErrors.push(kind));const __crmNativeAdd=EventTarget.prototype.addEventListener;let __crmReadyListenerSeq=0;EventTarget.prototype.addEventListener=function(type,listener,options){if(type==="leader-v4:crm-ready"&&typeof listener==="function"){const index=++__crmReadyListenerSeq;const stack=String(new Error().stack||"").split("\n")[2]||"";const match=stack.match(/\/([^/?#]+\.js)(?:[?:]|$)/);const label=String(match?.[1]||"listener_"+index).replace(/[^a-z0-9_.-]/gi,"_").slice(0,42);const wrapped=function(...args){globalThis.__crmE2eProgress?.("crm_ready_enter:"+index+":"+label);const result=listener.apply(this,args);globalThis.__crmE2eProgress?.("crm_ready_exit:"+index+":"+label);return result;};return __crmNativeAdd.call(this,type,wrapped,options);}return __crmNativeAdd.call(this,type,listener,options);};</script>').replace('</body>', '<script src="./assets/vendor/supabase-v2.112.2.js"></script><pre id="crmAuthenticatedE2eResult" data-status="running" hidden>running</pre><script type="module" src="./crm-authenticated-e2e-page.mjs"></script></body>'), { mode: 0o600 });
+    await writeFile(indexPath, html.replace('<head>', '<head><script>globalThis.__crmE2eFatalErrors=[];globalThis.__crmE2eProgressSequence=0;globalThis.__crmE2eProgress=(name)=>{try{const sequence=String(globalThis.__crmE2eProgressSequence=(globalThis.__crmE2eProgressSequence||0)+1).padStart(4,"0");navigator.sendBeacon("/__crm_e2e_progress",sequence+":"+String(name).slice(0,75));}catch(_){}};for(const kind of ["error","unhandledrejection"])addEventListener(kind,()=>globalThis.__crmE2eFatalErrors.push(kind));</script>').replace('</body>', '<script src="./assets/vendor/supabase-v2.112.2.js"></script><pre id="crmAuthenticatedE2eResult" data-status="running" hidden>running</pre><script type="module" src="./crm-authenticated-e2e-page.mjs"></script></body>'), { mode: 0o600 });
 
     if (roleUi) {
       const local = await localServer(tempV4); server = local.server;

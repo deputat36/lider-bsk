@@ -4,6 +4,7 @@ import {
   markupPercentForSubtotal,
   markupPercentFromMargin,
   normalizeMarginPercent,
+  normalizePricingSettings,
   priceWithMarkup,
   repriceAutomaticItems
 } from '../crm/v4/assets/v4/calculation-pricing-model-v1.js';
@@ -40,3 +41,55 @@ assert.equal(Math.round(marginRepriced[0].data.applied_markup_percent * 100) / 1
 assert.equal(marginRepriced[1].client_price, 900, 'target margin must not overwrite a manual employee price');
 
 console.log('Unified calculation pricing behavior, including target margin conversion, is valid.');
+
+// Explicit zero rules must survive normalization, including tier boundaries.
+const zeroRules = normalizePricingSettings({ smallMarkup: '0', mediumMarkup: 0, largeMarkup: '0', roundStep: 1 });
+for (const subtotal of [100, 5000, 15000]) assert.equal(markupPercentForSubtotal(subtotal, zeroRules), 0);
+assert.equal(normalizePricingSettings({ smallMarkup: '', mediumMarkup: 'bad' }).smallMarkup, 30);
+assert.equal(markupPercentForSubtotal(1, { smallLimit: 0, mediumLimit: 0 }), 10);
+const special = [
+  { qty: 1, contractor_price: 100, client_price: 0, data: { price_source: 'manual' } },
+  { qty: 2, contractor_price: 100, client_price: 50, data: { price_source: 'manual' } },
+  { qty: 1, contractor_price: 100, client_price: 125, data: { price_source: 'catalog' } },
+  { qty: 1, contractor_price: 100, client_price: 150, data: { price_source: 'auto' } }
+];
+const specialBefore = JSON.stringify(special);
+assert.deepEqual(repriceAutomaticItems(special, zeroRules).map(x => x.client_price), [0, 50, 125, 100]);
+assert.equal(JSON.stringify(special), specialBefore, 'repricing must not mutate historical input');
+
+// Exercise real builder event handlers: rule selection previews; the apply action reprices.
+const { readFileSync } = await import('node:fs');
+const { default: vm } = await import('node:vm');
+const source = readFileSync(new URL('../crm/v4/assets/v4/calculations.js', import.meta.url), 'utf8')
+  .replace(/^import[\s\S]*?from\s+['"][^'"]+['"];\s*/gm, '')
+  .replace(/export (async )?function /g, '$1function ');
+const handlers = {};
+const fields = new Map(Object.entries({ calcMarkup: '', calcTargetMargin: '', calcSmallMarkup: '0', calcMedMarkup: '0', calcLargeMarkup: '0', calcRoundStep: '1' }).map(([id, value]) => [id, { value }]));
+const messages = [];
+const ctx = vm.createContext({
+  normalizePricingSettings, normalizeMarginPercent, markupPercentFromMargin,
+  markupPercentForSubtotal, priceWithMarkup, repriceAutomaticItems,
+  legacyCatalogFallbackRows: () => [],
+  document: { addEventListener() {} },
+  byId: id => id === 'leadCardSection' ? { addEventListener: (name, callback) => { handlers[name] = callback; } } : fields.get(id),
+  toast: message => messages.push(message),
+  testItems: special
+});
+vm.runInContext(source, ctx);
+vm.runInContext('renderSmartPreview = () => {}; renderPricingExplanation = () => {}; renderDraftItems = () => {}; draftItems = testItems; bindCalculationEvents();', ctx);
+fields.get('calcTargetMargin').value = '20';
+handlers.input({ target: { id: 'calcTargetMargin', value: '20' } });
+assert.equal(vm.runInContext('draftItems[3].client_price', ctx), 150, 'typing target must not silently reprice draft');
+handlers.click({ target: { closest: selector => selector === '#applyAutomaticCalcPricesBtn' ? {} : null } });
+assert.equal(vm.runInContext('draftItems[3].client_price', ctx), 125, 'apply must calculate cost / (1 - margin/100)');
+assert.equal(vm.runInContext('draftItems[0].client_price', ctx), 0);
+assert.equal(vm.runInContext('draftItems[1].client_price', ctx), 50);
+assert.equal(vm.runInContext('draftItems[2].client_price', ctx), 125);
+fields.get('calcTargetMargin').value = '100';
+handlers.click({ target: { closest: selector => selector === '#applyAutomaticCalcPricesBtn' ? {} : null } });
+assert.equal(messages.length, 1, 'invalid margin must not emit a success toast');
+assert.equal(vm.runInContext('draftItems[3].client_price', ctx), 125);
+fields.get('calcTargetMargin').value = '';
+handlers.click({ target: { closest: selector => selector === '#applyAutomaticCalcPricesBtn' ? {} : null } });
+assert.equal(vm.runInContext('draftItems[3].client_price', ctx), 100, 'zero tier rule must reach actual builder handler');
+console.log('Builder pricing controls: explicit apply, zero tiers, manual/catalog protection PASS.');
