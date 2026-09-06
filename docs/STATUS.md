@@ -2,6 +2,13 @@
 
 Дата обновления: 2026-09-06.
 
+## Авторитетный источник каталога (#508)
+
+- Исправлена подмена успешного пустого leader_catalog встроенными ценами. Ошибки сети/доступа показывают недоступность; резерв разрешён только при отсутствии таблицы.
+- Типовые расчёты больше не ищут скрытые fallback rows. Недоступный материал объясняется сотруднику; добавлены повтор загрузки и обновление selector без сброса размеров.
+- Model + actual typical builder regression прошли локально. Authenticated staging Chromium E2E run `34044078635` на `bddc89bf28e09441e742ce2bbffc42e50f57df5a` прошёл: empty-catalog/retry, затем полный manager workflow, цены/версии, owner UI/API RBAC. Артефакт cleanup подтвердил Auth user deleted и все 21 residue category=0; дополнительный SELECT подтвердил отсутствие users/profiles/leads/calculations/catalog/logs/receipts. Cloud Browser workspace/mobile пока не проверены.
+- Staging bootstrap v11 добавляет exact ветку #508 и прежние два workflow refs; OIDC/repository/actor gates сохранены. Production mutations/cutover не выполнялись.
+
 ## Расчёт: explicit apply и ручные цены версий (#506)
 
 - В рабочей ветке подготовлены: кнопка применения цен только к auto-позициям; нулевая tier-наценка; сохранение manual provenance при правке клиентской цены новой версии.
