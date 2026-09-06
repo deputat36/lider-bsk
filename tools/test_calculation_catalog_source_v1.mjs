@@ -58,7 +58,8 @@ const fallback = [
 
 {
   const result = await loadCalculationCatalog({ fallbackRows: fallback });
-  assert.equal(result.source, 'fallback');
+  assert.equal(result.source, 'unavailable');
+  assert.deepEqual(result.rows, []);
   assert.equal(result.warning, 'catalog_client_unavailable');
 }
 
@@ -163,3 +164,38 @@ const fallback = [
 }
 
 console.log('calculation catalog source v1 tests: PASS');
+
+// Empty authoritative results (including RLS-filtered or all-disabled rows)
+// must never resurrect historical prices.
+for (const data of [[], [{name:'Disabled',is_active:false}]]) {
+  const result = await loadCalculationCatalog({supabaseClient:fakeClient({data}),fallbackRows:fallback});
+  assert.equal(result.source,'remote');
+  assert.equal(result.warning,'catalog_empty');
+  assert.deepEqual(result.rows,[]);
+}
+for (const error of [{code:'42501',message:'permission denied'},{code:'PGRST301',message:'JWT expired'}]) {
+  const result = await loadCalculationCatalog({supabaseClient:fakeClient({error}),fallbackRows:fallback});
+  assert.equal(result.source,'unavailable');
+  assert.deepEqual(result.rows,[]);
+}
+const offline = await loadCalculationCatalog({supabaseClient:{from(){throw new Error('offline')}},fallbackRows:fallback});
+assert.equal(offline.source,'unavailable');
+assert.deepEqual(offline.rows,[]);
+
+// Run real typical-builder lookups with an empty authoritative catalogue.
+const {readFileSync} = await import('node:fs');
+const {default:vm} = await import('node:vm');
+const builder = readFileSync(new URL('../crm/v4/assets/v4/calculations.js',import.meta.url),'utf8')
+ .replace(/^import[\s\S]*?from\s+['"][^'"]+['"];\s*/gm,'')
+ .replace(/export (async )?function /g,'$1function ');
+const fields = {calcSmartMode:'banner',calcWidth:'3',calcHeight:'1.5',calcQty:'1'};
+const context = vm.createContext({legacyCatalogFallbackRows,document:{addEventListener(){}},byId:id=>({value:fields[id]||'',checked:false})});
+vm.runInContext(builder,context);
+assert.equal(vm.runInContext("catalogByName('Баннер 340/440 — стандарт')",context),null);
+assert.equal(vm.runInContext('currentModeItems().length',context),0);
+assert.match(vm.runInContext('calculationModeError',context),/Позиция недоступна/);
+for (const mode of ['film','sheet','photo']) {
+ fields.calcSmartMode=mode;
+ assert.equal(vm.runInContext('currentModeItems().length',context),0);
+}
+console.log('Empty catalogue cannot resurrect typical materials or crash builder: PASS');

@@ -159,6 +159,14 @@ async function createNeedAndCalculation(){
   const need=await waitFor(async()=>{const rows=await table('leader_lead_needs','id,lead_id,title,need_design,need_installation,updated_at',{lead_id:R.leadId});return rows.length===1?rows[0]:false;},'need_create_timeout');ids.need=need.id;assert(need.need_design&&need.need_installation,'need_projection_failed');record('need_create');
   await waitFor(()=>document.querySelector('button[data-action="calculate-need"]'),'need_calculate_entry_missing');click('button[data-action="calculate-need"]');await waitFor(()=>document.getElementById('calcNeedId')?.value===need.id,'calculation_need_not_selected');
   await waitFor(()=>document.querySelector('[data-calc-mode="custom"]')&&document.getElementById('calcTitle'),'calculation_builder_missing');
+  click('[data-calc-mode="catalog"]');
+  await waitFor(()=>document.getElementById('calcReloadCatalogBtn')&&!document.getElementById('calcReloadCatalogBtn').disabled,'empty_catalog_not_ready');
+  assert(!document.getElementById('calcCatalogBackedItem'),'empty_catalog_resurrected_legacy_rows');
+  assert(document.body.textContent.includes('В каталоге пока нет доступных позиций.'),'empty_catalog_not_explained');
+  click('#calcReloadCatalogBtn');
+  await waitFor(()=>document.getElementById('calcReloadCatalogBtn')&&!document.getElementById('calcReloadCatalogBtn').disabled,'catalog_retry_not_finished');
+  assert(!document.getElementById('calcCatalogBackedItem'),'retry_resurrected_legacy_rows');
+  record('empty_catalog_authoritative_retry');
   click('[data-calc-mode="custom"]');setValue('#calcTitle',R.marker+' calculation');setValue('#calcCustomName',R.marker+' synthetic item');setValue('#calcCustomCost','1000');setValue('#calcCustomClient','1600');setValue('#calcCustomComment',R.marker);click('#addSmartCalcItemBtn');
   await waitFor(()=>document.querySelector('#calcDraftItems [data-calc-row-field="client_price"]'),'calculation_item_not_added');
   // Exercise explicit pricing through the real builder before persisting one item.

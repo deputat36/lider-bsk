@@ -83,7 +83,7 @@ function isMissingCatalogError(error) {
 export async function loadCalculationCatalog({ supabaseClient, fallbackRows = [] } = {}) {
   const fallback = normalizeCatalogRows(legacyCatalogFallbackRows(fallbackRows));
   if (!supabaseClient?.from) {
-    return { rows: fallback, source: 'fallback', warning: 'catalog_client_unavailable' };
+    return { rows: [], source: 'unavailable', warning: 'catalog_client_unavailable' };
   }
 
   try {
@@ -95,17 +95,16 @@ export async function loadCalculationCatalog({ supabaseClient, fallbackRows = []
       .order('name', { ascending: true });
     const { data, error } = await query;
     if (error) {
-      return {
-        rows: fallback,
-        source: 'fallback',
-        warning: isMissingCatalogError(error) ? 'catalog_table_unavailable' : 'catalog_read_failed'
-      };
+      if (isMissingCatalogError(error)) {
+        return { rows: fallback, source: 'fallback', warning: 'catalog_table_unavailable' };
+      }
+      return { rows: [], source: 'unavailable', warning: 'catalog_read_failed' };
     }
     const rows = normalizeCatalogRows(data || []);
-    if (!rows.length) return { rows: fallback, source: 'fallback', warning: 'catalog_empty' };
+    if (!rows.length) return { rows: [], source: 'remote', warning: 'catalog_empty' };
     return { rows, source: 'remote', warning: null };
   } catch {
-    return { rows: fallback, source: 'fallback', warning: 'catalog_read_failed' };
+    return { rows: [], source: 'unavailable', warning: 'catalog_read_failed' };
   }
 }
 

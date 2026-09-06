@@ -28,7 +28,7 @@
     "crm/v4/assets/v4/installation-job-staging-read-transport-v1.js": "b5ebf2a0b05404b639b63b7f8aae27c3574464ce",
     "crm/v4/assets/v4/installation-job-card-v2.js": "1c360e08ce954d7879bc075bc203d3fd406db0ae",
     "crm/v4/assets/v4/crm-v4-tab-loader-v1.js": "541fab32ba67b6d0d490deddd0ef6aa3729810ec",
-    "crm/v4/index.html": "59a89d4485d1199bb46e867a0e3713074e4155a3"
+    "crm/v4/index.html": "0cfaf850e46b5f85afa770d099055a154c7b53ba"
   },
   "generated_outputs": [
     "crm/v4/assets/v4/installation-job-save-route-v2.js",

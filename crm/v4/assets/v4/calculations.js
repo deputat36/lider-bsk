@@ -40,8 +40,8 @@ const CATALOG = [
 ];
 
 const LEGACY_CATALOG_ROWS = legacyCatalogFallbackRows(CATALOG);
-let calculationCatalogRows = LEGACY_CATALOG_ROWS;
-let calculationCatalogSource = 'fallback';
+let calculationCatalogRows = [];
+let calculationCatalogSource = 'loading';
 let calculationCatalogLoadPromise = null;
 
 const MODES = [
@@ -90,7 +90,6 @@ function checked(id) {
 
 function catalogByName(name) {
   return calculationCatalogRows.find((item) => item.name === name)
-    || LEGACY_CATALOG_ROWS.find((item) => item.name === name)
     || null;
 }
 
@@ -107,7 +106,7 @@ function catalogBackedRow(value) {
 }
 
 function catalogSourceLabel() {
-  return calculationCatalogSource === 'remote' ? 'Каталог CRM' : 'Встроенный резервный каталог';
+  return calculationCatalogSource === 'fallback' ? 'Встроенный резервный каталог' : 'Каталог CRM';
 }
 
 function canManageCalculationCatalog() {
@@ -117,7 +116,7 @@ function canManageCalculationCatalog() {
 
 function renderCatalogCreatePanel() {
   if (isStagingWorkflowEnvironment(V4_CONFIG.supabaseUrl)) {
-    return '<div class="v4-calc-mode-help">Добавление новой номенклатуры отключено в staging. Для проверки расчёта используйте резервный каталог или ручную позицию.</div>';
+    return '<div class="v4-calc-mode-help">Добавление новой номенклатуры отключено в staging. Для разовой работы используйте ручную позицию.</div>';
   }
   if (!canManageCalculationCatalog()) {
     return '<div class="v4-calc-mode-help">Новой номенклатурой управляет руководитель. Разовую работу можно добавить режимом «Ручная позиция».</div>';
@@ -214,7 +213,22 @@ async function ensureCalculationCatalog() {
   calculationCatalogLoadPromise = loadCalculationCatalog({ supabaseClient, fallbackRows: CATALOG }).then((result) => {
     calculationCatalogRows = result.rows;
     calculationCatalogSource = result.source;
-    if (val('calcSmartMode') === 'catalog') setCalcMode('catalog');
+    const mode = val('calcSmartMode');
+    if (mode === 'catalog') setCalcMode('catalog');
+    else if (['banner', 'film', 'sheet', 'photo'].includes(mode)) {
+      // Refresh only catalogue selectors; retain dimensions and employee inputs.
+      const template = document.createElement('template');
+      template.innerHTML = renderModeFields(mode);
+      for (const id of ['calcCatalogItem', 'calcSheetPrintMaterial']) {
+        const current = byId(id), fresh = template.content.querySelector('#' + id);
+        if (!current || !fresh) continue;
+        const selected = current.value;
+        current.replaceChildren(...fresh.childNodes);
+        if (Array.from(current.options).some(option => option.value === selected)) current.value = selected;
+      }
+      renderSmartPreview();
+    }
+    if (result.source === 'unavailable') calculationCatalogLoadPromise = null;
     return result;
   });
   return calculationCatalogLoadPromise;
@@ -461,6 +475,12 @@ function compositeValidationMessage(errors = []) {
 
 function renderModeFields(mode = 'banner') {
   if (mode === 'catalog') {
+    if (!calculationCatalogRows.length) {
+      const message = calculationCatalogSource === 'loading' ? 'Загружаю каталог…'
+        : calculationCatalogSource === 'remote' ? 'В каталоге пока нет доступных позиций.'
+        : 'Не удалось загрузить каталог. Проверьте соединение и повторите загрузку.';
+      return `<div class="v4-calc-mode-help" role="status">${message} Можно добавить свою позицию или смету подрядчика.</div><button type="button" id="calcReloadCatalogBtn" ${calculationCatalogSource === 'loading' ? 'disabled' : ''}>Обновить каталог</button>`;
+    }
     return `
       <div class="v4-calc-mode-help"><b>Позиция из справочника:</b> выберите готовую услугу или материал. Цена и правила берутся из ${esc(catalogSourceLabel())}; в сохранённом расчёте фиксируется snapshot.</div>
       <div class="v4-form-grid">
@@ -733,6 +753,7 @@ function currentModeItems() {
   }
   if (mode === 'banner') {
     const material = catalogByName(val('calcCatalogItem')) || catalogByName('Баннер 340/440 — стандарт');
+    if (!material) { calculationModeError = 'Позиция недоступна в каталоге. Выберите доступный материал или добавьте свою позицию.'; return []; }
     const units = area();
     const per = perimeterTotal();
     const step = num('calcGrommetStep') || 0.3;
@@ -747,10 +768,12 @@ function currentModeItems() {
     }));
     if (checked('calcNeedHemming') && per > 0) {
       const hem = catalogByName('Проклейка баннера по краю');
+      if (!hem) { calculationModeError = 'Позиция недоступна в каталоге. Выберите доступный материал или добавьте свою позицию.'; return []; }
       rows.push(makeCatalogRawItem(hem, { itemType: 'Доп. услуга', name: 'Проклейка баннера по периметру', qty: per, contractorPrice: num('calcHemmingCost'), comment: `Периметр всего: ${per.toFixed(2)} м`, calculationMode: 'banner_hemming' }));
     }
     if (checked('calcNeedGrommets') && per > 0) {
       const grommet = catalogByName('Установка люверсов');
+      if (!grommet) { calculationModeError = 'Позиция недоступна в каталоге. Выберите доступный материал или добавьте свою позицию.'; return []; }
       const count = Math.ceil(per / step);
       rows.push(makeCatalogRawItem(grommet, { itemType: 'Доп. услуга', name: `Люверсы по периметру, шаг ${step} м`, qty: count, contractorPrice: num('calcGrommetCost'), comment: `Расчёт: ${per.toFixed(2)} м / ${step} м = ${count} шт`, calculationMode: 'banner_grommets', data: { step } }));
     }
@@ -758,11 +781,13 @@ function currentModeItems() {
   }
   if (mode === 'film') {
     const material = catalogByName(val('calcCatalogItem')) || catalogByName('Самоклеящаяся пленка (мат/гл/прозр.)');
+    if (!material) { calculationModeError = 'Позиция недоступна в каталоге. Выберите доступный материал или добавьте свою позицию.'; return []; }
     const units = area();
     if (units <= 0) return [];
     rows.push(makeCatalogRawItem(material, { itemType: 'Плёнка', name: `${material.name} · ${num('calcWidth')}×${num('calcHeight')} м · ${num('calcQty') || 1} шт`, qty: units, comment: `Площадь: ${units.toFixed(2)} м²`, calculationMode: 'film', data: { width: num('calcWidth'), height: num('calcHeight'), pieces: num('calcQty') || 1 } }));
     if (checked('calcNeedMountFilm')) {
       const mount = catalogByName('Монтажная пленка');
+      if (!mount) { calculationModeError = 'Позиция недоступна в каталоге. Выберите доступный материал или добавьте свою позицию.'; return []; }
       rows.push(makeCatalogRawItem(mount, { itemType: 'Доп. материал', name: 'Монтажная плёнка', qty: units, contractorPrice: num('calcMountFilmCost'), comment: `Площадь: ${units.toFixed(2)} м²`, calculationMode: 'mount_film' }));
     }
     if (checked('calcNeedPlotterCut')) rows.push(makeRawItem({ category: 'Обработка плёнки', itemType: 'Доп. услуга', name: 'Плоттерная резка и выборка', unit: 'м²', qty: units, contractorPrice: num('calcPlotterCutCost'), comment: `Площадь: ${units.toFixed(2)} м²`, data: { calculation_mode: 'plotter_cut' } }));
@@ -770,11 +795,13 @@ function currentModeItems() {
   }
   if (mode === 'sheet') {
     const material = catalogByName(val('calcCatalogItem')) || catalogByName('ПВХ вспененный 3 мм');
+    if (!material) { calculationModeError = 'Позиция недоступна в каталоге. Выберите доступный материал или добавьте свою позицию.'; return []; }
     const units = area();
     if (units <= 0) return [];
     rows.push(makeCatalogRawItem(material, { itemType: 'Листовой материал', name: `${material.name} · ${num('calcWidth')}×${num('calcHeight')} м · ${num('calcQty') || 1} шт`, qty: units, comment: `Площадь: ${units.toFixed(2)} м²`, calculationMode: 'sheet', data: { width: num('calcWidth'), height: num('calcHeight'), pieces: num('calcQty') || 1 } }));
     if (checked('calcNeedSheetPrint')) {
       const film = catalogByName(val('calcSheetPrintMaterial')) || catalogByName('Самоклеящаяся пленка (мат/гл/прозр.)');
+      if (!film) { calculationModeError = 'Позиция недоступна в каталоге. Выберите доступный материал или добавьте свою позицию.'; return []; }
       rows.push(makeCatalogRawItem(film, { itemType: 'Печать', name: `Печать: ${film.name}`, unit: 'м²', qty: units, comment: `Площадь: ${units.toFixed(2)} м²`, calculationMode: 'sheet_print' }));
     }
     if (checked('calcNeedSheetLamination')) rows.push(makeRawItem({ category: 'Обработка листа', itemType: 'Доп. услуга', name: 'Накатка / ламинация', unit: 'м²', qty: units, contractorPrice: num('calcSheetLaminationCost'), data: { calculation_mode: 'sheet_lamination' } }));
@@ -783,10 +810,12 @@ function currentModeItems() {
   }
   if (mode === 'photo') {
     const item = catalogByName(val('calcCatalogItem')) || catalogByName('A4 фото (одна сторона)');
+    if (!item) { calculationModeError = 'Позиция недоступна в каталоге. Выберите доступный материал или добавьте свою позицию.'; return []; }
     const qty = num('calcQty') || 1;
     rows.push(makeCatalogRawItem(item, { itemType: 'Фото', name: item.name, qty, comment: `${qty} шт`, calculationMode: 'photo' }));
     if (checked('calcNeedLamination')) {
       const lam = catalogByName('A4 ламинация');
+      if (!lam) { calculationModeError = 'Позиция недоступна в каталоге. Выберите доступный материал или добавьте свою позицию.'; return []; }
       rows.push(makeCatalogRawItem(lam, { itemType: 'Доп. услуга', name: lam.name, qty, comment: `${qty} шт`, calculationMode: 'photo_lamination' }));
     }
     return applyAutoPrice(rows);
@@ -1299,6 +1328,13 @@ function bindCalculationEvents() {
       if (input) input.value = marginButton.dataset.calcMargin;
       renderSmartPreview();
       renderPricingExplanation();
+      return;
+    }
+    if (event.target.closest('#calcReloadCatalogBtn')) {
+      calculationCatalogLoadPromise = null;
+      calculationCatalogSource = 'loading';
+      setCalcMode('catalog');
+      ensureCalculationCatalog();
       return;
     }
     if (event.target.closest('#applyAutomaticCalcPricesBtn')) {

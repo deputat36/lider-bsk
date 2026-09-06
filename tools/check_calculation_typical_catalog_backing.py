@@ -14,7 +14,6 @@ for marker in [
     'catalogRowToTypicalDraftItem',
     'const LEGACY_CATALOG_ROWS = legacyCatalogFallbackRows(CATALOG)',
     'calculationCatalogRows.find',
-    'LEGACY_CATALOG_ROWS.find',
     'calculationCatalogRows.filter',
     'money(item.contractor_price)',
     'function makeCatalogRawItem',
@@ -56,6 +55,7 @@ for marker in [
         errors.append(f'Missing typical catalog adapter marker: {marker}')
 
 for forbidden in [
+    'LEGACY_CATALOG_ROWS.find',
     'return CATALOG.find',
     'return CATALOG.filter',
     'contractorPrice: material.price',
