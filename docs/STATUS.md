@@ -1,13 +1,17 @@
 # Статус проекта РА «Лидер»
 
-Дата обновления: 2026-09-05.
+Дата обновления: 2026-09-06.
 
 ## Расчёт: explicit apply и ручные цены версий (#506)
 
 - В рабочей ветке подготовлены: кнопка применения цен только к auto-позициям; нулевая tier-наценка; сохранение manual provenance при правке клиентской цены новой версии.
 - Ручные нулевые/убыточные и каталоговые цены исключены из массового repricing; исторические source items не меняются. Это проверено behavior-тестами моделей и реального builder event handler.
 - Добавлены cache aliases без новых eager modules; прежние URL ведут к одному актуальному модулю.
-- Staging authenticated/browser E2E нового patch ещё не выполнен. Эти изменения нельзя считать опубликованными или проверенными в рабочем сценарии до отдельного runtime gate.
+- Authenticated staging Chromium E2E run `34013812057` на `33520743f04c7b89a145cf478112a2ec92210ec0` прошёл: explicit apply/manual protection, две immutable версии с сохранением manual provenance, КП → заказ → дизайн → производство → монтаж, reload/navigation, manager и owner API RBAC, owner UI. Cleanup: Auth user удалён, все категории residue=0.
+- Исправлен тест входа owner: ожидание load перед submit. Удалён сломанный inline listener tracing; сбор fatal_errors теперь работает, в повторном прогоне ошибок нет. Regression компилирует сгенерированный inline script.
+- Это CI Chromium с реальным staging backend; Cloud Browser пока проверил только опубликованную форму входа. Mobile/tablet и полный customer-document privacy scenario ещё не доказаны.
+- В staging bootstrap v10 разрешены exact push ref текущей ветки и два workflow refs с прежними OIDC/repository/actor checks. Production warning/grants не менялись.
+- PR #507: runtime gate пройден, финальные checks/merge проверяются отдельно.
 - Production Supabase и backend routes не изменялись.
 
 ## Source-only catalog rollout probes (#152)
