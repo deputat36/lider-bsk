@@ -479,7 +479,7 @@ function renderModeFields(mode = 'banner') {
       const message = calculationCatalogSource === 'loading' ? 'Загружаю каталог…'
         : calculationCatalogSource === 'remote' ? 'В каталоге пока нет доступных позиций.'
         : 'Не удалось загрузить каталог. Проверьте соединение и повторите загрузку.';
-      return `<div class="v4-calc-mode-help" role="status">${message} Можно добавить свою позицию или смету подрядчика.</div><button type="button" id="calcReloadCatalogBtn" ${calculationCatalogSource === 'loading' ? 'disabled' : ''}>Обновить каталог</button>`;
+      return `<div class="v4-calc-mode-help" role="status">${message} Можно добавить свою позицию или смету подрядчика.</div><button type="button" id="calcReloadCatalogBtn" ${calculationCatalogSource === 'loading' ? 'disabled' : ''}>Обновить каталог</button>${renderCatalogCreatePanel()}`;
     }
     return `
       <div class="v4-calc-mode-help"><b>Позиция из справочника:</b> выберите готовую услугу или материал. Цена и правила берутся из ${esc(catalogSourceLabel())}; в сохранённом расчёте фиксируется snapshot.</div>
