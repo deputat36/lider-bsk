@@ -167,7 +167,7 @@ async function createNeedAndCalculation(){
   await waitFor(()=>document.getElementById('calcReloadCatalogBtn')&&!document.getElementById('calcReloadCatalogBtn').disabled,'catalog_retry_not_finished');
   assert(!document.getElementById('calcCatalogBackedItem'),'retry_resurrected_legacy_rows');
   record('empty_catalog_authoritative_retry');
-  click('[data-calc-mode="custom"]');setValue('#calcTitle',R.marker+' calculation');setValue('#calcCustomName',R.marker+' synthetic item');setValue('#calcCustomCost','1000');setValue('#calcCustomClient','1600');setValue('#calcCustomComment',R.marker);click('#addSmartCalcItemBtn');
+  click('[data-calc-mode="custom"]');setValue('#calcTitle',R.marker+' calculation');setValue('#calcCustomName',R.marker+' synthetic item');setValue('#calcCustomCost','1000');setValue('#calcCustomClient','1600');setValue('#calcCustomComment',R.marker+' PRIVATE_PRINT_COMMENT');click('#addSmartCalcItemBtn');
   await waitFor(()=>document.querySelector('#calcDraftItems [data-calc-row-field="client_price"]'),'calculation_item_not_added');
   // Exercise explicit pricing through the real builder before persisting one item.
   const draftPrice=(index)=>Number(document.querySelector('#calcDraftItems [data-calc-row-field="client_price"][data-index="'+index+'"]').value);
@@ -189,9 +189,10 @@ async function createNeedAndCalculation(){
   setValue('[data-version-field="title"]',R.marker+' calculation v2');setValue('[data-version-row-field="client_price"][data-index="0"]','1700');click('[data-version-save]');
   const versions=await waitFor(async()=>{try{const rows=await table('leader_lead_calculations','id,version_number,is_current_revision,client_total,profit,updated_at',{lead_id:R.leadId});return rows.length===2?rows:false;}catch(_){return false;}},'calculation_version_timeout',45000);const current=versions.find((row)=>Number(row.version_number)===2);assert(versions.some((row)=>row.id===calculation.id&&Number(row.client_total)===1600),'source_calculation_not_preserved');assert(current,'calculation_version_2_missing');ids.calculation=current.id;assert(Number(current.version_number)===2&&Number(current.client_total)===1700,'calculation_version_projection_failed');record('calculation_version');
   const sourcePrice=await one('leader_lead_calculation_items','client_price,data',{calculation_id:calculation.id});
-  const versionPrice=await one('leader_lead_calculation_items','client_price,data',{calculation_id:current.id});
+  const versionPrice=await one('leader_lead_calculation_items','client_price,data,comment',{calculation_id:current.id});
   assert(Number(sourcePrice.client_price)===1600&&sourcePrice.data?.price_source==='auto','source_price_provenance_changed');
   assert(Number(versionPrice.client_price)===1700&&versionPrice.data?.price_source==='manual','version_manual_provenance_not_persisted');
+  assert(versionPrice.comment?.includes('PRIVATE_PRINT_COMMENT'),'print_private_comment_fixture_missing');
   record('version_manual_price_persisted');
 }
 
@@ -199,6 +200,22 @@ async function createOfferAndOrder(){
   await waitFor(()=>document.querySelector('#offerCalculationId option[value="'+ids.calculation+'"]'),'offer_version_option_missing');setValue('#offerCalculationId',ids.calculation,'change');
   await waitFor(()=>document.getElementById('createOfferBtn')&&!document.getElementById('createOfferBtn').disabled,'offer_create_entry_missing');setValue('#offerTitle',R.marker+' offer');setValue('#offerExtraComment',R.marker+' synthetic terms');click('#createOfferBtn');
   const offer=await waitFor(async()=>{try{const rows=await table('leader_commercial_offers','id,lead_id,calculation_id,title,status,total_sum,updated_at',{lead_id:R.leadId});return rows.length===1?rows[0]:false;}catch(_){return false;}},'offer_create_timeout',45000);ids.offer=offer.id;assert(Number(offer.total_sum)===1700&&offer.calculation_id===ids.calculation,'offer_total_projection_failed');record('offer_create');
+  const originalOpen=window.open;let printedWindow=null;
+  window.open=function(...args){printedWindow=originalOpen.apply(window,args);return printedWindow;};
+  try {
+    for(const template of ['business','presentation']) {
+      const selector='.v4-offer-card[data-id="'+offer.id+'"] [data-print-offer-template="'+template+'"]';
+      await waitFor(()=>document.querySelector(selector),'print_button_missing_'+template);
+      click(selector);
+      await waitFor(()=>printedWindow?.document.body?.textContent.includes(R.marker+' synthetic item'),'print_document_missing_'+template);
+      const body=printedWindow.document.body.textContent;
+      assert(!body.includes('PRIVATE_PRINT_COMMENT'),'print_internal_comment_leaked_'+template);
+      assert(body.includes(Number(1700).toLocaleString('ru-RU')),'print_client_total_missing_'+template);
+      printedWindow.close();printedWindow=null;
+      record('offer_print_'+template+'_privacy');
+    }
+  } finally {window.open=originalOpen;if(printedWindow&&!printedWindow.closed)printedWindow.close();}
+
   await waitFor(()=>document.querySelector('.v4-offer-card[data-id="'+offer.id+'"] [data-action="mark-offer-sent"]'),'offer_send_missing');click('.v4-offer-card[data-id="'+offer.id+'"] [data-action="mark-offer-sent"]');await waitFor(async()=>{try{return (await one('leader_commercial_offers','id,status,updated_at',{id:offer.id})).status==='Отправлено';}catch(_){return false;}},'offer_send_timeout');
   await waitFor(()=>document.querySelector('.v4-offer-card[data-id="'+offer.id+'"] [data-action="approve-offer"]'),'offer_approve_missing');click('.v4-offer-card[data-id="'+offer.id+'"] [data-action="approve-offer"]');await waitFor(async()=>{try{return (await one('leader_commercial_offers','id,status,updated_at',{id:offer.id})).status==='Согласовано';}catch(_){return false;}},'offer_approve_timeout');record('offer_transitions_projection');
   await waitFor(()=>document.querySelector('.v4-offer-card[data-id="'+offer.id+'"] [data-open-offer-card]'),'offer_card_entry_missing');click('.v4-offer-card[data-id="'+offer.id+'"] [data-open-offer-card]');await waitFor(()=>document.getElementById('offerOrderCreateBox')&&document.querySelector('[data-create-order-from-offer]'),'order_from_offer_form_missing',30000);
@@ -406,6 +423,7 @@ export function browserLaunchPlan({ xvfbRun, chrome, profileDir, url } = {}) {
       '-screen 0 1440x1000x24 -nolisten tcp',
       chrome,
       '--disable-gpu',
+      '--disable-popup-blocking',
       '--no-sandbox',
       '--hide-scrollbars',
       '--disable-sync',

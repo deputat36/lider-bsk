@@ -495,3 +495,8 @@ Supabase baseline РА «Лидер»: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-
 - 2026-08-27 (#487/#488): real production create succeeds; corrected frontend entity/job response mismatch and replay checks, related-order staging read now uses role-filtered Edge. Installation create replay now requires a nonempty matching entity ID.
 
 - 2026-08-27 (#487/#488): Chrome passed canonical layout rejection, approval, production creation/replay and stale guard. Production card staging reads/controls aligned to existing narrow ACL; unread internal notes are never overwritten by status saves. Added order replay and premature-installation negative evidence.
+
+
+## 2026-09-07 — #510: клиентская приватность PDF КП
+
+Исходные строгая и презентационная PDF-формы раскрывали comment позиции и internal_only строки. Теперь обе используют существующий publicOfferRows; запрос не выбирает comment, но получает data для client_title/visibility/components. Публичные условия расчёта и согласованный итог сохраняются. Новый regression проверяет реальные шаблоны и SELECT-проекцию; authenticated staging E2E расширен открытием обоих печатных окон после сохранения версии с внутренним комментарием. Runtime-результат будет зафиксирован после завершения CI. Production migrations/Auth/backend routes не затрагиваются.

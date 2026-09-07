@@ -8,6 +8,8 @@ on:
       - 'crm/v4/assets/v4/calculation-composite-model-v1.js'
       - 'crm/v4/assets/v4/offers.js'
       - 'crm/v4/assets/v4/offer-visibility-v1.js'
+      - 'crm/v4/assets/v4/offer-print-brand-v4.js'
+      - 'tools/test_offer_print_privacy_v1.mjs'
       - 'tools/test_calculation_composite_model_v1.mjs'
       - 'tools/test_offer_visibility_v1.mjs'
       - 'tools/check_crm_composite_offer_visibility.py'
@@ -20,6 +22,8 @@ on:
       - 'crm/v4/assets/v4/calculation-composite-model-v1.js'
       - 'crm/v4/assets/v4/offers.js'
       - 'crm/v4/assets/v4/offer-visibility-v1.js'
+      - 'crm/v4/assets/v4/offer-print-brand-v4.js'
+      - 'tools/test_offer_print_privacy_v1.mjs'
       - 'tools/test_calculation_composite_model_v1.mjs'
       - 'tools/test_offer_visibility_v1.mjs'
       - 'tools/check_crm_composite_offer_visibility.py'
@@ -49,5 +53,7 @@ jobs:
         run: node tools/test_calculation_composite_model_v1.mjs
       - name: Offer visibility behavior
         run: node tools/test_offer_visibility_v1.mjs
+      - name: Both PDF templates exclude internal data
+        run: node tools/test_offer_print_privacy_v1.mjs
       - name: Composite and privacy source contract
         run: python3 tools/check_crm_composite_offer_visibility.py
