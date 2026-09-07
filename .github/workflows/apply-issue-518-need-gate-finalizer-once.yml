@@ -1,0 +1,45 @@
+name: Apply issue 518 need gate finalizer once
+
+on:
+  push:
+    branches: [agent/518-need-calculation-readiness-gate-v1]
+    paths:
+      - 'tools/apply_issue_518_need_gate_finalizer.py'
+      - '.github/workflows/apply-issue-518-need-gate-finalizer-once.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/518-need-calculation-readiness-gate-v1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply finalizer
+        run: python3 tools/apply_issue_518_need_gate_finalizer.py
+      - name: Focused regression
+        run: |
+          node --check crm/v4/assets/v4/needs.js
+          node --check crm/v4/assets/v4/need-calculation-readiness-v1.js
+          node tools/test_need_calculation_readiness_v1.mjs
+          python3 tools/check_crm_need_calculation_readiness_gate.py
+          python3 tools/generate_crm_installation_production_frontend_candidate.py
+          python3 tools/check_crm_installation_production_frontend_candidate.py
+      - name: Commit final source change
+        run: |
+          if git diff --quiet; then
+            echo 'No final source changes'
+            exit 1
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add crm/v4/assets/v4/needs.js
+          git commit -m 'Reset need readiness warning when editing'
+          git push origin HEAD:agent/518-need-calculation-readiness-gate-v1
