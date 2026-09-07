@@ -33,7 +33,7 @@ required = {
         'Показывать имя и контакты клиента в КП',
         'Персональные данные по умолчанию скрыты',
         'offerCreateSummaryMarkup',
-        'v4-offer-privacy is-',
+        'v4-offer-privacy ${includeClientDetails',
         'include_client_details: includeClientDetails',
     ],
     'css': [
@@ -69,8 +69,8 @@ required = {
     'migration': [
         'include_client_details',
         'v_include_client_details boolean := false',
-        'v_include_client_details',
-        'v_normalized_payload',
+        "'include_client_details', v_include_client_details",
+        'not v_include_client_details',
     ],
     'index': [
         'offers.css?v=20260907-client-privacy-1',
