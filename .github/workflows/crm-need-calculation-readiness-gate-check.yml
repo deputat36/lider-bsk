@@ -1,0 +1,45 @@
+name: CRM need calculation readiness gate check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/needs.js'
+      - 'crm/v4/assets/v4/need-calculation-readiness-v1.js'
+      - 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
+      - 'tools/test_need_calculation_readiness_v1.mjs'
+      - 'tools/check_crm_need_calculation_readiness_gate.py'
+      - '.github/workflows/crm-need-calculation-readiness-gate-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'crm/v4/assets/v4/needs.js'
+      - 'crm/v4/assets/v4/need-calculation-readiness-v1.js'
+      - 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
+      - 'tools/test_need_calculation_readiness_v1.mjs'
+      - 'tools/check_crm_need_calculation_readiness_gate.py'
+      - '.github/workflows/crm-need-calculation-readiness-gate-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  readiness-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax
+        run: |
+          node --check crm/v4/assets/v4/needs.js
+          node --check crm/v4/assets/v4/need-calculation-readiness-v1.js
+      - name: Behavior
+        run: node tools/test_need_calculation_readiness_v1.mjs
+      - name: Source contract
+        run: python3 tools/check_crm_need_calculation_readiness_gate.py
+      - name: Existing need to calculation contract
+        run: python3 tools/check_crm_need_calculation_flow.py
