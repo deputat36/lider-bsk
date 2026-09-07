@@ -249,7 +249,7 @@ async function loadLeadCardBundle() {
       import('./calculations-saved-tools-v2.js?v=20260805-tab-loader-1'),
       import('./calculations.js?v=20260805-tab-loader-1'),
       import('./calculation-draft-review-v1.js?v=20260805-tab-loader-1'),
-      import('./offers.js?v=20260805-tab-loader-1'),
+      import('./offers.js?v=20260907-client-privacy-1'),
       import('./orders.js?v=20260827-order-read-1'),
       import('./offer-card-v1.js?v=20260827-order-read-1'),
       import('./offer-print.js?v=20260805-tab-loader-1'),
