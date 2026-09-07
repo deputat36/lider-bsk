@@ -3,10 +3,10 @@ import { timeout, friendlyError } from './api.js';
 import { v4State } from './state.js';
 import { toast, setStatus } from './ui.js';
 import { publicOfferRows } from './offer-visibility-v1.js';
+import { storedOfferClientDetails } from './offer-client-privacy-v1.js';
 
 const CALC_FIELDS = 'id,lead_id,title,client_total,public_comment';
 const ITEM_FIELDS = 'id,calculation_id,name,unit,qty,client_sum,data,sort_order';
-const LEAD_FIELDS = 'id,name,phone,city,service';
 
 const esc = (v) => String(v ?? '').replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
 const money = (v) => `${Math.round(Number(v || 0)).toLocaleString('ru-RU')} ₽`;
@@ -23,8 +23,8 @@ function logoHtml() {
 function top(offer, title = 'Коммерческое предложение') {
   return `<header class="top">${logoHtml()}<div class="meta"><b>${title}</b><div>${dateRu(new Date())}</div><div>до ${dateRu(offer.valid_until)}</div></div></header>`;
 }
-function taskText(lead, calc, offer) {
-  return [lead?.service, calc?.title].filter(Boolean).join('. ') || offer.title || 'Работы по согласованной заявке';
+function taskText(calc, offer) {
+  return calc?.title || offer.title || 'Работы по согласованной заявке';
 }
 function rows(items) {
   const rows = visibleItems(items);
@@ -34,19 +34,37 @@ function rows(items) {
 function table(items, total) {
   return `<section class="items-wrap"><div class="title"><h2>Состав предложения</h2><span>цены для клиента</span></div><table class="items"><thead><tr><th>№</th><th>Наименование</th><th>Кол-во</th><th>Цена</th><th>Сумма</th></tr></thead><tbody>${rows(items)}<tr class="total-row"><td colspan="4">Итого</td><td class="num">${money(total)}</td></tr></tbody></table></section>`;
 }
+function clientBusinessCard(offer) {
+  const details = storedOfferClientDetails(offer);
+  if (!details.include) return '';
+  const fields = [
+    details.name ? `<div class="field"><span class="label">Имя</span><b>${esc(details.name)}</b></div>` : '',
+    details.phone ? `<div class="field"><span class="label">Телефон</span><b>${esc(details.phone)}</b></div>` : ''
+  ].filter(Boolean).join('');
+  return fields ? `<section class="card"><div class="title"><h2>Клиент</h2><span>по настройке КП</span></div><div class="grid">${fields}</div></section>` : '';
+}
+function clientPresentationCard(offer) {
+  const details = storedOfferClientDetails(offer);
+  if (!details.include) return '';
+  const fields = [
+    details.name ? `<div class="field"><span class="label">Имя</span><b>${esc(details.name)}</b></div>` : '',
+    details.phone ? `<div class="field"><span class="label">Телефон</span><b>${esc(details.phone)}</b></div>` : ''
+  ].filter(Boolean).join('');
+  return fields ? `<div class="card"><h3>Клиент</h3>${fields}</div>` : '';
+}
 function business(bundle) {
-  const { offer, calculation, items, lead } = bundle;
+  const { offer, calculation, items } = bundle;
   const total = Number(offer.total_sum || calculation?.client_total || 0);
   const comment = calculation?.public_comment || 'Предложение действительно при сохранении указанных параметров заказа, материалов и объёма работ.';
-  return `<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>${esc(offer.title || 'КП')}</title><style>${css()}</style></head><body><div class="print-actions"><button onclick="window.print()">Печать / PDF</button><button class="secondary" onclick="window.close()">Закрыть</button></div><main class="page">${top(offer)}<section class="hero"><div class="panel"><span class="label">Предложение</span><div class="big">${esc(offer.title || calculation?.title || 'Работы по заявке')}</div><p class="task">${esc(taskText(lead, calculation, offer))}</p></div><div class="panel"><span class="label">Итоговая стоимость</span><div class="price">${money(total)}</div><p class="task">Стоимость указана для согласованного состава работ.</p></div></section><section class="card"><div class="title"><h2>Клиент</h2><span>данные заявки</span></div><div class="grid"><div class="field"><span class="label">Имя</span><b>${esc(lead?.name || 'Не указано')}</b></div><div class="field"><span class="label">Телефон</span><b>${esc(lead?.phone || 'Не указано')}</b></div><div class="field"><span class="label">Город</span><b>${esc(lead?.city || 'Борисоглебск')}</b></div><div class="field"><span class="label">Услуга</span><b>${esc(lead?.service || calculation?.title || 'Рекламные работы')}</b></div></div></section>${table(items, total)}<section class="terms"><div class="term"><b>Запуск в работу</b><span>После подтверждения состава, стоимости и предоплаты.</span></div><div class="term"><b>Макет</b><span>Производство запускается после согласования финального макета.</span></div><div class="term"><b>Сроки</b><span>Зависят от макета, материалов и загрузки производства.</span></div><div class="term"><b>Доставка / монтаж</b><span>Согласуются отдельно, если не включены в состав.</span></div></section><div class="note"><b>Важно:</b> ${esc(comment)}</div><section class="sign"><div>Представитель РА «Лидер»</div><div>Клиент / согласовано</div></section><footer class="foot"><span><b>ЛИДЕР</b> · рекламное агентство</span><span>КП сформировано в CRM</span></footer></main></body></html>`;
+  return `<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>${esc(offer.title || 'КП')}</title><style>${css()}</style></head><body><div class="print-actions"><button onclick="window.print()">Печать / PDF</button><button class="secondary" onclick="window.close()">Закрыть</button></div><main class="page">${top(offer)}<section class="hero"><div class="panel"><span class="label">Предложение</span><div class="big">${esc(offer.title || calculation?.title || 'Работы по заявке')}</div><p class="task">${esc(taskText(calculation, offer))}</p></div><div class="panel"><span class="label">Итоговая стоимость</span><div class="price">${money(total)}</div><p class="task">Стоимость указана для согласованного состава работ.</p></div></section>${clientBusinessCard(offer)}${table(items, total)}<section class="terms"><div class="term"><b>Запуск в работу</b><span>После подтверждения состава, стоимости и предоплаты.</span></div><div class="term"><b>Макет</b><span>Производство запускается после согласования финального макета.</span></div><div class="term"><b>Сроки</b><span>Зависят от макета, материалов и загрузки производства.</span></div><div class="term"><b>Доставка / монтаж</b><span>Согласуются отдельно, если не включены в состав.</span></div></section><div class="note"><b>Важно:</b> ${esc(comment)}</div><section class="sign"><div>Представитель РА «Лидер»</div><div>Клиент / согласовано</div></section><footer class="foot"><span><b>ЛИДЕР</b> · рекламное агентство</span><span>КП сформировано в CRM</span></footer></main></body></html>`;
 }
 function presentation(bundle) {
-  const { offer, calculation, items, lead } = bundle;
+  const { offer, calculation, items } = bundle;
   const total = Number(offer.total_sum || calculation?.client_total || 0);
-  return `<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>${esc(offer.title || 'КП')}</title><style>${css()}</style></head><body><div class="print-actions"><button onclick="window.print()">Печать / PDF</button><button class="secondary" onclick="window.close()">Закрыть</button></div><main class="page presentation"><section class="cover">${top(offer, 'КП')}<section class="hero"><span class="label" style="color:#ff6a00">идеи, которые ведут вперёд</span><div class="big">${esc(offer.title || calculation?.title || 'Рекламные работы')}</div><p class="task">${esc(taskText(lead, calculation, offer))}</p></section><div class="price-box"><span class="label">Итоговая стоимость</span><b>${money(total)}</b><p>Цена для согласованного состава работ.</p></div></section><div class="after-cover"><section class="grid"><div class="card"><h3>Клиент</h3><div class="field"><span class="label">Имя</span><b>${esc(lead?.name || 'Не указано')}</b></div><div class="field"><span class="label">Телефон</span><b>${esc(lead?.phone || 'Не указано')}</b></div></div><div class="card dark"><h3>Как запускаем</h3><p>1. Подтверждаем состав и стоимость.</p><p>2. Согласовываем макет и материалы.</p><p>3. Запускаем производство после предоплаты.</p></div></section>${table(items, total)}<div class="note"><b>Важно:</b> ${esc(calculation?.public_comment || 'Предложение действительно при сохранении указанных параметров заказа, материалов и объёма работ.')}</div></div><footer class="foot"><span><b>ЛИДЕР</b> · рекламное агентство</span><span>Коммерческое предложение</span></footer></main></body></html>`;
+  return `<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>${esc(offer.title || 'КП')}</title><style>${css()}</style></head><body><div class="print-actions"><button onclick="window.print()">Печать / PDF</button><button class="secondary" onclick="window.close()">Закрыть</button></div><main class="page presentation"><section class="cover">${top(offer, 'КП')}<section class="hero"><span class="label" style="color:#ff6a00">идеи, которые ведут вперёд</span><div class="big">${esc(offer.title || calculation?.title || 'Рекламные работы')}</div><p class="task">${esc(taskText(calculation, offer))}</p></section><div class="price-box"><span class="label">Итоговая стоимость</span><b>${money(total)}</b><p>Цена для согласованного состава работ.</p></div></section><div class="after-cover"><section class="grid">${clientPresentationCard(offer)}<div class="card dark"><h3>Как запускаем</h3><p>1. Подтверждаем состав и стоимость.</p><p>2. Согласовываем макет и материалы.</p><p>3. Запускаем производство после предоплаты.</p></div></section>${table(items, total)}<div class="note"><b>Важно:</b> ${esc(calculation?.public_comment || 'Предложение действительно при сохранении указанных параметров заказа, материалов и объёма работ.')}</div></div><footer class="foot"><span><b>ЛИДЕР</b> · рекламное агентство</span><span>Коммерческое предложение</span></footer></main></body></html>`;
 }
 async function loadBundle(offer) {
-  let calculation = null, items = [], lead = v4State.currentLead || null;
+  let calculation = null, items = [];
   if (offer.calculation_id) {
     const calc = await timeout(supabaseClient.from('leader_lead_calculations').select(CALC_FIELDS).eq('id', offer.calculation_id).maybeSingle(), 12000, 'Расчёт для печати не загрузился за 12 секунд');
     if (calc.error) throw calc.error;
@@ -55,13 +73,7 @@ async function loadBundle(offer) {
     if (rowsRes.error) throw rowsRes.error;
     items = rowsRes.data || [];
   }
-  const leadId = offer.lead_id || calculation?.lead_id || lead?.id;
-  if (leadId && (!lead || lead.id !== leadId)) {
-    const leadRes = await timeout(supabaseClient.from('leader_leads').select(LEAD_FIELDS).eq('id', leadId).maybeSingle(), 12000, 'Заявка для печати не загрузилась за 12 секунд');
-    if (leadRes.error) throw leadRes.error;
-    lead = leadRes.data || lead;
-  }
-  return { offer, calculation, items, lead };
+  return { offer, calculation, items };
 }
 async function openPrintOffer(offerId, template = 'business') {
   const offer = (v4State.offers || []).find((item) => item.id === offerId);
