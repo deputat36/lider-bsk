@@ -49,7 +49,7 @@ for marker in [
         errors.append('Missing offers next-action marker: ' + marker)
 
 for marker in [
-    'offers.css?v=20260717-next-action-1',
+    'offers.css?v=20260907-client-privacy-1',
     'calculations-saved-tools-v2.js?v=20260717-load-integrity-1',
     'offers.js?v=20260717-load-integrity-1',
 ]:
