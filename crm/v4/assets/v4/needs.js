@@ -607,7 +607,7 @@ function bindNeedsEvents() {
     }
 
     const edit = event.target.closest('button[data-action="edit-need"]');
-    if (edit) { const need = needFromAction(edit); if (need && requireV4Action(CRM_V4_ACTIONS.NEEDS_WRITE)) openNeedForm('edit', need); return; }
+    if (edit) { const need = needFromAction(edit); if (need && requireV4Action(CRM_V4_ACTIONS.NEEDS_WRITE)) { calculationGateNeedId = null; openNeedForm('edit', need); } return; }
     const copy = event.target.closest('button[data-action="copy-need"]');
     if (copy) { const need = needFromAction(copy); if (need && requireV4Action(CRM_V4_ACTIONS.NEEDS_WRITE)) openNeedForm('copy', need); return; }
     const calculateAnyway = event.target.closest('button[data-action="calculate-need-anyway"]');
