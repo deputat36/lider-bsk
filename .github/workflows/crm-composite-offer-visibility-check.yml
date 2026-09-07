@@ -7,12 +7,16 @@ on:
       - 'crm/v4/assets/v4/calculations.js'
       - 'crm/v4/assets/v4/calculation-composite-model-v1.js'
       - 'crm/v4/assets/v4/offers.js'
+      - 'crm/v4/assets/v4/offers.css'
       - 'crm/v4/assets/v4/offer-visibility-v1.js'
+      - 'crm/v4/assets/v4/offer-client-privacy-v1.js'
       - 'crm/v4/assets/v4/offer-print-brand-v4.js'
+      - 'tools/test_offer_client_privacy_v1.mjs'
       - 'tools/test_offer_print_privacy_v1.mjs'
       - 'tools/test_calculation_composite_model_v1.mjs'
       - 'tools/test_offer_visibility_v1.mjs'
       - 'tools/check_crm_composite_offer_visibility.py'
+      - 'tools/check_crm_offer_client_privacy_ux.py'
       - 'docs/CRM_OFFER_VISIBILITY_INTEGRATION_2026-07-01.md'
       - '.github/workflows/crm-composite-offer-visibility-check.yml'
   pull_request:
@@ -21,12 +25,16 @@ on:
       - 'crm/v4/assets/v4/calculations.js'
       - 'crm/v4/assets/v4/calculation-composite-model-v1.js'
       - 'crm/v4/assets/v4/offers.js'
+      - 'crm/v4/assets/v4/offers.css'
       - 'crm/v4/assets/v4/offer-visibility-v1.js'
+      - 'crm/v4/assets/v4/offer-client-privacy-v1.js'
       - 'crm/v4/assets/v4/offer-print-brand-v4.js'
+      - 'tools/test_offer_client_privacy_v1.mjs'
       - 'tools/test_offer_print_privacy_v1.mjs'
       - 'tools/test_calculation_composite_model_v1.mjs'
       - 'tools/test_offer_visibility_v1.mjs'
       - 'tools/check_crm_composite_offer_visibility.py'
+      - 'tools/check_crm_offer_client_privacy_ux.py'
       - 'docs/CRM_OFFER_VISIBILITY_INTEGRATION_2026-07-01.md'
       - '.github/workflows/crm-composite-offer-visibility-check.yml'
   workflow_dispatch:
@@ -48,12 +56,18 @@ jobs:
           node --check crm/v4/assets/v4/calculation-composite-model-v1.js
           node --check crm/v4/assets/v4/calculations.js
           node --check crm/v4/assets/v4/offer-visibility-v1.js
+          node --check crm/v4/assets/v4/offer-client-privacy-v1.js
           node --check crm/v4/assets/v4/offers.js
+          node --check crm/v4/assets/v4/offer-print-brand-v4.js
       - name: Composite calculation behavior
         run: node tools/test_calculation_composite_model_v1.mjs
       - name: Offer visibility behavior
         run: node tools/test_offer_visibility_v1.mjs
-      - name: Both PDF templates exclude internal data
+      - name: Client privacy behavior
+        run: node tools/test_offer_client_privacy_v1.mjs
+      - name: Both PDF templates enforce client privacy
         run: node tools/test_offer_print_privacy_v1.mjs
+      - name: Client privacy UX source contract
+        run: python3 tools/check_crm_offer_client_privacy_ux.py
       - name: Composite and privacy source contract
         run: python3 tools/check_crm_composite_offer_visibility.py
