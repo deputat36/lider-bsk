@@ -1,6 +1,6 @@
 -- STAGING ONLY: make commercial offers anonymous by default while preserving
 -- the existing transactional offer creation RPC and its security boundary.
--- Production project ofewxuqfjhamgerwzull must not execute this file.
+-- This file is guarded for the isolated staging environment only.
 
 DO $migration$
 DECLARE
