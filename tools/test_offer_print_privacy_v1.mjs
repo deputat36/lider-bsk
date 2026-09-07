@@ -8,7 +8,13 @@ const source = await readFile(new URL('../crm/v4/assets/v4/offer-print-brand-v4.
 const items = [
   { name: 'PRIVATE_PARENT', qty: 2, unit: 'шт', client_sum: 2400,
     comment: 'PRIVATE_COMMENT', contractor_sum: 731, profit: 1669,
-    data: { client_title: 'Вывеска <готовая>', visibility: 'single_line' } },
+    data: {
+      client_title: 'Вывеска <готовая>',
+      client_description: 'Объёмные буквы 3000×700 мм, акрил и LED-подсветка',
+      visibility: 'single_line',
+      vendor: 'PRIVATE_VENDOR',
+      contractor_quote: { total_cost: 731 }
+    } },
   { name: 'PRIVATE_LINE', client_sum: 999, data: { visibility: 'internal_only' } },
   { name: 'PRIVATE_COMPOSITE', qty: 1, client_sum: 3000,
     data: { visibility: 'detailed', components: [
@@ -45,12 +51,13 @@ for (const field of ['comment', 'contractor_price', 'contractor_sum', 'profit', 
 }
 for (const template of ['business', 'presentation']) {
   const html = context.printApi[template](loaded);
-  assert.ok(!html.includes('PRIVATE_'), `${template} must exclude internal names and comments`);
+  assert.ok(!html.includes('PRIVATE_'), `${template} must exclude internal names, vendor and comments`);
   assert.ok(html.includes('Вывеска &lt;готовая&gt;'), `${template} must escape client title`);
+  assert.ok(html.includes('Объёмные буквы 3000×700 мм, акрил и LED-подсветка'), `${template} must show safe client description`);
   assert.ok(html.includes('Публичные условия'));
   assert.ok(html.includes('Монтаж'));
   assert.ok(html.includes((1200).toLocaleString('ru-RU')), 'single-line unit price');
   assert.ok(html.includes((1500).toLocaleString('ru-RU')), 'component unit price');
   assert.ok(html.includes((6399).toLocaleString('ru-RU')), 'agreed total stays unchanged');
 }
-console.log('offer print privacy: both real templates and query projection PASS');
+console.log('offer print privacy: client description visible, internal contractor data hidden in both real templates PASS');
