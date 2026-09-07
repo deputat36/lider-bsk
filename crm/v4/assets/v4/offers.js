@@ -229,6 +229,8 @@ function renderCreateForm() {
   const calculation = (v4State.calculations || []).find((item) => item.id === selected) || null;
   const validUntil = validUntilDefault();
   const defaultTitle = calculation ? `КП: ${calculation.title || 'Расчёт'}` : '';
+  const lead = v4State.currentLead || {};
+  const hasClientIdentity = Boolean(String(lead.name || '').trim() || String(lead.phone || '').trim());
   return `<div id="offerCreateForm" class="v4-offer-form">
     <div class="v4-offer-form-head">
       <div><span>Следующее действие</span><h4>Создать коммерческое предложение</h4></div>
@@ -243,8 +245,8 @@ function renderCreateForm() {
         <div class="v4-offer-step-head"><span>2</span><div><h5>Что увидит клиент</h5><p>Название можно изменить. Имя и телефон добавляются только по вашему решению.</p></div></div>
         <label>Название КП<input id="offerTitle" value="${esc(defaultTitle)}" placeholder="Например: КП на изготовление вывески"></label>
         <label class="v4-offer-privacy-toggle">
-          <input id="offerIncludeClientDetails" type="checkbox">
-          <span><b>Показывать имя и контакты клиента в КП</b><small>По умолчанию выключено. Если включить, в КП попадут сохранённые имя и телефон из заявки.</small></span>
+          <input id="offerIncludeClientDetails" type="checkbox" ${hasClientIdentity ? '' : 'disabled'}>
+          <span><b>Показывать имя и контакты клиента в КП</b><small>${hasClientIdentity ? 'По умолчанию выключено. Если включить, в КП попадут сохранённые имя и телефон из заявки.' : 'В заявке не заполнены имя и телефон — сначала добавьте хотя бы одно из этих полей.'}</small></span>
         </label>
       </section>
       <section class="v4-offer-step">
