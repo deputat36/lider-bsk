@@ -1,0 +1,39 @@
+name: Apply issue 518 candidate guard once
+
+on:
+  push:
+    branches: [agent/518-need-calculation-readiness-gate-v1]
+    paths:
+      - 'tools/apply_issue_518_candidate_guard_patch.py'
+      - '.github/workflows/apply-issue-518-candidate-guard-once.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/518-need-calculation-readiness-gate-v1
+      - name: Apply candidate guard sync
+        run: python3 tools/apply_issue_518_candidate_guard_patch.py
+      - name: Validate candidate generator
+        run: |
+          python3 -m json.tool contracts/crm-installation-production-frontend-candidate-v1.json >/dev/null
+          python3 tools/generate_crm_installation_production_frontend_candidate.py
+          python3 tools/check_crm_installation_production_frontend_candidate.py
+      - name: Commit guard updates
+        run: |
+          if git diff --quiet; then
+            echo 'No guard changes'
+            exit 1
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tools/generate_crm_installation_production_frontend_candidate.py contracts/crm-installation-production-frontend-candidate-v1.json
+          git commit -m 'Sync installation candidate with need gate loader'
+          git push origin HEAD:agent/518-need-calculation-readiness-gate-v1
