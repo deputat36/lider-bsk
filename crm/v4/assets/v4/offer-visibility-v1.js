@@ -1,4 +1,4 @@
-const VERSION = 'offer-visibility-v1-20260904';
+const VERSION = 'offer-visibility-v1-20260907';
 
 function asObject(value) {
   return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
@@ -13,6 +13,10 @@ function moneyNumber(value) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function textValue(value) {
+  return String(value ?? '').trim();
+}
+
 export function offerVisibilityVersion() {
   return VERSION;
 }
@@ -25,6 +29,11 @@ export function itemVisibility(item) {
 export function itemClientTitle(item) {
   const data = asObject(item?.data);
   return data.client_title || item?.name || 'Позиция';
+}
+
+export function itemClientDescription(item) {
+  const data = asObject(item?.data);
+  return textValue(data.client_description || data.characteristics || '');
 }
 
 export function publicOfferRows(items) {
@@ -42,6 +51,7 @@ export function publicOfferRows(items) {
         components.forEach((component) => {
           rows.push({
             name: component.title || itemClientTitle(item),
+            description: textValue(component.client_description || component.comment || ''),
             qty: component.qty || 1,
             unit: component.unit || '',
             client_sum: moneyNumber(component.client_sum),
@@ -54,6 +64,7 @@ export function publicOfferRows(items) {
     }
     rows.push({
       name: itemClientTitle(item),
+      description: itemClientDescription(item),
       qty: item?.qty || 1,
       unit: item?.unit || '',
       client_sum: clientSum,
