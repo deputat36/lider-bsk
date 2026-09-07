@@ -111,6 +111,7 @@ function buildOfferTexts({ calculation, items, lead, need, validUntil, extraComm
       const qty = Number(item.qty || 0);
       const unit = item.unit || '';
       fullLines.push(`— ${item.name}${qty ? ` — ${qty.toLocaleString('ru-RU')} ${unit}` : ''} — ${money(item.client_sum)}`);
+      if (item.description) fullLines.push(`  ${item.description}`);
     });
   } else {
     fullLines.push('— Работы по согласованной заявке');

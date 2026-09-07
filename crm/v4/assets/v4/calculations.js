@@ -10,7 +10,7 @@ import { isStagingWorkflowEnvironment } from './workflow-staging-transport-v1.js
 import { catalogRowToDraftItem, catalogRowToTypicalDraftItem, legacyCatalogFallbackRows, loadCalculationCatalog } from './calculation-catalog-source-v1.js';
 import { createCalculationCatalogItem } from './calculation-catalog-create-v1.js';
 import { canPerformV4Action, CRM_V4_ACTIONS } from './action-permissions-v1.js';
-import { contractorQuoteDraftItem } from './calculation-contractor-quote-model-v1.js';
+import { contractorQuoteDraftItem, contractorQuoteDraftValidation } from './calculation-contractor-quote-model-v1.js';
 import { compositeDraftValidation } from './calculation-composite-model-v1.js';
 
 const CALC_FIELDS = 'id,lead_id,need_id,client_id,title,status,version_number,client_total,contractor_cost,profit,margin_percent,warning_level,warnings,public_comment,internal_comment,commercial_offer_id,order_id,created_by,updated_by,created_at,updated_at';
@@ -44,19 +44,22 @@ let calculationCatalogRows = [];
 let calculationCatalogSource = 'loading';
 let calculationCatalogLoadPromise = null;
 
-const MODES = [
+const PRIMARY_MODES = [
   ['catalog', 'Из каталога'],
-  ['contractor_quote', 'Подрядчик / готовая смета'],
-  ['composite', 'Составное изделие'],
+  ['contractor_quote', 'По цене подрядчика'],
+  ['custom', 'Своя позиция'],
+  ['composite', 'Составное изделие']
+];
+const TEMPLATE_MODES = [
   ['banner', 'Баннер'],
   ['film', 'Плёнка / наклейки'],
   ['sheet', 'ПВХ / листовой материал'],
   ['pvc_shapes', 'ПВХ-фигуры'],
   ['letters', 'Буквы / цифры'],
   ['photo', 'Фото A4'],
-  ['service', 'Дизайн / монтаж / доставка'],
-  ['custom', 'Ручная позиция']
+  ['service', 'Дизайн / монтаж / доставка']
 ];
+const MODES = [...PRIMARY_MODES, ...TEMPLATE_MODES];
 
 let draftItems = [];
 const calculationLoads = new Map();
@@ -410,12 +413,26 @@ function renderCalcCard(calc) {
   `;
 }
 
-function modeOptions(selected = 'banner') {
+function modeOptions(selected = 'catalog') {
   return MODES.map(([value, label]) => `<option value="${esc(value)}" ${value === selected ? 'selected' : ''}>${esc(label)}</option>`).join('');
 }
 
-function renderModeButtons(selected = 'banner') {
-  return MODES.map(([value, label]) => `<button type="button" class="${value === selected ? 'is-active' : ''}" data-calc-mode="${esc(value)}">${esc(label)}</button>`).join('');
+function modeButtonMarkup([value, label], selected) {
+  return `<button type="button" class="${value === selected ? 'is-active' : ''}" data-calc-mode="${esc(value)}">${esc(label)}</button>`;
+}
+
+function renderModeButtons(selected = 'catalog') {
+  const templateSelected = TEMPLATE_MODES.some(([value]) => value === selected);
+  return `
+    <div class="v4-mode-group v4-mode-group-primary" role="group" aria-label="Основные способы добавить позицию">
+      ${PRIMARY_MODES.map((mode) => modeButtonMarkup(mode, selected)).join('')}
+    </div>
+    <details class="v4-more-modes" ${templateSelected ? 'open' : ''}>
+      <summary>Ещё варианты: баннер, плёнка, ПВХ и другие шаблоны</summary>
+      <div class="v4-mode-group" role="group" aria-label="Шаблоны расчёта">
+        ${TEMPLATE_MODES.map((mode) => modeButtonMarkup(mode, selected)).join('')}
+      </div>
+    </details>`;
 }
 
 function renderCompositeComponentRow(index = 0) {
@@ -496,17 +513,32 @@ function renderModeFields(mode = 'banner') {
   }
   if (mode === 'contractor_quote') {
     return `
-      <div class="v4-calc-mode-help"><b>Готовая смета подрядчика:</b> внесите внутренние затраты. Общая наценка задаётся выше — отдельного второго калькулятора больше нет. Клиент увидит одну итоговую строку, внутренние расходы останутся в snapshot расчёта.</div>
-      <div class="v4-form-grid">
-        <label>Подрядчик<input id="calcContractorVendor" placeholder="Кто изготовит / выполнил расчёт"></label>
-        <label>Цена подрядчика, ₽<input id="calcContractorBase" type="number" min="0" step="1" value="0"></label>
-        <label>Доставка, ₽<input id="calcContractorDelivery" type="number" min="0" step="1" value="0"></label>
-        <label>Монтаж, ₽<input id="calcContractorInstallation" type="number" min="0" step="1" value="0"></label>
-        <label>Дизайн, ₽<input id="calcContractorDesign" type="number" min="0" step="1" value="0"></label>
-        <label>Прочие расходы, ₽<input id="calcContractorOther" type="number" min="0" step="1" value="0"></label>
-        <label>Итог клиенту вручную, ₽<input id="calcContractorClient" type="number" min="0" step="1" placeholder="Пусто = по общей наценке"></label>
-        <label>Комментарий к позиции<input id="calcContractorComment" placeholder="Что входит в готовую стоимость"></label>
-      </div>
+      <div class="v4-calc-mode-help"><b>По готовой цене подрядчика:</b> сначала напишите понятное название и характеристики для клиента. Ниже отдельно внесите внутреннюю смету — название подрядчика и его цены в КП не попадут.</div>
+      <section class="v4-contractor-client-card" aria-label="Данные позиции для клиента">
+        <div class="v4-contractor-card-head">
+          <div><h5>Что увидит клиент</h5><p>Это название и описание попадут в коммерческое предложение.</p></div>
+          <span class="v4-client-badge">Для клиента</span>
+        </div>
+        <div class="v4-form-grid">
+          <label>Название для клиента *<input id="calcContractorClientTitle" placeholder="Например: Световая вывеска «ОВОЩИ»"></label>
+          <label>Количество<input id="calcContractorQty" type="number" min="0.01" step="0.01" value="1"></label>
+          <label>Единица<select id="calcContractorUnit"><option>комплект</option><option>шт</option><option>м²</option><option>услуга</option></select></label>
+          <label>Итог клиенту вручную, ₽<input id="calcContractorClient" type="number" min="0" step="1" placeholder="Пусто = по общей наценке"></label>
+          <label class="wide">Характеристики / описание для клиента<textarea id="calcContractorClientDescription" rows="3" placeholder="Например: объёмные световые буквы, 3000×700 мм, акрил 3 мм, светодиодная подсветка, цвет по макету"></textarea></label>
+        </div>
+      </section>
+      <details class="v4-contractor-internal-card" open>
+        <summary><span>Внутренний расчёт себестоимости</span><small>Клиент этого не увидит</small></summary>
+        <div class="v4-form-grid">
+          <label>Подрядчик<input id="calcContractorVendor" placeholder="Кто изготовит / дал цену"></label>
+          <label>Цена подрядчика за весь объём, ₽<input id="calcContractorBase" type="number" min="0" step="1" value="0"></label>
+          <label>Доставка, ₽<input id="calcContractorDelivery" type="number" min="0" step="1" value="0"></label>
+          <label>Монтаж, ₽<input id="calcContractorInstallation" type="number" min="0" step="1" value="0"></label>
+          <label>Дизайн, ₽<input id="calcContractorDesign" type="number" min="0" step="1" value="0"></label>
+          <label>Прочие расходы, ₽<input id="calcContractorOther" type="number" min="0" step="1" value="0"></label>
+          <label class="wide">Внутренняя заметка<input id="calcContractorComment" placeholder="Например: смета поставщика, срок, что учтено отдельно"></label>
+        </div>
+      </details>
     `;
   }
   if (mode === 'composite') {
@@ -717,7 +749,7 @@ function perimeterTotal() {
 }
 
 function currentModeItems() {
-  const mode = val('calcSmartMode') || 'banner';
+  const mode = val('calcSmartMode') || 'catalog';
   const rows = [];
   calculationModeError = '';
   if (mode === 'composite') {
@@ -737,8 +769,12 @@ function currentModeItems() {
     return [catalogRowToDraftItem(row, num('calcCatalogBackedQty') || 1, { catalog_source: calculationCatalogSource })];
   }
   if (mode === 'contractor_quote') {
-    const item = contractorQuoteDraftItem({
-      title: val('calcTitle') || 'Подрядный заказ',
+    const prepared = contractorQuoteDraftValidation({
+      clientTitle: val('calcContractorClientTitle'),
+      clientDescription: val('calcContractorClientDescription'),
+      qty: num('calcContractorQty') || 1,
+      unit: val('calcContractorUnit') || 'комплект',
+      itemType: 'Изготовление',
       vendor: val('calcContractorVendor'),
       base: num('calcContractorBase'),
       delivery: num('calcContractorDelivery'),
@@ -746,10 +782,15 @@ function currentModeItems() {
       design: num('calcContractorDesign'),
       other: num('calcContractorOther'),
       clientPrice: num('calcContractorClient'),
-      comment: val('calcContractorComment')
+      internalComment: val('calcContractorComment')
     });
-    if (item.contractor_price <= 0) return [];
-    return applyAutoPrice([item]);
+    if (!prepared.ok) {
+      calculationModeError = prepared.errors.includes('contractor_client_title_required')
+        ? 'Укажите понятное название позиции для клиента'
+        : 'Укажите цену подрядчика или другие внутренние расходы';
+      return [];
+    }
+    return applyAutoPrice([prepared.item]);
   }
   if (mode === 'banner') {
     const material = catalogByName(val('calcCatalogItem')) || catalogByName('Баннер 340/440 — стандарт');
@@ -874,7 +915,7 @@ function renderSmartPreview() {
     <span><b>Клиенту:</b> ${money(client)}</span>
     <span><b>Прибыль:</b> ${money(profit)}</span>
     <span><b>Маржа:</b> ${Math.round(margin)}%</span>
-    <div class="v4-estimate-lines">${calculated.map((item) => `<div><b>${esc(item.name)}</b><span>${Number(item.qty).toLocaleString('ru-RU')} ${esc(item.unit)} · подрядчик ${money(item.contractor_sum)} · клиент ${money(item.client_sum)}</span></div>`).join('')}</div>
+    <div class="v4-estimate-lines">${calculated.map((item) => `<div><b>${esc(item.name)}</b>${item.data?.client_description ? `<small class="v4-client-description">${esc(item.data.client_description)}</small>` : ''}<span>${Number(item.qty).toLocaleString('ru-RU')} ${esc(item.unit)} · себестоимость ${money(item.contractor_sum)} · клиент ${money(item.client_sum)}</span></div>`).join('')}</div>
   `;
 }
 
@@ -887,7 +928,7 @@ function renderDraftItems() {
   const visible = draftItems.map(calcItem);
   list.innerHTML = visible.length ? visible.map((item, index) => `
     <tr>
-      <td>${esc(item.name)}${item.comment ? `<small>${esc(item.comment)}</small>` : ''}</td>
+      <td>${esc(item.name)}${item.data?.client_description ? `<small class="v4-client-description"><b>Для клиента:</b> ${esc(item.data.client_description)}</small>` : ''}${item.comment ? `<small class="v4-internal-note"><b>Внутренне:</b> ${esc(item.comment)}</small>` : ''}</td>
       <td>${esc(item.unit)}</td>
       <td><input class="v4-calc-row-input" data-calc-row-field="qty" data-index="${index}" type="number" min="0" step="0.01" value="${item.qty}"></td>
       <td><input class="v4-calc-row-input" data-calc-row-field="contractor_price" data-index="${index}" type="number" min="0" step="1" value="${item.contractor_price}"></td>
@@ -914,29 +955,57 @@ function renderDraftItems() {
 }
 
 function renderCalcForm() {
-  const selectedMode = byId('calcSmartMode')?.value || 'banner';
+  const selectedMode = byId('calcSmartMode')?.value || 'catalog';
   return `
     <div class="v4-calc-form">
       <div class="v4-calc-wizard-head">
         <div>
-          <h4>Новый расчёт</h4>
-          <p>Один расчёт для типовых и нестандартных заказов. Добавляйте материалы, услуги и ручные позиции в общую смету.</p>
+          <h4>Расчёт заказа</h4>
+          <p>Сначала добавьте понятные позиции, затем проверьте состав и только после этого настройте итоговую цену.</p>
         </div>
-        <div class="v4-calc-steps"><span>1. Позиции</span><span>2. Цена и прибыль</span><span>3. КП</span></div>
+        <div class="v4-calc-steps"><span>1. Что считаем</span><span>2. Состав</span><span>3. Цена</span><span>4. Сохранить</span></div>
       </div>
       <div class="v4-form-grid">
         <label>Название расчёта
-          <input id="calcTitle" placeholder="Например: Баннер 3×2 с люверсами">
+          <input id="calcTitle" placeholder="Например: Вывеска для магазина на ул. Советской">
         </label>
         <label>Потребность
           <select id="calcNeedId">${needOptions()}</select>
         </label>
-        <label>Комментарий для клиента
-          <input id="calcPublicComment" placeholder="Что входит в стоимость">
+        <label>Общее примечание для клиента
+          <input id="calcPublicComment" placeholder="Условия, которые относятся ко всему расчёту">
         </label>
       </div>
+
+      <div class="v4-calc-auto-box">
+        <div class="v4-calc-section-heading">
+          <span class="v4-calc-section-number">1</span>
+          <div><h4>Что считаем?</h4><p>Чаще всего достаточно выбрать каталог, цену подрядчика или свою позицию. Готовые шаблоны спрятаны ниже, чтобы не перегружать экран.</p></div>
+        </div>
+        <div class="v4-mode-buttons">${renderModeButtons(selectedMode)}</div>
+        <label class="v4-mode-select-state">Текущий тип
+          <select id="calcSmartMode" tabindex="-1" aria-hidden="true">${modeOptions(selectedMode)}</select>
+        </label>
+        <div id="calcModeFields">${renderModeFields(selectedMode)}</div>
+        <div id="calcSmartPreview" class="v4-calc-live"></div>
+        <div class="v4-form-actions">
+          <button id="addSmartCalcItemBtn" type="button" class="v4-primary">Добавить позицию в расчёт</button>
+        </div>
+      </div>
+
+      <div class="v4-table-wrap">
+        <table class="v4-table">
+          <thead><tr><th>Позиция</th><th>Ед.</th><th>Кол-во</th><th>Себест. ед.</th><th>Клиенту ед.</th><th>Сумма клиенту</th><th></th></tr></thead>
+          <tbody id="calcDraftItems"></tbody>
+        </table>
+      </div>
+      <div id="calcDraftTotals" class="v4-calc-totals"></div>
+      <div id="calcDraftGuide"></div>
+
       <section class="v4-pricing-control" aria-label="Управление ценой расчёта">
-        <div><h4>Цена и прибыль</h4><p>Можно управлять либо наценкой к себестоимости, либо целевой маржой. Заполняйте только один способ — CRM покажет второй показатель. Для изменения добавленных автоматических позиций нажмите кнопку применения.</p></div>
+        <div>
+          <div class="v4-calc-section-heading"><span class="v4-calc-section-number">3</span><div><h4>Цена и прибыль</h4><p>Настройте итог после того, как увидели состав и себестоимость. Ручные цены позиций CRM не перезапишет.</p></div></div>
+        </div>
         <div class="v4-pricing-choice">
           <div>
             <b>Наценка к себестоимости</b>
@@ -951,51 +1020,20 @@ function renderCalcForm() {
         </div>
         <div id="calcPricingExplanation" class="v4-pricing-explanation" aria-live="polite"></div>
         <button id="applyAutomaticCalcPricesBtn" type="button">Применить к автоматическим позициям</button>
-        <p>Ручные цены и цены из каталога сохраняются. Правила округления и наценки по сумме заказа — ниже, в дополнительных настройках.</p>
-      </section>
-      <div class="v4-calc-auto-box">
-        <h4>Тип позиции</h4>
-        <div class="v4-mode-buttons">${renderModeButtons(selectedMode)}</div>
-        <label class="v4-mode-select">Текущий тип
-          <select id="calcSmartMode">${modeOptions(selectedMode)}</select>
-        </label>
-        <div id="calcModeFields">${renderModeFields(selectedMode)}</div>
+        <p>Ручные цены и зафиксированные цены из каталога сохраняются.</p>
         <details class="v4-calc-settings">
           <summary>Дополнительные правила автоматической цены</summary>
           <div class="v4-form-grid">
-            <label>Мелкий заказ до, ₽
-              <input id="calcSmallLimit" type="number" value="3000">
-            </label>
-            <label>Наценка мелкий, %
-              <input id="calcSmallMarkup" type="number" value="30">
-            </label>
-            <label>Средний заказ до, ₽
-              <input id="calcMedLimit" type="number" value="10000">
-            </label>
-            <label>Наценка средний, %
-              <input id="calcMedMarkup" type="number" value="20">
-            </label>
-            <label>Наценка крупный, %
-              <input id="calcLargeMarkup" type="number" value="10">
-            </label>
-            <label>Шаг округления итога, ₽
-              <input id="calcRoundStep" type="number" value="10">
-            </label>
+            <label>Мелкий заказ до, ₽<input id="calcSmallLimit" type="number" value="3000"></label>
+            <label>Наценка мелкий, %<input id="calcSmallMarkup" type="number" value="30"></label>
+            <label>Средний заказ до, ₽<input id="calcMedLimit" type="number" value="10000"></label>
+            <label>Наценка средний, %<input id="calcMedMarkup" type="number" value="20"></label>
+            <label>Наценка крупный, %<input id="calcLargeMarkup" type="number" value="10"></label>
+            <label>Шаг округления итога, ₽<input id="calcRoundStep" type="number" value="10"></label>
           </div>
         </details>
-        <div id="calcSmartPreview" class="v4-calc-live"></div>
-        <div class="v4-form-actions">
-          <button id="addSmartCalcItemBtn" type="button" class="v4-primary">Добавить в расчёт</button>
-        </div>
-      </div>
-      <div class="v4-table-wrap">
-        <table class="v4-table">
-          <thead><tr><th>Позиция</th><th>Ед.</th><th>Кол-во</th><th>Себест. ед.</th><th>Клиенту ед.</th><th>Сумма клиенту</th><th></th></tr></thead>
-          <tbody id="calcDraftItems"></tbody>
-        </table>
-      </div>
-      <div id="calcDraftTotals" class="v4-calc-totals"></div>
-      <div id="calcDraftGuide"></div>
+      </section>
+
       <div class="v4-form-actions">
         <button id="saveCalculationBtn" type="button" class="v4-primary">Сохранить расчёт</button>
         <button id="clearCalculationBtn" type="button">Очистить</button>
@@ -1021,12 +1059,12 @@ export function renderCalculations() {
       <div class="v4-subcard-head">
         <div>
           <h3>Расчёты</h3>
-          <p>Расчёт теперь адаптируется под позицию. Для баннера достаточно указать размер и опции, дополнительные строки создаются автоматически.</p>
+          <p>Работайте сверху вниз: выберите, что считаете, добавьте позиции, проверьте состав и настройте цену. Технические данные подрядчиков остаются внутри CRM.</p>
         </div>
         <span class="v4-muted">Расчётов: ${calculations.length}</span>
       </div>
       <div class="v4-calculations-list">
-        ${v4State.calculationsError ? `<div class="v4-empty is-error">${esc(v4State.calculationsError)}</div>` : calculations.length ? calculations.map(renderCalcCard).join('') : '<div class="v4-empty">Расчётов пока нет. Начните с типа позиции: например, баннер или плёнка.</div>'}
+        ${v4State.calculationsError ? `<div class="v4-empty is-error">${esc(v4State.calculationsError)}</div>` : calculations.length ? calculations.map(renderCalcCard).join('') : '<div class="v4-empty">Расчётов пока нет. Начните с «Из каталога», «По цене подрядчика» или «Своя позиция».</div>'}
       </div>
       ${renderCalcForm()}
     </section>
