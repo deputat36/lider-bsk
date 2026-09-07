@@ -22,17 +22,27 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Fix exact two-template replacement guard
+      - name: Fix exact two-template replacement guards
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p = Path('tools/apply_issue_516_offer_privacy_ux_patch.py')
           s = p.read_text(encoding='utf-8')
-          old = '''print_source = replace_once(print_source, old_business, "  const { offer, calculation, items } = bundle;", 'business destructure')\nprint_source = replace_once(print_source, old_business, "  const { offer, calculation, items } = bundle;", 'presentation destructure')'''
-          new = '''if print_source.count(old_business) != 2:\n    raise RuntimeError(f'print destructure: expected 2 occurrences, got {print_source.count(old_business)}')\nprint_source = print_source.replace(old_business, "  const { offer, calculation, items } = bundle;", 2)'''
-          if old not in s:
-              raise SystemExit('destructure patch marker not found')
-          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+          replacements = [
+            (
+              '''print_source = replace_once(print_source, old_business, "  const { offer, calculation, items } = bundle;", 'business destructure')\nprint_source = replace_once(print_source, old_business, "  const { offer, calculation, items } = bundle;", 'presentation destructure')''',
+              '''if print_source.count(old_business) != 2:\n    raise RuntimeError(f'print destructure: expected 2 occurrences, got {print_source.count(old_business)}')\nprint_source = print_source.replace(old_business, "  const { offer, calculation, items } = bundle;", 2)'''
+            ),
+            (
+              '''print_source = replace_once(print_source, '${esc(taskText(lead, calculation, offer))}', '${esc(taskText(calculation, offer))}', 'business task call')\nprint_source = replace_once(print_source, '${esc(taskText(lead, calculation, offer))}', '${esc(taskText(calculation, offer))}', 'presentation task call')''',
+              '''old_task_call = '${esc(taskText(lead, calculation, offer))}'\nif print_source.count(old_task_call) != 2:\n    raise RuntimeError(f'print task call: expected 2 occurrences, got {print_source.count(old_task_call)}')\nprint_source = print_source.replace(old_task_call, '${esc(taskText(calculation, offer))}', 2)'''
+            )
+          ]
+          for old, new in replacements:
+              if old not in s:
+                  raise SystemExit('patch marker not found')
+              s = s.replace(old, new, 1)
+          p.write_text(s, encoding='utf-8')
           PY
       - name: Apply exact source patch
         run: python3 tools/apply_issue_516_offer_privacy_ux_patch.py
