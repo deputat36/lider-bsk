@@ -16,6 +16,7 @@ const PAYLOAD_FIELDS = Object.freeze(new Set([
   'title',
   'valid_until',
   'extra_comment',
+  'include_client_details',
 ]))
 
 export type JsonObject = Record<string, unknown>
@@ -134,6 +135,10 @@ export function validateOfferRequest(value: unknown): ValidationResult {
   if (rawExtraComment.length > 4000) {
     return { ok: false, code: 'invalid_payload', message: 'extra_comment must contain at most 4000 characters' }
   }
+  if (payload.include_client_details !== undefined && payload.include_client_details !== null && typeof payload.include_client_details !== 'boolean') {
+    return { ok: false, code: 'invalid_payload', message: 'include_client_details must be a boolean or null' }
+  }
+  const includeClientDetails = payload.include_client_details === true
 
   return {
     ok: true,
@@ -147,6 +152,7 @@ export function validateOfferRequest(value: unknown): ValidationResult {
         title: rawTitle,
         valid_until: cleanText(payload.valid_until, 20),
         extra_comment: rawExtraComment || null,
+        include_client_details: includeClientDetails,
       },
     },
   }
