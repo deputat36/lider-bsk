@@ -245,7 +245,7 @@ async function loadLeadCardBundle() {
       import('./lead-card.js?v=20260816-direct-card-1'),
       import('./lead-timeline.js?v=20260805-tab-loader-1'),
       import('./lead-timeline-hooks.js?v=20260805-tab-loader-1'),
-      import('./needs.js?v=20260805-tab-loader-1'),
+      import('./needs.js?v=20260907-readiness-gate-1'),
       import('./calculations-saved-tools-v2.js?v=20260805-tab-loader-1'),
       import('./calculations.js?v=20260805-tab-loader-1'),
       import('./calculation-draft-review-v1.js?v=20260805-tab-loader-1'),
