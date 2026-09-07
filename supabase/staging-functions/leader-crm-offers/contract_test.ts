@@ -24,6 +24,7 @@ function request(overrides: Record<string, unknown> = {}) {
       title: 'Коммерческое предложение',
       valid_until: '2026-08-21',
       extra_comment: 'Тестовый комментарий',
+      include_client_details: false,
     },
     ...overrides,
   }
@@ -43,12 +44,28 @@ Deno.test('environment key helpers support legacy and new keys', () => {
   assert(!isJwtApiKey('sb_secret_example'), 'new secret key must not be treated as JWT')
 })
 
-Deno.test('valid offer request is minimized', () => {
+Deno.test('valid offer request is minimized and anonymous by default', () => {
   const result = validateOfferRequest(request())
   assert(result.ok, 'valid request rejected')
   assert(result.request.action === OFFER_ACTION, 'action drifted')
   const payload = result.request.payload as Record<string, unknown>
-  assert(Object.keys(payload).sort().join(',') === 'calculation_id,extra_comment,idempotency_key,title,valid_until', 'payload projection drifted')
+  assert(Object.keys(payload).sort().join(',') === 'calculation_id,extra_comment,idempotency_key,include_client_details,title,valid_until', 'payload projection drifted')
+  assert(payload.include_client_details === false, 'default request must stay anonymous')
+
+  const base = request()
+  const basePayload = base.payload as Record<string, unknown>
+  const omitted = validateOfferRequest({ ...base, payload: { ...basePayload, include_client_details: undefined } })
+  assert(!omitted.ok, 'undefined wire field must not be accepted by JSON contract')
+
+  const withoutFlagPayload = { ...basePayload }
+  delete withoutFlagPayload.include_client_details
+  const withoutFlag = validateOfferRequest({ ...base, payload: withoutFlagPayload })
+  assert(withoutFlag.ok, 'omitted privacy flag must remain backward compatible')
+  assert((withoutFlag.request.payload as Record<string, unknown>).include_client_details === false, 'omitted privacy flag must default false')
+
+  const personalized = validateOfferRequest({ ...base, payload: { ...basePayload, include_client_details: true } })
+  assert(personalized.ok, 'explicit personalized request rejected')
+  assert((personalized.request.payload as Record<string, unknown>).include_client_details === true, 'personalized flag lost')
 })
 
 Deno.test('browser actor and server fields are rejected', () => {
@@ -60,6 +77,15 @@ Deno.test('browser actor and server fields are rejected', () => {
   for (const field of ['status', 'offer_number', 'client_total', 'calculation_snapshot']) {
     const result = validateOfferRequest({ ...base, payload: { ...payload, [field]: 'forbidden' } })
     assert(!result.ok && result.code === 'invalid_payload', `${field} accepted`)
+  }
+})
+
+Deno.test('privacy flag type fails closed', () => {
+  const base = request()
+  const payload = base.payload as Record<string, unknown>
+  for (const value of ['true', 1, {}, []]) {
+    const result = validateOfferRequest({ ...base, payload: { ...payload, include_client_details: value } })
+    assert(!result.ok && result.code === 'invalid_payload', `invalid privacy flag accepted: ${JSON.stringify(value)}`)
   }
 })
 
