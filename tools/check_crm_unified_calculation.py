@@ -24,8 +24,7 @@ for forbidden in ['calculations-standard.js?', 'calculations-advanced.js?', 'cal
 if 'calculation-contractor-quote-v1.js?v=' in loader:
     errors.append('Legacy contractor calculator remains in lead-card bundle')
 for legacy_path in legacy_paths:
-    if legacy_path.exists():
-        errors.append('Retired legacy calculator must not exist: ' + str(legacy_path.relative_to(root)))
+    if legacy_path.exists(): errors.append('Retired legacy calculator must not exist: ' + str(legacy_path.relative_to(root)))
 if not retirement_doc_path.exists():
     errors.append('Missing legacy calculator retirement decision record')
 else:
@@ -38,14 +37,15 @@ else:
         'Existing saved calculations are not changed or migrated',
         'Production Supabase remains unchanged',
     ]:
-        if marker not in retirement_doc:
-            errors.append('Missing retirement decision marker: ' + marker)
+        if marker not in retirement_doc: errors.append('Missing retirement decision marker: ' + marker)
+
 for marker in [
     'calculations.js?v=20260717-module-singleton-1',
     'calculations-unified.css?v=20260715-draft-review-1',
     'calculation-draft-review-v1.js?v=20260715-1',
 ]:
     if marker not in html: errors.append('Missing unified calculation asset: ' + marker)
+
 for marker in [
     'Цена и прибыль',
     'applyAutomaticCalcPricesBtn',
@@ -63,69 +63,73 @@ for marker in [
     'repriceAutomaticItems',
 ]:
     if marker not in calc: errors.append('Missing pricing UX marker: ' + marker)
+
+for marker in [
+    'PRIMARY_MODES', 'TEMPLATE_MODES',
+    "['catalog', 'Из каталога']", "['contractor_quote', 'По цене подрядчика']",
+    "['custom', 'Своя позиция']", "['composite', 'Составное изделие']",
+    'v4-more-modes', 'v4-mode-select-state',
+    '1. Что считаем', '2. Состав', '3. Цена', '4. Сохранить',
+]:
+    if marker not in calc: errors.append('Missing simplified workspace marker: ' + marker)
+
 for marker in ['calcHemmingCost', 'calcGrommetCost', 'calcNeedPlotterCut', 'calcMountFilmCost', 'calcNeedSheetPrint', 'calcNeedSheetLamination', 'calcNeedSheetCut', 'ПВХ вспененный 20 мм', 'data-calc-row-field="contractor_price"', 'data-action="auto-calc-item"']:
     if marker not in calc: errors.append('Missing restored calculation setting: ' + marker)
 for marker in ["['pvc_shapes', 'ПВХ-фигуры']", "['letters', 'Буквы / цифры']", 'calcPvcDiameters', 'calcLettersSpec', 'calcCustomCategory', 'calcCustomType', 'calcCustomData']:
     if marker not in calc: errors.append('Missing specialized calculation mode: ' + marker)
-for marker in ["['contractor_quote', 'Подрядчик / готовая смета']", 'calcContractorVendor', 'calcContractorBase', 'calcContractorDelivery', 'calcContractorInstallation', 'calcContractorDesign', 'calcContractorOther', 'calcContractorClient', 'contractorQuoteDraftItem']:
-    if marker not in calc: errors.append('Missing unified contractor quote UX marker: ' + marker)
-for marker in ['contractor-quote-model-v1-20260903', "builder_version: 'calc-builder-v2'", "mode: 'contractor_quote'", "visibility: 'single_line'", 'contractor_quote:', 'components:', 'pricing:']:
+
+for marker in [
+    'calcContractorClientTitle', 'calcContractorClientDescription', 'calcContractorQty', 'calcContractorUnit',
+    'calcContractorVendor', 'calcContractorBase', 'calcContractorDelivery', 'calcContractorInstallation',
+    'calcContractorDesign', 'calcContractorOther', 'calcContractorClient', 'calcContractorComment',
+    'contractorQuoteDraftValidation', 'Что увидит клиент', 'Клиент этого не увидит',
+    'Укажите понятное название позиции для клиента', 'v4-client-description', 'v4-internal-note',
+]:
+    if marker not in calc: errors.append('Missing client-safe contractor quote UX marker: ' + marker)
+
+for marker in [
+    'contractor-quote-model-v1-20260907', "builder_version: 'calc-builder-v2'",
+    "mode: 'contractor_quote'", "visibility: 'single_line'",
+    'client_title:', 'client_description:', 'quoted_quantity:', 'quoted_unit:',
+    'manual_client_total:', 'contractorQuoteDraftValidation', 'contractor_quote:', 'components:', 'pricing:',
+]:
     if marker not in contractor_model: errors.append('Missing contractor quote snapshot marker: ' + marker)
+
+for forbidden in [
+    "title: val('calcTitle') || 'Подрядный заказ'",
+    "['contractor_quote', 'Подрядчик / готовая смета']",
+]:
+    if forbidden in calc: errors.append('Obsolete contractor UX remains: ' + forbidden)
+
 for marker in ['parseCalculationPairs', 'parseCalculationDiameters', 'circleAreaSquareMeters']:
     if marker not in spec_model: errors.append('Missing specification model marker: ' + marker)
-for marker in [
-    'marginPercentFromMarkup',
-    'markupPercentFromMargin',
-    'normalizeMarginPercent',
-    'price_source',
-    'manual',
-    'markupPercentForSubtotal',
-]:
+for marker in ['marginPercentFromMarkup', 'markupPercentFromMargin', 'normalizeMarginPercent', 'price_source', 'manual', 'markupPercentForSubtotal']:
     if marker not in model: errors.append('Missing pricing model marker: ' + marker)
 for marker in [
-    'CLEAR_CONFIRMATION_WINDOW_MS',
-    'calculationDraftClearDecision',
-    'calculationDraftEconomics',
-    'profitPerUnit',
-    'markupPercent',
-    'marginPercent',
-    'isLoss',
-    'calculationDraftRowLabels',
-    'calculationDraftReviewDescriptor',
-    'reconcileCalculationDraftReview',
+    'CLEAR_CONFIRMATION_WINDOW_MS', 'calculationDraftClearDecision', 'calculationDraftEconomics',
+    'profitPerUnit', 'markupPercent', 'marginPercent', 'isLoss', 'calculationDraftRowLabels',
+    'calculationDraftReviewDescriptor', 'reconcileCalculationDraftReview',
 ]:
     if marker not in review_model: errors.append('Missing draft review model marker: ' + marker)
 for marker in [
-    'MutationObserver',
-    'v4-calc-draft-review-head',
-    'v4-calc-row-review-meta',
-    'v4-calc-row-characteristics',
-    'v4-calc-row-economics',
-    'decorateRowEconomics',
-    'Экономика позиции:',
-    'aria-label',
-    'Нажмите «Очистить» ещё раз в течение 4 секунд',
-    'stopImmediatePropagation',
-    'cell.dataset.label',
-    'Автоматическая цена',
-    'Ручная цена',
+    'MutationObserver', 'v4-calc-draft-review-head', 'v4-calc-row-review-meta', 'v4-calc-row-characteristics',
+    'v4-calc-row-economics', 'decorateRowEconomics', 'Экономика позиции:', 'aria-label',
+    'Нажмите «Очистить» ещё раз в течение 4 секунд', 'stopImmediatePropagation', 'cell.dataset.label',
+    'Автоматическая цена', 'Ручная цена', 'calcContractorClientDescription', 'По цене подрядчика',
 ]:
     if marker not in review: errors.append('Missing draft review UX marker: ' + marker)
 for marker in [
-    '@media(max-width:720px)',
-    '.v4-draft-review-table thead',
-    'content:attr(data-label)',
-    '.v4-calc-remove-row',
-    '.v4-calc-draft-count',
-    '.v4-calc-row-characteristics',
-    '.v4-calc-row-economics',
-    '.v4-calc-row-economics.is-loss',
+    '@media(max-width:720px)', '.v4-draft-review-table thead', 'content:attr(data-label)',
+    '.v4-calc-remove-row', '.v4-calc-draft-count', '.v4-calc-row-characteristics',
+    '.v4-calc-row-economics', '.v4-calc-row-economics.is-loss', '.v4-more-modes',
+    '.v4-contractor-client-card', '.v4-contractor-internal-card', '.v4-client-description', '.v4-internal-note',
 ]:
-    if marker not in review_css: errors.append('Missing responsive draft review style: ' + marker)
+    if marker not in review_css: errors.append('Missing responsive calculation style: ' + marker)
+
 for source_name, source in [('pricing model', model), ('contractor quote model', contractor_model), ('draft review model', review_model), ('draft review module', review)]:
     for forbidden in [".from('", '.insert(', '.update(', '.delete(', 'supabase/functions', 'supabase/migrations', 'service_role', 'sb_secret_']:
         if forbidden in source: errors.append(f'{source_name} must remain browser-only and no-write: {forbidden}')
 
 if errors:
     print('\n'.join(errors)); sys.exit(1)
-print('CRM uses one calculation workspace with target-margin pricing and per-position economics; legacy calculators remain retired.')
+print('CRM uses one easier calculation workspace: client-facing contractor data are explicit, internal quote data stay internal, target-margin pricing and per-position economics remain intact.')

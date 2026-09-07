@@ -29,7 +29,7 @@ function taskText(lead, calc, offer) {
 function rows(items) {
   const rows = visibleItems(items);
   if (!rows.length) return '<tr><td colspan="5">Работы по согласованной заявке</td></tr>';
-  return rows.map((item, i) => `<tr><td class="num">${i + 1}</td><td><b>${esc(item.name || 'Позиция')}</b></td><td class="num">${Number(item.qty || 0).toLocaleString('ru-RU')} ${esc(item.unit || 'шт')}</td><td class="num">${money(item.client_sum / (Number(item.qty) || 1))}</td><td class="num"><b>${money(item.client_sum)}</b></td></tr>`).join('');
+  return rows.map((item, i) => `<tr><td class="num">${i + 1}</td><td><b>${esc(item.name || 'Позиция')}</b>${item.description ? `<div style="margin-top:4px;color:#6b7280;line-height:1.35">${esc(item.description)}</div>` : ''}</td><td class="num">${Number(item.qty || 0).toLocaleString('ru-RU')} ${esc(item.unit || 'шт')}</td><td class="num">${money(item.client_sum / (Number(item.qty) || 1))}</td><td class="num"><b>${money(item.client_sum)}</b></td></tr>`).join('');
 }
 function table(items, total) {
   return `<section class="items-wrap"><div class="title"><h2>Состав предложения</h2><span>цены для клиента</span></div><table class="items"><thead><tr><th>№</th><th>Наименование</th><th>Кол-во</th><th>Цена</th><th>Сумма</th></tr></thead><tbody>${rows(items)}<tr class="total-row"><td colspan="4">Итого</td><td class="num">${money(total)}</td></tr></tbody></table></section>`;

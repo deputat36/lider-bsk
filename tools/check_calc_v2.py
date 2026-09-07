@@ -30,8 +30,16 @@ checks = {
         'Commercial offer rules',
     ],
     calculations: [
-        "['contractor_quote', 'Подрядчик / готовая смета']",
+        "['contractor_quote', 'По цене подрядчика']",
         "['composite', 'Составное изделие']",
+        'PRIMARY_MODES',
+        'TEMPLATE_MODES',
+        'v4-more-modes',
+        'v4-mode-select-state',
+        'calcContractorClientTitle',
+        'calcContractorClientDescription',
+        'calcContractorQty',
+        'calcContractorUnit',
         'calcContractorVendor',
         'calcContractorBase',
         'calcContractorDelivery',
@@ -39,18 +47,26 @@ checks = {
         'calcContractorDesign',
         'calcContractorOther',
         'calcContractorClient',
-        'contractorQuoteDraftItem',
+        'contractorQuoteDraftValidation',
+        'Что увидит клиент',
+        'Клиент этого не увидит',
+        'Укажите понятное название позиции для клиента',
         'compositeDraftValidation',
         'calcCompositeComponents',
         'calcCompositeVisibility',
-        'Общая наценка задаётся выше',
     ],
     contractor_model: [
-        'contractor-quote-model-v1-20260903',
+        'contractor-quote-model-v1-20260907',
         "builder_version: 'calc-builder-v2'",
         "mode: 'contractor_quote'",
         "calculation_mode: 'contractor_quote'",
         "visibility: 'single_line'",
+        'client_title:',
+        'client_description:',
+        'quoted_quantity:',
+        'quoted_unit:',
+        'manual_client_total:',
+        'contractorQuoteDraftValidation',
         'contractor_quote:',
         'price_source:',
     ],
@@ -64,9 +80,12 @@ checks = {
         'visible_component_client_total',
     ],
     visibility: [
-        'offer-visibility-v1-20260904',
+        'offer-visibility-v1-20260907',
         'publicOfferRows',
         'shortOfferItemNames',
+        'itemClientDescription',
+        'client_description',
+        'description:',
         'single_line',
         'detailed',
         'internal_only',
@@ -77,6 +96,7 @@ checks = {
         'return publicOfferRows(items);',
         'shortOfferItemNames(items, 8)',
         'offerVisibilityVersion()',
+        'if (item.description)',
     ],
     index: [
         'calculations-saved-tools.css?v=20260715-review-1',
@@ -138,9 +158,17 @@ for path, markers in checks.items():
 
 index_text = index.read_text(encoding='utf-8')
 loader_text = loader.read_text(encoding='utf-8')
+calculations_text = calculations.read_text(encoding='utf-8')
 for legacy in ['calculation-contractor-quote-v1.js?v=', 'contractorQuotePrepareBtn']:
     if legacy in index_text or legacy in loader_text:
         print(f'Legacy contractor quote shell still wired: {legacy}')
+        sys.exit(1)
+for forbidden in [
+    "title: val('calcTitle') || 'Подрядный заказ'",
+    "['contractor_quote', 'Подрядчик / готовая смета']",
+]:
+    if forbidden in calculations_text:
+        print(f'Obsolete contractor client UX remains: {forbidden}')
         sys.exit(1)
 
 saved_model_text = saved_model.read_text(encoding='utf-8')
@@ -157,4 +185,4 @@ if 'сначала типовой, затем нестандартный' in sav
     print('Obsolete two-calculator copy remains in saved calculations')
     sys.exit(1)
 
-print('CRM calc v2 markers, unified contractor/composite modes and offer visibility are valid.')
+print('CRM calc v2 keeps one workspace; contractor client fields are separated from internal quote data and offer visibility remains privacy-safe.')

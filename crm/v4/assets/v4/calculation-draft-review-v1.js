@@ -68,11 +68,15 @@ function capturePendingReview() {
   const mode = text(select?.value) || 'custom';
   const modeLabel = text(select?.selectedOptions?.[0]?.textContent) || 'Позиция расчёта';
   const previewRows = [...document.querySelectorAll('#calcSmartPreview .v4-estimate-lines > div')];
-  const category = mode === 'custom' ? fieldValue('calcCustomCategory') : modeLabel;
+  const category = mode === 'custom'
+    ? fieldValue('calcCustomCategory')
+    : mode === 'contractor_quote' ? 'По цене подрядчика' : modeLabel;
   const itemType = mode === 'custom'
     ? fieldValue('calcCustomType')
-    : mode === 'service' ? 'Услуга' : 'Состав позиции';
-  const characteristics = mode === 'custom' ? fieldValue('calcCustomData') : '';
+    : mode === 'service' ? 'Услуга' : mode === 'contractor_quote' ? 'Изготовление' : 'Состав позиции';
+  const characteristics = mode === 'custom'
+    ? fieldValue('calcCustomData')
+    : mode === 'contractor_quote' ? fieldValue('calcContractorClientDescription') : '';
   return previewRows.map((preview) => calculationDraftReviewDescriptor({
     modeLabel,
     category,
