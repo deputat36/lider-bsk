@@ -1,0 +1,49 @@
+name: Apply issue 514 calculation UX once
+
+on:
+  push:
+    branches:
+      - agent/514-calculation-contractor-client-ux
+    paths:
+      - 'tools/apply_issue_514_calculation_ux_patch.py'
+      - '.github/workflows/apply-issue-514-calculation-ux-once.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/514-calculation-contractor-client-ux
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply exact source patch
+        run: python3 tools/apply_issue_514_calculation_ux_patch.py
+      - name: Syntax and focused tests
+        run: |
+          node --check crm/v4/assets/v4/calculations.js
+          node --check crm/v4/assets/v4/offers.js
+          node --check crm/v4/assets/v4/offer-print-brand-v4.js
+          node --check crm/v4/assets/v4/calculation-draft-review-v1.js
+          node tools/test_calculation_contractor_quote_model_v1.mjs
+          node tools/test_offer_visibility_v1.mjs
+          node tools/test_offer_print_privacy_v1.mjs
+      - name: Commit generated source changes
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add crm/v4/assets/v4/calculations.js crm/v4/assets/v4/offers.js crm/v4/assets/v4/offer-print-brand-v4.js crm/v4/assets/v4/calculation-draft-review-v1.js
+          if git diff --cached --quiet; then
+            echo 'No changes to commit'
+            exit 0
+          fi
+          git commit -m 'Redesign contractor calculation client UX'
+          git push origin HEAD:agent/514-calculation-contractor-client-ux
