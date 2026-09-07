@@ -19,6 +19,13 @@ import {
 import { V4_CONFIG } from './config.js';
 import { invokeStagingWorkflow, isStagingWorkflowEnvironment } from './workflow-staging-transport-v1.js';
 import { offerVisibilityVersion, publicOfferRows, shortOfferItemNames } from './offer-visibility-v1.js';
+import {
+  offerClientIdentityLines,
+  offerClientPrivacyLabel,
+  offerCreateSummary,
+  offerGreeting,
+  storedOfferIncludesClientDetails
+} from './offer-client-privacy-v1.js';
 
 const OFFER_FIELDS = 'id,lead_id,calculation_id,client_id,order_id,offer_number,offer_type,title,short_text,full_text,total_sum,valid_until,status,sent_at,approved_at,rejected_at,created_by,updated_by,created_at,updated_at';
 const CALC_FIELDS = 'id,lead_id,need_id,client_id,title,status,version_number,client_total,contractor_cost,profit,margin_percent,warning_level,warnings,public_comment,internal_comment,commercial_offer_id,order_id,created_by,updated_by,created_at,updated_at';
@@ -79,11 +86,13 @@ function publicItems(items) {
   return publicOfferRows(items);
 }
 
-function buildOfferTexts({ calculation, items, lead, need, validUntil, extraComment }) {
+function buildOfferTexts({ calculation, items, lead, need, validUntil, extraComment, includeClientDetails = false }) {
   const visibleItems = publicItems(items);
   const shortNames = shortOfferItemNames(items, 8);
   const shortLines = [
-    `Здравствуйте${lead?.name ? `, ${lead.name}` : ''}! Подготовили расчёт по вашей заявке.`,
+    offerGreeting(lead, includeClientDetails),
+    '',
+    'Подготовили расчёт по вашей заявке.',
     '',
     `${calculation.title || 'Работы по заявке'} — ${money(calculation.client_total)}.`
   ];
@@ -98,11 +107,10 @@ function buildOfferTexts({ calculation, items, lead, need, validUntil, extraComm
   const fullLines = [
     'КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ',
     'РА «Лидер»',
-    `Дата: ${new Date().toLocaleDateString('ru-RU')}`,
-    '',
-    `Клиент: ${lead?.name || 'не указано'}`
+    `Дата: ${new Date().toLocaleDateString('ru-RU')}`
   ];
-  if (lead?.phone) fullLines.push(`Телефон: ${lead.phone}`);
+  const identityLines = offerClientIdentityLines(lead, includeClientDetails);
+  if (identityLines.length) fullLines.push('', ...identityLines);
   fullLines.push('', 'Задача клиента');
   fullLines.push(needDescription(need) || calculation.title || lead?.service || 'Работы по заявке');
   fullLines.push('', 'Состав предложения');
@@ -166,7 +174,50 @@ function renderOfferCard(offer) {
   const isActive = offer.id === activeOfferId;
   const statusModel = offerStatusUiModel(offer.status);
   const statusTitle = statusModel.known ? `Registry: ${statusModel.key}` : statusModel.warning;
-  return `<article class="v4-offer-card" data-id="${esc(offer.id)}"><div><div class="v4-offer-title-row"><h4>${esc(offer.title || 'Коммерческое предложение')}</h4><span class="${esc(statusModel.cssClass)}" title="${esc(statusTitle)}">${esc(statusModel.label)}</span></div><div class="v4-offer-meta"><span><b>Сумма:</b> ${money(offer.total_sum)}</span><span><b>Действует до:</b> ${formatDate(offer.valid_until)}</span><span><b>Создано:</b> ${formatDate(offer.created_at)}</span></div></div><div class="v4-offer-actions"><button type="button" data-action="preview-offer">${isActive ? 'Скрыть' : 'Показать'}</button><button type="button" data-action="copy-short-offer">Копировать короткое</button><button type="button" data-action="copy-full-offer">Копировать полное</button>${offerStatusActionButtons(offer.status)}</div>${isActive ? `<div class="v4-offer-preview"><div><h5>Подробное КП</h5><pre>${esc(offer.full_text || '')}</pre></div><div><h5>Короткое сообщение</h5><pre>${esc(offer.short_text || '')}</pre></div></div>` : ''}</article>`;
+  const includeClientDetails = storedOfferIncludesClientDetails(offer);
+  const privacyLabel = offerClientPrivacyLabel(includeClientDetails);
+  return `<article class="v4-offer-card" data-id="${esc(offer.id)}">
+    <div>
+      <div class="v4-offer-title-row"><h4>${esc(offer.title || 'Коммерческое предложение')}</h4><span class="${esc(statusModel.cssClass)}" title="${esc(statusTitle)}">${esc(statusModel.label)}</span></div>
+      <div class="v4-offer-meta">
+        <span><b>Сумма:</b> ${money(offer.total_sum)}</span>
+        <span><b>Действует до:</b> ${formatDate(offer.valid_until)}</span>
+        <span class="v4-offer-privacy ${includeClientDetails ? 'is-personalized' : 'is-anonymous'}"><b>Клиент:</b> ${esc(privacyLabel)}</span>
+      </div>
+    </div>
+    <div class="v4-offer-actions">
+      <button type="button" data-action="preview-offer">${isActive ? 'Скрыть предпросмотр' : 'Предпросмотр'}</button>
+      <button type="button" data-action="copy-short-offer">Скопировать сообщение</button>
+      <button type="button" data-action="copy-full-offer">Скопировать КП</button>
+      ${offerStatusActionButtons(offer.status)}
+    </div>
+    ${isActive ? `<div class="v4-offer-preview"><div><h5>КП для клиента</h5><pre>${esc(offer.full_text || '')}</pre></div><div><h5>Короткое сообщение</h5><pre>${esc(offer.short_text || '')}</pre></div></div>` : ''}
+  </article>`;
+}
+
+function offerCreateSummaryMarkup(calculationId = '', includeClientDetails = false, validUntil = '') {
+  const calculation = (v4State.calculations || []).find((item) => item.id === calculationId) || null;
+  const summary = offerCreateSummary({ calculation, includeClientDetails, validUntil });
+  const lead = v4State.currentLead || {};
+  const identity = includeClientDetails
+    ? [lead.name, lead.phone].filter(Boolean).join(' · ') || 'данные клиента не заполнены'
+    : 'имя и телефон не попадут в КП';
+  return `<div class="v4-offer-summary-grid">
+    <div><span>Расчёт</span><b>${esc(summary.calculationTitle)}</b></div>
+    <div><span>Сумма</span><b>${money(summary.total)}</b></div>
+    <div><span>Данные клиента</span><b>${esc(summary.privacyLabel)}</b><small>${esc(identity)}</small></div>
+    <div><span>Действует до</span><b>${esc(formatDate(summary.validUntil) || '—')}</b></div>
+  </div>`;
+}
+
+function renderOfferCreateSummary() {
+  const box = byId('offerCreateSummary');
+  if (!box) return;
+  box.innerHTML = offerCreateSummaryMarkup(
+    byId('offerCalculationId')?.value || '',
+    Boolean(byId('offerIncludeClientDetails')?.checked),
+    byId('offerValidUntil')?.value || ''
+  );
 }
 
 function renderCreateForm() {
@@ -175,7 +226,42 @@ function renderCreateForm() {
   const availability = offerCalculationAvailability(v4State.calculations || [], v4State.offers || []);
   if (!availability.available) return `<div class="v4-empty">${esc(availability.message)}</div>`;
   const selected = preferredOfferCalculationId(v4State.calculations || [], selectedCalculationId, v4State.offers || []);
-  return `<div id="offerCreateForm" class="v4-offer-form"><div class="v4-offer-form-head"><div><span>Следующее действие</span><h4>Сформировать КП из расчёта</h4></div><p>${esc(availability.message)}</p></div><div class="v4-form-grid"><label>Расчёт<select id="offerCalculationId">${calculationOptions(selected)}</select></label><label>Название КП<input id="offerTitle" placeholder="Например: КП на изготовление баннера"></label><label>Действует до<input id="offerValidUntil" type="date" value="${validUntilDefault()}"></label><label class="wide">Дополнительные условия для клиента<textarea id="offerExtraComment" rows="2" placeholder="Предоплата, доставка, сроки, особенности монтажа"></textarea></label></div><div class="v4-form-actions"><button id="createOfferBtn" type="button" class="v4-primary" ${selected && !createBusy ? '' : 'disabled'}>${createBusy ? 'Формирую КП...' : 'Сформировать КП'}</button></div><p class="v4-muted">В клиентском тексте не показываются себестоимость, прибыль, маржа и цены подрядчиков. Правила отображения: ${esc(offerVisibilityVersion())}.</p></div>`;
+  const calculation = (v4State.calculations || []).find((item) => item.id === selected) || null;
+  const validUntil = validUntilDefault();
+  const defaultTitle = calculation ? `КП: ${calculation.title || 'Расчёт'}` : '';
+  const lead = v4State.currentLead || {};
+  const hasClientIdentity = Boolean(String(lead.name || '').trim() || String(lead.phone || '').trim());
+  return `<div id="offerCreateForm" class="v4-offer-form">
+    <div class="v4-offer-form-head">
+      <div><span>Следующее действие</span><h4>Создать коммерческое предложение</h4></div>
+      <p>Проверьте, что увидит клиент. Персональные данные по умолчанию скрыты.</p>
+    </div>
+    <div class="v4-offer-create-flow">
+      <section class="v4-offer-step">
+        <div class="v4-offer-step-head"><span>1</span><div><h5>Выберите расчёт</h5><p>CRM возьмёт из него клиентские позиции и итоговую сумму.</p></div></div>
+        <label>Расчёт<select id="offerCalculationId">${calculationOptions(selected)}</select></label>
+      </section>
+      <section class="v4-offer-step">
+        <div class="v4-offer-step-head"><span>2</span><div><h5>Что увидит клиент</h5><p>Название можно изменить. Имя и телефон добавляются только по вашему решению.</p></div></div>
+        <label>Название КП<input id="offerTitle" value="${esc(defaultTitle)}" placeholder="Например: КП на изготовление вывески"></label>
+        <label class="v4-offer-privacy-toggle">
+          <input id="offerIncludeClientDetails" type="checkbox" ${hasClientIdentity ? '' : 'disabled'}>
+          <span><b>Показывать имя и контакты клиента в КП</b><small>${hasClientIdentity ? 'По умолчанию выключено. Если включить, в КП попадут сохранённые имя и телефон из заявки.' : 'В заявке не заполнены имя и телефон — сначала добавьте хотя бы одно из этих полей.'}</small></span>
+        </label>
+      </section>
+      <section class="v4-offer-step">
+        <div class="v4-offer-step-head"><span>3</span><div><h5>Срок и условия</h5><p>Срок действия нужен всегда. Дополнительные условия можно не заполнять.</p></div></div>
+        <label>Действует до<input id="offerValidUntil" type="date" value="${validUntil}"></label>
+        <details class="v4-offer-optional">
+          <summary>Дополнительные условия для клиента</summary>
+          <label>Условия<textarea id="offerExtraComment" rows="3" placeholder="Предоплата, доставка, сроки, особенности монтажа"></textarea></label>
+        </details>
+      </section>
+    </div>
+    <div id="offerCreateSummary" class="v4-offer-create-summary" aria-live="polite">${offerCreateSummaryMarkup(selected, false, validUntil)}</div>
+    <div class="v4-form-actions"><button id="createOfferBtn" type="button" class="v4-primary" ${selected && !createBusy ? '' : 'disabled'}>${createBusy ? 'Создаю КП...' : 'Создать КП'}</button></div>
+    <p class="v4-muted">В КП никогда не показываются себестоимость, прибыль, маржа и цены подрядчиков. Персональные данные добавляются только при включённой опции. Правила отображения: ${esc(offerVisibilityVersion())}.</p>
+  </div>`;
 }
 
 export function renderOffers() {
@@ -310,7 +396,8 @@ async function createOffer() {
 
     const validUntil = byId('offerValidUntil')?.value || validUntilDefault();
     const extraComment = byId('offerExtraComment')?.value?.trim() || '';
-    const texts = buildOfferTexts({ ...bundle, validUntil, extraComment });
+    const includeClientDetails = Boolean(byId('offerIncludeClientDetails')?.checked);
+    const texts = buildOfferTexts({ ...bundle, validUntil, extraComment, includeClientDetails });
     const title = byId('offerTitle')?.value?.trim() || `КП: ${calculation.title || 'Расчёт'}`;
 
     if (isStagingWorkflowEnvironment(V4_CONFIG.supabaseUrl)) {
@@ -323,7 +410,8 @@ async function createOffer() {
           idempotency_key: `offer.create_from_calculation:${calculation.id}:v1`,
           title,
           valid_until: validUntil,
-          extra_comment: extraComment || null
+          extra_comment: extraComment || null,
+          include_client_details: includeClientDetails
         }
       } });
       if (invoked.error || invoked.data?.ok !== true) {
@@ -529,13 +617,18 @@ function bindOfferEvents() {
   });
 
   byId('leadCardSection')?.addEventListener('change', (event) => {
-    if (event.target?.id !== 'offerCalculationId') return;
-    selectedCalculationId = event.target.value || '';
-    const button = byId('createOfferBtn');
-    if (button) button.disabled = !selectedCalculationId || createBusy;
-    const calculation = (v4State.calculations || []).find((item) => item.id === selectedCalculationId);
-    const title = byId('offerTitle');
-    if (calculation && title && !title.value.trim()) title.value = `КП: ${calculation.title || 'Расчёт'}`;
+    const targetId = event.target?.id || '';
+    if (targetId === 'offerCalculationId') {
+      selectedCalculationId = event.target.value || '';
+      const button = byId('createOfferBtn');
+      if (button) button.disabled = !selectedCalculationId || createBusy;
+      const calculation = (v4State.calculations || []).find((item) => item.id === selectedCalculationId);
+      const title = byId('offerTitle');
+      if (calculation && title && !title.value.trim()) title.value = `КП: ${calculation.title || 'Расчёт'}`;
+    }
+    if (['offerCalculationId', 'offerIncludeClientDetails', 'offerValidUntil'].includes(targetId)) {
+      renderOfferCreateSummary();
+    }
   });
 
   document.addEventListener('leader-v4:create-offer-from-calculation', (event) => {

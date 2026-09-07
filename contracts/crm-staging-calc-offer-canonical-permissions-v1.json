@@ -33,19 +33,21 @@
       }
     },
     "leader-crm-offers": {
-      "version": 5,
+      "version": 6,
       "status": "ACTIVE",
       "verify_jwt": true,
       "permission": "offers.write",
       "action": "offer.create_from_calculation",
       "business_rpc": "leader_create_offer_from_calculation_rpc",
-      "sha256": "b20ffa860121826b265bc01bda3757277573a2e87a2604c0c4764bf4add627a7",
+      "sha256": "c84c442fefadebca33de08f480e85d852d0b1a4bbf5e871e8992adbe004329e6",
       "local_role_allowlist": false,
       "direct_profile_read_for_authorization": false,
       "typed_headers": true,
+      "client_details_default": false,
+      "client_details_in_idempotency_hash": true,
       "previous_version": {
-        "version": 4,
-        "sha256": "25b2ff8b11ede3351f95c8f29315b5e43230e5cea153526f75039dc8ff99455e",
+        "version": 5,
+        "sha256": "b20ffa860121826b265bc01bda3757277573a2e87a2604c0c4764bf4add627a7",
         "valid_rollback": true
       }
     }
@@ -64,7 +66,8 @@
     "positive_roles": ["owner", "admin", "manager"],
     "negative_roles": ["accountant", "designer", "installer", "contractor", "unknown_role", "inactive_owner"],
     "synthetic_profiles_after_rollback": 0,
-    "authenticated_http_e2e": "not_run_no_test_auth_user_created",
+    "offer_privacy_transaction_test": "passed",
+    "offer_privacy_residue_after_rollback": 0,
     "business_data_mutated_by_verification": false
   },
   "production": {
@@ -76,7 +79,7 @@
   },
   "rollback": {
     "calculations": "redeploy recorded version 4 bundle",
-    "offers": "redeploy recorded version 4 bundle",
+    "offers": "redeploy recorded version 5 bundle",
     "database_change_required": false,
     "business_data_cleanup_required": false
   }

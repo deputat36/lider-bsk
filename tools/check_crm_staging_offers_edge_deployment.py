@@ -41,19 +41,23 @@ if deployment.get('production_deployment') != 'not_performed_requires_explicit_a
 function = deployment.get('function', {})
 expected = {
     'slug': 'leader-crm-offers',
-    'version': 5,
+    'version': 6,
     'status': 'ACTIVE',
     'verify_jwt': True,
-    'sha256': 'b20ffa860121826b265bc01bda3757277573a2e87a2604c0c4764bf4add627a7',
+    'sha256': 'c84c442fefadebca33de08f480e85d852d0b1a4bbf5e871e8992adbe004329e6',
 }
 for key, value in expected.items():
     if function.get(key) != value:
         errors.append(f'Deployed offers {key} drift: {function.get(key)!r}')
 if deployment.get('typed_headers') is not True:
     errors.append('Offers deployment must record typed Headers')
+if deployment.get('client_details_default') is not False:
+    errors.append('Offer client details must default to false')
+if deployment.get('client_details_in_idempotency_hash') is not True:
+    errors.append('Offer privacy mode must participate in idempotency hash')
 previous = deployment.get('previous_version', {})
-if previous.get('version') != 4 or previous.get('valid_rollback') is not True:
-    errors.append('Offers v4 rollback evidence drift')
+if previous.get('version') != 5 or previous.get('sha256') != 'b20ffa860121826b265bc01bda3757277573a2e87a2604c0c4764bf4add627a7' or previous.get('valid_rollback') is not True:
+    errors.append('Offers v5 rollback evidence drift')
 
 if deployment.get('action') != 'offer.create_from_calculation':
     errors.append('Canonical offer action drift')
@@ -119,6 +123,9 @@ contract_markers = [
     "'idempotency_key'",
     "'calculation_id'",
     "'valid_until'",
+    "'include_client_details'",
+    'include_client_details must be a boolean or null',
+    'payload.include_client_details === true',
     'hasOnlyFields(request, REQUEST_FIELDS)',
     'hasOnlyFields(payload, PAYLOAD_FIELDS)',
 ]
@@ -128,6 +135,8 @@ for marker in contract_markers:
 
 for marker in (
     'offer permission and staging ref are canonical',
+    'valid offer request is minimized and anonymous by default',
+    'privacy flag type fails closed',
     'browser actor and server fields are rejected',
     'unknown action and response statuses are stable',
 ):
@@ -135,10 +144,11 @@ for marker in (
         errors.append(f'Missing offers unit-test marker: {marker}')
 
 for marker in (
-    'leader-crm-offers v5',
+    'leader-crm-offers v6',
     'offers.write',
-    'b20ffa86',
-    'typed',
+    'c84c442f',
+    'include_client_details',
+    'default `false`',
     'Production boundary',
     'production Edge deploy',
     'rollback',
@@ -157,7 +167,7 @@ for marker in (
 production_candidates = []
 for path in (root / 'supabase/migrations').glob('*.sql'):
     lowered = path.name.lower()
-    if 'offers_edge' in lowered or 'crm_offers' in lowered:
+    if 'offers_edge' in lowered or 'crm_offers' in lowered or 'offer_client_privacy' in lowered:
         production_candidates.append(path.name)
 if production_candidates:
     errors.append('Staging offers artifacts appeared in production migrations: ' + ', '.join(production_candidates))
@@ -166,4 +176,4 @@ if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('CRM staging offers Edge v5 source, typed headers, canonical permission and deployment contract are synchronized.')
+print('CRM staging offers Edge v6, anonymous-by-default privacy, canonical permission and deployment contract are synchronized.')

@@ -1,4 +1,4 @@
-# Supabase staging offers Edge v5
+# Supabase staging offers Edge v6
 
 ## Назначение
 
@@ -8,10 +8,10 @@
 
 - environment: `staging`;
 - project ref: `otulfnouybahfnsycxqn`;
-- function: `leader-crm-offers v5`;
+- function: `leader-crm-offers v6`;
 - status: `ACTIVE`;
 - `verify_jwt=true`;
-- deployed SHA-256: `b20ffa860121826b265bc01bda3757277573a2e87a2604c0c4764bf4add627a7`.
+- deployed SHA-256: `c84c442fefadebca33de08f480e85d852d0b1a4bbf5e871e8992adbe004329e6`.
 
 ## Контракт действия
 
@@ -30,16 +30,17 @@
 
 Роль из browser payload не принимается. Unknown action, лишние поля, отсутствующие idempotency/concurrency данные и недопустимые даты отклоняются до бизнес-записи.
 
-## Изменение v5
+## Изменение v6
 
-Runtime-логика прав и бизнес-RPC не менялась. `adminFetch` переведён на стандартный `Headers`:
+Добавлен явный privacy-флаг `include_client_details`:
 
-- заголовки имеют однозначный тип для Deno;
-- legacy JWT service key получает `Authorization: Bearer ...`;
-- modern secret key используется как `apikey` без ошибочного JWT-предположения;
-- входные headers безопасно сохраняются через `new Headers(init.headers || {})`.
+- отсутствующий флаг нормализуется в `false`;
+- `false` — новое КП не содержит имени и телефона клиента;
+- `true` — имя и телефон добавляются только по явному решению сотрудника;
+- флаг входит в normalized payload и idempotency hash, поэтому запросы с разным режимом приватности не считаются одинаковыми;
+- unknown/server-owned поля по-прежнему отклоняются.
 
-Эта правка позволила включить строгий `deno check` для фактически развёрнутого offer source.
+Runtime-логика canonical permission не менялась. `adminFetch` по-прежнему использует typed `Headers`, поддерживает legacy JWT service key и modern secret key.
 
 ## Данные и устойчивость
 
@@ -51,7 +52,8 @@ Runtime-логика прав и бизнес-RPC не менялась. `adminF
 - `idempotency_key`;
 - заголовок КП;
 - дату действия КП;
-- необязательный дополнительный комментарий.
+- необязательный дополнительный комментарий;
+- необязательный boolean `include_client_details`, default `false`.
 
 Тоталы и связанные сущности вычисляются и проверяются сервером. Успешный idempotent replay возвращает HTTP 200, новая запись — HTTP 201.
 
@@ -69,17 +71,19 @@ Checker контролирует action/permission, порядок JWT → valid
 
 Management API показал:
 
-- `leader-crm-offers v5` ACTIVE;
+- `leader-crm-offers v6` ACTIVE;
 - `verify_jwt=true`;
-- SHA начинается с `b20ffa86`;
+- SHA начинается с `c84c442f`;
 - функция использует canonical `offers.write`;
 - browser-supplied role отсутствует.
 
+Транзакционный staging privacy-test подтвердил оба режима и завершился rollback. После проверки synthetic leads/calculations/offers/receipts/profiles = 0.
+
 ## Rollback
 
-Version 4 с SHA `25b2ff8b11ede3351f95c8f29315b5e43230e5cea153526f75039dc8ff99455e` остаётся валидным rollback. Он использует ту же canonical authorization и business RPC; отличие только в способе построения admin headers.
+Version 5 с SHA `b20ffa860121826b265bc01bda3757277573a2e87a2604c0c4764bf4add627a7` остаётся валидным rollback Edge bundle.
 
-Rollback не требует DDL, изменения grants или очистки бизнес-данных.
+Rollback Edge не требует изменения таблиц. Privacy-совместимость RPC сохраняет старый payload без `include_client_details`, нормализуя его в `false`.
 
 ## Production boundary
 

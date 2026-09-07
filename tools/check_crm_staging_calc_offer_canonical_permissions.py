@@ -69,8 +69,19 @@ require('offer_index', (
 ))
 forbid('offer_index', ('canWriteOffer', 'OFFER_WRITE_ROLES', 'leader_user_profiles?user_id=', 'activeProfile('))
 forbid('offer_contract', ('canWriteOffer', 'OFFER_WRITE_ROLES', 'normalizeRole'))
-require('offer_contract', ("OFFER_PERMISSION = 'offers.write'", f"STAGING_PROJECT_REF = '{STAGING}'"))
-require('offer_test', ('offer permission and staging ref are canonical', 'browser actor and server fields are rejected'))
+require('offer_contract', (
+    "OFFER_PERMISSION = 'offers.write'",
+    f"STAGING_PROJECT_REF = '{STAGING}'",
+    "'include_client_details'",
+    'include_client_details must be a boolean or null',
+    'payload.include_client_details === true',
+))
+require('offer_test', (
+    'offer permission and staging ref are canonical',
+    'valid offer request is minimized and anonymous by default',
+    'privacy flag type fails closed',
+    'browser actor and server fields are rejected',
+))
 
 for name, auth_marker, validation_marker, permission_marker, rpc_marker in (
     ('calc_index', 'const checked = await authenticatedUser', 'const validation = validateCalculationRequest', 'const permissionResult = await canonicalPermission', "'/rest/v1/rpc/leader_create_calculation_version_rpc'"),
@@ -101,7 +112,7 @@ if db_auth.get('browser_role_parameter') is not False:
 
 expected = {
     'leader-crm-calculations': (5, 'calculations.write', '4cd0bde123d6f6c052e0c5337ca01f17a0f76edfb5adf2eed1975e25e39357a4'),
-    'leader-crm-offers': (5, 'offers.write', 'b20ffa860121826b265bc01bda3757277573a2e87a2604c0c4764bf4add627a7'),
+    'leader-crm-offers': (6, 'offers.write', 'c84c442fefadebca33de08f480e85d852d0b1a4bbf5e871e8992adbe004329e6'),
 }
 for slug, (version, permission, sha256) in expected.items():
     function = deployment.get('functions', {}).get(slug, {})
@@ -118,12 +129,16 @@ if calc_server.get('authorization', {}).get('database_permission_rpc') != 'publi
     errors.append('Calculation server permission bridge drift')
 if calc_server.get('authorization', {}).get('local_role_allowlist') is not False:
     errors.append('Calculation local allowlist returned')
-if offer_deployment.get('function', {}).get('version') != 5:
+if offer_deployment.get('function', {}).get('version') != 6:
     errors.append('Offer deployment version drift')
 if offer_deployment.get('function', {}).get('sha256') != expected['leader-crm-offers'][2]:
     errors.append('Offer deployment hash drift')
 if offer_deployment.get('typed_headers') is not True:
     errors.append('Offer typed headers evidence missing')
+if offer_deployment.get('client_details_default') is not False:
+    errors.append('Offer privacy default drift')
+if offer_deployment.get('client_details_in_idempotency_hash') is not True:
+    errors.append('Offer privacy idempotency evidence missing')
 
 production = deployment.get('production', {})
 if production.get('project_ref') != PRODUCTION:
@@ -134,9 +149,12 @@ for field in ('edge_deployed', 'database_mutated', 'auth_mutated'):
 
 require('doc', (
     'active version: `5`',
+    'active version: `6`',
     '4cd0bde123d6f6c052e0c5337ca01f17a0f76edfb5adf2eed1975e25e39357a4',
-    'b20ffa860121826b265bc01bda3757277573a2e87a2604c0c4764bf4add627a7',
-    'synthetic profiles = 0',
+    'c84c442fefadebca33de08f480e85d852d0b1a4bbf5e871e8992adbe004329e6',
+    'include_client_details',
+    'default `false`',
+    'synthetic profiles/leads/calculations/offers/receipts после проверки = 0',
     'Production rollout требует отдельного explicit approval',
 ))
 require('workflow', (
@@ -151,11 +169,11 @@ if PRODUCTION in texts['calc_index'] or PRODUCTION in texts['calc_contract'] or 
     errors.append('Staging source references production project')
 for path in (ROOT / 'supabase/migrations').glob('*.sql'):
     lowered = path.name.lower()
-    if 'calc_offer' in lowered or 'canonical_permissions' in lowered:
+    if 'calc_offer' in lowered or 'canonical_permissions' in lowered or 'offer_client_privacy' in lowered:
         errors.append(f'Staging rollout leaked into production migrations: {path.name}')
 
 if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('Staging calculations and offers use canonical database permissions, typed offer headers, exact JWT deployments and production remains locked.')
+print('Staging calculations and offers use canonical database permissions; offer v6 is anonymous by default and production remains locked.')
