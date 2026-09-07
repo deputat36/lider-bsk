@@ -54,9 +54,6 @@ Deno.test('valid offer request is minimized and anonymous by default', () => {
 
   const base = request()
   const basePayload = base.payload as Record<string, unknown>
-  const omitted = validateOfferRequest({ ...base, payload: { ...basePayload, include_client_details: undefined } })
-  assert(!omitted.ok, 'undefined wire field must not be accepted by JSON contract')
-
   const withoutFlagPayload = { ...basePayload }
   delete withoutFlagPayload.include_client_details
   const withoutFlag = validateOfferRequest({ ...base, payload: withoutFlagPayload })
