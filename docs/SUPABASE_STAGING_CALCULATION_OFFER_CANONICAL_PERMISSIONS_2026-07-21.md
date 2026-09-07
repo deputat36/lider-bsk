@@ -1,10 +1,10 @@
 # Canonical permissions для staging расчётов и КП
 
-Дата: 21 июля 2026 года.
+Дата: 21 июля 2026 года. Актуализация КП: 7 сентября 2026 года.
 
 ## Причина
 
-Расчёты и коммерческие предложения уже имели JWT-защиту, staging environment guard, строгую валидацию, idempotency и transactional RPC. Локальный список разрешённых ролей создавал второй источник истины рядом с единой SQL-матрицей CRM.
+Расчёты и коммерческие предложения используют JWT-защиту, staging environment guard, строгую валидацию, idempotency и transactional RPC. Локальный список разрешённых ролей не используется: источник истины — единая SQL-матрица CRM.
 
 ## Решение
 
@@ -36,23 +36,29 @@ Browser role/permissions не принимаются. Unknown role/action и ina
 - permission: `calculations.write`;
 - business RPC: `leader_create_calculation_version_rpc`.
 
-Удалены `CALCULATION_WRITE_ROLES`, `canWriteCalculation` и direct profile lookup для authorization. Payload validation, immutable versions, server totals, locks, idempotency и safe response не менялись.
-
-Version 4 остаётся допустимым быстрым rollback.
+Payload validation, immutable versions, server totals, locks, idempotency и safe response не менялись.
 
 ## Коммерческие предложения
 
 - function: `leader-crm-offers`;
-- active version: `5`;
+- active version: `6`;
 - status: `ACTIVE`;
-- SHA: `b20ffa860121826b265bc01bda3757277573a2e87a2604c0c4764bf4add627a7`;
+- SHA: `c84c442fefadebca33de08f480e85d852d0b1a4bbf5e871e8992adbe004329e6`;
 - action: `offer.create_from_calculation`;
 - permission: `offers.write`;
 - business RPC: `leader_create_offer_from_calculation_rpc`.
 
-Локального role allowlist нет. `adminFetch` использует typed `Headers`, корректно поддерживая legacy JWT service key и modern secret key. Validation, snapshot, concurrency и idempotency не менялись.
+Локального role allowlist нет. `adminFetch` использует typed `Headers`, корректно поддерживая legacy JWT service key и modern secret key.
 
-Version 4 остаётся допустимым быстрым rollback.
+В v6 добавлен `include_client_details`:
+
+- default `false`;
+- имя и телефон клиента не включаются без явного выбора сотрудника;
+- `true` включает персонализацию;
+- privacy-флаг участвует в idempotency hash;
+- старый payload без флага остаётся валиден и трактуется как `false`.
+
+Version 5 остаётся допустимым быстрым Edge rollback.
 
 ## Матрица
 
@@ -62,8 +68,6 @@ Version 4 остаётся допустимым быстрым rollback.
 - accountant/designer/installer/contractor — запрещено;
 - inactive owner — запрещён;
 - unknown role — запрещена.
-
-Тест выполнен внутри транзакции; synthetic profiles = 0 после rollback.
 
 ## Grants
 
@@ -77,11 +81,13 @@ Version 4 остаётся допустимым быстрым rollback.
 - permission до business RPC;
 - exact actions, permissions, versions и hashes;
 - calculation/offer unit tests;
+- privacy default false и strict boolean validation;
+- idempotency conflict при смене privacy mode под тем же ключом;
 - typed Headers;
 - production migration boundary;
 - advisors.
 
-Authenticated HTTP E2E не выполнялся: тестовый Auth user не создавался. SQL и unit tests не подменяют user-JWT smoke test.
+Транзакционный staging privacy-test выполнен с rollback; synthetic profiles/leads/calculations/offers/receipts после проверки = 0.
 
 ## Production boundary
 
