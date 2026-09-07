@@ -1,3 +1,4 @@
+# One-shot workflow; remove after successful finalization.
 name: Apply issue 516 offer privacy UX finalizer once
 
 on:
