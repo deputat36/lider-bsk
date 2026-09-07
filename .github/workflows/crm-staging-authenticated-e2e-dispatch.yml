@@ -2,7 +2,7 @@ name: CRM staging authenticated E2E dispatch
 
 on:
   push:
-    branches: [agent/506-calculation-price-controls-v1, agent/508-catalog-source-authority-v1]
+    branches: [agent/506-calculation-price-controls-v1, agent/508-catalog-source-authority-v1, agent/510-offer-print-privacy-v1]
   workflow_dispatch:
 
 permissions:
