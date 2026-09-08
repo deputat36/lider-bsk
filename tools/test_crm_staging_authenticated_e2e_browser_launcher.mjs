@@ -25,6 +25,7 @@ assert.ok(plan.args.includes('/usr/bin/google-chrome'));
 assert.ok(plan.args.includes('--disable-background-timer-throttling'));
 assert.ok(plan.args.includes('--disable-renderer-backgrounding'));
 assert.ok(plan.args.includes('--window-size=1366,900'));
+assert.ok(browserLaunchPlan({xvfbRun:'/usr/bin/xvfb-run',chrome:'/usr/bin/google-chrome',profileDir:'/tmp/profile',url:'http://127.0.0.1/',narrow:true}).args.includes('--window-size=500,844'));
 assert.ok(plan.args.includes('--user-data-dir=/tmp/leader-crm-e2e-profile'));
 assert.ok(plan.args.includes('http://127.0.0.1:43123/index.html?tab=leads'));
 assert.equal(plan.args.some((item) => String(item).startsWith('--headless')), false);
