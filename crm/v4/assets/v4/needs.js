@@ -13,6 +13,7 @@ import {
   needFingerprint,
   needFormPresentation
 } from './need-workspace-model-v1.js';
+import { needCalculationGateDecision } from './need-calculation-readiness-v1.js';
 
 const NEED_FIELDS = 'id,lead_id,client_id,need_type,title,description,structured_data,need_design,need_installation,design_reason,installation_reason,deadline_text,deadline_date,files,status,completeness_score,missing_fields,created_by,updated_by,created_at,updated_at';
 const NEED_ARCHIVE_DEPENDENCY_FIELDS = 'id,need_id,status,commercial_offer_id,order_id,is_current_revision,created_at';
@@ -21,6 +22,7 @@ const NEED_TYPES = ['Баннер', 'Вывеска', 'Пленка / накле
 let saveBusy = false;
 let needsLoadSequence = 0;
 const archiveBusy = new Set();
+let calculationGateNeedId = null;
 let workspace = {
   leadId: null,
   mode: 'create',
@@ -56,6 +58,7 @@ function createUuid() {
 function resetWorkspace(leadId, mode = 'loading') {
   saveBusy = false;
   archiveBusy.clear();
+  calculationGateNeedId = null;
   workspace = {
     leadId: leadId || null,
     mode,
@@ -144,6 +147,8 @@ function renderNeedCard(need, duplicateMeta = null) {
   const missing = Array.isArray(need.missing_fields) ? need.missing_fields : [];
   const canWrite = canPerformV4Action(CRM_V4_ACTIONS.NEEDS_WRITE);
   const canCalculate = canPerformV4Action(CRM_V4_ACTIONS.CALCULATIONS_WRITE);
+  const calculationDecision = needCalculationGateDecision(need);
+  const calculationGateOpen = calculationGateNeedId === need.id && calculationDecision.action === 'review';
   const duplicateClass = duplicateMeta ? ` is-duplicate ${duplicateMeta.isKeeper ? 'is-duplicate-keeper' : 'is-duplicate-extra'}` : '';
   const archiveLabel = duplicateMeta ? (duplicateMeta.isKeeper ? 'Проверить архивирование' : 'Архивировать дубль') : 'Архивировать';
   const duplicateNote = duplicateMeta
@@ -169,6 +174,15 @@ function renderNeedCard(need, duplicateMeta = null) {
         </div>
         ${data.installation_address ? `<div class="v4-need-note"><b>Адрес монтажа:</b> ${esc(data.installation_address)}</div>` : ''}
         ${missing.length ? `<div class="v4-need-missing">Не хватает: ${missing.map(esc).join(', ')}</div>` : ''}
+        ${calculationGateOpen ? `<div class="v4-need-missing" data-need-calculation-gate role="alert">
+          <b>Перед расчётом проверьте потребность</b>
+          <p>${esc(calculationDecision.readiness.message)}</p>
+          <div class="v4-need-actions">
+            ${canWrite ? '<button type="button" data-action="edit-need">Изменить потребность</button>' : ''}
+            <button type="button" class="v4-primary" data-action="calculate-need-anyway">Продолжить всё равно</button>
+            <button type="button" data-action="cancel-calculate-need">Отмена</button>
+          </div>
+        </div>` : ''}
       </div>
       <div class="v4-need-actions">
         ${canCalculate ? '<button type="button" class="v4-primary" data-action="calculate-need">Перейти к расчёту</button>' : ''}
@@ -593,13 +607,39 @@ function bindNeedsEvents() {
     }
 
     const edit = event.target.closest('button[data-action="edit-need"]');
-    if (edit) { const need = needFromAction(edit); if (need && requireV4Action(CRM_V4_ACTIONS.NEEDS_WRITE)) openNeedForm('edit', need); return; }
+    if (edit) { const need = needFromAction(edit); if (need && requireV4Action(CRM_V4_ACTIONS.NEEDS_WRITE)) { calculationGateNeedId = null; openNeedForm('edit', need); } return; }
     const copy = event.target.closest('button[data-action="copy-need"]');
     if (copy) { const need = needFromAction(copy); if (need && requireV4Action(CRM_V4_ACTIONS.NEEDS_WRITE)) openNeedForm('copy', need); return; }
+    const calculateAnyway = event.target.closest('button[data-action="calculate-need-anyway"]');
+    if (calculateAnyway) {
+      const need = needFromAction(calculateAnyway);
+      if (!need || !requireV4Action(CRM_V4_ACTIONS.CALCULATIONS_WRITE)) return;
+      const decision = needCalculationGateDecision(need, { continueAnyway: true });
+      if (decision.action !== 'calculate') return;
+      calculationGateNeedId = null;
+      renderNeeds();
+      document.dispatchEvent(new CustomEvent('leader-v4:calculate-need', { detail: { need, readinessOverride: true } }));
+      return;
+    }
+    const cancelCalculationGate = event.target.closest('button[data-action="cancel-calculate-need"]');
+    if (cancelCalculationGate) {
+      calculationGateNeedId = null;
+      renderNeeds();
+      return;
+    }
     const calculate = event.target.closest('button[data-action="calculate-need"]');
     if (calculate) {
       const need = needFromAction(calculate);
-      if (need && requireV4Action(CRM_V4_ACTIONS.CALCULATIONS_WRITE)) document.dispatchEvent(new CustomEvent('leader-v4:calculate-need', { detail: { need } }));
+      if (!need || !requireV4Action(CRM_V4_ACTIONS.CALCULATIONS_WRITE)) return;
+      const decision = needCalculationGateDecision(need);
+      if (decision.action === 'review') {
+        calculationGateNeedId = need.id;
+        renderNeeds();
+        requestAnimationFrame(() => document.querySelector(`[data-id="${need.id}"] [data-need-calculation-gate]`)?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' }));
+        return;
+      }
+      calculationGateNeedId = null;
+      document.dispatchEvent(new CustomEvent('leader-v4:calculate-need', { detail: { need } }));
       return;
     }
     const archive = event.target.closest('button[data-action="archive-need"]');
