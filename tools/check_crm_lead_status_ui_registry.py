@@ -78,7 +78,7 @@ checks = {
     html: [
         'lead-card.js?v=20260721-assignment-1',
         'lead-analytics-badges-v1.js?v=20260721-followup-1',
-        'styles.css?v=20260717-primary-action-1',
+        'styles.css?v=20260908-lead-workspace-1',
     ],
     test: [
         "unknownLeadStatuses([{ status: unknown }, { status: unknown }])",

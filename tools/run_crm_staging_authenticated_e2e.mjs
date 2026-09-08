@@ -153,6 +153,11 @@ async function assignLead(){
 
 async function createNeedAndCalculation(){
   progress('need_ui_wait');
+  assert(document.querySelector('.v4-lead-summary'),'lead_summary_missing');
+  assert(!document.getElementById('leadHistoryDetails').open,'history_not_collapsed');
+  for(const id of ['needsList','needFormBox','savedCalculationsBox','calculationsBox','offersBox','ordersBox','leadTimelineBox'])assert(document.querySelectorAll('#'+id).length===1,'workspace_duplicate_host:'+id);
+  if(!document.getElementById('leadNeedStage').open)click('#leadNeedStage > summary');
+  record('lead_workspace_summary_and_hosts');
   if(!document.getElementById('needForm')){const entry=await waitFor(()=>{const form=document.getElementById('needForm');if(form)return form;const node=document.querySelector('button[data-action="open-create-need"]');return document.body.dataset.v4Tab==='card'&&location.search.includes('lead='+R.leadId)&&node&&node.isConnected&&!node.disabled?node:false;},'need_create_entry_missing',45000);if(entry?.id!=='needForm'&&!document.getElementById('needForm'))click('button[data-action="open-create-need"]');}
   await waitFor(()=>document.getElementById('needForm'),'need_form_missing');
   setValue('#needTitle',R.marker+' need');setValue('#needDescription',R.marker+' synthetic brief');setValue('#needWidth','2');setValue('#needHeight','1');setValue('#needQuantity','1');setValue('#needMaterial','');setValue('#needDeadline','Synthetic deadline '+R.marker);setChecked('#needDesign');setValue('#needDesignReason',R.marker+' synthetic design');setChecked('#needInstallation');setValue('#needInstallAddress',R.marker+' synthetic address');setValue('#needInstallationReason',R.marker+' synthetic installation');click('#saveNeedBtn');
@@ -175,6 +180,8 @@ async function createNeedAndCalculation(){
   const afterGate=await one('leader_lead_needs','updated_at,missing_fields',{id:need.id});
   assert(afterGate.updated_at===need.updated_at&&JSON.stringify(afterGate.missing_fields)===JSON.stringify(need.missing_fields),'readiness_gate_mutated_need');
   record('readiness_cancel_edit_continue_without_mutation');
+  assert(document.getElementById('leadCalculationStage').open,'calculation_stage_not_revealed');
+  assert(document.getElementById('calculationsBox').getClientRects().length>0,'calculation_stage_hidden');
   await waitFor(()=>document.querySelector('[data-calc-mode="custom"]')&&document.getElementById('calcTitle'),'calculation_builder_missing');
   click('[data-calc-mode="catalog"]');
   await waitFor(()=>document.getElementById('calcReloadCatalogBtn')&&!document.getElementById('calcReloadCatalogBtn').disabled,'empty_catalog_not_ready');
@@ -214,6 +221,9 @@ async function createNeedAndCalculation(){
 }
 
 async function createOfferAndOrder(){
+  if(!document.getElementById('leadOfferStage').open)click('#leadOfferStage > summary');
+  assert(document.getElementById('offersBox').getClientRects().length>0,'offer_stage_hidden');
+  record('lead_workspace_offer_disclosure');
   await waitFor(()=>document.querySelector('#offerCalculationId option[value="'+ids.calculation+'"]'),'offer_version_option_missing');setValue('#offerCalculationId',ids.calculation,'change');
   await waitFor(()=>document.getElementById('createOfferBtn')&&!document.getElementById('createOfferBtn').disabled,'offer_create_entry_missing');setValue('#offerTitle',R.marker+' offer');setValue('#offerExtraComment',R.marker+' synthetic terms');click('#createOfferBtn');
   const offer=await waitFor(async()=>{try{const rows=await table('leader_commercial_offers','id,lead_id,calculation_id,title,status,total_sum,updated_at',{lead_id:R.leadId});return rows.length===1?rows[0]:false;}catch(_){return false;}},'offer_create_timeout',45000);ids.offer=offer.id;assert(Number(offer.total_sum)===1700&&offer.calculation_id===ids.calculation,'offer_total_projection_failed');record('offer_create');
