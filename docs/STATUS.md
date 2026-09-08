@@ -505,3 +505,8 @@ Supabase baseline РА «Лидер»: `docs/SUPABASE_RA_LIDER_BASELINE_2026-06-
 ## 2026-09-07 — #512: размеры существующей потребности
 
 Cloud Browser воспроизвёл пустые размеры после «Перейти к расчёту» для существующего баннера 3×2. Read-only production SELECT подтвердил width_m/height_m в structured_data. Тот же need-calculation-prefill-v1.js теперь поддерживает метрические legacy-поля, сохраняя приоритет заполненных width/height. Данные не мигрируются; callback и backend routes прежние. Regression покрывает legacy, mixed, пустые значения, десятичную запятую и приоритет явного нуля. Изменение чистой функции не создаёт fixtures; новый authenticated E2E не запускался. После публикации требуется повторить read-only переход на той же карточке.
+
+
+## 2026-09-08 — #518: проверка мягкого перехода к расчёту
+
+PR #519 продолжен от фактического head 5b464baded49d96d4f349d3f6e86d0546496ad22. Authenticated staging browser scenario расширен: неполная потребность, показ предупреждения, отмена, переход в редактор без сохранения, продолжение расчёта и проверка неизменности updated_at/missing_fields. Используется прежний E2E cleanup всех fixtures/Auth; результат ещё ожидается. Production Supabase только read-only; новые backend routes не включаются.
