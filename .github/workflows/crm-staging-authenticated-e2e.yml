@@ -16,6 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
+      STAGING_CRM_E2E_NARROW: ${{ github.ref == 'refs/heads/agent/520-lead-workspace-v1' }}
       STAGING_SUPABASE_URL: https://otulfnouybahfnsycxqn.supabase.co
       STAGING_SUPABASE_PUBLISHABLE_KEY: sb_publishable_iRCLPHgRaI5SNo9h4efMQw_W7Kdby1D
       BOOTSTRAP_URL: https://otulfnouybahfnsycxqn.supabase.co/functions/v1/leader-staging-authenticated-e2e-bootstrap

@@ -153,6 +153,13 @@ async function assignLead(){
 
 async function createNeedAndCalculation(){
   progress('need_ui_wait');
+  assert(document.querySelector('.v4-lead-summary'),'lead_summary_missing');
+  assert(!document.getElementById('leadHistoryDetails').open,'history_not_collapsed');
+  for(const id of ['needsList','needFormBox','savedCalculationsBox','calculationsBox','offersBox','ordersBox','leadTimelineBox'])assert(document.querySelectorAll('#'+id).length===1,'workspace_duplicate_host:'+id);
+  if(!document.getElementById('leadNeedStage').open)click('#leadNeedStage > summary');
+  const summaryRect=document.querySelector('.v4-lead-summary').getBoundingClientRect();
+  assert(summaryRect.left>=0&&summaryRect.right<=innerWidth+1,'lead_summary_horizontal_overflow');
+  record('lead_workspace_summary_and_hosts',{viewport_width:innerWidth,summary_width:Math.round(summaryRect.width),narrow:innerWidth<=640});
   if(!document.getElementById('needForm')){const entry=await waitFor(()=>{const form=document.getElementById('needForm');if(form)return form;const node=document.querySelector('button[data-action="open-create-need"]');return document.body.dataset.v4Tab==='card'&&location.search.includes('lead='+R.leadId)&&node&&node.isConnected&&!node.disabled?node:false;},'need_create_entry_missing',45000);if(entry?.id!=='needForm'&&!document.getElementById('needForm'))click('button[data-action="open-create-need"]');}
   await waitFor(()=>document.getElementById('needForm'),'need_form_missing');
   setValue('#needTitle',R.marker+' need');setValue('#needDescription',R.marker+' synthetic brief');setValue('#needWidth','2');setValue('#needHeight','1');setValue('#needQuantity','1');setValue('#needMaterial','');setValue('#needDeadline','Synthetic deadline '+R.marker);setChecked('#needDesign');setValue('#needDesignReason',R.marker+' synthetic design');setChecked('#needInstallation');setValue('#needInstallAddress',R.marker+' synthetic address');setValue('#needInstallationReason',R.marker+' synthetic installation');click('#saveNeedBtn');
@@ -175,6 +182,8 @@ async function createNeedAndCalculation(){
   const afterGate=await one('leader_lead_needs','updated_at,missing_fields',{id:need.id});
   assert(afterGate.updated_at===need.updated_at&&JSON.stringify(afterGate.missing_fields)===JSON.stringify(need.missing_fields),'readiness_gate_mutated_need');
   record('readiness_cancel_edit_continue_without_mutation');
+  assert(document.getElementById('leadCalculationStage').open,'calculation_stage_not_revealed');
+  assert(document.getElementById('calculationsBox').getClientRects().length>0,'calculation_stage_hidden');
   await waitFor(()=>document.querySelector('[data-calc-mode="custom"]')&&document.getElementById('calcTitle'),'calculation_builder_missing');
   click('[data-calc-mode="catalog"]');
   await waitFor(()=>document.getElementById('calcReloadCatalogBtn')&&!document.getElementById('calcReloadCatalogBtn').disabled,'empty_catalog_not_ready');
@@ -214,6 +223,9 @@ async function createNeedAndCalculation(){
 }
 
 async function createOfferAndOrder(){
+  if(!document.getElementById('leadOfferStage').open)click('#leadOfferStage > summary');
+  assert(document.getElementById('offersBox').getClientRects().length>0,'offer_stage_hidden');
+  record('lead_workspace_offer_disclosure');
   await waitFor(()=>document.querySelector('#offerCalculationId option[value="'+ids.calculation+'"]'),'offer_version_option_missing');setValue('#offerCalculationId',ids.calculation,'change');
   await waitFor(()=>document.getElementById('createOfferBtn')&&!document.getElementById('createOfferBtn').disabled,'offer_create_entry_missing');setValue('#offerTitle',R.marker+' offer');setValue('#offerExtraComment',R.marker+' synthetic terms');click('#createOfferBtn');
   const offer=await waitFor(async()=>{try{const rows=await table('leader_commercial_offers','id,lead_id,calculation_id,title,status,total_sum,updated_at',{lead_id:R.leadId});return rows.length===1?rows[0]:false;}catch(_){return false;}},'offer_create_timeout',45000);ids.offer=offer.id;assert(Number(offer.total_sum)===1700&&offer.calculation_id===ids.calculation,'offer_total_projection_failed');record('offer_create');
@@ -430,7 +442,7 @@ async function findXvfbRun() {
   }
   throw new Error('xvfb_run_not_found');
 }
-export function browserLaunchPlan({ xvfbRun, chrome, profileDir, url } = {}) {
+export function browserLaunchPlan({ xvfbRun, chrome, profileDir, url, narrow = false } = {}) {
   if (!text(xvfbRun) || !text(chrome) || !text(profileDir) || !text(url)) throw new Error('browser_launch_input_invalid');
   return Object.freeze({
     binary: xvfbRun,
@@ -452,7 +464,7 @@ export function browserLaunchPlan({ xvfbRun, chrome, profileDir, url } = {}) {
       '--disable-backgrounding-occluded-windows',
       '--disable-renderer-backgrounding',
       '--disable-dev-shm-usage',
-      '--window-size=1366,900',
+      narrow ? '--window-size=500,844' : '--window-size=1366,900',
       `--user-data-dir=${profileDir}`,
       url
     ])
@@ -521,14 +533,14 @@ async function run(env = process.env, roleUi = '') {
 
     if (roleUi) {
       const local = await localServer(tempV4); server = local.server;
-      const launch = browserLaunchPlan({ xvfbRun, chrome, profileDir: path.join(tempRoot, 'chrome-profile-role'), url: local.url });
+      const launch = browserLaunchPlan({ xvfbRun, chrome, profileDir: path.join(tempRoot, 'chrome-profile-role'), url: local.url, narrow: env.STAGING_CRM_E2E_NARROW === 'true' });
       const chromeResult = await runChrome(launch.binary, launch.args, local.resultPromise, local.getProgressState);
       const evidence = sanitize(JSON.parse(chromeResult.evidenceBody)); if (evidence.status !== 'passed') { await mkdir(path.dirname(path.resolve(config.evidencePath)), { recursive: true }); await writeFile(path.resolve(config.evidencePath), JSON.stringify(evidence, null, 2), { mode: 0o600 }); throw new Error(`browser_e2e_failed:${evidence.error || 'unknown'}`); }
       const target = path.resolve(config.evidencePath); await mkdir(path.dirname(target), { recursive: true }); await writeFile(target, `${JSON.stringify(evidence, null, 2)}\n`, { mode: 0o600 }); return { evidence, target };
     }
 
     const local = await localServer(tempV4); server = local.server;
-    const launch = browserLaunchPlan({ xvfbRun, chrome, profileDir: path.join(tempRoot, 'chrome-profile-manager'), url: local.url });
+    const launch = browserLaunchPlan({ xvfbRun, chrome, profileDir: path.join(tempRoot, 'chrome-profile-manager'), url: local.url, narrow: env.STAGING_CRM_E2E_NARROW === 'true' });
     const chromeResult = await runChrome(launch.binary, launch.args, local.resultPromise, local.getProgressState);
     const evidence = sanitize(JSON.parse(chromeResult.evidenceBody)); if (evidence.status !== 'passed') { await mkdir(path.dirname(path.resolve(config.evidencePath)), { recursive: true }); await writeFile(path.resolve(config.evidencePath), JSON.stringify(evidence, null, 2), { mode: 0o600 }); throw new Error(`browser_e2e_failed:${evidence.error || 'unknown'}`); }
     await waitForWorkflowRpc(local.getWorkflowRpcState);

@@ -113,6 +113,7 @@ function scheduleRender() {
 
 function highlight(target) {
   if (!target) return;
+  for (let node = target; node; node = node.parentElement) { if (node.tagName === 'DETAILS') node.open = true; }
   target.classList.add('is-readiness-target');
   target.scrollIntoView({ behavior: 'smooth', block: 'center' });
   setTimeout(() => target.classList.remove('is-readiness-target'), 2400);
@@ -127,14 +128,14 @@ function runAction(button) {
   const needId = button.dataset.needReadinessNeedId || '';
   if (action === 'focus_need_select') {
     const select = document.getElementById('calcNeedId');
-    select?.focus();
     highlight(select?.closest('label') || select);
+    select?.focus();
     return;
   }
   if (action === 'focus_calculation_select') {
     const select = document.getElementById('offerCalculationId');
-    select?.focus();
     highlight(select?.closest('label') || select);
+    select?.focus();
     return;
   }
   if (action === 'open_calculations') {

@@ -1,6 +1,6 @@
 import { supabaseClient } from './supabase-client.js';
 import { timeout, friendlyError } from './api.js';
-import { v4State, setState, setRoute } from './state.js';
+import { v4State, setState, setRoute, subscribeState } from './state.js';
 import { byId, setStatus, toast } from './ui.js';
 import { clearLeadUrl } from './router.js';
 import { readCrmLeadRoute } from './crm-navigation-route-v1.js';
@@ -103,13 +103,33 @@ function nextContactDate(kind) {
   return date;
 }
 
+
+function updateStageCounts() {
+  const lead = v4State.currentLead;
+  if (!lead || lead.id !== v4State.route.leadId) return;
+  const own = (rows) => (rows || []).filter((row) => row.lead_id === lead.id && row.status !== 'Архив');
+  const needs = own(v4State.leadNeeds), calculations = own(v4State.calculations), offers = own(v4State.offers);
+  const orderIds = new Set([lead.converted_order_id, ...calculations.map((row) => row.order_id), ...offers.map((row) => row.order_id)].filter(Boolean));
+  const labels = {
+    need: v4State.leadNeedsBusy ? 'Загрузка…' : v4State.leadNeedsError ? 'Не загрузилась — откройте' : needs.length ? `Потребностей: ${needs.length}` : 'Пока нет',
+    calculation: v4State.calculationsBusy ? 'Загрузка…' : v4State.calculationsError ? 'Не загрузился — откройте' : calculations.length ? `Сохранённых версий: ${calculations.length}` : 'Пока нет',
+    offer: v4State.offersBusy ? 'Загрузка…' : v4State.offersError ? 'Не загрузилось — откройте' : offers.length ? `Предложений: ${offers.length}` : 'Пока нет',
+    order: orderIds.size ? `Связанных заказов: ${orderIds.size}` : 'Пока нет связи'
+  };
+  for (const [key, value] of Object.entries(labels)) {
+    const node = document.querySelector(`[data-lead-stage-count="${key}"]`);
+    if (node && node.textContent !== value) node.textContent = value;
+  }
+}
+
 function renderLeadDetails(lead) {
   const phone = phoneHref(lead.phone);
   const nextContactValue = formatInputDateTime(lead.next_contact_at);
   const contactState = nextContactState(lead);
   const responsibility = leadResponsibilityState(lead, assignmentContext());
   const contactOpen = currentPrimaryAction(lead).type === 'focus_contact' ? ' open' : '';
-  const firstContactOpen = lead.last_contact_at ? '' : ' open';
+  const firstContactOpen = '';
+  const stage = lead.converted_order_id ? 'order' : ['Согласовано', 'КП отправлено', 'Ждём ответ'].includes(lead.status) ? 'offer' : ['Расчёт подготовлен', 'Нужно пересчитать'].includes(lead.status) ? 'calculation' : 'need';
   const firstContactDraft = buildFirstContactDraft(lead);
   return `
     <div class="v4-lead-card-view">
@@ -126,6 +146,15 @@ function renderLeadDetails(lead) {
         </div>
       </div>
 
+      <dl class="v4-lead-summary" aria-label="Кратко о заявке">
+        <div><dt>Этап</dt><dd>${esc(lead.status || 'Новая')}</dd></div>
+        <div><dt>Ответственный</dt><dd data-lead-responsibility="${esc(responsibility.key)}">${esc(responsibility.label)}</dd></div>
+        <div><dt>Следующий контакт</dt><dd class="${contactState.className}">${esc(contactState.text)}${lead.next_contact_at ? ` · ${formatDate(lead.next_contact_at)}` : ''}</dd></div>
+      </dl>
+      <section class="v4-client-task" aria-label="Задача клиента"><h3>Что нужно клиенту</h3>
+        <p>${esc((lead.message || lead.service || 'Уточните задачу при первом контакте.').slice(0, 260))}${(lead.message || '').length > 260 ? '…' : ''}</p>
+        ${(lead.message || '').length > 260 ? `<details><summary>Сообщение полностью</summary><p>${esc(lead.message)}</p></details>` : ''}
+      </section>
       <section class="v4-subcard v4-action-panel">
         <div id="leadPrimaryActionHost" class="v4-primary-action" aria-live="polite">${primaryActionMarkup(lead)}</div>
         <details id="leadFirstContactDetails" class="v4-first-contact-box"${firstContactOpen}>
@@ -165,17 +194,8 @@ function renderLeadDetails(lead) {
         </details>
       </section>
 
-      <div class="v4-detail-grid">
-        <div><dt>Статус</dt><dd>${esc(lead.status || 'Новая')}</dd></div>
-        <div><dt>Ответственный</dt><dd data-lead-responsibility="${esc(responsibility.key)}">${esc(responsibility.label)}</dd></div>
-        <div><dt>Телефон</dt><dd>${esc(lead.phone || '—')}</dd></div>
-        <div><dt>Бюджет</dt><dd>${money(lead.budget || lead.estimated_amount)}</dd></div>
-        <div><dt>Дата заявки</dt><dd>${formatDate(lead.created_at)}</dd></div>
-        <div><dt>Следующий контакт</dt><dd>${formatDate(lead.next_contact_at)}</dd></div>
-      </div>
-
-      <section class="v4-subcard"><h3>Сообщение клиента</h3><p>${esc(lead.message || 'Сообщение не заполнено.')}</p></section>
-
+      <details id="leadNeedStage" class="v4-work-stage"${stage === 'need' ? ' open' : ''}>
+        <summary><span>1. Потребность</span><small data-lead-stage-count="need">Загрузка…</small></summary>
       <section class="v4-subcard v4-needs-section">
         <div class="v4-subcard-head">
           <div><h3>Потребности клиента</h3><p>Зафиксируйте, что именно нужно клиенту: размеры, материал, сроки, монтаж, дизайн и особые условия.</p></div>
@@ -188,13 +208,31 @@ function renderLeadDetails(lead) {
         <div id="needFormBox"></div>
       </section>
 
+      </details>
+      <details id="leadCalculationStage" class="v4-work-stage"${stage === 'calculation' ? ' open' : ''}>
+        <summary><span>2. Расчёт</span><small data-lead-stage-count="calculation">Загрузка…</small></summary>
       <section id="savedCalculationsBox" class="v4-calculations-host"><div class="v4-empty">Сохранённые расчёты загрузятся после открытия карточки.</div></section>
       <section id="calculationsBox" class="v4-calculations-host"><div class="v4-empty">Конструктор расчёта загрузится после открытия карточки.</div></section>
+      </details>
+      <details id="leadOfferStage" class="v4-work-stage"${stage === 'offer' ? ' open' : ''}>
+        <summary><span>3. КП</span><small data-lead-stage-count="offer">Загрузка…</small></summary>
       <section id="offersBox" class="v4-offers-host"><div class="v4-empty">Коммерческие предложения загрузятся после открытия карточки.</div></section>
 
+      </details>
+      <details id="leadOrderStage" class="v4-work-stage"${stage === 'order' ? ' open' : ''}>
+        <summary><span>4. Заказ</span><small data-lead-stage-count="order">Проверка связи…</small></summary>
+        <section id="ordersBox" class="v4-orders-host"></section>
+      </details>
+      <details id="leadHistoryDetails" class="v4-work-stage">
+        <summary>История и комментарии</summary>
+        <section id="leadTimelineBox" class="v4-subcard v4-lead-timeline-section"></section>
+      </details>
       <details class="v4-subcard v4-source-details">
         <summary>Источник обращения и дополнительные сведения</summary>
         <dl class="v4-detail-grid">
+          <div><dt>Телефон</dt><dd>${esc(lead.phone || '—')}</dd></div>
+          <div><dt>Бюджет</dt><dd>${money(lead.budget || lead.estimated_amount)}</dd></div>
+          <div><dt>Дата заявки</dt><dd>${formatDate(lead.created_at)}</dd></div>
           <div><dt>Источник</dt><dd>${esc(lead.source || '—')}</dd></div>
           <div><dt>Предпочтительная связь</dt><dd>${esc(lead.contact_preference || 'MAX / телефон')}</dd></div>
           <div><dt>Город</dt><dd>${esc(lead.city || '—')}</dd></div>
@@ -243,6 +281,7 @@ function renderLead(lead) {
   if (!box) return;
   box.innerHTML = renderLeadDetails(lead);
   showLeadCard();
+  updateStageCounts();
   document.dispatchEvent(new CustomEvent('leader-v4:lead-card-rendered', { detail: { lead } }));
 }
 
@@ -376,7 +415,12 @@ async function handleNextContact(kind, button) {
   }
 }
 
+function revealWorkTarget(target) {
+  for (let node = target; node; node = node.parentElement) { if (node.tagName === 'DETAILS') node.open = true; }
+}
+
 function revealAndFocus(details, focusTarget = null) {
+  revealWorkTarget(details);
   if (details) details.open = true;
   details?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   if (focusTarget) setTimeout(() => focusTarget.focus(), 250);
@@ -435,11 +479,13 @@ function handlePrimaryAction(button) {
     return;
   }
   if (action === 'open_need') {
+    revealWorkTarget(byId('needFormBox'));
     document.querySelector('#leadCardSection [data-action="open-create-need"]')?.click();
     byId('needFormBox')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     return;
   }
   if (action === 'start_offer') {
+    revealWorkTarget(byId('savedCalculationsBox'));
     const calculationOfferButton = document.querySelector('#savedCalculationsBox [data-v2-calc-create-offer]');
     if (calculationOfferButton) {
       calculationOfferButton.click();
@@ -461,6 +507,7 @@ function handlePrimaryAction(button) {
     if (typeof window.v4SetTab === 'function') window.v4SetTab('orders');
     return;
   }
+  revealWorkTarget(byId(button.dataset.targetId));
   byId(button.dataset.targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -486,6 +533,9 @@ function bindLeadCardEvents() {
     if (v4State.route.leadId) loadLead(v4State.route.leadId);
   });
   document.addEventListener('leader-v4:needs-loaded', () => renderPrimaryAction());
+  document.addEventListener('leader-v4:calculate-need', () => revealWorkTarget(byId('calculationsBox')), true);
+  document.addEventListener('leader-v4:create-offer-from-calculation', () => revealWorkTarget(byId('offersBox')), true);
+  subscribeState(() => { updateStageCounts(); });
   document.addEventListener('leader-v4:lead-workflow-updated', renderWorkflowUpdatedLead);
 }
 

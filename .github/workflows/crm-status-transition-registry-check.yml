@@ -51,6 +51,7 @@ on:
       - 'tools/check_crm_production_board_status_registry.py'
       - 'tools/test_crm_status_transitions.mjs'
       - 'tools/test_crm_lead_status_ui.mjs'
+      - 'tools/test_crm_lead_workspace.mjs'
       - 'tools/test_crm_offer_status_ui.mjs'
       - 'tools/test_crm_order_status_ui.mjs'
       - 'tools/test_crm_payment_status_ui.mjs'
@@ -110,6 +111,7 @@ on:
       - 'tools/check_crm_production_board_status_registry.py'
       - 'tools/test_crm_status_transitions.mjs'
       - 'tools/test_crm_lead_status_ui.mjs'
+      - 'tools/test_crm_lead_workspace.mjs'
       - 'tools/test_crm_offer_status_ui.mjs'
       - 'tools/test_crm_order_status_ui.mjs'
       - 'tools/test_crm_payment_status_ui.mjs'
@@ -178,6 +180,7 @@ jobs:
           node --check tools/test_crm_production_board_status_model.mjs
           node tools/test_crm_status_transitions.mjs
           node tools/test_crm_lead_status_ui.mjs
+          node tools/test_crm_lead_workspace.mjs
           node tools/test_crm_offer_status_ui.mjs
           node tools/test_crm_order_status_ui.mjs
           node tools/test_crm_payment_status_ui.mjs

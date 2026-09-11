@@ -205,6 +205,8 @@ function prepareTimeline(plan, attempt = 0) {
   }
   if (type) type.value = plan.eventType;
   if (body) {
+    const history = document.getElementById('leadHistoryDetails');
+    if (history) history.open = true;
     const current = String(body.value || '').trim();
     if (!current) body.value = plan.comment;
     else if (!current.includes(plan.comment)) body.value = `${current}\n${plan.comment}`;
