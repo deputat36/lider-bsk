@@ -99,7 +99,7 @@ function renderSummary() {
     <div class="lead-analytics-summary-head">
       <div>
         <h3>Сводка по заявкам</h3>
-        <small>Derived-категории только для аналитики. Нажмите на категорию, чтобы применить или снять поиск. Raw service/source в базе не меняются.</small>
+        <small>Нажмите на услугу или источник, чтобы отобрать заявки. Повторное нажатие снимает фильтр.</small>
       </div>
       ${activeSearch ? '<button type="button" class="lead-analytics-summary-clear" data-lead-analytics-clear>Сбросить поиск</button>' : ''}
     </div>
