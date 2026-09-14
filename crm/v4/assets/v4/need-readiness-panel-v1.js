@@ -37,7 +37,7 @@ function boxMarkup(model) {
   const score = model.needId || model.score > 0 ? `${Number(model.score || 0)}%` : 'Проверка';
   const advisory = model.ready
     ? 'Перед КП выполните финальную проверку.'
-    : 'Предупреждение advisory: сохранение расчёта и формирование КП автоматически не блокируются.';
+    : 'Можно продолжить расчёт и создать КП. Уточните недостающие данные до согласования заказа.';
   return `<div class="v4-need-readiness-head"><div><h5>${esc(model.title)}</h5><p>${esc(model.message)}</p></div><span class="v4-need-readiness-score">${esc(score)}</span></div>${missing.length ? `<div class="v4-need-readiness-missing">${missing.map((field) => `<span>${esc(field)}</span>`).join('')}</div>` : ''}<div class="v4-need-readiness-actions">${label ? `<button type="button" data-need-readiness-action="${esc(model.action)}" data-need-readiness-need-id="${esc(model.needId || '')}">${esc(label)}</button>` : ''}<span class="v4-need-readiness-note">${esc(advisory)}</span></div>`;
 }
 

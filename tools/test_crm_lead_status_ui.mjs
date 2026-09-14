@@ -91,3 +91,6 @@ assert.match(missingOrderLinkAction.hint, /связанная запись не 
 assert.equal(leadPrimaryAction({ status: unknown }, { now }).type, 'other_actions');
 
 console.log('CRM lead status UI registry behavior is valid.');
+
+assert.match(leadPrimaryAction({status:"Новая"}, {currentUserId:"manager",currentUserRole:"manager"}).hint, /перейдёт/);
+assert.match(leadPrimaryAction({status:"Расчёт подготовлен"}, {currentUserId:"manager",currentUserRole:"manager"}).hint, /этап сохранится/);

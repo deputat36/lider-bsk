@@ -81,7 +81,7 @@ else:
         'Сводка по заявкам',
         'Услуги',
         'Источники',
-        'Raw service/source в базе не меняются',
+        'Повторное нажатие снимает фильтр.',
         'data-lead-analytics-search',
         'data-lead-analytics-clear',
         'aria-pressed=',

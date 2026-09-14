@@ -130,7 +130,9 @@ export function leadPrimaryAction(lead = {}, context = {}) {
     return primaryAction(
       'assign_self',
       'Взять заявку в работу',
-      'Назначьте себя ответственным. Новая заявка одновременно перейдёт в статус «В работе».'
+      rawLeadStatus(lead.status) === 'Новая'
+        ? 'Вы станете ответственным, заявка перейдёт в статус «В работе».'
+        : 'Вы станете ответственным за заявку. Текущий этап сохранится.'
     );
   }
   if (responsibility.key === 'other' && String(context.currentUserId || '').trim()) {

@@ -65,7 +65,7 @@ function syncLeadListCards() {
     const chip = card.querySelector('.v4-lead-status');
     if (chip) {
       chip.classList.toggle('is-unknown', !model.known);
-      chip.title = model.known ? `Registry: ${model.key}` : model.warning;
+      chip.title = model.known ? model.label : model.warning;
     }
 
     const hints = ensureHints(card);
