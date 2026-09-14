@@ -95,10 +95,13 @@ assert.equal(vm.runInContext('draftItems[3].client_price', ctx), 100, 'zero tier
 console.log('Builder pricing controls: explicit apply, zero tiers, manual/catalog protection PASS.');
 
 // New-item forms must distinguish an explicit zero from an empty automatic price.
+ctx.contractorQuoteDraftValidation = (await import('../crm/v4/assets/v4/calculation-contractor-quote-model-v1.js')).contractorQuoteDraftValidation;
+fields.set('calcContractorClientTitle', { value: 'Работа подрядчика' });
 ctx.parseCalculationPairs = () => [{ name: 'A', qty: 2 }];
 fields.get('calcMarkup').value = '30';
 vm.runInContext('draftItems = [];', ctx);
 for (const [mode, costId, priceId] of [
+  ['contractor_quote', 'calcContractorBase', 'calcContractorClient'],
   ['custom', 'calcCustomCost', 'calcCustomClient'],
   ['service', 'calcServiceCost', 'calcServiceClient'],
   ['letters', 'calcLettersCost', 'calcLettersClient']
@@ -110,8 +113,19 @@ for (const [mode, costId, priceId] of [
     const row = vm.runInContext('currentModeItems()[0]', ctx);
     assert.equal(row.client_price, expected, `${mode}: input ${JSON.stringify(input)} must preserve employee intent`);
     assert.equal(row.data.price_source, source);
+    vm.runInContext('draftItems = []; addSmartItems();', ctx);
+    assert.equal(vm.runInContext('draftItems.length', ctx), 1, `${mode}: intentional loss must not block adding`);
+    assert.equal(vm.runInContext('draftItems[0].client_price', ctx), expected);
     const repricedRow = repriceAutomaticItems([row], { ...settings, fixedMarkup: 50 })[0];
     assert.equal(repricedRow.client_price, source === 'manual' ? expected : 1500);
   }
 }
 console.log('New-item forms: manual zero, below-cost price, empty auto price and subsequent repricing PASS.');
+// Critical input errors still prevent adding, even when HTML validation is bypassed.
+const originalCurrentModeItems = vm.runInContext('currentModeItems', ctx);
+for (const bad of [{ qty: -1 }, { client_price: -1 }, { contractor_price: -1 }, { qty: NaN }, { client_price: Infinity }]) {
+  ctx.invalidRow = { qty: 1, client_price: 0, contractor_price: 1000, ...bad };
+  vm.runInContext('draftItems = []; currentModeItems = () => [invalidRow]; addSmartItems();', ctx);
+  assert.equal(vm.runInContext('draftItems.length', ctx), 0);
+}
+ctx.currentModeItems = originalCurrentModeItems;

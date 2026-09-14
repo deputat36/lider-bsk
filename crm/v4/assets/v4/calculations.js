@@ -523,7 +523,7 @@ function renderModeFields(mode = 'banner') {
           <label>Название для клиента *<input id="calcContractorClientTitle" placeholder="Например: Световая вывеска «ОВОЩИ»"></label>
           <label>Количество<input id="calcContractorQty" type="number" min="0.01" step="0.01" value="1"></label>
           <label>Единица<select id="calcContractorUnit"><option>комплект</option><option>шт</option><option>м²</option><option>услуга</option></select></label>
-          <label>Итог клиенту вручную, ₽<input id="calcContractorClient" type="number" min="0" step="1" placeholder="Пусто = по общей наценке"></label>
+          <label>Итог клиенту вручную, ₽<input id="calcContractorClient" type="number" min="0" step="1" placeholder="Пусто = по общей наценке; 0 = бесплатно"></label>
           <label class="wide">Характеристики / описание для клиента<textarea id="calcContractorClientDescription" rows="3" placeholder="Например: объёмные световые буквы, 3000×700 мм, акрил 3 мм, светодиодная подсветка, цвет по макету"></textarea></label>
         </div>
       </section>
@@ -781,7 +781,7 @@ function currentModeItems() {
       installation: num('calcContractorInstallation'),
       design: num('calcContractorDesign'),
       other: num('calcContractorOther'),
-      clientPrice: num('calcContractorClient'),
+      clientPrice: val('calcContractorClient'),
       internalComment: val('calcContractorComment')
     });
     if (!prepared.ok) {
@@ -1126,9 +1126,9 @@ function addSmartItems() {
     toast(calculationModeError || 'Заполните поля расчёта позиции');
     return;
   }
-  const invalid = items.map(calcItem).filter((item) => item.client_sum <= 0 || item.profit < 0 || item.qty <= 0);
+  const invalid = items.filter((item) => ![item.qty, item.client_price, item.contractor_price].every(Number.isFinite) || item.qty <= 0 || item.client_price < 0 || item.contractor_price < 0);
   if (invalid.length) {
-    toast('Проверьте позицию: сумма клиенту должна быть больше 0, расчёт не должен быть убыточным');
+    toast('Проверьте позицию: количество должно быть больше 0, цены — неотрицательными числами');
     return;
   }
   draftItems.push(...items);
