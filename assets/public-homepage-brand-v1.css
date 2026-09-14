@@ -154,6 +154,28 @@ html body .icon {
   color: var(--brand-orange);
 }
 
+/* One geometric line-icon system for service and contact content. */
+html body .leader-icon {
+  display: block;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  color: currentColor;
+}
+
+html body .icon .leader-icon {
+  width: 28px;
+  height: 28px;
+}
+
+html body .contact-line {
+  color: var(--text-primary);
+}
+
+html body .contact-line .leader-icon {
+  color: var(--brand-orange);
+}
+
 html body .strip__item,
 html body .check,
 html body .step,
