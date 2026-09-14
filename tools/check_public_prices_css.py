@@ -8,7 +8,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 PAGE = ROOT / "prices.html"
 CSS = ROOT / "assets" / "public-prices.css"
-CSS_LINK = '<link rel="stylesheet" href="assets/public-prices.css?v=1">'
+CSS_LINK = '<link rel="stylesheet" href="assets/public-prices.css?v=2">'
 FORM_CSS_LINK = '<link rel="stylesheet" href="assets/public-lead-form.css?v=14">'
 FORM_SCRIPT = '<script src="assets/public-lead-form.js?v=23"></script>'
 
@@ -49,19 +49,32 @@ def main() -> None:
             errors.append(f"prices.html lost required marker: {marker}")
 
     required_css_markers = (
-        ":root{",
+        '@import url("brand/leader-tokens.css?v=1")',
+        '@import url("brand/leader-components-v1.css?v=1")',
+        "--accent:var(--brand-orange)",
         ".grid{",
         ".price{",
         ".table{",
         ".steps{",
         ".cta{",
+        "background:var(--brand-orange)",
+        "border-radius:var(--radius-md)",
         "@media(max-width:900px)",
     )
     for marker in required_css_markers:
         if marker not in css:
             errors.append(f"public-prices.css is missing required marker: {marker}")
 
-    if len(css.strip()) < 3000:
+    for stale in (
+        "#f6c343",
+        "rgba(246,195,67",
+        "#fff7d6",
+        "#fde68a",
+    ):
+        if stale.lower() in css.lower():
+            errors.append(f"legacy yellow price accent remains: {stale}")
+
+    if len(css.strip()) < 4000:
         errors.append(f"public-prices.css is unexpectedly short: {len(css.strip())} characters")
 
     if re.search(r"url\s*\(\s*['\"]?https?://", css, flags=re.IGNORECASE):
@@ -72,8 +85,8 @@ def main() -> None:
         sys.exit(1)
 
     print(
-        "Public prices CSS contract is valid: "
-        f"external CSS {len(css.strip())} characters, no inline style block."
+        "Public prices brand CSS contract is valid: "
+        f"external CSS {len(css.strip())} characters, Lider palette, no inline style block."
     )
 
 
