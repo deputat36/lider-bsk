@@ -69,7 +69,7 @@ def main() -> None:
 
     expected_stylesheets = [
         'assets/public-lead-form.css?v=22',
-        'assets/public-examples.css?v=1',
+        'assets/public-examples.css?v=2',
     ]
     if parser.stylesheets != expected_stylesheets:
         raise SystemExit(f'Unexpected examples stylesheet order: {parser.stylesheets}')
@@ -90,15 +90,38 @@ def main() -> None:
         raise SystemExit('Examples page lead form container mismatch')
 
     for marker in (
+        '@import url("brand/leader-tokens.css?v=1")',
+        '@import url("brand/leader-components-v1.css?v=1")',
         'body.page-examples',
-        '--shadow:0 18px 48px rgba(26,26,26,.10)',
+        '--shadow:var(--shadow-sm)',
         '.grid{display:grid;grid-template-columns:repeat(3,1fr)',
         '.steps{display:grid;grid-template-columns:repeat(4,1fr)',
-        '.cta{background:linear-gradient(135deg,#111417,#1a1a1a)',
+        '.cta{background:var(--brand-900)',
+        'border-radius:var(--radius-md)',
         '@media(max-width:900px)',
         '.grid,.steps,.cta{grid-template-columns:1fr}',
     ):
         require(examples_css, marker, EXAMPLES_CSS)
+
+    for icon_id in (
+        'icon-outdoor',
+        'icon-cut',
+        'icon-sign',
+        'icon-design',
+        'icon-social',
+        'icon-bundle',
+    ):
+        require(examples, f'assets/brand/leader-icons.svg#{icon_id}', EXAMPLES)
+
+    for legacy_icon in (
+        '<div class="icon">▰</div>',
+        '<div class="icon">✂</div>',
+        '<div class="icon">i</div>',
+        '<div class="icon">А</div>',
+        '<div class="icon">VK</div>',
+        '<div class="icon">+</div>',
+    ):
+        forbid(examples, legacy_icon, EXAMPLES)
 
     require(
         form_script,
@@ -141,7 +164,7 @@ def main() -> None:
         if not (ROOT / path).is_file():
             raise SystemExit(f'Broken local examples link: {href}')
 
-    print('Public examples consolidation and external CSS contract is valid.')
+    print('Public examples consolidation and shared brand-system contract is valid.')
 
 
 if __name__ == '__main__':
