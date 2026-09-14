@@ -2,6 +2,9 @@
 
 Этот каталог — единый источник фирменных digital-ассетов проекта.
 
+Полная спецификация: `docs/BRAND_SYSTEM_RA_LIDER.md`.  
+Короткая памятка: `docs/BRAND_QUICK_GUIDE_RA_LIDER.md`.
+
 ## Канонические файлы
 
 ### `logo-lider-header.svg`
@@ -34,9 +37,15 @@
 
 ### `leader-tokens.css`
 
-Статус: digital source of truth для цветов, нейтралей, радиусов, теней, типографических токенов, spacing и motion.
+Статус: runtime source of truth для цветов, нейтралей, радиусов, теней, типографических токенов, spacing и motion на сайте/в CRM.
 
 Основной orange: `#FF6A00`.
+
+### `leader-tokens.json`
+
+Статус: переносимая копия ключевых design tokens для дизайн-инструментов, документации и non-CSS clients.
+
+JSON не должен расходиться с CSS по Brand Orange, Graphite, Manrope, базовым радиусам, container и spacing scale.
 
 ### `leader-icons.svg`
 
