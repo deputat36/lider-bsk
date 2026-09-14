@@ -5,9 +5,15 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 
-# Root HTML files are the client-facing public site. Internal CRM pages live in
-# dedicated subdirectories and are intentionally outside this scan.
-#
+# Most root HTML files are client-facing public pages. A small explicit set of
+# internal visual review pages also lives at repository root for manual QA.
+# Those pages may contain implementation vocabulary, but they are excluded only
+# when they retain an explicit noindex,nofollow contract.
+INTERNAL_ROOT_PAGES = {
+    'brand-system-review.html',
+    'logo-review.html',
+}
+
 # Keep this list focused on language and identifiers that reveal internal
 # operations or infrastructure. Generic commercial terms such as "API" or
 # "интеграция" are intentionally not forbidden because they may describe a
@@ -36,17 +42,30 @@ def compact(line: str, limit: int = 180) -> str:
 
 
 def main() -> None:
-    pages = sorted(ROOT.glob('*.html'))
-    if not pages:
-        raise SystemExit('No root public HTML files found')
+    root_pages = sorted(ROOT.glob('*.html'))
+    if not root_pages:
+        raise SystemExit('No root HTML files found')
 
     errors: list[str] = []
-    for path in pages:
+    public_pages: list[Path] = []
+
+    for path in root_pages:
         text = path.read_text(encoding='utf-8')
+        if path.name in INTERNAL_ROOT_PAGES:
+            if '<meta name="robots" content="noindex,nofollow">' not in text:
+                errors.append(
+                    f'{path.name}: internal review page lost required noindex,nofollow boundary'
+                )
+            continue
+        public_pages.append(path)
         for lineno, line in enumerate(text.splitlines(), start=1):
             for pattern, label in FORBIDDEN:
                 if pattern.search(line):
                     errors.append(f'{path.name}:{lineno}: internal term {label!r}: {compact(line)}')
+
+    missing_review_pages = sorted(name for name in INTERNAL_ROOT_PAGES if not (ROOT / name).is_file())
+    for name in missing_review_pages:
+        errors.append(f'internal review page allowlist references missing file: {name}')
 
     if errors:
         print('\n'.join(errors))
@@ -54,7 +73,8 @@ def main() -> None:
 
     print(
         f'Client copy and infrastructure boundary is valid for '
-        f'{len(pages)} root public HTML files.'
+        f'{len(public_pages)} public root HTML files; '
+        f'{len(INTERNAL_ROOT_PAGES)} noindex review pages validated separately.'
     )
 
 
