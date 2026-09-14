@@ -1,0 +1,37 @@
+name: Homepage brand migration v1 check
+
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'assets/public-homepage.css'
+      - 'assets/public-homepage-brand-v1.css'
+      - 'assets/brand/**'
+      - 'tools/check_homepage_brand_migration_v1.py'
+      - '.github/workflows/homepage-brand-migration-v1-check.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'index.html'
+      - 'assets/public-homepage.css'
+      - 'assets/public-homepage-brand-v1.css'
+      - 'assets/brand/**'
+      - 'tools/check_homepage_brand_migration_v1.py'
+      - '.github/workflows/homepage-brand-migration-v1-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  homepage-brand-migration-v1:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate homepage brand migration
+        run: python tools/check_homepage_brand_migration_v1.py
