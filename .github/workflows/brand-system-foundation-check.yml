@@ -6,6 +6,7 @@ on:
       - 'assets/brand/**'
       - 'brand-system-review.html'
       - 'docs/BRAND_SYSTEM_RA_LIDER.md'
+      - 'docs/BRAND_QUICK_GUIDE_RA_LIDER.md'
       - 'tools/check_brand_system_foundation.py'
       - '.github/workflows/brand-system-foundation-check.yml'
   push:
@@ -15,6 +16,7 @@ on:
       - 'assets/brand/**'
       - 'brand-system-review.html'
       - 'docs/BRAND_SYSTEM_RA_LIDER.md'
+      - 'docs/BRAND_QUICK_GUIDE_RA_LIDER.md'
       - 'tools/check_brand_system_foundation.py'
       - '.github/workflows/brand-system-foundation-check.yml'
 

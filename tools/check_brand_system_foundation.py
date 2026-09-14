@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
-"""Static contract for RA Lider brand system foundation."""
+"""Static contract for RA Lider Brandbook 1.0 foundation."""
 from pathlib import Path
+import json
 
 ROOT = Path(__file__).resolve().parents[1]
 TOKENS = ROOT / "assets" / "brand" / "leader-tokens.css"
+TOKENS_JSON = ROOT / "assets" / "brand" / "leader-tokens.json"
 COMPONENTS = ROOT / "assets" / "brand" / "leader-components-v1.css"
 REVIEW = ROOT / "brand-system-review.html"
 DOC = ROOT / "docs" / "BRAND_SYSTEM_RA_LIDER.md"
+QUICK_GUIDE = ROOT / "docs" / "BRAND_QUICK_GUIDE_RA_LIDER.md"
+ASSET_README = ROOT / "assets" / "brand" / "README.md"
 LOGO = ROOT / "assets" / "brand" / "logo-lider-header.svg"
+MARK = ROOT / "assets" / "brand" / "logo-lider-mark.svg"
+LEGACY_LIGHT = ROOT / "assets" / "brand" / "logo-lider-light.svg"
 
 errors: list[str] = []
 
@@ -17,7 +23,10 @@ def require(condition: bool, message: str) -> None:
         errors.append(message)
 
 
-for path in (TOKENS, COMPONENTS, REVIEW, DOC, LOGO):
+for path in (
+    TOKENS, TOKENS_JSON, COMPONENTS, REVIEW, DOC, QUICK_GUIDE,
+    ASSET_README, LOGO, MARK, LEGACY_LIGHT,
+):
     require(path.exists(), f"missing required brand asset: {path.relative_to(ROOT)}")
 
 if TOKENS.exists():
@@ -32,13 +41,32 @@ if TOKENS.exists():
         "--border-default: var(--brand-200);",
         "--text-primary: var(--brand-900);",
         "--text-secondary: var(--brand-500);",
+        "--font-brand: Manrope, Arial, Helvetica, sans-serif;",
+        "--weight-extrabold: 800;",
+        "--line-body: 1.55;",
         "--radius-md: 12px;",
         "--radius-lg: 16px;",
         "--container: 1180px;",
+        "--content-readable: 760px;",
+        "--photo-overlay-base: rgba(13, 15, 18, 0.45);",
         "--focus-ring: 0 0 0 4px rgba(255, 106, 0, 0.22);",
     )
     for token in required_tokens:
         require(token in text, f"missing token contract: {token}")
+
+if TOKENS_JSON.exists():
+    try:
+        token_data = json.loads(TOKENS_JSON.read_text(encoding="utf-8"))
+    except Exception as exc:  # pragma: no cover - explicit CI diagnostics
+        token_data = {}
+        errors.append(f"leader-tokens.json is invalid JSON: {exc}")
+    require(token_data.get("meta", {}).get("version") == "1.0", "JSON tokens must declare version 1.0")
+    require(token_data.get("color", {}).get("brand", {}).get("orange") == "#FF6A00", "JSON Brand Orange drifted")
+    require(token_data.get("color", {}).get("neutral", {}).get("900") == "#171717", "JSON Graphite drifted")
+    require(token_data.get("typography", {}).get("fontBrand", "").startswith("Manrope"), "JSON primary font drifted")
+    require(token_data.get("radius", {}).get("md") == 12, "JSON button/control radius drifted")
+    require(token_data.get("layout", {}).get("container") == 1180, "JSON container drifted")
+    require(token_data.get("spacing") == [4, 8, 12, 16, 24, 32, 48, 64, 96], "JSON spacing scale drifted")
 
 if COMPONENTS.exists():
     text = COMPONENTS.read_text(encoding="utf-8")
@@ -62,26 +90,82 @@ if REVIEW.exists():
         'assets/brand/leader-tokens.css',
         'assets/brand/leader-components-v1.css',
         'assets/brand/logo-lider-header.svg',
+        'assets/brand/logo-lider-mark.svg',
+        'Brandbook 1.0',
         'Делаем бизнес заметнее.',
         'Brand Orange',
         'Типографическая иерархия',
         'Фотографии',
         'Фирменный мотив',
+        'Композиционные семейства',
+        'Система доверия',
+        'Tone of Voice',
     ):
         require(marker in text, f"review page missing marker: {marker}")
 
 if DOC.exists():
     text = DOC.read_text(encoding="utf-8")
     for marker in (
-        "# Фирменная система РА «Лидер»",
+        "# Брендбук РА «Лидер»",
+        "Версия: 1.0",
         "assets/brand/logo-lider-header.svg",
+        "assets/brand/logo-lider-mark.svg",
         "assets/brand/leader-tokens.css",
         "#FF6A00",
-        "Tone of Voice",
+        "**Manrope**",
+        "## 20. Композиционные шаблоны",
+        "## 25. Система доверия",
+        "## 33. Tone of Voice",
+        "## 42. Предпечатная проверка",
+        "## 44. Чек-лист нового макета",
         "CRM",
         "Портфолио",
     ):
         require(marker in text, f"brand specification missing marker: {marker}")
+    require("Pantone/RAL/серии самоклеящихся плёнок не фиксировать" in text,
+            "brandbook must keep physical color matching disclaimer")
+    require("logo-lider-light.svg` содержит встроенный растр" in text,
+            "brandbook must classify raster-in-SVG legacy asset")
+
+if QUICK_GUIDE.exists():
+    text = QUICK_GUIDE.read_text(encoding="utf-8")
+    for marker in (
+        "# РА «Лидер» — быстрый фирменный гайд",
+        "#FF6A00",
+        "Основной: Manrope",
+        "Рассчитать заказ",
+        "реальные работы",
+        "Tone of Voice",
+        "Перед публикацией",
+    ):
+        require(marker in text, f"quick brand guide missing marker: {marker}")
+
+if ASSET_README.exists():
+    text = ASSET_README.read_text(encoding="utf-8")
+    for marker in (
+        "единый источник фирменных digital-ассетов",
+        "logo-lider-header.svg",
+        "logo-lider-mark.svg",
+        "reference only",
+        "Правило для тёмного фона",
+        "встроенный raster image",
+    ):
+        require(marker in text, f"brand asset registry missing marker: {marker}")
+
+if LOGO.exists():
+    text = LOGO.read_text(encoding="utf-8")
+    require("<image" not in text, "canonical horizontal logo must remain pure vector SVG")
+    require("data:image" not in text, "canonical horizontal logo must not embed raster data")
+
+if MARK.exists():
+    text = MARK.read_text(encoding="utf-8")
+    require("<image" not in text, "canonical mark must remain pure vector SVG")
+    require("data:image" not in text, "canonical mark must not embed raster data")
+
+if LEGACY_LIGHT.exists():
+    text = LEGACY_LIGHT.read_text(encoding="utf-8")
+    require("data:image/png;base64" in text,
+            "legacy light logo classification changed; re-audit asset registry before altering its status")
 
 if errors:
     print("Brand system foundation contract: FAIL")
