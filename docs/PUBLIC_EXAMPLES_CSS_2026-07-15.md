@@ -1,25 +1,36 @@
 # Внешний CSS страницы примеров рекламных задач
 
-Дата: 15 июля 2026 года.
+Дата исходного выноса CSS: 15 июля 2026 года.
+Обновление бренд-системы: 14 сентября 2026 года.
 
 ## Цель
 
-Убрать крупный inline CSS из `primery-rabot-kejsy.html`, сохранив визуальное оформление, SEO, форму заявки и честное позиционирование страницы как набора типовых сценариев, а не вымышленного портфолио.
+Сохранить `primery-rabot-kejsy.html` как честный набор типовых сценариев заказа, а не вымышленное портфолио, и одновременно привести страницу к общей визуальной системе РА «Лидер».
 
-## Изменения
-
-Создан кешируемый stylesheet:
-
-- `assets/public-examples.css?v=1`.
+## Текущий stylesheet
 
 Страница подключает файлы в следующем порядке:
 
 1. `assets/public-lead-form.css?v=22`;
-2. `assets/public-examples.css?v=1`.
+2. `assets/public-examples.css?v=2`.
 
-Для явного контракта страницы добавлен body-класс:
+`public-examples.css?v=2` использует общие фирменные основания:
 
-- `page-examples`.
+- `assets/brand/leader-tokens.css?v=1`;
+- `assets/brand/leader-components-v1.css?v=1`.
+
+Body-класс страницы: `page-examples`.
+
+## Что изменено в сентябре 2026
+
+- фирменный orange, graphite, surfaces, borders, radii и shadows берутся из общих design tokens;
+- orange CTA переведена на плоский фирменный цвет вместо обязательного градиента;
+- кнопки получили системный радиус 12 px;
+- карточки используют системный радиус 16 px и спокойную тень;
+- заголовки больше не зависят от повсеместных uppercase + weight 900;
+- шесть случайных текстовых/символьных иконок заменены единым SVG line-icon набором;
+- в общий icon sprite добавлены `icon-sign` и `icon-bundle`;
+- сохранена адаптивность и `prefers-reduced-motion`.
 
 ## Что сохранено
 
@@ -48,17 +59,16 @@
 
 ## Автоматическая защита
 
-Расширен `tools/check_public_examples_consolidation.py`.
+`tools/check_public_examples_consolidation.py` контролирует:
 
-Проверка контролирует:
-
-- точный порядок stylesheet;
-- наличие `public-examples.css?v=1`;
+- точный порядок stylesheet и cache marker `public-examples.css?v=2`;
+- подключение shared brand tokens/components;
 - отсутствие inline CSS;
 - отсутствие исполняемого inline JavaScript;
 - сохранение JSON-LD;
 - правильный body-класс;
 - шесть карточек и четыре шага;
+- единые SVG line-icons вместо старых псевдоиконок;
 - форму заявки;
 - централизованный preset;
 - честные оговорки о типовых сценариях;
@@ -67,27 +77,10 @@
 - legacy-редирект `portfolio.html`;
 - локальные HTML-ссылки.
 
-Workflow `Public examples consolidation check` теперь также отслеживает общий CSS и shared form preset.
+## Production
 
-## Supabase read-only snapshot
-
-На момент подготовки изменения:
-
-- production project: `ACTIVE_HEALTHY`;
-- `leader-public-lead`: ACTIVE, версия 10;
-- всего записей в `leader_leads`: 12;
-- записей с `request_id`: 1;
-- заявок со страницы `primery-rabot-kejsy.html`: 0;
-- последняя заявка: 1 июля 2026 года, 14:20:01 UTC.
-
-Production Supabase не изменялся.
+Production Supabase в рамках бренд-миграции не изменяется. Schema, RLS, grants, Auth, Edge Functions и рабочие данные не затрагиваются.
 
 ## Границы
 
-Не изменялись:
-
-- Supabase schema, RLS, grants, Auth, Edge Functions и данные;
-- CRM UI;
-- `nav_*` и `nav_v2_*`;
-- содержимое legacy-редиректа;
-- реальные материалы портфолио, которые остаются заблокированы до получения подтверждённых фотографий и фактов.
+Не изменяются реальные материалы портфолио, пока не получены подтверждённые фотографии и факты. Страница не должна создавать впечатление, что типовые сценарии являются выполненными работами конкретных клиентов.
