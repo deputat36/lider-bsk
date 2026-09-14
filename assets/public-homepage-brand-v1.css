@@ -1,0 +1,218 @@
+/*
+ * РА «Лидер» — первая безопасная миграция главной страницы на brand system v1.
+ *
+ * Файл подключается через public-homepage.css после общих brand imports.
+ * Селекторы намеренно специфичнее legacy-слоя, чтобы не переписывать старую
+ * таблицу целиком и сохранить простой откат.
+ */
+
+html:root {
+  --black: var(--brand-900);
+  --graphite: var(--brand-800);
+  --orange: var(--brand-orange);
+  --orange-dark: var(--brand-orange-dark);
+  --gray: var(--brand-500);
+  --silver: var(--brand-200);
+  --white: var(--brand-white);
+  --soft: var(--surface-page);
+  --text: var(--text-primary);
+  --muted: var(--text-secondary);
+  --line: var(--border-default);
+  --shadow: var(--shadow-md);
+  --radius: var(--radius-lg);
+  --max: var(--container);
+}
+
+html body {
+  font-family: Manrope, Montserrat, Arial, Helvetica, sans-serif;
+  color: var(--text-primary);
+}
+
+/* Header and navigation: calmer weight, same information architecture. */
+html body .nav,
+html body .phone {
+  font-weight: 700;
+}
+
+html body .menu-btn {
+  border-radius: var(--radius-md);
+}
+
+/* Buttons: one clear orange primary, no mandatory pill or gradient. */
+html body .btn {
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard);
+}
+
+html body .btn--accent {
+  background: var(--brand-orange);
+  border-color: var(--brand-orange);
+  color: var(--text-inverse);
+  box-shadow: 0 8px 20px rgba(255, 106, 0, .18);
+}
+
+html body .btn--accent:hover {
+  background: var(--brand-orange-hover);
+  border-color: var(--brand-orange-hover);
+  box-shadow: 0 10px 22px rgba(255, 106, 0, .22);
+}
+
+html body .btn--dark {
+  background: var(--brand-900);
+  border-color: var(--brand-900);
+}
+
+/* Hero keeps the brand character but loses decorative visual noise. */
+html body .hero {
+  background: linear-gradient(135deg, var(--brand-950), var(--brand-900));
+}
+
+html body .hero::before {
+  opacity: .18;
+}
+
+html body .hero::after {
+  background: var(--brand-orange);
+  opacity: .75;
+}
+
+html body .badge {
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  letter-spacing: .045em;
+  text-transform: none;
+}
+
+html body h1 {
+  max-width: 900px;
+  font-weight: 800;
+  line-height: .98;
+  letter-spacing: -.035em;
+  text-transform: none;
+}
+
+html body .hero-card {
+  border-radius: var(--radius-xl);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, .22);
+}
+
+html body .hero-card::before {
+  opacity: .5;
+}
+
+html body .hero-card h2,
+html body .section-head h2,
+html body .black h2,
+html body .cta h2 {
+  font-weight: 800;
+  letter-spacing: -.025em;
+  text-transform: none;
+}
+
+html body .quick a {
+  border-radius: var(--radius-md);
+  font-weight: 700;
+}
+
+html body .fact {
+  border-radius: var(--radius-md);
+}
+
+html body .fact b {
+  font-weight: 700;
+  text-transform: none;
+}
+
+/* Reusable content surfaces. */
+html body .card {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+html body .card::before {
+  display: none;
+}
+
+html body .card h3 {
+  font-weight: 700;
+  text-transform: none;
+}
+
+html body .card a {
+  font-weight: 700;
+}
+
+html body .icon {
+  border-radius: var(--radius-md);
+  background: var(--brand-orange-soft);
+  color: var(--brand-orange);
+}
+
+html body .strip__item,
+html body .check,
+html body .step,
+html body details,
+html body .notice {
+  border-radius: var(--radius-lg);
+}
+
+html body .strip__item b,
+html body .step h3 {
+  font-weight: 700;
+  text-transform: none;
+}
+
+html body .black,
+html body .cta {
+  background: var(--brand-900);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+}
+
+html body .black::after,
+html body .cta::after {
+  opacity: .55;
+}
+
+html body summary,
+html body .footer a {
+  font-weight: 700;
+}
+
+html body .seo-text h2 {
+  font-weight: 800;
+  text-transform: none;
+}
+
+/* Pills stay pills only where their function is a label/status. */
+html body .tag,
+html body .package__label {
+  font-weight: 700;
+}
+
+@media (max-width: 720px) {
+  html body h1 {
+    letter-spacing: -.025em;
+  }
+
+  html body .cta,
+  html body .hero-card {
+    border-radius: var(--radius-lg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html body .btn {
+    transition: none;
+  }
+
+  html body .btn:hover {
+    transform: none;
+  }
+}
