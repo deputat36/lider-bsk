@@ -1,0 +1,35 @@
+name: Brand system foundation check
+
+on:
+  pull_request:
+    paths:
+      - 'assets/brand/**'
+      - 'brand-system-review.html'
+      - 'docs/BRAND_SYSTEM_RA_LIDER.md'
+      - 'tools/check_brand_system_foundation.py'
+      - '.github/workflows/brand-system-foundation-check.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'assets/brand/**'
+      - 'brand-system-review.html'
+      - 'docs/BRAND_SYSTEM_RA_LIDER.md'
+      - 'tools/check_brand_system_foundation.py'
+      - '.github/workflows/brand-system-foundation-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  brand-system-foundation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate brand system contract
+        run: python tools/check_brand_system_foundation.py

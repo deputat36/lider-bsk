@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="description" content="Внутренняя страница визуальной проверки фирменной системы рекламного агентства Лидер: логотип, цвета, типографика, компоненты и правила применения.">
+  <meta name="theme-color" content="#171717">
+  <title>РА «Лидер» — проверка фирменной системы</title>
+  <link rel="stylesheet" href="assets/brand/leader-tokens.css">
+  <link rel="stylesheet" href="assets/brand/leader-components-v1.css">
+  <style>
+    *{box-sizing:border-box}
+    html{background:var(--surface-page)}
+    body{margin:0;font-family:Manrope,Arial,Helvetica,sans-serif;background:var(--surface-page);color:var(--text-primary);line-height:1.55}
+    img{max-width:100%;height:auto}
+    button{font:inherit}
+    .review-shell{width:min(100% - 32px,var(--container));margin:0 auto;padding:40px 0 80px}
+    .review-hero{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);gap:32px;align-items:center;padding:40px;background:var(--brand-950);color:#fff;border-radius:var(--radius-xl);overflow:hidden;position:relative}
+    .review-hero:after{content:"";position:absolute;right:-70px;bottom:-115px;width:300px;height:300px;border:42px solid rgba(255,106,0,.14);transform:rotate(-18deg)}
+    .review-hero>*{position:relative;z-index:1}
+    .review-hero h1{font-size:clamp(38px,6vw,68px);line-height:.98;letter-spacing:-.035em;margin:14px 0 18px;font-weight:800;max-width:850px}
+    .review-hero p{font-size:19px;color:rgba(255,255,255,.75);max-width:720px;margin:0}
+    .review-logo{background:#fff;border-radius:var(--radius-lg);padding:28px;box-shadow:var(--shadow-lg)}
+    .review-logo img{display:block;width:100%}
+    .review-section{padding-top:56px}
+    .review-section h2{font-size:clamp(28px,4vw,44px);letter-spacing:-.025em;line-height:1.05;margin:0 0 10px;font-weight:800}
+    .review-section>p{margin:0 0 24px;color:var(--text-secondary);max-width:760px}
+    .swatches{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+    .swatch{min-height:150px;padding:18px;border-radius:var(--radius-lg);display:flex;flex-direction:column;justify-content:flex-end;border:1px solid rgba(0,0,0,.06)}
+    .swatch b{font-size:17px}
+    .swatch code{font-size:13px;margin-top:3px}
+    .orange{background:var(--brand-orange);color:#fff}.graphite{background:var(--brand-900);color:#fff}.deep{background:var(--brand-950);color:#fff}.canvas{background:var(--surface-page);color:var(--text-primary)}
+    .type-stack{display:grid;gap:22px;background:#fff;border:1px solid var(--border-default);border-radius:var(--radius-lg);padding:28px}
+    .type-stack div{border-bottom:1px solid var(--border-default);padding-bottom:20px}.type-stack div:last-child{border-bottom:0;padding-bottom:0}
+    .display{font-size:clamp(42px,6vw,64px);line-height:1;font-weight:800;letter-spacing:-.035em}.h2{font-size:42px;line-height:1.08;font-weight:800}.h3{font-size:28px;line-height:1.15;font-weight:700}.body{font-size:17px}.caption{font-size:13px;color:var(--text-secondary)}
+    .actions{display:flex;gap:12px;flex-wrap:wrap}.brand-button,.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:11px 18px;border:1px solid transparent;text-decoration:none;font-weight:700;cursor:pointer}
+    .brand-button--outline{border-color:var(--border-default)}
+    .component-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+    .brand-card{padding:24px}.brand-card h3{font-size:22px;margin:0 0 8px}.brand-card p{margin:0 0 18px;color:var(--text-secondary)}.brand-card a{color:var(--text-primary);font-weight:700;text-decoration:none}.brand-card a:hover{color:var(--brand-orange)}
+    .photo-rule{display:grid;grid-template-columns:1fr 1fr;gap:16px}.photo-placeholder{min-height:250px;border-radius:var(--radius-lg);display:grid;place-items:center;padding:24px;text-align:center}.photo-good{background:linear-gradient(145deg,#e7e9ec,#fff);border:1px solid var(--border-default)}.photo-overlay{background:linear-gradient(rgba(13,15,18,.52),rgba(13,15,18,.52)),linear-gradient(135deg,#5d6268,#c8cbd0);color:#fff}
+    .pattern{height:180px;background:var(--brand-900);border-radius:var(--radius-lg);position:relative;overflow:hidden}.pattern:before,.pattern:after{content:"";position:absolute;top:-40px;bottom:-40px;width:48px;background:var(--brand-orange);transform:skewX(-17deg);opacity:.9}.pattern:before{left:23%}.pattern:after{left:35%;opacity:.35}
+    .rules{display:grid;grid-template-columns:1fr 1fr;gap:16px}.rule{padding:22px;border-radius:var(--radius-lg);border:1px solid var(--border-default);background:#fff}.rule b{display:block;margin-bottom:8px}.rule p{margin:0;color:var(--text-secondary)}
+    @media(max-width:900px){.review-hero,.photo-rule,.rules{grid-template-columns:1fr}.swatches,.component-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:560px){.review-shell{width:min(100% - 24px,var(--container));padding-top:24px}.review-hero{padding:24px}.swatches,.component-grid{grid-template-columns:1fr}.display{font-size:40px}.h2{font-size:32px}.actions>*{width:100%}}
+  </style>
+</head>
+<body>
+  <main class="review-shell">
+    <section class="review-hero">
+      <div>
+        <span class="brand-kicker">РА «Лидер» · Brand system v1</span>
+        <h1>Делаем бизнес заметнее.</h1>
+        <p>Рабочая визуальная система: официальный логотип, графит, фирменный оранжевый, спокойная типографика, реальные работы и функциональные компоненты без декоративного шума.</p>
+      </div>
+      <div class="review-logo">
+        <img src="assets/brand/logo-lider-header.svg" alt="Лидер — рекламное агентство">
+      </div>
+    </section>
+
+    <section class="review-section">
+      <h2>Цветовая основа</h2>
+      <p>Оранжевый — акцент и действие. Графит формирует характер бренда. Белый и нейтральный фон дают воздуху и реальным работам оставаться в центре.</p>
+      <div class="swatches">
+        <div class="swatch orange"><b>Brand Orange</b><code>#FF6A00</code></div>
+        <div class="swatch graphite"><b>Graphite</b><code>#171717</code></div>
+        <div class="swatch deep"><b>Deep Graphite</b><code>#0D0F12</code></div>
+        <div class="swatch canvas"><b>Canvas</b><code>#F7F7F8</code></div>
+      </div>
+    </section>
+
+    <section class="review-section">
+      <h2>Типографическая иерархия</h2>
+      <p>Крупные заголовки остаются уверенными, но постоянный weight 900 и тотальный uppercase больше не являются обязательными.</p>
+      <div class="type-stack">
+        <div class="display">Реклама, которую видно</div>
+        <div class="h2">От макета до монтажа</div>
+        <div class="h3">Наружная реклама</div>
+        <div class="body">Подготовим макет, изготовим вывеску и выполним монтаж. До начала работ согласуем внешний вид, стоимость и сроки.</div>
+        <div class="caption">Caption · конкретно, спокойно, профессионально</div>
+      </div>
+    </section>
+
+    <section class="review-section">
+      <h2>Кнопки</h2>
+      <p>Основная CTA плоская оранжевая. Скругление 12 px вместо обязательной pill-формы. Focus state единый для сайта и будущих интерфейсов.</p>
+      <div class="actions">
+        <button class="brand-button brand-button--primary" type="button">Рассчитать заказ</button>
+        <button class="brand-button brand-button--dark" type="button">Посмотреть работы</button>
+        <button class="brand-button brand-button--outline" type="button">Узнать подробнее</button>
+        <button class="brand-button brand-button--ghost" type="button">Отмена</button>
+      </div>
+    </section>
+
+    <section class="review-section">
+      <h2>Карточки</h2>
+      <p>Базовый компонент один, а содержание меняется. Не требуется изобретать отдельный визуальный стиль для каждой услуги.</p>
+      <div class="component-grid">
+        <article class="brand-card"><h3>Вывески</h3><p>Проектирование, изготовление и монтаж наружного оформления.</p><a href="#">Рассчитать →</a></article>
+        <article class="brand-card"><h3>Печать и плёнка</h3><p>Баннеры, самоклеящаяся плёнка, витрины, наклейки и оформление.</p><a href="#">Выбрать формат →</a></article>
+        <article class="brand-card"><h3>Дизайн</h3><p>Макеты для наружной рекламы, полиграфии, соцсетей и презентаций.</p><a href="#">Обсудить задачу →</a></article>
+      </div>
+    </section>
+
+    <section class="review-section">
+      <h2>Фотографии</h2>
+      <p>Главным доказательством качества становятся реальные объекты. Фирменная графика помогает фотографии, а не заменяет её.</p>
+      <div class="photo-rule">
+        <div class="photo-placeholder photo-good"><div><b>Основной принцип</b><br>честный кадр · естественный цвет · объект в центре</div></div>
+        <div class="photo-placeholder photo-overlay"><div><b>Текст поверх фото</b><br>графитовый overlay 35–55%, достаточный контраст</div></div>
+      </div>
+    </section>
+
+    <section class="review-section">
+      <h2>Фирменный мотив</h2>
+      <p>Диагональная восходящая геометрия происходит из существующего знака и используется дозированно.</p>
+      <div class="pattern" aria-label="Пример фирменного диагонального паттерна"></div>
+    </section>
+
+    <section class="review-section">
+      <h2>Практические правила</h2>
+      <div class="rules">
+        <div class="rule"><b>Сохраняем</b><p>Официальный логотип, #FF6A00, графит, реальную производственную фотографию, ясную коммуникацию.</p></div>
+        <div class="rule"><b>Убираем хаос</b><p>Случайные emoji, разные семейства иконок, лишние градиенты, огромные радиусы и декоративные эффекты без функции.</p></div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

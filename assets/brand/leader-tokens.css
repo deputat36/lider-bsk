@@ -1,0 +1,75 @@
+/*
+ * РА «Лидер» — единые design tokens бренда.
+ *
+ * Используется как общий источник фирменных значений для публичного сайта,
+ * CRM и будущих интерфейсов. Не содержит бизнес-логики.
+ */
+
+:root {
+  /* Brand */
+  --brand-orange: #ff6a00;
+  --brand-orange-hover: #e85f00;
+  --brand-orange-dark: #c84f00;
+  --brand-orange-soft: #fff3e8;
+  --brand-orange-line: #ffd2ad;
+
+  /* Neutral palette */
+  --brand-950: #0d0f12;
+  --brand-900: #171717;
+  --brand-800: #242424;
+  --brand-700: #353535;
+  --brand-500: #667085;
+  --brand-300: #d1d5db;
+  --brand-200: #e5e7eb;
+  --brand-100: #f1f3f5;
+  --brand-050: #f7f7f8;
+  --brand-white: #ffffff;
+
+  /* Semantic surfaces */
+  --surface-page: var(--brand-050);
+  --surface-card: var(--brand-white);
+  --surface-dark: var(--brand-900);
+  --border-default: var(--brand-200);
+  --text-primary: var(--brand-900);
+  --text-secondary: var(--brand-500);
+  --text-inverse: var(--brand-white);
+
+  /* Semantic states */
+  --success: #168653;
+  --success-soft: #dcfce7;
+  --warning: #b56a00;
+  --warning-soft: #fef3c7;
+  --error: #c9362b;
+  --error-soft: #fee2e2;
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  /* Shadows */
+  --shadow-sm: 0 4px 16px rgba(23, 23, 23, 0.06);
+  --shadow-md: 0 12px 32px rgba(23, 23, 23, 0.09);
+  --shadow-lg: 0 20px 48px rgba(23, 23, 23, 0.14);
+  --focus-ring: 0 0 0 4px rgba(255, 106, 0, 0.22);
+
+  /* Layout */
+  --container: 1180px;
+
+  /* Spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-24: 96px;
+
+  /* Motion */
+  --motion-fast: 160ms;
+  --motion-base: 200ms;
+  --ease-standard: cubic-bezier(.2, .8, .2, 1);
+}

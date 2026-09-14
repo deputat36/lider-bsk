@@ -1,0 +1,113 @@
+/*
+ * РА «Лидер» — базовые визуальные компоненты бренда.
+ * Подключается после leader-tokens.css.
+ * Содержит только безопасные presentation-правила без бизнес-логики.
+ */
+
+:where(body) {
+  color: var(--text-primary);
+}
+
+:where(button, a, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--brand-orange);
+  outline-offset: 2px;
+  box-shadow: var(--focus-ring);
+}
+
+.brand-button,
+.btn {
+  border-radius: var(--radius-md);
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard);
+}
+
+.brand-button:hover,
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.brand-button--primary,
+.btn--accent {
+  background: var(--brand-orange);
+  color: var(--text-inverse);
+  border-color: var(--brand-orange);
+  box-shadow: 0 8px 20px rgba(255, 106, 0, 0.18);
+}
+
+.brand-button--primary:hover,
+.btn--accent:hover {
+  background: var(--brand-orange-hover);
+  border-color: var(--brand-orange-hover);
+  box-shadow: 0 10px 22px rgba(255, 106, 0, 0.22);
+}
+
+.brand-button--dark,
+.btn--dark {
+  background: var(--brand-900);
+  color: var(--text-inverse);
+  border-color: var(--brand-900);
+}
+
+.brand-button--outline {
+  background: var(--surface-card);
+  color: var(--text-primary);
+  border-color: var(--border-default);
+}
+
+.brand-button--ghost {
+  background: transparent;
+  color: inherit;
+  border-color: transparent;
+}
+
+.brand-card {
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.brand-card--flat {
+  box-shadow: none;
+}
+
+.brand-muted {
+  color: var(--text-secondary);
+}
+
+.brand-accent {
+  color: var(--brand-orange);
+}
+
+.brand-surface-dark {
+  color: var(--text-inverse);
+  background: var(--surface-dark);
+}
+
+.brand-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--brand-orange-dark);
+  background: var(--brand-orange-soft);
+  border: 1px solid var(--brand-orange-line);
+  border-radius: var(--radius-md);
+  padding: 7px 10px;
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-button,
+  .btn {
+    transition: none;
+  }
+
+  .brand-button:hover,
+  .btn:hover {
+    transform: none;
+  }
+}
