@@ -26,6 +26,7 @@ export function contractorQuoteDraftItem(input = {}) {
   const installation = numberValue(input.installation);
   const design = numberValue(input.design);
   const other = numberValue(input.other);
+  const manualPrice = textValue(input.clientPrice) !== '';
   const clientTotal = numberValue(input.clientPrice);
   const totalCost = base + delivery + installation + design + other;
   const vendor = textValue(input.vendor);
@@ -34,7 +35,7 @@ export function contractorQuoteDraftItem(input = {}) {
   const qty = Math.max(0.01, numberValue(input.qty) || 1);
   const unit = unitValue(input.unit);
   const contractorPrice = totalCost / qty;
-  const clientPrice = clientTotal > 0 ? clientTotal / qty : 0;
+  const clientPrice = manualPrice ? clientTotal / qty : 0;
 
   return {
     category: 'Подрядный расчёт',
@@ -73,10 +74,10 @@ export function contractorQuoteDraftItem(input = {}) {
         { code: 'other', label: 'Прочие расходы', amount: other }
       ],
       pricing: {
-        manual_client_total: clientTotal > 0 ? clientTotal : null,
-        manual_client_price: clientTotal > 0 ? clientPrice : null
+        manual_client_total: manualPrice ? clientTotal : null,
+        manual_client_price: manualPrice ? clientPrice : null
       },
-      price_source: clientTotal > 0 ? 'manual' : 'auto',
+      price_source: manualPrice ? 'manual' : 'auto',
       model_version: CONTRACTOR_QUOTE_MODEL_V1
     }
   };

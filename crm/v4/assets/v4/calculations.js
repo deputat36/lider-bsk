@@ -294,8 +294,8 @@ function applyAutoPrice(rows) {
   const markup = autoMarkupBySubtotal(currentContractor + newContractor, settings);
   return rows.map((item) => ({
     ...item,
-    client_price: Number(item.client_price || 0) > 0 ? Number(item.client_price || 0) : priceWithMarkup(item.contractor_price, markup * 100, settings.roundStep),
-    data: { ...(item.data || {}), price_source: Number(item.client_price || 0) > 0 ? 'manual' : 'auto', applied_markup_percent: markup * 100 }
+    client_price: (item.data?.price_source === 'manual' || Number(item.client_price || 0) > 0) ? Number(item.client_price || 0) : priceWithMarkup(item.contractor_price, markup * 100, settings.roundStep),
+    data: { ...(item.data || {}), price_source: (item.data?.price_source === 'manual' || Number(item.client_price || 0) > 0) ? 'manual' : 'auto', applied_markup_percent: markup * 100 }
   }));
 }
 
@@ -523,7 +523,7 @@ function renderModeFields(mode = 'banner') {
           <label>Название для клиента *<input id="calcContractorClientTitle" placeholder="Например: Световая вывеска «ОВОЩИ»"></label>
           <label>Количество<input id="calcContractorQty" type="number" min="0.01" step="0.01" value="1"></label>
           <label>Единица<select id="calcContractorUnit"><option>комплект</option><option>шт</option><option>м²</option><option>услуга</option></select></label>
-          <label>Итог клиенту вручную, ₽<input id="calcContractorClient" type="number" min="0" step="1" placeholder="Пусто = по общей наценке"></label>
+          <label>Итог клиенту вручную, ₽<input id="calcContractorClient" type="number" min="0" step="1" placeholder="Пусто = по общей наценке; 0 = бесплатно"></label>
           <label class="wide">Характеристики / описание для клиента<textarea id="calcContractorClientDescription" rows="3" placeholder="Например: объёмные световые буквы, 3000×700 мм, акрил 3 мм, светодиодная подсветка, цвет по макету"></textarea></label>
         </div>
       </section>
@@ -683,7 +683,7 @@ function renderModeFields(mode = 'banner') {
         <label>Цвет<input id="calcLettersColor" value="чёрный"></label>
         <label>Материал<input id="calcLettersMaterial" value="самоклеящаяся плёнка"></label>
         <label>Себестоимость, ₽/шт<input id="calcLettersCost" type="number" min="0" step="1" value="25"></label>
-        <label>Цена клиенту, ₽/шт<input id="calcLettersClient" type="number" min="0" step="1" placeholder="Пусто = по общей наценке"></label>
+        <label>Цена клиенту, ₽/шт<input id="calcLettersClient" type="number" min="0" step="1" placeholder="Пусто = по общей наценке; 0 = бесплатно"></label>
       </div>`;
   }
   if (mode === 'service') {
@@ -696,7 +696,7 @@ function renderModeFields(mode = 'banner') {
           <input id="calcServiceCost" type="number" min="0" step="1" value="0">
         </label>
         <label>Цена клиенту, ₽
-          <input id="calcServiceClient" type="number" min="0" step="1" value="0">
+          <input id="calcServiceClient" type="number" min="0" step="1" placeholder="Пусто = по общей наценке; 0 = бесплатно">
         </label>
         <label>Комментарий
           <input id="calcServiceComment" placeholder="Например: монтаж на объекте клиента">
@@ -725,7 +725,7 @@ function renderModeFields(mode = 'banner') {
         <input id="calcCustomCost" type="number" min="0" step="1" value="0">
       </label>
       <label>Цена клиенту за ед.
-        <input id="calcCustomClient" type="number" min="0" step="1" value="0">
+        <input id="calcCustomClient" type="number" min="0" step="1" placeholder="Пусто = по общей наценке; 0 = бесплатно">
       </label>
       <label>Комментарий
         <input id="calcCustomComment" placeholder="Что входит в позицию">
@@ -781,7 +781,7 @@ function currentModeItems() {
       installation: num('calcContractorInstallation'),
       design: num('calcContractorDesign'),
       other: num('calcContractorOther'),
-      clientPrice: num('calcContractorClient'),
+      clientPrice: val('calcContractorClient'),
       internalComment: val('calcContractorComment')
     });
     if (!prepared.ok) {
@@ -882,16 +882,16 @@ function currentModeItems() {
     const height = num('calcLettersHeight') || 10;
     const color = val('calcLettersColor') || 'чёрный';
     const material = val('calcLettersMaterial') || 'самоклеящаяся плёнка';
-    return applyAutoPrice(parseCalculationPairs(val('calcLettersSpec')).map((part) => makeRawItem({ category: 'Буквы / цифры', itemType: 'Изготовление', name: `Буква/цифра «${part.name}» · ${height} см · ${color}`, unit: 'шт', qty: part.qty, contractorPrice: num('calcLettersCost'), clientPrice, comment: material, data: { calculation_mode: 'letters', symbol: part.name, height_cm: height, color, material, price_source: clientPrice > 0 ? 'manual' : 'auto' } })));
+    return applyAutoPrice(parseCalculationPairs(val('calcLettersSpec')).map((part) => makeRawItem({ category: 'Буквы / цифры', itemType: 'Изготовление', name: `Буква/цифра «${part.name}» · ${height} см · ${color}`, unit: 'шт', qty: part.qty, contractorPrice: num('calcLettersCost'), clientPrice, comment: material, data: { calculation_mode: 'letters', symbol: part.name, height_cm: height, color, material, price_source: val('calcLettersClient') !== '' ? 'manual' : 'auto' } })));
   }
   if (mode === 'service') {
     const cost = num('calcServiceCost');
     const client = num('calcServiceClient');
-    return applyAutoPrice([makeRawItem({ category: 'Услуги', itemType: 'Услуга', name: val('calcServiceName') || 'Услуга', unit: 'услуга', qty: 1, contractorPrice: cost, clientPrice: client, comment: val('calcServiceComment'), data: { calculation_mode: 'service', price_source: client > 0 ? 'manual' : 'auto' } })]);
+    return applyAutoPrice([makeRawItem({ category: 'Услуги', itemType: 'Услуга', name: val('calcServiceName') || 'Услуга', unit: 'услуга', qty: 1, contractorPrice: cost, clientPrice: client, comment: val('calcServiceComment'), data: { calculation_mode: 'service', price_source: val('calcServiceClient') !== '' ? 'manual' : 'auto' } })]);
   }
   const customCost = num('calcCustomCost');
   const customClient = num('calcCustomClient');
-  return applyAutoPrice([makeRawItem({ category: val('calcCustomCategory') || 'Ручная позиция', itemType: val('calcCustomType') || 'Услуга', name: val('calcCustomName') || 'Ручная позиция', unit: val('calcCustomUnit') || 'шт', qty: num('calcCustomQty') || 1, contractorPrice: customCost, clientPrice: customClient, comment: val('calcCustomComment'), data: { calculation_mode: 'custom', characteristics: val('calcCustomData'), price_source: customClient > 0 ? 'manual' : 'auto' } })]);
+  return applyAutoPrice([makeRawItem({ category: val('calcCustomCategory') || 'Ручная позиция', itemType: val('calcCustomType') || 'Услуга', name: val('calcCustomName') || 'Ручная позиция', unit: val('calcCustomUnit') || 'шт', qty: num('calcCustomQty') || 1, contractorPrice: customCost, clientPrice: customClient, comment: val('calcCustomComment'), data: { calculation_mode: 'custom', characteristics: val('calcCustomData'), price_source: val('calcCustomClient') !== '' ? 'manual' : 'auto' } })]);
 }
 
 function renderSmartPreview() {
@@ -1126,9 +1126,9 @@ function addSmartItems() {
     toast(calculationModeError || 'Заполните поля расчёта позиции');
     return;
   }
-  const invalid = items.map(calcItem).filter((item) => item.client_sum <= 0 || item.profit < 0 || item.qty <= 0);
+  const invalid = items.filter((item) => ![item.qty, item.client_price, item.contractor_price].every(Number.isFinite) || item.qty <= 0 || item.client_price < 0 || item.contractor_price < 0);
   if (invalid.length) {
-    toast('Проверьте позицию: сумма клиенту должна быть больше 0, расчёт не должен быть убыточным');
+    toast('Проверьте позицию: количество должно быть больше 0, цены — неотрицательными числами');
     return;
   }
   draftItems.push(...items);
