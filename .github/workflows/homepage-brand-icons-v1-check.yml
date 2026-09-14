@@ -1,0 +1,33 @@
+name: Homepage brand icons v1 check
+
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'assets/brand/leader-icons.svg'
+      - 'tools/check_homepage_brand_icons_v1.py'
+      - '.github/workflows/homepage-brand-icons-v1-check.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'index.html'
+      - 'assets/brand/leader-icons.svg'
+      - 'tools/check_homepage_brand_icons_v1.py'
+      - '.github/workflows/homepage-brand-icons-v1-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  homepage-brand-icons-v1:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate homepage icon system
+        run: python tools/check_homepage_brand_icons_v1.py
