@@ -93,3 +93,25 @@ fields.get('calcTargetMargin').value = '';
 handlers.click({ target: { closest: selector => selector === '#applyAutomaticCalcPricesBtn' ? {} : null } });
 assert.equal(vm.runInContext('draftItems[3].client_price', ctx), 100, 'zero tier rule must reach actual builder handler');
 console.log('Builder pricing controls: explicit apply, zero tiers, manual/catalog protection PASS.');
+
+// New-item forms must distinguish an explicit zero from an empty automatic price.
+ctx.parseCalculationPairs = () => [{ name: 'A', qty: 2 }];
+fields.get('calcMarkup').value = '30';
+vm.runInContext('draftItems = [];', ctx);
+for (const [mode, costId, priceId] of [
+  ['custom', 'calcCustomCost', 'calcCustomClient'],
+  ['service', 'calcServiceCost', 'calcServiceClient'],
+  ['letters', 'calcLettersCost', 'calcLettersClient']
+]) {
+  fields.set('calcSmartMode', { value: mode });
+  fields.set(costId, { value: '1000' });
+  for (const [input, expected, source] of [['0', 0, 'manual'], ['', 1300, 'auto'], ['500', 500, 'manual']]) {
+    fields.set(priceId, { value: input });
+    const row = vm.runInContext('currentModeItems()[0]', ctx);
+    assert.equal(row.client_price, expected, `${mode}: input ${JSON.stringify(input)} must preserve employee intent`);
+    assert.equal(row.data.price_source, source);
+    const repricedRow = repriceAutomaticItems([row], { ...settings, fixedMarkup: 50 })[0];
+    assert.equal(repricedRow.client_price, source === 'manual' ? expected : 1500);
+  }
+}
+console.log('New-item forms: manual zero, below-cost price, empty auto price and subsequent repricing PASS.');

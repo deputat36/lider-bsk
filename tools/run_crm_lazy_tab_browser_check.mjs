@@ -109,8 +109,25 @@ rapid={final_tab:document.body.dataset.v4Tab,url_tab:new URL(location.href).sear
 await openTab('orders');await openTab('finance_control');history.back();await waitFor(()=>document.body.dataset.v4Tab==='orders'&&sectionReady('orders'),'history_back_timeout');history.forward();await waitFor(()=>document.body.dataset.v4Tab==='finance_control'&&sectionReady('finance_control'),'history_forward_timeout');historyResult={back:'orders',forward:'finance_control'};
 }
 const layout=layoutEvidence();assert(!layout.horizontal_overflow,'horizontal_overflow');assert(!layout.button_overlap,'navigation_button_overlap');assert(document.body.innerText.trim().length>200,'blank_workspace');
+// Exercise the real calculation builder with isolated in-memory state, without saving.
+const {v4State}=await import('./state.js');
+v4State.route.leadId='22222222-2222-4222-8222-222222222222';v4State.calculationsBusy=false;
+const calcHost=document.getElementById('leadCardSection');
+calcHost.innerHTML='<div id="calculationsBox"></div>';
+const calc=await import('./calculations.js');calc.bootCalculations();
+await waitFor(()=>!v4State.calculationsBusy,'calculation_mock_load');calc.renderCalculations();
+const fill=(id,value)=>{const input=document.getElementById(id);assert(input,'missing_input:'+id);input.value=value;input.dispatchEvent(new Event('input',{bubbles:true}));};
+document.querySelector('[data-calc-mode="custom"]').click();
+fill('calcCustomCost','1000');fill('calcCustomClient','0');
+document.getElementById('addSmartCalcItemBtn').click();
+const price=()=>document.querySelector('[data-calc-row-field="client_price"]')?.value;
+assert(price()==='0','new_manual_zero_overwritten');
+fill('calcMarkup','50');document.getElementById('applyAutomaticCalcPricesBtn').click();
+assert(price()==='0','manual_zero_repriced');
+assert(document.querySelector('[data-calc-row-field="client_price"]').closest('tr').innerText.includes('Ручная'),'manual_zero_label');
+assert(window.__CRM_BROWSER_MOCK__.mutations.length===0,'pricing_mock_mutation');
 await sleep(200);assert(window.__CRM_BROWSER_ERRORS__.length===0,'browser_errors:'+JSON.stringify(window.__CRM_BROWSER_ERRORS__));
-finish('passed',{eager_entrypoints:eagerEntrypoints,initial_heavy_modules:initialHeavy,first,repeated,rapid,history:historyResult,layout,installation_imports:1,mock_mutations:0,console_errors:0});
+finish('passed',{eager_entrypoints:eagerEntrypoints,initial_heavy_modules:initialHeavy,first,repeated,rapid,history:historyResult,layout,installation_imports:1,mock_mutations:0,console_errors:0,manual_zero_price_preserved:true});
 }catch(error){const feedback=document.getElementById('v4TabLoadFeedback');finish('failed',{error:String(error?.message||error||'lazy_browser_failed'),tab:document.body.dataset.v4Tab,layout:layoutEvidence(),browser_errors:window.__CRM_BROWSER_ERRORS__,browser_warnings:window.__CRM_BROWSER_WARNINGS__,loader:{state:feedback?.dataset?.v4LoaderState||'',tab:feedback?.dataset?.v4LoaderTab||'',hidden:Boolean(feedback?.hidden),text:String(feedback?.innerText||'').slice(0,300)},managed_sections:[...document.querySelectorAll('[data-v4-managed-section]')].map(section=>({tab:section.dataset.v4ManagedSection,hidden:section.hidden})),loaded_modules:jsResources().map(url=>url.split('/').pop()).slice(-40),mock_mutations:window.__CRM_BROWSER_MOCK__?.mutations||[]});}}
 run();
 `;

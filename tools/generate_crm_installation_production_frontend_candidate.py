@@ -34,7 +34,7 @@ SOURCES = {
     },
     'index': {
         'path': ROOT / 'crm/v4/index.html',
-        'blob_sha': '96820c07c4ba8ddb28e934405d61e9d77f4daea9',
+        'blob_sha': 'f0a077260aca7b27f12bb0bf5aa1a69728d14641',
     },
 }
 
