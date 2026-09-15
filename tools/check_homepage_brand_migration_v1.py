@@ -25,7 +25,7 @@ if HOME.exists():
     imports = (
         '@import url("brand/leader-tokens.css?v=1");',
         '@import url("brand/leader-components-v1.css?v=1");',
-        '@import url("public-homepage-brand-v1.css?v=1");',
+        '@import url("public-homepage-brand-v1.css?v=2");',
     )
     for marker in imports:
         require(marker in text, f"homepage CSS missing brand import: {marker}")
@@ -35,8 +35,8 @@ if HOME.exists():
 
 if INDEX.exists():
     text = INDEX.read_text(encoding="utf-8")
-    require('assets/public-homepage.css?v=2' in text, "homepage CSS cache marker must be v=2")
-    require(text.count('assets/public-homepage.css?v=2') == 1, "homepage CSS v=2 link must appear exactly once")
+    require('assets/public-homepage.css?v=3' in text, "homepage CSS cache marker must be v=2")
+    require(text.count('assets/public-homepage.css?v=3') == 1, "homepage CSS v=2 link must appear exactly once")
 
 if MIGRATION.exists():
     text = MIGRATION.read_text(encoding="utf-8")
