@@ -7,6 +7,7 @@ on:
       - '404.html'
       - 'assets/public-utility-pages.css'
       - 'tools/check_public_404_page.py'
+      - 'tools/test_public_404_browser.mjs'
       - 'docs/PUBLIC_404_PAGE_2026-07-13.md'
       - 'docs/PUBLIC_UTILITY_PAGES_CSS_2026-07-15.md'
       - '.github/workflows/public-404-page-check.yml'
@@ -16,6 +17,7 @@ on:
       - '404.html'
       - 'assets/public-utility-pages.css'
       - 'tools/check_public_404_page.py'
+      - 'tools/test_public_404_browser.mjs'
       - 'docs/PUBLIC_404_PAGE_2026-07-13.md'
       - 'docs/PUBLIC_UTILITY_PAGES_CSS_2026-07-15.md'
       - '.github/workflows/public-404-page-check.yml'
@@ -30,3 +32,20 @@ jobs:
         run: |
           set -euo pipefail
           python3 tools/check_public_404_page.py
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated browser test dependency
+        run: |
+          npm install --no-save --package-lock=false playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Verify nested 404 recovery at desktop, tablet and mobile widths
+        run: node tools/test_public_404_browser.mjs
+      - name: Upload responsive screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-404-browser
+          path: artifacts/public-404/
+          retention-days: 3

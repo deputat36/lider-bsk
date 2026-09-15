@@ -2,18 +2,19 @@
 from html.parser import HTMLParser
 from pathlib import Path
 import sys
+from urllib.parse import urljoin, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 PAGE = ROOT / "404.html"
 CSS = ROOT / "assets" / "public-utility-pages.css"
 REQUIRED_LINKS = {
     "/",
-    "request.html",
-    "uslugi.html",
-    "primery-rabot-kejsy.html",
-    "prices.html",
-    "kontakty.html",
-    "privacy.html",
+    "/request.html",
+    "/uslugi.html",
+    "/primery-rabot-kejsy.html",
+    "/prices.html",
+    "/kontakty.html",
+    "/privacy.html",
     "tel:+79802457471",
 }
 
@@ -84,7 +85,7 @@ def main() -> None:
         errors.append("404.html recovery navigation must have an aria-label")
     if parser.form_markers:
         errors.append("404.html must not embed or initialize the public lead form")
-    if parser.stylesheets != ["assets/public-utility-pages.css?v=1"]:
+    if parser.stylesheets != ["/assets/public-utility-pages.css?v=1"]:
         errors.append(f"404.html has unexpected stylesheets: {parser.stylesheets!r}")
     if "page-not-found" not in parser.body_classes:
         errors.append("404.html must use body class page-not-found")
@@ -96,6 +97,16 @@ def main() -> None:
     missing = sorted(REQUIRED_LINKS - set(parser.hrefs))
     if missing:
         errors.append(f"404.html is missing recovery links: {missing!r}")
+
+    # A custom 404 is rendered at the missing URL, including nested directories.
+    for base in ("https://www.lider-bsk.ru/missing", "https://www.lider-bsk.ru/banner/missing", "https://www.lider-bsk.ru/a/b/missing/"):
+        for href in parser.hrefs + parser.stylesheets:
+            if href.startswith("tel:"):
+                continue
+            resolved = urlsplit(urljoin(base, href))
+            target = ROOT / (resolved.path.lstrip("/") or "index.html")
+            if not href.startswith("/") or not target.is_file():
+                errors.append(f"404 recovery target fails at {base}: {href} → {resolved.path}")
 
     for forbidden in (
         "leader-public-lead",
