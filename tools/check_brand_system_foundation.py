@@ -11,6 +11,7 @@ REVIEW = ROOT / "brand-system-review.html"
 DOC = ROOT / "docs" / "BRAND_SYSTEM_RA_LIDER.md"
 WEB_DOC = ROOT / "docs" / "WEB_BRANDBOOK_RA_LIDER.md"
 CRM_DOC = ROOT / "docs" / "CRM_BRANDBOOK_RA_LIDER.md"
+DEMO_DOC = ROOT / "docs" / "DEMO_MATERIALS_GUIDE_RA_LIDER.md"
 QUICK_GUIDE = ROOT / "docs" / "BRAND_QUICK_GUIDE_RA_LIDER.md"
 ASSET_README = ROOT / "assets" / "brand" / "README.md"
 LOGO = ROOT / "assets" / "brand" / "logo-lider-header.svg"
@@ -26,7 +27,7 @@ def require(condition: bool, message: str) -> None:
 
 
 for path in (
-    TOKENS, TOKENS_JSON, COMPONENTS, REVIEW, DOC, WEB_DOC, CRM_DOC,
+    TOKENS, TOKENS_JSON, COMPONENTS, REVIEW, DOC, WEB_DOC, CRM_DOC, DEMO_DOC,
     QUICK_GUIDE, ASSET_README, LOGO, MARK, LEGACY_LIGHT,
 ):
     require(path.exists(), f"missing required brand asset: {path.relative_to(ROOT)}")
@@ -170,6 +171,29 @@ if CRM_DOC.exists():
             "CRM brandbook must keep brand-vs-semantic color boundary")
     require("gradient primary button" in text,
             "CRM brandbook must keep target removal of advertising gradients")
+
+if DEMO_DOC.exists():
+    text = DEMO_DOC.read_text(encoding="utf-8")
+    for marker in (
+        "# Демо-материалы РА «Лидер»",
+        "Демо-материалы помогают клиенту понять",
+        "НЕ являются портфолио",
+        "Демонстрационный пример",
+        "Визуализация. Не является выполненным объектом.",
+        "## 7. Серия демо: типы вывесок",
+        "## 9. Серия демо: способы монтажа",
+        "## 11. Серия демо: печатная продукция",
+        "## 17. AI и генеративная графика",
+        "## 23. Каталог демо-ассетов",
+        "## 31. Definition of Done для одного демо-материала",
+        "Что вы можете для меня сделать и какой вариант мне выбрать?",
+        "Что вы уже реально делали?",
+    ):
+        require(marker in text, f"demo materials guide missing marker: {marker}")
+    require("Портфолио хранится отдельно" in text,
+            "demo guide must keep portfolio assets separate from demo assets")
+    require("AI-рендер не является техническим чертежом" in text,
+            "demo guide must keep AI-vs-technical-drawing boundary")
 
 if QUICK_GUIDE.exists():
     text = QUICK_GUIDE.read_text(encoding="utf-8")
