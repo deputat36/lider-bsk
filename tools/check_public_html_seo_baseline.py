@@ -4,7 +4,7 @@ from __future__ import annotations
 from collections import Counter
 from html.parser import HTMLParser
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import urljoin, urlsplit
 import re
 import sys
 
@@ -18,6 +18,9 @@ PUBLIC_SUBPAGES = (
 EXCLUDED_ROOT_PAGES = {
     "deal-card-v2.html",
     "deals-v2.html",
+}
+UTILITY_PAGES = EXCLUDED_ROOT_PAGES | {
+    "logo-review.html", "brand-system-review.html", "utm-links.html",
 }
 ALLOWED_ROBOTS = {"index,follow", "noindex,follow", "noindex,nofollow"}
 
@@ -33,6 +36,7 @@ class PageParser(HTMLParser):
         self.canonicals: list[str] = []
         self.titles: list[str] = []
         self.h1_texts: list[str] = []
+        self.hrefs: list[str] = []
         self._capture_title = False
         self._capture_h1 = False
         self._buffer: list[str] = []
@@ -40,6 +44,8 @@ class PageParser(HTMLParser):
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         values = {name.lower(): (value or "").strip() for name, value in attrs}
         tag = tag.lower()
+        if tag == "a" and values.get("href"):
+            self.hrefs.append(values["href"])
         if tag == "html":
             self.html_langs.append(values.get("lang", ""))
         elif tag == "meta":
@@ -132,6 +138,15 @@ def main() -> None:
     noindex_follow_pages = 0
     closed_utility_pages = 0
 
+    # Navigator shells have no server-rendered H1, but still need indexing guards.
+    for name in sorted(UTILITY_PAGES):
+        parser = PageParser()
+        parser.feed((ROOT / name).read_text(encoding="utf-8"))
+        if [normalize_robots(value) for value in parser.robots] != ["noindex,nofollow"]:
+            errors.append(f"{name}: utility page must declare noindex,nofollow")
+        if HOST + "/" + name in sitemap:
+            errors.append(f"{name}: utility page must not appear in sitemap")
+
     for page in pages:
         parser = PageParser()
         parser.feed(page.read_text(encoding="utf-8"))
@@ -182,6 +197,10 @@ def main() -> None:
         self_canonical = expected_self_canonical(page)
         if robots == "index,follow":
             indexable_pages += 1
+            for href in parser.hrefs:
+                target = urlsplit(urljoin(self_canonical, href))
+                if target.netloc == "www.lider-bsk.ru" and target.path.lstrip("/") in UTILITY_PAGES:
+                    errors.append(f"{name}: public link exposes utility page {href!r}")
             if canonical and canonical != self_canonical:
                 errors.append(f"{name}: indexable page canonical must be self URL {self_canonical!r}, got {canonical!r}")
             if page.parent == ROOT and self_canonical not in sitemap:
