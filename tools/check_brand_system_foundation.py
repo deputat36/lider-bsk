@@ -9,6 +9,8 @@ TOKENS_JSON = ROOT / "assets" / "brand" / "leader-tokens.json"
 COMPONENTS = ROOT / "assets" / "brand" / "leader-components-v1.css"
 REVIEW = ROOT / "brand-system-review.html"
 DOC = ROOT / "docs" / "BRAND_SYSTEM_RA_LIDER.md"
+WEB_DOC = ROOT / "docs" / "WEB_BRANDBOOK_RA_LIDER.md"
+CRM_DOC = ROOT / "docs" / "CRM_BRANDBOOK_RA_LIDER.md"
 QUICK_GUIDE = ROOT / "docs" / "BRAND_QUICK_GUIDE_RA_LIDER.md"
 ASSET_README = ROOT / "assets" / "brand" / "README.md"
 LOGO = ROOT / "assets" / "brand" / "logo-lider-header.svg"
@@ -24,8 +26,8 @@ def require(condition: bool, message: str) -> None:
 
 
 for path in (
-    TOKENS, TOKENS_JSON, COMPONENTS, REVIEW, DOC, QUICK_GUIDE,
-    ASSET_README, LOGO, MARK, LEGACY_LIGHT,
+    TOKENS, TOKENS_JSON, COMPONENTS, REVIEW, DOC, WEB_DOC, CRM_DOC,
+    QUICK_GUIDE, ASSET_README, LOGO, MARK, LEGACY_LIGHT,
 ):
     require(path.exists(), f"missing required brand asset: {path.relative_to(ROOT)}")
 
@@ -126,6 +128,48 @@ if DOC.exists():
             "brandbook must keep physical color matching disclaimer")
     require("logo-lider-light.svg` содержит встроенный растр" in text,
             "brandbook must classify raster-in-SVG legacy asset")
+
+if WEB_DOC.exists():
+    text = WEB_DOC.read_text(encoding="utf-8")
+    for marker in (
+        "# Брендбук публичного сайта РА «Лидер»",
+        "assets/brand/leader-tokens.css",
+        "assets/brand/leader-components-v1.css",
+        "assets/brand/leader-icons.svg",
+        "## 11. Hero",
+        "## 16. Портфолио и доказательства",
+        "## 17. Trust-system",
+        "## 20. Формы заявок",
+        "## 24. Responsive",
+        "## 25. Accessibility",
+        "## 30. Правило безопасной миграции",
+        "## 32. Definition of Done для публичной страницы",
+    ):
+        require(marker in text, f"website brandbook missing marker: {marker}")
+    require("фальшивые AI-фотографии" in text,
+            "website brandbook must forbid fake AI completed-work photography")
+
+if CRM_DOC.exists():
+    text = CRM_DOC.read_text(encoding="utf-8")
+    for marker in (
+        "# Брендбук CRM РА «Лидер»",
+        "crm/v4/assets/v4/brand-foundations-v2.css",
+        "## 6. Семантические цвета",
+        "## 15. Рабочие списки",
+        "## 18. Карточка заказа",
+        "## 20. Расчёт стоимости",
+        "## 27. Error state",
+        "## 31. Destructive actions",
+        "## 33. Permissions и роли",
+        "## 37. Responsive CRM",
+        "## 44. Текущий `brand-foundations-v2.css`",
+        "## 46. Definition of Done для CRM-экрана",
+    ):
+        require(marker in text, f"CRM brandbook missing marker: {marker}")
+    require("Orange не означает" in text,
+            "CRM brandbook must keep brand-vs-semantic color boundary")
+    require("gradient primary button" in text,
+            "CRM brandbook must keep target removal of advertising gradients")
 
 if QUICK_GUIDE.exists():
     text = QUICK_GUIDE.read_text(encoding="utf-8")
