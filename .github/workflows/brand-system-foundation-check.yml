@@ -9,6 +9,7 @@ on:
       - 'docs/BRAND_QUICK_GUIDE_RA_LIDER.md'
       - 'docs/WEB_BRANDBOOK_RA_LIDER.md'
       - 'docs/CRM_BRANDBOOK_RA_LIDER.md'
+      - 'docs/DEMO_MATERIALS_GUIDE_RA_LIDER.md'
       - 'tools/check_brand_system_foundation.py'
       - '.github/workflows/brand-system-foundation-check.yml'
   push:
@@ -21,6 +22,7 @@ on:
       - 'docs/BRAND_QUICK_GUIDE_RA_LIDER.md'
       - 'docs/WEB_BRANDBOOK_RA_LIDER.md'
       - 'docs/CRM_BRANDBOOK_RA_LIDER.md'
+      - 'docs/DEMO_MATERIALS_GUIDE_RA_LIDER.md'
       - 'tools/check_brand_system_foundation.py'
       - '.github/workflows/brand-system-foundation-check.yml'
 
