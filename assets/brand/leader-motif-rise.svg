@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 360" role="img" aria-labelledby="title desc">
+  <title id="title">Фирменный восходящий мотив РА «Лидер»</title>
+  <desc id="desc">Абстрактная диагональная геометрия для фонового использования в hero и CTA.</desc>
+  <g fill="none" stroke-linecap="square" transform="rotate(-17 400 180)">
+    <rect x="455" y="-130" width="56" height="620" fill="#FF6A00" opacity="0.92" stroke="none"/>
+    <rect x="555" y="-130" width="56" height="620" fill="#FF6A00" opacity="0.30" stroke="none"/>
+    <rect x="655" y="-130" width="56" height="620" fill="#FFFFFF" opacity="0.10" stroke="none"/>
+  </g>
+</svg>
