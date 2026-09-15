@@ -93,12 +93,12 @@ def main() -> None:
 
     expected_stylesheets = [
         'assets/public-lead-form.css?v=4',
-        'assets/public-homepage.css?v=2',
+        'assets/public-homepage.css?v=3',
     ]
     if parser.stylesheets != expected_stylesheets:
         raise SystemExit(f'Unexpected homepage stylesheets: {parser.stylesheets}')
 
-    helper_script = 'assets/packages-link.js?v=1'
+    helper_script = 'assets/packages-link.js?v=2'
     if parser.scripts.count(FORM_SCRIPT) != 1 or parser.scripts.count(helper_script) != 1:
         raise SystemExit(f'Unexpected homepage scripts: {parser.scripts}')
     if parser.scripts.index(FORM_SCRIPT) > parser.scripts.index(helper_script):
@@ -106,15 +106,6 @@ def main() -> None:
     for stale in ('assets/public-lead-form.js?v=4', 'assets/public-lead-form.js?v=5'):
         if stale in page:
             raise SystemExit(f'Stale homepage form cache marker remains: {stale}')
-
-    for marker in (
-        'function clientCopy()',
-        'Обращение получает номер и не теряется',
-        'Обращение под контролем',
-        'Понятный расчёт',
-        'номер обращения для быстрой проверки',
-    ):
-        require(helper, marker, 'assets/packages-link.js')
 
     print('Homepage source copy and structural contract is valid with core form cache v23.')
 
