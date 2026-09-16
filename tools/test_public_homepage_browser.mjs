@@ -67,6 +67,7 @@ try {
       assert.equal(await nav.isVisible(), false);
       await button.click();
       await page.setViewportSize({ width: 1440, height: 900 });
+      await page.waitForFunction(() => document.querySelector('.menu-btn').getAttribute('aria-expanded') === 'false');
       assert.equal(await nav.isVisible(), true);
       assert.equal(await button.getAttribute('aria-expanded'), 'false');
       await page.setViewportSize({ width, height: 900 });
