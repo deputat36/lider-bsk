@@ -542,3 +542,5 @@ Cloud Browser подтвердил замену явно введённых 0 �
 - packages-link.js теперь только управляет меню: aria-expanded, Escape/focus, переход к разделу, выход фокуса и resize. SVG сохраняется. Без JavaScript навигация доступна.
 - Локальные homepage/DOM/brand checkers прошли. Chromium run 35058528163 на baf75c80 прошёл 1440/1024/768/390/360, сценарий → prefill формы, Escape/focus/resize, no-JS. Console/errors/failed assets/writes = 0. Скриншоты desktop/mobile просмотрены. Выявленный конфликт legacy CSS формы с меню и логотипом исправлен. Последняя правка добавляет reduced-motion и отступ якоря главной; финальный CI и публикация проверяются перед/после merge.
 - Production backend, Supabase, Auth и формы не изменяются; E2E блокирует внешнюю сеть и записи.
+
+- Дополнительно Cloud Browser воспроизвёл: «Обсудить соцсети» оставляло «Баннер» в форме. Шесть service CTA получили data-service для существующего обработчика; тест проверяет выбор услуги и сохранение введённого описания. Отправки формы нет.

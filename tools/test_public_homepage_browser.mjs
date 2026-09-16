@@ -82,6 +82,13 @@ try {
     await page.waitForTimeout(1300);
     assert.equal(await page.locator('#main-navigation').innerHTML(), before);
     assert.equal(await page.locator('#leader-ui-fix-v10').count(), 0);
+    for (const service of ['Вывеска / наружная реклама', 'Печать на плёнке', 'Плоттерная резка', 'Дизайн макета', 'Соцсети и контент', 'Яндекс Карты и 2ГИС']) {
+      await page.locator(`#services [data-service="${service}"]`).click();
+      assert.equal(await page.locator('#leader-lead-form [name="service"]').inputValue(), service);
+    }
+    // Existing client text must survive service selection, and scenario prefill needs an empty draft.
+    assert.match(await page.locator('#leader-lead-form [name="message"]').inputValue(), /Вывеска/);
+    await page.locator('#leader-lead-form [name="message"]').fill('');
     await page.locator('[data-scenario="shop"]').click();
     assert.equal(await page.locator('#leader-lead-form [name="service"]').inputValue(), 'Комплексная реклама');
     assert.match(await page.locator('#leader-lead-form [name="message"]').inputValue(), /магазин/);
