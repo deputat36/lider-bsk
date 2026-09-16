@@ -31,11 +31,16 @@ try {
       const req = route.request();
       if (req.method() !== 'GET') writes.push(req.url());
       if (req.url().startsWith(origin + '/') && req.method() === 'GET') return route.continue();
-      blocked.push(req.url()); return route.abort();
+      blocked.push(req.url());
+      // Analytics is deliberately isolated; unexpected network still fails below.
+      if (req.url() === 'https://mc.yandex.ru/metrika/tag.js' && req.method() === 'GET') {
+        return route.fulfill({ status: 200, contentType: 'text/javascript', body: '/* analytics disabled in isolated UI test */' });
+      }
+      return route.abort();
     });
     await page.goto(origin + '/');
     const nav = page.getByRole('navigation', { name: 'Основная навигация' });
-    const button = page.getByRole('button', { name: 'Открыть меню', exact: true });
+    const button = page.locator('.menu-btn');
     assert.equal(await page.locator('.brand-logo').evaluate(el => el.complete && el.naturalWidth > 0), true);
     assert.equal(await page.locator('#leader-lead-form form').count(), 1);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
@@ -72,6 +77,10 @@ try {
     await page.waitForTimeout(1300);
     assert.equal(await page.locator('#main-navigation').innerHTML(), before);
     assert.equal(await page.locator('#leader-ui-fix-v10').count(), 0);
+    await page.locator('[data-scenario="shop"]').click();
+    assert.equal(await page.locator('#leader-lead-form [name="service"]').inputValue(), 'Комплексная реклама');
+    assert.match(await page.locator('#leader-lead-form [name="message"]').inputValue(), /магазин/);
+    await page.getByRole('link', { name: 'РА Лидер — на главную', exact: true }).click();
     await page.screenshot({ path: `artifacts/public-homepage/${width}.png`, fullPage: false });
     assert.deepEqual(errors, []); assert.deepEqual(failed, []); assert.deepEqual(writes, []);
     console.log(JSON.stringify({ width, logoLoaded: true, menu: true, formMounted: true, overflow: false, errors, failed, writes, externalRequestsBlocked: blocked.length }));
