@@ -62,8 +62,13 @@ try {
       await button.click();
       await page.screenshot({ path: `artifacts/public-homepage/menu-${width}.png`, fullPage: false });
       await page.keyboard.press('Escape');
+      await button.click();
+      await page.locator('#services h2').click();
+      assert.equal(await nav.isVisible(), false);
+      await button.click();
       await page.setViewportSize({ width: 1440, height: 900 });
       assert.equal(await nav.isVisible(), true);
+      assert.equal(await button.getAttribute('aria-expanded'), 'false');
       await page.setViewportSize({ width, height: 900 });
       assert.equal(await nav.isVisible(), false);
     } else {

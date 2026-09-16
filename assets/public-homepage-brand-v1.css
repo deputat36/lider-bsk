@@ -208,6 +208,7 @@ html body .package__label {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
   html body .btn {
     transition: none;
   }
@@ -232,7 +233,7 @@ html body .menu-btn[aria-expanded="true"] { background: var(--brand-orange-soft)
 html body .leader-extra-links { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 html body .leader-extra-links a { padding: 24px; border: 1px solid var(--border-default); border-radius: var(--radius-lg); background: var(--surface-card); font-weight: 700; }
 html body .leader-extra-links a:hover { border-color: var(--brand-orange); }
-html body section[id] { scroll-margin-top: 160px; }
+html body section[id], html body #top { scroll-margin-top: 160px; }
 @media (max-width: 1060px) {
   html body .header__in { grid-template-columns: 225px 1fr; }
   html body .header .brand, html body .brand-logo { width: 225px !important; }
@@ -245,7 +246,7 @@ html body section[id] { scroll-margin-top: 160px; }
   html body .header .nav a { padding: 8px 12px; border-radius: var(--radius-sm); }
   html body .header .nav a:hover { background: var(--surface-subtle); }
   html body .leader-extra-links { grid-template-columns: repeat(2, 1fr); }
-  html body section[id] { scroll-margin-top: 100px; }
+  html body section[id], html body #top { scroll-margin-top: 100px; }
 }
 @media (max-width: 720px) {
   html body .header__in { grid-template-columns: 184px 1fr; padding: 8px 0; }
