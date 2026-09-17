@@ -102,6 +102,7 @@ try {
     assert.equal(await page.locator('#leader-lead-form [name="service"]').inputValue(), 'Комплексная реклама');
     assert.match(await page.locator('#leader-lead-form [name="message"]').inputValue(), /магазин/);
     await page.getByRole('link', { name: 'РА Лидер — на главную', exact: true }).click();
+    await page.waitForFunction(() => scrollY === 0);
     await page.screenshot({ path: `artifacts/public-homepage/${width}.png`, fullPage: false });
     assert.deepEqual(errors, []); assert.deepEqual(failed, []); assert.deepEqual(writes, []);
     console.log(JSON.stringify({ width, logoLoaded: true, menu: true, formMounted: true, overflow: false, errors, failed, writes, externalRequestsBlocked: blocked.length }));

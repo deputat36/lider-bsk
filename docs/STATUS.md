@@ -552,3 +552,4 @@ Cloud Browser подтвердил замену явно введённых 0 �
 - Existing hero now names the actual services, has a short introduction, two actions and two factual notes. Removed hero/primary-button shadows and transparent hero-card surface; retained existing scenario/form paths.
 - Fixed reduced-motion cascade specificity; browser regression checks computed scrolling behavior and first-screen CTA at five widths.
 - This iteration is source-only; final CI/screenshots/publication pending. No Supabase operations or form submissions.
+- Browser screenshots exposed the legacy #top target on main, clipping the top bar after logo navigation. Moved the target to the start of the document and added scrollY=0 regression.
