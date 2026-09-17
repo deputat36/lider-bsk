@@ -553,3 +553,11 @@ Cloud Browser подтвердил замену явно введённых 0 �
 - Fixed reduced-motion cascade specificity; browser regression checks computed scrolling behavior and first-screen CTA at five widths.
 - This iteration is source-only; final CI/screenshots/publication pending. No Supabase operations or form submissions.
 - Browser screenshots exposed the legacy #top target on main, clipping the top bar after logo navigation. Moved the target to the start of the document and added scrollY=0 regression.
+
+
+## 2026-09-17 — Real portfolio intake / #235
+
+- #540 merged as ba5489d425bf54aafdf19e9d15442f48069e919b; 52 PR checks success + IndexNow skipped, 56 main checks success, Pages 35185895389 success. Published hero/service prefill/logo return verified in Cloud Browser; five responsive screenshots reviewed.
+- Replaced the empty intake registry with the owner's named project list and a versioned manifest of expected photo slots, service pages and categories. All entries remain unpublished while original photos are unavailable.
+- Publication prerequisite checker is added to the existing public site workflow; missing files/metadata, duplicate IDs and non-local paths are rejected for ready entries. No frontend consumes the manifest yet; no fake portfolio is published.
+- #235 remains open until original photos are available, inspected and published. No Supabase or form submissions in this iteration.
