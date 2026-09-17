@@ -5,6 +5,8 @@ on:
     paths:
       - 'index.html'
       - 'assets/public-homepage.css'
+      - 'assets/packages-link.js'
+      - 'tools/test_public_homepage_browser.mjs'
       - 'assets/public-homepage-brand-v1.css'
       - 'assets/brand/**'
       - 'tools/check_homepage_brand_migration_v1.py'
@@ -15,6 +17,8 @@ on:
     paths:
       - 'index.html'
       - 'assets/public-homepage.css'
+      - 'assets/packages-link.js'
+      - 'tools/test_public_homepage_browser.mjs'
       - 'assets/public-homepage-brand-v1.css'
       - 'assets/brand/**'
       - 'tools/check_homepage_brand_migration_v1.py'
@@ -35,3 +39,20 @@ jobs:
           python-version: '3.12'
       - name: Validate homepage brand migration
         run: python tools/check_homepage_brand_migration_v1.py
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser test dependency
+        run: |
+          npm install --no-save --package-lock=false playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Check homepage navigation, form mount and responsive layout
+        run: node tools/test_public_homepage_browser.mjs
+      - name: Upload homepage screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-homepage-browser
+          path: artifacts/public-homepage/
+          retention-days: 3

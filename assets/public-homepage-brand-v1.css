@@ -208,6 +208,7 @@ html body .package__label {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
   html body .btn {
     transition: none;
   }
@@ -215,4 +216,41 @@ html body .package__label {
   html body .btn:hover {
     transform: none;
   }
+}
+
+/* Static header replaces the delayed packages-link style/content patch. */
+html body .header { background: var(--surface-card); backdrop-filter: none; }
+html body .header__in { display: grid; grid-template-columns: 250px 1fr; gap: 12px 24px; padding: 12px 0; }
+/* Shared legacy form CSS still patches headers on other pages; contain that here. */
+html body .header .brand { min-width: 0 !important; width: 250px !important; height: auto !important; }
+html body .header .brand::before { display: none !important; }
+html body .brand-logo { display: block; width: 250px; height: 66px; object-fit: contain; }
+html body .header__cta { justify-self: end; }
+html body .header .nav { grid-column: 1 / -1; grid-row: 2; justify-content: center; gap: 8px 32px; }
+html body .header .nav a { display: inline-flex; align-items: center; min-height: 44px; }
+html body .menu-btn { cursor: pointer; }
+html body .menu-btn[aria-expanded="true"] { background: var(--brand-orange-soft); border-color: var(--brand-orange); }
+html body .leader-extra-links { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+html body .leader-extra-links a { padding: 24px; border: 1px solid var(--border-default); border-radius: var(--radius-lg); background: var(--surface-card); font-weight: 700; }
+html body .leader-extra-links a:hover { border-color: var(--brand-orange); }
+html body section[id], html body #top { scroll-margin-top: 160px; }
+@media (max-width: 1060px) {
+  html body .header__in { grid-template-columns: 225px 1fr; }
+  html body .header .brand, html body .brand-logo { width: 225px !important; }
+  html body .brand-logo { height: 60px; }
+  html body .header .nav { display: flex !important; flex-wrap: wrap; }
+  html body .header .menu-btn { display: none !important; }
+  html body .header.navigation-ready .menu-btn { display: grid !important; }
+  html body .header.navigation-ready .nav { display: none !important; }
+  html body .header.navigation-ready.open .nav { display: grid !important; grid-template-columns: 1fr; gap: 4px; max-height: 60vh; overflow-y: auto; }
+  html body .header .nav a { padding: 8px 12px; border-radius: var(--radius-sm); }
+  html body .header .nav a:hover { background: var(--surface-subtle); }
+  html body .leader-extra-links { grid-template-columns: repeat(2, 1fr); }
+  html body section[id], html body #top { scroll-margin-top: 100px; }
+}
+@media (max-width: 720px) {
+  html body .header__in { grid-template-columns: 184px 1fr; padding: 8px 0; }
+  html body .header .brand, html body .brand-logo { width: 184px !important; }
+  html body .brand-logo { height: 49px; }
+  html body .leader-extra-links { grid-template-columns: 1fr; }
 }
