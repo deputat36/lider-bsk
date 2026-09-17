@@ -39,6 +39,14 @@ try {
       return route.abort();
     });
     await page.goto(origin + '/');
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior), 'auto');
+    assert.equal(await page.locator('.hero__actions a').count(), 2);
+    assert.equal(await page.locator('.hero__actions .btn--accent').evaluate(el => {
+      const r = el.getBoundingClientRect();
+      return r.top >= 0 && r.bottom <= innerHeight - 70 && r.width >= 44 && r.height >= 44;
+    }), true, `Primary hero action must be on the first screen at ${width}px`);
+    assert.equal(await page.locator('.hero-card').evaluate(el => getComputedStyle(el).boxShadow), 'none');
     const nav = page.getByRole('navigation', { name: 'Основная навигация' });
     const button = page.locator('.menu-btn');
     assert.equal(await page.locator('.brand-logo').evaluate(el => el.complete && el.naturalWidth > 0), true);

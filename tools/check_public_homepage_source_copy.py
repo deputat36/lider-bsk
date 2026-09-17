@@ -93,7 +93,7 @@ def main() -> None:
 
     expected_stylesheets = [
         'assets/public-lead-form.css?v=4',
-        'assets/public-homepage.css?v=3',
+        'assets/public-homepage.css?v=4',
     ]
     if parser.stylesheets != expected_stylesheets:
         raise SystemExit(f'Unexpected homepage stylesheets: {parser.stylesheets}')

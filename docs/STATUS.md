@@ -544,3 +544,11 @@ Cloud Browser подтвердил замену явно введённых 0 �
 - Production backend, Supabase, Auth и формы не изменяются; E2E блокирует внешнюю сеть и записи.
 
 - Дополнительно Cloud Browser воспроизвёл: «Обсудить соцсети» оставляло «Баннер» в форме. Шесть service CTA получили data-service для существующего обработчика; тест проверяет выбор услуги и сохранение введённого описания. Отправки формы нет.
+
+
+## 2026-09-17 — Homepage clarity / #539
+
+- #538 merged as `8f4712158142b27aa0b517f9f7d10b7c910e061a`; PR checks 52 success + IndexNow skipped, main 56 success. Pages `35185324649` success; published Cloud Browser confirms logo/menu/service prefill.
+- Existing hero now names the actual services, has a short introduction, two actions and two factual notes. Removed hero/primary-button shadows and transparent hero-card surface; retained existing scenario/form paths.
+- Fixed reduced-motion cascade specificity; browser regression checks computed scrolling behavior and first-screen CTA at five widths.
+- This iteration is source-only; final CI/screenshots/publication pending. No Supabase operations or form submissions.
