@@ -1,0 +1,313 @@
+{
+  "version": 1,
+  "source": "Owner website task: supplied project list; original image files unavailable in current workspace/repository on 2026-09-17.",
+  "projects": [
+    {
+      "id": "mix-food",
+      "owner_label": "MIX FOOD",
+      "categories": [
+        "signs",
+        "windows",
+        "print"
+      ],
+      "service_pages": [
+        "vyveski-borisoglebsk.html",
+        "oformlenie-vitrin-borisoglebsk.html"
+      ],
+      "status": "awaiting_originals",
+      "publish": false,
+      "photos": [
+        {
+          "slot": "facade",
+          "expected_web_path": "assets/portfolio/mix-food/mix-food-facade-borisoglebsk.webp",
+          "description_from_owner": "Фасад и вывеска MIX FOOD",
+          "source_file": null,
+          "width": null,
+          "height": null,
+          "alt": null
+        },
+        {
+          "slot": "windows",
+          "expected_web_path": "assets/portfolio/mix-food/mix-food-windows-borisoglebsk.webp",
+          "description_from_owner": "Оформление окон MIX FOOD",
+          "source_file": null,
+          "width": null,
+          "height": null,
+          "alt": null
+        },
+        {
+          "slot": "menu",
+          "expected_web_path": "assets/portfolio/mix-food/mix-food-menu-borisoglebsk.webp",
+          "description_from_owner": "Меню MIX FOOD",
+          "source_file": null,
+          "width": null,
+          "height": null,
+          "alt": null
+        },
+        {
+          "slot": "production",
+          "expected_web_path": "assets/portfolio/mix-food/mix-food-production-borisoglebsk.webp",
+          "description_from_owner": "Вывеска MIX FOOD до монтажа",
+          "source_file": null,
+          "width": null,
+          "height": null,
+          "alt": null
+        }
+      ]
+    },
+    {
+      "id": "tsvetochnaya-baza",
+      "owner_label": "Цветочная база",
+      "categories": [
+        "signs",
+        "windows"
+      ],
+      "service_pages": [
+        "vyveski-borisoglebsk.html",
+        "oformlenie-vitrin-borisoglebsk.html"
+      ],
+      "status": "awaiting_originals",
+      "publish": false,
+      "photos": [
+        {
+          "slot": "day",
+          "expected_web_path": "assets/portfolio/tsvetochnaya-baza/tsvetochnaya-baza-day-borisoglebsk.webp",
+          "description_from_owner": "Вывеска Цветочной базы днём",
+          "source_file": null,
+          "width": null,
+          "height": null,
+          "alt": null
+        },
+        {
+          "slot": "night",
+          "expected_web_path": "assets/portfolio/tsvetochnaya-baza/tsvetochnaya-baza-night-borisoglebsk.webp",
+          "description_from_owner": "Световая вывеска Цветочной базы ночью",
+          "source_file": null,
+          "width": null,
+          "height": null,
+          "alt": null
+        },
+        {
+          "slot": "windows",
+          "expected_web_path": "assets/portfolio/tsvetochnaya-baza/tsvetochnaya-baza-windows-borisoglebsk.webp",
+          "description_from_owner": "Оформление витрин Цветочной базы",
+          "source_file": null,
+          "width": null,
+          "height": null,
+          "alt": null
+        },
+        {
+          "slot": "production",
+          "expected_web_path": "assets/portfolio/tsvetochnaya-baza/tsvetochnaya-baza-production-borisoglebsk.webp",
+          "description_from_owner": "Вывеска Цветочной базы до монтажа",
+          "source_file": null,
+          "width": null,
+          "height": null,
+          "alt": null
+        }
+      ]
+    },
+    {
+      "id": "bormash",
+      "owner_label": "БОРМАШ / Борисоглебское машиностроение",
+      "categories": [
+        "signs"
+      ],
+      "service_pages": [
+        "vyveski-borisoglebsk.html"
+      ],
+      "status": "awaiting_originals",
+      "publish": false,
+      "photos": [
+        {
+          "slot": "facade",
+          "expected_web_path": "assets/portfolio/bormash/bormash-facade-borisoglebsk.webp",
+          "description_from_owner": "Фасадная вывеска БОРМАШ",
+          "source_file": null,
+          "width": null,
+          "height": null,
+          "alt": null
+        },
+        {
+          "slot": "production",
+          "expected_web_path": "assets/portfolio/bormash/bormash-production-borisoglebsk.webp",
+          "description_from_owner": "Объёмные элементы вывески БОРМАШ до монтажа",
+          "source_file": null,
+          "width": null,
+          "height": null,
+          "alt": null
+        }
+      ]
+    },
+    {
+      "id": "zavod-bormash",
+      "owner_label": "Завод БОРМАШ",
+      "categories": [
+        "signs"
+      ],
+      "service_pages": [
+        "vyveski-borisoglebsk.html"
+      ],
+      "status": "awaiting_originals",
+      "publish": false,
+      "photos": [
+        {
+          "slot": "night",
+          "expected_web_path": "assets/portfolio/zavod-bormash/zavod-bormash-night-borisoglebsk.webp",
+          "description_from_owner": "Световая фасадная вывеска завода БОРМАШ ночью",
+          "source_file": null,
+          "width": null,
+          "height": null,
+          "alt": null
+        },
+        {
+          "slot": "production",
+          "expected_web_path": "assets/portfolio/zavod-bormash/zavod-bormash-production-borisoglebsk.webp",
+          "description_from_owner": "Вывеска завода БОРМАШ до монтажа",
+          "source_file": null,
+          "width": null,
+          "height": null,
+          "alt": null
+        }
+      ]
+    },
+    {
+      "id": "panova-park",
+      "owner_label": "Панова Парк",
+      "categories": [
+        "structures"
+      ],
+      "service_pages": [
+        "vyveski-borisoglebsk.html"
+      ],
+      "status": "awaiting_originals",
+      "publish": false,
+      "photos": [
+        {
+          "slot": "structure",
+          "expected_web_path": "assets/portfolio/panova-park/panova-park-structure-borisoglebsk.webp",
+          "description_from_owner": "Отдельно стоящая рекламная конструкция Панова Парк",
+          "source_file": null,
+          "width": null,
+          "height": null,
+          "alt": null
+        }
+      ]
+    },
+    {
+      "id": "myasnoy-dvorik",
+      "owner_label": "Мясной Дворик",
+      "categories": [
+        "banners"
+      ],
+      "service_pages": [
+        "bannery-borisoglebsk.html"
+      ],
+      "status": "awaiting_originals",
+      "publish": false,
+      "photos": [
+        {
+          "slot": "facade",
+          "expected_web_path": "assets/portfolio/myasnoy-dvorik/myasnoy-dvorik-facade-borisoglebsk.webp",
+          "description_from_owner": "Фасадный баннер Мясной Дворик",
+          "source_file": null,
+          "width": null,
+          "height": null,
+          "alt": null
+        }
+      ]
+    },
+    {
+      "id": "pro-service",
+      "owner_label": "Pro-Service",
+      "categories": [
+        "banners"
+      ],
+      "service_pages": [
+        "bannery-borisoglebsk.html"
+      ],
+      "status": "awaiting_originals",
+      "publish": false,
+      "photos": [
+        {
+          "slot": "banner",
+          "expected_web_path": "assets/portfolio/pro-service/pro-service-banner-borisoglebsk.webp",
+          "description_from_owner": "Вертикальный рекламный баннер Pro-Service",
+          "source_file": null,
+          "width": null,
+          "height": null,
+          "alt": null
+        }
+      ]
+    },
+    {
+      "id": "ingosstrakh-borshchenka",
+      "owner_label": "Ингосстрах / Борщенка",
+      "categories": [
+        "signs"
+      ],
+      "service_pages": [
+        "vyveski-borisoglebsk.html"
+      ],
+      "status": "awaiting_originals",
+      "publish": false,
+      "photos": [
+        {
+          "slot": "facade",
+          "expected_web_path": "assets/portfolio/ingosstrakh-borshchenka/ingosstrakh-borshchenka-facade-borisoglebsk.webp",
+          "description_from_owner": "Фасадные объёмные буквы Ингосстрах / Борщенка",
+          "source_file": null,
+          "width": null,
+          "height": null,
+          "alt": null
+        }
+      ]
+    },
+    {
+      "id": "flower-window",
+      "owner_label": "Цветочная витрина",
+      "categories": [
+        "windows"
+      ],
+      "service_pages": [
+        "oformlenie-vitrin-borisoglebsk.html"
+      ],
+      "status": "awaiting_originals",
+      "publish": false,
+      "photos": [
+        {
+          "slot": "window",
+          "expected_web_path": "assets/portfolio/flower-window/flower-window-window-borisoglebsk.webp",
+          "description_from_owner": "Оформление цветочной витрины",
+          "source_file": null,
+          "width": null,
+          "height": null,
+          "alt": null
+        }
+      ]
+    },
+    {
+      "id": "auto-moto-window",
+      "owner_label": "Авто / Мото / Страхование / ОСАГО",
+      "categories": [
+        "windows"
+      ],
+      "service_pages": [
+        "nakleyki-na-vitrinu-borisoglebsk.html"
+      ],
+      "status": "awaiting_originals",
+      "publish": false,
+      "photos": [
+        {
+          "slot": "window",
+          "expected_web_path": "assets/portfolio/auto-moto-window/auto-moto-window-window-borisoglebsk.webp",
+          "description_from_owner": "Оформление окон Авто / Мото / Страхование / ОСАГО",
+          "source_file": null,
+          "width": null,
+          "height": null,
+          "alt": null
+        }
+      ]
+    }
+  ]
+}
