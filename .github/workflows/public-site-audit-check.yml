@@ -5,6 +5,10 @@ on:
   push:
     branches: [main]
     paths:
+      - 'docs/PUBLIC_PORTFOLIO_MANIFEST_V1.json'
+      - 'docs/PUBLIC_PORTFOLIO_MATERIALS_INTAKE_2026-07-13.md'
+      - 'assets/portfolio/**'
+      - 'tools/check_public_portfolio_manifest.py'
       - '*.html'
       - 'banner/index.html'
       - 'signs/index.html'
@@ -63,6 +67,10 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - 'docs/PUBLIC_PORTFOLIO_MANIFEST_V1.json'
+      - 'docs/PUBLIC_PORTFOLIO_MATERIALS_INTAKE_2026-07-13.md'
+      - 'assets/portfolio/**'
+      - 'tools/check_public_portfolio_manifest.py'
       - '*.html'
       - 'banner/index.html'
       - 'signs/index.html'
@@ -273,6 +281,9 @@ jobs:
 
       - name: Check public CI workflow contracts
         run: python3 tools/check_public_ci_workflows.py
+
+      - name: Check real portfolio publication prerequisites
+        run: python3 tools/check_public_portfolio_manifest.py
 
       - name: Check public scripts syntax
         shell: bash
