@@ -5,6 +5,7 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 
 const root = process.cwd();
+const servicesOnly = process.argv.includes('--services');
 const types = { '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.png': 'image/png', '.json': 'application/json', '.html': 'text/html; charset=utf-8' };
 const server = createServer(async (req, res) => {
   let file = path.resolve(root, '.' + new URL(req.url, 'http://localhost').pathname);
@@ -38,7 +39,51 @@ try {
       }
       return route.abort();
     });
-    await page.goto(origin + '/');
+    await page.goto(origin + (servicesOnly ? '/uslugi.html' : '/'));
+    if (servicesOnly) {
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      const nav = page.getByRole('navigation', { name: 'Основная навигация' });
+      const button = page.locator('.menu-btn');
+      assert.equal(await page.locator('.brand-logo').evaluate(el => el.complete && el.naturalWidth > 0), true);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+      assert.equal(await page.locator('.service-more').count(), 4);
+      assert.equal(await page.locator('.service-list a').count(), 40);
+      assert.equal(await page.locator('#leader-lead-form form').count(), 1);
+      await page.screenshot({ path: `artifacts/public-homepage/services-${width}.png` });
+      if (width <= 1060) {
+        assert.equal(await nav.isVisible(), false);
+        await button.click();
+        assert.equal(await nav.isVisible(), true);
+        await page.keyboard.press('Tab');
+        assert.equal(await page.evaluate(() => document.activeElement.getAttribute('href')), 'uslugi.html');
+        await page.keyboard.press('Escape');
+        assert.equal(await nav.isVisible(), false);
+        assert.equal(await button.getAttribute('aria-expanded'), 'false');
+      } else {
+        assert.equal(await nav.isVisible(), true);
+        assert.equal(await button.isVisible(), false);
+      }
+      for (const group of ['outdoor', 'print', 'design', 'online']) {
+        const details = page.locator(`#${group} details`);
+        const extra = details.locator('a').first();
+        assert.equal(await extra.isVisible(), false);
+        await details.locator('summary').focus();
+        await page.keyboard.press('Enter');
+        assert.equal(await extra.isVisible(), true);
+        await details.locator('summary').press('Enter');
+        assert.equal(await extra.isVisible(), false);
+      }
+      await page.locator('.quick-links a[href="#outdoor"]').click();
+      await page.screenshot({ path: `artifacts/public-homepage/services-group-${width}.png` });
+      await page.getByRole('link', { name: 'Подобрать услугу', exact: true }).click();
+      assert.equal(await page.locator('#leader-lead-form [name="service"]').isVisible(), true);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+      await page.screenshot({ path: `artifacts/public-homepage/services-form-${width}.png` });
+      assert.deepEqual(errors, []); assert.deepEqual(failed, []); assert.deepEqual(writes, []);
+      console.log(JSON.stringify({ page: 'services', width, menu: true, detailsKeyboard: true, formMounted: true, errors, failed, writes }));
+      await page.close();
+      continue;
+    }
     await page.emulateMedia({ reducedMotion: 'reduce' });
     assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior), 'auto');
     assert.equal(await page.locator('.hero__actions a').count(), 2);
@@ -109,9 +154,13 @@ try {
     await page.close();
   }
   const noJs = await browser.newPage({ javaScriptEnabled: false, viewport: { width: 390, height: 900 } });
-  await noJs.goto(origin + '/');
+  await noJs.goto(origin + (servicesOnly ? '/uslugi.html' : '/'));
   assert.equal(await noJs.getByRole('navigation', { name: 'Основная навигация' }).isVisible(), true);
-  assert.equal(await noJs.locator('#service-pages a').count(), 6);
+  if (servicesOnly) {
+    await noJs.locator('#outdoor summary').click();
+    assert.equal(await noJs.locator('#outdoor details a').first().isVisible(), true);
+    assert.equal(await noJs.locator('.service-list a').count(), 40);
+  } else assert.equal(await noJs.locator('#service-pages a').count(), 6);
   console.log('No-JavaScript commercial navigation: PASS');
   await noJs.close();
 } finally { await browser.close(); await new Promise(resolve => server.close(resolve)); }

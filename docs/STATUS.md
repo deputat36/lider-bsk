@@ -561,3 +561,11 @@ Cloud Browser подтвердил замену явно введённых 0 �
 - Replaced the empty intake registry with the owner's named project list and a versioned manifest of expected photo slots, service pages and categories. All entries remain unpublished while original photos are unavailable.
 - Publication prerequisite checker is added to the existing public site workflow; missing files/metadata, duplicate IDs and non-local paths are rejected for ready entries. No frontend consumes the manifest yet; no fake portfolio is published.
 - #235 remains open until original photos are available, inspected and published. No Supabase or form submissions in this iteration.
+
+
+## 2026-09-19 — Services navigation and progressive disclosure / #542
+
+- #541 merged a0e0c7a8aefa751fbb20d8b10b75d96980d2fa1f: PR 34 success + IndexNow skipped; main 38 success. Manifest has 10 intake records, zero publication-ready photos; #235 remains open.
+- Services page retains its four task groups and all existing HTML service links. Primary choices remain visible; additional links use native details, available without JS.
+- Reuses the existing menu helper, official logo, icons and brand tokens. Adds the missing mobile menu and shared navigation destinations; keeps existing form v23 and SEO metadata.
+- CI and five-width browser QA pending. No Supabase calls, deployments or synthetic rows.

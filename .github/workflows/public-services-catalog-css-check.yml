@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
     paths:
+      - 'assets/packages-link.js'
+      - 'assets/brand/**'
+      - 'tools/test_public_homepage_browser.mjs'
       - 'uslugi.html'
       - 'assets/public-services.css'
       - 'tools/check_public_services_catalog_css.py'
@@ -12,6 +15,9 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - 'assets/packages-link.js'
+      - 'assets/brand/**'
+      - 'tools/test_public_homepage_browser.mjs'
       - 'uslugi.html'
       - 'assets/public-services.css'
       - 'tools/check_public_services_catalog_css.py'
@@ -37,3 +43,20 @@ jobs:
           name: public-services-catalog-css-report
           path: public-services-catalog-css-report.txt
           if-no-files-found: error
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser test dependency
+        run: |
+          npm install --no-save --package-lock=false playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Check services navigation and responsive layout
+        run: node tools/test_public_homepage_browser.mjs --services
+      - name: Upload services screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-services-browser
+          path: artifacts/public-homepage/
+          retention-days: 3
