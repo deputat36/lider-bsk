@@ -74,6 +74,7 @@ try {
         assert.equal(await extra.isVisible(), false);
       }
       await page.locator('.quick-links a[href="#outdoor"]').click();
+      assert.equal(await page.locator('.header').evaluate(el => { const r = el.getBoundingClientRect(); return r.top >= 0 && r.top < 2 && r.bottom > 0; }), true, 'Services header must stay available after category navigation');
       await page.screenshot({ path: `artifacts/public-homepage/services-group-${width}.png` });
       await page.getByRole('link', { name: 'Подобрать услугу', exact: true }).click();
       assert.equal(await page.locator('#leader-lead-form [name="service"]').isVisible(), true);

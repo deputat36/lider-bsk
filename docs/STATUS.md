@@ -569,3 +569,4 @@ Cloud Browser подтвердил замену явно введённых 0 �
 - Services page retains its four task groups and all existing HTML service links. Primary choices remain visible; additional links use native details, available without JS.
 - Reuses the existing menu helper, official logo, icons and brand tokens. Adds the missing mobile menu and shared navigation destinations; keeps existing form v23 and SEO metadata.
 - CI and five-width browser QA pending. No Supabase calls, deployments or synthetic rows.
+- First browser run passed all five widths; screenshot review exposed sticky header lost after scrolling because shared overflow-x:hidden creates a scroll container. Services-only overflow-x:clip and sticky-position regression added before merge.

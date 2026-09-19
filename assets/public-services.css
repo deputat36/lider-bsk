@@ -55,3 +55,6 @@ html body .menu-btn{display:none;border:1px solid var(--border-default);border-r
  html body .group h2{font-size:23px}
 }
 @media(prefers-reduced-motion:reduce){html:root{scroll-behavior:auto}}
+
+/* Clip horizontal paint without creating a scroll container that breaks sticky. */
+html:root,html body{overflow-x:clip}
