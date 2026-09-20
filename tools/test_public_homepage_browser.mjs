@@ -51,6 +51,23 @@ try {
       assert.equal(await page.locator('#leader-lead-form form').count(), 1);
       assert.equal(await page.locator('[name="service"]').inputValue(), 'Вывеска / наружная реклама');
       await page.screenshot({ path: `artifacts/public-homepage/signs-${width}.png` });
+      assert.equal(await page.locator('.sign-formats article').count(), 3);
+      await page.locator('#formats').screenshot({ path: `artifacts/public-homepage/signs-formats-${width}.png` });
+      assert.equal(await page.locator('.sign-related a').count(), 3);
+      const questions = page.locator('.sign-questions details');
+      assert.equal(await questions.count(), 4);
+      for (const question of await questions.all()) {
+        assert.equal(await question.locator('p').isVisible(), false);
+        await question.locator('summary').focus();
+        await page.keyboard.press('Enter');
+        assert.equal(await question.locator('p').isVisible(), true);
+      }
+      await page.locator('#questions h2').scrollIntoViewIfNeeded();
+      await page.screenshot({ path: `artifacts/public-homepage/signs-questions-${width}.png` });
+      await page.locator('.sign-related a[href="bannery-borisoglebsk.html"]').click();
+      assert.equal(await page.locator('h1').innerText(), 'Баннеры в Борисоглебске');
+      await page.goBack();
+
       if (width <= 1060) {
         assert.equal(await nav.isVisible(), false);
         await button.click();
@@ -199,6 +216,8 @@ try {
   await noJs.goto(origin + (signsOnly ? '/vyveski-borisoglebsk.html' : servicesOnly ? '/uslugi.html' : '/'));
   assert.equal(await noJs.getByRole('navigation', { name: 'Основная навигация' }).isVisible(), true);
   if (signsOnly) {
+    await noJs.locator('.sign-questions summary').first().click();
+    assert.equal(await noJs.locator('.sign-questions details').first().locator('p').isVisible(), true);
     await noJs.locator('.sign-details summary').click();
     assert.equal(await noJs.locator('.sign-details ul').isVisible(), true);
     assert.equal(await noJs.locator('a[href="tel:+79802457471"]').count() > 0, true);

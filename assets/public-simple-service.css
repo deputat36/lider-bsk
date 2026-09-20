@@ -97,3 +97,15 @@ body.page-shop-sign-service .menu-btn{display:none;border:1px solid var(--border
 @media(max-width:860px){body.page-shop-sign-service .sign-estimate,body.page-shop-sign-service .sign-steps,body.page-shop-sign-service .cta{grid-template-columns:1fr}body.page-shop-sign-service .sign-estimate{gap:20px}}
 @media(max-width:720px){body.page-shop-sign-service .cta{padding:18px}body.page-shop-sign-service .hero{padding:28px 0 32px}body.page-shop-sign-service #estimate,body.page-shop-sign-service #request{scroll-margin-top:84px}}
 @media(prefers-reduced-motion:reduce){html:has(body.page-shop-sign-service){scroll-behavior:auto}}
+
+/* Choice and answers use the same landing grid, without a second calculator. */
+body.page-shop-sign-service .sign-formats{margin-top:24px}
+body.page-shop-sign-service .sign-formats .muted{margin-top:16px}
+body.page-shop-sign-service .sign-format-note{margin:24px 0 0}
+body.page-shop-sign-service .sign-questions{max-width:900px}
+body.page-shop-sign-service .sign-questions details{border-bottom:1px solid var(--border-default)}
+body.page-shop-sign-service .sign-questions summary{padding:16px 0}
+body.page-shop-sign-service .sign-questions p{margin:0 0 20px;max-width:760px}
+body.page-shop-sign-service .sign-related{display:flex;gap:12px;flex-wrap:wrap}
+body.page-shop-sign-service .sign-related a{padding:12px 16px;min-height:44px;border:1px solid var(--border-default);border-radius:var(--radius-md)}
+body.page-shop-sign-service .sign-related a:hover{border-color:var(--brand-orange)}

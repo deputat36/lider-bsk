@@ -55,10 +55,10 @@ PAGES = {
     },
     'vyveski-borisoglebsk.html': {
         'body_class': 'page-shop-sign-service',
-        'shared_css': 'assets/public-simple-service.css?v=4',
+        'shared_css': 'assets/public-simple-service.css?v=5',
         'canonical': 'https://www.lider-bsk.ru/vyveski-borisoglebsk.html',
         'h1': 'Вывески в Борисоглебске',
-        'section': 'Какие задачи решает вывеска',
+        'section': 'Какую вывеску выбрать',
         'cta': 'Заявка на вывеску',
     },
     'pechat-na-plenke-borisoglebsk.html': {
@@ -166,8 +166,9 @@ for page_name, expected in PAGES.items():
         raise SystemExit(f'{page_name}: main section heading changed')
     if f'<h2>{expected["cta"]}</h2>' not in html:
         raise SystemExit(f'{page_name}: CTA heading changed')
-    if html.count('class="card"') != 6:
-        raise SystemExit(f'{page_name}: expected six service cards')
+    expected_cards = 3 if page_name == 'vyveski-borisoglebsk.html' else 6
+    if html.count('class="card"') != expected_cards:
+        raise SystemExit(f'{page_name}: expected {expected_cards} service cards')
     if html.count('id="leader-lead-form"') != 1:
         raise SystemExit(f'{page_name}: lead form container mismatch')
     if 'href="tel:+79802457471"' not in html:
