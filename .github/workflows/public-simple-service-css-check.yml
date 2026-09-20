@@ -58,11 +58,13 @@ jobs:
           npm install --no-save --package-lock=false playwright@1.55.0
           npx playwright install --with-deps chromium
       - name: Check sign landing at five widths without production writes
-        run: node tools/test_public_homepage_browser.mjs --signs
+        run: |
+          node tools/test_public_homepage_browser.mjs --signs
+          node tools/test_public_homepage_browser.mjs --banners
       - name: Upload sign screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: public-signs-browser
+          name: public-service-landings-browser
           path: artifacts/public-homepage/
           retention-days: 3

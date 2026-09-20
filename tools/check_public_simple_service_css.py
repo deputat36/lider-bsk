@@ -38,8 +38,8 @@ PAGES = {
         'cta': 'Заявка на оформление карточки',
     },
     'bannery-borisoglebsk.html': {
-        'body_class': 'page-banner-service',
-        'shared_css': 'assets/public-simple-service.css?v=2',
+        'body_class': 'page-banner-service page-service-modern',
+        'shared_css': 'assets/public-simple-service.css?v=6',
         'canonical': 'https://www.lider-bsk.ru/bannery-borisoglebsk.html',
         'h1': 'Баннеры в Борисоглебске',
         'section': 'Какие баннеры можно заказать',
@@ -54,8 +54,8 @@ PAGES = {
         'cta': 'Заявка на табличку',
     },
     'vyveski-borisoglebsk.html': {
-        'body_class': 'page-shop-sign-service',
-        'shared_css': 'assets/public-simple-service.css?v=5',
+        'body_class': 'page-shop-sign-service page-service-modern',
+        'shared_css': 'assets/public-simple-service.css?v=6',
         'canonical': 'https://www.lider-bsk.ru/vyveski-borisoglebsk.html',
         'h1': 'Вывески в Борисоглебске',
         'section': 'Какую вывеску выбрать',
@@ -166,7 +166,7 @@ for page_name, expected in PAGES.items():
         raise SystemExit(f'{page_name}: main section heading changed')
     if f'<h2>{expected["cta"]}</h2>' not in html:
         raise SystemExit(f'{page_name}: CTA heading changed')
-    expected_cards = 3 if page_name == 'vyveski-borisoglebsk.html' else 6
+    expected_cards = 3 if page_name in {'vyveski-borisoglebsk.html', 'bannery-borisoglebsk.html'} else 6
     if html.count('class="card"') != expected_cards:
         raise SystemExit(f'{page_name}: expected {expected_cards} service cards')
     if html.count('id="leader-lead-form"') != 1:
@@ -179,7 +179,7 @@ print('Shared simple service CSS contract is valid for eleven pages.')
 # The sign landing reuses the existing menu and form; no second submission path.
 sign = (ROOT / 'vyveski-borisoglebsk.html').read_text(encoding='utf-8')
 for marker in ('assets/packages-link.js?v=2', 'assets/brand/logo-lider-header.svg?v=3',
-               'aria-controls="main-navigation"', 'id="estimate"', 'class="sign-details"',
+               'aria-controls="main-navigation"', 'id="estimate"', 'class="service-details"',
                'Нет размеров или макета?', 'id="main"'):
     if marker not in sign:
         raise SystemExit(f'Sign landing missing: {marker}')
