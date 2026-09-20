@@ -32,80 +32,80 @@ h3{font-size:22px;margin:0 0 10px}
 body.page-outdoor-overview .back{color:#667085}
 @media(max-width:860px){.grid,.cta{grid-template-columns:1fr}}
 
-/* Sign landing: scoped migration; other simple service pages keep their layout. */
-html:has(body.page-shop-sign-service),body.page-shop-sign-service{overflow-x:clip}
-body.page-shop-sign-service{font-family:Manrope,Arial,Helvetica,sans-serif;color:var(--text-primary)}
-body.page-shop-sign-service .wrap{width:min(100% - 32px,var(--container))}
-body.page-shop-sign-service .header{position:sticky;top:0;z-index:30;border-bottom:1px solid var(--border-default)}
-body.page-shop-sign-service .nav{display:flex}
-body.page-shop-sign-service .header a{text-decoration:none}
-body.page-shop-sign-service .hero{background:var(--brand-950);padding:40px 0 44px}
-body.page-shop-sign-service .hero h1{font-size:clamp(34px,4.5vw,60px);line-height:1.08;font-weight:800;text-transform:none;letter-spacing:-.03em}
-body.page-shop-sign-service h2{font-size:clamp(28px,3vw,38px);font-weight:700;text-transform:none;letter-spacing:-.02em}
-body.page-shop-sign-service .hero p{max-width:720px;font-size:19px}
-body.page-shop-sign-service .hero .sign-note{font-size:16px;margin:16px 0 0}
-body.page-shop-sign-service .btn{background:var(--brand-orange);color:white;border:0;border-radius:var(--radius-md);font-weight:700;min-height:44px;margin:0;padding:12px 18px}
-body.page-shop-sign-service .btn:hover{background:var(--brand-orange-hover)}
-body.page-shop-sign-service .sign-actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-body.page-shop-sign-service .sign-secondary{display:inline-flex;align-items:center;min-height:44px}
-body.page-shop-sign-service .card{border-radius:var(--radius-md);box-shadow:none;padding:22px}
-body.page-shop-sign-service .card p{margin-bottom:0}
-body.page-shop-sign-service .section{padding:44px 0}
-body.page-shop-sign-service .sign-estimate{display:grid;grid-template-columns:1.3fr 1fr;gap:48px}
-body.page-shop-sign-service .sign-details{border-top:1px solid var(--border-default);margin-top:20px}
-body.page-shop-sign-service summary{cursor:pointer;min-height:44px;padding:12px 0;font-weight:700}
-body.page-shop-sign-service .sign-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;padding-left:24px}
-body.page-shop-sign-service .sign-steps li{padding-left:8px}
-body.page-shop-sign-service .cta{background:var(--brand-950);border-radius:var(--radius-lg);padding:28px;grid-template-columns:.8fr 1.2fr}
-body.page-shop-sign-service .cta>div{min-width:0}
-body.page-shop-sign-service .sign-footer{background:var(--surface-page);padding:24px 0}
-body.page-shop-sign-service .sign-footer .wrap{display:flex;flex-wrap:wrap;gap:16px 32px}
-body.page-shop-sign-service .sign-footer a{min-height:44px;display:inline-flex;align-items:center}
-body.page-shop-sign-service :focus-visible{outline:3px solid var(--brand-orange);outline-offset:4px}
-body.page-shop-sign-service .skip-link{position:fixed;top:8px;left:8px;z-index:50;transform:translateY(-160%);background:white;color:var(--text-primary);padding:12px}
-body.page-shop-sign-service .skip-link:focus{transform:none}
-body.page-shop-sign-service #estimate{scroll-margin-top:170px}
-body.page-shop-sign-service #request{scroll-margin-top:160px}
-body.page-shop-sign-service .header{background:var(--surface-card);backdrop-filter:none}
-body.page-shop-sign-service .header__in{display:grid;grid-template-columns:250px 1fr;gap:12px 24px;padding:12px 0}
-body.page-shop-sign-service .header .brand{min-width:0!important;width:250px!important;height:auto!important}
-body.page-shop-sign-service .header .brand:before{display:none!important}
-body.page-shop-sign-service .brand-logo{display:block;width:250px;height:66px;object-fit:contain}
-body.page-shop-sign-service .header__cta{display:flex;align-items:center;justify-self:end;gap:12px}
-body.page-shop-sign-service .header .nav{grid-column:1/-1;grid-row:2;justify-content:center;gap:8px 32px;font-weight:700}
-body.page-shop-sign-service .header .nav a{display:inline-flex;align-items:center;min-height:44px}
-body.page-shop-sign-service .header .nav [aria-current="page"]{color:var(--brand-orange-dark)}
-body.page-shop-sign-service .menu-btn{display:none;border:1px solid var(--border-default);border-radius:var(--radius-md);background:var(--surface-card);width:44px;height:44px;cursor:pointer}
+/* Explicit opt-in for migrated landings; legacy pages keep their layout. */
+html:has(body.page-service-modern),body.page-service-modern{overflow-x:clip}
+body.page-service-modern{font-family:Manrope,Arial,Helvetica,sans-serif;color:var(--text-primary)}
+body.page-service-modern .wrap{width:min(100% - 32px,var(--container))}
+body.page-service-modern .header{position:sticky;top:0;z-index:30;border-bottom:1px solid var(--border-default)}
+body.page-service-modern .nav{display:flex}
+body.page-service-modern .header a{text-decoration:none}
+body.page-service-modern .hero{background:var(--brand-950);padding:40px 0 44px}
+body.page-service-modern .hero h1{font-size:clamp(34px,4.5vw,60px);line-height:1.08;font-weight:800;text-transform:none;letter-spacing:-.03em}
+body.page-service-modern h2{font-size:clamp(28px,3vw,38px);font-weight:700;text-transform:none;letter-spacing:-.02em}
+body.page-service-modern .hero p{max-width:720px;font-size:19px}
+body.page-service-modern .hero .service-note{font-size:16px;margin:16px 0 0}
+body.page-service-modern .btn{background:var(--brand-orange);color:white;border:0;border-radius:var(--radius-md);font-weight:700;min-height:44px;margin:0;padding:12px 18px}
+body.page-service-modern .btn:hover{background:var(--brand-orange-hover)}
+body.page-service-modern .service-actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+body.page-service-modern .service-secondary{display:inline-flex;align-items:center;min-height:44px}
+body.page-service-modern .card{border-radius:var(--radius-md);box-shadow:none;padding:22px}
+body.page-service-modern .card p{margin-bottom:0}
+body.page-service-modern .section{padding:44px 0}
+body.page-service-modern .service-estimate{display:grid;grid-template-columns:1.3fr 1fr;gap:48px}
+body.page-service-modern .service-details{border-top:1px solid var(--border-default);margin-top:20px}
+body.page-service-modern summary{cursor:pointer;min-height:44px;padding:12px 0;font-weight:700}
+body.page-service-modern .service-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;padding-left:24px}
+body.page-service-modern .service-steps li{padding-left:8px}
+body.page-service-modern .cta{background:var(--brand-950);border-radius:var(--radius-lg);padding:28px;grid-template-columns:.8fr 1.2fr}
+body.page-service-modern .cta>div{min-width:0}
+body.page-service-modern .service-footer{background:var(--surface-page);padding:24px 0}
+body.page-service-modern .service-footer .wrap{display:flex;flex-wrap:wrap;gap:16px 32px}
+body.page-service-modern .service-footer a{min-height:44px;display:inline-flex;align-items:center}
+body.page-service-modern :focus-visible{outline:3px solid var(--brand-orange);outline-offset:4px}
+body.page-service-modern .skip-link{position:fixed;top:8px;left:8px;z-index:50;transform:translateY(-160%);background:white;color:var(--text-primary);padding:12px}
+body.page-service-modern .skip-link:focus{transform:none}
+body.page-service-modern #estimate{scroll-margin-top:170px}
+body.page-service-modern #request{scroll-margin-top:160px}
+body.page-service-modern .header{background:var(--surface-card);backdrop-filter:none}
+body.page-service-modern .header__in{display:grid;grid-template-columns:250px 1fr;gap:12px 24px;padding:12px 0}
+body.page-service-modern .header .brand{min-width:0!important;width:250px!important;height:auto!important}
+body.page-service-modern .header .brand:before{display:none!important}
+body.page-service-modern .brand-logo{display:block;width:250px;height:66px;object-fit:contain}
+body.page-service-modern .header__cta{display:flex;align-items:center;justify-self:end;gap:12px}
+body.page-service-modern .header .nav{grid-column:1/-1;grid-row:2;justify-content:center;gap:8px 32px;font-weight:700}
+body.page-service-modern .header .nav a{display:inline-flex;align-items:center;min-height:44px}
+body.page-service-modern .header .nav [aria-current="page"]{color:var(--brand-orange-dark)}
+body.page-service-modern .menu-btn{display:none;border:1px solid var(--border-default);border-radius:var(--radius-md);background:var(--surface-card);width:44px;height:44px;cursor:pointer}
 @media(max-width:1060px){
- body.page-shop-sign-service .header__in{grid-template-columns:225px 1fr}
- body.page-shop-sign-service .header .brand,body.page-shop-sign-service .brand-logo{width:225px!important}
- body.page-shop-sign-service .brand-logo{height:60px}
- body.page-shop-sign-service .header .nav{display:flex!important;flex-wrap:wrap}
- body.page-shop-sign-service .header .menu-btn{display:none!important}
- body.page-shop-sign-service .header.navigation-ready .menu-btn{display:grid!important;place-items:center}
- body.page-shop-sign-service .header.navigation-ready .nav{display:none!important}
- body.page-shop-sign-service .header.navigation-ready.open .nav{display:grid!important;grid-template-columns:1fr;gap:4px;max-height:60vh;overflow-y:auto}
- body.page-shop-sign-service .header .nav a{padding:8px 12px}
- body.page-shop-sign-service #request{scroll-margin-top:110px}
+ body.page-service-modern .header__in{grid-template-columns:225px 1fr}
+ body.page-service-modern .header .brand,body.page-service-modern .brand-logo{width:225px!important}
+ body.page-service-modern .brand-logo{height:60px}
+ body.page-service-modern .header .nav{display:flex!important;flex-wrap:wrap}
+ body.page-service-modern .header .menu-btn{display:none!important}
+ body.page-service-modern .header.navigation-ready .menu-btn{display:grid!important;place-items:center}
+ body.page-service-modern .header.navigation-ready .nav{display:none!important}
+ body.page-service-modern .header.navigation-ready.open .nav{display:grid!important;grid-template-columns:1fr;gap:4px;max-height:60vh;overflow-y:auto}
+ body.page-service-modern .header .nav a{padding:8px 12px}
+ body.page-service-modern #request{scroll-margin-top:110px}
 }
 @media(max-width:720px){
- body.page-shop-sign-service .header__in{grid-template-columns:184px 1fr;padding:8px 0}
- body.page-shop-sign-service .header .brand,body.page-shop-sign-service .brand-logo{width:184px!important}
- body.page-shop-sign-service .brand-logo{height:49px}
- body.page-shop-sign-service .header__cta .phone,body.page-shop-sign-service .header__cta .btn{display:none}
+ body.page-service-modern .header__in{grid-template-columns:184px 1fr;padding:8px 0}
+ body.page-service-modern .header .brand,body.page-service-modern .brand-logo{width:184px!important}
+ body.page-service-modern .brand-logo{height:49px}
+ body.page-service-modern .header__cta .phone,body.page-service-modern .header__cta .btn{display:none}
 }
-@media(max-width:860px){body.page-shop-sign-service .sign-estimate,body.page-shop-sign-service .sign-steps,body.page-shop-sign-service .cta{grid-template-columns:1fr}body.page-shop-sign-service .sign-estimate{gap:20px}}
-@media(max-width:720px){body.page-shop-sign-service .cta{padding:18px}body.page-shop-sign-service .hero{padding:28px 0 32px}body.page-shop-sign-service #estimate,body.page-shop-sign-service #request{scroll-margin-top:84px}}
-@media(prefers-reduced-motion:reduce){html:has(body.page-shop-sign-service){scroll-behavior:auto}}
+@media(max-width:860px){body.page-service-modern .service-estimate,body.page-service-modern .service-steps,body.page-service-modern .cta{grid-template-columns:1fr}body.page-service-modern .service-estimate{gap:20px}}
+@media(max-width:720px){body.page-service-modern .cta{padding:18px}body.page-service-modern .hero{padding:28px 0 32px}body.page-service-modern #estimate,body.page-service-modern #request{scroll-margin-top:84px}}
+@media(prefers-reduced-motion:reduce){html:has(body.page-service-modern){scroll-behavior:auto}}
 
 /* Choice and answers use the same landing grid, without a second calculator. */
-body.page-shop-sign-service .sign-formats{margin-top:24px}
-body.page-shop-sign-service .sign-formats .muted{margin-top:16px}
-body.page-shop-sign-service .sign-format-note{margin:24px 0 0}
-body.page-shop-sign-service .sign-questions{max-width:900px}
-body.page-shop-sign-service .sign-questions details{border-bottom:1px solid var(--border-default)}
-body.page-shop-sign-service .sign-questions summary{padding:16px 0}
-body.page-shop-sign-service .sign-questions p{margin:0 0 20px;max-width:760px}
-body.page-shop-sign-service .sign-related{display:flex;gap:12px;flex-wrap:wrap}
-body.page-shop-sign-service .sign-related a{padding:12px 16px;min-height:44px;border:1px solid var(--border-default);border-radius:var(--radius-md)}
-body.page-shop-sign-service .sign-related a:hover{border-color:var(--brand-orange)}
+body.page-service-modern .service-formats{margin-top:24px}
+body.page-service-modern .service-formats .muted{margin-top:16px}
+body.page-service-modern .service-format-note{margin:24px 0 0}
+body.page-service-modern .service-questions{max-width:900px}
+body.page-service-modern .service-questions details{border-bottom:1px solid var(--border-default)}
+body.page-service-modern .service-questions summary{padding:16px 0}
+body.page-service-modern .service-questions p{margin:0 0 20px;max-width:760px}
+body.page-service-modern .service-related{display:flex;gap:12px;flex-wrap:wrap}
+body.page-service-modern .service-related a{padding:12px 16px;min-height:44px;border:1px solid var(--border-default);border-radius:var(--radius-md)}
+body.page-service-modern .service-related a:hover{border-color:var(--brand-orange)}
