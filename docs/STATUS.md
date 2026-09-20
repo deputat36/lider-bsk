@@ -570,3 +570,11 @@ Cloud Browser подтвердил замену явно введённых 0 �
 - Reuses the existing menu helper, official logo, icons and brand tokens. Adds the missing mobile menu and shared navigation destinations; keeps existing form v23 and SEO metadata.
 - CI and five-width browser QA pending. No Supabase calls, deployments or synthetic rows.
 - First browser run passed all five widths; screenshot review exposed sticky header lost after scrolling because shared overflow-x:hidden creates a scroll container. Services-only overflow-x:clip and sticky-position regression added before merge.
+
+
+## 2026-09-20 — страница вывесок (#544)
+
+- На опубликованной странице подтверждено отсутствие общей навигации. В рабочей ветке добавлены официальный логотип, существующее мобильное меню и короткий путь к расчёту.
+- Начать обращение можно без размеров/макета; дополнительные данные раскрываются, факторы стоимости и порядок заказа видны отдельно. Шесть существующих задач и SEO сохранены.
+- CSS миграция ограничена page-shop-sign-service; форма v27 и её prefill/submit не менялись. Добавлен пятиширинный browser regression в существующий workflow; результат CI и published smoke фиксируется в PR после выполнения.
+- Supabase, Auth и production формы в этой итерации не вызываются; synthetic данные не создаются. Реальные фотографии по #235 всё ещё отсутствуют.
