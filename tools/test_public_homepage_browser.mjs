@@ -5,6 +5,7 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 
 const root = process.cwd();
+const signsOnly = process.argv.includes('--signs');
 const servicesOnly = process.argv.includes('--services');
 const types = { '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.png': 'image/png', '.json': 'application/json', '.html': 'text/html; charset=utf-8' };
 const server = createServer(async (req, res) => {
@@ -39,7 +40,47 @@ try {
       }
       return route.abort();
     });
-    await page.goto(origin + (servicesOnly ? '/uslugi.html' : '/'));
+    await page.goto(origin + (signsOnly ? '/vyveski-borisoglebsk.html' : servicesOnly ? '/uslugi.html' : '/'));
+    if (signsOnly) {
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      const nav = page.getByRole('navigation', { name: 'Основная навигация' });
+      const button = page.locator('.menu-btn');
+      assert.equal(await page.locator('.brand-logo').evaluate(el => el.complete && el.naturalWidth > 0), true);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+      assert.equal(await page.locator('.hero .btn').evaluate(el => el.getBoundingClientRect().bottom <= innerHeight), true);
+      assert.equal(await page.locator('#leader-lead-form form').count(), 1);
+      assert.equal(await page.locator('[name="service"]').inputValue(), 'Вывеска / наружная реклама');
+      await page.screenshot({ path: `artifacts/public-homepage/signs-${width}.png` });
+      if (width <= 1060) {
+        assert.equal(await nav.isVisible(), false);
+        await button.click();
+        assert.equal(await nav.isVisible(), true);
+        await page.keyboard.press('Tab');
+        assert.equal(await page.evaluate(() => document.activeElement.getAttribute('href')), 'uslugi.html');
+        await page.keyboard.press('Escape');
+        assert.equal(await nav.isVisible(), false);
+        assert.equal(await button.getAttribute('aria-expanded'), 'false');
+      } else assert.equal(await nav.isVisible(), true);
+      await page.getByRole('link', { name: 'Что влияет на стоимость', exact: true }).click();
+      const details = page.locator('.sign-details');
+      assert.equal(await details.locator('ul').isVisible(), false);
+      await details.locator('summary').focus();
+      await page.keyboard.press('Enter');
+      assert.equal(await details.locator('ul').isVisible(), true);
+      assert.equal(await page.locator('.header').evaluate(el => Math.abs(el.getBoundingClientRect().top) < 2), true);
+      await page.screenshot({ path: `artifacts/public-homepage/signs-estimate-${width}.png` });
+      await page.getByRole('link', { name: 'Обсудить мой вариант', exact: true }).click();
+      assert.equal(await page.locator('[name="service"]').isVisible(), true);
+      await page.locator('[name="message"]').fill('Нужна вывеска, размер уточним позже');
+      await page.getByRole('link', { name: 'Рассчитать вывеску', exact: true }).click();
+      assert.equal(await page.locator('[name="message"]').inputValue(), 'Нужна вывеска, размер уточним позже');
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+      await page.screenshot({ path: `artifacts/public-homepage/signs-form-${width}.png` });
+      assert.deepEqual(errors, []); assert.deepEqual(failed, []); assert.deepEqual(writes, []);
+      console.log(JSON.stringify({ page: 'signs', width, menu: true, keyboardDetails: true, servicePrefill: true, draftPreserved: true, errors, failed, writes }));
+      await page.close();
+      continue;
+    }
     if (servicesOnly) {
       await page.emulateMedia({ reducedMotion: 'reduce' });
       const nav = page.getByRole('navigation', { name: 'Основная навигация' });
@@ -155,9 +196,13 @@ try {
     await page.close();
   }
   const noJs = await browser.newPage({ javaScriptEnabled: false, viewport: { width: 390, height: 900 } });
-  await noJs.goto(origin + (servicesOnly ? '/uslugi.html' : '/'));
+  await noJs.goto(origin + (signsOnly ? '/vyveski-borisoglebsk.html' : servicesOnly ? '/uslugi.html' : '/'));
   assert.equal(await noJs.getByRole('navigation', { name: 'Основная навигация' }).isVisible(), true);
-  if (servicesOnly) {
+  if (signsOnly) {
+    await noJs.locator('.sign-details summary').click();
+    assert.equal(await noJs.locator('.sign-details ul').isVisible(), true);
+    assert.equal(await noJs.locator('a[href="tel:+79802457471"]').count() > 0, true);
+  } else if (servicesOnly) {
     await noJs.locator('#outdoor summary').click();
     assert.equal(await noJs.locator('#outdoor details a').first().isVisible(), true);
     assert.equal(await noJs.locator('.service-list a').count(), 40);
