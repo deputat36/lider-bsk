@@ -62,16 +62,16 @@ PAGES = {
         'cta': 'Заявка на вывеску',
     },
     'pechat-na-plenke-borisoglebsk.html': {
-        'body_class': 'page-film-print-service',
-        'shared_css': 'assets/public-simple-service.css?v=2',
+        'body_class': 'page-film-print-service page-service-modern',
+        'shared_css': 'assets/public-simple-service.css?v=6',
         'canonical': 'https://www.lider-bsk.ru/pechat-na-plenke-borisoglebsk.html',
         'h1': 'Печать на плёнке в Борисоглебске',
         'section': 'Что можно заказать',
         'cta': 'Заявка на печать',
     },
     'oformlenie-vitrin-borisoglebsk.html': {
-        'body_class': 'page-window-branding',
-        'shared_css': 'assets/public-simple-service.css?v=2',
+        'body_class': 'page-window-branding page-service-modern',
+        'shared_css': 'assets/public-simple-service.css?v=6',
         'canonical': 'https://www.lider-bsk.ru/oformlenie-vitrin-borisoglebsk.html',
         'h1': 'Оформление витрин в Борисоглебске',
         'section': 'Что можно разместить на витрине',
@@ -86,8 +86,8 @@ PAGES = {
         'cta': 'Оставьте заявку',
     },
     'nakleyki-plotternaya-rezka-borisoglebsk.html': {
-        'body_class': 'page-plotter-stickers',
-        'shared_css': 'assets/public-simple-service.css?v=3',
+        'body_class': 'page-plotter-stickers page-service-modern',
+        'shared_css': 'assets/public-simple-service.css?v=6',
         'canonical': 'https://www.lider-bsk.ru/nakleyki-plotternaya-rezka-borisoglebsk.html',
         'h1': 'Наклейки и плоттерная резка в Борисоглебске',
         'section': 'Что можно сделать',
@@ -166,7 +166,7 @@ for page_name, expected in PAGES.items():
         raise SystemExit(f'{page_name}: main section heading changed')
     if f'<h2>{expected["cta"]}</h2>' not in html:
         raise SystemExit(f'{page_name}: CTA heading changed')
-    expected_cards = 3 if page_name in {'vyveski-borisoglebsk.html', 'bannery-borisoglebsk.html'} else 6
+    expected_cards = 3 if 'page-service-modern' in expected['body_class'] else 6
     if html.count('class="card"') != expected_cards:
         raise SystemExit(f'{page_name}: expected {expected_cards} service cards')
     if html.count('id="leader-lead-form"') != 1:
@@ -183,3 +183,8 @@ for marker in ('assets/packages-link.js?v=2', 'assets/brand/logo-lider-header.sv
                'Нет размеров или макета?', 'id="main"'):
     if marker not in sign:
         raise SystemExit(f'Sign landing missing: {marker}')
+
+for name in ('pechat-na-plenke-borisoglebsk.html', 'nakleyki-plotternaya-rezka-borisoglebsk.html', 'oformlenie-vitrin-borisoglebsk.html'):
+    page = (ROOT / name).read_text(encoding='utf-8')
+    if 'прикрепите фото' in page.lower():
+        raise SystemExit(f'{name}: do not promise an unavailable file upload')
