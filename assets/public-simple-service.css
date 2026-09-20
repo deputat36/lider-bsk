@@ -86,7 +86,14 @@ body.page-shop-sign-service .menu-btn{display:none;border:1px solid var(--border
  body.page-shop-sign-service .header.navigation-ready .nav{display:none!important}
  body.page-shop-sign-service .header.navigation-ready.open .nav{display:grid!important;grid-template-columns:1fr;gap:4px;max-height:60vh;overflow-y:auto}
  body.page-shop-sign-service .header .nav a{padding:8px 12px}
- body.page-shop-sign-service .group,
+ body.page-shop-sign-service #request{scroll-margin-top:110px}
+}
+@media(max-width:720px){
+ body.page-shop-sign-service .header__in{grid-template-columns:184px 1fr;padding:8px 0}
+ body.page-shop-sign-service .header .brand,body.page-shop-sign-service .brand-logo{width:184px!important}
+ body.page-shop-sign-service .brand-logo{height:49px}
+ body.page-shop-sign-service .header__cta .phone,body.page-shop-sign-service .header__cta .btn{display:none}
+}
 @media(max-width:860px){body.page-shop-sign-service .sign-estimate,body.page-shop-sign-service .sign-steps,body.page-shop-sign-service .cta{grid-template-columns:1fr}body.page-shop-sign-service .sign-estimate{gap:20px}}
 @media(max-width:720px){body.page-shop-sign-service .cta{padding:18px}body.page-shop-sign-service .hero{padding:28px 0 32px}body.page-shop-sign-service #estimate,body.page-shop-sign-service #request{scroll-margin-top:84px}}
 @media(prefers-reduced-motion:reduce){html:has(body.page-shop-sign-service){scroll-behavior:auto}}
