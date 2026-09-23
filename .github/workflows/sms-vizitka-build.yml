@@ -44,6 +44,38 @@ jobs:
           )
           s = s.replace('import android.app.RoleManager;', 'import android.app.role.RoleManager;')
           p.write_text(s)
+
+          p = root / "app/src/main/java/ru/etagi/borisoglebsk/smscard/NotificationHelper.java"
+          s = p.read_text()
+          s = s.replace('private static final String CHANNEL_ID = "after_call_cards";',
+                        'private static final String CHANNEL_ID = "after_call_cards_popup_v2";')
+          s = s.replace('"Визитка после звонка",\n                NotificationManager.IMPORTANCE_HIGH',
+                        '"Визитка после звонка — всплывающее",\n                NotificationManager.IMPORTANCE_HIGH')
+          s = s.replace(
+              'channel.setDescription("Предложение отправить SMS-визитку после завершения разговора");\n        manager.createNotificationChannel(channel);',
+              'channel.setDescription("Всплывающее предложение отправить SMS-визитку после завершения разговора");\n'
+              '        channel.enableVibration(true);\n'
+              '        channel.setVibrationPattern(new long[]{0, 120, 80, 120});\n'
+              '        channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);\n'
+              '        manager.createNotificationChannel(channel);'
+          )
+          s = s.replace('.setContentIntent(openPi)', '.setContentIntent(sendPi)')
+          s = s.replace('"Отправить", sendPi', '"Отправить SMS", sendPi')
+          s = s.replace(
+              '.setAutoCancel(true)\n                .setCategory(Notification.CATEGORY_REMINDER)',
+              '.setAutoCancel(true)\n'
+              '                .setPriority(Notification.PRIORITY_MAX)\n'
+              '                .setDefaults(Notification.DEFAULT_ALL)\n'
+              '                .setVisibility(Notification.VISIBILITY_PUBLIC)\n'
+              '                .setCategory(Notification.CATEGORY_REMINDER)'
+          )
+          p.write_text(s)
+
+          p = root / "app/build.gradle.kts"
+          s = p.read_text()
+          s = s.replace('versionCode = 2', 'versionCode = 3')
+          s = s.replace('versionName = "0.2.0"', 'versionName = "0.2.2"')
+          p.write_text(s)
           PY
 
       - name: Set up JDK 17
@@ -64,6 +96,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: sms-vizitka-v0.2.1-debug
+          name: sms-vizitka-v0.2.2-debug
           path: android/build-src/sms-card-app/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
