@@ -62,3 +62,7 @@ Existing page-specific contracts were updated for the new marker:
 - public form fields, messages, endpoint and request payload were not changed;
 - CRM UI, `nav_*` and `nav_v2_*` were not changed;
 - no controlled browser submission or production smoke was run.
+
+## Current cache version — 2026-09-25
+
+All public form pages now load `assets/public-lead-form.js?v=29` for the service-selection and campaign-navigation correction (#556). The v23 entry above records the completed July migration. Production Supabase was not changed.

@@ -6,6 +6,9 @@
   const METRIKA_ID=109387236;
   const PENDING_STORAGE_KEY='leader_public_lead_pending_v1';
   const MAX_PENDING_AGE_MS=30*60*1000;
+  const CAMPAIGN_STORAGE_KEY='leader_public_campaign_v1';
+  const UTM_KEYS=['utm_source','utm_medium','utm_campaign','utm_term','utm_content'];
+  let campaignMemory=null;
   const CONSENT_VERSION='privacy-2026-07-12-v1';
 
   const scenarios={
@@ -91,6 +94,24 @@
   }
   function setStatus(form,type,msg){const s=form.querySelector('[data-leader-lead-status]');if(s){s.className='leader-lead-status show '+type;s.textContent=msg}}
   function qs(){const p=new URLSearchParams(location.search);return{utm_source:p.get('utm_source')||'',utm_medium:p.get('utm_medium')||'',utm_campaign:p.get('utm_campaign')||'',utm_term:p.get('utm_term')||'',utm_content:p.get('utm_content')||'',scenario:p.get('scenario')||'',service:p.get('service')||''}}
+
+  // Retain the last campaign during this visit, including navigation without UTM.
+  // Only campaign fields are stored; contact data and full URLs are never saved.
+  function campaignAttribution(){
+    const query=qs();
+    if(UTM_KEYS.some(key=>clean(query[key]))){
+      campaignMemory={created_at:Date.now(),values:Object.fromEntries(UTM_KEYS.map(key=>[key,clean(query[key]).slice(0,200)]))};
+      try{window.sessionStorage.setItem(CAMPAIGN_STORAGE_KEY,JSON.stringify(campaignMemory))}catch(_){}
+    }else if(!campaignMemory){
+      try{campaignMemory=JSON.parse(window.sessionStorage.getItem(CAMPAIGN_STORAGE_KEY)||'null')}catch(_){}
+    }
+    const age=Date.now()-Number(campaignMemory&&campaignMemory.created_at);
+    if(!campaignMemory||!Number.isFinite(age)||age<0||age>MAX_PENDING_AGE_MS){
+      campaignMemory=null;
+      try{window.sessionStorage.removeItem(CAMPAIGN_STORAGE_KEY)}catch(_){}
+    }
+    return Object.fromEntries(UTM_KEYS.map(key=>[key,clean(campaignMemory&&campaignMemory.values&&campaignMemory.values[key]).slice(0,200)]));
+  }
 
   function loadMetrika(){
     if(window.__leaderMetrikaLoaded)return;
@@ -217,7 +238,7 @@
     if(delivery)parts.push('Доставка/монтаж: '+delivery);
     if(budget)parts.push('Бюджет: '+budget);
 
-    const utm=qs();
+    const utm=campaignAttribution();
     const payload={
       name,
       phone,
@@ -320,6 +341,7 @@
   }
 
   function init(){
+    campaignAttribution();
     loadMetrika();
     initClicks();
     document.querySelectorAll('#leader-lead-form,[data-leader-lead-form]').forEach(mount);

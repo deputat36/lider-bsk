@@ -46,7 +46,7 @@ def main() -> None:
         raise SystemExit(f'Homepage must not contain inline style blocks, found {parser.style_count}')
 
     expected_scripts = [
-        'assets/public-lead-form.js?v=23',
+        'assets/public-lead-form.js?v=29',
         'assets/packages-link.js?v=2',
     ]
     if parser.scripts != expected_scripts:

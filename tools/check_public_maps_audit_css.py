@@ -33,7 +33,7 @@ if re.search(
 
 form_css = 'assets/public-lead-form.css?v=4'
 page_css = 'assets/public-maps-audit.css?v=1'
-form_js = 'assets/public-lead-form.js?v=5'
+form_js = 'assets/public-lead-form.js?v=29'
 for marker in (form_css, page_css, form_js):
     if html.count(marker) != 1:
         raise SystemExit(f'Expected exactly one {marker}')

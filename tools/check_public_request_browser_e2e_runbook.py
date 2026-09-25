@@ -9,7 +9,7 @@ REQUEST_PAGE = ROOT / "request.html"
 FORM = ROOT / "assets" / "public-lead-form.js"
 REFERENCE = ROOT / "assets" / "public-lead-reference-v1.js"
 EDGE = ROOT / "supabase" / "functions" / "leader-public-lead" / "index.ts"
-FORM_SCRIPT = "assets/public-lead-form.js?v=23"
+FORM_SCRIPT = "assets/public-lead-form.js?v=29"
 
 
 def read(path: Path) -> str:

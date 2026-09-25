@@ -10,7 +10,7 @@ PAGE = ROOT / "reklama-dlya-biznesa.html"
 CSS = ROOT / "assets" / "public-business-advertising.css"
 CSS_LINK = '<link rel="stylesheet" href="assets/public-business-advertising.css?v=1">'
 FORM_CSS_LINK = '<link rel="stylesheet" href="assets/public-lead-form.css?v=8">'
-FORM_SCRIPT = '<script src="assets/public-lead-form.js?v=9"></script>'
+FORM_SCRIPT = '<script src="assets/public-lead-form.js?v=29"></script>'
 
 
 def main() -> None:
@@ -30,7 +30,7 @@ def main() -> None:
     if page.count(FORM_CSS_LINK) != 1:
         errors.append("Business advertising page must retain public-lead-form.css?v=8 exactly once")
     if page.count(FORM_SCRIPT) != 1:
-        errors.append("Business advertising page must retain public-lead-form.js?v=9 exactly once")
+        errors.append("Business advertising page must retain public-lead-form.js?v=29 exactly once")
     if CSS_LINK in page and FORM_CSS_LINK in page and page.index(FORM_CSS_LINK) > page.index(CSS_LINK):
         errors.append("Shared form CSS must load before business advertising page CSS")
 
