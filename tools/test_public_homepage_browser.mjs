@@ -5,12 +5,16 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 
 const root = process.cwd();
-const bannersOnly = process.argv.includes('--banners');
-const signsOnly = process.argv.includes('--signs') || bannersOnly;
-const landingName = bannersOnly ? 'banners' : 'signs';
-const landingPath = bannersOnly ? '/bannery-borisoglebsk.html' : '/vyveski-borisoglebsk.html';
-const landingService = bannersOnly ? 'Баннер' : 'Вывеска / наружная реклама';
-const landingCta = bannersOnly ? 'Рассчитать баннер' : 'Рассчитать вывеску';
+const landingCases = {
+  signs: { path: '/vyveski-borisoglebsk.html', service: 'Вывеска / наружная реклама', cta: 'Рассчитать вывеску', relatedHeading: 'Баннеры в Борисоглебске' },
+  banners: { path: '/bannery-borisoglebsk.html', service: 'Баннер', cta: 'Рассчитать баннер', relatedHeading: 'Вывески в Борисоглебске' },
+  film: { path: '/pechat-na-plenke-borisoglebsk.html', service: 'Печать на плёнке', cta: 'Рассчитать печать на плёнке', relatedHeading: 'Наклейки и плоттерная резка в Борисоглебске' },
+  stickers: { path: '/nakleyki-plotternaya-rezka-borisoglebsk.html', service: 'Наклейки', cta: 'Рассчитать наклейки', relatedHeading: 'Печать на плёнке в Борисоглебске' },
+  windows: { path: '/oformlenie-vitrin-borisoglebsk.html', service: 'Печать на плёнке', cta: 'Рассчитать оформление витрины', relatedHeading: 'Печать на плёнке в Борисоглебске' },
+};
+const landingName = Object.keys(landingCases).find(name => process.argv.includes('--' + name));
+const landing = landingCases[landingName];
+const landingOnly = Boolean(landing);
 const servicesOnly = process.argv.includes('--services');
 const types = { '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.png': 'image/png', '.json': 'application/json', '.html': 'text/html; charset=utf-8' };
 const server = createServer(async (req, res) => {
@@ -45,8 +49,8 @@ try {
       }
       return route.abort();
     });
-    await page.goto(origin + (signsOnly ? landingPath : servicesOnly ? '/uslugi.html' : '/'));
-    if (signsOnly) {
+    await page.goto(origin + (landingOnly ? landing.path : servicesOnly ? '/uslugi.html' : '/'));
+    if (landingOnly) {
       await page.emulateMedia({ reducedMotion: 'reduce' });
       const nav = page.getByRole('navigation', { name: 'Основная навигация' });
       const button = page.locator('.menu-btn');
@@ -54,11 +58,16 @@ try {
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
       assert.equal(await page.locator('.hero .btn').evaluate(el => el.getBoundingClientRect().bottom <= innerHeight), true);
       assert.equal(await page.locator('#leader-lead-form form').count(), 1);
-      assert.equal(await page.locator('[name="service"]').inputValue(), landingService);
+      assert.equal(await page.locator('[name="service"]').inputValue(), landing.service);
       await page.screenshot({ path: `artifacts/public-homepage/${landingName}-${width}.png` });
       assert.equal(await page.locator('.service-formats article').count(), 3);
       await page.locator('#formats').screenshot({ path: `artifacts/public-homepage/${landingName}-formats-${width}.png` });
       assert.equal(await page.locator('.service-related a').count(), 3);
+      if (landingName === 'stickers') {
+        assert.equal(await page.locator('input[type="file"]').count(), 0);
+        assert.equal(await page.getByText('Куда отправить фото или макет?', { exact: true }).count(), 1);
+        assert.equal(await page.getByText(/прикрепите фото/i).count(), 0);
+      }
       const questions = page.locator('.service-questions details');
       assert.equal(await questions.count(), 4);
       for (const question of await questions.all()) {
@@ -70,7 +79,7 @@ try {
       await page.locator('#questions h2').scrollIntoViewIfNeeded();
       await page.screenshot({ path: `artifacts/public-homepage/${landingName}-questions-${width}.png` });
       await page.locator('.service-related a').first().click();
-      assert.equal(await page.locator('h1').innerText(), bannersOnly ? 'Вывески в Борисоглебске' : 'Баннеры в Борисоглебске');
+      assert.equal(await page.locator('h1').innerText(), landing.relatedHeading);
       await page.goBack();
 
       if (width <= 1060) {
@@ -94,7 +103,7 @@ try {
       await page.getByRole('link', { name: 'Обсудить мой вариант', exact: true }).click();
       assert.equal(await page.locator('[name="service"]').isVisible(), true);
       await page.locator('[name="message"]').fill('Нужен расчёт, размер уточним позже');
-      await page.getByRole('link', { name: landingCta, exact: true }).click();
+      await page.getByRole('link', { name: landing.cta, exact: true }).click();
       assert.equal(await page.locator('[name="message"]').inputValue(), 'Нужен расчёт, размер уточним позже');
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
       await page.screenshot({ path: `artifacts/public-homepage/${landingName}-form-${width}.png` });
@@ -218,9 +227,9 @@ try {
     await page.close();
   }
   const noJs = await browser.newPage({ javaScriptEnabled: false, viewport: { width: 390, height: 900 } });
-  await noJs.goto(origin + (signsOnly ? landingPath : servicesOnly ? '/uslugi.html' : '/'));
+  await noJs.goto(origin + (landingOnly ? landing.path : servicesOnly ? '/uslugi.html' : '/'));
   assert.equal(await noJs.getByRole('navigation', { name: 'Основная навигация' }).isVisible(), true);
-  if (signsOnly) {
+  if (landingOnly) {
     await noJs.locator('.service-questions summary').first().click();
     assert.equal(await noJs.locator('.service-questions details').first().locator('p').isVisible(), true);
     await noJs.locator('.service-details summary').click();
