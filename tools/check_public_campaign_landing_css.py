@@ -34,7 +34,7 @@ PAGES = {
         ),
         'data_service': 'Комплексная реклама',
         'price_cards': 0,
-        'form_js': 'assets/public-lead-form.js?v=28',
+        'form_js': 'assets/public-lead-form.js?v=29',
     },
 }
 

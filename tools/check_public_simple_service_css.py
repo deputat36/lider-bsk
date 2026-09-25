@@ -104,8 +104,8 @@ PRIORITY_FORM_PAGES = {
 }
 
 FORM_SCRIPT_OVERRIDES = {
-    **{name: 'assets/public-lead-form.js?v=27' for name in PRIORITY_FORM_PAGES},
-    'outdoor-advertising-borisoglebsk.html': 'assets/public-lead-form.js?v=28',
+    **{name: 'assets/public-lead-form.js?v=29' for name in PRIORITY_FORM_PAGES},
+    'outdoor-advertising-borisoglebsk.html': 'assets/public-lead-form.js?v=29',
 }
 
 css = CSS.read_text(encoding='utf-8')
@@ -149,7 +149,7 @@ for page_name, expected in PAGES.items():
 
     form_css = 'assets/public-lead-form.css?v=4'
     shared_css = expected['shared_css']
-    form_js = FORM_SCRIPT_OVERRIDES.get(page_name, 'assets/public-lead-form.js?v=5')
+    form_js = FORM_SCRIPT_OVERRIDES.get(page_name, 'assets/public-lead-form.js?v=29')
     for marker in (form_css, shared_css, form_js):
         if html.count(marker) != 1:
             raise SystemExit(f'{page_name}: expected exactly one {marker}')

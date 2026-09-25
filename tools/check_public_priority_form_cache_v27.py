@@ -7,7 +7,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 FORM_SCRIPT = ROOT / 'assets' / 'public-lead-form.js'
 CAMPAIGN_MODEL = ROOT / 'assets' / 'public-campaign-link-model.js'
-PRIORITY_SCRIPT = 'assets/public-lead-form.js?v=27'
+PRIORITY_SCRIPT = 'assets/public-lead-form.js?v=29'
 PRIORITY_PAGES = {
     'bannery-borisoglebsk.html': "'bannery-borisoglebsk.html':{service:'Баннер'",
     'pechat-bannerov-borisoglebsk.html': "'pechat-bannerov-borisoglebsk.html':{service:'Баннер'",

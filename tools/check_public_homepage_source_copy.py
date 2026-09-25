@@ -5,7 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PAGE = ROOT / 'index.html'
 HELPER = ROOT / 'assets' / 'packages-link.js'
-FORM_SCRIPT = 'assets/public-lead-form.js?v=23'
+FORM_SCRIPT = 'assets/public-lead-form.js?v=29'
 
 
 class HomepageParser(HTMLParser):

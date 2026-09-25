@@ -85,7 +85,7 @@ def main() -> None:
 
     expected_scripts = [
         'assets/public-lead-reference-v1.js?v=1',
-        'assets/public-lead-form.js?v=23',
+        'assets/public-lead-form.js?v=29',
     ]
     if parser.scripts != expected_scripts:
         raise SystemExit(f'Unexpected request script order: {parser.scripts}')

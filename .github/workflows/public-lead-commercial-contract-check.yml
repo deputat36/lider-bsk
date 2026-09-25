@@ -10,6 +10,8 @@ on:
       - 'supabase/functions/leader-public-lead/index.ts'
       - 'docs/PUBLIC_SITE_COMMERCIAL_AUDIT_2026-07-12.md'
       - 'tools/check_public_lead_commercial_contract.py'
+      - 'tools/test_public_lead_submission.mjs'
+      - 'tools/test_public_lead_browser.mjs'
       - '.github/workflows/public-lead-commercial-contract-check.yml'
   pull_request:
     branches: [main]
@@ -19,6 +21,8 @@ on:
       - 'supabase/functions/leader-public-lead/index.ts'
       - 'docs/PUBLIC_SITE_COMMERCIAL_AUDIT_2026-07-12.md'
       - 'tools/check_public_lead_commercial_contract.py'
+      - 'tools/test_public_lead_submission.mjs'
+      - 'tools/test_public_lead_browser.mjs'
       - '.github/workflows/public-lead-commercial-contract-check.yml'
 
 jobs:
@@ -34,3 +38,20 @@ jobs:
         run: |
           set -euo pipefail
           python3 tools/check_public_lead_commercial_contract.py
+          node tools/test_public_lead_submission.mjs
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser regression dependency
+        run: |
+          npm install --no-save --package-lock=false playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Verify desktop and mobile submission without production writes
+        run: node tools/test_public_lead_browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: public-lead-submission-browser
+          path: artifacts/public-lead/
+          retention-days: 7

@@ -72,7 +72,7 @@ def main() -> None:
 
     for marker in (
         'MIN_VERSION = 5',
-        'CORE_VERSION = 23',
+        'CORE_VERSION = 29',
         "'index.html'",
         "'request.html'",
         "'uslugi.html'",

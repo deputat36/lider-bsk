@@ -28,5 +28,5 @@ for marker in ['setTimeout', 'innerHTML', 'createElement', '.onclick', '.textCon
 for marker in ['aria-expanded', 'aria-label', "event.key === 'Escape'", 'button.focus()', "mobile.addEventListener('change'", "header.addEventListener('focusout'"]:
     assert marker in helper, f'Missing menu behavior: {marker}'
 assert page.count('assets/packages-link.js?v=2') == 1
-assert page.count('assets/public-lead-form.js?v=23') == 1
+assert page.count('assets/public-lead-form.js?v=29') == 1
 print('Static homepage content and accessible navigation contract: PASS')
