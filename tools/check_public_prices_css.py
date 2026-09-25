@@ -10,7 +10,7 @@ PAGE = ROOT / "prices.html"
 CSS = ROOT / "assets" / "public-prices.css"
 CSS_LINK = '<link rel="stylesheet" href="assets/public-prices.css?v=1">'
 FORM_CSS_LINK = '<link rel="stylesheet" href="assets/public-lead-form.css?v=14">'
-FORM_SCRIPT = '<script src="assets/public-lead-form.js?v=29"></script>'
+FORM_SCRIPT = '<script src="assets/public-lead-form.js?v=30"></script>'
 
 
 def main() -> None:

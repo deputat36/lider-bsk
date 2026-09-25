@@ -62,7 +62,7 @@ def main() -> None:
         'Они не выдаются за реальные работы или отзывы клиентов.',
         'Фотографии конкретных выполненных заказов публикуются только после отбора материалов и согласования с заказчиками.',
         'data-leader-lead-form',
-        'assets/public-lead-form.js?v=29',
+        'assets/public-lead-form.js?v=30',
         'Получите номер',
     ):
         require(examples, marker, EXAMPLES)

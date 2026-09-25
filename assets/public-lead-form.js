@@ -3,6 +3,7 @@
   'use strict';
 
   const ENDPOINT='https://ofewxuqfjhamgerwzull.supabase.co/functions/v1/leader-public-lead';
+  const catalog=window.LeaderServiceCatalog;
   const METRIKA_ID=109387236;
   const PENDING_STORAGE_KEY='leader_public_lead_pending_v1';
   const MAX_PENDING_AGE_MS=30*60*1000;
@@ -136,7 +137,7 @@
     if(scroll)scrollToForm();
   }
   function applyScenario(key,scroll){const s=scenarios[key];if(s)applyServicePreset(s,scroll)}
-  function currentPreset(){const q=qs();if(q.service)return{service:q.service,text:'Услуга выбрана по ссылке: '+q.service};return servicePresets[pageKey()]||null}
+  function currentPreset(){const q=qs();const selected=catalog&&catalog.find(q.service);if(selected)return{service:selected.label,text:'Услуга выбрана по ссылке: '+selected.label};const legacy=servicePresets[pageKey()];const item=catalog&&catalog.forPage(pageKey());return item?{service:item.label,text:legacy?legacy.text:'Интересует: '+item.label}:legacy||null}
 
   function buildFormHtml(id){
     return `<form class="leader-lead-widget" data-leader-lead-widget>
@@ -146,7 +147,7 @@
       <div class="leader-lead-grid">
         <div class="leader-lead-span-6"><label for="${id}-name">Имя / организация</label><input id="${id}-name" name="name" type="text" autocomplete="name" maxlength="200" placeholder="Например, Алексей"></div>
         <div class="leader-lead-span-6"><label for="${id}-phone">Телефон</label><input id="${id}-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="80" placeholder="+7..." required></div>
-        <div class="leader-lead-span-12"><label for="${id}-service">Что нужно?</label><select id="${id}-service" name="service"><option>Баннер</option><option>Полиграфия</option><option>Визитки</option><option>Наклейки</option><option>Табличка</option><option>Печать на плёнке</option><option>Плоттерная резка</option><option>Вывеска / наружная реклама</option><option>Дизайн макета</option><option>Соцсети и контент</option><option>Яндекс Карты и 2ГИС</option><option>Логотип / фирменный стиль</option><option>Комплексная реклама</option><option>Другое</option></select></div>
+        <div class="leader-lead-span-12"><label for="${id}-service">Что нужно?</label><select id="${id}-service" name="service" required>${catalog?catalog.services.map(item=>`<option value="${item.label}"${item.id==='other'?' selected':''}>${item.label}</option>`).join(''):'<option value="">Услуги временно недоступны</option>'}</select></div>
         <div class="leader-lead-span-12"><label for="${id}-message">Коротко опишите задачу</label><textarea id="${id}-message" name="message" maxlength="2000" rows="3" placeholder="Например: нужен рекламный пост, баннер или наклейки"></textarea></div>
       </div>
       <button class="leader-lead-more" type="button" data-leader-more>Добавить подробности для точного расчёта ↓</button>
@@ -218,6 +219,7 @@
     const budget=field(form,'budget');
     const business=field(form,'business');
 
+    if(!service){setStatus(form,'err','Выберите услугу или позвоните по номеру 8 980 245-74-71.');return}
     if(!phone){setStatus(form,'err','Укажите телефон, чтобы мы могли связаться с вами.');return}
 
     const pageTitle=(document.title||'').replace(/\s+/g,' ').trim();
@@ -226,7 +228,9 @@
     parts.push('Источник: сайт РА Лидер');
     parts.push('Страница: '+pageTitle);
     parts.push('URL: '+location.href);
+    const serviceInfo=catalog&&catalog.find(service);
     if(service)parts.push('Услуга: '+service);
+    if(serviceInfo)parts.push('Направление: '+catalog.directions[serviceInfo.direction]);
     if(message)parts.push('Задача клиента: '+message);
     if(city)parts.push('Город: '+city);
     if(business)parts.push('Бизнес/объект: '+business);
@@ -243,6 +247,8 @@
       name,
       phone,
       service,
+      service_id:serviceInfo?serviceInfo.id:'',
+      direction:serviceInfo?serviceInfo.direction:'',
       source:'Сайт',
       message:parts.join('\n')||'Клиент оставил быструю заявку без подробного описания.',
       page_url:location.href,
@@ -284,6 +290,8 @@
       // Legacy CI marker: goal('lead_sent',{service,page:location.href,request_id:rid})
       goal('lead_sent',{service,page:location.href,page_path:location.pathname,request_id:responseRequestId,duplicate});
       form.reset();
+      const serviceSelect=form.querySelector('[name="service"]');
+      if(serviceSelect)serviceSelect.value=service;
     }catch(err){
       console.error(err);
       setStatus(form,'err','Не удалось отправить заявку. Позвоните по номеру 8 980 245-74-71 или попробуйте ещё раз.');
@@ -333,6 +341,7 @@
       if(!a)return;
       const href=a.getAttribute('href')||'';
       const text=(a.textContent||'').trim();
+      if(href==='#request'||href==='#leader-lead-form')goal('request_block_click',{service:field(document.querySelector('[data-leader-lead-widget]')||document,'service'),page_path:location.pathname});
       if(href.indexOf('tel:')===0)goal('phone_click',{href,text,page:location.href,page_path:location.pathname});
       if(a.dataset&&a.dataset.service){e.preventDefault();applyServicePreset({service:a.dataset.service,text:'Услуга выбрана кнопкой: '+a.dataset.service},true)}
       if(a.dataset&&a.dataset.scenario){e.preventDefault();applyScenario(a.dataset.scenario,true)}

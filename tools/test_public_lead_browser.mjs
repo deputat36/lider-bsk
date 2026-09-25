@@ -4,6 +4,9 @@ import { readFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 const root = process.cwd();
+await import('../assets/leader-service-catalog.js');
+const commercial = JSON.parse(await readFile('data/commercial-services.json', 'utf8'));
+const catalog = globalThis.LeaderServiceCatalog;
 const server = createServer(async (req, res) => {
   const pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
   const file = path.resolve(root, '.' + (pathname === '/' ? '/index.html' : pathname));
@@ -54,6 +57,36 @@ try {
     assert.equal(errors.length, 0, errors.join('\n'));
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     await page.screenshot({path:`artifacts/public-lead/submission-${width}.png`});
+    for (const item of commercial) {
+      const service = catalog.find(item.id);
+      await page.goto(origin + '/' + service.pages[0]);
+      await page.locator('[name="service"]').waitFor();
+      assert.equal(await page.locator('[name="service"]').inputValue(), service.label);
+      assert.equal(await page.locator('[name="service"] option').count(), catalog.services.length);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+      assert.equal(await page.locator('.hero .btn').evaluate(el => el.getBoundingClientRect().bottom <= innerHeight - 70), true, service.id + ' CTA visible');
+      await page.screenshot({path:`artifacts/public-lead/${service.id}-${width}.png`});
+      if (['automation','promoters','websites'].includes(service.id)) {
+        await page.locator('#demo').screenshot({path:`artifacts/public-lead/${service.id}-demo-${width}.png`});
+      }
+      const question=page.locator('.service-questions details').first();
+      await question.locator('summary').focus();
+      await page.keyboard.press('Enter');
+      assert.equal(await question.locator('p').isVisible(), true);
+      await page.locator('.hero .btn').click();
+      await page.locator('[name="phone"]').fill('+7 900 000-00-00');
+      await page.locator('[name="message"]').fill('Synthetic task ' + service.id);
+      await page.locator('button[type="submit"]').click();
+      await page.locator('[data-leader-lead-status].ok').waitFor();
+      const submitted=payloads.at(-1);
+      assert.equal(submitted.service, service.label);
+      assert.equal(submitted.direction, service.direction);
+      assert.equal(submitted.utm_source, 'vk');
+      assert.equal(submitted.page_path, '/' + service.pages[0]);
+      assert.ok(submitted.message.includes('Задача клиента: Synthetic task ' + service.id));
+      assert.equal(await page.locator('[name="service"]').inputValue(), service.label, 'Keep service after success');
+      assert.equal(errors.length, 0, errors.join('\n'));
+    }
     await context.close();
   }
   console.log('PASS: desktop/mobile submit, campaign navigation, user service selection, retry; zero production requests forwarded.');

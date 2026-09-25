@@ -34,6 +34,8 @@ function page(search = '', sessionStorage = storage) {
       return { ok: true, status: 200, json: async () => ({ ok: true, request_id: payload.request_id }) };
     },
   });
+  vm.runInContext(fs.readFileSync('assets/leader-service-catalog.js', 'utf8'), context);
+  context.window.LeaderServiceCatalog = context.LeaderServiceCatalog;
   const marker = source.lastIndexOf('})();');
   const instrumented = source.slice(0, marker) + '\nwindow.testSubmit=submit; window.testAttribution=typeof campaignAttribution === "function" ? campaignAttribution : qs;\n' + source.slice(marker);
   vm.runInContext(instrumented, context);
@@ -44,6 +46,9 @@ const direct = page();
 await direct.submit();
 assert.equal(direct.sent[0].service, 'Наклейки', 'Selected service must survive an URL without service');
 assert.equal(direct.sent[0].source, 'Сайт');
+assert.equal(direct.sent[0].direction, 'production');
+assert.equal(direct.sent[0].service_id, 'stickers');
+assert.ok(direct.sent[0].message.includes('Направление: Производство рекламы'));
 assert.equal(direct.sent[0].page_path, '/nakleyki-plotternaya-rezka-borisoglebsk.html');
 assert.ok(direct.sent[0].message.includes('Услуга: Наклейки'));
 assert.ok(direct.sent[0].submitted_at);

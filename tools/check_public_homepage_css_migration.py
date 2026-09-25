@@ -39,6 +39,7 @@ def main() -> None:
     expected_stylesheets = [
         'assets/public-lead-form.css?v=4',
         'assets/public-homepage.css?v=4',
+        'assets/public-commercial-services.css?v=1',
     ]
     if parser.stylesheets != expected_stylesheets:
         raise SystemExit(f'Unexpected homepage stylesheet order: {parser.stylesheets}')
@@ -46,7 +47,8 @@ def main() -> None:
         raise SystemExit(f'Homepage must not contain inline style blocks, found {parser.style_count}')
 
     expected_scripts = [
-        'assets/public-lead-form.js?v=29',
+        'assets/leader-service-catalog.js?v=1',
+        'assets/public-lead-form.js?v=30',
         'assets/packages-link.js?v=2',
     ]
     if parser.scripts != expected_scripts:

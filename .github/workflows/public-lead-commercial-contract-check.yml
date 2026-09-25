@@ -5,6 +5,12 @@ on:
   push:
     branches: [main]
     paths:
+      - '*.html'
+      - 'assets/leader-service-catalog.js'
+      - 'assets/public-commercial-services.css'
+      - 'data/commercial-services.json'
+      - 'tools/test_commercial_service_contract.mjs'
+      - 'tools/build_commercial_service_pages.py'
       - 'assets/public-lead-form.js'
       - 'assets/public-lead-form.css'
       - 'supabase/functions/leader-public-lead/index.ts'
@@ -16,6 +22,12 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - '*.html'
+      - 'assets/leader-service-catalog.js'
+      - 'assets/public-commercial-services.css'
+      - 'data/commercial-services.json'
+      - 'tools/test_commercial_service_contract.mjs'
+      - 'tools/build_commercial_service_pages.py'
       - 'assets/public-lead-form.js'
       - 'assets/public-lead-form.css'
       - 'supabase/functions/leader-public-lead/index.ts'
@@ -39,6 +51,8 @@ jobs:
           set -euo pipefail
           python3 tools/check_public_lead_commercial_contract.py
           node tools/test_public_lead_submission.mjs
+          node tools/test_commercial_service_contract.mjs
+          python3 tools/build_commercial_service_pages.py --check
 
       - uses: actions/setup-node@v4
         with:

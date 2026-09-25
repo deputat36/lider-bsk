@@ -10,7 +10,7 @@ PAGE = ROOT / "uslugi.html"
 CSS = ROOT / "assets" / "public-services.css"
 CSS_LINK = '<link rel="stylesheet" href="assets/public-services.css?v=2">'
 FORM_CSS_LINK = '<link rel="stylesheet" href="assets/public-lead-form.css?v=5">'
-FORM_SCRIPT = '<script src="assets/public-lead-form.js?v=29"></script>'
+FORM_SCRIPT = '<script src="assets/public-lead-form.js?v=30"></script>'
 
 
 def main() -> None:

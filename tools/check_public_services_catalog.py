@@ -41,20 +41,20 @@ def main() -> None:
         '<link rel="canonical" href="https://www.lider-bsk.ru/uslugi.html">',
         '<meta property="og:url" content="https://www.lider-bsk.ru/uslugi.html">',
         'Каталог рекламных услуг в Борисоглебске',
-        'Наружная реклама и оформление точки',
-        'Печать и полиграфия',
-        'Дизайн и фирменный стиль',
-        'Продвижение и онлайн-оформление',
+        'Привлечь клиентов',
+        'Оформить бизнес',
+        'Автоматизировать бизнес',
+        'Производство рекламы',
         'Не нашли точное название услуги?',
         'data-leader-lead-form',
-        'assets/public-lead-form.js?v=29',
+        'assets/public-lead-form.js?v=30',
         '"@type":"CollectionPage"',
         '"@type":"ItemList"',
         'privacy.html',
     ):
         require(text, marker)
 
-    for section_id in ('outdoor', 'print', 'design', 'online', 'request'):
+    for section_id in ('promotion', 'branding', 'automation', 'production', 'outdoor', 'print', 'design', 'online', 'request'):
         if section_id not in parser.ids:
             raise SystemExit(f'Missing section id: {section_id}')
 
