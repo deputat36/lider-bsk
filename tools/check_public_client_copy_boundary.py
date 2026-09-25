@@ -19,7 +19,8 @@ INTERNAL_ROOT_PAGES = {
 # "интеграция" are intentionally not forbidden because they may describe a
 # legitimate customer-facing service.
 FORBIDDEN = (
-    (re.compile(r'\bcrm\b', re.IGNORECASE), 'CRM'),
+    # CRM is an advertised service (issue #555); internal routes remain forbidden.
+    (re.compile(r'/crm/', re.IGNORECASE), 'internal CRM route'),
     (re.compile(r'себестоим', re.IGNORECASE), 'себестоимость'),
     (re.compile(r'марж', re.IGNORECASE), 'маржа'),
     (re.compile(r'рабоч(?:ий|его|ему|им|ем)\s+контур', re.IGNORECASE), 'рабочий контур'),

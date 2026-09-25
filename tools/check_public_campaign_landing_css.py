@@ -20,7 +20,7 @@ PAGES = {
         ),
         'data_service': 'Соцсети и контент',
         'price_cards': 3,
-        'form_js': 'assets/public-lead-form.js?v=29',
+        'form_js': 'assets/public-lead-form.js?v=30',
     },
     'reklama-otkrytiya-magazina-borisoglebsk.html': {
         'body_class': 'page-store-opening',
@@ -34,7 +34,7 @@ PAGES = {
         ),
         'data_service': 'Комплексная реклама',
         'price_cards': 0,
-        'form_js': 'assets/public-lead-form.js?v=29',
+        'form_js': 'assets/public-lead-form.js?v=30',
     },
 }
 

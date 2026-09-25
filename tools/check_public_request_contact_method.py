@@ -8,7 +8,7 @@ FORM = ROOT / "assets/public-lead-form.js"
 GUARD = ROOT / "assets/public-request-contact-method-v1.js"
 STYLE = ROOT / "assets/public-request-contact-method-v1.css"
 DOC = ROOT / "docs/PUBLIC_REQUEST_CONTACT_METHOD_GUARD_2026-07-13.md"
-FORM_SCRIPT = 'assets/public-lead-form.js?v=29'
+FORM_SCRIPT = 'assets/public-lead-form.js?v=30'
 
 
 def read(path: Path, errors: list[str]) -> str:

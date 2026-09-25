@@ -1,0 +1,13 @@
+/* Commercial examples are schematic concepts, not a portfolio. */
+.page-commercial-service .commercial-direction{color:var(--brand-orange);font-size:14px;font-weight:700;margin:0 0 12px}
+.page-commercial-service .hero h1{max-width:1050px}
+.commercial-includes{padding-left:20px;margin:0}.commercial-includes li+li{margin-top:12px}
+.commercial-demo{border:1px solid var(--border-default);border-radius:var(--radius-lg);padding:32px;background:var(--surface-page)}
+.commercial-demo .demo-label{display:inline-block;padding:5px 10px;background:#fff0e5;color:#9b3e00;border-radius:6px;font-size:13px;font-weight:700;margin:0 0 20px}
+.demo-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:24px 0}
+.demo-card{padding:22px;border:1px solid var(--border-default);border-top:3px solid var(--brand-orange);border-radius:var(--radius-md);background:white}
+.demo-card span{color:#7c8188;font-size:13px;letter-spacing:.08em}.demo-card h3{margin:12px 0 8px}.demo-card p{margin:0}
+.demo-caption{font-size:14px;color:var(--text-secondary);max-width:850px}
+.business-goals{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}.business-goals .card{min-width:0}
+@media(max-width:1000px){.business-goals{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.demo-grid,.business-goals{grid-template-columns:1fr}.commercial-demo{padding:20px}.page-commercial-service .hero{padding:24px 0 32px}.page-commercial-service .hero h1{font-size:34px}.page-commercial-service .hero p{font-size:17px}.page-commercial-service .hero .commercial-direction{font-size:14px}}

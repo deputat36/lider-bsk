@@ -1,3 +1,5 @@
+import '../../../../assets/leader-service-catalog.js?v=1';
+
 const SERVICE_RULES = [
   ['Баннеры', ['баннер']],
   ['Наклейки', ['наклейк', 'афиш']],
@@ -40,7 +42,8 @@ function matchCategory(value, rules, emptyLabel = 'Не указано') {
 }
 
 export function normalizeLeadServiceCategory(service) {
-  return matchCategory(service, SERVICE_RULES);
+  const known=globalThis.LeaderServiceCatalog.find(service);
+  return known?known.category:matchCategory(service, SERVICE_RULES);
 }
 
 export function normalizeLeadSourceCategory(source, pageUrl = '', utmSource = '', referer = '') {

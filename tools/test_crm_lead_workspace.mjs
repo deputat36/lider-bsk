@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
+import { leadCustomerTask, leadDirectionLabel } from '../crm/v4/assets/v4/lead-client-context-v1.js';
 
 const source = await readFile(new URL('../crm/v4/assets/v4/lead-card.js', import.meta.url), 'utf8');
 const nodes = Object.fromEntries(['need', 'calculation', 'offer', 'order'].map(key => [key, { textContent: '' }]));
@@ -12,6 +13,7 @@ const state = {
 };
 const context = vm.createContext({
   v4State: state,
+  leadCustomerTask, leadDirectionLabel,
   leadPrimaryAction: () => ({ type: 'open_need', label: 'Потребность', hint: '' }),
   leadResponsibilityState: () => ({ key: 'self', label: 'Вы' }),
   buildFirstContactDraft: () => '',
@@ -46,3 +48,11 @@ const child = { tagName: 'DIV', parentElement: parent };
 context.api.revealWorkTarget(child);
 assert.equal(parent.open, true, 'existing CTAs must reveal their containing stage');
 console.log('Lead workspace: isolated counts, preserved hosts and reveal behavior PASS');
+
+const webLead = { service: 'CRM и автоматизация', message: 'Источник: сайт РА Лидер\nСтраница: CRM\nURL: https://example.test/\nУслуга: CRM и автоматизация\nНаправление: Автоматизировать бизнес\nЗадача клиента: Убрать повторный ввод\nи видеть следующий шаг\nГород: Борисоглебск' };
+assert.equal(leadCustomerTask(webLead), 'Убрать повторный ввод\nи видеть следующий шаг');
+assert.equal(leadDirectionLabel(webLead), 'Автоматизировать бизнес');
+assert.equal(leadCustomerTask({message:'Позвоните после 18',service:'Баннер'}), 'Позвоните после 18');
+const webHtml=context.api.renderLeadDetails(webLead);
+assert.match(webHtml, /Что нужно клиенту<\/h3>\s*<p>Убрать повторный ввод/);
+assert.match(webHtml, /<details><summary>Сообщение полностью<\/summary>/);

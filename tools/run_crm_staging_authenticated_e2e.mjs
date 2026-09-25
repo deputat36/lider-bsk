@@ -507,6 +507,9 @@ async function run(env = process.env, roleUi = '') {
   const config = loadConfig(env); const chrome = await findChrome(); const xvfbRun = await findXvfbRun(); const tempRoot = await mkdtemp(path.join(tmpdir(), 'lider-crm-authenticated-e2e-')); const tempV4 = path.join(tempRoot, 'v4'); let server;
   try {
     await cp(path.resolve('crm/v4'), tempV4, { recursive: true });
+    // CRM imports the same root-level catalog as the public site.
+    await cp(path.resolve('assets/leader-service-catalog.js'), path.join(tempV4, 'assets/leader-service-catalog.js'));
+
     if (roleUi) {
       const authPath = path.join(tempV4, 'assets/v4/auth.js');
       let authSource = await readFile(authPath, 'utf8');

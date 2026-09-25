@@ -5,7 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PAGE = ROOT / 'index.html'
 HELPER = ROOT / 'assets' / 'packages-link.js'
-FORM_SCRIPT = 'assets/public-lead-form.js?v=29'
+FORM_SCRIPT = 'assets/public-lead-form.js?v=30'
 
 
 class HomepageParser(HTMLParser):
@@ -51,7 +51,7 @@ def main() -> None:
     parser.feed(page)
 
     for marker in (
-        '<title>РА Лидер в Борисоглебске — наружная реклама, баннеры, наклейки, дизайн</title>',
+        '<title>РА Лидер в Борисоглебске — реклама, печать, сайты и автоматизация</title>',
         '<link rel="canonical" href="https://www.lider-bsk.ru/">',
         '<meta property="og:url" content="https://www.lider-bsk.ru/">',
         '<script type="application/ld+json">',
@@ -94,6 +94,7 @@ def main() -> None:
     expected_stylesheets = [
         'assets/public-lead-form.css?v=4',
         'assets/public-homepage.css?v=4',
+        'assets/public-commercial-services.css?v=1',
     ]
     if parser.stylesheets != expected_stylesheets:
         raise SystemExit(f'Unexpected homepage stylesheets: {parser.stylesheets}')

@@ -10,7 +10,7 @@ PAGE = ROOT / "faq.html"
 CSS = ROOT / "assets" / "public-faq.css"
 CSS_LINK = '<link rel="stylesheet" href="assets/public-faq.css?v=1">'
 FORM_CSS_LINK = '<link rel="stylesheet" href="assets/public-lead-form.css?v=6">'
-FORM_SCRIPT = '<script src="assets/public-lead-form.js?v=29"></script>'
+FORM_SCRIPT = '<script src="assets/public-lead-form.js?v=30"></script>'
 
 
 def main() -> None:
@@ -30,7 +30,7 @@ def main() -> None:
     if page.count(FORM_CSS_LINK) != 1:
         errors.append("FAQ page must retain public-lead-form.css?v=6 exactly once")
     if page.count(FORM_SCRIPT) != 1:
-        errors.append("FAQ page must retain public-lead-form.js?v=29 exactly once")
+        errors.append("FAQ page must retain public-lead-form.js?v=30 exactly once")
     if CSS_LINK in page and FORM_CSS_LINK in page and page.index(FORM_CSS_LINK) > page.index(CSS_LINK):
         errors.append("Shared form CSS must load before FAQ page CSS")
 

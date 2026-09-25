@@ -119,7 +119,7 @@ try {
       assert.equal(await page.locator('.brand-logo').evaluate(el => el.complete && el.naturalWidth > 0), true);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
       assert.equal(await page.locator('.service-more').count(), 4);
-      assert.equal(await page.locator('.service-list a').count(), 40);
+      assert.equal(await page.locator('.service-list a').count(), 49);
       assert.equal(await page.locator('#leader-lead-form form').count(), 1);
       await page.screenshot({ path: `artifacts/public-homepage/services-${width}.png` });
       if (width <= 1060) {
@@ -135,7 +135,7 @@ try {
         assert.equal(await nav.isVisible(), true);
         assert.equal(await button.isVisible(), false);
       }
-      for (const group of ['outdoor', 'print', 'design', 'online']) {
+      for (const group of ['promotion', 'branding', 'automation', 'production']) {
         const details = page.locator(`#${group} details`);
         const extra = details.locator('a').first();
         assert.equal(await extra.isVisible(), false);
@@ -145,7 +145,7 @@ try {
         await details.locator('summary').press('Enter');
         assert.equal(await extra.isVisible(), false);
       }
-      await page.locator('.quick-links a[href="#outdoor"]').click();
+      await page.locator('.quick-links a[href="#branding"]').click();
       assert.equal(await page.locator('.header').evaluate(el => { const r = el.getBoundingClientRect(); return r.top >= 0 && r.top < 2 && r.bottom > 0; }), true, 'Services header must stay available after category navigation');
       await page.screenshot({ path: `artifacts/public-homepage/services-group-${width}.png` });
       await page.getByRole('link', { name: 'Подобрать услугу', exact: true }).click();
@@ -209,12 +209,10 @@ try {
     await page.waitForTimeout(1300);
     assert.equal(await page.locator('#main-navigation').innerHTML(), before);
     assert.equal(await page.locator('#leader-ui-fix-v10').count(), 0);
-    for (const service of ['Вывеска / наружная реклама', 'Печать на плёнке', 'Плоттерная резка', 'Дизайн макета', 'Соцсети и контент', 'Яндекс Карты и 2ГИС']) {
-      await page.locator(`#services [data-service="${service}"]`).click();
-      assert.equal(await page.locator('#leader-lead-form [name="service"]').inputValue(), service);
+    assert.equal(await page.locator('#services .business-goals article').count(), 4);
+    for (const direction of ['promotion', 'branding', 'automation', 'production']) {
+      assert.equal(await page.locator(`#services a[href="uslugi.html#${direction}"]`).count(), 1);
     }
-    // Existing client text must survive service selection, and scenario prefill needs an empty draft.
-    assert.match(await page.locator('#leader-lead-form [name="message"]').inputValue(), /Вывеска/);
     await page.locator('#leader-lead-form [name="message"]').fill('');
     await page.locator('[data-scenario="shop"]').click();
     assert.equal(await page.locator('#leader-lead-form [name="service"]').inputValue(), 'Комплексная реклама');
@@ -236,9 +234,9 @@ try {
     assert.equal(await noJs.locator('.service-details ul').isVisible(), true);
     assert.equal(await noJs.locator('a[href="tel:+79802457471"]').count() > 0, true);
   } else if (servicesOnly) {
-    await noJs.locator('#outdoor summary').click();
-    assert.equal(await noJs.locator('#outdoor details a').first().isVisible(), true);
-    assert.equal(await noJs.locator('.service-list a').count(), 40);
+    await noJs.locator('#branding summary').click();
+    assert.equal(await noJs.locator('#branding details a').first().isVisible(), true);
+    assert.equal(await noJs.locator('.service-list a').count(), 49);
   } else assert.equal(await noJs.locator('#service-pages a').count(), 6);
   console.log('No-JavaScript commercial navigation: PASS');
   await noJs.close();

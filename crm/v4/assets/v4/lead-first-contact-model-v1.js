@@ -1,3 +1,5 @@
+import '../../../../assets/leader-service-catalog.js?v=1';
+
 const DEFAULT_SERVICE = 'вашей задаче';
 
 const SERVICE_PROFILES = [
@@ -76,6 +78,8 @@ export function firstContactGreeting(name) {
 
 export function firstContactServiceProfile(service) {
   const normalized = clean(service, 160);
+  const canonical=globalThis.LeaderServiceCatalog.find(normalized);
+  if(canonical&&canonical.questions.length)return {label:`задаче «${canonical.label}»`,questions:[...canonical.questions]};
   const profile = SERVICE_PROFILES.find((item) => item.match.test(normalized));
   if (profile) return { label: profile.label, questions: [...profile.questions] };
   return {

@@ -40,7 +40,6 @@ if INDEX.exists():
     for icon_id in (
         "icon-outdoor",
         "icon-print",
-        "icon-cut",
         "icon-design",
         "icon-social",
         "icon-pin",
@@ -65,8 +64,8 @@ if INDEX.exists():
     ):
         require(legacy not in html, f"legacy mixed icon remains: {legacy}")
 
-    require(html.count('class="leader-icon"') == 11, "homepage must use exactly 11 branded line-icon instances")
-    require(html.count('aria-hidden="true"') >= 11, "decorative icons must be hidden from assistive technology")
+    require(html.count('class="leader-icon"') == 9, "homepage must use exactly 9 branded line-icon instances")
+    require(html.count('aria-hidden="true"') >= 9, "decorative icons must be hidden from assistive technology")
     require('aria-label="Открыть меню"' in html, "menu icon button must keep an accessible name")
 
 if errors:
