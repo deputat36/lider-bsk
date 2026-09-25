@@ -234,8 +234,8 @@ try {
     assert.equal(await noJs.locator('.service-details ul').isVisible(), true);
     assert.equal(await noJs.locator('a[href="tel:+79802457471"]').count() > 0, true);
   } else if (servicesOnly) {
-    await noJs.locator('#outdoor summary').click();
-    assert.equal(await noJs.locator('#outdoor details a').first().isVisible(), true);
+    await noJs.locator('#branding summary').click();
+    assert.equal(await noJs.locator('#branding details a').first().isVisible(), true);
     assert.equal(await noJs.locator('.service-list a').count(), 49);
   } else assert.equal(await noJs.locator('#service-pages a').count(), 6);
   console.log('No-JavaScript commercial navigation: PASS');

@@ -45,7 +45,7 @@ UTM последней кампании хранится в sessionStorage до 
 
 Тесты: реальный submit с перехватом HTTP; переход с рекламной ссылки; изменение услуги; повтор после ошибки; TTL/отказ sessionStorage; единый справочник; раскрытие исходного сообщения CRM; браузер всех новых страниц на desktop/mobile. Внешние запросы в UI-тесте блокируются, production POST не пересылается.
 
-Для полного staging E2E добавлен только точный ref `agent/555-commercial-services-v1` в существующий OIDC bootstrap и dispatch. Проверки issuer/audience/repository/owner/actor/workflow сохранены. Рабочий Supabase не изменяется. Результат запуска и cleanup фиксируются в CI и STATUS после проверки.
+Для полного staging E2E временно был добавлен только точный ref `agent/555-commercial-services-v1` в существующий OIDC bootstrap и dispatch. Проверки issuer/audience/repository/owner/actor/workflow сохранены. Рабочий Supabase не изменяется. Полный [run 36127890994](https://github.com/deputat36/lider-bsk/actions/runs/36127890994) на `2fb555d5c34bd5412700f4b316fd9f065eed28bc` прошёл manager path, manager/owner RBAC, refresh, replay и stale guards. Cleanup удалил строки 21 типа и Auth-пользователя; независимый SQL подтвердил отсутствие synthetic-лидов/Auth. После проверки временный OIDC ref и dispatch удалены, bootstrap возвращён к исходному списку. Последующие исправления касаются только тестов, метаданных и документации.
 
 ## Что нельзя назвать завершённым без отдельного шага
 

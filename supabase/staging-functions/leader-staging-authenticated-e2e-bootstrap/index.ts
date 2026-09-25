@@ -13,7 +13,6 @@ const LEGACY_BRANCH_REF='refs/heads/agent/487-authenticated-staging-e2e'
 // Narrow test context for the explicitly authorized pricing iteration (#506).
 const PRICING_BRANCH_REF='refs/heads/agent/506-calculation-price-controls-v1'
 const READINESS_BRANCH_REF='refs/heads/agent/518-need-calculation-readiness-gate-v1'
-const COMMERCIAL_BRANCH_REF='refs/heads/agent/555-commercial-services-v1'
 const WORKSPACE_BRANCH_REF='refs/heads/agent/520-lead-workspace-v1'
 const PRINT_PRIVACY_BRANCH_REF='refs/heads/agent/510-offer-print-privacy-v1'
 const CATALOG_SOURCE_BRANCH_REF='refs/heads/agent/508-catalog-source-authority-v1'
@@ -31,10 +30,6 @@ const CATALOG_WORKFLOW_REFS=new Set([
   `${REPOSITORY}/.github/workflows/crm-staging-catalog-authenticated-e2e.yml@${CATALOG_BRANCH_REF}`,
 ])
 const TRUSTED_CONTEXTS=new Map<string,{eventName:string,workflowRefs:Set<string>}>([
-  [COMMERCIAL_BRANCH_REF,{eventName:'push',workflowRefs:new Set([
-    `${REPOSITORY}/.github/workflows/crm-staging-authenticated-e2e-dispatch.yml@${COMMERCIAL_BRANCH_REF}`,
-    `${REPOSITORY}/.github/workflows/crm-staging-authenticated-e2e.yml@${COMMERCIAL_BRANCH_REF}`,
-  ])}],
   [WORKSPACE_BRANCH_REF,{eventName:'push',workflowRefs:new Set([
     `${REPOSITORY}/.github/workflows/crm-staging-authenticated-e2e-dispatch.yml@${WORKSPACE_BRANCH_REF}`,
     `${REPOSITORY}/.github/workflows/crm-staging-authenticated-e2e.yml@${WORKSPACE_BRANCH_REF}`,

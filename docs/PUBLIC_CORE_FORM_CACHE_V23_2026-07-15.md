@@ -65,4 +65,7 @@ Existing page-specific contracts were updated for the new marker:
 
 ## Current cache version — 2026-09-25
 
-All public form pages now load `assets/public-lead-form.js?v=29` for the service-selection and campaign-navigation correction (#556). The v23 entry above records the completed July migration. Production Supabase was not changed.
+The #556 correction used `assets/public-lead-form.js?v=29` for the service-selection and campaign-navigation correction (#556). The v23 entry above records the completed July migration. Production Supabase was not changed.
+
+
+Current #555 integration: 58 public form pages load `assets/public-lead-form.js?v=30` after `assets/leader-service-catalog.js?v=1`. The new catalog supplies the same service names to forms and CRM; July and #556 records above are historical. Production Supabase was not changed.
