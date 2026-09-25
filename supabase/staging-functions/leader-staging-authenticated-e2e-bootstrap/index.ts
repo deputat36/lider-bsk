@@ -29,7 +29,12 @@ const LEGACY_WORKFLOW_REFS=new Set([
 const CATALOG_WORKFLOW_REFS=new Set([
   `${REPOSITORY}/.github/workflows/crm-staging-catalog-authenticated-e2e.yml@${CATALOG_BRANCH_REF}`,
 ])
+const SPECIAL_PRICE_BRANCH_REF='refs/heads/agent/526-special-price-v1'
 const TRUSTED_CONTEXTS=new Map<string,{eventName:string,workflowRefs:Set<string>}>([
+  [SPECIAL_PRICE_BRANCH_REF,{eventName:'push',workflowRefs:new Set([
+    `${REPOSITORY}/.github/workflows/crm-staging-authenticated-e2e-dispatch.yml@${SPECIAL_PRICE_BRANCH_REF}`,
+    `${REPOSITORY}/.github/workflows/crm-staging-authenticated-e2e.yml@${SPECIAL_PRICE_BRANCH_REF}`,
+  ])}],
   [WORKSPACE_BRANCH_REF,{eventName:'push',workflowRefs:new Set([
     `${REPOSITORY}/.github/workflows/crm-staging-authenticated-e2e-dispatch.yml@${WORKSPACE_BRANCH_REF}`,
     `${REPOSITORY}/.github/workflows/crm-staging-authenticated-e2e.yml@${WORKSPACE_BRANCH_REF}`,

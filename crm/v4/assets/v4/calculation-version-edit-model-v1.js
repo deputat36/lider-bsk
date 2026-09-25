@@ -1,3 +1,4 @@
+import { calculationSaveDecision } from './calculation-save-policy-v1.js';
 function number(value, fallback = 0) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -140,7 +141,7 @@ export function updateCalculationVersionItem(item, field, value) {
   if (!allowed.includes(field)) return item;
   const updated = { ...item, data: cloneData(item.data) };
   updated[field] = ['qty', 'contractor_price', 'client_price'].includes(field)
-    ? Math.max(0, number(value)) : value;
+    ? (value === '' ? NaN : Number(value)) : value;
   if (field === 'client_price') updated.data.price_source = 'manual';
   return updated;
 }
@@ -189,7 +190,7 @@ export function calculationVersionTotals(items = []) {
   const warnings = [];
   if (!calculated.length) warnings.push('Нет позиций расчёта');
   if (calculated.some((item) => item.qty <= 0)) warnings.push('Количество должно быть больше 0');
-  if (calculated.some((item) => item.client_price <= 0)) warnings.push('Цена клиенту должна быть больше 0');
+  if (calculated.some((item) => item.client_price === 0)) warnings.push('Есть бесплатные позиции');
   if (profit < 0) warnings.push('Расчёт убыточный');
   if (clientTotal > 0 && marginPercent < 20) warnings.push('Маржа ниже 20%');
   return {
@@ -202,10 +203,10 @@ export function calculationVersionTotals(items = []) {
     warning_level: warnings.some((warning) => /убыточ|количество|цена клиенту/i.test(warning))
       ? 'critical'
       : warnings.length ? 'warning' : 'ok',
-    canSave: calculated.length > 0
-      && calculated.every((item) => item.qty > 0 && item.client_price > 0)
-      && clientTotal > 0
-      && profit >= 0
+    canSave: calculationSaveDecision(items, {
+      client_total: clientTotal, contractor_cost: contractorCost,
+      profit, margin_percent: marginPercent
+    }).ok
   };
 }
 

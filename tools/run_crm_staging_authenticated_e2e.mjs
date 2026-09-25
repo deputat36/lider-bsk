@@ -209,14 +209,54 @@ async function createNeedAndCalculation(){
   setValue('#calcTargetMargin','');setValue('#calcMarkup','');setValue('#calcSmallMarkup','0');click('#applyAutomaticCalcPricesBtn');assert(draftPrice(1)===1000,'zero_tier_rule_lost');
   click('#calcDraftItems [data-action="remove-calc-item"][data-index="1"]');
   setValue('#calcMarkup','60');click('#calcDraftItems [data-action="auto-calc-item"][data-index="0"]');assert(draftPrice(0)===1600,'source_auto_price_setup_failed');
-  record('pricing_manual_auto_protection');click('#saveCalculationBtn');
-  const calculation=await waitFor(async()=>{try{const rows=await table('leader_lead_calculations','id,lead_id,need_id,title,version_number,client_total,contractor_cost,profit,status,updated_at',{lead_id:R.leadId});return rows.length===1?rows[0]:false;}catch(_){return false;}},'calculation_create_timeout',45000);ids.calculation=calculation.id;assert(Number(calculation.client_total)===1600&&Number(calculation.contractor_cost)===1000&&Number(calculation.profit)===600,'calculation_server_totals_failed');await assertCount('leader_lead_calculation_items',{calculation_id:calculation.id},1);record('calculation_create_atomic');
-  await waitFor(()=>document.querySelector('[data-calc-version-source="'+calculation.id+'"]'),'calculation_version_entry_missing');click('[data-calc-version-source="'+calculation.id+'"]');await waitFor(()=>document.getElementById('calculationVersionEditor'),'calculation_version_editor_missing');
-  setValue('[data-version-field="title"]',R.marker+' calculation v2');setValue('[data-version-row-field="client_price"][data-index="0"]','1700');click('[data-version-save]');
-  const versions=await waitFor(async()=>{try{const rows=await table('leader_lead_calculations','id,version_number,is_current_revision,client_total,profit,updated_at',{lead_id:R.leadId});return rows.length===2?rows:false;}catch(_){return false;}},'calculation_version_timeout',45000);const current=versions.find((row)=>Number(row.version_number)===2);assert(versions.some((row)=>row.id===calculation.id&&Number(row.client_total)===1600),'source_calculation_not_preserved');assert(current,'calculation_version_2_missing');ids.calculation=current.id;assert(Number(current.version_number)===2&&Number(current.client_total)===1700,'calculation_version_projection_failed');record('calculation_version');
+  record('pricing_manual_auto_protection');
+  const savedConfirm=window.confirm, savedInvoke=supabaseClient.functions.invoke.bind(supabaseClient.functions);
+  const commands=[]; let acceptPrice=false; const warnings=[];
+  window.confirm=(message)=>{warnings.push(message);return acceptPrice;};
+  supabaseClient.functions.invoke=async(name,options)=>{
+    if(options?.body?.action?.startsWith('calculation.')) commands.push({name,body:structuredClone(options.body)});
+    return savedInvoke(name,options);
+  };
+  let calculation,current;
+  try {
+    setValue('#calcDraftItems [data-calc-row-field="client_price"][data-index="0"]','0','change');
+    click('#saveCalculationBtn');
+    assert(warnings.length===1&&warnings[0].includes('Бесплатная работа'),'zero_price_confirmation_missing');
+    await assertCount('leader_lead_calculations',{lead_id:R.leadId},0);
+    assert(commands.length===0,'cancelled_price_was_sent');
+    acceptPrice=true;click('#saveCalculationBtn');
+    calculation=await waitFor(async()=>{const rows=await table('leader_lead_calculations','id,lead_id,need_id,title,version_number,client_total,contractor_cost,profit,warnings,status,updated_at',{lead_id:R.leadId});return rows.length===1?rows[0]:false;},'calculation_create_timeout',45000);
+    ids.calculation=calculation.id;
+    assert(Number(calculation.client_total)===0&&Number(calculation.profit)===-1000&&calculation.warnings.length>0,'free_initial_not_persisted');
+    record('free_initial_calculation_and_cancel');
+    for(const [offset,price] of [900,1000,1700].entries()) {
+      const version=offset+2, sourceId=ids.calculation;
+      await waitFor(()=>document.querySelector('[data-calc-version-source="'+sourceId+'"]'),'version_entry_missing');
+      click('[data-calc-version-source="'+sourceId+'"]');
+      await waitFor(()=>document.getElementById('calculationVersionEditor'),'calculation_version_editor_missing');
+      setValue('[data-version-field="title"]',R.marker+' calculation v'+version);
+      setValue('[data-version-row-field="client_price"][data-index="0"]',String(price));click('[data-version-save]');
+      const versions=await waitFor(async()=>{const rows=await table('leader_lead_calculations','id,version_number,is_current_revision,client_total,profit,warnings,updated_at',{lead_id:R.leadId});return rows.length===version?rows:false;},'calculation_version_timeout',45000);
+      current=versions.find(row=>Number(row.version_number)===version);
+      assert(current&&Number(current.client_total)===price&&Number(current.profit)===price-1000,'special_price_version_projection_failed');
+      assert(versions.some(row=>row.id===calculation.id&&Number(row.client_total)===0),'source_calculation_not_preserved');
+      ids.calculation=current.id;
+    }
+    assert(warnings.some(message=>message.includes('убыточный'))&&warnings.some(message=>message.includes('Работа в ноль')),'price_warning_missing');
+    for(const command of [commands[0],commands[commands.length-1]]) {
+      const replay=await savedInvoke(command.name,{body:command.body});
+      assert(replay.data?.ok&&replay.data.idempotent_replay,'calculation_replay_failed');
+    }
+    const last=commands[commands.length-1];const stale=structuredClone(last.body);
+    stale.request_id=crypto.randomUUID();stale.expected_updated_at='2000-01-01T00:00:00.000Z';stale.payload.idempotency_key+=':stale';
+    const rejected=await savedInvoke(last.name,{body:stale});
+    assert(rejected.data?.ok!==true,'calculation_stale_not_rejected');
+    await assertCount('leader_lead_calculations',{lead_id:R.leadId},4);
+    record('special_prices_free_loss_break_even_profit_replay_stale');
+  } finally {window.confirm=savedConfirm;supabaseClient.functions.invoke=savedInvoke;}
   const sourcePrice=await one('leader_lead_calculation_items','client_price,data',{calculation_id:calculation.id});
   const versionPrice=await one('leader_lead_calculation_items','client_price,data,comment',{calculation_id:current.id});
-  assert(Number(sourcePrice.client_price)===1600&&sourcePrice.data?.price_source==='auto','source_price_provenance_changed');
+  assert(Number(sourcePrice.client_price)===0&&sourcePrice.data?.price_source==='manual','source_price_provenance_changed');
   assert(Number(versionPrice.client_price)===1700&&versionPrice.data?.price_source==='manual','version_manual_provenance_not_persisted');
   assert(versionPrice.comment?.includes('PRIVATE_PRINT_COMMENT'),'print_private_comment_fixture_missing');
   record('version_manual_price_persisted');

@@ -1,3 +1,4 @@
+import { calculationSaveDecision } from './calculation-save-policy-v1.js';
 import { supabaseClient } from './supabase-client.js';
 import { V4_CONFIG } from './config.js';
 import { timeout, friendlyError } from './api.js';
@@ -418,10 +419,13 @@ async function saveVersionDraft() {
   }
   const totals = calculationVersionTotals(versionDraft.items);
   if (!totals.canSave) {
-    toast('Проверьте количество, цену клиенту и прибыль');
+    toast('Проверьте количество и числовые значения цен');
     updateEditorComputed();
     return;
   }
+
+  const decision = calculationSaveDecision(versionDraft.items, totals);
+  if (decision.confirmation && !globalThis.confirm(decision.confirmation)) return;
 
   saveBusy = true;
   renderVersionEditor();

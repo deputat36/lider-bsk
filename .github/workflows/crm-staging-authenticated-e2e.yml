@@ -89,7 +89,7 @@ jobs:
           set -euo pipefail
           mkdir -p "${RUNNER_TEMP}/crm-authenticated-e2e"
           node tools/run_crm_staging_authenticated_e2e.mjs --mode=run > "${RUNNER_TEMP}/crm-authenticated-e2e/browser.log" 2>&1
-          jq -e '.status == "passed" and .authenticated == true and .role == "manager" and .browser_actions == true and .refresh == true and .back_forward == true and .direct_orders == true and .review_guard == true and .production_replay == true and .stale_guard == true and .installation_replay == true and .projection_sync == true and .counts == {"needs":1,"calculations":2,"offers":1,"orders":1,"design_tasks":1,"production_jobs":1,"installation_jobs":1}' "${STAGING_CRM_E2E_EVIDENCE_PATH}" >/dev/null
+          jq -e '.status == "passed" and .authenticated == true and .role == "manager" and .browser_actions == true and .refresh == true and .back_forward == true and .direct_orders == true and .review_guard == true and .production_replay == true and .stale_guard == true and .installation_replay == true and .projection_sync == true and .counts == {"needs":1,"calculations":4,"offers":1,"orders":1,"design_tasks":1,"production_jobs":1,"installation_jobs":1}' "${STAGING_CRM_E2E_EVIDENCE_PATH}" >/dev/null
 
       - name: Verify manager direct API RBAC
         id: manager_rbac

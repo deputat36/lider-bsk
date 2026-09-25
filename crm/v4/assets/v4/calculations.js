@@ -1,3 +1,4 @@
+import { calculationSaveDecision } from './calculation-save-policy-v1.js';
 import { supabaseClient } from './supabase-client.js';
 import { timeout, friendlyError } from './api.js';
 import { v4State, setState } from './state.js';
@@ -1211,10 +1212,12 @@ async function saveCalculation() {
     toast('Добавьте хотя бы одну позицию расчёта');
     return;
   }
-  if (result.client_total <= 0 || result.profit < 0) {
-    toast('Проверьте расчёт: сумма клиенту должна быть больше 0, расчёт не должен быть убыточным');
+  const decision = calculationSaveDecision(draftItems, result);
+  if (!decision.ok) {
+    toast(decision.message);
     return;
   }
+  if (decision.confirmation && !globalThis.confirm(decision.confirmation)) return;
   const calcPayload = {
     lead_id: v4State.route.leadId,
     need_id: val('calcNeedId') || null,
@@ -1431,7 +1434,7 @@ function bindCalculationEvents() {
           renderDraftItems();
           return;
         }
-        draftItems[index][field] = Math.max(0, parseNum(rowInput.value));
+        draftItems[index][field] = rowInput.value === '' ? NaN : Number(rowInput.value);
         if (field === 'client_price') draftItems[index].data = { ...(draftItems[index].data || {}), price_source: 'manual' };
         if (field === 'contractor_price' && draftItems[index].data?.price_source !== 'manual') {
           draftItems = repriceAutomaticItems(draftItems, { ...calcSettings(), mediumLimit: calcSettings().medLimit });
