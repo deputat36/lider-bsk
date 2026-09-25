@@ -12,7 +12,7 @@ JS = ROOT / "assets" / "public-order-process.js"
 LANDING_CSS = '<link rel="stylesheet" href="assets/public-landing.css?v=1">'
 FORM_CSS = '<link rel="stylesheet" href="assets/public-lead-form.css?v=4">'
 PAGE_CSS = '<link rel="stylesheet" href="assets/public-order-process.css?v=1">'
-FORM_JS = '<script src="assets/public-lead-form.js?v=5"></script>'
+FORM_JS = '<script src="assets/public-lead-form.js?v=29"></script>'
 PAGE_JS = '<script src="assets/public-order-process.js?v=1"></script>'
 PRESET = 'Страница «Как проходит заказ». Нужна консультация и расчёт рекламной задачи.'
 
@@ -39,7 +39,7 @@ def main() -> None:
         (LANDING_CSS, "public-landing.css?v=1"),
         (FORM_CSS, "public-lead-form.css?v=4"),
         (PAGE_CSS, "public-order-process.css?v=1"),
-        (FORM_JS, "public-lead-form.js?v=5"),
+        (FORM_JS, "public-lead-form.js?v=29"),
         (PAGE_JS, "public-order-process.js?v=1"),
     ):
         if page.count(marker) != 1:

@@ -13,7 +13,7 @@ EXPECTED_URL = 'https://www.lider-bsk.ru/kak-prohodit-zakaz.html'
 SHARED_CSS = 'assets/public-landing.css?v=1'
 FORM_CSS = 'assets/public-lead-form.css?v=4'
 PAGE_CSS = 'assets/public-order-process.css?v=1'
-FORM_JS = 'assets/public-lead-form.js?v=5'
+FORM_JS = 'assets/public-lead-form.js?v=29'
 PAGE_JS = 'assets/public-order-process.js?v=1'
 PRESET = 'Страница «Как проходит заказ». Нужна консультация и расчёт рекламной задачи.'
 

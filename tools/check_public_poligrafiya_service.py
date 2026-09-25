@@ -17,7 +17,7 @@ checks = [
     ('polygraphy hub message mentions polygraphy', 'data-lead-message="Страница: полиграфия' in page),
     ('polygraphy hub loads shared print preset', 'assets/public-print-product.js?v=1' in page),
     ('polygraphy hub has no executable inline preset', "service.options[i].value==='Полиграфия'" not in page),
-    ('handouts page uses lead form v5', 'assets/public-lead-form.js?v=5' in handouts),
+    ('handouts page uses lead form v5', 'assets/public-lead-form.js?v=29' in handouts),
     ('handouts page declares Polygraphy service', 'data-lead-service="Полиграфия"' in handouts),
     ('handouts page message mentions handout materials', 'data-lead-message="Страница: раздаточные материалы' in handouts),
     ('handouts page loads shared print CSS', 'assets/public-print-product.css?v=1' in handouts),

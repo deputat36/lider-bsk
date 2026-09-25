@@ -47,7 +47,7 @@ if re.search(r'<script(?![^>]*\bsrc=)(?![^>]*type=["\']application/ld\+json["\']
 assets = (
     'assets/public-lead-form.css?v=4',
     'assets/public-business-card-builder.css?v=1',
-    'assets/public-lead-form.js?v=5',
+    'assets/public-lead-form.js?v=29',
     'assets/public-related-services.js?v=1',
     'assets/public-business-card-builder.js?v=1',
 )
