@@ -7,6 +7,8 @@ on:
       - 'crm/v4/assets/v4/action-permissions-v1.js'
       - 'crm/v4/assets/v4/calculation-version-integrity-model-v1.js'
       - 'crm/v4/assets/v4/calculation-version-edit-model-v1.js'
+      - 'crm/v4/assets/v4/calculation-save-policy-v1.js'
+      - 'tools/test_calculation_save_policy.mjs'
       - 'crm/v4/assets/v4/calculation-version-save-route-v1.js'
       - 'crm/v4/assets/v4/calculation-version-editor-v1.js'
       - 'crm/v4/assets/v4/calculation-version-editor-v1.css'
@@ -25,6 +27,8 @@ on:
       - 'crm/v4/assets/v4/action-permissions-v1.js'
       - 'crm/v4/assets/v4/calculation-version-integrity-model-v1.js'
       - 'crm/v4/assets/v4/calculation-version-edit-model-v1.js'
+      - 'crm/v4/assets/v4/calculation-save-policy-v1.js'
+      - 'tools/test_calculation_save_policy.mjs'
       - 'crm/v4/assets/v4/calculation-version-save-route-v1.js'
       - 'crm/v4/assets/v4/calculation-version-editor-v1.js'
       - 'crm/v4/assets/v4/calculation-version-editor-v1.css'
@@ -53,7 +57,9 @@ jobs:
       - name: Check version editor syntax
         run: node --check crm/v4/assets/v4/calculation-version-editor-v1.js
       - name: Test version edit model
-        run: node tools/test_calculation_version_edit_model.mjs
+        run: |
+          node tools/test_calculation_version_edit_model.mjs
+          node tools/test_calculation_save_policy.mjs
       - name: Test editor observer lifecycle
         run: node tools/test_calculation_version_editor_lifecycle.mjs
       - name: Test save route title intent

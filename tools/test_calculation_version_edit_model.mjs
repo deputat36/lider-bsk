@@ -132,7 +132,7 @@ assert.equal(totals.canSave, true);
 
 const invalid = calculationVersionTotals([{ ...copied[0], client_price: 50 }]);
 assert.equal(invalid.profit, -100);
-assert.equal(invalid.canSave, false);
+assert.equal(invalid.canSave, true);
 assert.match(invalid.warnings.join(' '), /убыточ/i);
 
 const draft = createCalculationVersionDraft({
