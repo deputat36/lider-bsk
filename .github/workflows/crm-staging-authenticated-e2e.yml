@@ -144,7 +144,7 @@ jobs:
           HTTP_CODE="$(curl -sS -o "${RESPONSE_FILE}" -w '%{http_code}' -X POST "${BOOTSTRAP_URL}" -H "Authorization: Bearer ${OIDC_TOKEN}" -H 'Content-Type: application/json' --data "{\"action\":\"inspect\",\"run_key\":\"${STAGING_CRM_E2E_RUN_KEY}\",\"marker\":\"${STAGING_CRM_E2E_MARKER}\"}")"
           unset OIDC_TOKEN
           test "${HTTP_CODE}" = '200'
-          jq -e '.ok == true and .counts.needs == 1 and .counts.calculations == 2 and .counts.offers == 1 and .counts.orders == 1 and .counts.design_tasks == 1 and .counts.production_jobs == 1 and .counts.installation_jobs == 1' "${RESPONSE_FILE}" >/dev/null
+          jq -e '.ok == true and .counts.needs == 1 and .counts.calculations == 4 and .counts.offers == 1 and .counts.orders == 1 and .counts.design_tasks == 1 and .counts.production_jobs == 1 and .counts.installation_jobs == 1' "${RESPONSE_FILE}" >/dev/null
 
       - name: Cleanup all synthetic rows and Auth user
         id: cleanup
