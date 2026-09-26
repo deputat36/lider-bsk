@@ -19,3 +19,7 @@ Production не изменялся. Перед rollout нужны отдельн
 ## Rollback
 
 `supabase/staging-migrations/calculation_special_prices_rollback.sql` восстанавливает **точные прежние тела функций** после проверки md5 новых. Таблицы, grants, receipts и принятые версии не удаляются. Сохранённые специальные цены остаются валидными историческими записями. Перед rollback прекратить новые записи через изменяемые команды и сохранить определения функций. После rollback повторить permission/replay probes и сравнить исходные md5: initial `ba8ad5920edc71f1f6a9e4316dc3bd37`, version `7a68e970d4e0f528a46c83fc36d5b130`. При несовпадении preflight остановится; не отключать его.
+
+## Подтверждённый runtime (2026-09-26)
+
+[Run 36267024854](https://github.com/deputat36/lider-bsk/actions/runs/36267024854): полный UI path с 4 immutable версиями, free/loss/break-even confirmations, отмена без запроса, replay без дубля и stale reject. Manager/owner UI/API permissions, согласование, создание единственного заказа, дизайн, production и installation — passed. Cleanup: Auth user deleted, все 21 категории residue=0. Временные branch/workflow allowlist записи удалены после прогона; production не менялся. Финансовые записи и остальные четыре роли этим прогоном не проверялись.
