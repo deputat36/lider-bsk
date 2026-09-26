@@ -85,6 +85,7 @@ let v4RuntimeState;
 const started=Date.now();
 const steps=[];
 const networkErrors=[];
+const calculationCommands=[];let captureCalculationCommands=false;
 const ids={};
 const sleep=(ms)=>new Promise((resolve)=>setTimeout(resolve,ms));
 const clean=(value)=>String(value??'').trim();
@@ -99,6 +100,10 @@ function instrumentTransportProbe(){
   globalThis.fetch=async(input,init)=>{
     let requestUrl;try{requestUrl=new URL(String(input?.url||input||''));}catch(_){return nativeFetch(input,init);}
     const exactStaging=requestUrl.origin==='${STAGING_URL}';
+    if(captureCalculationCommands&&exactStaging&&requestUrl.pathname.startsWith('/functions/v1/')){
+      let body;try{body=JSON.parse(init?.body);}catch(_){}
+      if(body?.action?.startsWith('calculation.'))calculationCommands.push({name:requestUrl.pathname.split('/').pop(),body:structuredClone(body)});
+    }
     const isWorkflowRpc=exactStaging&&requestUrl.pathname==='/rest/v1/rpc/leader_update_lead_workflow_browser_rpc';
     let response;
     if(isWorkflowRpc){const headers=Object.fromEntries(new Headers(init?.headers||input?.headers||{}).entries());response=await nativeFetch('/__crm_e2e_staging_request_proxy',{method:'POST',headers:{'Content-Type':'application/json'},signal:init?.signal,body:JSON.stringify({path:requestUrl.pathname+requestUrl.search,method:clean(init?.method||input?.method||'POST').toUpperCase(),headers,body:typeof init?.body==='string'?init.body:''})});}
@@ -211,12 +216,8 @@ async function createNeedAndCalculation(){
   setValue('#calcMarkup','60');click('#calcDraftItems [data-action="auto-calc-item"][data-index="0"]');assert(draftPrice(0)===1600,'source_auto_price_setup_failed');
   record('pricing_manual_auto_protection');
   const savedConfirm=window.confirm, savedInvoke=supabaseClient.functions.invoke.bind(supabaseClient.functions);
-  const commands=[]; let acceptPrice=false; const warnings=[];
+  const commands=calculationCommands;captureCalculationCommands=true; let acceptPrice=false; const warnings=[];
   window.confirm=(message)=>{warnings.push(message);return acceptPrice;};
-  supabaseClient.functions.invoke=async(name,options)=>{
-    if(options?.body?.action?.startsWith('calculation.')) commands.push({name,body:structuredClone(options.body)});
-    return savedInvoke(name,options);
-  };
   let calculation,current;
   try {
     setValue('#calcDraftItems [data-calc-row-field="client_price"][data-index="0"]','0','change');
@@ -243,6 +244,7 @@ async function createNeedAndCalculation(){
       ids.calculation=current.id;
     }
     assert(warnings.some(message=>message.includes('убыточный'))&&warnings.some(message=>message.includes('Работа в ноль')),'price_warning_missing');
+    captureCalculationCommands=false;assert(commands.length===4,'calculation_command_capture_incomplete');
     for(const command of [commands[0],commands[commands.length-1]]) {
       const replay=await savedInvoke(command.name,{body:command.body});
       assert(replay.data?.ok&&replay.data.idempotent_replay,'calculation_replay_failed');
@@ -253,7 +255,7 @@ async function createNeedAndCalculation(){
     assert(rejected.data?.ok!==true,'calculation_stale_not_rejected');
     await assertCount('leader_lead_calculations',{lead_id:R.leadId},4);
     record('special_prices_free_loss_break_even_profit_replay_stale');
-  } finally {window.confirm=savedConfirm;supabaseClient.functions.invoke=savedInvoke;}
+  } finally {window.confirm=savedConfirm;captureCalculationCommands=false;}
   const sourcePrice=await one('leader_lead_calculation_items','client_price,data',{calculation_id:calculation.id});
   const versionPrice=await one('leader_lead_calculation_items','client_price,data,comment',{calculation_id:current.id});
   assert(Number(sourcePrice.client_price)===0&&sourcePrice.data?.price_source==='manual','source_price_provenance_changed');
@@ -323,9 +325,9 @@ async function designProductionInstallation(orderId){
   const finalOrders=await invoke('leader-crm-orders',{action:'list'});const finalOrder=finalOrders.data?.orders?.find((row)=>row.id===orderId);assert(finalOrder,'final_order_read_failed');assert(finalOrder.production_status==='Готово'&&finalOrder.installation_status,'final_order_projection_failed');
   const finalLead=await one('leader_leads','id,status,assigned_to,converted_order_id,updated_at',{id:R.leadId});assert(clean(finalLead.assigned_to)===clean(v4RuntimeState.user?.id)&&finalLead.status==='Создан заказ'&&finalLead.converted_order_id===orderId,'final_lead_assignment_persistence_failed');record('lead_assignment_db_persisted_final');
   const counts={needs:(await table('leader_lead_needs','id',{lead_id:R.leadId})).length,calculations:(await table('leader_lead_calculations','id',{lead_id:R.leadId})).length,offers:(await table('leader_commercial_offers','id',{lead_id:R.leadId})).length,orders:(await table('leader_orders','id',{lead_id:R.leadId})).length,design_tasks:(await table('leader_design_tasks','id',{order_id:orderId})).length,production_jobs:(await table('leader_production_jobs','id',{order_id:orderId})).length,installation_jobs:(await table('leader_installation_jobs','id',{order_id:orderId})).length};
-  assert(JSON.stringify(counts)===JSON.stringify({needs:1,calculations:2,offers:1,orders:1,design_tasks:1,production_jobs:1,installation_jobs:1}),'final_counts_mismatch');
+  assert(JSON.stringify(counts)===JSON.stringify({needs:1,calculations:4,offers:1,orders:1,design_tasks:1,production_jobs:1,installation_jobs:1}),'final_counts_mismatch');
   const productionRequests=performance.getEntriesByType('resource').map((item)=>item.name).filter((name)=>name.includes('${PRODUCTION_REF}'));assert(productionRequests.length===0,'production_network_request_detected');
-  assert(networkErrors.length===3&&networkErrors.every((e)=>['leader-crm-production-create','leader-crm-installation-create'].includes(e.path)&&[400,409].includes(e.status)),'unexpected_crm_http_error');assert((globalThis.__crmE2eFatalErrors||[]).length===0,'fatal_browser_errors');
+  assert(networkErrors.length===4&&networkErrors.filter(e=>e.path==='leader-crm-calculations').length===1&&networkErrors.every((e)=>['leader-crm-calculations','leader-crm-production-create','leader-crm-installation-create'].includes(e.path)&&[400,409].includes(e.status)),'unexpected_crm_http_error');assert((globalThis.__crmE2eFatalErrors||[]).length===0,'fatal_browser_errors');
   output('passed',{network_errors:networkErrors,fatal_errors:globalThis.__crmE2eFatalErrors||[],phase:'main',authenticated:true,role:'manager',browser_actions:true,refresh:true,back_forward:true,direct_orders:true,review_guard:true,production_replay:true,stale_guard:true,installation_replay:true,projection_sync:true,counts,steps,duration_ms:Date.now()-started,cleanup_required:true});
 }
 
