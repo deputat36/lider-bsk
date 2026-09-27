@@ -19,7 +19,7 @@ export function normalizeQuickStartState(value = {}) {
   return Object.freeze({
     completed: Object.freeze(completed),
     automatic: Object.freeze(automaticList(value?.automatic, completed)),
-    collapsed: value?.collapsed === true
+    collapsed: value?.collapsed !== false
   });
 }
 
@@ -152,6 +152,7 @@ function render() {
   const progressText = document.getElementById('crmQuickStartProgressText');
   const progressBar = document.getElementById('crmQuickStartProgress');
 
+  host.classList.toggle('is-collapsed', state.collapsed);
   if (body) body.hidden = state.collapsed;
   if (progressText) progressText.textContent = `${progress.completed} из ${progress.total} шагов`;
   if (progressBar) {

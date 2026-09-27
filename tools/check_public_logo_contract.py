@@ -1,99 +1,44 @@
 #!/usr/bin/env python3
-"""Validate the official public-site logo contract."""
-
-from __future__ import annotations
-
+"""Protect the owner's artwork, not a previously reconstructed lookalike."""
+import base64
+import hashlib
 import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-HEADER_LOGO = ROOT / "assets/brand/logo-lider-header.svg"
-CSS = ROOT / "assets/public-lead-form.css"
-DOC = ROOT / "docs/PUBLIC_LOGO_DISPLAY_AUDIT_2026-07-16.md"
-WORKFLOW = ROOT / ".github/workflows/public-logo-display-check.yml"
-CORE_PAGES = (
-    ROOT / "index.html",
-    ROOT / "request.html",
-    ROOT / "uslugi.html",
-    ROOT / "primery-rabot-kejsy.html",
-)
-
-
-def require(text: str, marker: str, label: str) -> None:
-    if marker not in text:
-        raise AssertionError(f"{label}: missing marker {marker!r}")
-
-
-def main() -> int:
-    for path in (HEADER_LOGO, CSS, DOC, WORKFLOW, *CORE_PAGES):
-        if not path.is_file():
-            raise AssertionError(f"missing file: {path.relative_to(ROOT)}")
-
-    logo_text = HEADER_LOGO.read_text(encoding="utf-8")
-    logo_root = ET.fromstring(logo_text)
-    if logo_root.tag != "{http://www.w3.org/2000/svg}svg":
-        raise AssertionError("official header logo: root element must be svg")
-    if logo_root.attrib.get("viewBox") != "0 0 900 260":
-        raise AssertionError("official header logo: unexpected viewBox")
-    if logo_root.attrib.get("width") != "900" or logo_root.attrib.get("height") != "260":
-        raise AssertionError("official header logo: intrinsic dimensions must be 900x260")
-
-    require(logo_text.lower(), "#ff4d00", "official header logo")
-    require(logo_text.lower(), "#ff7200", "official header logo")
-    require(logo_text.lower(), "#090a0c", "official header logo")
-    require(logo_text, "Лидер — рекламное агентство", "official header logo title")
-    require(logo_text, "fill-rule=\"evenodd\"", "official header logo compound paths")
-    if len(re.findall(r"<path\b", logo_text)) < 3:
-        raise AssertionError("official header logo: expected mark and wordmark paths")
-    if re.search(r"<(?:image|script|foreignObject)\b", logo_text, re.IGNORECASE):
-        raise AssertionError("official header logo: raster/script/foreignObject is forbidden")
-    if "base64" in logo_text.lower():
-        raise AssertionError("official header logo: embedded raster is forbidden")
-    if re.search(r"(?:href|src)=", logo_text, re.IGNORECASE):
-        raise AssertionError("official header logo: external dependencies are forbidden")
-
-    css = CSS.read_text(encoding="utf-8")
-    require(css, "leader-public-logo-v2", "css")
-    require(css, 'background:url("brand/logo-lider-header.svg")', "css official asset")
-    require(css, "width:250px!important;height:66px!important;flex:0 0 250px!important", "css desktop")
-    require(css, "width:225px!important;height:60px!important;flex-basis:225px!important", "css laptop")
-    require(css, "width:184px!important;height:49px!important;flex-basis:184px!important", "css mobile")
-    require(css, "clip:rect(0,0,0,0)!important", "css accessible div fallback")
-    require(css, ".header .brand,.header .brand *{font-size:0!important;color:transparent!important", "css text-node fallback")
-    if css.rfind("leader-public-logo-v2") <= css.rfind("leader-public-logo-v1"):
-        raise AssertionError("css: official logo override must follow the superseded approximation")
-
-    root_html = tuple(ROOT.glob("*.html"))
-    if not root_html:
-        raise AssertionError("no root public html found")
-    for page in root_html:
-        text = page.read_text(encoding="utf-8")
-        if "logo-lider-light.svg" in text:
-            raise AssertionError(f"{page.name}: obsolete logo reference is forbidden")
-
-    for page in CORE_PAGES:
-        text = page.read_text(encoding="utf-8")
-        require(text, 'class="brand"', page.name)
-        require(text, "Лидер", page.name)
-        require(text, "assets/public-lead-form.css", page.name)
-
-    doc = DOC.read_text(encoding="utf-8")
-    doc_lower = doc.lower()
-    require(doc_lower, "официальный логотип", "doc correction")
-    require(doc, "250 × 66", "doc desktop dimensions")
-    require(doc, "225 × 60", "doc laptop dimensions")
-    require(doc, "184 × 49", "doc mobile dimensions")
-    require(doc, "logo-lider-header.svg", "doc asset")
-    require(doc_lower, "предыдущая аппроксимация", "doc superseded asset")
-
-    workflow = WORKFLOW.read_text(encoding="utf-8")
-    require(workflow, "python3 tools/check_public_logo_contract.py", "workflow")
-    require(workflow, "assets/brand/logo-lider-header.svg", "workflow path")
-
-    print(f"official public logo contract OK: {len(root_html)} root HTML files checked")
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+SOURCE = ROOT / 'assets/brand/source/logo-lider-owner-black-20260717.png'
+SOURCE_SHA = '3bf3bb59ac90cdfe535ec2c66339462d5c7d90199b453563226129744bcef833'
+NS = '{http://www.w3.org/2000/svg}'
+assert hashlib.sha256(SOURCE.read_bytes()).hexdigest() == SOURCE_SHA, 'Owner source changed'
+for name in ('logo-lider-header.svg', 'logo-lider-mark.svg', 'logo-lider-light.svg'):
+    path = ROOT / 'assets/brand' / name
+    root = ET.fromstring(path.read_text())
+    assert root.get('data-source-sha256') == SOURCE_SHA, f'{name}: provenance missing'
+    assert not any(root.iter(NS + 'path')), f'{name}: do not retrace the owner logo'
+    assert not any(root.iter(NS + 'text')), f'{name}: do not retype the wordmark'
+    assert not any(root.iter(NS + 'script')), f'{name}: executable content'
+    images = list(root.iter(NS + 'image'))
+    assert len(images) == 1
+    src = images[0].get('href', '')
+    assert src.startswith('data:image/webp;base64,')
+    assert base64.b64decode(src.split(',', 1)[1]) == (ROOT / 'assets/brand/source/logo-lider-owner-web-640.webp').read_bytes()
+    assert path.stat().st_size < 40000, f'{name}: web logo exceeds 40 KB'
+pages = list(ROOT.glob('*.html'))
+for page in pages:
+    text = page.read_text()
+    for brand in re.findall(r'<a\b[^>]*class="brand"[^>]*>(.*?)</a>', text, re.S):
+        assert 'class="brand-logo"' in brand and 'logo-lider-header.svg?v=4' in brand, page.name
+        assert 'alt="Лидер — рекламное агентство"' in brand, page.name
+        assert not re.search(r'<(?:i|svg|strong)\b', brand), f'{page.name}: logo imitation'
+    if 'assets/public-lead-form.css?' in text:
+        assert 'assets/public-lead-form.css?v=27' in text, f'{page.name}: stale shared form CSS'
+        styles = re.findall(r'<link[^>]+rel="stylesheet"[^>]+href="([^"]+)"', text)
+        assert styles[-1] == 'assets/public-product-system.css?v=1', f'{page.name}: shared system must load last'
+    assert 'logo-lider-light.svg' not in text, f'{page.name}: obsolete asset'
+css = (ROOT / 'assets/brand/leader-logo.css').read_text()
+assert '108px' in css and '82px' in css and 'object-fit: contain' in css
+assert 'logo-lider-header.svg?v=4' in (ROOT / 'crm/v4/index.html').read_text()
+printed = (ROOT / 'crm/v4/assets/v4/offer-print-brand-v4.js').read_text()
+assert 'logo-lider-header.svg?v=4' in printed and 'logo-mark' not in printed
+print(f'Owner logo contract OK: {len(pages)} pages; web/CRM/print; immutable source; no paths or retyped mark')

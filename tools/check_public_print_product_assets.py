@@ -100,7 +100,7 @@ for forbidden in ('fetch(', 'XMLHttpRequest', 'localStorage', 'sessionStorage'):
     if forbidden in js:
         raise SystemExit(f'Print product preset must not use {forbidden}')
 
-form_css = 'assets/public-lead-form.css?v=4'
+form_css = 'assets/public-lead-form.css?v=27'
 shared_css = 'assets/public-print-product.css?v=1'
 form_js = 'assets/public-lead-form.js?v=30'
 related_js = 'assets/public-related-services.js?v=2'

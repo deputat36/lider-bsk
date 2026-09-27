@@ -20,7 +20,7 @@ checks = {
         'data-quick-start-step="finish"', 'data-quick-start-tab="order_control"',
         'для обучения не создавайте вымышленных клиентов',
         'crm-quick-start-v1.css?v=20260712-3',
-        'crm-quick-start-v1.js?v=20260712-2',
+        'crm-quick-start-v1.js?v=20260927-1',
         'Рабочая схема',
     ],
     module: [

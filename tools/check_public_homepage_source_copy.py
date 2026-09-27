@@ -92,9 +92,10 @@ def main() -> None:
         raise SystemExit(f'Homepage must contain exactly one mobile menu button, found {parser.menu_button_count}')
 
     expected_stylesheets = [
-        'assets/public-lead-form.css?v=4',
-        'assets/public-homepage.css?v=4',
+        'assets/public-lead-form.css?v=27',
+        'assets/public-homepage.css?v=5',
         'assets/public-commercial-services.css?v=1',
+        'assets/public-product-system.css?v=1',
     ]
     if parser.stylesheets != expected_stylesheets:
         raise SystemExit(f'Unexpected homepage stylesheets: {parser.stylesheets}')

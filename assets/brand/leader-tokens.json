@@ -49,6 +49,16 @@
       "tight": 1.02,
       "heading": 1.12,
       "body": 1.55
+    },
+    "scale": {
+      "h1": 48,
+      "h2": 32,
+      "h3": 24,
+      "h4": 20,
+      "h5": 18,
+      "h6": 16,
+      "body": 16,
+      "small": 12
     }
   },
   "radius": {
@@ -57,7 +67,17 @@
     "lg": 16,
     "xl": 24
   },
-  "spacing": [4, 8, 12, 16, 24, 32, 48, 64, 96],
+  "spacing": [
+    4,
+    8,
+    12,
+    16,
+    24,
+    32,
+    48,
+    64,
+    96
+  ],
   "layout": {
     "container": 1180,
     "contentReadable": 760,
@@ -77,5 +97,22 @@
     "light": 0.35,
     "base": 0.45,
     "strong": 0.55
+  },
+  "action": {
+    "primary": "{color.brand.orange}",
+    "text": "{color.neutral.900}",
+    "hover": "{color.brand.orangeHover}"
+  },
+  "control": {
+    "minHeight": 44,
+    "borderWidth": 1
+  },
+  "semantic": {
+    "textSecondary": "{color.neutral.600}",
+    "link": "#A84100",
+    "focus": "#A84100",
+    "successText": "#11633E",
+    "warningText": "#805000",
+    "errorText": "#A72A20"
   }
 }

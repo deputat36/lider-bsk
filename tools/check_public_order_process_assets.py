@@ -10,7 +10,7 @@ PAGE = ROOT / "kak-prohodit-zakaz.html"
 CSS = ROOT / "assets" / "public-order-process.css"
 JS = ROOT / "assets" / "public-order-process.js"
 LANDING_CSS = '<link rel="stylesheet" href="assets/public-landing.css?v=1">'
-FORM_CSS = '<link rel="stylesheet" href="assets/public-lead-form.css?v=4">'
+FORM_CSS = '<link rel="stylesheet" href="assets/public-lead-form.css?v=27">'
 PAGE_CSS = '<link rel="stylesheet" href="assets/public-order-process.css?v=1">'
 FORM_JS = '<script src="assets/public-lead-form.js?v=30"></script>'
 PAGE_JS = '<script src="assets/public-order-process.js?v=1"></script>'
@@ -37,7 +37,7 @@ def main() -> None:
 
     for marker, label in (
         (LANDING_CSS, "public-landing.css?v=1"),
-        (FORM_CSS, "public-lead-form.css?v=4"),
+        (FORM_CSS, "public-lead-form.css?v=5"),
         (PAGE_CSS, "public-order-process.css?v=1"),
         (FORM_JS, "public-lead-form.js?v=30"),
         (PAGE_JS, "public-order-process.js?v=1"),

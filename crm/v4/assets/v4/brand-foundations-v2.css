@@ -1,245 +1,97 @@
-/*
- * РА «Лидер» — фирменный визуальный фундамент CRM v2.
- *
- * Этот слой меняет только представление. Он не изменяет DOM-контракты,
- * роли, статусы, запросы Supabase и рабочие действия.
- */
-
-:root{
-  --v4-brand-orange:#ff6a00;
-  --v4-brand-orange-hover:#e85f00;
-  --v4-brand-orange-soft:#fff3e8;
-  --v4-brand-orange-line:#ffd2ad;
-  --v4-brand-graphite:#171717;
-  --v4-brand-graphite-soft:#242424;
-  --v4-brand-surface:#ffffff;
-  --v4-brand-canvas:#f7f7f8;
-  --v4-brand-line:#e5e7eb;
-  --v4-brand-muted:#667085;
-  --v4-brand-shadow:0 18px 46px rgba(23,23,23,.08);
-  --v4-brand-focus:0 0 0 4px rgba(255,106,0,.22);
+@import url("../../../../assets/brand/leader-tokens.css?v=2");
+/* РА «Лидер». Общие tokens, спокойная рабочая поверхность.
+   Слой не изменяет DOM-контракты, роли, статусы и server commands. */
+:root {
+ --v4-brand-orange:var(--brand-orange); --v4-brand-orange-hover:var(--brand-orange-hover);
+ --v4-brand-orange-soft:var(--brand-orange-soft); --v4-brand-orange-line:var(--brand-orange-line);
+ --v4-brand-graphite:var(--brand-900); --v4-brand-graphite-soft:var(--brand-800);
+ --v4-brand-surface:var(--surface-card); --v4-brand-canvas:var(--surface-page);
+ --v4-brand-line:var(--border-default); --v4-brand-muted:var(--text-secondary);
+ --v4-brand-shadow:none; --v4-brand-focus:var(--focus-ring);
+ --primary:var(--action-primary); --primary-dark:var(--action-hover);
+ --text:var(--text-primary); --muted:var(--text-secondary); --line:var(--border-default);
+ --shadow:none; --radius:var(--radius-md);
 }
-
-html{
-  background:var(--v4-brand-canvas);
+html, html body { background:var(--surface-page); color:var(--text-primary); }
+html body { font-family:var(--font-brand); font-size:14px; line-height:1.5; }
+html body::before, html body .v4-hero::before, html body .v4-hero::after { display:none; }
+html body [hidden] { display:none!important; }
+html body .v4-shell { max-width:1440px; padding:20px; color:var(--text-primary); }
+html body .v4-hero { background:var(--surface-card); border:1px solid var(--border-default); border-radius:var(--radius-md); box-shadow:none; padding:16px 20px; align-items:center; gap:24px; }
+html body .v4-brand-heading { display:flex; align-items:center; gap:20px; min-width:0; }
+html body .v4-brand-logo { display:block; width:76px; height:69.2px; object-fit:contain; flex:0 0 76px; }
+html body .v4-hero h1 { color:var(--text-primary); font-size:24px; line-height:1.25; margin:0 0 6px; text-transform:none; letter-spacing:-.025em; }
+html body .v4-hero .v4-kicker { color:var(--text-secondary); background:none; padding:0; border:0; margin:0 0 4px; text-transform:none; letter-spacing:0; font-weight:600; font-size:12px; }
+html body .v4-hero .v4-subtitle { color:var(--text-secondary); font-size:14px; }
+html body .v4-hero:has(#userPanel:not(.hidden)) .v4-subtitle { display:none; }
+html body .v4-auth-card { background:var(--surface-card); border:0; border-left:1px solid var(--border-default); border-radius:0; box-shadow:none; padding:0 0 0 20px; }
+html body .v4-auth-card .v4-status { padding:6px 10px; margin-bottom:8px; font-size:13px; }
+html body .v4-user-panel b { overflow-wrap:anywhere; font-size:13px; font-weight:600; }
+html body h2, html body .v4-card h2 { font-size:22px; font-weight:700; text-transform:none; letter-spacing:-.02em; }
+html body h3, html body .v4-card h3 { font-size:18px; font-weight:700; text-transform:none; }
+html body .v4-card, html body .v4-subcard, html body .v4-card-view,
+html body .v4-lead-card, html body .v4-offer-card, html body .v4-saved-calc-card {
+ background:var(--surface-card); border-color:var(--border-default)!important; border-radius:var(--radius-md); box-shadow:none!important;
 }
-
-body{
-  color:var(--v4-brand-graphite);
-  background:
-    radial-gradient(circle at 8% 0%,rgba(255,106,0,.07),transparent 25rem),
-    var(--v4-brand-canvas);
+html body .v4-card { padding:20px; }
+html body .v4-card:hover, html body .v4-subcard:hover { border-color:var(--border-strong)!important; }
+html body button, html body .v4-card-view-actions a, html body .v4-lead-actions a { min-height:44px; border-radius:var(--radius-sm); font-weight:600; font-family:inherit; padding:10px 12px; box-shadow:none!important; }
+html body button:hover, html body .v4-card-view-actions a:hover, html body .v4-lead-actions a:hover { transform:none; box-shadow:none!important; }
+html body .v4-primary, html body button.v4-primary, html body a.v4-primary,
+html body .v4-lead-actions button[data-action="open"] {
+ background:var(--action-primary)!important; color:var(--action-text)!important; border-color:var(--action-primary)!important; box-shadow:none!important;
 }
-
-.v4-shell{
-  color:var(--v4-brand-graphite);
+html body .v4-primary:hover, html body button.v4-primary:hover, html body a.v4-primary:hover { background:var(--action-hover)!important; border-color:var(--action-hover)!important; }
+html body button:focus-visible, html body a:focus-visible, html body input:focus-visible,
+html body select:focus-visible, html body textarea:focus-visible, html body summary:focus-visible {
+ outline:3px solid var(--focus-color)!important; outline-offset:3px; box-shadow:none!important;
 }
-
-.v4-hero{
-  background:
-    linear-gradient(118deg,rgba(255,106,0,.16),transparent 36%),
-    linear-gradient(135deg,var(--v4-brand-graphite),#0e0e0f 70%);
-  border-color:#303033;
-  box-shadow:0 20px 54px rgba(23,23,23,.18);
+html body :is(input,select,textarea):not([type="checkbox"]):not([type="radio"]) { min-height:44px; border-color:#98a2b3; border-radius:var(--radius-sm); font-family:inherit; background:var(--surface-card); color:var(--text-primary); }
+html body .v4-layout-tabs { background:var(--surface-card)!important; border-color:var(--border-default)!important; border-radius:var(--radius-md); box-shadow:none!important; }
+html body .v4-layout-tabs b { color:var(--text-secondary)!important; font-size:12px; font-weight:600; }
+html body .v4-layout-tabs button { border-color:var(--border-default)!important; color:var(--text-primary); box-shadow:none!important; }
+html body .v4-layout-tabs button:hover { background:var(--surface-subtle)!important; }
+html body .v4-layout-tabs button.is-active { background:var(--brand-orange-soft)!important; border-color:var(--brand-orange)!important; color:var(--text-primary)!important; font-weight:700; box-shadow:none!important; }
+html body .v4-status, html body .v4-lead-status, html body .v4-offer-title-row span, html body .v4-saved-calc-title span { border-radius:var(--radius-sm); box-shadow:none; font-weight:600; }
+html body .v4-status:not(.is-good):not(.is-warn):not(.is-error), html body .v4-lead-status:not(.is-good):not(.is-warn):not(.is-error) { background:var(--surface-subtle)!important; color:var(--text-secondary)!important; border-color:var(--border-default)!important; }
+html body .v4-status.is-good, html body .v4-lead-status.is-good, html body .v4-offer-title-row span.is-good { background:var(--success-bg)!important; color:var(--success-text)!important; border-color:#bbf7d0!important; }
+html body .v4-status.is-warn, html body .v4-lead-status.is-warn, html body .v4-offer-title-row span.is-warn { background:var(--warning-bg)!important; color:var(--warning-text)!important; border-color:#fde68a!important; }
+html body .v4-status.is-error, html body .v4-lead-status.is-error, html body .v4-offer-title-row span.is-error { background:var(--error-bg)!important; color:var(--error-text)!important; border-color:#fecaca!important; }
+html body .v4-action-panel, html body .v4-needs-section, html body .v4-calculations-host .v4-subcard,
+html body .v4-calc-auto-box, html body .v4-offers-section, html body .v4-orders-section { background:var(--surface-card)!important; border-color:var(--border-default)!important; box-shadow:none!important; }
+html body .v4-detail-grid div, html body .v4-profile-grid div, html body .v4-empty { background:var(--surface-subtle)!important; border-color:var(--border-default)!important; }
+html body .v4-detail-grid dt, html body .v4-profile-grid dt, html body .v4-muted { color:var(--text-secondary)!important; }
+html body .v4-detail-grid dd, html body .v4-profile-grid dd { color:var(--text-primary)!important; overflow-wrap:anywhere; }
+html body .v4-section-head, html body .v4-subcard-head, html body .v4-card-view-head { border-bottom-color:var(--border-default)!important; }
+html body .v4-quick-start { background:var(--surface-card); }
+html body .v4-quick-start.is-collapsed { padding:12px 16px; }
+html body .v4-quick-start.is-collapsed h2 { font-size:16px; margin:0; }
+html body .v4-quick-start.is-collapsed .v4-kicker,
+html body .v4-quick-start.is-collapsed .v4-quick-start-head p,
+html body .v4-quick-start.is-collapsed #crmQuickStartProgressText,
+html body .v4-quick-start.is-collapsed #crmQuickStartProgress { display:none; }
+html body .v4-quick-start.is-collapsed .v4-quick-start-head { align-items:center; }
+html body .v4-quick-start.is-collapsed .v4-quick-start-progress { min-width:0; }
+html body .v4-workspace { margin-top:16px; }
+html body .v4-action-panel::before, html body .v4-action-panel::after,
+html body .v4-profile-grid div::before, html body .v4-lead-stats div::before,
+html body .v4-detail-grid div::before, html body .v4-lead-card::before { display:none; }
+html body .v4-profile-grid dt, html body .v4-detail-grid dt, html body .v4-lead-stats span { font-size:12px; font-weight:600; letter-spacing:0; text-transform:none; }
+html body .v4-toast { border-radius:var(--radius-sm); box-shadow:var(--shadow-md)!important; }
+@media(max-width:768px) {
+ html body .v4-shell { padding:12px; }
+ html body .v4-hero { grid-template-columns:1fr; padding:16px; gap:16px; }
+ html body .v4-hero:has(#userPanel:not(.hidden)) { gap:8px; }
+ html body .v4-brand-heading { gap:12px; }
+ html body .v4-brand-logo { width:58px; height:52.8px; flex-basis:58px; }
+ html body .v4-hero h1 { font-size:22px; }
+ html body .v4-auth-card { padding:0; border:0; }
+ html body .v4-card { padding:14px; }
+ html body .v4-layout-tabs button { min-height:44px; }
+ html body .v4-lead-stats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ html body :is(input,select,textarea):not([type="checkbox"]):not([type="radio"]) { font-size:16px; }
+ html body .v4-quick-start.is-collapsed .v4-quick-start-head { display:flex; gap:8px; }
 }
-
-.v4-hero h1,
-.v4-hero .v4-subtitle,
-.v4-hero .v4-kicker{
-  color:#fff;
-}
-
-.v4-hero .v4-kicker{
-  display:inline-flex;
-  width:max-content;
-  padding:7px 11px;
-  border-radius:999px;
-  background:var(--v4-brand-orange);
-  letter-spacing:.035em;
-}
-
-.v4-auth-card{
-  border-color:rgba(255,255,255,.2);
-  box-shadow:0 20px 50px rgba(0,0,0,.2);
-}
-
-.v4-card,
-.v4-subcard,
-.v4-card-view,
-.v4-lead-card,
-.v4-offer-card,
-.v4-saved-calc-card{
-  border-color:var(--v4-brand-line)!important;
-  box-shadow:var(--v4-brand-shadow);
-}
-
-.v4-card:hover,
-.v4-subcard:hover{
-  border-color:var(--v4-brand-orange-line)!important;
-}
-
-.v4-section-head,
-.v4-subcard-head,
-.v4-card-view-head{
-  border-bottom-color:var(--v4-brand-line)!important;
-}
-
-html body .v4-primary,
-html body button.v4-primary,
-html body a.v4-primary{
-  background:linear-gradient(135deg,var(--v4-brand-orange),#ff8a2a)!important;
-  color:#fff!important;
-  border-color:var(--v4-brand-orange)!important;
-  box-shadow:0 10px 24px rgba(255,106,0,.25)!important;
-}
-
-html body .v4-primary:hover,
-html body button.v4-primary:hover,
-html body a.v4-primary:hover{
-  background:linear-gradient(135deg,var(--v4-brand-orange-hover),#ff7a18)!important;
-  border-color:var(--v4-brand-orange-hover)!important;
-  box-shadow:0 13px 28px rgba(255,106,0,.3)!important;
-}
-
-button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible,
-summary:focus-visible{
-  outline:2px solid var(--v4-brand-orange)!important;
-  outline-offset:2px;
-  box-shadow:var(--v4-brand-focus)!important;
-}
-
-input:focus,
-select:focus,
-textarea:focus{
-  border-color:var(--v4-brand-orange)!important;
-}
-
-.v4-layout-tabs{
-  background:rgba(255,255,255,.95)!important;
-  border-color:var(--v4-brand-line)!important;
-  box-shadow:0 12px 34px rgba(23,23,23,.09)!important;
-}
-
-.v4-layout-tabs b{
-  color:var(--v4-brand-graphite)!important;
-}
-
-.v4-layout-tabs button{
-  border-color:#d1d5db!important;
-  color:#353535;
-}
-
-.v4-layout-tabs button:hover{
-  border-color:var(--v4-brand-orange-line)!important;
-  background:var(--v4-brand-orange-soft)!important;
-}
-
-.v4-layout-tabs button.is-active{
-  background:var(--v4-brand-orange)!important;
-  border-color:var(--v4-brand-orange)!important;
-  color:#fff!important;
-  box-shadow:0 7px 18px rgba(255,106,0,.22)!important;
-}
-
-.v4-lead-card,
-.v4-offer-card,
-.v4-saved-calc-card{
-  border-left-color:var(--v4-brand-orange-line)!important;
-}
-
-.v4-lead-card:hover,
-.v4-offer-card:hover,
-.v4-saved-calc-card:hover,
-.v4-lead-card.is-active{
-  border-left-color:var(--v4-brand-orange)!important;
-}
-
-.v4-status:not(.is-good):not(.is-warn):not(.is-error),
-.v4-lead-status:not(.is-good):not(.is-warn):not(.is-error),
-.v4-offer-title-row span:not(.is-good):not(.is-warn):not(.is-error),
-.v4-saved-calc-title span:not(.is-good):not(.is-warn):not(.is-error){
-  background:var(--v4-brand-orange-soft)!important;
-  color:#9a3f00!important;
-  border-color:var(--v4-brand-orange-line)!important;
-}
-
-/* Семантические статусы сохраняют собственные цвета. */
-.v4-status.is-good,
-.v4-lead-status.is-good,
-.v4-offer-title-row span.is-good{
-  background:#dcfce7!important;
-  color:#166534!important;
-  border-color:#bbf7d0!important;
-}
-
-.v4-status.is-warn,
-.v4-lead-status.is-warn,
-.v4-offer-title-row span.is-warn{
-  background:#fef3c7!important;
-  color:#92400e!important;
-  border-color:#fde68a!important;
-}
-
-.v4-status.is-error,
-.v4-lead-status.is-error,
-.v4-offer-title-row span.is-error{
-  background:#fee2e2!important;
-  color:#991b1b!important;
-  border-color:#fecaca!important;
-}
-
-html body .v4-action-panel,
-html body .v4-needs-section,
-html body .v4-calculations-host .v4-subcard,
-html body .v4-calc-auto-box,
-html body .v4-offers-section,
-html body .v4-orders-section{
-  border-color:var(--v4-brand-orange-line)!important;
-  background:linear-gradient(135deg,var(--v4-brand-orange-soft),#fff 72%)!important;
-}
-
-.v4-workflow-guide div,
-.v4-detail-grid div,
-.v4-profile-grid div,
-.v4-empty{
-  background:#fafafa!important;
-  border-color:var(--v4-brand-line)!important;
-}
-
-.v4-workflow-guide div.is-done{
-  background:#f0fdf4!important;
-  border-color:#bbf7d0!important;
-  color:#166534!important;
-}
-
-.v4-detail-grid dt,
-.v4-profile-grid dt,
-.v4-muted{
-  color:var(--v4-brand-muted)!important;
-}
-
-.v4-detail-grid dd,
-.v4-profile-grid dd{
-  color:var(--v4-brand-graphite)!important;
-}
-
-.v4-toast{
-  border-color:rgba(255,106,0,.28)!important;
-  box-shadow:0 20px 52px rgba(23,23,23,.24)!important;
-}
-
-@media(max-width:640px){
-  .v4-hero{
-    background:
-      linear-gradient(145deg,rgba(255,106,0,.15),transparent 52%),
-      var(--v4-brand-graphite);
-  }
-
-  .v4-layout-tabs button{
-    min-height:44px;
-  }
+@media(prefers-reduced-motion:reduce) {
+ html body *, html body *::before, html body *::after { animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; scroll-behavior:auto!important; }
 }

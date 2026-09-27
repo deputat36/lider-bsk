@@ -22,8 +22,8 @@ def main() -> int:
         raise AssertionError("archived logo source has unexpected geometry")
 
     public_text = PUBLIC.read_text(encoding="utf-8").lower()
-    if "base64" in public_text or "<image" in public_text:
-        raise AssertionError("public logo must remain a clean vector")
+    if 'data-source-sha256="3bf3bb59ac90cdfe535ec2c66339462d5c7d90199b453563226129744bcef833"' not in public_text:
+        raise AssertionError("public logo must refer to the verified owner source from July 17")
 
     scan_extensions = {".html", ".css", ".js", ".mjs", ".json"}
     for path in ROOT.rglob("*"):

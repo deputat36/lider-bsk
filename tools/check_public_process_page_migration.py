@@ -11,7 +11,7 @@ SITEMAP = ROOT / 'sitemap.xml'
 
 EXPECTED_URL = 'https://www.lider-bsk.ru/kak-prohodit-zakaz.html'
 SHARED_CSS = 'assets/public-landing.css?v=1'
-FORM_CSS = 'assets/public-lead-form.css?v=4'
+FORM_CSS = 'assets/public-lead-form.css?v=27'
 PAGE_CSS = 'assets/public-order-process.css?v=1'
 FORM_JS = 'assets/public-lead-form.js?v=30'
 PAGE_JS = 'assets/public-order-process.js?v=1'
@@ -78,7 +78,7 @@ def main() -> None:
 
         for stale in (
             'assets/public-lead-form.js?v=10',
-            'assets/public-lead-form.css?v=10',
+            'assets/public-lead-form.css?v=3',
             ':root{--text:',
             '*{box-sizing:border-box}html{scroll-behavior:smooth}body{',
         ):

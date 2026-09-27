@@ -21,13 +21,13 @@ def main() -> int:
 
     html = PAGE.read_text(encoding="utf-8")
     require(html, 'name="robots" content="noindex,nofollow"', "robots")
-    require(html, "assets/brand/logo-lider-header.svg?v=3", "versioned logo")
-    require(html, "250 × 66", "desktop review size")
-    require(html, "184 × 49", "mobile review size")
+    require(html, "assets/brand/logo-lider-header.svg?v=4", "versioned logo")
+    require(html, "108 × 98", "desktop review size")
+    require(html, "82 × 75", "mobile review size")
     require(html, "Критерии принятия", "manual visual checklist")
 
     logo = LOGO.read_text(encoding="utf-8")
-    require(logo, 'viewBox="0 0 900 260"', "logo viewBox")
+    require(logo, 'viewBox="200 175 900 820"', "logo viewBox")
     require(logo, "Лидер — рекламное агентство", "accessible title")
 
     print("logo review page contract OK")
