@@ -1,0 +1,268 @@
+{
+  "browser.json": {
+    "evidence_version": "leader-crm-authenticated-staging-e2e-v1",
+    "status": "passed",
+    "project_ref": "otulfnouybahfnsycxqn",
+    "production_enabled": false,
+    "network_errors": [
+      {
+        "path": "leader-crm-calculations",
+        "status": 409,
+        "code": "source_changed",
+        "fields": ""
+      },
+      {
+        "path": "leader-crm-production-create",
+        "status": 400,
+        "code": "validation_error",
+        "fields": ""
+      },
+      {
+        "path": "leader-crm-production-create",
+        "status": 409,
+        "code": "conflict",
+        "fields": ""
+      },
+      {
+        "path": "leader-crm-installation-create",
+        "status": 400,
+        "code": "validation_error",
+        "fields": ""
+      }
+    ],
+    "fatal_errors": [],
+    "phase": "main",
+    "authenticated": true,
+    "role": "manager",
+    "browser_actions": true,
+    "refresh": true,
+    "back_forward": true,
+    "direct_orders": true,
+    "review_guard": true,
+    "production_replay": true,
+    "stale_guard": true,
+    "installation_replay": true,
+    "projection_sync": true,
+    "counts": {
+      "needs": 1,
+      "calculations": 4,
+      "offers": 1,
+      "orders": 1,
+      "design_tasks": 1,
+      "production_jobs": 1,
+      "installation_jobs": 1
+    },
+    "steps": [
+      {
+        "name": "manager_ui_permissions",
+        "detail": "pass"
+      },
+      {
+        "name": "login_first_entry",
+        "detail": "pass"
+      },
+      {
+        "name": "lead_card_rendered",
+        "detail": "pass"
+      },
+      {
+        "name": "lead_card",
+        "detail": "pass"
+      },
+      {
+        "name": "lead_assignment_ui_confirmed",
+        "detail": "pass"
+      },
+      {
+        "name": "next_contact_scheduled",
+        "detail": "pass"
+      },
+      {
+        "name": "lead_workspace_summary_and_hosts",
+        "detail": {
+          "viewport_width": 1366,
+          "summary_width": 1284,
+          "narrow": false
+        }
+      },
+      {
+        "name": "need_create",
+        "detail": "pass"
+      },
+      {
+        "name": "readiness_cancel_edit_continue_without_mutation",
+        "detail": "pass"
+      },
+      {
+        "name": "empty_catalog_authoritative_retry",
+        "detail": "pass"
+      },
+      {
+        "name": "pricing_manual_auto_protection",
+        "detail": "pass"
+      },
+      {
+        "name": "free_initial_calculation_and_cancel",
+        "detail": "pass"
+      },
+      {
+        "name": "special_prices_free_loss_break_even_profit_replay_stale",
+        "detail": "pass"
+      },
+      {
+        "name": "version_manual_price_persisted",
+        "detail": "pass"
+      },
+      {
+        "name": "lead_workspace_offer_disclosure",
+        "detail": "pass"
+      },
+      {
+        "name": "offer_create",
+        "detail": "pass"
+      },
+      {
+        "name": "offer_print_business_privacy",
+        "detail": "pass"
+      },
+      {
+        "name": "offer_print_presentation_privacy",
+        "detail": "pass"
+      },
+      {
+        "name": "offer_transitions_projection",
+        "detail": "pass"
+      },
+      {
+        "name": "order_create_projection",
+        "detail": "pass"
+      },
+      {
+        "name": "order_duplicate_prevention",
+        "detail": "pass"
+      },
+      {
+        "name": "direct_orders",
+        "detail": "pass"
+      },
+      {
+        "name": "back_forward_reopen",
+        "detail": "pass"
+      },
+      {
+        "name": "refresh_authenticated",
+        "detail": "pass"
+      },
+      {
+        "name": "design_create",
+        "detail": "pass"
+      },
+      {
+        "name": "review_not_approved_ui_guard",
+        "detail": "pass"
+      },
+      {
+        "name": "review_not_approved_server_guard",
+        "detail": "pass"
+      },
+      {
+        "name": "design_approved_projection",
+        "detail": "pass"
+      },
+      {
+        "name": "production_create_idempotent_replay",
+        "detail": "pass"
+      },
+      {
+        "name": "production_stale_rollback",
+        "detail": "pass"
+      },
+      {
+        "name": "installation_not_ready_rollback",
+        "detail": "pass"
+      },
+      {
+        "name": "production_ready_projection",
+        "detail": "pass"
+      },
+      {
+        "name": "installation_create_idempotent_replay",
+        "detail": "pass"
+      },
+      {
+        "name": "installation_card",
+        "detail": "pass"
+      },
+      {
+        "name": "lead_assignment_db_persisted_final",
+        "detail": "pass"
+      }
+    ],
+    "duration_ms": 24875,
+    "cleanup_required": true,
+    "assignment_persistence": true
+  },
+  "cleanup.json": {
+    "ok": true,
+    "action": "cleanup",
+    "residue": {
+      "leads": 0,
+      "needs": 0,
+      "offers": 0,
+      "orders": 0,
+      "catalog": 0,
+      "clients": 0,
+      "expenses": 0,
+      "payments": 0,
+      "profiles": 0,
+      "order_items": 0,
+      "calculations": 0,
+      "catalog_logs": 0,
+      "design_tasks": 0,
+      "offer_events": 0,
+      "order_events": 0,
+      "production_jobs": 0,
+      "catalog_receipts": 0,
+      "command_receipts": 0,
+      "calculation_items": 0,
+      "installation_jobs": 0,
+      "interactions_followups": 0
+    },
+    "auth_user_deleted": true
+  },
+  "manager-rbac.json": {
+    "ok": true,
+    "project_ref": "otulfnouybahfnsycxqn",
+    "role": "manager",
+    "authenticated": true,
+    "allowed_action_reached_server_contract": true,
+    "allowed_fixture_read": true,
+    "service_only_rpc_denied": true,
+    "forbidden_direct_api": "self_role_escalation_rejected",
+    "production_enabled": false
+  },
+  "owner-rbac.json": {
+    "ok": true,
+    "project_ref": "otulfnouybahfnsycxqn",
+    "role": "owner",
+    "authenticated": true,
+    "allowed_action_reached_server_contract": true,
+    "allowed_fixture_read": true,
+    "service_only_rpc_denied": true,
+    "forbidden_direct_api": "service_only_rpc_rejected",
+    "production_enabled": false
+  },
+  "owner-ui.json": {
+    "evidence_version": "leader-crm-authenticated-staging-e2e-v1",
+    "status": "passed",
+    "project_ref": "otulfnouybahfnsycxqn",
+    "production_enabled": false,
+    "authenticated": true,
+    "role": "owner",
+    "ui_allowed_controls": true,
+    "ui_forbidden_controls": "not_applicable_full_access",
+    "cleanup_required": true
+  },
+  "run": "https://github.com/deputat36/lider-bsk/actions/runs/36335551833",
+  "runtime_commit": "651a0cd2c41ba823b603d53ba276b9bb18839b1c"
+}

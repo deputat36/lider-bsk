@@ -35,7 +35,7 @@ def main() -> None:
     ):
         require(html, marker, PAGE)
 
-    if html.index('public-lead-form.css?v=12') > html.index('public-ad-packages.css?v=1'):
+    if html.index('public-lead-form.css?v=27') > html.index('public-ad-packages.css?v=1'):
         raise SystemExit('Page CSS must load after the shared lead-form CSS')
 
     forbid(html, '<style>', PAGE)

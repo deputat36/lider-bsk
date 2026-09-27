@@ -27,7 +27,7 @@
 
 Измеренный объём начальных ресурсов в изолированном локальном браузере: публичные экраны около 143–154 КБ, CRM-стенд около 91 КБ; общий шрифт 33.5 КБ, один SVG логотипа менее 40 КБ, OG PNG 57.5 КБ. Это не Lighthouse score и не измерение реального мобильного интернета. Метрика изолирована в тесте; доставку её событий в кабинет этот тест не доказывает.
 
-Скриншоты и подробный отчёт сохраняются artifact `product-system-browser` в существующем CI `CRM brand foundations v2 check`. Authenticated staging проверяется отдельным workflow, с обязательным cleanup; итоговый run добавляется после завершения. Production Supabase не изменялся.
+Скриншоты и подробный отчёт сохраняются artifact `product-system-browser` в существующем CI `CRM brand foundations v2 check`. Authenticated staging [run 36335551833](https://github.com/deputat36/lider-bsk/actions/runs/36335551833) прошёл на runtime commit `651a0cd2`: 4 версии (0/убыток/в ноль/прибыль), cancel/replay/stale, КП → заказ → дизайн → производство → монтаж, manager/owner UI и прямые API проверки. Artifact 10936504666: Auth удалён, все 21 категории residue=0; независимый SELECT подтвердил отсутствие synthetic Auth/leads и рабочих строк теста. Временное OIDC-разрешение ветки удалено из source и live bootstrap v20. Финансовые записи в этом сценарии не создавались; в staging ещё нет payment/expense tables. Production Supabase не изменялся.
 
 ## Figma
 

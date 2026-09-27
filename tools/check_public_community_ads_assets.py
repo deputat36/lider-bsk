@@ -33,7 +33,7 @@ def main() -> None:
     ):
         require(html, marker, PAGE)
 
-    if html.index('public-lead-form.css?v=26') > html.index('public-community-ads.css?v=1'):
+    if html.index('public-lead-form.css?v=27') > html.index('public-community-ads.css?v=1'):
         raise SystemExit('Page CSS must load after shared form CSS')
     if html.index('public-lead-form.js?v=30') > html.index('public-community-ads.js?v=1'):
         raise SystemExit('Page preset must load after shared form JS')

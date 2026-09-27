@@ -77,7 +77,7 @@ def main() -> None:
         require(css, marker, 'assets/public-homepage.css')
 
     for marker in (
-        'assets/public-lead-form.css?v=27',
+        'assets/public-lead-form.css?v=3',
         'assets/public-lead-form.js?v=4',
         'assets/public-lead-form.js?v=5',
         '<style>',

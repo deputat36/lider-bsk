@@ -7,7 +7,7 @@
 - Исходный логотип владельца от 17.07 заменяет реконструкцию в шапках, CRM, КП и OG. Добавлена защита оригинала и canonical usage.
 - Общие токены, локальный Manrope, светлые формы, контрастные кнопки/статусы, компактная шапка CRM и свёрнутые подсказки. 25 browser a11y/responsive cases прошли на 360/390/768/1024/1440 px.
 - [Что реализовано и ограничения Figma](DESIGN_SYSTEM_DELIVERY_2026-09-27.md). Figma foundations/components готовы, запись экранов ограничена лимитом Starter; не считать 10 экранов завершёнными.
-- Новый PR/CI/staging E2E находятся на проверке. Production Supabase не изменялся.
+- PR560: authenticated staging E2E [36335551833](https://github.com/deputat36/lider-bsk/actions/runs/36335551833) PASS: 4 версии, КП/заказ/дизайн/производство/монтаж, manager/owner UI/API, cleanup=0. Временный OIDC-доступ ветки удалён. CI обновляется после исправления устаревших cache assertions. Production Supabase не изменялся.
 
 ## Специальные цены расчётов (#526)
 

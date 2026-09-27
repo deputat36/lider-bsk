@@ -78,7 +78,7 @@ def main() -> None:
 
         for stale in (
             'assets/public-lead-form.js?v=10',
-            'assets/public-lead-form.css?v=27',
+            'assets/public-lead-form.css?v=3',
             ':root{--text:',
             '*{box-sizing:border-box}html{scroll-behavior:smooth}body{',
         ):
