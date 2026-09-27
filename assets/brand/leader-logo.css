@@ -1,0 +1,27 @@
+/* One owner-supplied mark. Legacy CSS lettering and logo pseudo-elements are retired. */
+html body .header .brand {
+  display: inline-flex !important;
+  align-items: center !important;
+  width: 108px !important;
+  min-width: 108px !important;
+  height: 98.4px !important;
+  padding: 4px 0 !important;
+  flex: 0 0 108px !important;
+  gap: 0 !important;
+  position: relative !important;
+  background: #fff;
+}
+html body .header .brand::before { content: none !important; display: none !important; }
+html body .header .brand .brand-logo {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  object-fit: contain;
+}
+html body .header .brand .mark,
+html body .header .brand > div { display: none !important; }
+.leader-document-logo { display: block; width: 108px; height: 98.4px; object-fit: contain; background: #fff; }
+@media (max-width: 720px) {
+  html body .header .brand { width: 82px !important; min-width: 82px !important; height: 74.7px !important; flex-basis: 82px !important; }
+}

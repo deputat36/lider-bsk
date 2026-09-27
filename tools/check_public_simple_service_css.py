@@ -39,7 +39,7 @@ PAGES = {
     },
     'bannery-borisoglebsk.html': {
         'body_class': 'page-banner-service page-service-modern',
-        'shared_css': 'assets/public-simple-service.css?v=6',
+        'shared_css': 'assets/public-simple-service.css?v=7',
         'canonical': 'https://www.lider-bsk.ru/bannery-borisoglebsk.html',
         'h1': 'Баннеры в Борисоглебске',
         'section': 'Какие баннеры можно заказать',
@@ -55,7 +55,7 @@ PAGES = {
     },
     'vyveski-borisoglebsk.html': {
         'body_class': 'page-shop-sign-service page-service-modern',
-        'shared_css': 'assets/public-simple-service.css?v=6',
+        'shared_css': 'assets/public-simple-service.css?v=7',
         'canonical': 'https://www.lider-bsk.ru/vyveski-borisoglebsk.html',
         'h1': 'Вывески в Борисоглебске',
         'section': 'Какую вывеску выбрать',
@@ -63,7 +63,7 @@ PAGES = {
     },
     'pechat-na-plenke-borisoglebsk.html': {
         'body_class': 'page-film-print-service page-service-modern',
-        'shared_css': 'assets/public-simple-service.css?v=6',
+        'shared_css': 'assets/public-simple-service.css?v=7',
         'canonical': 'https://www.lider-bsk.ru/pechat-na-plenke-borisoglebsk.html',
         'h1': 'Печать на плёнке в Борисоглебске',
         'section': 'Что можно заказать',
@@ -71,7 +71,7 @@ PAGES = {
     },
     'oformlenie-vitrin-borisoglebsk.html': {
         'body_class': 'page-window-branding page-service-modern',
-        'shared_css': 'assets/public-simple-service.css?v=6',
+        'shared_css': 'assets/public-simple-service.css?v=7',
         'canonical': 'https://www.lider-bsk.ru/oformlenie-vitrin-borisoglebsk.html',
         'h1': 'Оформление витрин в Борисоглебске',
         'section': 'Что можно разместить на витрине',
@@ -87,7 +87,7 @@ PAGES = {
     },
     'nakleyki-plotternaya-rezka-borisoglebsk.html': {
         'body_class': 'page-plotter-stickers page-service-modern',
-        'shared_css': 'assets/public-simple-service.css?v=6',
+        'shared_css': 'assets/public-simple-service.css?v=7',
         'canonical': 'https://www.lider-bsk.ru/nakleyki-plotternaya-rezka-borisoglebsk.html',
         'h1': 'Наклейки и плоттерная резка в Борисоглебске',
         'section': 'Что можно сделать',
@@ -147,7 +147,7 @@ for page_name, expected in PAGES.items():
     ):
         raise SystemExit(f'{page_name}: executable inline script is not allowed')
 
-    form_css = 'assets/public-lead-form.css?v=4'
+    form_css = 'assets/public-lead-form.css?v=27'
     shared_css = expected['shared_css']
     form_js = FORM_SCRIPT_OVERRIDES.get(page_name, 'assets/public-lead-form.js?v=30')
     for marker in (form_css, shared_css, form_js):
@@ -178,7 +178,7 @@ print('Shared simple service CSS contract is valid for eleven pages.')
 
 # The sign landing reuses the existing menu and form; no second submission path.
 sign = (ROOT / 'vyveski-borisoglebsk.html').read_text(encoding='utf-8')
-for marker in ('assets/packages-link.js?v=2', 'assets/brand/logo-lider-header.svg?v=3',
+for marker in ('assets/packages-link.js?v=2', 'assets/brand/logo-lider-header.svg?v=4',
                'aria-controls="main-navigation"', 'id="estimate"', 'class="service-details"',
                'Нет размеров или макета?', 'id="main"'):
     if marker not in sign:

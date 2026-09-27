@@ -23,9 +23,9 @@ for path in (INDEX, HOME, MIGRATION, TOKENS, COMPONENTS):
 if HOME.exists():
     text = HOME.read_text(encoding="utf-8")
     imports = (
-        '@import url("brand/leader-tokens.css?v=1");',
-        '@import url("brand/leader-components-v1.css?v=1");',
-        '@import url("public-homepage-brand-v1.css?v=3");',
+        '@import url("brand/leader-tokens.css?v=2");',
+        '@import url("brand/leader-components-v1.css?v=2");',
+        '@import url("public-homepage-brand-v1.css?v=4");',
     )
     for marker in imports:
         require(marker in text, f"homepage CSS missing brand import: {marker}")
@@ -35,8 +35,8 @@ if HOME.exists():
 
 if INDEX.exists():
     text = INDEX.read_text(encoding="utf-8")
-    require('assets/public-homepage.css?v=4' in text, "homepage CSS cache marker must be v=4")
-    require(text.count('assets/public-homepage.css?v=4') == 1, "homepage CSS v=4 link must appear exactly once")
+    require('assets/public-homepage.css?v=5' in text, "homepage CSS cache marker must be v=4")
+    require(text.count('assets/public-homepage.css?v=5') == 1, "homepage CSS v=4 link must appear exactly once")
 
 if MIGRATION.exists():
     text = MIGRATION.read_text(encoding="utf-8")

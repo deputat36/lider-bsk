@@ -19,7 +19,7 @@ p = Parser(); p.feed(page)
 assert len(p.ids) == len(set(p.ids)), 'Duplicate homepage IDs'
 assert len(p.menu) == 1 and p.menu[0].get('aria-expanded') == 'false'
 assert p.menu[0].get('aria-controls') in p.ids
-assert len(p.logo) == 1 and p.logo[0]['src'] == 'assets/brand/logo-lider-header.svg?v=3'
+assert len(p.logo) == 1 and p.logo[0]['src'] == 'assets/brand/logo-lider-header.svg?v=4'
 for target in ['prices.html', 'primery-rabot-kejsy.html', 'srochnaya-reklama-borisoglebsk.html', 'chto-nuzhno-dlya-rascheta.html']:
     assert target in p.links, f'Missing static commercial route: {target}'
 assert 'service-pages' in p.ids

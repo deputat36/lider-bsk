@@ -6,6 +6,14 @@
  * CRM и будущих интерфейсов. Не содержит бизнес-логики.
  */
 
+@font-face {
+  font-family: Manrope;
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url('../fonts/manrope-latin-cyrillic.woff2') format('woff2');
+}
+
 :root {
   /* Brand */
   --brand-orange: #ff6a00;
@@ -37,9 +45,14 @@
   --border-default: var(--brand-200);
   --border-strong: var(--brand-300);
   --text-primary: var(--brand-900);
-  --text-secondary: var(--brand-500);
+  --text-secondary: var(--brand-600);
   --text-tertiary: var(--brand-400);
   --text-inverse: var(--brand-white);
+  --action-primary: var(--brand-orange);
+  --action-hover: var(--brand-orange-hover);
+  --action-text: var(--brand-900);
+  --link-color: #a84100;
+  --focus-color: #a84100;
 
   /* Semantic states: independent from brand accent */
   --success: #168653;
@@ -48,10 +61,26 @@
   --warning-soft: #fef3c7;
   --error: #c9362b;
   --error-soft: #fee2e2;
+  --success-text: #11633e;
+  --success-bg: var(--success-soft);
+  --warning-text: #805000;
+  --warning-bg: var(--warning-soft);
+  --error-text: #a72a20;
+  --error-bg: var(--error-soft);
 
   /* Typography */
   --font-brand: Manrope, Arial, Helvetica, sans-serif;
   --font-system: Arial, Helvetica, sans-serif;
+  --type-h1: 48px;
+  --type-h2: 32px;
+  --type-h3: 24px;
+  --type-h4: 20px;
+  --type-h5: 18px;
+  --type-h6: 16px;
+  --type-body: 16px;
+  --type-small: 12px;
+  --control-height: 44px;
+  --border-width: 1px;
   --weight-regular: 400;
   --weight-medium: 500;
   --weight-semibold: 600;

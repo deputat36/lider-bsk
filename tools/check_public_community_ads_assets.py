@@ -19,7 +19,7 @@ def main() -> None:
     js = JS.read_text(encoding='utf-8')
 
     for marker in (
-        '<link rel="stylesheet" href="assets/public-lead-form.css?v=26">',
+        '<link rel="stylesheet" href="assets/public-lead-form.css?v=27">',
         '<link rel="stylesheet" href="assets/public-community-ads.css?v=1">',
         '<script src="assets/public-lead-form.js?v=30"></script>',
         '<script src="assets/public-community-ads.js?v=1"></script>',

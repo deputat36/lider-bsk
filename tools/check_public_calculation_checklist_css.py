@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PAGE = ROOT / "chto-nuzhno-dlya-rascheta.html"
 CSS = ROOT / "assets" / "public-calculation-checklist.css"
 CSS_LINK = '<link rel="stylesheet" href="assets/public-calculation-checklist.css?v=1">'
-FORM_CSS_LINK = '<link rel="stylesheet" href="assets/public-lead-form.css?v=13">'
+FORM_CSS_LINK = '<link rel="stylesheet" href="assets/public-lead-form.css?v=27">'
 FORM_SCRIPT = '<script src="assets/public-lead-form.js?v=30"></script>'
 
 

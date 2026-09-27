@@ -551,6 +551,7 @@ async function run(env = process.env, roleUi = '') {
     await cp(path.resolve('crm/v4'), tempV4, { recursive: true });
     // CRM imports the same root-level catalog as the public site.
     await cp(path.resolve('assets/leader-service-catalog.js'), path.join(tempV4, 'assets/leader-service-catalog.js'));
+    for (const folder of ['brand', 'fonts']) await cp(path.resolve('assets', folder), path.join(tempV4, 'assets', folder), { recursive: true });
 
     if (roleUi) {
       const authPath = path.join(tempV4, 'assets/v4/auth.js');

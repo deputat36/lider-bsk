@@ -22,7 +22,7 @@ def main() -> None:
     css = CSS.read_text(encoding='utf-8')
 
     for marker in (
-        '<link rel="stylesheet" href="assets/public-lead-form.css?v=17">',
+        '<link rel="stylesheet" href="assets/public-lead-form.css?v=27">',
         '<link rel="stylesheet" href="assets/public-social-ads.css?v=1">',
         '<script src="assets/public-lead-form.js?v=30"></script>',
         '<script src="assets/mobile-sticky-cta.js?v=1"></script>',

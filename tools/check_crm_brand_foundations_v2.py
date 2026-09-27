@@ -30,15 +30,15 @@ def main() -> None:
 
     require(
         polish,
-        '@import url("./brand-foundations-v2.css?v=20260721-1");',
+        '@import url("./brand-foundations-v2.css?v=20260927-1");',
         "версионированное подключение через действующий ui-polish.css",
     )
 
     required_tokens = {
-        "основной оранжевый": "--v4-brand-orange:#ff6a00;",
-        "графит": "--v4-brand-graphite:#171717;",
-        "нейтральный фон": "--v4-brand-canvas:#f7f7f8;",
-        "доступный focus ring": "--v4-brand-focus:0 0 0 4px rgba(255,106,0,.22);",
+        "основной оранжевый": "--v4-brand-orange:var(--brand-orange);",
+        "графит": "--v4-brand-graphite:var(--brand-900);",
+        "нейтральный фон": "--v4-brand-canvas:var(--surface-page);",
+        "доступный focus ring": "outline:3px solid var(--focus-color)",
     }
     for label, token in required_tokens.items():
         require(brand, token, label)

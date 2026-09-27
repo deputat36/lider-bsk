@@ -68,8 +68,9 @@ def main() -> None:
         require(examples, marker, EXAMPLES)
 
     expected_stylesheets = [
-        'assets/public-lead-form.css?v=22',
+        'assets/public-lead-form.css?v=27',
         'assets/public-examples.css?v=2',
+        'assets/public-product-system.css?v=1',
     ]
     if parser.stylesheets != expected_stylesheets:
         raise SystemExit(f'Unexpected examples stylesheet order: {parser.stylesheets}')

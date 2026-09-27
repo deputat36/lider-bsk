@@ -75,8 +75,9 @@ def main() -> None:
             raise SystemExit(f'Stale request marker remains: {marker}')
 
     expected_stylesheets = [
-        'assets/public-lead-form.css?v=4',
+        'assets/public-lead-form.css?v=27',
         'assets/public-request.css?v=1',
+        'assets/public-product-system.css?v=1',
     ]
     if parser.stylesheets != expected_stylesheets:
         raise SystemExit(f'Unexpected request stylesheets: {parser.stylesheets}')

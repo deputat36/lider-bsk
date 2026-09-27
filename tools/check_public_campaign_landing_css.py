@@ -4,7 +4,7 @@ import re
 
 ROOT = Path(__file__).resolve().parents[1]
 CSS_PATH = ROOT / 'assets' / 'public-campaign-landing.css'
-FORM_CSS = 'assets/public-lead-form.css?v=4'
+FORM_CSS = 'assets/public-lead-form.css?v=27'
 SHARED_CSS = 'assets/public-campaign-landing.css?v=1'
 
 PAGES = {

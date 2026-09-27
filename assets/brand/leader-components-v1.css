@@ -9,7 +9,7 @@
 }
 
 :where(button, a, input, select, textarea, summary):focus-visible {
-  outline: 2px solid var(--brand-orange);
+  outline: 2px solid var(--focus-color);
   outline-offset: 2px;
   box-shadow: var(--focus-ring);
 }
@@ -27,22 +27,22 @@
 
 .brand-button:hover,
 .btn:hover {
-  transform: translateY(-1px);
+  transform: none;
 }
 
 .brand-button--primary,
 .btn--accent {
   background: var(--brand-orange);
-  color: var(--text-inverse);
+  color: var(--action-text);
   border-color: var(--brand-orange);
-  box-shadow: 0 8px 20px rgba(255, 106, 0, 0.18);
+  box-shadow: none;
 }
 
 .brand-button--primary:hover,
 .btn--accent:hover {
   background: var(--brand-orange-hover);
   border-color: var(--brand-orange-hover);
-  box-shadow: 0 10px 22px rgba(255, 106, 0, 0.22);
+  box-shadow: none;
 }
 
 .brand-button--dark,

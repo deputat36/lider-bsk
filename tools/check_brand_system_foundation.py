@@ -43,7 +43,7 @@ if TOKENS.exists():
         "--surface-card: var(--brand-white);",
         "--border-default: var(--brand-200);",
         "--text-primary: var(--brand-900);",
-        "--text-secondary: var(--brand-500);",
+        "--text-secondary: var(--brand-600);",
         "--font-brand: Manrope, Arial, Helvetica, sans-serif;",
         "--weight-extrabold: 800;",
         "--line-body: 1.55;",
@@ -220,20 +220,13 @@ if ASSET_README.exists():
     ):
         require(marker in text, f"brand asset registry missing marker: {marker}")
 
-if LOGO.exists():
-    text = LOGO.read_text(encoding="utf-8")
-    require("<image" not in text, "canonical horizontal logo must remain pure vector SVG")
-    require("data:image" not in text, "canonical horizontal logo must not embed raster data")
-
-if MARK.exists():
-    text = MARK.read_text(encoding="utf-8")
-    require("<image" not in text, "canonical mark must remain pure vector SVG")
-    require("data:image" not in text, "canonical mark must not embed raster data")
-
-if LEGACY_LIGHT.exists():
-    text = LEGACY_LIGHT.read_text(encoding="utf-8")
-    require("data:image/png;base64" in text,
-            "legacy light logo classification changed; re-audit asset registry before altering its status")
+for asset in (LOGO, MARK, LEGACY_LIGHT):
+    if asset.exists():
+        text = asset.read_text(encoding="utf-8")
+        require('data-source-sha256="3bf3bb59ac90cdfe535ec2c66339462d5c7d90199b453563226129744bcef833"' in text,
+                f"{asset.name}: verified owner provenance required")
+        require("<path" not in text and "<text" not in text,
+                f"{asset.name}: reconstructed logo is forbidden")
 
 if errors:
     print("Brand system foundation contract: FAIL")

@@ -68,9 +68,9 @@ body.page-service-modern #estimate{scroll-margin-top:170px}
 body.page-service-modern #request{scroll-margin-top:160px}
 body.page-service-modern .header{background:var(--surface-card);backdrop-filter:none}
 body.page-service-modern .header__in{display:grid;grid-template-columns:250px 1fr;gap:12px 24px;padding:12px 0}
-body.page-service-modern .header .brand{min-width:0!important;width:250px!important;height:auto!important}
-body.page-service-modern .header .brand:before{display:none!important}
-body.page-service-modern .brand-logo{display:block;width:250px;height:66px;object-fit:contain}
+
+
+
 body.page-service-modern .header__cta{display:flex;align-items:center;justify-self:end;gap:12px}
 body.page-service-modern .header .nav{grid-column:1/-1;grid-row:2;justify-content:center;gap:8px 32px;font-weight:700}
 body.page-service-modern .header .nav a{display:inline-flex;align-items:center;min-height:44px}
@@ -78,8 +78,8 @@ body.page-service-modern .header .nav [aria-current="page"]{color:var(--brand-or
 body.page-service-modern .menu-btn{display:none;border:1px solid var(--border-default);border-radius:var(--radius-md);background:var(--surface-card);width:44px;height:44px;cursor:pointer}
 @media(max-width:1060px){
  body.page-service-modern .header__in{grid-template-columns:225px 1fr}
- body.page-service-modern .header .brand,body.page-service-modern .brand-logo{width:225px!important}
- body.page-service-modern .brand-logo{height:60px}
+
+
  body.page-service-modern .header .nav{display:flex!important;flex-wrap:wrap}
  body.page-service-modern .header .menu-btn{display:none!important}
  body.page-service-modern .header.navigation-ready .menu-btn{display:grid!important;place-items:center}
@@ -90,8 +90,8 @@ body.page-service-modern .menu-btn{display:none;border:1px solid var(--border-de
 }
 @media(max-width:720px){
  body.page-service-modern .header__in{grid-template-columns:184px 1fr;padding:8px 0}
- body.page-service-modern .header .brand,body.page-service-modern .brand-logo{width:184px!important}
- body.page-service-modern .brand-logo{height:49px}
+
+
  body.page-service-modern .header__cta .phone,body.page-service-modern .header__cta .btn{display:none}
 }
 @media(max-width:860px){body.page-service-modern .service-estimate,body.page-service-modern .service-steps,body.page-service-modern .cta{grid-template-columns:1fr}body.page-service-modern .service-estimate{gap:20px}}

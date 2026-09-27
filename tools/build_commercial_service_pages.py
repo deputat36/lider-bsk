@@ -30,8 +30,10 @@ def render(p):
 <meta property="og:title" content="{e(title)}"><meta property="og:description" content="{e(description)}"><meta property="og:url" content="{url}">
 <meta property="og:image" content="{origin}assets/og-lider-default.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="РА Лидер — рекламное агентство в Борисоглебске">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="{e(title)}"><meta name="twitter:description" content="{e(description)}"><meta name="twitter:image" content="{origin}assets/og-lider-default.png">
-<link rel="stylesheet" href="assets/public-lead-form.css?v=5"><link rel="stylesheet" href="assets/public-simple-service.css?v=6"><link rel="stylesheet" href="assets/public-commercial-services.css?v=1">
+<link rel="stylesheet" href="assets/public-lead-form.css?v=27"><link rel="stylesheet" href="assets/public-simple-service.css?v=7"><link rel="stylesheet" href="assets/public-commercial-services.css?v=1">
 <script type="application/ld+json">{json.dumps(ld,ensure_ascii=False,separators=(',',':'))}</script>
+<link rel="icon" type="image/svg+xml" href="assets/brand/logo-lider-mark.svg?v=4">
+<link rel="stylesheet" href="assets/public-product-system.css?v=1">
 </head><body class="page-service-modern page-commercial-service" data-commercial-service="{e(s['id'])}">
 {header}
 <section class="hero"><div class="wrap"><a class="back" href="uslugi.html">Все услуги</a><p class="commercial-direction">{e(direction)}</p><h1>{e(p['title'])}</h1><p>{e(description)}</p><div class="service-actions"><a class="btn" href="#request">Обсудить задачу</a><a class="service-secondary" href="#formats">Выбрать вариант</a></div><p class="service-note">Начать можно с описания задачи — готовое техническое задание не требуется.</p></div></section>

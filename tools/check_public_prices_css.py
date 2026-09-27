@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PAGE = ROOT / "prices.html"
 CSS = ROOT / "assets" / "public-prices.css"
 CSS_LINK = '<link rel="stylesheet" href="assets/public-prices.css?v=1">'
-FORM_CSS_LINK = '<link rel="stylesheet" href="assets/public-lead-form.css?v=14">'
+FORM_CSS_LINK = '<link rel="stylesheet" href="assets/public-lead-form.css?v=27">'
 FORM_SCRIPT = '<script src="assets/public-lead-form.js?v=30"></script>'
 
 

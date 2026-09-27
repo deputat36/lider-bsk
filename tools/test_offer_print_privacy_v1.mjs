@@ -4,7 +4,8 @@ import vm from 'node:vm';
 import { publicOfferRows } from '../crm/v4/assets/v4/offer-visibility-v1.js';
 import { storedOfferClientDetails } from '../crm/v4/assets/v4/offer-client-privacy-v1.js';
 
-const source = await readFile(new URL('../crm/v4/assets/v4/offer-print-brand-v4.js', import.meta.url), 'utf8');
+const sourceUrl = new URL('../crm/v4/assets/v4/offer-print-brand-v4.js', import.meta.url);
+const source = (await readFile(sourceUrl, 'utf8')).replaceAll('import.meta.url', JSON.stringify(sourceUrl.href));
 const items = [
   { name: 'PRIVATE_PARENT', qty: 2, unit: 'шт', client_sum: 2400,
     comment: 'PRIVATE_COMMENT', contractor_sum: 731, profit: 1669,
@@ -43,7 +44,7 @@ const personalizedOffer = {
 };
 
 const selects = [];
-const context = vm.createContext({
+const context = vm.createContext({ URL,
   publicOfferRows,
   storedOfferClientDetails,
   document: { addEventListener() {} },

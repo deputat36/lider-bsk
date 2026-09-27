@@ -3,6 +3,10 @@ name: CRM brand foundations v2 check
 on:
   pull_request:
     paths:
+      - 'assets/brand/**'
+      - 'assets/fonts/**'
+      - 'assets/public-product-system.css'
+      - 'tools/test_product_visual_browser.mjs'
       - 'crm/v4/assets/v4/brand-foundations-v2.css'
       - 'crm/v4/assets/v4/ui-polish.css'
       - 'crm/v4/brand-preview.html'
@@ -14,6 +18,10 @@ on:
       - main
       - design/crm-brand-foundations-v2
     paths:
+      - 'assets/brand/**'
+      - 'assets/fonts/**'
+      - 'assets/public-product-system.css'
+      - 'tools/test_product_visual_browser.mjs'
       - 'crm/v4/assets/v4/brand-foundations-v2.css'
       - 'crm/v4/assets/v4/ui-polish.css'
       - 'crm/v4/brand-preview.html'
@@ -30,6 +38,23 @@ jobs:
         run: python3 tools/check_crm_brand_foundations_v2.py
       - name: Validate isolated CRM brand preview
         run: python3 tools/check_crm_brand_preview.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned browser accessibility tools
+        run: |
+          npm install --no-save --package-lock=false playwright@1.55.0 axe-core@4.10.3
+          npx playwright install --with-deps chromium
+      - name: Verify product accessibility and responsive layout
+        run: node tools/test_product_visual_browser.mjs
+      - name: Upload responsive accessibility evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: product-system-browser
+          path: artifacts/product-system/
+          if-no-files-found: error
+          retention-days: 14
       - name: Capture desktop and mobile preview
         run: |
           set -euo pipefail
