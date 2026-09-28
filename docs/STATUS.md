@@ -1,13 +1,21 @@
 # Статус проекта РА «Лидер»
 
-Дата обновления: 2026-09-27.
+Дата обновления: 2026-09-28.
 
 ## Бренд и рабочие интерфейсы
 
 - Исходный логотип владельца от 17.07 заменяет реконструкцию в шапках, CRM, КП и OG. Добавлена защита оригинала и canonical usage.
 - Общие токены, локальный Manrope, светлые формы, контрастные кнопки/статусы, компактная шапка CRM и свёрнутые подсказки. 25 browser a11y/responsive cases прошли на 360/390/768/1024/1440 px.
 - [Что реализовано и ограничения Figma](DESIGN_SYSTEM_DELIVERY_2026-09-27.md). Figma foundations/components готовы, запись экранов ограничена лимитом Starter; не считать 10 экранов завершёнными.
-- PR560: authenticated staging E2E [36335551833](https://github.com/deputat36/lider-bsk/actions/runs/36335551833) PASS: 4 версии, КП/заказ/дизайн/производство/монтаж, manager/owner UI/API, cleanup=0. Временный OIDC-доступ ветки удалён. CI обновляется после исправления устаревших cache assertions. Production Supabase не изменялся.
+- PR560: authenticated staging E2E [36335551833](https://github.com/deputat36/lider-bsk/actions/runs/36335551833) PASS: 4 версии, КП/заказ/дизайн/производство/монтаж, manager/owner UI/API, cleanup=0. Временный OIDC-доступ ветки удалён. PR560 merged: 116/116 checks PASS; опубликованный main — 118/118, включая Pages deploy. Browser 28.09 подтвердил оригинальный логотип, локальный Manrope и актуальные стили на www. Production Supabase не изменялся.
+
+## Целостность production и актуальный backlog
+
+- Read-only снимок: 5 заявок / 5 расчётов / 5 КП без заказов (#381), 8 расчётов без потребности и 3 расхождения сумм с позициями. Дубли request_id и проверенные orphan links не найдены; пустые финансовые таблицы не доказывают финансовый E2E.
+- [План #381, точный scope, SQL и rollback](PRODUCTION_DATA_INTEGRITY_2026-09-27.md). Кандидат по умолчанию ROLLBACK, проверяет approval/owner/status/timestamp/links/current revision, сохраняет snapshot и audit. TEMP-only PostgreSQL тест пройден; production DML не выполнялся.
+- Source/staging опережают production: canonical RBAC/receipts и catalog RPC там отсутствуют, legacy anon intake INSERT ещё разрешён. #201/#202/#204/#206 остаются открыты до согласованного cutover и proof.
+- #526 и #210 выполнены в своём source/staging scope; #552 закрыт, #553/#554 сведены к основным задачам. #152 и #226 уже имеют source/staging реализацию, а не пустой backlog.
+- Следующий самостоятельный блок #5: формы оплат/расходов, серверные проверки и audit, staging financial schema parity, положительные/отрицательные E2E и cleanup. В текущем staging таблицы оплат/расходов отсутствуют.
 
 ## Специальные цены расчётов (#526)
 
@@ -20,7 +28,7 @@
 - Четыре цели на главной и в каталоге, девять новых коммерческих страниц, общий справочник 23 услуг сайта/формы/CRM/аналитики. Старые ссылки каталога сохранены.
 - Карточка CRM показывает задачу клиента первой; направление и вопросы первого контакта соответствуют услуге.
 - Подробности аудита, карта 13 репозиториев и границы production: [ECOSYSTEM_COMMERCIAL_DELIVERY_2026-09-25.md](ECOSYSTEM_COMMERCIAL_DELIVERY_2026-09-25.md).
-- PR551 и PR557 merged. Production Supabase не изменялся. PR558: мобильные и настольные страницы проверены браузером; полный staging E2E [36127890994](https://github.com/deputat36/lider-bsk/actions/runs/36127890994) успешен: manager/owner RBAC, расчёт, КП, заказ, производство, монтаж, refresh/replay/stale guards. Cleanup удалил все synthetic-записи и Auth; независимый SQL подтвердил остаток 0. Перед merge проверяется итоговый CI.
+- PR551 и PR557 merged. Production Supabase не изменялся. PR558: мобильные и настольные страницы проверены браузером; полный staging E2E [36127890994](https://github.com/deputat36/lider-bsk/actions/runs/36127890994) успешен: manager/owner RBAC, расчёт, КП, заказ, производство, монтаж, refresh/replay/stale guards. Cleanup удалил все synthetic-записи и Auth; независимый SQL подтвердил остаток 0. PR558 merged, итоговый CI пройден.
 
 ## Передача услуги и рекламного источника (#556)
 

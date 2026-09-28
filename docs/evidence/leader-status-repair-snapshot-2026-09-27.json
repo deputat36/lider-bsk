@@ -1,0 +1,92 @@
+[
+  {
+    "entity": "lead",
+    "id": "e33082c6-bcef-409d-adff-545b6185da13",
+    "status": "Создан заказ",
+    "updated_at": "2026-06-16 09:44:56.778722+00"
+  },
+  {
+    "entity": "lead",
+    "id": "ee79a85d-6645-450d-a705-ad9a45d37fbc",
+    "status": "Создан заказ",
+    "updated_at": "2026-06-21 13:37:08.889+00"
+  },
+  {
+    "entity": "lead",
+    "id": "6a30b274-c394-4f4e-8397-dbe703ad6316",
+    "status": "Создан заказ",
+    "updated_at": "2026-06-17 05:44:56.778722+00"
+  },
+  {
+    "entity": "lead",
+    "id": "5e482682-180b-41e7-ae43-fedb34cda162",
+    "status": "Создан заказ",
+    "updated_at": "2026-06-17 12:47:36.246+00"
+  },
+  {
+    "entity": "lead",
+    "id": "8665cfe4-1a0f-49e5-bce7-c3c94a7eb791",
+    "status": "Создан заказ",
+    "updated_at": "2026-06-17 08:44:56.778722+00"
+  },
+  {
+    "entity": "calculation",
+    "id": "d7d9ee72-25fc-4a3d-9819-0611af9de50b",
+    "status": "Создан заказ",
+    "updated_at": "2026-06-14 09:44:56.778722+00"
+  },
+  {
+    "entity": "calculation",
+    "id": "777509d8-64ee-4406-a7a6-4f9cf2c3a5eb",
+    "status": "Создан заказ",
+    "updated_at": "2026-06-16 09:44:56.778722+00"
+  },
+  {
+    "entity": "calculation",
+    "id": "8df2d8e8-3b18-4d49-ada3-ceeb0a71ce11",
+    "status": "Создан заказ",
+    "updated_at": "2026-06-21 13:37:19.565+00"
+  },
+  {
+    "entity": "calculation",
+    "id": "39f62129-3ab8-420a-8b87-d9b1f288e4cc",
+    "status": "Создан заказ",
+    "updated_at": "2026-06-17 12:47:43.485+00"
+  },
+  {
+    "entity": "calculation",
+    "id": "0597fdd3-eedb-4192-89ed-8b217e66f281",
+    "status": "Создан заказ",
+    "updated_at": "2026-06-16 09:44:56.778722+00"
+  },
+  {
+    "entity": "offer",
+    "id": "fdf19de7-ca6f-49b2-9c06-20f328073675",
+    "status": "Согласовано",
+    "updated_at": "2026-06-16 09:44:56.778722+00"
+  },
+  {
+    "entity": "offer",
+    "id": "76bd8557-5f34-4e1d-9320-06dbad25ba39",
+    "status": "Согласовано",
+    "updated_at": "2026-06-14 09:44:56.778722+00"
+  },
+  {
+    "entity": "offer",
+    "id": "e5ba54f2-ef01-468e-878c-b1b748e9a2f3",
+    "status": "Согласовано",
+    "updated_at": "2026-06-16 09:44:56.778722+00"
+  },
+  {
+    "entity": "offer",
+    "id": "c58adec4-3d23-4084-ab97-ac527aaa007c",
+    "status": "Согласовано",
+    "updated_at": "2026-06-21 13:37:19.565+00"
+  },
+  {
+    "entity": "offer",
+    "id": "ae2b8b01-cf7a-455d-90a6-acba70d0c855",
+    "status": "Согласовано",
+    "updated_at": "2026-06-17 12:47:43.485+00"
+  }
+]

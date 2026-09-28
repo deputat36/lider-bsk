@@ -1,0 +1,138 @@
+{
+  "date": "2026-09-27",
+  "project": "ofewxuqfjhamgerwzull",
+  "access": "read-only",
+  "checks": [
+    {
+      "check_name": "converted_lead_without_order",
+      "affected_count": 5,
+      "ids": [
+        "5e482682-180b-41e7-ae43-fedb34cda162",
+        "6a30b274-c394-4f4e-8397-dbe703ad6316",
+        "8665cfe4-1a0f-49e5-bce7-c3c94a7eb791",
+        "e33082c6-bcef-409d-adff-545b6185da13",
+        "ee79a85d-6645-450d-a705-ad9a45d37fbc"
+      ]
+    },
+    {
+      "check_name": "lead_client_orphan",
+      "affected_count": 0,
+      "ids": []
+    },
+    {
+      "check_name": "lead_order_mismatch",
+      "affected_count": 0,
+      "ids": []
+    },
+    {
+      "check_name": "calculation_without_need",
+      "affected_count": 8,
+      "ids": [
+        "39f62129-3ab8-420a-8b87-d9b1f288e4cc",
+        "416db14d-894a-468b-b344-1fbf2db72df7",
+        "54f6f145-8456-4be9-947e-9cc828392759",
+        "5a46579a-4cf4-4d4d-af41-b75ffe6624a5",
+        "8df2d8e8-3b18-4d49-ada3-ceeb0a71ce11",
+        "96f07440-a813-4a5c-8a7e-dd2064818a21",
+        "c9546893-7889-41ff-a1c7-1d96d5564460",
+        "ea194ba8-bc23-4464-9a2d-594a92271af8"
+      ]
+    },
+    {
+      "check_name": "calculation_need_mismatch",
+      "affected_count": 0,
+      "ids": []
+    },
+    {
+      "check_name": "converted_calculation_without_order",
+      "affected_count": 5,
+      "ids": [
+        "0597fdd3-eedb-4192-89ed-8b217e66f281",
+        "39f62129-3ab8-420a-8b87-d9b1f288e4cc",
+        "777509d8-64ee-4406-a7a6-4f9cf2c3a5eb",
+        "8df2d8e8-3b18-4d49-ada3-ceeb0a71ce11",
+        "d7d9ee72-25fc-4a3d-9819-0611af9de50b"
+      ]
+    },
+    {
+      "check_name": "offer_without_calculation",
+      "affected_count": 0,
+      "ids": []
+    },
+    {
+      "check_name": "agreed_offer_without_order",
+      "affected_count": 5,
+      "ids": [
+        "76bd8557-5f34-4e1d-9320-06dbad25ba39",
+        "ae2b8b01-cf7a-455d-90a6-acba70d0c855",
+        "c58adec4-3d23-4084-ab97-ac527aaa007c",
+        "e5ba54f2-ef01-468e-878c-b1b748e9a2f3",
+        "fdf19de7-ca6f-49b2-9c06-20f328073675"
+      ]
+    },
+    {
+      "check_name": "order_without_client",
+      "affected_count": 0,
+      "ids": []
+    },
+    {
+      "check_name": "order_without_items",
+      "affected_count": 0,
+      "ids": []
+    },
+    {
+      "check_name": "production_without_order",
+      "affected_count": 0,
+      "ids": []
+    },
+    {
+      "check_name": "installation_without_order",
+      "affected_count": 0,
+      "ids": []
+    },
+    {
+      "check_name": "design_without_source",
+      "affected_count": 0,
+      "ids": []
+    },
+    {
+      "check_name": "payment_without_order",
+      "affected_count": 0,
+      "ids": []
+    },
+    {
+      "check_name": "expense_broken_order",
+      "affected_count": 0,
+      "ids": []
+    },
+    {
+      "check_name": "calculation_totals_mismatch",
+      "affected_count": 0,
+      "ids": []
+    },
+    {
+      "check_name": "calculation_items_totals_mismatch",
+      "affected_count": 3,
+      "ids": [
+        "0597fdd3-eedb-4192-89ed-8b217e66f281",
+        "416db14d-894a-468b-b344-1fbf2db72df7",
+        "96f07440-a813-4a5c-8a7e-dd2064818a21"
+      ]
+    },
+    {
+      "check_name": "order_totals_mismatch",
+      "affected_count": 0,
+      "ids": []
+    },
+    {
+      "check_name": "duplicate_request_id",
+      "affected_count": 0,
+      "ids": []
+    },
+    {
+      "check_name": "suspected_lead_duplicates",
+      "affected_count": 0,
+      "ids": []
+    }
+  ]
+}

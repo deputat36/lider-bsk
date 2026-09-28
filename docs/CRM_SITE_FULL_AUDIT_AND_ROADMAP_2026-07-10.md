@@ -8,6 +8,17 @@ Supabase project: `ofewxuqfjhamgerwzull`.
 
 Режим: GitHub source changes и read-only Supabase inspection. Production Supabase в рамках аудита не изменялся.
 
+## Актуализация 28.09.2026
+
+Этот документ сохраняет исходный аудит июля; live-версии и пункты ниже не следует считать повторно подтверждёнными сегодня. Текущий источник состояния — [STATUS.md](STATUS.md), master issue #200 и [data integrity / rollback](PRODUCTION_DATA_INTEGRITY_2026-09-27.md).
+
+- PR558: коммерческие направления, service/UTM контекст, вопросы первого контакта — merged.
+- PR559 / #526: сознательные нулевые и убыточные цены, неизменяемые версии и staging E2E — merged; production backend cutover отдельно.
+- PR560: исходный логотип владельца, единые tokens/Manrope/контраст, public/CRM/print, 25 responsive/a11y cases, authenticated E2E до монтажа, cleanup=0 — merged, 116/116 PR checks PASS.
+- #210 и #552 выполнены; #553/#554 — дубли основных задач. #152 catalog management и #226 design task уже реализованы в source/staging, production activation ещё не выполнена.
+- P0 production: #201/#202/#204 — legacy anon intake и canonical RBAC/receipts prerequisites. #206 — полноценный production public proof только после approval. #381 — исторические status/order links, кандидат без автоматического применения.
+- Следующий P1: #5 финансовые writes и staging parity; затем доказательство остальных ролей и authenticated mobile. #235 — реальные портфолио-материалы. Figma foundations готовы, эталонные экраны пока ограничены Starter MCP quota.
+
 ## 1. Цель системы
 
 Целевой бизнес-путь:
