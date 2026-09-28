@@ -7,6 +7,8 @@ on:
       - 'docs/**'
       - 'tools/check_docs_contract.py'
       - 'tools/check_current_public_ops_docs.py'
+      - 'tools/sql/issue381-status-repair-*.sql'
+      - 'tools/build_issue381_repair_temp_test.py'
       - '.github/ISSUE_TEMPLATE/**'
       - '.github/workflows/docs-checks.yml'
   pull_request:
@@ -15,10 +17,38 @@ on:
       - 'docs/**'
       - 'tools/check_docs_contract.py'
       - 'tools/check_current_public_ops_docs.py'
+      - 'tools/sql/issue381-status-repair-*.sql'
+      - 'tools/build_issue381_repair_temp_test.py'
       - '.github/ISSUE_TEMPLATE/**'
       - '.github/workflows/docs-checks.yml'
 
 jobs:
+  validate-repair-candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: isolated-ci-only
+          POSTGRES_DB: repair_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate isolated apply and rollback scenarios
+        run: python3 tools/build_issue381_repair_temp_test.py
+      - name: Exercise guards, snapshots and rollback in disposable PostgreSQL
+        env:
+          PGPASSWORD: isolated-ci-only
+        run: psql -h localhost -U postgres -d repair_test -v ON_ERROR_STOP=1 -f build/issue381-repair-temp-test.sql
   validate-project-docs:
     runs-on: ubuntu-latest
     steps:

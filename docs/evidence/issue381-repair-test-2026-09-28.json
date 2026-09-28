@@ -1,0 +1,29 @@
+{
+  "date": "2026-09-28",
+  "project": "otulfnouybahfnsycxqn",
+  "result": "passed",
+  "scope": "TEMP-only PostgreSQL fixture; no persistent CRM rows or Auth users",
+  "transaction_end": "ROLLBACK",
+  "production_mutated": false,
+  "checks": [
+    "approval required",
+    "inactive owner rejected",
+    "stale apply rejected",
+    "historical offer revision apply guard",
+    "apply 15 rows + snapshot + audit",
+    "duplicate apply rejected",
+    "stale rollback rejected",
+    "historical offer revision rollback guard",
+    "rollback 15 rows + audit",
+    "duplicate rollback rejected"
+  ],
+  "limitations": [
+    "not full production schema/RLS clone",
+    "production dry-run requires separate approval"
+  ],
+  "sha256": {
+    "tools/sql/issue381-status-repair-candidate.sql": "0db4aef47b2290a31cacbdaa170dab437f4129cedd3c84a3d573160693fd2ae7",
+    "tools/sql/issue381-status-repair-rollback.sql": "fe18f99421dcc2d59e8d9566600c9dd9abab61d08479acb0e762cbe8eb035c5c",
+    "tools/build_issue381_repair_temp_test.py": "7e54cfadd90d7a33795b7dfff2f3fae60ad9cb92e9dbe01cc3bc539fc9068879"
+  }
+}
