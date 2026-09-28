@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
     paths:
+      - 'crm/v4/assets/v4/finance-record-*.js'
+      - 'crm/v4/assets/v4/finance-control-v2.js'
+      - 'tools/test_finance_records.mjs'
+      - 'supabase/functions/leader-crm-finance/**'
+      - 'supabase/staging-migrations/20260928093643_finance_records_staging.sql'
       - 'crm/v4/assets/v4/finance-plan-actual-model-v1.js'
       - 'crm/v4/assets/v4/finance-plan-actual-panel-v1.js'
       - 'crm/v4/assets/v4/payment-record-status-model-v1.js'
@@ -23,6 +28,11 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - 'crm/v4/assets/v4/finance-record-*.js'
+      - 'crm/v4/assets/v4/finance-control-v2.js'
+      - 'tools/test_finance_records.mjs'
+      - 'supabase/functions/leader-crm-finance/**'
+      - 'supabase/staging-migrations/20260928093643_finance_records_staging.sql'
       - 'crm/v4/assets/v4/finance-plan-actual-model-v1.js'
       - 'crm/v4/assets/v4/finance-plan-actual-panel-v1.js'
       - 'crm/v4/assets/v4/payment-record-status-model-v1.js'
@@ -59,6 +69,7 @@ jobs:
           node --check crm/v4/assets/v4/crm-v4-tab-loader-v1.js
           node --check tools/test_finance_plan_actual.mjs
           node --check tools/test_crm_payment_record_status.mjs
+          node tools/test_finance_records.mjs
           node tools/test_finance_plan_actual.mjs
           node tools/test_crm_payment_record_status.mjs
           python3 tools/check_finance_plan_actual.py

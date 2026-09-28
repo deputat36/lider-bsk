@@ -1,0 +1,388 @@
+{
+  "date": "2026-09-28",
+  "project": "ofewxuqfjhamgerwzull",
+  "access": "read-only",
+  "schema": {
+    "rls": [
+      {
+        "table": "leader_expenses",
+        "enabled": true
+      },
+      {
+        "table": "leader_finance_notes",
+        "enabled": true
+      },
+      {
+        "table": "leader_payments",
+        "enabled": true
+      }
+    ],
+    "columns": [
+      {
+        "name": "id",
+        "type": "uuid",
+        "table": "leader_expenses",
+        "default": "gen_random_uuid()",
+        "nullable": "NO"
+      },
+      {
+        "name": "owner_id",
+        "type": "uuid",
+        "table": "leader_expenses",
+        "default": "auth.uid()",
+        "nullable": "NO"
+      },
+      {
+        "name": "order_id",
+        "type": "uuid",
+        "table": "leader_expenses",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "name": "contractor_id",
+        "type": "uuid",
+        "table": "leader_expenses",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "name": "expense_date",
+        "type": "timestamp with time zone",
+        "table": "leader_expenses",
+        "default": "now()",
+        "nullable": "NO"
+      },
+      {
+        "name": "category",
+        "type": "text",
+        "table": "leader_expenses",
+        "default": "'Прочее'::text",
+        "nullable": "NO"
+      },
+      {
+        "name": "amount",
+        "type": "numeric",
+        "table": "leader_expenses",
+        "default": "0",
+        "nullable": "NO"
+      },
+      {
+        "name": "method",
+        "type": "text",
+        "table": "leader_expenses",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "name": "status",
+        "type": "text",
+        "table": "leader_expenses",
+        "default": "'Проведён'::text",
+        "nullable": "NO"
+      },
+      {
+        "name": "comment",
+        "type": "text",
+        "table": "leader_expenses",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "name": "created_by",
+        "type": "uuid",
+        "table": "leader_expenses",
+        "default": "auth.uid()",
+        "nullable": "YES"
+      },
+      {
+        "name": "created_by_email",
+        "type": "text",
+        "table": "leader_expenses",
+        "default": "auth.email()",
+        "nullable": "YES"
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "table": "leader_expenses",
+        "default": "now()",
+        "nullable": "NO"
+      },
+      {
+        "name": "updated_at",
+        "type": "timestamp with time zone",
+        "table": "leader_expenses",
+        "default": "now()",
+        "nullable": "NO"
+      },
+      {
+        "name": "id",
+        "type": "uuid",
+        "table": "leader_finance_notes",
+        "default": "gen_random_uuid()",
+        "nullable": "NO"
+      },
+      {
+        "name": "owner_id",
+        "type": "uuid",
+        "table": "leader_finance_notes",
+        "default": "auth.uid()",
+        "nullable": "NO"
+      },
+      {
+        "name": "related_type",
+        "type": "text",
+        "table": "leader_finance_notes",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "name": "related_id",
+        "type": "uuid",
+        "table": "leader_finance_notes",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "name": "note_type",
+        "type": "text",
+        "table": "leader_finance_notes",
+        "default": "'Заметка'::text",
+        "nullable": "NO"
+      },
+      {
+        "name": "body",
+        "type": "text",
+        "table": "leader_finance_notes",
+        "default": null,
+        "nullable": "NO"
+      },
+      {
+        "name": "created_by",
+        "type": "uuid",
+        "table": "leader_finance_notes",
+        "default": "auth.uid()",
+        "nullable": "YES"
+      },
+      {
+        "name": "created_by_email",
+        "type": "text",
+        "table": "leader_finance_notes",
+        "default": "auth.email()",
+        "nullable": "YES"
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "table": "leader_finance_notes",
+        "default": "now()",
+        "nullable": "NO"
+      },
+      {
+        "name": "id",
+        "type": "uuid",
+        "table": "leader_payments",
+        "default": "gen_random_uuid()",
+        "nullable": "NO"
+      },
+      {
+        "name": "owner_id",
+        "type": "uuid",
+        "table": "leader_payments",
+        "default": "auth.uid()",
+        "nullable": "NO"
+      },
+      {
+        "name": "order_id",
+        "type": "uuid",
+        "table": "leader_payments",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "name": "amount",
+        "type": "numeric",
+        "table": "leader_payments",
+        "default": "0",
+        "nullable": "NO"
+      },
+      {
+        "name": "method",
+        "type": "text",
+        "table": "leader_payments",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "name": "payment_date",
+        "type": "date",
+        "table": "leader_payments",
+        "default": "CURRENT_DATE",
+        "nullable": "NO"
+      },
+      {
+        "name": "comment",
+        "type": "text",
+        "table": "leader_payments",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "table": "leader_payments",
+        "default": "now()",
+        "nullable": "NO"
+      },
+      {
+        "name": "updated_at",
+        "type": "timestamp with time zone",
+        "table": "leader_payments",
+        "default": "now()",
+        "nullable": "NO"
+      },
+      {
+        "name": "payment_status",
+        "type": "text",
+        "table": "leader_payments",
+        "default": "'Проведён'::text",
+        "nullable": "NO"
+      },
+      {
+        "name": "receipt_number",
+        "type": "text",
+        "table": "leader_payments",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "name": "created_by",
+        "type": "uuid",
+        "table": "leader_payments",
+        "default": "auth.uid()",
+        "nullable": "YES"
+      },
+      {
+        "name": "created_by_email",
+        "type": "text",
+        "table": "leader_payments",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "name": "payment_type",
+        "type": "text",
+        "table": "leader_payments",
+        "default": "'Приход'::text",
+        "nullable": "NO"
+      },
+      {
+        "name": "payment_stage",
+        "type": "text",
+        "table": "leader_payments",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "name": "finance_category",
+        "type": "text",
+        "table": "leader_payments",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "name": "counterparty_name",
+        "type": "text",
+        "table": "leader_payments",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "name": "related_entity_type",
+        "type": "text",
+        "table": "leader_payments",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "name": "related_entity_id",
+        "type": "uuid",
+        "table": "leader_payments",
+        "default": null,
+        "nullable": "YES"
+      },
+      {
+        "name": "is_confirmed",
+        "type": "boolean",
+        "table": "leader_payments",
+        "default": "true",
+        "nullable": "NO"
+      }
+    ],
+    "policies": [
+      {
+        "cmd": "ALL",
+        "qual": "leader_private.leader_has_access()",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "leader_expenses",
+        "permissive": "PERMISSIVE",
+        "policyname": "leader_expenses_app",
+        "schemaname": "public",
+        "with_check": "leader_private.leader_has_access()"
+      },
+      {
+        "cmd": "ALL",
+        "qual": "leader_private.leader_has_access()",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "leader_finance_notes",
+        "permissive": "PERMISSIVE",
+        "policyname": "leader_finance_notes_app",
+        "schemaname": "public",
+        "with_check": "leader_private.leader_has_access()"
+      },
+      {
+        "cmd": "ALL",
+        "qual": "leader_private.leader_has_access()",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "leader_payments",
+        "permissive": "PERMISSIVE",
+        "policyname": "leader_payments_app",
+        "schemaname": "public",
+        "with_check": "leader_private.leader_has_access()"
+      }
+    ],
+    "constraints": [
+      {
+        "table": "leader_expenses",
+        "definition": "FOREIGN KEY (contractor_id) REFERENCES leader_contractors(id) ON DELETE SET NULL"
+      },
+      {
+        "table": "leader_expenses",
+        "definition": "FOREIGN KEY (order_id) REFERENCES leader_orders(id) ON DELETE SET NULL"
+      },
+      {
+        "table": "leader_expenses",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "table": "leader_finance_notes",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "table": "leader_payments",
+        "definition": "FOREIGN KEY (order_id) REFERENCES leader_orders(id) ON DELETE CASCADE"
+      },
+      {
+        "table": "leader_payments",
+        "definition": "PRIMARY KEY (id)"
+      }
+    ]
+  }
+}
