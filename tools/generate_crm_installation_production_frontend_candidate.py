@@ -30,11 +30,11 @@ SOURCES = {
     },
     'loader': {
         'path': ROOT / 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js',
-        'blob_sha': '4b855aac457d03d0a95aca6fbe0e7bc25d4105c7',
+        'blob_sha': '6c8c706191f34a14043d6a61b49eff70ec0449de',
     },
     'index': {
         'path': ROOT / 'crm/v4/index.html',
-        'blob_sha': '0034afeaffda4ecf446561c9796a0e7961512e5a',
+        'blob_sha': '59a99c18f94eda3db161fc6ab98f53d3268db16e',
     },
 }
 
@@ -361,7 +361,7 @@ def candidate_loader(source: str) -> str:
 
 def main() -> int:
     sources = load_sources()
-    if 'crm-v4-tab-loader-v1.js?v=20260816-direct-card-1' not in sources['index']:
+    if 'crm-v4-tab-loader-v1.js?v=20260928-finance-1' not in sources['index']:
         raise SystemExit('index: approved lazy tab loader entrypoint missing')
     if '<script type="module" src="assets/v4/installation-job-card-' in sources['index']:
         raise SystemExit('index: eager installation card script is forbidden')

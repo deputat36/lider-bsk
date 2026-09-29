@@ -16,7 +16,7 @@ assert(!lead.error&&lead.data?.converted_order_id,'finance_source_order_missing'
 click('[data-v4-tab-button="orders"]');
 await waitFor(()=>document.querySelector('[data-open-order="'+orderId+'"]'),'finance_order_button_missing');
 click('[data-open-order="'+orderId+'"]');
-await waitFor(()=>document.querySelector('[data-finance-new="payment"]'),'finance_writer_missing');
+try { await waitFor(()=>document.querySelector('[data-finance-new="payment"]'),'finance_writer_missing'); } catch (_) { throw new Error('finance_writer_missing:'+JSON.stringify({card:!!document.querySelector('#orderCardTitle'),finance:!!document.querySelector('[data-order-finance]'),code:document.querySelector('#orderCardV1')?.dataset.errorCode||'',role:state.profile?.role,loaded:state.profileLoaded})); }
 assert(document.querySelector('[role="dialog"]'),'finance_dialog_semantics_missing');record('finance_card_opened');
 const originalFetch=globalThis.fetch.bind(globalThis);const commands=[];let loseOnce=true;
 globalThis.fetch=async(input,init)=>{

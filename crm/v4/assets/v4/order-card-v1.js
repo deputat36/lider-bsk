@@ -99,10 +99,12 @@ function closeCard() {
 
 function loading() {
   currentBundle = null;
+  delete host().dataset.errorCode;
   host().innerHTML = `<div class="v4-order-modal"><div class="v4-order-modal-card"><div class="v4-order-modal-head"><div><h2>Карточка заказа</h2><p>Загружаю заказ...</p></div><button type="button" data-order-card-close>Закрыть</button></div><div class="v4-order-modal-empty">Загрузка...</div></div></div>`;
 }
 
-function errorBox(text) {
+function errorBox(text, code = 'order_read_failed') {
+  host().dataset.errorCode = String(code).replace(/[^a-z0-9_]/gi, '').slice(0, 64);
   currentBundle = null;
   host().innerHTML = `<div class="v4-order-modal"><div class="v4-order-modal-card"><div class="v4-order-modal-head"><div><h2>Карточка заказа</h2><p>Не удалось загрузить данные</p></div><button type="button" data-order-card-close>Закрыть</button></div><div class="v4-order-modal-empty">${esc(text)}</div></div></div>`;
 }
@@ -133,7 +135,8 @@ async function fetchFinance(orderId) {
     ]);
     const recent = (a, b) => String(b.payment_date || b.expense_date || '').localeCompare(String(a.payment_date || a.expense_date || '')) || String(b.created_at).localeCompare(String(a.created_at));
     return { payments: payments.sort(recent), expenses: expenses.sort(recent), financeError: '' };
-  } catch (_) {
+  } catch (error) {
+    host().dataset.errorCode = String(error?.code || 'finance_read_failed').replace(/[^a-z0-9_]/gi, '').slice(0, 64);
     return { payments: [], expenses: [], financeError: 'Не удалось загрузить оплаты и расходы. Финансовые итоги временно недоступны.' };
   }
 }
@@ -349,7 +352,7 @@ async function openOrderCard(orderId, message = '', refresh = false) {
       if (saved) saved.textContent = message;
     }
   } catch (error) {
-    if (request === cardRequest) errorBox(friendlyError(error));
+    if (request === cardRequest) errorBox(friendlyError(error), error?.code);
   } finally {
     if (request === cardRequest) busy = false;
   }
