@@ -1,3 +1,4 @@
+import { invokeLeaderFunction } from './functions-client.js';
 import { V4_CONFIG } from './config.js';
 import { v4State } from './state.js';
 import { canPerformV4Action, CRM_V4_ACTIONS } from './action-permissions-v1.js';
@@ -109,10 +110,21 @@ function errorBox(text, code = 'order_read_failed') {
   host().innerHTML = `<div class="v4-order-modal"><div class="v4-order-modal-card"><div class="v4-order-modal-head"><div><h2>Карточка заказа</h2><p>Не удалось загрузить данные</p></div><button type="button" data-order-card-close>Закрыть</button></div><div class="v4-order-modal-empty">${esc(text)}</div></div></div>`;
 }
 
-async function fetchOrder(orderId) {
+async function fetchOrderBundle(orderId) {
+  if (new URL(V4_CONFIG.supabaseUrl).hostname === 'otulfnouybahfnsycxqn.supabase.co') {
+    const result = await invokeLeaderFunction('leader-crm-orders', { action: 'get', order_id: orderId });
+    if (!result.order || !Array.isArray(result.items)) throw new Error('Ответ сервера не содержит заказ и его позиции.');
+    return result;
+  }
   const response = await supabaseClient.from('leader_orders').select(ORDER_FIELDS).eq('id', orderId).single();
   if (response.error || !response.data) throw response.error || new Error('Заказ не найден');
-  return response.data;
+  return { order: response.data, items: await fetchItems(orderId) };
+}
+
+async function fetchOrderRevision(orderId) {
+  const response = await supabaseClient.from('leader_orders').select('id,updated_at').eq('id', orderId).single();
+  if (response.error || !response.data) throw response.error || new Error('Заказ не найден');
+  return response.data.updated_at;
 }
 
 async function fetchItems(orderId) {
@@ -329,17 +341,16 @@ async function openOrderCard(orderId, message = '', refresh = false) {
   ensureStyles();
   loading();
   try {
-    let order = await fetchOrder(orderId);
-    const items = await fetchItems(order.id);
+    let { order, items } = await fetchOrderBundle(orderId);
     let finance = await fetchFinance(order.id);
     if (canReadFinance() && !finance.financeError) {
       try {
-      const current = await fetchOrder(order.id);
-      if (current.updated_at !== order.updated_at) {
-        order = current;
+      const currentRevision = await fetchOrderRevision(order.id);
+      if (currentRevision !== order.updated_at) {
+        ({ order, items } = await fetchOrderBundle(orderId));
         finance = await fetchFinance(order.id);
-        const verified = await fetchOrder(order.id);
-        if (verified.updated_at !== order.updated_at) finance.financeError = 'Финансы заказа изменились во время загрузки. Обновите итоги.';
+        const verified = await fetchOrderRevision(order.id);
+        if (verified !== order.updated_at) finance.financeError = 'Финансы заказа изменились во время загрузки. Обновите итоги.';
       }
       } catch (_) { finance.financeError = 'Не удалось проверить актуальность финансовых итогов. Повторите загрузку.'; }
     }

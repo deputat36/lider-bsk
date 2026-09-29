@@ -48,7 +48,7 @@ export function leadsActionPlan(body = {}, urlAction = '') {
 
 export function orderActionPlan(body = {}) {
   const action = clean(body?.action || 'list', 40)
-  if (action === 'list') {
+  if (action === 'list' || action === 'get') {
     return Object.freeze({ action, known: true, bootstrap: false, permissions: Object.freeze(['orders.read']), fields: Object.freeze([]) })
   }
   if (action !== 'update') {

@@ -4,13 +4,14 @@ export function financeBrowserSource(ownerLoginSource) {
   if (!prefix || prefix === ownerLoginSource) throw new Error('finance_login_anchor_missing');
   return prefix + String.raw`
 const {supabaseClient:client}=await import('./assets/v4/supabase-client.js');
+const {invokeLeaderFunction}=await import('./assets/v4/functions-client.js');
 const {v4State:state}=await import('./assets/v4/state.js');
 const {buildOrderFinanceSnapshot}=await import('./assets/v4/finance-plan-actual-model-v1.js');
 const steps=[];const record=name=>{steps.push(name);progress(name);};
 const select=selector=>{const node=document.querySelector(selector);assert(node,'finance_node_missing:'+selector);return node;};
 const click=selector=>{const node=select(selector);assert(!node.disabled,'finance_button_disabled');node.click();};
 const value=(name,value)=>{const node=select('[data-finance-form] [name="'+name+'"]');node.value=value;node.dispatchEvent(new Event('input',{bubbles:true}));node.dispatchEvent(new Event('change',{bubbles:true}));};
-const read=async(table,fields,orderId)=>{const result=await client.from(table).select(fields).eq(table==='leader_orders'?'id':'order_id',orderId);assert(!result.error,'finance_read_failed:'+table);return result.data;};
+const read=async(table,fields,orderId)=>{if(table==='leader_orders'){const result=await invokeLeaderFunction('leader-crm-orders',{action:'get',order_id:orderId});return [result.order];}const result=await client.from(table).select(fields).eq(table==='leader_orders'?'id':'order_id',orderId);assert(!result.error,'finance_read_failed:'+table);return result.data;};
 const lead=await client.from('leader_leads').select('converted_order_id').eq('id',R.leadId).single();
 assert(!lead.error&&lead.data?.converted_order_id,'finance_source_order_missing');const orderId=lead.data.converted_order_id;
 click('[data-v4-tab-button="orders"]');

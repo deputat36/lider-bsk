@@ -14,6 +14,7 @@ const mock = `
 const order={id:'${orderId}',order_number:123,project_name:'Вывеска и оформление входной группы — проверка длинного названия заказа',client_name:'Тестовый клиент',client_total:1700,contractor_cost:1000,profit:700,status:'Принят в работу',payment_status:'Частично оплачено',updated_at:'${now}',created_at:'${now}',data:{}};
 const data={leader_orders:[order],leader_order_items:[{name:'Вывеска с длинным описанием материалов и способа монтажа',quantity:1,client_sum:1700,contractor_sum:1000}],leader_payments:[{id:'${actorId}',order_id:order.id,amount:1000.25,payment_type:'Приход',payment_status:'Проведён',is_confirmed:true,method:'Перевод',payment_date:'2026-09-28',created_at:'${now}',updated_at:'${now}'}],leader_expenses:[]};
 globalThis.__financeMock={reads:[],fail:false};
+globalThis.__financeMock.bundle={order,items:data.leader_order_items};
 export const supabaseClient={from(table){globalThis.__financeMock.reads.push(table);const query={select(){return this},eq(){return this},order(){return this},single(){return Promise.resolve({data:data[table][0]})},limit(){return this},range(){return this},then(resolve,reject){return Promise.resolve(globalThis.__financeMock.fail&&table==='leader_payments'?{error:new Error('synthetic_read_failure')}:{data:data[table]}).then(resolve,reject)}};return query},auth:{getSession:async()=>({data:{session:{access_token:'synthetic-test'}}})},functions:{invoke:async()=>({error:new Error('synthetic-network-error')})}};
 `;
 const html = `<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Проверка финансов заказа</title><link rel="stylesheet" href="/assets/brand/design-tokens.css"><style>body{margin:0;font-family:Arial,sans-serif;color:#182334}main{padding:20px}button{font:inherit}h1{font-size:24px}</style></head><body><main><h1>Заказы</h1><button data-open-order="${orderId}">Открыть тестовый заказ</button></main><script type="module">import {v4State} from '/crm/v4/assets/v4/state.js';v4State.profileLoaded=true;v4State.profile={user_id:'${actorId}',role:'owner',is_active:true};await import('/crm/v4/assets/v4/order-card-v1.js');globalThis.financeReady=true;</script></body></html>`;
@@ -22,6 +23,7 @@ const server = createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   if (url.pathname === '/test') { res.setHeader('Content-Type', 'text/html'); res.end(html); return; }
   if (url.pathname.endsWith('/supabase-client.js')) { res.setHeader('Content-Type','text/javascript'); res.end(mock); return; }
+  if (url.pathname.endsWith('/functions-client.js')) { res.setHeader('Content-Type','text/javascript'); res.end("export async function invokeLeaderFunction(){return globalThis.__financeMock.bundle;}"); return; }
   if (url.pathname.endsWith('/config.js')) { res.setHeader('Content-Type','text/javascript'); res.end("export const V4_CONFIG={supabaseUrl:'https://otulfnouybahfnsycxqn.supabase.co'};"); return; }
   try {
     const file = path.resolve(root, '.' + url.pathname); if (!file.startsWith(root + '/')) throw new Error('path');
