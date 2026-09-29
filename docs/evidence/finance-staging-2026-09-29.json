@@ -1,0 +1,78 @@
+{
+  "finance-ui": {
+    "evidence_version": "leader-crm-authenticated-staging-e2e-v1",
+    "status": "passed",
+    "project_ref": "otulfnouybahfnsycxqn",
+    "production_enabled": false,
+    "authenticated": true,
+    "role": "owner",
+    "financial_ui": true,
+    "retry_no_duplicate": true,
+    "optimistic_lock": true,
+    "audited_void": true,
+    "cents_exact": true,
+    "direct_writes_denied": true,
+    "viewport_width": 1366,
+    "steps": [
+      "finance_card_opened",
+      "finance_ui_timeout_retry_no_duplicate",
+      "finance_conflict_stale_validation_direct_write_guards",
+      "finance_ui_expense_and_plan_fact",
+      "finance_ui_audited_void",
+      "finance_keyboard_and_layout"
+    ],
+    "cleanup_required": true
+  },
+  "finance-manager-rbac": {
+    "ok": true,
+    "project_ref": "otulfnouybahfnsycxqn",
+    "role": "manager",
+    "authenticated": true,
+    "allowed_action_reached_server_contract": true,
+    "allowed_fixture_read": true,
+    "service_only_rpc_denied": true,
+    "forbidden_direct_api": "self_role_escalation_rejected",
+    "finance_rpc_denied": true,
+    "money_records_hidden": true,
+    "production_enabled": false
+  },
+  "cleanup": {
+    "ok": true,
+    "action": "cleanup",
+    "residue": {
+      "leads": 0,
+      "needs": 0,
+      "offers": 0,
+      "orders": 0,
+      "catalog": 0,
+      "clients": 0,
+      "expenses": 0,
+      "payments": 0,
+      "profiles": 0,
+      "order_items": 0,
+      "calculations": 0,
+      "catalog_logs": 0,
+      "design_tasks": 0,
+      "offer_events": 0,
+      "order_events": 0,
+      "finance_audit": 0,
+      "production_jobs": 0,
+      "catalog_receipts": 0,
+      "command_receipts": 0,
+      "calculation_items": 0,
+      "installation_jobs": 0,
+      "interactions_followups": 0
+    },
+    "auth_user_deleted": true
+  },
+  "runtime_head": "6eed928396d86f3364f65811b9870e5eb4406e7d",
+  "run_url": "https://github.com/deputat36/lider-bsk/actions/runs/36520188081",
+  "production_mutated": false,
+  "independent_staging_counts": {
+    "payments": 0,
+    "expenses": 0,
+    "orders": 0,
+    "synthetic_auth": 0,
+    "synthetic_profiles": 0
+  }
+}

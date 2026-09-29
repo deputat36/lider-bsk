@@ -1,3 +1,4 @@
+import { firstFinanceNumber } from './finance-plan-actual-model-v1.js';
 import { supabaseClient } from './supabase-client.js';
 import { friendlyError } from './api.js';
 import { setStatus, toast } from './ui.js';
@@ -17,7 +18,7 @@ function esc(value) {
 
 function money(value) {
   const number = Number(value || 0);
-  return number ? `${Math.round(number).toLocaleString('ru-RU')} ₽` : '—';
+  return Number.isFinite(number) ? `${number.toLocaleString('ru-RU', { maximumFractionDigits: 2 })} ₽` : '—';
 }
 
 function dateRu(value) {
@@ -46,17 +47,16 @@ function num(value) {
 
 function clientTotal(order) {
   const data = dataOf(order);
-  return num(order.client_total || data.client_total || data.clientTotal || data.total_client || data.totalClient || data.total);
+  return firstFinanceNumber(order.client_total, data.client_total, data.clientTotal, data.total_client, data.totalClient, data.total);
 }
 
 function costTotal(order) {
   const data = dataOf(order);
-  return num(order.contractor_cost || data.contractor_cost || data.contractorCost || data.cost_total || data.costTotal || data.contractor_total || data.contractorTotal);
+  return firstFinanceNumber(order.contractor_cost, data.contractor_cost, data.contractorCost, data.cost_total, data.costTotal, data.contractor_total, data.contractorTotal);
 }
 
 function profitTotal(order) {
-  const profit = num(order.profit || dataOf(order).profit);
-  return profit || (clientTotal(order) - costTotal(order));
+  return firstFinanceNumber(order.profit, dataOf(order).profit, clientTotal(order) - costTotal(order));
 }
 
 function marginPercent(order) {

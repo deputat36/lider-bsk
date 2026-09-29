@@ -4,6 +4,15 @@ on:
   push:
     branches: [main]
     paths:
+      - 'crm/v4/assets/v4/finance-record-*.js'
+      - 'crm/v4/assets/v4/finance-control-v2.js'
+      - 'tools/test_finance_records.mjs'
+      - 'tools/test_order_detail_read.mjs'
+      - 'supabase/staging-functions/_shared/order-detail-read-v1.js'
+      - 'tools/build_finance_rpc_test.py'
+      - 'tools/generate_crm_finance_production_candidate.py'
+      - 'supabase/functions/leader-crm-finance/**'
+      - 'supabase/staging-migrations/20260928093643_finance_records_staging.sql'
       - 'crm/v4/assets/v4/finance-plan-actual-model-v1.js'
       - 'crm/v4/assets/v4/finance-plan-actual-panel-v1.js'
       - 'crm/v4/assets/v4/payment-record-status-model-v1.js'
@@ -23,6 +32,15 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - 'crm/v4/assets/v4/finance-record-*.js'
+      - 'crm/v4/assets/v4/finance-control-v2.js'
+      - 'tools/test_finance_records.mjs'
+      - 'tools/test_order_detail_read.mjs'
+      - 'supabase/staging-functions/_shared/order-detail-read-v1.js'
+      - 'tools/build_finance_rpc_test.py'
+      - 'tools/generate_crm_finance_production_candidate.py'
+      - 'supabase/functions/leader-crm-finance/**'
+      - 'supabase/staging-migrations/20260928093643_finance_records_staging.sql'
       - 'crm/v4/assets/v4/finance-plan-actual-model-v1.js'
       - 'crm/v4/assets/v4/finance-plan-actual-panel-v1.js'
       - 'crm/v4/assets/v4/payment-record-status-model-v1.js'
@@ -59,7 +77,41 @@ jobs:
           node --check crm/v4/assets/v4/crm-v4-tab-loader-v1.js
           node --check tools/test_finance_plan_actual.mjs
           node --check tools/test_crm_payment_record_status.mjs
+          node tools/test_finance_records.mjs
+          node tools/test_order_detail_read.mjs
           node tools/test_finance_plan_actual.mjs
           node tools/test_crm_payment_record_status.mjs
           python3 tools/check_finance_plan_actual.py
           python3 tools/check_crm_payment_record_status_registry.py
+
+  finance-transactions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: isolated-ci-only
+          POSTGRES_DB: finance_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate source-only production package and isolated SQL test
+        run: |
+          python3 tools/generate_crm_finance_production_candidate.py
+          python3 tools/build_finance_rpc_test.py
+      - name: Exercise real transaction, role, replay and rollback semantics
+        env:
+          PGPASSWORD: isolated-ci-only
+        run: psql -h localhost -U postgres -d finance_test -v ON_ERROR_STOP=1 -f build/finance-rpc-test.sql
+      - name: Upload source-only production candidates
+        uses: actions/upload-artifact@v4
+        with:
+          name: crm-finance-production-candidate
+          path: build/crm-finance-production-candidate

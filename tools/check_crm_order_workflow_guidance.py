@@ -44,9 +44,13 @@ for marker in [
     if marker not in card:
         errors.append('Missing order card guidance marker: ' + marker)
 
-for forbidden in ['.insert(', '.update(', '.delete(', 'invokeLeaderFunction']:
+for forbidden in ['.insert(', '.update(', '.delete(']:
     if forbidden in card:
         errors.append('Order card guidance must not add a write path: ' + forbidden)
+
+# The order detail read uses the existing canonical gate; guidance still cannot write.
+if card.count('invokeLeaderFunction(') != 1 or "invokeLeaderFunction('leader-crm-orders', { action: 'get', order_id: orderId })" not in card:
+    errors.append('Order card may invoke only the authorized order.get read')
 
 if 'class="v4-primary" data-order-card-open-lead' in card:
     errors.append('Linked lead action must remain visually secondary')

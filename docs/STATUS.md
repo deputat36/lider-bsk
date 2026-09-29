@@ -1,6 +1,6 @@
 # Статус проекта РА «Лидер»
 
-Дата обновления: 2026-09-28.
+Дата обновления: 2026-09-29.
 
 ## Бренд и рабочие интерфейсы
 
@@ -9,13 +9,21 @@
 - [Что реализовано и ограничения Figma](DESIGN_SYSTEM_DELIVERY_2026-09-27.md). Figma foundations/components готовы, запись экранов ограничена лимитом Starter; не считать 10 экранов завершёнными.
 - PR560: authenticated staging E2E [36335551833](https://github.com/deputat36/lider-bsk/actions/runs/36335551833) PASS: 4 версии, КП/заказ/дизайн/производство/монтаж, manager/owner UI/API, cleanup=0. Временный OIDC-доступ ветки удалён. PR560 merged: 116/116 checks PASS; опубликованный main — 118/118, включая Pages deploy. Browser 28.09 подтвердил оригинальный логотип, локальный Manrope и актуальные стили на www. Production Supabase не изменялся.
 
+## Production-разрешение и операционный этап
+
+29.09.2026 владелец разрешил необходимые изменения production `ofewxuqfjhamgerwzull`
+только в контуре `leader_*` / `leader-*`. Это заменяет прежний read-only запрет
+для следующих этапов; исторические записи ниже описывают выполненные проверки.
+Перед rollout обязательны staging proof, backup затрагиваемых объектов, реальный
+rollback и postflight. Чужие проекты не затрагивать; рабочие данные считать реальными.
+
 ## Целостность production и актуальный backlog
 
 - Read-only снимок: 5 заявок / 5 расчётов / 5 КП без заказов (#381), 8 расчётов без потребности и 3 расхождения сумм с позициями. Дубли request_id и проверенные orphan links не найдены; пустые финансовые таблицы не доказывают финансовый E2E.
 - [План #381, точный scope, SQL и rollback](PRODUCTION_DATA_INTEGRITY_2026-09-27.md). Кандидат по умолчанию ROLLBACK, проверяет approval/owner/status/timestamp/links/current revision, сохраняет snapshot и audit. TEMP-only PostgreSQL тест пройден; production DML не выполнялся.
-- Source/staging опережают production: canonical RBAC/receipts и catalog RPC там отсутствуют, legacy anon intake INSERT ещё разрешён. #201/#202/#204/#206 остаются открыты до согласованного cutover и proof.
+- Source/staging опережают production: canonical RBAC/receipts и catalog RPC там отсутствуют, legacy anon intake INSERT ещё разрешён. #201/#202/#204/#206 остаются открыты до проверенного cutover и proof.
 - #526 и #210 выполнены в своём source/staging scope; #552 закрыт, #553/#554 сведены к основным задачам. #152 и #226 уже имеют source/staging реализацию, а не пустой backlog.
-- Следующий самостоятельный блок #5: формы оплат/расходов, серверные проверки и audit, staging financial schema parity, положительные/отрицательные E2E и cleanup. В текущем staging таблицы оплат/расходов отсутствуют.
+- #5: staging E2E [36520188081](https://github.com/deputat36/lider-bsk/actions/runs/36520188081) PASS, 60 workflows PASS, 22 категории cleanup=0 и Auth удалён. Реализованы формы оплат/расходов и отмена с причиной, серверная транзакция с правами/revision/receipt/audit, staging financial tables и cleanup. [Scope и production rollout/rollback](CRM_FINANCE_RECORDS_ROLLOUT_2026-09-29.md). Production ввод не включён; #5 остаётся открытым до общего cutover и proof.
 
 ## Специальные цены расчётов (#526)
 

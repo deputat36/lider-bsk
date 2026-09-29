@@ -22,8 +22,8 @@ jobs:
           test -f "$card"
           test -f "$model"
           grep -Fq 'order-card-v1.js?v=20260629-design-1' "$index"
-          grep -Fq "from('leader_payments')" "$card"
-          grep -Fq "from('leader_expenses')" "$card"
+          grep -Fq "fetchAllOrderFinance(supabaseClient, 'leader_payments'" "$card"
+          grep -Fq "fetchAllOrderFinance(supabaseClient, 'leader_expenses'" "$card"
           grep -Fq "from './finance-plan-actual-model-v1.js'" "$card"
           grep -Fq 'План и подтверждённый факт' "$card"
           grep -Fq 'Подтверждено приходов' "$card"
@@ -36,3 +36,4 @@ jobs:
           ! grep -Fq '<span>Факт прибыль</span>' "$card"
           node --check "$model"
           node --check "$card"
+          node tools/test_finance_records.mjs

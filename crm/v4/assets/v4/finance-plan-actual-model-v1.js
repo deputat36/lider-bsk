@@ -19,9 +19,17 @@ function includesAny(value, tokens) {
   return tokens.some((token) => normalized.includes(token));
 }
 
+export function firstFinanceNumber(...values) {
+  for (const value of values) {
+    if (value === null || value === undefined || value === '' || typeof value === 'boolean') continue;
+    if (Number.isFinite(Number(value))) return Number(value);
+  }
+  return 0;
+}
+
+function currency(value) { return Math.round((Number(value) + Number.EPSILON) * 100) / 100; }
 function explicitProfit(order, plannedRevenue, plannedCost) {
-  const raw = Number(order?.profit);
-  return Number.isFinite(raw) ? raw : plannedRevenue - plannedCost;
+  return currency(firstFinanceNumber(order?.profit, plannedRevenue - plannedCost));
 }
 
 export function confirmedPaymentEffect(payment = {}) {
@@ -61,29 +69,29 @@ export function confirmedExpenseEffect(expense = {}) {
 }
 
 export function buildOrderFinanceSnapshot(order = {}, payments = [], expenses = [], options = {}) {
-  const plannedRevenue = number(order.client_total);
-  const plannedCost = number(order.contractor_cost);
+  const plannedRevenue = currency(number(order.client_total));
+  const plannedCost = currency(number(order.contractor_cost));
   const plannedProfit = explicitProfit(order, plannedRevenue, plannedCost);
   const paymentEffects = (payments || []).map((payment) => ({ payment, effect: confirmedPaymentEffect(payment) }));
   const expenseEffects = (expenses || []).map((expense) => ({ expense, effect: confirmedExpenseEffect(expense) }));
 
   const confirmedIncoming = paymentEffects
     .filter(({ effect }) => effect.included && effect.direction === 'incoming')
-    .reduce((sum, { effect }) => sum + effect.signedAmount, 0);
+    .reduce((sum, { effect }) => sum + Math.round(effect.signedAmount * 100), 0) / 100;
   const confirmedPaymentOutflow = paymentEffects
     .filter(({ effect }) => effect.included && effect.direction === 'outgoing')
-    .reduce((sum, { effect }) => sum + Math.abs(effect.signedAmount), 0);
-  const confirmedNetReceipts = confirmedIncoming - confirmedPaymentOutflow;
+    .reduce((sum, { effect }) => sum + Math.round(Math.abs(effect.signedAmount) * 100), 0) / 100;
+  const confirmedNetReceipts = currency(confirmedIncoming - confirmedPaymentOutflow);
   const confirmedExpenses = expenseEffects
     .filter(({ effect }) => effect.included)
-    .reduce((sum, { effect }) => sum + effect.amount, 0);
+    .reduce((sum, { effect }) => sum + Math.round(effect.amount * 100), 0) / 100;
   const confirmedExpenseRows = expenseEffects.filter(({ effect }) => effect.included).length;
   const ignoredPaymentRows = paymentEffects.filter(({ effect }) => !effect.included).length;
   const unknownPaymentStatusRows = paymentEffects.filter(({ effect }) => effect.reason === 'unknown_status').length;
   const notPostedPaymentRows = paymentEffects.filter(({ effect }) => effect.reason === 'not_posted').length;
   const ignoredExpenseRows = expenseEffects.filter(({ effect }) => !effect.included).length;
-  const cashResult = confirmedNetReceipts - confirmedExpenses;
-  const debt = Math.max(plannedRevenue - confirmedNetReceipts, 0);
+  const cashResult = currency(confirmedNetReceipts - confirmedExpenses);
+  const debt = currency(Math.max(plannedRevenue - confirmedNetReceipts, 0));
   const expenseEvidenceCompleteEnough = plannedCost <= 0 || confirmedExpenseRows > 0;
   const terminal = options.terminal === true;
   const statusKnown = options.statusKnown !== false;
@@ -91,9 +99,9 @@ export function buildOrderFinanceSnapshot(order = {}, payments = [], expenses = 
   let actualProfitState = 'unknown';
   if (expenseEvidenceCompleteEnough) actualProfitState = terminal ? 'provisional' : 'partial';
   const actualProfit = actualProfitState === 'unknown' ? null : cashResult;
-  const planFactDiff = actualProfit === null ? null : actualProfit - plannedProfit;
+  const planFactDiff = actualProfit === null ? null : currency(actualProfit - plannedProfit);
   const warnings = [];
-  if (!statusKnown) warnings.push('Статус заказа не сопоставлен с canonical registry.');
+  if (!statusKnown) warnings.push('Статус заказа не распознан. Проверьте его перед завершением заказа.');
   if (plannedCost > 0 && confirmedExpenseRows === 0) warnings.push('Нет подтверждённых расходов: фактическая прибыль не рассчитана.');
   if (ignoredPaymentRows > 0) warnings.push(`Не учтено непроведённых, неподтверждённых, неизвестных или отменённых платежей: ${ignoredPaymentRows}.`);
   if (unknownPaymentStatusRows > 0) warnings.push(`Платежей с неизвестным статусом: ${unknownPaymentStatusRows}.`);
@@ -173,15 +181,15 @@ export function buildFinancePortfolioSnapshot(orders = [], payments = [], expens
     .reduce((sum, effect) => sum + effect.amount, 0);
 
   const totals = orderSnapshots.reduce((acc, item) => {
-    acc.plannedRevenue += item.plannedRevenue;
-    acc.plannedCost += item.plannedCost;
-    acc.plannedProfit += item.plannedProfit;
-    acc.confirmedIncoming += item.confirmedIncoming;
-    acc.confirmedPaymentOutflow += item.confirmedPaymentOutflow;
-    acc.confirmedNetReceipts += item.confirmedNetReceipts;
-    acc.confirmedExpenses += item.confirmedExpenses;
-    acc.cashResult += item.cashResult;
-    acc.debt += item.debt;
+    acc.plannedRevenue = currency(acc.plannedRevenue + item.plannedRevenue);
+    acc.plannedCost = currency(acc.plannedCost + item.plannedCost);
+    acc.plannedProfit = currency(acc.plannedProfit + item.plannedProfit);
+    acc.confirmedIncoming = currency(acc.confirmedIncoming + item.confirmedIncoming);
+    acc.confirmedPaymentOutflow = currency(acc.confirmedPaymentOutflow + item.confirmedPaymentOutflow);
+    acc.confirmedNetReceipts = currency(acc.confirmedNetReceipts + item.confirmedNetReceipts);
+    acc.confirmedExpenses = currency(acc.confirmedExpenses + item.confirmedExpenses);
+    acc.cashResult = currency(acc.cashResult + item.cashResult);
+    acc.debt = currency(acc.debt + item.debt);
     acc.ignoredPaymentRows += item.ignoredPaymentRows;
     acc.unknownPaymentStatusRows += item.unknownPaymentStatusRows;
     acc.notPostedPaymentRows += item.notPostedPaymentRows;
@@ -238,7 +246,7 @@ export function buildFinancePortfolioSnapshot(orders = [], payments = [], expens
       : 100,
     actualProfitState,
     actualProfit,
-    planFactDiff: actualProfit === null ? null : actualProfit - totals.plannedProfit
+    planFactDiff: actualProfit === null ? null : currency(actualProfit - totals.plannedProfit)
   });
 }
 
