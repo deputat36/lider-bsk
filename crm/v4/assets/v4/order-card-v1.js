@@ -92,7 +92,8 @@ function closeCard() {
   cardRequest += 1;
   financeWriter = null;
   host().innerHTML = '';
-  if (opener?.isConnected) opener.focus();
+  const returnTarget = opener?.isConnected ? opener : (currentBundle?.order.id ? document.querySelector(`[data-open-order="${CSS.escape(currentBundle.order.id)}"]`) : null);
+  returnTarget?.focus();
   opener = null;
   currentBundle = null;
   busy = false;
@@ -332,9 +333,9 @@ function renderCard(order, items, payments, expenses, financeError = '') {
   }));
 }
 
-async function openOrderCard(orderId, message = '', refresh = false) {
+async function openOrderCard(orderId, message = '', refresh = false, trigger = null) {
   if (!orderId || busy || financeWriter?.isBusy()) return;
-  if (!refresh) opener = document.activeElement;
+  if (!refresh) opener = trigger || document.activeElement;
   const request = ++cardRequest;
   busy = true;
   financeWriter = null;
@@ -393,7 +394,7 @@ function boot() {
     const close = event.target.closest?.('[data-order-card-close]');
     if (close) { event.preventDefault(); closeCard(); return; }
     const open = event.target.closest?.('[data-open-order]');
-    if (open) { event.preventDefault(); openOrderCard(open.dataset.openOrder); return; }
+    if (open) { event.preventDefault(); openOrderCard(open.dataset.openOrder, '', false, open); return; }
     const openLead = event.target.closest?.('[data-order-card-open-lead]');
     if (openLead) { event.preventDefault(); closeCard(); openLeadRoute(openLead.dataset.orderCardOpenLead); return; }
     const primary = event.target.closest?.('[data-order-primary-target]');
