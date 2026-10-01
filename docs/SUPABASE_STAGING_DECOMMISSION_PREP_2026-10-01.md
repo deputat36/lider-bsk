@@ -188,3 +188,22 @@ A successful database reconstruction alone is not sufficient to pause it. Requir
 5. migration of active cloud-staging GitHub workflows;
 6. a final backup;
 7. explicit owner approval.
+
+
+### Database parity checkpoint
+
+Shadow run #10 (`36851633247`) completed successfully after adding the local-only public-intake rate-limit reconstruction.
+
+Hosted staging fingerprint:
+- tables: 30, hash `5b990a2876f87f50627821fcb665d326`;
+- functions: 46, hash `1df97f2dd4c229f6e9e66fdc9e5148a2`;
+- policies: 22, hash `c538d5f19732b5328ee9d45efe5ee622`;
+- indexes: 85, hash `20a7a557f969c4d54eb8bce37fc9ea60`.
+
+Local reconstruction fingerprint in run #10:
+- tables: 30, hash `5b990a2876f87f50627821fcb665d326` — exact match;
+- functions: 46, hash `f696ebc5e88b1a454b7275b724dd7e03` — count matches, definitions require per-function diff;
+- policies: 22, hash `c538d5f19732b5328ee9d45efe5ee622` — exact match;
+- indexes: 83, hash `467d808f9eb16c061421f7be03ac1586` — two hosted indexes are not yet reconstructed.
+
+No cutover is allowed until the remaining function/index differences are classified and either reproduced or explicitly proven to be non-required historical drift.
