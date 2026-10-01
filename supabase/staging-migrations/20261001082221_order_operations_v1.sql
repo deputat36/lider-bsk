@@ -3,24 +3,24 @@ ALTER TABLE public.leader_orders ADD COLUMN IF NOT EXISTS sent_to_contractor_at 
 CREATE OR REPLACE FUNCTION public.leader_write_order_operation_rpc(p_payload jsonb)
 RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $function$
 DECLARE
- actor uuid; req jsonb; payload jsonb; action text; rid uuid; oid uuid; expected timestamptz;
+ actor uuid; req jsonb; payload jsonb; v_action text; rid uuid; oid uuid; expected timestamptz;
  profile public.leader_user_profiles%rowtype; ord public.leader_orders%rowtype;
  receipt leader_private.leader_command_receipts%rowtype;
  key text; hash text; result jsonb; old_status text; target text; target_label text;
  note text; allowed boolean; net numeric; debt numeric; event_id uuid;
 BEGIN
  actor:=(p_payload->>'actor_id')::uuid; req:=p_payload->'request'; payload:=req->'payload';
- action:=req->>'action'; rid:=(req->>'request_id')::uuid;
+ v_action:=req->>'action'; rid:=(req->>'request_id')::uuid;
  oid:=(payload->>'order_id')::uuid; expected:=(req->>'expected_updated_at')::timestamptz;
  IF actor IS NULL OR rid IS NULL OR oid IS NULL OR expected IS NULL
   OR jsonb_typeof(payload) IS DISTINCT FROM 'object'
-  OR action IS NULL OR action NOT IN ('order.transition','order.layout_not_required','order.update')
+  OR v_action IS NULL OR v_action NOT IN ('order.transition','order.layout_not_required','order.update')
   OR EXISTS(SELECT 1 FROM jsonb_object_keys(req) k WHERE k NOT IN ('action','request_id','expected_updated_at','payload'))
  THEN RAISE EXCEPTION 'invalid_payload' USING ERRCODE='22023'; END IF;
  SELECT * INTO profile FROM public.leader_user_profiles WHERE user_id=actor AND is_active;
  IF NOT FOUND THEN RETURN jsonb_build_object('ok',false,'error',jsonb_build_object('code','inactive_profile')); END IF;
- IF NOT leader_private.leader_actor_has_crm_action(actor,CASE WHEN action='order.transition' THEN 'orders.transition' ELSE 'orders.update' END)
-  OR (action='order.layout_not_required' AND NOT leader_private.leader_actor_has_crm_action(actor,'design.write'))
+ IF NOT leader_private.leader_actor_has_crm_action(actor,CASE WHEN v_action='order.transition' THEN 'orders.transition' ELSE 'orders.update' END)
+  OR (v_action='order.layout_not_required' AND NOT leader_private.leader_actor_has_crm_action(actor,'design.write'))
  THEN RETURN jsonb_build_object('ok',false,'error',jsonb_build_object('code','forbidden')); END IF;
  note:=btrim(coalesce(payload->>'comment',''));
  IF length(note)>2000 OR length(coalesce(payload->>'debt_reason',''))>1000 OR EXISTS(SELECT 1 FROM jsonb_object_keys(payload) k WHERE k NOT IN
@@ -28,7 +28,7 @@ BEGIN
  THEN RAISE EXCEPTION 'invalid_payload' USING ERRCODE='22023'; END IF;
  key:='order:'||rid::text; hash:=encode(extensions.digest(convert_to(jsonb_build_object('actor',actor,'request',req)::text,'UTF8'),'sha256'),'hex');
  PERFORM pg_advisory_xact_lock(hashtextextended(key,0));
- SELECT * INTO receipt FROM leader_private.leader_command_receipts WHERE leader_command_receipts.action=leader_write_order_operation_rpc.action AND idempotency_key=key;
+ SELECT * INTO receipt FROM leader_private.leader_command_receipts WHERE leader_command_receipts.action=v_action AND idempotency_key=key;
  IF FOUND THEN
   IF receipt.actor_id<>actor OR receipt.request_hash<>hash THEN RETURN jsonb_build_object('ok',false,'error',jsonb_build_object('code','idempotency_conflict')); END IF;
   RETURN receipt.response||jsonb_build_object('idempotent_replay',true);
@@ -42,11 +42,11 @@ BEGIN
  PERFORM id FROM public.leader_design_tasks WHERE order_id=oid FOR UPDATE;
  PERFORM id FROM public.leader_production_jobs WHERE order_id=oid FOR UPDATE;
  PERFORM id FROM public.leader_installation_jobs WHERE order_id=oid FOR UPDATE;
- IF action='order.layout_not_required' THEN
+ IF v_action='order.layout_not_required' THEN
   IF old_status NOT IN ('Новый','Макет на согласовании') OR length(note)<3 THEN RAISE EXCEPTION 'invalid_payload' USING ERRCODE='22023'; END IF;
   IF EXISTS(SELECT 1 FROM public.leader_design_tasks WHERE order_id=oid AND task_status NOT IN ('Завершено','Отменено')) THEN RETURN jsonb_build_object('ok',false,'error',jsonb_build_object('code','design_task_active')); END IF;
   UPDATE public.leader_orders SET layout_status='Не требуется',layout_comment=note,updated_at=clock_timestamp() WHERE id=oid RETURNING * INTO ord;
- ELSIF action='order.update' THEN
+ ELSIF v_action='order.update' THEN
   IF EXISTS(SELECT 1 FROM jsonb_object_keys(payload) k WHERE k NOT IN ('order_id','deadline','comment'))
    OR NOT(payload ? 'deadline' OR payload ? 'comment') THEN RAISE EXCEPTION 'invalid_payload' USING ERRCODE='22023'; END IF;
   IF payload ? 'deadline' AND payload->>'deadline' IS NOT NULL AND (payload->>'deadline')!~'^\d{4}-\d{2}-\d{2}$' THEN RAISE EXCEPTION 'invalid_payload' USING ERRCODE='22023'; END IF;
@@ -86,12 +86,12 @@ BEGIN
    updated_at=clock_timestamp() WHERE id=oid RETURNING * INTO ord;
  END IF;
  INSERT INTO public.leader_activity_log(user_id,action,entity,entity_id,data)
- VALUES(actor,action,'order',oid::text,jsonb_build_object('request_id',rid,'old_status',old_status,'new_status',ord.status,'comment',note,
+ VALUES(actor,v_action,'order',oid::text,jsonb_build_object('request_id',rid,'old_status',old_status,'new_status',ord.status,'comment',note,
   'layout_status',ord.layout_status,'deadline',ord.deadline,'expenses_reviewed',payload->'expenses_reviewed','documents_reviewed',payload->'documents_reviewed',
   'debt_exception',CASE WHEN debt>0 THEN true ELSE false END,'debt_reason',payload->>'debt_reason')) RETURNING id INTO event_id;
  result:=jsonb_build_object('ok',true,'request_id',rid,'order_id',oid,'status',ord.status,'order_updated_at',ord.updated_at,'audit_id',event_id);
  INSERT INTO leader_private.leader_command_receipts(action,idempotency_key,request_id,request_hash,actor_id,state,response,completed_at)
- VALUES(action,key,rid,hash,actor,'success',result,clock_timestamp());
+ VALUES(v_action,key,rid,hash,actor,'success',result,clock_timestamp());
  RETURN result;
 EXCEPTION WHEN invalid_text_representation OR invalid_parameter_value OR datetime_field_overflow THEN
  RETURN jsonb_build_object('ok',false,'error',jsonb_build_object('code','invalid_payload'));
@@ -115,6 +115,7 @@ CREATE OR REPLACE FUNCTION leader_private.leader_order_money_projection_v1()
 RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $function$
 DECLARE net numeric;
 BEGIN
+ IF TG_OP='INSERT' AND (NEW.status<>'Новый' OR NOT leader_private.leader_actor_has_crm_action(NEW.owner_id,'orders.create')) THEN RAISE EXCEPTION 'invalid_order_creation' USING ERRCODE='22023'; END IF;
  SELECT coalesce(sum(CASE WHEN lower(coalesce(payment_type,''))~'(возврат|расход|исход)' THEN -abs(amount) ELSE abs(amount) END),0) INTO net
  FROM public.leader_payments WHERE order_id=NEW.id AND is_confirmed AND lower(btrim(payment_status)) IN ('проведён','проведен','posted');
  NEW.prepayment:=net;

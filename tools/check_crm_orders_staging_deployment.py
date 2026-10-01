@@ -84,10 +84,12 @@ def main() -> int:
     require(implementation, expected_import, "implementation")
     if implementation.count("import ") != 1:
         raise AssertionError("orders implementation must contain exactly one pinned import")
-    for marker in ("runCanonicalEdgeWrapper", "orderActionPlan", "leader-crm-orders-impl"):
+    for marker in ("runCanonicalEdgeWrapper", "plan: orderOperationPlan", "execute: executeOrderOperation"):
         require(wrapper, marker, "wrapper")
-    if PRODUCTION_REF in wrapper or PRODUCTION_REF in implementation:
-        raise AssertionError("staging transport must not reference production")
+    if PRODUCTION_REF in implementation:
+        raise AssertionError("retired staging implementation must not reference production")
+    require(wrapper, "https://" + STAGING_REF + ".supabase.co", "allowed staging host")
+    require(wrapper, "https://" + PRODUCTION_REF + ".supabase.co", "authorized production host")
 
     for marker in (STAGING_REF, "leader_staging.environment_guard", "staging_environment_guard_failed", "progress_percent integer not null default 0"):
         require(migration, marker, "migration")

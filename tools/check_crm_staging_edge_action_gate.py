@@ -140,8 +140,11 @@ for marker in [
     if marker not in texts['leads']:
         errors.append(f'Missing leads v4 workflow marker: {marker}')
 
-if 'leader-crm-orders-impl' not in texts['orders'] or 'runCanonicalEdgeWrapper' not in texts['orders']:
-    errors.append('Orders wrapper does not target the preserved implementation')
+for marker in ('runCanonicalEdgeWrapper', 'plan: orderOperationPlan', 'execute: executeOrderOperation'):
+    if marker not in texts['orders']:
+        errors.append(f'Orders endpoint must use the canonical transactional handler: {marker}')
+if 'implementationSlug:' in texts['orders']:
+    errors.append('Orders endpoint must not fall back to legacy arbitrary PATCH')
 if '17524ea9ef08c11b18b385b9469778d5b1084ddb' not in texts['leads_impl']:
     errors.append('Leads implementation pin drift')
 if '4dafa2723c1018574572d9a91441cf382ac25b34' not in texts['orders_impl']:

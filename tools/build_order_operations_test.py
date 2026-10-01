@@ -7,13 +7,13 @@ from build_finance_rpc_test import setup, source
 ROOT = Path(__file__).resolve().parents[1]
 operation_sql = (ROOT/'supabase/staging-migrations/20261001082221_order_operations_v1.sql').read_text()
 extra = """
-ALTER TABLE public.leader_orders ADD COLUMN status text DEFAULT 'Новый',ADD COLUMN layout_status text DEFAULT 'Макета нет',ADD COLUMN layout_comment text,ADD COLUMN deadline date,ADD COLUMN data jsonb DEFAULT '{}';
+ALTER TABLE public.leader_orders ADD COLUMN owner_id uuid DEFAULT '90000000-0000-4000-8000-000000000502',ADD COLUMN status text DEFAULT 'Новый',ADD COLUMN layout_status text DEFAULT 'Макета нет',ADD COLUMN layout_comment text,ADD COLUMN deadline date,ADD COLUMN data jsonb DEFAULT '{}';
 CREATE TABLE public.leader_order_items(id uuid,order_id uuid);
 CREATE TABLE public.leader_design_tasks(id uuid,order_id uuid,task_status text);
 CREATE TABLE public.leader_production_jobs(id uuid,order_id uuid,production_status text);
 CREATE TABLE public.leader_installation_jobs(id uuid,order_id uuid,install_status text);
 GRANT SELECT,UPDATE ON public.leader_orders,public.leader_design_tasks,public.leader_production_jobs,public.leader_installation_jobs TO service_role;
-UPDATE leader_private.leader_role_action_matrix_v1 SET allowed_actions=allowed_actions||ARRAY['orders.read','orders.update','orders.transition','design.write'] WHERE role IN ('owner','admin','manager');
+UPDATE leader_private.leader_role_action_matrix_v1 SET allowed_actions=allowed_actions||ARRAY['orders.read','orders.create','orders.update','orders.transition','design.write'] WHERE role IN ('owner','admin','manager');
 """
 tests = r"""
 SET LOCAL ROLE service_role;
