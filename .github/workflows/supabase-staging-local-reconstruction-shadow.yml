@@ -61,7 +61,7 @@ jobs:
           root = Path.cwd().parents[1]
           src_dir = root / 'supabase' / 'staging-migrations'
           dst_dir = Path.cwd() / 'supabase' / 'migrations'
-          files = sorted(src_dir.glob('*.sql'))
+          files = sorted(p for p in src_dir.glob('*.sql') if 'rollback' not in p.name.lower())
           if not files:
               raise SystemExit('No staging migration SQL files found')
 
@@ -75,7 +75,7 @@ jobs:
 
           manifest_path = Path.cwd() / 'migration-map.tsv'
           manifest_path.write_text('\n'.join(manifest) + '\n', encoding='utf-8')
-          print(f'Prepared {len(files)} staging migrations')
+          print(f'Prepared {len(files)} staging migrations; rollback scripts excluded')
           PY
 
           test -s migration-map.tsv
