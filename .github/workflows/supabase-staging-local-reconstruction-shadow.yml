@@ -1,0 +1,117 @@
+name: Supabase staging local reconstruction shadow
+
+on:
+  push:
+    branches:
+      - chore/supabase-staging-decommission-prep-2026-10-01
+    paths:
+      - '.github/workflows/supabase-staging-local-reconstruction-shadow.yml'
+      - 'supabase/staging-migrations/**'
+      - 'supabase/staging/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reconstruct:
+    name: Reconstruct staging locally
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Safety preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Supabase CLI: $(supabase --version)"
+          test -d supabase/staging-migrations
+          if grep -R -n --fixed-strings 'ofewxuqfjhamgerwzull' supabase/staging-migrations; then
+            echo 'Production project ref found in staging migrations; refusing local reconstruction.'
+            exit 1
+          fi
+          if grep -R -nE 'supabase[[:space:]]+(link|db[[:space:]]+(push|pull|dump|reset)[[:space:]].*--linked)' supabase/staging-migrations; then
+            echo 'Remote Supabase CLI command text found in staging SQL; refusing reconstruction.'
+            exit 1
+          fi
+
+      - name: Build isolated local Supabase workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .ci/supabase-staging-local
+          mkdir -p .ci/supabase-staging-local
+          cd .ci/supabase-staging-local
+          supabase init
+          mkdir -p supabase/migrations
+
+          python3 - <<'PY'
+          from datetime import datetime, timedelta
+          from pathlib import Path
+          import shutil
+
+          root = Path.cwd().parents[1]
+          src_dir = root / 'supabase' / 'staging-migrations'
+          dst_dir = Path.cwd() / 'supabase' / 'migrations'
+          files = sorted(src_dir.glob('*.sql'))
+          if not files:
+              raise SystemExit('No staging migration SQL files found')
+
+          base = datetime(2020, 1, 1, 0, 0, 0)
+          manifest = []
+          for index, src in enumerate(files):
+              version = (base + timedelta(seconds=index)).strftime('%Y%m%d%H%M%S')
+              dst = dst_dir / f'{version}_{src.stem}.sql'
+              shutil.copyfile(src, dst)
+              manifest.append(f'{dst.name}\t{src.relative_to(root)}')
+
+          manifest_path = Path.cwd() / 'migration-map.tsv'
+          manifest_path.write_text('\n'.join(manifest) + '\n', encoding='utf-8')
+          print(f'Prepared {len(files)} staging migrations')
+          PY
+
+          test -s migration-map.tsv
+          cat migration-map.tsv
+
+      - name: Start isolated local Supabase
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd .ci/supabase-staging-local
+          supabase start
+
+      - name: Rebuild database from staging migrations
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd .ci/supabase-staging-local
+          supabase db reset --local
+          supabase migration list --local
+
+      - name: Verify staging guard exists locally
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd .ci/supabase-staging-local
+          DB_URL="$(supabase status -o env | sed -n 's/^DB_URL=//p' | tr -d '"')"
+          test -n "${DB_URL}"
+          psql "${DB_URL}" -v ON_ERROR_STOP=1 -Atc "
+            select project_ref || '|' || environment_name || '|' || repository
+            from leader_staging.environment_guard
+            where singleton = true;
+          " | grep -Fx 'otulfnouybahfnsycxqn|staging|deputat36/lider-bsk'
+
+      - name: Stop local Supabase
+        if: always()
+        shell: bash
+        run: |
+          cd .ci/supabase-staging-local 2>/dev/null || exit 0
+          supabase stop --no-backup || true
