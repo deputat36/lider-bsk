@@ -9,6 +9,7 @@ on:
       - 'supabase/staging-migrations/**'
       - 'supabase/staging/**'
       - '.ci/supabase-staging-baseline/**'
+      - '.ci/supabase-staging-reconstruction/**'
   workflow_dispatch:
 
 permissions:
@@ -63,8 +64,10 @@ jobs:
           baseline_dir = root / '.ci' / 'supabase-staging-baseline'
           src_dir = root / 'supabase' / 'staging-migrations'
           legacy_staging_dir = root / 'supabase' / 'staging'
+          reconstruction_dir = root / '.ci' / 'supabase-staging-reconstruction'
           dst_dir = Path.cwd() / 'supabase' / 'migrations'
           baseline_files = sorted(baseline_dir.glob('*.sql'))
+          reconstruction_files = sorted(reconstruction_dir.glob('*.sql'))
 
           excluded_source_only = {
               '20260715_02_calculation_version_harness.sql',
@@ -79,13 +82,21 @@ jobs:
 
           pre_20260721 = [p for p in primary_files if p.name < '20260721_']
           from_20260721 = [p for p in primary_files if p.name >= '20260721_']
-          files = baseline_files + pre_20260721 + legacy_files + from_20260721
-          staging_files = primary_files + legacy_files
+          files = (
+              baseline_files
+              + pre_20260721
+              + reconstruction_files
+              + legacy_files
+              + from_20260721
+          )
+          staging_files = primary_files + reconstruction_files + legacy_files
 
           if not primary_files:
               raise SystemExit('No staging migration SQL files found')
           if not legacy_files:
               raise SystemExit('Expected supabase/staging compatibility migrations are missing')
+          if not reconstruction_files:
+              raise SystemExit('Expected local staging reconstruction files are missing')
           if not baseline_files:
               raise SystemExit('No local staging baseline SQL files found')
 
@@ -102,6 +113,7 @@ jobs:
           print(
               f'Prepared {len(baseline_files)} local baseline files + '
               f'{len(primary_files)} canonical/helper staging files + '
+              f'{len(reconstruction_files)} reconstructed historical blocks + '
               f'{len(legacy_files)} compatibility migrations; '
               f'source-only and rollback scripts excluded'
           )
