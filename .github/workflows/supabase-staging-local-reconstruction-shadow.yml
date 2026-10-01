@@ -62,12 +62,30 @@ jobs:
           root = Path.cwd().parents[1]
           baseline_dir = root / '.ci' / 'supabase-staging-baseline'
           src_dir = root / 'supabase' / 'staging-migrations'
+          legacy_staging_dir = root / 'supabase' / 'staging'
           dst_dir = Path.cwd() / 'supabase' / 'migrations'
           baseline_files = sorted(baseline_dir.glob('*.sql'))
-          staging_files = sorted(p for p in src_dir.glob('*.sql') if 'rollback' not in p.name.lower())
-          files = baseline_files + staging_files
-          if not staging_files:
+
+          excluded_source_only = {
+              '20260715_02_calculation_version_harness.sql',
+              '20260715_03_calculation_version_safe_response.sql',
+          }
+          primary_files = sorted(
+              p for p in src_dir.glob('*.sql')
+              if 'rollback' not in p.name.lower()
+              and p.name not in excluded_source_only
+          )
+          legacy_files = sorted(legacy_staging_dir.glob('*.sql'))
+
+          pre_20260721 = [p for p in primary_files if p.name < '20260721_']
+          from_20260721 = [p for p in primary_files if p.name >= '20260721_']
+          files = baseline_files + pre_20260721 + legacy_files + from_20260721
+          staging_files = primary_files + legacy_files
+
+          if not primary_files:
               raise SystemExit('No staging migration SQL files found')
+          if not legacy_files:
+              raise SystemExit('Expected supabase/staging compatibility migrations are missing')
           if not baseline_files:
               raise SystemExit('No local staging baseline SQL files found')
 
@@ -83,7 +101,9 @@ jobs:
           manifest_path.write_text('\n'.join(manifest) + '\n', encoding='utf-8')
           print(
               f'Prepared {len(baseline_files)} local baseline files + '
-              f'{len(staging_files)} staging migrations; rollback scripts excluded'
+              f'{len(primary_files)} canonical/helper staging files + '
+              f'{len(legacy_files)} compatibility migrations; '
+              f'source-only and rollback scripts excluded'
           )
           PY
 
