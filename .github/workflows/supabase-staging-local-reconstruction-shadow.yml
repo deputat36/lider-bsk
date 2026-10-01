@@ -78,22 +78,22 @@ jobs:
           tx_marker = 'begin;\\n'
           if tx_marker not in rate_source:
               raise SystemExit('Rate-limit candidate transaction marker is missing')
-          staging_guard = """do $guard$
-begin
-  if not exists (
-    select 1
-    from leader_staging.environment_guard
-    where singleton = true
-      and project_ref = 'otulfnouybahfnsycxqn'
-      and environment_name = 'staging'
-      and repository = 'deputat36/lider-bsk'
-  ) then
-    raise exception 'staging_environment_guard_failed';
-  end if;
-end
-$guard$;
-
-"""
+          staging_guard = (
+              "do $guard$;\n"
+              "begin\n"
+              "  if not exists (\n"
+              "    select 1\n"
+              "    from leader_staging.environment_guard\n"
+              "    where singleton = true\n"
+              "      and project_ref = 'otulfnouybahfnsycxqn'\n"
+              "      and environment_name = 'staging'\n"
+              "      and repository = 'deputat36/lider-bsk'\n"
+              "  ) then\n"
+              "    raise exception 'staging_environment_guard_failed';\n"
+              "  end if;\n"
+              "end\n"
+              "$guard$;\n\n"
+          )
           rate_source = rate_source.replace(tx_marker, tx_marker + staging_guard, 1)
           rate_reconstruction = Path.cwd() / '20260725_rate_limit_local_reconstruction.sql'
           rate_reconstruction.write_text(rate_source, encoding='utf-8')
