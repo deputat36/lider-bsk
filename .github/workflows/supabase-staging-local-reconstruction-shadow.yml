@@ -127,22 +127,40 @@ jobs:
               p for p in reconstruction_files
               if p.name.startswith('20260718_')
           ]
+          design_snapshot = [
+              p for p in reconstruction_files
+              if p.name.startswith('20260721_design_impl_')
+          ]
+          classified_reconstruction = set(offer_reconstruction + design_snapshot)
           other_reconstruction = [
               p for p in reconstruction_files
-              if not p.name.startswith('20260718_')
+              if p not in classified_reconstruction
           ]
           if other_reconstruction:
               raise SystemExit(
                   'Unclassified local reconstruction files: '
                   + ', '.join(p.name for p in other_reconstruction)
               )
+          if len(design_snapshot) != 1:
+              raise SystemExit('Expected exactly one local design implementation snapshot')
+
+          through_design_rbac = [
+              p for p in through_public_intake_alignment
+              if p.name <= '20260721_01_canonical_action_rbac.sql'
+          ]
+          after_design_rbac = [
+              p for p in through_public_intake_alignment
+              if p.name > '20260721_01_canonical_action_rbac.sql'
+          ]
 
           files = (
               baseline_files
               + pre_20260721
               + offer_reconstruction
               + legacy_files
-              + through_public_intake_alignment
+              + through_design_rbac
+              + design_snapshot
+              + after_design_rbac
               + [rate_reconstruction]
               + after_public_intake_alignment
           )
