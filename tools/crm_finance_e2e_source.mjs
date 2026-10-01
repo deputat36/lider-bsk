@@ -65,6 +65,43 @@ const dialog=select('[role="dialog"]');assert(dialog.scrollWidth<=dialog.clientW
 document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));assert(!document.querySelector('[role="dialog"]'),'finance_escape_failed');
 assert(document.activeElement?.dataset.openOrder===orderId,'finance_focus_not_restored');record('finance_keyboard_and_layout');
 globalThis.fetch=originalFetch;
-output('passed',{authenticated:true,role:'owner',financial_ui:true,retry_no_duplicate:true,optimistic_lock:true,audited_void:true,cents_exact:true,direct_writes_denied:true,viewport_width:innerWidth,steps,cleanup_required:true});
+// Continue the real order through mounting, handover, settlement and closure.
+const installation=await client.from('leader_installation_jobs').select('id,install_status').eq('order_id',orderId).single();
+assert(!installation.error&&installation.data,'operations_installation_missing');
+let current=(await read('leader_orders','id',orderId))[0];
+assert(current.status==='Готово','operations_expected_ready');
+const beforeMount=await client.functions.invoke('leader-crm-orders',{body:{action:'order.transition',request_id:crypto.randomUUID(),expected_updated_at:current.updated_at,payload:{order_id:orderId,target_status:'issued',comment:'Synthetic handover'}}});
+let rejection=beforeMount.data;try{if(beforeMount.error)rejection=await beforeMount.error.context.clone().json();}catch(_){}
+assert(rejection?.error?.code==='installation_not_completed','operations_incomplete_installation_allowed');record('operations_incomplete_installation_rejected');
+click('[data-v4-tab-button="installation"]');
+await waitFor(()=>document.querySelector('[data-open-installation-job-card="'+installation.data.id+'"]'),'operations_installation_button_missing');
+click('[data-open-installation-job-card="'+installation.data.id+'"]');
+await waitFor(()=>document.querySelector('#installJobStatus'),'operations_installation_card_missing');
+for(const status of ['В работе','Выполнен']){
+ const node=select('#installJobStatus');node.value=status;assert(node.value===status,'operations_installation_transition_unavailable');node.dispatchEvent(new Event('change',{bubbles:true}));
+ click('[data-save-installation-job]');
+ await waitFor(()=>document.querySelector('#installJobStatus')!==node&&document.querySelector('#installJobStatus')?.value===status,'operations_installation_not_saved');
+}
+click('[data-installation-job-close]');record('operations_installation_completed_in_ui');
+click('[data-v4-tab-button="orders"]');await waitFor(()=>document.querySelector('[data-open-order="'+orderId+'"]'),'operations_order_missing');click('[data-open-order="'+orderId+'"]');
+await waitFor(()=>document.querySelector('[data-order-operation="issued"]'),'operations_handover_missing');
+click('[data-order-operation="issued"]');select('[data-order-operation-form] [name="comment"]').value='Результат принят клиентом, монтаж завершён';select('[data-order-operation-form]').requestSubmit();
+await waitFor(()=>document.querySelector('[data-order-operation="closed"]')&&!document.querySelector('[data-order-operation-form]'),'operations_handover_not_saved');
+current=(await read('leader_orders','id',orderId))[0];assert(current.status==='Выдано'&&current.issued_at&&Number(current.balance)>0,'operations_handover_created_fake_payment');record('operations_handover_without_fake_payment');
+click('[data-order-operation="closed"]');
+for(const name of ['expenses_reviewed','documents_reviewed','confirm'])select('[data-order-operation-form] [name="'+name+'"]').checked=true;
+select('[data-order-operation-form]').requestSubmit();
+await waitFor(()=>document.querySelector('[data-order-operation-form] [role="status"]')?.textContent.includes('Остался долг'),'operations_debt_close_not_rejected');
+click('[data-order-operation-dismiss]');
+click('[data-finance-new="payment"]');value('amount',String(current.balance));value('method','Перевод');value('comment','Synthetic final settlement');select('[data-finance-form]').requestSubmit();
+await waitFor(()=>!document.querySelector('[data-finance-form]')&&document.querySelector('[data-finance-saved]')?.textContent.includes('сохранена'),'operations_final_settlement_failed');
+click('[data-order-operation="closed"]');for(const name of ['expenses_reviewed','documents_reviewed','confirm'])select('[data-order-operation-form] [name="'+name+'"]').checked=true;select('[data-order-operation-form]').requestSubmit();
+await waitFor(()=>!document.querySelector('[data-order-operation-form]')&&!document.querySelector('[data-order-operation="closed"]'),'operations_close_failed');
+current=(await read('leader_orders','id',orderId))[0];assert(current.status==='Закрыт'&&current.completed_at&&current.issued_at&&Number(current.balance)===0&&current.payment_status==='Оплачено','operations_closed_projection_wrong');
+const history=await invokeLeaderFunction('leader-crm-orders',{action:'events',order_id:orderId});assert(history.events?.length===2,'operations_audit_missing_or_duplicate');
+select('[data-order-history]').open=true;await waitFor(()=>document.querySelector('[data-order-history-content]')?.textContent.includes('Закрыт'),'operations_history_missing');
+const forbiddenPatch=await client.functions.invoke('leader-crm-orders',{body:{action:'update',order_id:orderId,payment_status:'Не оплачено'}});assert(forbiddenPatch.error,'operations_legacy_patch_allowed');
+record('operations_paid_order_closed_with_history');
+output('passed',{authenticated:true,role:'owner',financial_ui:true,order_lifecycle_ui:true,retry_no_duplicate:true,optimistic_lock:true,audited_void:true,cents_exact:true,direct_writes_denied:true,viewport_width:innerWidth,steps,cleanup_required:true});
 }catch(error){output('failed',{error:clean(error?.message).slice(0,180),cleanup_required:true});}`;
 }

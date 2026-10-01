@@ -5,7 +5,7 @@ from pathlib import Path
 from build_finance_rpc_test import setup, source
 
 ROOT = Path(__file__).resolve().parents[1]
-operation_sql = (ROOT/'supabase/staging-migrations/20261001082221_order_operations_v1.sql').read_text()
+operation_sql = (ROOT/'supabase/staging-migrations/20261001082221_order_operations_v1.sql').read_text().split('-- STAGING CLEANUP UPGRADE',1)[0]
 extra = """
 ALTER TABLE public.leader_orders ADD COLUMN owner_id uuid DEFAULT '90000000-0000-4000-8000-000000000502',ADD COLUMN status text DEFAULT 'Новый',ADD COLUMN layout_status text DEFAULT 'Макета нет',ADD COLUMN layout_comment text,ADD COLUMN deadline date,ADD COLUMN data jsonb DEFAULT '{}';
 CREATE TABLE public.leader_order_items(id uuid,order_id uuid);

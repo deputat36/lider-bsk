@@ -22,8 +22,8 @@ STAGING_REF = "otulfnouybahfnsycxqn"
 PRODUCTION_REF = "ofewxuqfjhamgerwzull"
 SOURCE_COMMIT = "4dafa2723c1018574572d9a91441cf382ac25b34"
 MIGRATION_NAME = "staging_orders_edge_projection_compat_20260716"
-CURRENT_VERSION = 3
-CURRENT_SHA256 = "dccbd8ec3c57cdd58db269e6808f86cdc99f4416ae41eca8b6df24a284649646"
+CURRENT_VERSION = 5
+CURRENT_SHA256 = "39374907d50741d4a9318184ce8f8e112e4b2f147d4e1fe9b3d2bd2fe4b26198"
 
 MANAGER_FIELDS = {
     "id", "order_number", "created_at", "updated_at", "project_name", "client_name",
@@ -80,10 +80,10 @@ def main() -> int:
     doc = DOC.read_text(encoding="utf-8")
     workflow = WORKFLOW.read_text(encoding="utf-8")
 
-    expected_import = f"https://raw.githubusercontent.com/deputat36/lider-bsk/{SOURCE_COMMIT}/supabase/functions/leader-crm-orders/index.ts"
-    require(implementation, expected_import, "implementation")
-    if implementation.count("import ") != 1:
-        raise AssertionError("orders implementation must contain exactly one pinned import")
+    for marker in ("retired_endpoint", "status:410"):
+        require(implementation, marker, "retired implementation")
+    if "fetch(" in implementation or "Deno.env" in implementation or "import " in implementation:
+        raise AssertionError("retired endpoint must have no database or delegation capability")
     for marker in ("runCanonicalEdgeWrapper", "plan: orderOperationPlan", "execute: executeOrderOperation"):
         require(wrapper, marker, "wrapper")
     if PRODUCTION_REF in implementation:
@@ -108,10 +108,10 @@ def main() -> int:
     active = current["functions"]["leader-crm-orders"]
     if active.get("version") != CURRENT_VERSION or active.get("sha256") != CURRENT_SHA256:
         raise AssertionError("current orders wrapper deployment drift")
-    if active.get("verify_jwt") is not True or active.get("implementation_slug") != "leader-crm-orders-impl":
+    if active.get("verify_jwt") is not True or active.get("handler") != "transactional_orders_v1":
         raise AssertionError("current orders wrapper security drift")
     impl = current["functions"]["leader-crm-orders-impl"]
-    if impl.get("version") != 1 or impl.get("pinned_commit") != SOURCE_COMMIT or impl.get("verify_jwt") is not True:
+    if impl.get("version") != 2 or impl.get("retired") is not True or impl.get("verify_jwt") is not True:
         raise AssertionError("current orders implementation drift")
 
     if source_projection(source, "manager") != MANAGER_FIELDS:

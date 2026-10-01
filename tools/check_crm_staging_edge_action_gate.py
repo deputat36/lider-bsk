@@ -38,14 +38,14 @@ if deployment.get('project_ref') != 'otulfnouybahfnsycxqn' or deployment.get('en
     errors.append('Deployment contract must target the isolated staging project')
 if deployment.get('execution_order') != ['parse_body', 'authenticate_user', 'resolve_action', 'check_permissions', 'optional_execute', 'forward_to_implementation']:
     errors.append('JWT-first execution order drift')
-if deployment.get('production_deployment') != 'not_performed_requires_explicit_approval':
+if deployment.get('production_deployment') != 'not_performed_authorized_20260929':
     errors.append('Production deployment boundary drift')
 
 expected_functions = {
     'leader-crm-leads-staging': (4, '6ee051d0c8db9154c87bdd3b49b1d60b8bf27f6407c9a2843403886b4999868a'),
     'leader-crm-leads-staging-impl': (1, 'b3e864d49e4529d6c112ce70185337e71484bfa833676031dfa28e1fb21fe1bd'),
-    'leader-crm-orders': (3, 'dccbd8ec3c57cdd58db269e6808f86cdc99f4416ae41eca8b6df24a284649646'),
-    'leader-crm-orders-impl': (1, '7ba9f9b59790b0c683a7d3cc64ccfc27fc42c9ea24c9f009a8b064554c5831d7'),
+    'leader-crm-orders': (5, '39374907d50741d4a9318184ce8f8e112e4b2f147d4e1fe9b3d2bd2fe4b26198'),
+    'leader-crm-orders-impl': (2, 'cf23c595daeb28aff619ec6c0dfbb64b9b9ce2b9d4fc10b0de8db087b4c89148'),
 }
 for slug, (version, digest) in expected_functions.items():
     entry = deployment.get('functions', {}).get(slug, {})

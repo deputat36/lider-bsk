@@ -8,8 +8,17 @@ Deno.serve(async (req: Request) => {
     const url = Deno.env.get('SUPABASE_URL')
     if (!['https://otulfnouybahfnsycxqn.supabase.co','https://ofewxuqfjhamgerwzull.supabase.co'].includes(url || '')) throw new Error('wrong_environment')
     if (req.method === 'POST') {
-      const body = await req.text()
-      if (new TextEncoder().encode(body).length > 16384) return new Response(JSON.stringify({ error: 'payload_too_large' }), { status: 413 })
+      const reader = req.body?.getReader()
+      const chunks: Uint8Array[] = []; let size = 0
+      if (reader) while (true) {
+        const { done, value } = await reader.read(); if (done) break
+        size += value.length
+        if (size > 16384) { await reader.cancel(); return new Response(JSON.stringify({ error: 'payload_too_large' }), { status: 413, headers: { 'Content-Type':'application/json', 'Access-Control-Allow-Origin':'*' } }) }
+        chunks.push(value)
+      }
+      const bytes = new Uint8Array(size); let offset = 0
+      for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length }
+      const body = new TextDecoder().decode(bytes)
       req = new Request(req.url, { method: req.method, headers: req.headers, body })
     }
     return await runCanonicalEdgeWrapper(req, { plan: orderOperationPlan, execute: executeOrderOperation })
