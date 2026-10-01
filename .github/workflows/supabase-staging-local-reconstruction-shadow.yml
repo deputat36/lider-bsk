@@ -16,6 +16,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: supabase-staging-local-reconstruction-shadow-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   reconstruct:
     name: Reconstruct staging locally
@@ -180,12 +184,12 @@ jobs:
           test -s migration-map.tsv
           cat migration-map.tsv
 
-      - name: Start isolated local Supabase
+      - name: Start isolated local Postgres
         shell: bash
         run: |
           set -euo pipefail
           cd .ci/supabase-staging-local
-          supabase start
+          supabase db start
 
       - name: Rebuild database from staging migrations
         shell: bash
@@ -200,8 +204,7 @@ jobs:
         run: |
           set -euo pipefail
           cd .ci/supabase-staging-local
-          DB_URL="$(supabase status -o env | sed -n 's/^DB_URL=//p' | tr -d '"')"
-          test -n "${DB_URL}"
+          DB_URL='postgresql://postgres:postgres@127.0.0.1:54322/postgres'
           psql "${DB_URL}" -v ON_ERROR_STOP=1 -Atc "
             select project_ref || '|' || environment_name || '|' || repository
             from leader_staging.environment_guard
@@ -213,8 +216,7 @@ jobs:
         run: |
           set -euo pipefail
           cd .ci/supabase-staging-local
-          DB_URL="$(supabase status -o env | sed -n 's/^DB_URL=//p' | tr -d '"')"
-          test -n "${DB_URL}"
+          DB_URL='postgresql://postgres:postgres@127.0.0.1:54322/postgres'
           echo 'LOCAL_STAGING_FINGERPRINT='
           psql "${DB_URL}" -v ON_ERROR_STOP=1 -Atc "
             with table_items as (
@@ -259,6 +261,29 @@ jobs:
               'indexes_count',(select count(*) from index_items),
               'indexes_hash',(select md5(string_agg(item,E'\\n' order by item)) from index_items)
             );
+          "
+
+          echo 'LOCAL_FUNCTION_ITEMS='
+          psql "${DB_URL}" -v ON_ERROR_STOP=1 -Atc "
+            select n.nspname || '.' || p.oid::regprocedure::text || '|' ||
+                   md5(pg_get_functiondef(p.oid))
+            from pg_proc p
+            join pg_namespace n on n.oid=p.pronamespace
+            where (n.nspname='public' and (p.proname like 'leader_%' or p.proname='rls_auto_enable'))
+               or n.nspname='leader_private'
+            order by 1;
+          "
+          echo 'LOCAL_INDEX_ITEMS='
+          psql "${DB_URL}" -v ON_ERROR_STOP=1 -Atc "
+            select n.nspname || '.' || t.relname || '|' || i.relname || '|' ||
+                   md5(pg_get_indexdef(i.oid))
+            from pg_index x
+            join pg_class t on t.oid=x.indrelid
+            join pg_namespace n on n.oid=t.relnamespace
+            join pg_class i on i.oid=x.indexrelid
+            where (n.nspname='public' and t.relname like 'leader_%')
+               or n.nspname in ('leader_private','leader_staging')
+            order by 1;
           "
 
       - name: Stop local Supabase
