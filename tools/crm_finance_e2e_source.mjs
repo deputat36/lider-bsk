@@ -75,7 +75,7 @@ for(const target of ['production','ready']){
  if((target==='production'&&['Новый','Макет на согласовании'].includes(current.status))||(target==='ready'&&current.status==='В производстве')){
   click('[data-order-operation="'+target+'"]');const confirm=document.querySelector('[data-order-operation-form] [name="confirm"]');if(confirm)confirm.checked=true;
   select('[data-order-operation-form]').requestSubmit();
-  await waitFor(()=>!document.querySelector('[data-order-operation-form]'),'operations_stage_not_saved:'+target);
+  await waitFor(()=>!document.querySelector('[data-order-operation-form]')&&document.querySelector('[data-order-operation="'+(target==='production'?'ready':'issued')+'"]'),'operations_stage_not_saved:'+target);
   current=(await read('leader_orders','id',orderId))[0];
  }
 }
@@ -108,7 +108,7 @@ click('[data-order-operation-dismiss]');
 click('[data-finance-new="payment"]');value('amount',String(current.balance));value('method','Перевод');value('comment','Synthetic final settlement');select('[data-finance-form]').requestSubmit();
 await waitFor(()=>!document.querySelector('[data-finance-form]')&&document.querySelector('[data-finance-saved]')?.textContent.includes('сохранена'),'operations_final_settlement_failed');
 click('[data-order-operation="closed"]');for(const name of ['expenses_reviewed','documents_reviewed','confirm'])select('[data-order-operation-form] [name="'+name+'"]').checked=true;select('[data-order-operation-form]').requestSubmit();
-await waitFor(()=>!document.querySelector('[data-order-operation-form]')&&!document.querySelector('[data-order-operation="closed"]'),'operations_close_failed');
+await waitFor(()=>document.querySelector('[data-order-history]')&&!document.querySelector('[data-order-operation-form]')&&!document.querySelector('[data-order-operation="closed"]'),'operations_close_failed');
 current=(await read('leader_orders','id',orderId))[0];assert(current.status==='Закрыт'&&current.completed_at&&current.issued_at&&Number(current.balance)===0&&current.payment_status==='Оплачено','operations_closed_projection_wrong');
 const history=await invokeLeaderFunction('leader-crm-orders',{action:'events',order_id:orderId});assert(history.events?.length===orderLogCount+2,'operations_audit_missing_or_duplicate');
 select('[data-order-history]').open=true;await waitFor(()=>document.querySelector('[data-order-history-content]')?.textContent.includes('Закрыт'),'operations_history_missing');
