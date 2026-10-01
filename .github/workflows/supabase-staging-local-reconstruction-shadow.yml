@@ -8,6 +8,7 @@ on:
       - '.github/workflows/supabase-staging-local-reconstruction-shadow.yml'
       - 'supabase/staging-migrations/**'
       - 'supabase/staging/**'
+      - '.ci/supabase-staging-baseline/**'
   workflow_dispatch:
 
 permissions:
@@ -59,11 +60,16 @@ jobs:
           import shutil
 
           root = Path.cwd().parents[1]
+          baseline_dir = root / '.ci' / 'supabase-staging-baseline'
           src_dir = root / 'supabase' / 'staging-migrations'
           dst_dir = Path.cwd() / 'supabase' / 'migrations'
-          files = sorted(p for p in src_dir.glob('*.sql') if 'rollback' not in p.name.lower())
-          if not files:
+          baseline_files = sorted(baseline_dir.glob('*.sql'))
+          staging_files = sorted(p for p in src_dir.glob('*.sql') if 'rollback' not in p.name.lower())
+          files = baseline_files + staging_files
+          if not staging_files:
               raise SystemExit('No staging migration SQL files found')
+          if not baseline_files:
+              raise SystemExit('No local staging baseline SQL files found')
 
           base = datetime(2020, 1, 1, 0, 0, 0)
           manifest = []
@@ -75,7 +81,10 @@ jobs:
 
           manifest_path = Path.cwd() / 'migration-map.tsv'
           manifest_path.write_text('\n'.join(manifest) + '\n', encoding='utf-8')
-          print(f'Prepared {len(files)} staging migrations; rollback scripts excluded')
+          print(
+              f'Prepared {len(baseline_files)} local baseline files + '
+              f'{len(staging_files)} staging migrations; rollback scripts excluded'
+          )
           PY
 
           test -s migration-map.tsv
