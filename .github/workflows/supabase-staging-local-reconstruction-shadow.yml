@@ -79,7 +79,7 @@ jobs:
           if tx_marker not in rate_source:
               raise SystemExit('Rate-limit candidate transaction marker is missing')
           staging_guard = (
-              "do $guard$;\n"
+              "do $guard$\n"
               "begin\n"
               "  if not exists (\n"
               "    select 1\n"
