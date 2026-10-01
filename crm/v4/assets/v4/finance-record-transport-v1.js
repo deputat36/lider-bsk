@@ -1,10 +1,10 @@
+import { orderOperationsAvailable } from './operational-server-contract-v1.js';
 import { FINANCE_ACTIONS } from './finance-record-model-v1.js';
 
-const STAGING_HOST = 'otulfnouybahfnsycxqn.supabase.co';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const pending = new Map();
 export function financeWriteAvailable(url, allowed) {
-  try { return allowed === true && new URL(url).protocol === 'https:' && new URL(url).hostname === STAGING_HOST; } catch (_) { return false; }
+  return allowed === true && orderOperationsAvailable(url);
 }
 export function financeErrorMessage(code) {
   return ({

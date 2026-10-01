@@ -1,3 +1,4 @@
+import { orderOperationsAvailable } from './operational-server-contract-v1.js';
 import { supabaseClient } from './supabase-client.js';
 import { friendlyError } from './api.js';
 import { setStatus } from './ui.js';
@@ -146,7 +147,7 @@ async function loadOrdersFast(force = false) {
     let response;
     try {
       const host = new URL(V4_CONFIG.supabaseUrl).hostname;
-      if (host === 'otulfnouybahfnsycxqn.supabase.co') {
+      if (orderOperationsAvailable(V4_CONFIG.supabaseUrl)) {
         const result = await invokeLeaderFunction('leader-crm-orders', { action: 'list' });
         response = { data: result.orders || [], error: null };
       }

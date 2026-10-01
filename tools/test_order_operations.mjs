@@ -1,0 +1,26 @@
+import assert from 'node:assert/strict';
+import { webcrypto } from 'node:crypto';
+import { orderOperationOptions, prepareOrderOperation } from '../crm/v4/assets/v4/order-operation-ui-v1.js';
+import { orderOperationPlan, executeOrderOperation } from '../supabase/staging-functions/_shared/order-operations-edge-v1.js';
+
+assert.deepEqual(orderOperationOptions({ status:'Новый' }).map(x=>x.key), ['production','cancelled']);
+assert.deepEqual(orderOperationOptions({ status:'Готово' }).map(x=>x.key), ['issued']);
+assert.deepEqual(orderOperationOptions({ status:'Выдано' }).map(x=>x.key), ['closed']);
+assert.deepEqual(orderOperationOptions({ status:'Закрыт' }), []);
+assert.deepEqual(orderOperationOptions({ status:'unknown' }), []);
+const saved = new Map(), storage = { getItem:k=>saved.get(k), setItem:(k,v)=>saved.set(k,v) };
+const args = { actorId:'90000000-0000-4000-8000-000000000502', order:{id:'90000000-0000-4000-8000-000000000501',updated_at:'2026-09-29T10:00:00Z'}, action:'order.transition', payload:{order_id:'90000000-0000-4000-8000-000000000501',target_status:'issued',comment:'PRIVATE_HANDOVER'},storage,crypt:webcrypto };
+const first = await prepareOrderOperation(args);
+const retry = await prepareOrderOperation({...args,order:{...args.order,updated_at:'2026-09-30T11:00:00Z'}});
+assert.deepEqual(first,retry);
+assert(!JSON.stringify([...saved]).includes('PRIVATE_HANDOVER'));
+assert.notEqual((await prepareOrderOperation({...args,payload:{...args.payload,comment:'Different action'}})).command.request_id,first.command.request_id);
+assert.deepEqual(orderOperationPlan({ action:'order.transition' }).permissions,['orders.transition']);
+assert.deepEqual(orderOperationPlan({ action:'order.layout_not_required' }).permissions,['orders.update','design.write']);
+assert.equal(orderOperationPlan({ action:'arbitrary_patch' }).known,false);
+const context={body:{action:'update',payment_status:'Оплачено'},plan:{action:'update'},auth:{actorId:args.actorId},env:{supabaseUrl:'https://test.invalid',serviceRole:'synthetic'},helpers:{json:(status,body)=>new Response(JSON.stringify(body),{status})}};
+let calls=0;
+globalThis.fetch=async(url,init)=>{calls++; if(url.includes('/rpc/'))return new Response(JSON.stringify(JSON.parse(init.body).p_action==='clients.read'));assert(!decodeURIComponent(url).includes('contractor_cost'));assert(!decodeURIComponent(url).includes('payment_status'));return new Response('[]');};
+const legacy = await executeOrderOperation(context);assert.equal(legacy.status,409);assert.equal(calls,0);
+const list=await executeOrderOperation({...context,body:{action:'list'},plan:{action:'list'}});assert.equal(list.status,200);assert.equal(calls,4);
+console.log('Order actions, immutable retry identity, legacy PATCH rejection and manager list privacy passed.');
