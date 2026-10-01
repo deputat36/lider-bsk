@@ -534,7 +534,7 @@ exception
     return jsonb_build_object('ok', false, 'request_id', v_request_id,
       'error', jsonb_build_object('code', 'offer_create_failed', 'message', 'Commercial offer could not be persisted'));
 end
-$function$
+$function$;
 
 
 revoke all on function leader_private.leader_create_offer_from_calculation_rpc_internal_v1(jsonb)
