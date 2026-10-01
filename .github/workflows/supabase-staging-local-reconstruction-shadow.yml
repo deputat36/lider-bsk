@@ -10,6 +10,7 @@ on:
       - 'supabase/staging/**'
       - '.ci/supabase-staging-baseline/**'
       - '.ci/supabase-staging-reconstruction/**'
+      - 'supabase/production-candidates/20260724_02_public_intake_rate_limit_candidate.sql'
   workflow_dispatch:
 
 permissions:
@@ -65,9 +66,37 @@ jobs:
           src_dir = root / 'supabase' / 'staging-migrations'
           legacy_staging_dir = root / 'supabase' / 'staging'
           reconstruction_dir = root / '.ci' / 'supabase-staging-reconstruction'
+          rate_candidate = root / 'supabase' / 'production-candidates' / '20260724_02_public_intake_rate_limit_candidate.sql'
           dst_dir = Path.cwd() / 'supabase' / 'migrations'
           baseline_files = sorted(baseline_dir.glob('*.sql'))
           reconstruction_files = sorted(reconstruction_dir.glob('*.sql'))
+
+          if not rate_candidate.is_file():
+              raise SystemExit('Public intake rate-limit candidate source is missing')
+
+          rate_source = rate_candidate.read_text(encoding='utf-8')
+          tx_marker = 'begin;\\n'
+          if tx_marker not in rate_source:
+              raise SystemExit('Rate-limit candidate transaction marker is missing')
+          staging_guard = """do $guard$
+begin
+  if not exists (
+    select 1
+    from leader_staging.environment_guard
+    where singleton = true
+      and project_ref = 'otulfnouybahfnsycxqn'
+      and environment_name = 'staging'
+      and repository = 'deputat36/lider-bsk'
+  ) then
+    raise exception 'staging_environment_guard_failed';
+  end if;
+end
+$guard$;
+
+"""
+          rate_source = rate_source.replace(tx_marker, tx_marker + staging_guard, 1)
+          rate_reconstruction = Path.cwd() / '20260725_rate_limit_local_reconstruction.sql'
+          rate_reconstruction.write_text(rate_source, encoding='utf-8')
 
           excluded_source_only = {
               '20260715_02_calculation_version_harness.sql',
@@ -82,14 +111,43 @@ jobs:
 
           pre_20260721 = [p for p in primary_files if p.name < '20260721_']
           from_20260721 = [p for p in primary_files if p.name >= '20260721_']
+          through_public_intake_alignment = [
+              p for p in from_20260721
+              if p.name <= '20260725_01_public_intake_contract_alignment.sql'
+          ]
+          after_public_intake_alignment = [
+              p for p in from_20260721
+              if p.name > '20260725_01_public_intake_contract_alignment.sql'
+          ]
+          offer_reconstruction = [
+              p for p in reconstruction_files
+              if p.name.startswith('20260718_')
+          ]
+          other_reconstruction = [
+              p for p in reconstruction_files
+              if not p.name.startswith('20260718_')
+          ]
+          if other_reconstruction:
+              raise SystemExit(
+                  'Unclassified local reconstruction files: '
+                  + ', '.join(p.name for p in other_reconstruction)
+              )
+
           files = (
               baseline_files
               + pre_20260721
+              + offer_reconstruction
+              + legacy_files
+              + through_public_intake_alignment
+              + [rate_reconstruction]
+              + after_public_intake_alignment
+          )
+          staging_files = (
+              primary_files
               + reconstruction_files
               + legacy_files
-              + from_20260721
+              + [rate_reconstruction]
           )
-          staging_files = primary_files + reconstruction_files + legacy_files
 
           if not primary_files:
               raise SystemExit('No staging migration SQL files found')
@@ -149,6 +207,59 @@ jobs:
             from leader_staging.environment_guard
             where singleton = true;
           " | grep -Fx 'otulfnouybahfnsycxqn|staging|deputat36/lider-bsk'
+
+      - name: Print local staging parity fingerprint
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd .ci/supabase-staging-local
+          DB_URL="$(supabase status -o env | sed -n 's/^DB_URL=//p' | tr -d '"')"
+          test -n "${DB_URL}"
+          echo 'LOCAL_STAGING_FINGERPRINT='
+          psql "${DB_URL}" -v ON_ERROR_STOP=1 -Atc "
+            with table_items as (
+              select schemaname || '.' || tablename as item
+              from pg_tables
+              where (schemaname='public' and tablename like 'leader_%')
+                 or schemaname in ('leader_private','leader_staging')
+            ),
+            function_items as (
+              select n.nspname || '.' || p.oid::regprocedure::text || '=' ||
+                     md5(pg_get_functiondef(p.oid)) as item
+              from pg_proc p
+              join pg_namespace n on n.oid=p.pronamespace
+              where (n.nspname='public' and (p.proname like 'leader_%' or p.proname='rls_auto_enable'))
+                 or n.nspname='leader_private'
+            ),
+            policy_items as (
+              select schemaname || '.' || tablename || ':' || policyname || ':' ||
+                     permissive || ':' || array_to_string(roles, ',') || ':' || cmd || ':' ||
+                     coalesce(qual,'') || ':' || coalesce(with_check,'') as item
+              from pg_policies
+              where (schemaname='public' and tablename like 'leader_%')
+                 or schemaname in ('leader_private','leader_staging')
+            ),
+            index_items as (
+              select n.nspname || '.' || t.relname || ':' || i.relname || ':' ||
+                     pg_get_indexdef(i.oid) as item
+              from pg_index x
+              join pg_class t on t.oid=x.indrelid
+              join pg_namespace n on n.oid=t.relnamespace
+              join pg_class i on i.oid=x.indexrelid
+              where (n.nspname='public' and t.relname like 'leader_%')
+                 or n.nspname in ('leader_private','leader_staging')
+            )
+            select jsonb_build_object(
+              'tables_count',(select count(*) from table_items),
+              'tables_hash',(select md5(string_agg(item,E'\\n' order by item)) from table_items),
+              'functions_count',(select count(*) from function_items),
+              'functions_hash',(select md5(string_agg(item,E'\\n' order by item)) from function_items),
+              'policies_count',(select count(*) from policy_items),
+              'policies_hash',(select md5(string_agg(item,E'\\n' order by item)) from policy_items),
+              'indexes_count',(select count(*) from index_items),
+              'indexes_hash',(select md5(string_agg(item,E'\\n' order by item)) from index_items)
+            );
+          "
 
       - name: Stop local Supabase
         if: always()
