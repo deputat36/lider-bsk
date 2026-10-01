@@ -129,3 +129,62 @@ These are not being changed during the staging migration preparation phase.
 ## Rollback principle
 
 At every stage the rollback is: keep or restore the current cloud-staging workflow path. No production rollback should be necessary because production is outside this migration scope.
+
+
+## Progress evidence — 2026-10-01
+
+A branch-only shadow reconstruction workflow now exists at:
+
+`.github/workflows/supabase-staging-local-reconstruction-shadow.yml`
+
+The workflow has no production credentials, never links to a hosted project, and refuses staging migration input containing the production project ref.
+
+### Proven clean install
+
+GitHub Actions run #6 completed successfully and proved that the core hosted staging database can be reconstructed into an isolated local Supabase stack from repository sources plus explicitly documented local-only reconstruction layers.
+
+Successful run:
+- workflow run: `36850978122`;
+- conclusion: `success`;
+- staging guard verification: passed;
+- production changes: none;
+- hosted staging changes: none.
+
+### Migration-history gaps discovered safely
+
+The hosted staging migration registry is not represented by one canonical Git directory.
+
+Verified sources are split across:
+- `supabase/staging-migrations/`;
+- `supabase/staging/`;
+- historical state that is no longer present as original migration files.
+
+The reconstruction therefore explicitly:
+- excludes rollback scripts;
+- excludes source-only calculation candidates superseded by the clean-install migration;
+- includes the three real compatibility migrations under `supabase/staging/`;
+- restores the pre-existing `public.rls_auto_enable()` event-trigger baseline locally;
+- reconstructs the missing 2026-07-18 commercial-offer block locally from hosted staging metadata and the current RPC, reversed to its pre-privacy form so the committed 2026-09-07 privacy migration can replay normally;
+- intentionally does not reproduce the temporary 2026-07-22 installation-read experiment because the following committed reconcile migration explicitly restores the exact main definition.
+
+### Public-intake rate limit
+
+The hosted staging history also contains a public-intake rate-limit migration plus an execute-revoke/restore rehearsal.
+
+The reviewed SQL source already exists in:
+`supabase/production-candidates/20260724_02_public_intake_rate_limit_candidate.sql`.
+
+The shadow CI is being extended to reuse this source only inside the ephemeral local database, after adding a staging environment guard. The production candidate is not being deployed or copied into production migrations.
+
+### Current stop condition
+
+The cloud staging project must remain active.
+
+A successful database reconstruction alone is not sufficient to pause it. Required next proofs are:
+1. database schema/function/policy/index parity;
+2. local Auth lifecycle;
+3. required staging Edge Functions;
+4. representative authenticated browser/API E2E;
+5. migration of active cloud-staging GitHub workflows;
+6. a final backup;
+7. explicit owner approval.
