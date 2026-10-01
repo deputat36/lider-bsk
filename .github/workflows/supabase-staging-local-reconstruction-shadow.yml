@@ -75,7 +75,7 @@ jobs:
               raise SystemExit('Public intake rate-limit candidate source is missing')
 
           rate_source = rate_candidate.read_text(encoding='utf-8')
-          tx_marker = 'begin;\\n'
+          tx_marker = 'begin;'
           if tx_marker not in rate_source:
               raise SystemExit('Rate-limit candidate transaction marker is missing')
           staging_guard = (
