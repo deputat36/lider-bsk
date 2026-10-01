@@ -69,11 +69,23 @@ globalThis.fetch=originalFetch;
 const installation=await client.from('leader_installation_jobs').select('id,install_status').eq('order_id',orderId).single();
 assert(!installation.error&&installation.data,'operations_installation_missing');
 let current=(await read('leader_orders','id',orderId))[0];
-assert(current.status==='Готово','operations_expected_ready');
+click('[data-v4-tab-button="orders"]');await waitFor(()=>document.querySelector('[data-open-order="'+orderId+'"]'),'operations_order_missing');click('[data-open-order="'+orderId+'"]');
+await waitFor(()=>document.querySelector('[data-order-operations]'),'operations_section_missing');
+for(const target of ['production','ready']){
+ if((target==='production'&&['Новый','Макет на согласовании'].includes(current.status))||(target==='ready'&&current.status==='В производстве')){
+  click('[data-order-operation="'+target+'"]');const confirm=document.querySelector('[data-order-operation-form] [name="confirm"]');if(confirm)confirm.checked=true;
+  select('[data-order-operation-form]').requestSubmit();
+  await waitFor(()=>!document.querySelector('[data-order-operation-form]'),'operations_stage_not_saved:'+target);
+  current=(await read('leader_orders','id',orderId))[0];
+ }
+}
+assert(current.status==='Готово','operations_expected_ready:'+current.status);record('operations_order_work_ready_in_ui');
+const orderLogCount=(await invokeLeaderFunction('leader-crm-orders',{action:'events',order_id:orderId})).events.length;
+document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
 const beforeMount=await client.functions.invoke('leader-crm-orders',{body:{action:'order.transition',request_id:crypto.randomUUID(),expected_updated_at:current.updated_at,payload:{order_id:orderId,target_status:'issued',comment:'Synthetic handover'}}});
 let rejection=beforeMount.data;try{if(beforeMount.error)rejection=await beforeMount.error.context.clone().json();}catch(_){}
 assert(rejection?.error?.code==='installation_not_completed','operations_incomplete_installation_allowed');record('operations_incomplete_installation_rejected');
-click('[data-v4-tab-button="installation"]');
+click('[data-v4-tab-button="production"]');await waitFor(()=>document.querySelector('[data-production-light-kind="installation"]'),'operations_installation_tab_missing');click('[data-production-light-kind="installation"]');
 await waitFor(()=>document.querySelector('[data-open-installation-job-card="'+installation.data.id+'"]'),'operations_installation_button_missing');
 click('[data-open-installation-job-card="'+installation.data.id+'"]');
 await waitFor(()=>document.querySelector('#installJobStatus'),'operations_installation_card_missing');
@@ -98,7 +110,7 @@ await waitFor(()=>!document.querySelector('[data-finance-form]')&&document.query
 click('[data-order-operation="closed"]');for(const name of ['expenses_reviewed','documents_reviewed','confirm'])select('[data-order-operation-form] [name="'+name+'"]').checked=true;select('[data-order-operation-form]').requestSubmit();
 await waitFor(()=>!document.querySelector('[data-order-operation-form]')&&!document.querySelector('[data-order-operation="closed"]'),'operations_close_failed');
 current=(await read('leader_orders','id',orderId))[0];assert(current.status==='Закрыт'&&current.completed_at&&current.issued_at&&Number(current.balance)===0&&current.payment_status==='Оплачено','operations_closed_projection_wrong');
-const history=await invokeLeaderFunction('leader-crm-orders',{action:'events',order_id:orderId});assert(history.events?.length===2,'operations_audit_missing_or_duplicate');
+const history=await invokeLeaderFunction('leader-crm-orders',{action:'events',order_id:orderId});assert(history.events?.length===orderLogCount+2,'operations_audit_missing_or_duplicate');
 select('[data-order-history]').open=true;await waitFor(()=>document.querySelector('[data-order-history-content]')?.textContent.includes('Закрыт'),'operations_history_missing');
 const forbiddenPatch=await client.functions.invoke('leader-crm-orders',{body:{action:'update',order_id:orderId,payment_status:'Не оплачено'}});assert(forbiddenPatch.error,'operations_legacy_patch_allowed');
 record('operations_paid_order_closed_with_history');

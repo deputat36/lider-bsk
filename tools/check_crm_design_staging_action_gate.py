@@ -46,7 +46,7 @@ for slug, (version, digest) in expected.items():
 
 if deployment.get('design_mapping') != {'design_task.create_from_order': ['design.write']}:
     errors.append('Design deployment mapping drift')
-if deployment.get('production_deployment') != 'not_performed_requires_explicit_approval':
+if deployment.get('production_deployment') != 'not_performed_authorized_20260929':
     errors.append('Production deployment boundary drift')
 
 for marker in [
