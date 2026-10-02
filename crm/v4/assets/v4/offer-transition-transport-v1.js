@@ -1,4 +1,4 @@
-export const OFFER_TRANSITION_PRODUCTION_ENABLED = false;
+export const OFFER_TRANSITION_PRODUCTION_ENABLED = true;
 export function offerTransitionAvailable(url) {
   return url==='https://otulfnouybahfnsycxqn.supabase.co' || (OFFER_TRANSITION_PRODUCTION_ENABLED && url==='https://ofewxuqfjhamgerwzull.supabase.co');
 }

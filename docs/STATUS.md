@@ -4,20 +4,14 @@
 
 ## PR564: клиенты и переход КП → заказ
 
-Реестр клиентов: PostgreSQL/RLS и две проверки доступа зелёные; полный staging
-[37067332615](https://github.com/deputat36/lider-bsk/actions/runs/37067332615) PASS.
-Исправлены отсутствие permissive SELECT на чистой схеме и счётчик order_audit.
-Повтор запроса клиента сохраняет один request_id; прямой browser DML закрыт.
-Production transport пока выключен, production rollout не выполнен.
-
-В рабочей ветке КП получило действия отправки/согласования в карточке,
-обновление формы заказа по событию загрузки и ссылку на существующий заказ.
-Серверный переход установлен только в staging; новый E2E проверяет именно эту
-карточку. Production-флаг выключен до отдельного backup/rollout/postflight.
-Создание КП использует прежний `leader-crm-offers`; смена статуса —
-`leader-crm-offer-transitions`. При подготовке staging прежний Edge был временно
-замещён, затем восстановлен из source v6 (теперь deploy v8); следующий E2E
-обязательно перепроверяет создание КП и сохранение privacy. Production не затронут.
+Реестр клиентов и явные действия карточки КП готовы. Полный staging
+[37068003199](https://github.com/deputat36/lider-bsk/actions/runs/37068003199) PASS:
+клиенты/retry/stale, КП/согласование/заказ и полный цикл до финансов/закрытия.
+Cleanup 24/24=0, Auth удалён, временное OIDC-доверие ветки снято.
+Production backend установлен с закрытым backup; postflight подтвердил неизменность
+реальных данных, stop rollback проверен. Frontend gates включены после backend proof.
+[Scope, проверки и rollback](CRM_CLIENTS_OFFERS_PRODUCTION_2026-10-02.md).
+Pages-публикация подтверждается после merge; production UI записи не симулировались.
 
 ## Заказы и финансы: рабочий сервер
 

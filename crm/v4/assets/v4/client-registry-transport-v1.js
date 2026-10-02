@@ -1,5 +1,5 @@
 // Production is enabled only after database and Edge postflight.
-export const CLIENT_REGISTRY_PRODUCTION_ENABLED = false;
+export const CLIENT_REGISTRY_PRODUCTION_ENABLED = true;
 export function clientRegistryAvailable(url) {
   return url === 'https://otulfnouybahfnsycxqn.supabase.co' ||
     (CLIENT_REGISTRY_PRODUCTION_ENABLED && url === 'https://ofewxuqfjhamgerwzull.supabase.co');
