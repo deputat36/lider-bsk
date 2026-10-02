@@ -12,7 +12,7 @@ CREATE TABLE public.leader_activity_log(id uuid PRIMARY KEY DEFAULT gen_random_u
 ALTER TABLE public.leader_activity_log ENABLE ROW LEVEL SECURITY;
 GRANT ALL ON public.leader_clients,public.leader_leads,public.leader_activity_log TO service_role;
 GRANT ALL ON public.leader_clients,public.leader_activity_log TO authenticated,anon;
-CREATE POLICY clients_old ON public.leader_clients TO authenticated USING(true) WITH CHECK(true);
+-- Deliberately no legacy permissive policy: match a clean staging installation.
 CREATE POLICY audit_old ON public.leader_activity_log TO authenticated USING(true) WITH CHECK(true);
 UPDATE leader_private.leader_role_action_matrix_v1 SET allowed_actions=allowed_actions||ARRAY['clients.read','clients.write'] WHERE role IN ('owner','admin','manager');
 """
@@ -73,5 +73,5 @@ DO $$ BEGIN IF (SELECT count(*) FROM public.leader_clients)<>0 THEN RAISE EXCEPT
 RESET ROLE;
 ROLLBACK;
 """
-out=ROOT/'build/client-registry-test.sql';out.parent.mkdir(exist_ok=True);out.write_text(setup+extra+source+tests)
+out=ROOT/'build/client-registry-test.sql';out.parent.mkdir(exist_ok=True);out.write_text(setup+extra+source+(ROOT/'supabase/staging-migrations/20261002212947_client_registry_read_and_evidence.sql').read_text().split('-- STAGING CLEANUP UPGRADE',1)[0]+tests)
 print('Built client registry SQL transaction, role, replay, search, link and RLS tests.')
