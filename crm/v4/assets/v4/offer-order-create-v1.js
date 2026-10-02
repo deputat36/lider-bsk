@@ -56,7 +56,7 @@ async function loadBundle(offerId) {
   const calcResponse = await supabaseClient.from('leader_lead_calculations').select(CALC_FIELDS).eq('id', offer.calculation_id).single();
   if (calcResponse.error || !calcResponse.data) throw calcResponse.error || new Error('Связанный расчёт не найден');
   const calculation = calcResponse.data;
-  if (calculation.order_id) return { offer, calculation, canCreate: false, reason: 'По связанному расчёту заказ уже создан.' };
+  if (calculation.order_id) return { offer, calculation, orderId:calculation.order_id, canCreate:false, reason:'По связанному расчёту заказ уже создан.' };
   if (Number(calculation.client_total || 0) <= 0) return { offer, calculation, canCreate: false, reason: 'Сумма расчёта клиенту должна быть больше 0 ₽.' };
 
   const itemsResponse = await supabaseClient
@@ -74,7 +74,7 @@ async function loadBundle(offerId) {
   const leadResponse = await supabaseClient.from('leader_leads').select(LEAD_FIELDS).eq('id', leadId).single();
   if (leadResponse.error || !leadResponse.data) throw leadResponse.error || new Error('Связанная заявка не найдена');
   const lead = leadResponse.data;
-  if (lead.converted_order_id) return { offer, calculation, items, lead, canCreate: false, reason: 'По этой заявке заказ уже создан.' };
+  if (lead.converted_order_id) return { offer, calculation, items, lead, orderId:lead.converted_order_id, canCreate:false, reason:'По этой заявке заказ уже создан.' };
 
   let need = null;
   if (calculation.need_id) {
@@ -86,10 +86,10 @@ async function loadBundle(offerId) {
   return { offer, calculation, items, lead, need, canCreate: true, reason: '' };
 }
 
-function renderDisabled(reason) {
+function renderDisabled(reason, orderId = '') {
   const container = host();
   if (!container || container.querySelector('#offerOrderCreateBox')) return;
-  container.insertAdjacentHTML('beforeend', `<section id="offerOrderCreateBox" class="v4-offer-order-create"><h3>Создание заказа из КП</h3><div class="v4-offer-order-warning">${esc(reason)}</div></section>`);
+  (container.querySelector('.v4-offer-actions-line') || container).insertAdjacentHTML(container.querySelector('.v4-offer-actions-line') ? 'afterend' : 'beforeend', `<section id="offerOrderCreateBox" class="v4-offer-order-create"><h3>Создание заказа из КП</h3><div class="v4-offer-order-warning">${esc(reason)}</div>${orderId ? `<button type="button" class="v4-primary" data-open-order="${esc(orderId)}" data-offer-card-close>Открыть заказ</button>` : ''}</section>`);
 }
 
 function renderForm(bundle) {
@@ -99,7 +99,7 @@ function renderForm(bundle) {
   if (old) old.remove();
   const title = orderTitleFromOffer(bundle.offer, bundle.calculation);
   const comment = bundle.calculation.public_comment || bundle.need?.description || '';
-  container.insertAdjacentHTML('beforeend', `
+  (container.querySelector('.v4-offer-actions-line') || container).insertAdjacentHTML(container.querySelector('.v4-offer-actions-line') ? 'afterend' : 'beforeend', `
     <section id="offerOrderCreateBox" class="v4-offer-order-create">
       <h3>Создать заказ из этого КП</h3>
       <p>КП согласовано, заказ ещё не создан. Проверьте параметры запуска.</p>
@@ -141,7 +141,9 @@ async function enhanceOfferCard(force = false) {
   lastOfferId = offerId;
   try {
     const bundle = await loadBundle(offerId);
-    if (!bundle.canCreate) renderDisabled(bundle.reason || 'Заказ из этого КП сейчас создать нельзя.');
+    if (currentOfferId() !== offerId) return;
+    document.getElementById('offerOrderCreateBox')?.remove();
+    if (!bundle.canCreate) renderDisabled(bundle.reason || 'Заказ из этого КП сейчас создать нельзя.', bundle.orderId || bundle.offer.order_id);
     else renderForm(bundle);
   } catch (error) {
     renderDisabled(friendlyError(error));
@@ -228,7 +230,7 @@ function boot() {
       enhanceOfferCard(true);
     }
   }, true);
-  document.addEventListener('click', (event) => { if (event.target.closest?.('[data-open-offer-card]')) setTimeout(() => enhanceOfferCard(true), 900); });
+  document.addEventListener('leader-v4:offer-card-rendered', () => enhanceOfferCard(true));
   document.addEventListener('leader-v4:lead-card-rendered', () => setTimeout(() => enhanceOfferCard(true), 500));
 }
 boot();
