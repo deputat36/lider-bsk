@@ -29,7 +29,8 @@ await assert.rejects(fetchAllOrderFinance({ from: () => query }, 'leader_payment
 
 const stage = 'https://otulfnouybahfnsycxqn.supabase.co';
 assert.equal(financeWriteAvailable(stage, true), true);
-for (const url of ['https://ofewxuqfjhamgerwzull.supabase.co', stage + '.evil.test', 'http://otulfnouybahfnsycxqn.supabase.co']) assert.equal(financeWriteAvailable(url, true), false);
+assert.equal(financeWriteAvailable('https://ofewxuqfjhamgerwzull.supabase.co', true), true);
+for (const url of [stage + '.evil.test', 'https://ofewxuqfjhamgerwzull.supabase.co.evil.test', 'http://otulfnouybahfnsycxqn.supabase.co']) assert.equal(financeWriteAvailable(url, true), false);
 assert.equal(financeWriteAvailable(stage, false), false);
 const actorId = '90000000-0000-4000-8000-000000000501';
 const orderId = '90000000-0000-4000-8000-000000000502';
@@ -54,5 +55,5 @@ client.functions.invoke = async () => ({ error: { context: new Response(JSON.str
 const rejected = await invokeFinanceCommand({ client, url: stage, allowed: true, command: retry.command });
 assert.equal(rejected.uncertain, false);
 assert.equal(rejected.code, 'source_changed');
-assert.equal((await invokeFinanceCommand({ client, url: 'https://ofewxuqfjhamgerwzull.supabase.co', allowed: true, command: first.command })).code, 'production_locked');
+assert.equal((await invokeFinanceCommand({ client, url: 'https://unknown.supabase.co', allowed: true, command: first.command })).code, 'production_locked');
 console.log('Finance validation, complete pagination, cents, special prices and retry identity passed.');

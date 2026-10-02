@@ -94,8 +94,8 @@ async function fetchItems(calculationId) {
 async function fetchOrder(orderId) {
   if (!orderId) return null;
   if (orderOperationsAvailable(V4_CONFIG.supabaseUrl)) {
-    const result = await invokeLeaderFunction('leader-crm-orders', { action: 'list' });
-    return (result.orders || []).find((order) => order.id === orderId) || null;
+    const result = await invokeLeaderFunction('leader-crm-orders', { action: 'get', order_id: orderId });
+    return result.order || null;
   }
   const response = await supabaseClient.from('leader_orders').select('id,order_number,project_name,status,deadline,client_total,payment_status,created_at').eq('id', orderId).single();
   return response.error ? null : response.data;

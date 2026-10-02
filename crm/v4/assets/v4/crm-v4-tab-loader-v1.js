@@ -87,9 +87,9 @@ const TAB_REGISTRY = Object.freeze({
   orders: Object.freeze({
     requiredPermission: 'orders',
     importModule: managedModule(
-      () => import('./orders-fast-loader-v1.js?v=20260805-tab-loader-1'),
+      () => import('./orders-fast-loader-v1.js?v=20261001-order-finance-1'),
       [
-        () => import('./order-card-v1.js?v=20260928-finance-1'),
+        () => import('./order-card-v1.js?v=20261001-order-finance-1'),
         () => import('./order-act-preview-v1.js?v=20260805-tab-loader-1'),
         () => import('./design-task-draft-preview-v1.js?v=20260827-revision-1'),
         () => import('./design-task-draft-entrypoints-v1.js?v=20260714-design-staging-1'),
@@ -250,8 +250,8 @@ async function loadLeadCardBundle() {
       import('./calculations.js?v=20260805-tab-loader-1'),
       import('./calculation-draft-review-v1.js?v=20260805-tab-loader-1'),
       import('./offers.js?v=20260907-client-privacy-1'),
-      import('./orders.js?v=20260827-order-read-1'),
-      import('./offer-card-v1.js?v=20260827-order-read-1'),
+      import('./orders.js?v=20261001-order-finance-1'),
+      import('./offer-card-v1.js?v=20261001-order-finance-1'),
       import('./offer-print.js?v=20260805-tab-loader-1'),
       import('./offer-order-create-v1.js?v=20260805-tab-loader-1'),
       import('./need-readiness-panel-v1.js?v=20260713-readiness-1')

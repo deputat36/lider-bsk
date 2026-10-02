@@ -1,5 +1,5 @@
 // Enable only after the matching production DB/Edge postflight succeeds.
-export const ORDER_FINANCE_PRODUCTION_ENABLED = false;
+export const ORDER_FINANCE_PRODUCTION_ENABLED = true;
 export function orderOperationsAvailable(url) {
   try {
     const parsed = new URL(url);

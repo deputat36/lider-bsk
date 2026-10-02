@@ -1,6 +1,15 @@
 # Статус проекта РА «Лидер»
 
-Дата обновления: 2026-09-29.
+Дата обновления: 2026-10-02.
+
+## Заказы и финансы: рабочий сервер
+
+01.10 установлен production backend PR563: финансовые записи, безопасные действия
+заказа, закрытие, audit, canonical RBAC/receipts и защита от прямой подмены оплаты.
+Backup/postflight подтвердили неизменность существующих данных; stop-rollback проверен.
+[Фактический scope, проверка и rollback](CRM_ORDER_FINANCE_PRODUCTION_2026-10-01.md).
+Staging browser E2E 36875276336 прошёл до оплаченного закрытого заказа, cleanup 23/23 = 0.
+Frontend gate включён в этом PR; доступность на www подтверждается после Pages deploy.
 
 ## Бренд и рабочие интерфейсы
 
@@ -21,7 +30,7 @@ rollback и postflight. Чужие проекты не затрагивать; �
 
 - Read-only снимок: 5 заявок / 5 расчётов / 5 КП без заказов (#381), 8 расчётов без потребности и 3 расхождения сумм с позициями. Дубли request_id и проверенные orphan links не найдены; пустые финансовые таблицы не доказывают финансовый E2E.
 - [План #381, точный scope, SQL и rollback](PRODUCTION_DATA_INTEGRITY_2026-09-27.md). Кандидат по умолчанию ROLLBACK, проверяет approval/owner/status/timestamp/links/current revision, сохраняет snapshot и audit. TEMP-only PostgreSQL тест пройден; production DML не выполнялся.
-- Source/staging опережают production: canonical RBAC/receipts и catalog RPC там отсутствуют, legacy anon intake INSERT ещё разрешён. #201/#202/#204/#206 остаются открыты до проверенного cutover и proof.
+- Source/staging опережают production: catalog RPC и большинство operational write contracts там ещё отсутствуют; canonical RBAC/receipts установлены 01.10, legacy anon intake INSERT ещё разрешён. #201/#202/#204/#206 остаются открыты до проверенного cutover и proof.
 - #526 и #210 выполнены в своём source/staging scope; #552 закрыт, #553/#554 сведены к основным задачам. #152 и #226 уже имеют source/staging реализацию, а не пустой backlog.
 - #5: staging E2E [36520188081](https://github.com/deputat36/lider-bsk/actions/runs/36520188081) PASS, 60 workflows PASS, 22 категории cleanup=0 и Auth удалён. Реализованы формы оплат/расходов и отмена с причиной, серверная транзакция с правами/revision/receipt/audit, staging financial tables и cleanup. [Scope и production rollout/rollback](CRM_FINANCE_RECORDS_ROLLOUT_2026-09-29.md). Production ввод не включён; #5 остаётся открытым до общего cutover и proof.
 

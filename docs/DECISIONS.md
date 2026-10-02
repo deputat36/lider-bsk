@@ -1,6 +1,6 @@
 # Архитектурные решения
 
-Дата обновления: 2026-09-29.
+Дата обновления: 2026-10-02.
 
 ## ADR-001. Основной репозиторий проекта
 
@@ -257,3 +257,12 @@ staging использует существующий canonical Edge wrapper, а
 #202/#204 cutover. Разрешение владельца на rollout в контуре Leader получено
 29.09.2026; оно не отменяет staging proof, backup, rollback и postflight. Отсутствие расходов не доказывает нулевую себестоимость.
 Подробности: `CRM_FINANCE_RECORDS_ROLLOUT_2026-09-29.md`.
+
+## ADR. Заказ, выдача и деньги — отдельные серверные действия (02.10.2026)
+
+Заказ меняется versioned-командой с fresh profile/RBAC, row lock, audit и durable receipt.
+Передача клиенту не означает оплату. Оплата выводится из подтверждённого ledger;
+старый произвольный PATCH и browser DML не используются. Закрытие с долгом сохраняет
+его и требует owner/admin с причиной. Production rollout разрешён владельцем 29.09,
+выполнен после staging proof, private snapshot, rollback rehearsal и postflight.
+Подробности: [production runbook](CRM_ORDER_FINANCE_PRODUCTION_2026-10-01.md).

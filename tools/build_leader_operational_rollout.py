@@ -14,7 +14,9 @@ def main():
     finance=finance[finance.index('DO $guard$'):finance.rindex('ROLLBACK;')]
     operations=(ROOT/'supabase/staging-migrations/20261001082221_order_operations_v1.sql').read_text().split('-- STAGING CLEANUP UPGRADE',1)[0]
     sql=core+"\nSET LOCAL leader.finance_approval='APPROVED_FINANCE_20260928_ofewxuqfjhamgerwzull';\n"+finance+operations
-    sql+='\n-- No existing business row is rewritten by this rollout.\nROLLBACK;\n'
+    postflight=(ROOT/'supabase/production-candidates/leader_operational_postflight.sql').read_text()
+    sql+='\n'+postflight+'\n-- No existing business row is rewritten by this rollout.\nROLLBACK;\n'
+    (OUT/'postflight.sql').write_text(postflight)
     (OUT/'rehearsal.sql').write_text(sql)
     (OUT/'stop-rollback.sql').write_text("""BEGIN;
 -- Stop new commands while retaining valid payments, history, receipts and stronger RLS.
