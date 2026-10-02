@@ -8,7 +8,7 @@ import {
 } from '../crm/v4/assets/v4/crm-navigation-route-v1.js';
 
 assert.deepEqual(CRM_NAVIGATION_TABS, [
-  'management_dashboard', 'leads', 'orders', 'order_control', 'finance_control',
+  'management_dashboard', 'leads', 'orders', 'clients', 'order_control', 'finance_control',
   'production', 'contact_control', 'catalog', 'public_lead_audit', 'user_admin'
 ]);
 assert.equal(normalizeCrmNavigationTab(' orders '), 'orders');

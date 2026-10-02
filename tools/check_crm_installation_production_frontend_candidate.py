@@ -71,7 +71,7 @@ if approval.get('approved') is not False:
 
 current_index = read(CURRENT_INDEX)
 require(current_index, [
-    'assets/v4/crm-v4-tab-loader-v1.js?v=20261001-order-finance-1',
+    'assets/v4/crm-v4-tab-loader-v1.js?v=20261002-clients-1',
 ], 'working index')
 if re.search(r'<script\b[^>]*\bsrc=["\'][^"\']*installation-job-card-[^"\']*["\']', current_index, re.I):
     fail('working index: eager installation card script is forbidden')

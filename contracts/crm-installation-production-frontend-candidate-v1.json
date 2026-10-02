@@ -27,8 +27,8 @@
     "crm/v4/assets/v4/installation-job-staging-transport-v1.js": "a4f265fe53c438095ebcbc7b58d22e90e551c057",
     "crm/v4/assets/v4/installation-job-staging-read-transport-v1.js": "b5ebf2a0b05404b639b63b7f8aae27c3574464ce",
     "crm/v4/assets/v4/installation-job-card-v2.js": "1c360e08ce954d7879bc075bc203d3fd406db0ae",
-    "crm/v4/assets/v4/crm-v4-tab-loader-v1.js": "a114f72ebf9a35edffe8e5d34818a4ff7cd11f05",
-    "crm/v4/index.html": "62d74a0388d5ccec14f894bfcf0f3f1cdbe3d999"
+    "crm/v4/assets/v4/crm-v4-tab-loader-v1.js": "5751b758b9a6d7f9fb47bcd7d35f3fddda136028",
+    "crm/v4/index.html": "da3fd57d37a0f2625ec02287a3065d3d8327f598"
   },
   "generated_outputs": [
     "crm/v4/assets/v4/installation-job-save-route-v2.js",
@@ -75,7 +75,7 @@
   },
   "loader": {
     "source": "crm/v4/assets/v4/crm-v4-tab-loader-v1.js",
-    "index_entrypoint": "assets/v4/crm-v4-tab-loader-v1.js?v=20261001-order-finance-1",
+    "index_entrypoint": "assets/v4/crm-v4-tab-loader-v1.js?v=20261002-clients-1",
     "current_script": "assets/v4/installation-job-card-v2.js?v=20260805-tab-loader-1",
     "staging_only_script": "assets/v4/installation-job-staging-create-v1.js?v=20260827-entity-1",
     "candidate_script": "assets/v4/installation-job-card-v3.js?v=20260723-production-edge-candidate-1",

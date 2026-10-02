@@ -87,7 +87,7 @@ def main() -> int:
                 f"installation card may only be referenced by crm-v4-tab-loader-v1.js: {path.relative_to(ROOT)}"
             )
 
-    require(index, "crm-v4-tab-loader-v1.js?v=20261001-order-finance-1", INDEX)
+    require(index, "crm-v4-tab-loader-v1.js?v=20261002-clients-1", INDEX)
     for tab in TABS:
         require(loader, f"{tab}: Object.freeze({{", LOADER)
         require(loader, f"requiredPermission: '{tab}'", LOADER)
