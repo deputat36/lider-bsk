@@ -10,7 +10,7 @@ export async function readOrderDetail({ body, auth, env, helpers }) {
   };
   try {
     const [costs, finance] = await Promise.all([allowed('costs.read'), allowed('finance.read')]);
-    const fields = ['id','order_number','project_name','status','deadline','layout_status','production_status','lead_id','client_id','created_at','updated_at'];
+    const fields = ['id','order_number','project_name','status','deadline','layout_status','production_status','installation_status','lead_id','client_id','created_at','updated_at','issued_at','completed_at','is_archived'];
     // Client identity is needed by sales staff; accountant only needs the order reference.
     if (await allowed('clients.read')) fields.push('client_name','client_phone');
     if (costs) fields.push('contractor_cost','profit');

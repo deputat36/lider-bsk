@@ -1,3 +1,4 @@
+import { orderOperationsAvailable } from './operational-server-contract-v1.js';
 import { supabaseClient } from './supabase-client.js';
 import { friendlyError } from './api.js';
 import { invokeLeaderFunction } from './functions-client.js';
@@ -92,9 +93,9 @@ async function fetchItems(calculationId) {
 }
 async function fetchOrder(orderId) {
   if (!orderId) return null;
-  if (new URL(V4_CONFIG.supabaseUrl).hostname === 'otulfnouybahfnsycxqn.supabase.co') {
-    const result = await invokeLeaderFunction('leader-crm-orders', { action: 'list' });
-    return (result.orders || []).find((order) => order.id === orderId) || null;
+  if (orderOperationsAvailable(V4_CONFIG.supabaseUrl)) {
+    const result = await invokeLeaderFunction('leader-crm-orders', { action: 'get', order_id: orderId });
+    return result.order || null;
   }
   const response = await supabaseClient.from('leader_orders').select('id,order_number,project_name,status,deadline,client_total,payment_status,created_at').eq('id', orderId).single();
   return response.error ? null : response.data;

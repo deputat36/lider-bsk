@@ -11,7 +11,7 @@ const orderId = '90000000-0000-4000-8000-000000000501';
 const actorId = '90000000-0000-4000-8000-000000000502';
 const now = '2026-09-28T12:00:00Z';
 const mock = `
-const order={id:'${orderId}',order_number:123,project_name:'Вывеска и оформление входной группы — проверка длинного названия заказа',client_name:'Тестовый клиент',client_total:1700,contractor_cost:1000,profit:700,status:'Принят в работу',payment_status:'Частично оплачено',updated_at:'${now}',created_at:'${now}',data:{}};
+const order={id:'${orderId}',order_number:123,project_name:'Вывеска и оформление входной группы — проверка длинного названия заказа',client_name:'Тестовый клиент',client_total:1700,contractor_cost:1000,profit:700,status:'Выдано',balance:699.75,issued_at:'${now}',payment_status:'Частично оплачено',updated_at:'${now}',created_at:'${now}',data:{}};
 const data={leader_orders:[order],leader_order_items:[{name:'Вывеска с длинным описанием материалов и способа монтажа',quantity:1,client_sum:1700,contractor_sum:1000}],leader_payments:[{id:'${actorId}',order_id:order.id,amount:1000.25,payment_type:'Приход',payment_status:'Проведён',is_confirmed:true,method:'Перевод',payment_date:'2026-09-28',created_at:'${now}',updated_at:'${now}'}],leader_expenses:[]};
 globalThis.__financeMock={reads:[],fail:false};
 globalThis.__financeMock.bundle={order,items:data.leader_order_items};
@@ -50,6 +50,13 @@ try {
     const violations=await page.evaluate(async()=>(await axe.run(document.querySelector('[role="dialog"]'),{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}})).violations.map(v=>({id:v.id,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary}))})));
     await page.locator('[data-finance-editor]').scrollIntoViewIfNeeded();
     if(width===360||width===1440) await page.screenshot({path:path.join(output,`expense-${width}.png`)});
+    await page.click('[data-finance-dismiss]');
+    await page.click('[data-order-operation="closed"]');
+    await page.fill('[name="debt_reason"]','Согласованная отсрочка, долг сохраняется');
+    const operationLayout=await page.evaluate(()=>({overflow:document.documentElement.scrollWidth>innerWidth,dialogOverflow:document.querySelector('[role="dialog"]').scrollWidth>document.querySelector('[role="dialog"]').clientWidth+1}));
+    const operationViolations=await page.evaluate(async()=>(await axe.run(document.querySelector('[data-order-operations]'),{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}})).violations.map(v=>v.id));
+    assert.equal(operationLayout.overflow,false);assert.equal(operationLayout.dialogOverflow,false);assert.deepEqual(operationViolations,[]);
+    if(width===360||width===1440){await page.locator('[data-order-operation-form]').scrollIntoViewIfNeeded();await page.screenshot({path:path.join(output,`closure-${width}.png`)});}
     await page.keyboard.press('Escape');assert.equal(await page.locator('[role="dialog"]').count(),0);
     assert.equal(await page.locator('[data-open-order]').evaluate(node=>node===document.activeElement),true);
     await page.evaluate(()=>{globalThis.__financeMock.fail=true;});

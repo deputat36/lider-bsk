@@ -1,3 +1,4 @@
+import { orderOperationsAvailable } from './operational-server-contract-v1.js';
 import { supabaseClient } from './supabase-client.js';
 import { invokeLeaderFunction } from './functions-client.js';
 import { friendlyError } from './api.js';
@@ -23,7 +24,7 @@ let previousCalculations = null;
 function esc(value) {
   return String(value ?? '').replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
 }
-function money(value) { return `${Math.round(Number(value || 0)).toLocaleString('ru-RU')} ₽`; }
+function money(value) { return value == null ? '—' : `${Number(value).toLocaleString('ru-RU', { maximumFractionDigits: 2 })} ₽`; }
 function formatDate(value) { if (!value) return '—'; try { return new Date(value).toLocaleDateString('ru-RU'); } catch (_) { return String(value); } }
 function defaultDeadline() { const date = new Date(); date.setDate(date.getDate() + 3); return date.toISOString().slice(0, 10); }
 
@@ -70,7 +71,7 @@ function isDeadlineOverdue(order) {
 function orderChecklistItems(order) {
   const statusModel = orderStatusUiModel(order.status);
   const status = statusModel.label;
-  const pay = order.payment_status || 'Не оплачено';
+  const pay = order.payment_status || 'Недоступно для роли';
   const layout = layoutStatus(order);
   const hasDeadline = Boolean(order.deadline);
   const overdue = isDeadlineOverdue(order);
@@ -80,7 +81,7 @@ function orderChecklistItems(order) {
   return [
     { title: 'Заказ создан', text: status, done: true },
     { title: 'Макет', text: layout, done: layoutDone, warn: !layoutDone },
-    { title: 'Оплата', text: pay, done: paid, warn: !paid },
+    ...(order.payment_status ? [{ title: 'Оплата', text: pay, done: paid, warn: !paid }] : []),
     { title: 'Срок', text: hasDeadline ? formatDate(order.deadline) : 'Срок не указан', done: hasDeadline && !overdue, danger: overdue, warn: !hasDeadline },
     { title: 'Производство', text: stages.productionStarted ? status : 'Ещё не в производстве', done: stages.productionStarted, warn: !stages.productionStarted },
     { title: 'Готовность', text: stages.ready ? status : 'Не готово', done: stages.ready, warn: !stages.ready },
@@ -98,7 +99,7 @@ function renderOrderCard(order) {
   const orderType = order.data?.order_type || order.order_type || '—';
   const statusModel = orderStatusUiModel(order.status);
   const warning = statusModel.known ? '' : `<div class="v4-status-registry-warning" data-unknown-order-status="${esc(statusModel.raw)}">${esc(statusModel.warning)}</div>`;
-  return `<article class="v4-order-card"><div class="v4-order-title-row"><h4>№${esc(order.order_number || String(order.id || '').slice(0, 8))} — ${esc(order.project_name || 'Заказ')}</h4><span class="v4-crm-badge ${esc(statusModel.cssClass)}" title="${esc(statusModel.known ? `Registry: ${statusModel.key}` : statusModel.warning)}">${esc(statusModel.label)}</span></div>${warning}<div class="v4-order-meta"><span><b>Клиент:</b> ${esc(order.client_name || '—')}</span><span><b>Телефон:</b> ${esc(order.client_phone || '—')}</span><span><b>Тип:</b> ${esc(orderType)}</span><span><b>Срок:</b> ${formatDate(order.deadline)}</span><span><b>Макет:</b> ${esc(layoutStatus(order))}</span></div><div class="v4-order-kpi"><div><span>Клиенту</span><b>${money(order.client_total)}</b></div><div><span>Себестоимость</span><b>${money(order.contractor_cost)}</b></div><div><span>Прибыль</span><b>${money(order.profit)}</b></div><div><span>Оплата</span><b>${esc(order.payment_status || 'Не оплачено')}</b></div></div>${renderOrderChecklist(order)}</article>`;
+  return `<article class="v4-order-card"><div class="v4-order-title-row"><h4>№${esc(order.order_number || String(order.id || '').slice(0, 8))} — ${esc(order.project_name || 'Заказ')}</h4><span class="v4-crm-badge ${esc(statusModel.cssClass)}" title="${esc(statusModel.known ? `Registry: ${statusModel.key}` : statusModel.warning)}">${esc(statusModel.label)}</span></div>${warning}<div class="v4-order-meta"><span><b>Клиент:</b> ${esc(order.client_name || '—')}</span><span><b>Телефон:</b> ${esc(order.client_phone || '—')}</span><span><b>Тип:</b> ${esc(orderType)}</span><span><b>Срок:</b> ${formatDate(order.deadline)}</span><span><b>Макет:</b> ${esc(layoutStatus(order))}</span></div><div class="v4-order-kpi"><div><span>Клиенту</span><b>${money(order.client_total)}</b></div><div><span>Себестоимость</span><b>${money(order.contractor_cost)}</b></div><div><span>Прибыль</span><b>${money(order.profit)}</b></div><div><span>Оплата</span><b>${esc(order.payment_status || 'Недоступно для роли')}</b></div></div>${renderOrderChecklist(order)}</article>`;
 }
 
 function renderCreateForm() {
@@ -131,9 +132,9 @@ export async function loadOrders() {
   renderOrders();
   try {
     let response;
-    if (new URL(V4_CONFIG.supabaseUrl).hostname === 'otulfnouybahfnsycxqn.supabase.co') {
-      const result = await invokeLeaderFunction('leader-crm-orders', { action: 'list' });
-      response = { data: (result.orders || []).filter((order) => ids.includes(order.id)), error: null };
+    if (orderOperationsAvailable(V4_CONFIG.supabaseUrl)) {
+      const bundles = await Promise.all(ids.map(order_id => invokeLeaderFunction('leader-crm-orders', { action: 'get', order_id })));
+      response = { data: bundles.map(result => result.order).filter(Boolean), error: null };
     } else {
       response = await supabaseClient.from('leader_orders').select(ORDER_FIELDS).in('id', ids).limit(30);
     }

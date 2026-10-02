@@ -1,3 +1,4 @@
+import { orderOperationsAvailable } from '../crm/v4/assets/v4/operational-server-contract-v1.js';
 import assert from 'node:assert/strict';
 import {
   calculationStatusForOfferStatus,
@@ -63,11 +64,13 @@ assert.equal(resolveOfferId(null), '');
 const fetchOrderFunction = offerCardSource.slice(offerCardSource.indexOf('async function fetchOrder('), offerCardSource.indexOf('async function fetchEvents('));
 let serverReads = 0;
 const fetchStagingOrder = runInNewContext(fetchOrderFunction + ';fetchOrder', {
-  URL, V4_CONFIG: { supabaseUrl: 'https://otulfnouybahfnsycxqn.supabase.co' },
+  URL, orderOperationsAvailable, V4_CONFIG: { supabaseUrl: 'https://otulfnouybahfnsycxqn.supabase.co' },
   supabaseClient: { from() { throw new Error('direct_staging_read_forbidden'); } },
   invokeLeaderFunction: async (slug, payload) => {
-    assert.equal(slug, 'leader-crm-orders'); assert.equal(payload.action, 'list'); serverReads++;
-    return { orders: [{ id: 'order-1', status: 'Новый' }] };
+    assert.equal(slug, 'leader-crm-orders'); assert.equal(payload.action, 'get'); serverReads++;
+    if (payload.order_id === 'missing') return { order: null };
+    assert.equal(payload.order_id, 'order-1');
+    return { order: { id: 'order-1', status: 'Новый' } };
   }
 });
 assert.equal(await fetchStagingOrder(null), null);
@@ -78,11 +81,11 @@ assert.equal(serverReads, 2);
 const ordersSource = readFileSync(new URL('../crm/v4/assets/v4/orders.js', import.meta.url), 'utf8');
 const loadOrdersFunction = ordersSource.slice(ordersSource.indexOf('async function loadOrders('), ordersSource.indexOf('async function loadOrderBundle('));
 const loadRelatedOrders = runInNewContext(loadOrdersFunction + ';loadOrders', {
-  URL, V4_CONFIG: { supabaseUrl: 'https://otulfnouybahfnsycxqn.supabase.co' },
+  URL, orderOperationsAvailable, V4_CONFIG: { supabaseUrl: 'https://otulfnouybahfnsycxqn.supabase.co' },
   ensureHost() {}, linkedOrderIds: () => ['order-1'], v4State: { route: { leadId: 'lead-1' }, crmReady: true },
   renderOrders() {}, orders: [], ordersBusy: false, ordersError: null,
   friendlyError: (error) => { throw error; },
   supabaseClient: { from() { throw new Error('direct_staging_related_order_read_forbidden'); } },
-  invokeLeaderFunction: async () => ({ orders: [{id:'order-1'}, {id:'unrelated'}] })
+  invokeLeaderFunction: async (slug, payload) => { assert.equal(payload.action, 'get'); assert.equal(payload.order_id, 'order-1'); return { order: {id:'order-1'} }; }
 });
 assert.deepEqual(JSON.parse(JSON.stringify(await loadRelatedOrders())), [{ id: 'order-1' }]);

@@ -1,0 +1,41 @@
+{
+  "date": "2026-10-01",
+  "verified_on": "2026-10-02",
+  "project_ref": "ofewxuqfjhamgerwzull",
+  "migration": "leader_order_finance_operational_v1_20261001",
+  "owner_authorization": "2026-09-29",
+  "staging_e2e": 36875276336,
+  "backup_id": "order-finance-20261001-v1",
+  "private_backup": true,
+  "postflight_passed": true,
+  "business_rows_unchanged": true,
+  "stop_rollback_rehearsed": true,
+  "service_execute_restored": true,
+  "synthetic_production_rows_created": 0,
+  "production_positive_ui_write_performed": false,
+  "edge_sources_match_reviewed_package": true,
+  "functions": [
+    {
+      "slug": "leader-crm-orders",
+      "version": 3,
+      "sha256": "6f7d54ab1068e682cc348cfcc4b0b7a8515277b33bcaf8419f7ac32b500ef22c",
+      "verify_jwt": true
+    },
+    {
+      "slug": "leader-crm-finance",
+      "version": 1,
+      "sha256": "4827ef333515fee7697e04c7084a691bade12f16e994608df3632f7d7b3e74e9",
+      "verify_jwt": true
+    }
+  ],
+  "advisors": {
+    "security_leader_warn_error": 0,
+    "performance_leader_warn_error": 0,
+    "private_no_policy_info": 3
+  },
+  "frontend_publication": "tracked_by_PR563_and_Pages_deploy",
+  "unauthenticated_http_smoke": {
+    "leader-crm-orders": 401,
+    "leader-crm-finance": 401
+  }
+}

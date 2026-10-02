@@ -1,3 +1,5 @@
+import { orderOperationsAvailable } from './operational-server-contract-v1.js';
+import { renderOrderOperations, mountOrderOperations } from './order-operation-ui-v1.js';
 import { invokeLeaderFunction } from './functions-client.js';
 import { V4_CONFIG } from './config.js';
 import { v4State } from './state.js';
@@ -31,6 +33,7 @@ let busy = false;
 let booted = false;
 let currentBundle = null;
 let financeWriter = null;
+let orderWriter = null;
 let opener = null;
 let cardRequest = 0;
 const canReadFinance = () => canPerformV4Action(CRM_V4_ACTIONS.FINANCE_READ);
@@ -88,9 +91,10 @@ function host() {
 }
 
 function closeCard() {
-  if (financeWriter?.isBusy()) return;
+  if (financeWriter?.isBusy() || orderWriter?.isBusy()) return;
   cardRequest += 1;
   financeWriter = null;
+  orderWriter = null;
   host().innerHTML = '';
   const returnTarget = opener?.isConnected ? opener : (currentBundle?.order.id ? document.querySelector(`[data-open-order="${CSS.escape(currentBundle.order.id)}"]`) : null);
   returnTarget?.focus();
@@ -112,7 +116,7 @@ function errorBox(text, code = 'order_read_failed') {
 }
 
 async function fetchOrderBundle(orderId) {
-  if (new URL(V4_CONFIG.supabaseUrl).hostname === 'otulfnouybahfnsycxqn.supabase.co') {
+  if (orderOperationsAvailable(V4_CONFIG.supabaseUrl)) {
     const result = await invokeLeaderFunction('leader-crm-orders', { action: 'get', order_id: orderId });
     if (!result.order || !Array.isArray(result.items)) throw new Error('Ответ сервера не содержит заказ и его позиции.');
     return result;
@@ -326,7 +330,8 @@ function renderCard(order, items, payments, expenses, financeError = '') {
   const statusModel = orderStatusUiModel(order.status);
   const statusWarning = statusModel.known ? '' : `<div class="v4-order-modal-empty" data-unknown-order-status="${esc(statusModel.raw)}">${esc(statusModel.warning)}</div>`;
   currentBundle = { order, items, payments, expenses, statusModel, financeError };
-  host().innerHTML = `<div class="v4-order-modal"><div class="v4-order-modal-card" role="dialog" aria-modal="true" aria-labelledby="orderCardTitle"><div class="v4-order-modal-head"><div><p class="v4-kicker">Карточка заказа</p><h2 id="orderCardTitle" tabindex="-1">№${esc(order.order_number || shortId(order.id))} — ${esc(order.project_name || 'Заказ')}</h2><p>${esc(order.client_name || 'Клиент не указан')} · ${esc(order.client_phone || 'телефон не указан')} · создано ${dateRu(order.created_at)}</p></div><button type="button" data-order-card-close>Закрыть</button></div><div class="v4-order-modal-grid"><div><span>Статус</span><b title="${esc(statusModel.known ? `Registry: ${statusModel.key}` : statusModel.warning)}">${esc(statusModel.label)}</b></div><div><span>Оплата</span><b>${esc(order.payment_status || 'Не оплачено')}</b></div><div><span>Срок</span><b>${dateRu(order.deadline)}</b></div><div><span>Дизайн / макет</span><b>${esc(order.layout_status || '—')}</b></div><div><span>Производство</span><b>${esc(order.production_status || '—')}</b></div><div><span>Тип</span><b>${esc(orderType)}</b></div><div><span>План клиенту</span><b>${money(order.client_total)}</b></div></div>${statusWarning}${renderPrimaryGuidance(order, statusModel, expenses)}${renderExceptionAssistant()}<div class="v4-order-modal-actions">${order.lead_id ? `<button type="button" data-order-card-open-lead="${esc(order.lead_id)}">Открыть связанную заявку</button>` : ''}<button type="button" data-order-card-close>Закрыть</button></div>${renderDesign(order)}${renderFinance(order, payments, expenses, financeError)}<section class="v4-order-modal-section"><h3>Позиции заказа</h3><div class="v4-order-modal-items">${renderItems(items)}</div></section></div></div>`;
+  host().innerHTML = `<div class="v4-order-modal"><div class="v4-order-modal-card" role="dialog" aria-modal="true" aria-labelledby="orderCardTitle"><div class="v4-order-modal-head"><div><p class="v4-kicker">Карточка заказа</p><h2 id="orderCardTitle" tabindex="-1">№${esc(order.order_number || shortId(order.id))} — ${esc(order.project_name || 'Заказ')}</h2><p>${esc(order.client_name || 'Клиент не указан')} · ${esc(order.client_phone || 'телефон не указан')} · создано ${dateRu(order.created_at)}</p></div><button type="button" data-order-card-close>Закрыть</button></div><div class="v4-order-modal-grid"><div><span>Статус</span><b title="${esc(statusModel.known ? `Registry: ${statusModel.key}` : statusModel.warning)}">${esc(statusModel.label)}</b></div><div><span>Оплата</span><b>${esc(order.payment_status || 'Не оплачено')}</b></div><div><span>Срок</span><b>${dateRu(order.deadline)}</b></div><div><span>Дизайн / макет</span><b>${esc(order.layout_status || '—')}</b></div><div><span>Производство</span><b>${esc(order.production_status || '—')}</b></div><div><span>Тип</span><b>${esc(orderType)}</b></div><div><span>План клиенту</span><b>${money(order.client_total)}</b></div></div>${statusWarning}${renderOrderOperations(order, orderOperationsAvailable(V4_CONFIG.supabaseUrl), canPerformV4Action(CRM_V4_ACTIONS.ORDERS_TRANSITION), canPerformV4Action(CRM_V4_ACTIONS.ORDERS_UPDATE))}${renderPrimaryGuidance(order, statusModel, expenses)}${renderExceptionAssistant()}<div class="v4-order-modal-actions">${order.lead_id ? `<button type="button" data-order-card-open-lead="${esc(order.lead_id)}">Открыть связанную заявку</button>` : ''}<button type="button" data-order-card-close>Закрыть</button></div>${renderDesign(order)}${renderFinance(order, payments, expenses, financeError)}<section class="v4-order-modal-section"><h3>Позиции заказа</h3><div class="v4-order-modal-items">${renderItems(items)}</div></section></div></div>`;
+  orderWriter = mountOrderOperations(host().querySelector('[data-order-operations]'), { order, client: supabaseClient, url: V4_CONFIG.supabaseUrl, actorId: v4State.profile?.user_id, role: v4State.profile?.role, refresh: message => openOrderCard(order.id, message, true) });
   financeWriter = mountFinanceWriter(host().querySelector('[data-order-finance]'), { order, payments, expenses, client: supabaseClient, url: V4_CONFIG.supabaseUrl, actorId: v4State.profile?.user_id, canWrite: canWriteFinance, refresh: message => openOrderCard(order.id, message || '', true) });
   document.dispatchEvent(new CustomEvent('leader-v4:order-card-rendered', {
     detail: { orderId: String(order.id || '') }
@@ -334,11 +339,12 @@ function renderCard(order, items, payments, expenses, financeError = '') {
 }
 
 async function openOrderCard(orderId, message = '', refresh = false, trigger = null) {
-  if (!orderId || busy || financeWriter?.isBusy()) return;
+  if (!orderId || busy || financeWriter?.isBusy() || orderWriter?.isBusy()) return;
   if (!refresh) opener = trigger || document.activeElement;
   const request = ++cardRequest;
   busy = true;
   financeWriter = null;
+  orderWriter = null;
   ensureStyles();
   loading();
   try {
