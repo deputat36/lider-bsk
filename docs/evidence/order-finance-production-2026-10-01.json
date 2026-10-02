@@ -33,5 +33,9 @@
     "performance_leader_warn_error": 0,
     "private_no_policy_info": 3
   },
-  "frontend_publication": "tracked_by_PR563_and_Pages_deploy"
+  "frontend_publication": "tracked_by_PR563_and_Pages_deploy",
+  "unauthenticated_http_smoke": {
+    "leader-crm-orders": 401,
+    "leader-crm-finance": 401
+  }
 }
