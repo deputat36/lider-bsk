@@ -46,7 +46,7 @@ function ensureStyles() {
     .v4-offer-text{white-space:pre-wrap;border:1px solid #e2e8f0;background:#f8fafc;border-radius:14px;padding:12px;max-height:420px;overflow:auto;font-family:Arial,sans-serif;line-height:1.45}.v4-offer-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}.v4-offer-tabs button.is-active{background:#ea580c;color:#fff;border-color:#ea580c}
     .v4-offer-row{border:1px solid #e2e8f0;border-radius:14px;padding:10px;margin:8px 0;background:#f8fafc}.v4-offer-row-head{display:flex;justify-content:space-between;gap:10px}.v4-offer-row-head b{overflow-wrap:anywhere}
     .v4-offer-actions-line{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.v4-offer-empty{border:1px dashed #cbd5e1;border-radius:14px;padding:12px;color:#64748b;background:#f8fafc}.v4-offer-close{white-space:nowrap}
-    @media(max-width:860px){.v4-offer-modal-card{padding:12px;border-radius:18px}.v4-offer-head,.v4-offer-columns{display:grid;grid-template-columns:1fr}.v4-offer-actions-line button,.v4-offer-tabs button{width:100%}}
+    @media(max-width:860px){.v4-offer-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.v4-offer-grid div{min-width:0}.v4-offer-grid b{overflow-wrap:anywhere}.v4-offer-modal-card{padding:12px;border-radius:18px}.v4-offer-head,.v4-offer-columns{display:grid;grid-template-columns:1fr}.v4-offer-actions-line button,.v4-offer-tabs button{width:100%}}
   `;
   document.head.appendChild(style);
 }
@@ -133,6 +133,17 @@ function renderCard({ offer, lead, calculation, items, order, events }) {
   const short = offer.short_text || '';
   currentOffer = offer;
   host().innerHTML = `<div class="v4-offer-modal"><div class="v4-offer-modal-card" role="dialog" aria-modal="true" aria-label="Карточка КП"><div class="v4-offer-head"><div><p class="v4-kicker">Карточка КП</p><h2>${esc(offer.title || 'Коммерческое предложение')}</h2><p>№${esc(offer.offer_number || shortId(offer.id))} · ${esc(offer.offer_type || 'КП')} · создано ${dateTimeRu(offer.created_at)}</p></div><button type="button" class="v4-offer-close" data-offer-card-close>Закрыть</button></div><div class="v4-offer-grid"><div><span>Статус</span><b>${esc(offer.status || 'Черновик')}</b></div><div><span>Сумма</span><b>${money(offer.total_sum)}</b></div><div><span>Действует до</span><b>${dateRu(offer.valid_until)}</b></div><div><span>Отправлено</span><b>${dateTimeRu(offer.sent_at)}</b></div><div><span>Согласовано</span><b>${dateTimeRu(offer.approved_at)}</b></div><div><span>Заказ</span><b>${order ? 'создан' : 'нет'}</b></div></div><div class="v4-offer-actions-line">${offerStatusControls(offer)}<button type="button" data-edit-type="offer" data-edit-id="${esc(offer.id)}">Редактировать КП</button>${lead ? `<button type="button" data-open-lead="${esc(lead.id)}" data-offer-card-close>Открыть заявку</button>` : ''}${order ? `<button type="button" data-open-order="${esc(order.id)}" data-offer-card-close>Открыть заказ</button>` : ''}<button type="button" data-offer-copy="full">Копировать полное</button><button type="button" data-offer-copy="short">Копировать короткое</button></div><div class="v4-offer-columns"><section class="v4-offer-section"><h3>Текст КП</h3><div class="v4-offer-tabs"><button type="button" class="is-active" data-offer-text-tab="full">Полное КП</button><button type="button" data-offer-text-tab="short">Короткое сообщение</button></div><pre class="v4-offer-text" data-offer-full="${esc(full)}" data-offer-short="${esc(short)}">${esc(full || 'Полный текст КП не заполнен.')}</pre></section><div>${renderRelation(lead, calculation, order)}<section class="v4-offer-section" style="margin-top:12px"><h3>История КП</h3>${renderEvents(events)}</section></div></div><section class="v4-offer-section" style="margin-top:12px"><h3>Состав из расчёта</h3>${renderItems(items)}</section></div></div>`;
+  const card = host().querySelector('.v4-offer-modal-card');
+  const actions = card.querySelector('.v4-offer-actions-line');
+  const grid = card.querySelector('.v4-offer-grid');
+  grid.before(actions);
+  const secondary = document.createElement('details');
+  const summary = document.createElement('summary');
+  summary.textContent = 'Дополнительные действия';
+  secondary.append(summary);
+  actions.querySelectorAll('[data-edit-type], [data-open-lead], [data-offer-copy]').forEach(button=>secondary.append(button));
+  actions.append(secondary);
+
 }
 
 function offerStatusControls(offer) {

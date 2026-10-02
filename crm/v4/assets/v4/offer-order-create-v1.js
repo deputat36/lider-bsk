@@ -103,7 +103,7 @@ function renderForm(bundle) {
     <section id="offerOrderCreateBox" class="v4-offer-order-create">
       <h3>Создать заказ из этого КП</h3>
       <p>КП согласовано, заказ ещё не создан. Проверьте параметры запуска.</p>
-      <div class="v4-offer-order-warning">После создания заказ будет связан с КП, расчётом и заявкой. Состав позиций перенесётся из расчёта серверной функцией.</div>
+      <div class="v4-offer-order-warning">Состав и сумма из согласованного КП перенесутся в заказ автоматически.</div>
       <div class="v4-form-grid">
         <label>Название заказа
           <input id="offerOrderProjectName" value="${esc(title)}" placeholder="Например: Баннер 3×2 для клиента">
