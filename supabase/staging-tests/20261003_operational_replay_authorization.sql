@@ -2,7 +2,7 @@
 CREATE OR REPLACE FUNCTION pg_temp.check_operational_replay(fn text, request jsonb)
 RETURNS void LANGUAGE plpgsql AS $$
 DECLARE response jsonb; actor uuid := (request->>'actor_id')::uuid;
- profile_role text; retry jsonb; retry_id uuid := gen_random_uuid(); original_actor uuid;
+ profile_role text; retry jsonb; retry_id uuid := gen_random_uuid(); original_actor uuid; original_response jsonb;
  receipt_action text := request#>>'{request,action}'; receipt_key text := request#>>'{request,payload,idempotency_key}';
  before_count integer;
 BEGIN
@@ -13,6 +13,20 @@ BEGIN
  IF response->>'ok' IS DISTINCT FROM 'true' OR response->>'idempotent_replay' IS DISTINCT FROM 'true'
     OR response->>'request_id' IS DISTINCT FROM retry_id::text THEN
   RAISE EXCEPTION 'new_request_replay_failed:%:%',fn,response; END IF;
+ IF (response->'entity') ?| ARRAY['contractor_cost','client_total','installer_cost','client_price','profit','internal_comment'] THEN
+  RAISE EXCEPTION 'command_financial_response_leak:%',fn; END IF;
+ IF receipt_action LIKE '%.create_from_order' THEN
+  SELECT receipt.response INTO original_response FROM leader_private.leader_command_receipts receipt
+  WHERE action=receipt_action AND idempotency_key=receipt_key;
+  UPDATE leader_private.leader_command_receipts
+  SET response=jsonb_set(original_response,'{entity}',(original_response->'entity')||'{"client_total":1000,"installer_cost":700,"internal_comment":"private fixture"}'::jsonb)
+  WHERE action=receipt_action AND idempotency_key=receipt_key;
+  EXECUTE format('SELECT public.%I($1)',fn) INTO response USING retry;
+  IF response->>'ok' IS DISTINCT FROM 'true' OR (response->'entity') ?| ARRAY['client_total','installer_cost','internal_comment'] THEN
+   RAISE EXCEPTION 'historical_receipt_financial_leak:%:%',fn,response; END IF;
+  UPDATE leader_private.leader_command_receipts SET response=original_response
+  WHERE action=receipt_action AND idempotency_key=receipt_key;
+ END IF;
  UPDATE public.leader_user_profiles SET is_active=false WHERE user_id=actor;
  EXECUTE format('SELECT public.%I($1)',fn) INTO response USING retry;
  IF response#>>'{error,code}' IS DISTINCT FROM 'forbidden' THEN

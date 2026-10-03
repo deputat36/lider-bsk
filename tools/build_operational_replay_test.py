@@ -89,6 +89,7 @@ CREATE TABLE leader_private.leader_role_action_matrix_v1(role text PRIMARY KEY,a
   );""", "  return leader_private.leader_installation_command_error(v_request_id, 'persistence_failed', 'Installation job update could not be persisted');")
         sql += baseline
     sql += read('supabase/staging-migrations/20261003184404_operational_replay_authorization_v1.sql')
+    sql += read('supabase/staging-migrations/20261003185613_operational_response_projection_v1.sql')
     return sql
 
 

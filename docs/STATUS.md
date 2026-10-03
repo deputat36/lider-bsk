@@ -2,7 +2,20 @@
 
 Дата обновления: 2026-10-03.
 
-## Команды дизайна — текущий этап 03.10
+## Авторизация повторных команд производства/монтажа — этап 03.10
+
+Исправлена staging-проблема: production receipt replay и layout
+wrapper проверяли данные до fresh authorization. Новый scoped upgrade переносит
+production.write / internal_comment permissions до чтения receipt, проверяет actor
+в receipt и возвращает текущий request_id при retry. Четыре команды проверены в staging на positive create/update, retry с новым
+request_id, inactive/смене роли, снятии orders.update при сохранённом
+production.write, receipt actor mismatch и browser EXECUTE denial. Финансовые
+поля удалены из create response и replay исторического receipt; строки receipts
+не переписываются. Synthetic транзакции завершены ROLLBACK, residue=0. Тот же
+SQL regression добавлен в существующий PostgreSQL CI. Production operational
+activation пока не выполнена. [Scope и proof](CRM_OPERATIONAL_REPLAY_AUTHORIZATION_2026-10-03.md).
+
+## Команды дизайна — завершённый этап 03.10
 
 PR568: production `design_commands_production_v1` + JWT `leader-crm-design` v1
 установлены после full staging [37127188581](https://github.com/deputat36/lider-bsk/actions/runs/37127188581)
@@ -17,7 +30,7 @@ Frontend gate включён после backend postflight: создание и�
 Mobile/local mock proofs: 15 queue + 5 designer action + 5 manager approval cases.
 Production authenticated UI/positive worker mutations ещё не доказаны.
 [Scope, source, точные proof и rollback](CRM_DESIGN_COMMANDS_PRODUCTION_2026-10-03.md).
-Доставка frontend отслеживается в [PR568](https://github.com/deputat36/lider-bsk/pull/568) и связанном Pages deployment; authenticated production proof остаётся отдельным этапом.
+PR568 merged `1080f858`; CI 63 success + 1 skipped; Pages 37143960202 success. Browser www подтвердил новые importmap версии. Authenticated production proof остаётся отдельным этапом.
 
 ## Очереди исполнителей — предшествующий этап 03.10
 
@@ -74,7 +87,7 @@ Authenticated production UI не проверен: текущая сессия �
 и mobile CTA, targeted browser 5 widths PASS. Production mutations для proof не создавались.
 
 Следующий этап: design/production/installation server cutover. Read-only preflight
-03.10: их transactional RPC отсутствуют, browser DML ещё открыт. Shared RBAC/receipts
+на этапе PR564: operational transactional RPC отсутствовали, browser DML был открыт. Design-команды впоследствии активированы PR568; production/installation остаются отдельным этапом. Shared RBAC/receipts
 уже установлены; installation plan теперь поддерживает `--existing-core`, исключая
 повторный apply/rollback общего слоя и использование старых row counts.
 
