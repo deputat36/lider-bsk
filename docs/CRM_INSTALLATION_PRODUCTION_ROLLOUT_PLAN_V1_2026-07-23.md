@@ -2,7 +2,17 @@
 
 Issue #456.
 
-Статус: source-only план подготовлен, production execution не выполнялся.
+Статус installation cutover: source-only, execution ещё не выполнялся.
+
+Актуализация 03.10.2026: shared canonical RBAC/receipts уже установлены PR563.
+Старые P1/empty-receipts/отсутствие core ниже относятся к историческому baseline.
+Для следующего rollout генерировать с `--existing-core`: P1 проверяет существующий
+core без повторной установки и без его rollback. Старые row counts не используются;
+нужен свежий preflight. Установка installation RPC/Edge остаётся отдельным cutover.
+Разрешение владельца 29.09/02.10 действует; конкретные фазы выполняются после proof.
+Read-only preflight 03.10: 1 order, 0 installation jobs/items/events/comments;
+все требуемые columns присутствуют, installation read/update RPC отсутствуют.
+
 
 ## Назначение
 
