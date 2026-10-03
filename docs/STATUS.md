@@ -12,6 +12,11 @@ Staging RPC возвращает только рабочие поля без д�
 ссылки/unsafe URL, replay/stale, role/inactive, privacy и ACL PASS. Все fixtures в
 ROLLBACK; независимая проверка tasks/events/orders/profiles/receipts/Auth = 0.
 Targeted browser: 360/390/768/1024/1440 px PASS (локальный mock, не production proof).
+Полный authenticated staging E2E [37110797611](https://github.com/deputat36/lider-bsk/actions/runs/37110797611)
+PASS на SHA `9f6d029`: менеджер/владелец, явное согласование → производство → монтаж,
+клиенты, оплаты/расходы и закрытие. Cleanup PASS; независимый SQL подтвердил нулевой
+остаток задач, истории дизайна, заказов, profiles/Auth, production/installation,
+оплат/расходов и receipts. Временный OIDC-доступ ветки снят после завершения.
 Production cutover ещё не выполнен; права чтения исполнителей и остальные команды
 производства/монтажа требуют согласованного rollout. Astra для этого блока не нужна.
 
