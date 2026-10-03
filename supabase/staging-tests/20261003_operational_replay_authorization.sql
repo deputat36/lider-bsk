@@ -22,6 +22,15 @@ BEGIN
  IF response#>>'{error,code}' IS DISTINCT FROM 'forbidden' THEN
   RAISE EXCEPTION 'role_changed_replay_leaked:%:%',fn,response; END IF;
  UPDATE public.leader_user_profiles SET role=profile_role WHERE user_id=actor;
+ IF request#>'{request,payload,patch}' ? 'internal_comment' THEN
+  UPDATE public.leader_user_profiles SET role='contractor' WHERE user_id=actor;
+  IF NOT leader_private.leader_actor_has_crm_action(actor,'production.write') THEN
+   RAISE EXCEPTION 'contractor_fixture_missing_production_write'; END IF;
+  EXECUTE format('SELECT public.%I($1)',fn) INTO response USING retry;
+  IF response#>>'{error,code}' IS DISTINCT FROM 'forbidden' THEN
+   RAISE EXCEPTION 'internal_comment_replay_leaked:%:%',fn,response; END IF;
+  UPDATE public.leader_user_profiles SET role=profile_role WHERE user_id=actor;
+ END IF;
  SELECT actor_id INTO original_actor FROM leader_private.leader_command_receipts
  WHERE action=receipt_action AND idempotency_key=receipt_key;
  UPDATE leader_private.leader_command_receipts SET actor_id=gen_random_uuid()

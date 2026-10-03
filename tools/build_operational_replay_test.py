@@ -24,13 +24,14 @@ def scenarios():
         marker = '  v_replay := public.leader_create_' + kind + '_job_from_order_rpc(v_request);'
         assert source.count(marker) == 1
         source = source.replace(marker, f"  perform pg_temp.check_operational_replay('leader_create_{kind}_job_from_order_rpc',v_request);\n" + marker)
+        extra_patch = ", 'internal_comment','LIDER replay internal note'" if kind == 'production' else ''
         update = f"""
   v_update_request := jsonb_build_object(
     'actor_id',v_request->>'actor_id','actor_email',v_request->>'actor_email',
     'request',jsonb_build_object('action','{kind}_job.update','request_id',gen_random_uuid(),
       'expected_updated_at',(select updated_at from public.leader_{kind}_jobs where id=v_job_id),
       'payload',jsonb_build_object('job_id',v_job_id,'idempotency_key','LIDER-REPLAY-20261003-{kind}-update',
-        'patch',jsonb_build_object('title','LIDER replay regression updated title'))));
+        'patch',jsonb_build_object('title','LIDER replay regression updated title'{extra_patch}))));
   v_response := public.leader_update_{kind}_job_rpc(v_update_request);
   if v_response->>'ok' is distinct from 'true' then raise exception 'positive_update_failed:%',v_response; end if;
   perform pg_temp.check_operational_replay('leader_update_{kind}_job_rpc',v_update_request);
@@ -67,7 +68,7 @@ GRANT USAGE ON SCHEMA public,auth,extensions TO service_role;
 """ + read('supabase/staging-migrations/20260713_01_design_task_harness.sql')
     sql += """
 ALTER TABLE public.leader_leads ADD COLUMN name text,ADD COLUMN phone text,ADD COLUMN source text,ADD COLUMN assigned_to uuid,ADD COLUMN next_contact_at timestamptz,ADD COLUMN request_id text;
-ALTER TABLE public.leader_orders ADD COLUMN current_stage text,ADD COLUMN next_action text,ADD COLUMN source text;
+ALTER TABLE public.leader_orders ADD COLUMN current_stage text,ADD COLUMN next_action text,ADD COLUMN source text,ADD COLUMN installation_status text;
 CREATE TABLE leader_private.leader_role_action_matrix_v1(role text PRIMARY KEY,allowed_actions text[]);
 """
     for role, actions in json.loads(read('contracts/crm-v4-role-action-matrix-v1.json'))['roles'].items():
