@@ -77,7 +77,16 @@ CREATE TABLE leader_private.leader_role_action_matrix_v1(role text PRIMARY KEY,a
     for filename in ['20260721_04_production_job_update_rpc.sql', '20260721_05_installation_schema_install.sql',
                      '20260721_06_installation_job_update_rpc.sql', '20260731_02_production_job_create_from_order_rpc.sql',
                      '20260731_03_production_job_create_layout_gate_fix.sql', '20260731_04_installation_job_create_from_order_rpc.sql']:
-        sql += read('supabase/staging-migrations/' + filename)
+        baseline = read('supabase/staging-migrations/' + filename)
+        if filename == '20260721_06_installation_job_update_rpc.sql':
+            # Inspected staging runtime differs only in formatting this exception handler.
+            # Reproduce the deployed body exactly; keep the migration fingerprint guard strict.
+            baseline = baseline.replace("""  return leader_private.leader_installation_command_error(
+    v_request_id,
+    'persistence_failed',
+    'Installation job update could not be persisted'
+  );""", "  return leader_private.leader_installation_command_error(v_request_id, 'persistence_failed', 'Installation job update could not be persisted');")
+        sql += baseline
     sql += read('supabase/staging-migrations/20261003184404_operational_replay_authorization_v1.sql')
     return sql
 
