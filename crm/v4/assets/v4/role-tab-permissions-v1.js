@@ -1,5 +1,8 @@
+import { V4_CONFIG } from './config.js';
 import { v4State } from './state.js';
 import { CRM_V4_ACTIONS, canPerformV4Action } from './action-permissions-v1.js';
+
+export const DESIGN_QUEUE_PRODUCTION_ENABLED = true;
 
 export const CRM_V4_TABS = Object.freeze([
   'management_dashboard',
@@ -60,13 +63,19 @@ export function canOpenV4Tab(tab, profile = v4State.profile) {
 export function canOpenV4ProductionKind(kind, profile = v4State.profile) {
   const value = String(kind || '').trim();
   if (!canOpenV4Tab('production', profile)) return false;
+  if (value === 'design') {
+    let enabledEnvironment = false;
+    try { const host = new URL(V4_CONFIG.supabaseUrl).hostname; enabledEnvironment = host === 'otulfnouybahfnsycxqn.supabase.co' || (DESIGN_QUEUE_PRODUCTION_ENABLED && host === 'ofewxuqfjhamgerwzull.supabase.co'); } catch (_) {}
+    return enabledEnvironment && canPerformV4Action(CRM_V4_ACTIONS.DESIGN_READ, profile);
+  }
   if (value === 'production') return canPerformV4Action(CRM_V4_ACTIONS.PRODUCTION_READ, profile);
   if (value === 'installation') return canPerformV4Action(CRM_V4_ACTIONS.INSTALLATION_READ, profile);
   return false;
 }
 
 export function firstAllowedV4ProductionKind(profile = v4State.profile) {
-  return ['production', 'installation'].find((kind) => canOpenV4ProductionKind(kind, profile)) || '';
+  const kinds = normalizedRole(profile) === 'designer' ? ['design', 'production', 'installation'] : ['production', 'installation', 'design'];
+  return kinds.find((kind) => canOpenV4ProductionKind(kind, profile)) || '';
 }
 
 export function canViewV4Costs(profile = v4State.profile) {
@@ -86,6 +95,12 @@ export function firstAllowedV4Tab(profile = v4State.profile) {
 export function applyV4TabButtonVisibility(root = document, profile = v4State.profile) {
   const allowed = allowedV4Tabs(profile);
   root.querySelectorAll?.('[data-v4-tab-button]').forEach((button) => {
+    if (button.dataset.v4TabButton === 'production') {
+      const label = ({ designer: 'Дизайн', installer: 'Монтаж', contractor: 'Производство' })[normalizedRole(profile)] || 'Задания';
+      const badge = button.querySelector?.('.v4-production-tab-badge');
+      button.textContent = label;
+      if (badge) button.appendChild(badge);
+    }
     const permitted = profile?.is_active === true && allowed.has(button.dataset.v4TabButton || '');
     button.hidden = !permitted;
     button.disabled = !permitted;
@@ -97,7 +112,7 @@ export function roleAccessSummary(profile = v4State.profile) {
   return {
     role: normalizedRole(profile),
     tabs: [...allowedV4Tabs(profile)],
-    productionKinds: ['production', 'installation'].filter((kind) => canOpenV4ProductionKind(kind, profile)),
+    productionKinds: ['design', 'production', 'installation'].filter((kind) => canOpenV4ProductionKind(kind, profile)),
     canViewCosts: canViewV4Costs(profile),
     canViewInternalNotes: canViewV4InternalNotes(profile),
     serverEnforcement: false,

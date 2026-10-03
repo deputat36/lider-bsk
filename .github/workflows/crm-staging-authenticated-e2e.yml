@@ -172,6 +172,29 @@ jobs:
           node tools/run_crm_staging_role_permission_e2e.mjs > "${RUNNER_TEMP}/crm-authenticated-e2e/finance-manager-rbac.json"
           jq -e '.ok == true and .role == "manager" and .finance_rpc_denied == true and .money_records_hidden == true' "${RUNNER_TEMP}/crm-authenticated-e2e/finance-manager-rbac.json" >/dev/null
 
+      - name: Verify designer contractor installer UI and direct API
+        id: worker_roles
+        if: steps.finance_manager.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          OIDC_FILE="${RUNNER_TEMP}/crm-e2e-worker-oidc.json"
+          curl -fsS -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${OIDC_AUDIENCE}" > "${OIDC_FILE}"
+          OIDC_TOKEN="$(jq -er '.value' "${OIDC_FILE}")"
+          rm -f "${OIDC_FILE}"
+          for WORKER_ROLE in designer contractor installer; do
+            export STAGING_CRM_E2E_EXPECTED_ROLE="${WORKER_ROLE}"
+            RESPONSE_FILE="${RUNNER_TEMP}/crm-authenticated-e2e/${WORKER_ROLE}-role.json"
+            HTTP_CODE="$(curl -sS -o "${RESPONSE_FILE}" -w '%{http_code}' -X POST "${BOOTSTRAP_URL}" -H "Authorization: Bearer ${OIDC_TOKEN}" -H 'Content-Type: application/json' --data "{\"action\":\"set_role\",\"run_key\":\"${STAGING_CRM_E2E_RUN_KEY}\",\"marker\":\"${STAGING_CRM_E2E_MARKER}\",\"role\":\"${WORKER_ROLE}\"}")"
+            test "${HTTP_CODE}" = '200'
+            node tools/run_crm_staging_worker_role_api.mjs > "${RUNNER_TEMP}/crm-authenticated-e2e/${WORKER_ROLE}-api.json"
+            export STAGING_CRM_E2E_EVIDENCE_PATH="${RUNNER_TEMP}/crm-authenticated-e2e/${WORKER_ROLE}-ui.json"
+            node tools/run_crm_staging_authenticated_e2e.mjs --mode=role-ui > "${RUNNER_TEMP}/crm-authenticated-e2e/${WORKER_ROLE}-ui.log" 2>&1
+            jq -e '.status == "passed" and .authenticated == true and .ui_allowed_controls == true and .ui_forbidden_controls == true' "${STAGING_CRM_E2E_EVIDENCE_PATH}" >/dev/null
+          done
+          curl -fsS -X POST "${BOOTSTRAP_URL}" -H "Authorization: Bearer ${OIDC_TOKEN}" -H 'Content-Type: application/json' --data "{\"action\":\"set_role\",\"run_key\":\"${STAGING_CRM_E2E_RUN_KEY}\",\"marker\":\"${STAGING_CRM_E2E_MARKER}\",\"role\":\"manager\"}" > "${RUNNER_TEMP}/crm-authenticated-e2e/workers-restored-manager.json"
+          unset OIDC_TOKEN
+
       - name: Inspect synthetic fixture before cleanup
         id: inspect
         if: steps.finance_manager.outcome == 'success'
@@ -230,5 +253,6 @@ jobs:
           test '${{ steps.owner_checks.outcome }}' = 'success'
           test '${{ steps.finance_checks.outcome }}' = 'success'
           test '${{ steps.finance_manager.outcome }}' = 'success'
+          test '${{ steps.worker_roles.outcome }}' = 'success'
           test '${{ steps.inspect.outcome }}' = 'success'
           test '${{ steps.cleanup.outcome }}' = 'success'
