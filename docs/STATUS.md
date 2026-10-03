@@ -17,7 +17,7 @@ Frontend gate включён после backend postflight: создание и�
 Mobile/local mock proofs: 15 queue + 5 designer action + 5 manager approval cases.
 Production authenticated UI/positive worker mutations ещё не доказаны.
 [Scope, source, точные proof и rollback](CRM_DESIGN_COMMANDS_PRODUCTION_2026-10-03.md).
-Доставка финального frontend PR568 ещё проверяется; не считать публикацию доказанной.
+Доставка frontend отслеживается в [PR568](https://github.com/deputat36/lider-bsk/pull/568) и связанном Pages deployment; authenticated production proof остаётся отдельным этапом.
 
 ## Очереди исполнителей — предшествующий этап 03.10
 
