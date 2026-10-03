@@ -61,6 +61,7 @@ function taskStatusModel(task = {}) {
     deadline: dateIso(task?.deadline),
     layoutStatus: text(task?.layout_status),
     layoutLinkPresent: Boolean(text(task?.layout_link)),
+    layoutLink: text(task?.layout_link),
     createdAt: dateIso(task?.created_at)
   });
 }
