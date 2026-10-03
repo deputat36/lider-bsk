@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import {
   DESIGN_TASK_STAGING_TRANSPORT,
+  DESIGN_COMMAND_PRODUCTION_ENABLED,
+  isDesignCommandEnvironment,
   buildStagingDesignCommand,
   designStagingTransportAvailability,
   invokeStagingDesignTask
@@ -44,8 +46,9 @@ const production = designStagingTransportAvailability({
   draft,
   expectedUpdatedAt
 });
-assert.equal(production.enabled, false);
-assert.equal(production.reason, 'production_locked');
+assert.equal(production.enabled, true);
+assert.equal(production.reason, '');
+assert.equal(designStagingTransportAvailability({supabaseUrl:productionUrl,canWrite:false,draft,expectedUpdatedAt}).reason,'forbidden');
 
 const command = buildStagingDesignCommand({ draft, expectedUpdatedAt, requestId: ids.request });
 assert.deepEqual(Object.keys(command).sort(), ['action', 'expected_updated_at', 'payload', 'request_id']);
@@ -169,7 +172,7 @@ assert.equal(noSessionClient.calls.length, 0);
 const lockedClient = clientWith({ data: null, error: null });
 const locked = await invokeStagingDesignTask({
   client: lockedClient,
-  supabaseUrl: productionUrl,
+  supabaseUrl: "https://ofewxuqfjhamgerwzull.supabase.co.example.invalid",
   canWrite: true,
   draft,
   expectedUpdatedAt
@@ -184,3 +187,12 @@ for (const precise of ['2026-08-27T15:00:00.123456+00:00', '2026-08-27T18:00:00.
   const preciseCommand = buildStagingDesignCommand({ draft, expectedUpdatedAt: precise, requestId: ids.request });
   assert.equal(preciseCommand.expected_updated_at, precise);
 }
+
+assert.equal(DESIGN_COMMAND_PRODUCTION_ENABLED,true);
+assert.equal(isDesignCommandEnvironment(productionUrl),true);
+assert.equal(isDesignCommandEnvironment(stagingUrl+'.example.invalid'),false);
+const prodClient=clientWith({data:{ok:true,entity:{id:ids.task}},error:null});
+const prod=await invokeStagingDesignTask({client:prodClient,supabaseUrl:productionUrl,canWrite:true,draft,expectedUpdatedAt,cryptoObject:{randomUUID:()=>ids.request}});
+assert.equal(prod.ok,true);assert.equal(prod.taskId,ids.task);assert.equal(prodClient.calls[0].slug,'leader-crm-design');
+
+assert.equal(designStagingTransportAvailability({supabaseUrl:productionUrl+'.example.invalid',canWrite:true,draft,expectedUpdatedAt}).reason,'production_locked');

@@ -27,7 +27,11 @@ DROP FUNCTION public.leader_create_design_task_from_order_rpc(jsonb);
 DROP SCHEMA leader_staging CASCADE;
 CREATE TABLE leader_private.leader_rollout_backups(id text PRIMARY KEY,project_ref text,data_snapshot jsonb,metadata_snapshot jsonb,edge_snapshot jsonb);
 """
-source=next((r/'supabase/production-candidates').glob('*_design_commands_production_v1.sql')).read_text().replace('BEGIN;','',1).replace('COMMIT;','',1)
+production=next((r/'supabase/production-candidates').glob('*_design_commands_production_v1.sql')).read_text()
+stage_body=source[source.index('create or replace function public.leader_create_design_task_from_order_rpc'):].strip()
+production_body=production[production.index('create or replace function public.leader_create_design_task_from_order_rpc'):production.index('-- Browser mutations remain closed;')].strip()
+assert stage_body==production_body, 'Staging/production command source drift'
+source=production.replace('BEGIN;','',1).replace('COMMIT;','',1)
 
 out=r/'build/design-commands-test.sql';out.parent.mkdir(exist_ok=True)
 tests=(r/'supabase/staging-tests/20261003_design_commands.sql').read_text().replace('BEGIN;','',1).replace('ROLLBACK;','',1)

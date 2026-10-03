@@ -29,7 +29,9 @@ export async function invokeStagingWorkflow({ client, supabaseUrl, action, entit
   };
   const response = await client.functions.invoke(action === 'design_task.transition' ? 'leader-crm-design' : FUNCTION_SLUG, { body });
   if (response?.error || response?.data?.ok !== true) {
-    const code = response?.data?.error?.code || response?.error?.message || 'workflow_failed';
+    let details = response?.data;
+    if (!details && response?.error?.context?.clone) { try { details = await response.error.context.clone().json(); } catch (_) {} }
+    const code = details?.error?.code || (typeof details?.error === 'string' ? details.error : null) || response?.error?.message || 'workflow_failed';
     throw new Error(String(code));
   }
   return response.data;

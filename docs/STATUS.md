@@ -2,7 +2,24 @@
 
 Дата обновления: 2026-10-03.
 
-## Очереди исполнителей — текущий этап 03.10
+## Команды дизайна — текущий этап 03.10
+
+PR568: production `design_commands_production_v1` + JWT `leader-crm-design` v1
+установлены после full staging [37127188581](https://github.com/deputat36/lider-bsk/actions/runs/37127188581)
+SUCCESS (`6aa6a7c`) и candidate PostgreSQL CI (`dbde9db`). Новый request_id при retry
+возвращает ту же задачу; cross-actor/content conflict, canonical RBAC/inactive,
+strict transitions, privacy/audit и optimistic locking проверены. Private backup
+`design-commands-20261003-v1`, полный snapshot unchanged, browser writes закрыты;
+actual stop RPC REVOKE/ROLLBACK PASS. Auth/Storage/core production не менялись.
+Cleanup staging независимым SQL = 0, временный доступ ветки снят (bootstrap v32).
+Frontend gate включён после backend postflight: создание из заказа, явное
+согласование; дизайнер начинает работу/передаёт ссылку из существующей очереди.
+Mobile/local mock proofs: 15 queue + 5 designer action + 5 manager approval cases.
+Production authenticated UI/positive worker mutations ещё не доказаны.
+[Scope, source, точные proof и rollback](CRM_DESIGN_COMMANDS_PRODUCTION_2026-10-03.md).
+Доставка финального frontend PR568 ещё проверяется; не считать публикацию доказанной.
+
+## Очереди исполнителей — предшествующий этап 03.10
 
 В существующую доску добавлена очередь дизайна: статус, срок, дизайнер,
 приоритет, ТЗ и безопасные ссылки на файлы. Дизайнер открывает её первой.
@@ -19,7 +36,7 @@ canonical SELECT/точная projection, browser DML и contact SELECT закр
 snapshot не изменился. Stop-read REVOKE проверен в BEGIN/ROLLBACK; safe SELECT
 восстановлен, DML остался закрытым. Disposable PostgreSQL CI: 7 ролей/неактивный
 профиль/legacy-policy bypass/rollback PASS. Frontend read gate включён после proof.
-Создание и переходы дизайна в production не включены. Auth/Storage/Edge production
+На этапе PR567 создание и переходы дизайна в production ещё не включались; последующий rollout описан выше. Auth/Storage/Edge production
 не менялись; установка общего core не повторялась. Это не полный operational cutover.
 
 ## Согласование макета: operational upgrade 03.10
@@ -37,7 +54,7 @@ PASS на SHA `9f6d029`: менеджер/владелец, явное согл�
 клиенты, оплаты/расходы и закрытие. Cleanup PASS; независимый SQL подтвердил нулевой
 остаток задач, истории дизайна, заказов, profiles/Auth, production/installation,
 оплат/расходов и receipts. Временный OIDC-доступ ветки снят после завершения.
-Production cutover ещё не выполнен; права чтения исполнителей и остальные команды
+На этапе PR566 production cutover ещё не выполнялся; последующие изменения описаны выше. Остальные команды
 производства/монтажа требуют согласованного rollout. Astra для этого блока не нужна.
 
 ## PR564: клиенты и переход КП → заказ

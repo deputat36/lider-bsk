@@ -144,7 +144,8 @@ function stagingActionHtml(result) {
   if (availability.staging) {
     return '<button type="button" disabled title="Нужны design.write, актуальный заказ и готовый command envelope">Тестовое создание в staging недоступно</button>';
   }
-  return '<button type="button" disabled title="Production rollout требует отдельного явного решения владельца">Создать задачу в CRM — отключено</button>';
+  if (isDesignCommandEnvironment(V4_CONFIG.supabaseUrl)) return '';
+  return '<button type="button" disabled title="Серверные команды ещё не включены для этого окружения">Создать задачу в CRM — отключено</button>';
 }
 
 function transitionActionHtml(result) {

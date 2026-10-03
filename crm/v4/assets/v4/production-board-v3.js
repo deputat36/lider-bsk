@@ -1,3 +1,6 @@
+import { invokeStagingWorkflow } from './workflow-staging-transport-v1.js';
+import { isDesignCommandEnvironment } from './design-task-staging-transport-v1.js?v=20260827-revision-1';
+import { canPerformV4Action, CRM_V4_ACTIONS } from './action-permissions-v1.js';
 import { v4State, subscribeState } from './state.js';
 import { supabaseClient } from './supabase-client.js';
 import { friendlyError } from './api.js';
@@ -10,6 +13,7 @@ let loaded = false;
 const emptyState = () => ({ design: [], production: [], installation: [], orders: new Map(), warning: '' });
 let state = emptyState();
 let generation = 0;
+const pendingDesign = new Set();
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
@@ -47,7 +51,7 @@ function ensureStyles() {
   const style = document.createElement('style');
   style.id = 'productionBoardV3LightStyles';
   style.textContent = `.v4-prod-light{display:grid;gap:14px}.v4-prod-light-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.v4-prod-light-head h2{margin:0}.v4-prod-light-head p{margin:6px 0 0;color:#64748b}.v4-prod-light-actions{display:flex;gap:8px;flex-wrap:wrap}.v4-prod-light-actions button{border:1px solid #16a34a;background:#16a34a;color:#fff;border-radius:12px;padding:9px 12px;font-weight:900}.v4-prod-light-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.v4-prod-light-summary div{border:1px solid #d1fae5;background:#f0fdf4;border-radius:16px;padding:12px}.v4-prod-light-summary span{display:block;color:#166534;font-size:12px;font-weight:900;text-transform:uppercase}.v4-prod-light-summary b{display:block;margin-top:5px;font-size:22px}.v4-prod-light-warning{border:1px solid #fde68a;background:#fffdf3;color:#92400e;border-radius:14px;padding:10px;font-weight:800}.v4-prod-light-tabs{display:flex;gap:8px;flex-wrap:wrap}.v4-prod-light-tabs button{border:1px solid #cbd5e1;background:#fff;border-radius:999px;padding:8px 12px;font-weight:900}.v4-prod-light-tabs button.is-active{background:#16a34a;border-color:#16a34a;color:#fff}.v4-prod-light-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:12px}.v4-prod-light-card{border:1px solid #e2e8f0;background:#fff;border-radius:16px;padding:12px;display:grid;gap:6px;box-shadow:0 8px 22px rgba(15,23,42,.05)}.v4-prod-light-card.is-overdue{border-color:#fecaca;background:#fff7f7}.v4-prod-light-card.has-layout-warning{border-color:#fdba74;background:#fffaf5}.v4-prod-light-card h3{margin:0;font-size:16px}.v4-prod-light-card small{color:#64748b}.v4-prod-light-badge{display:inline-flex;width:max-content;border-radius:999px;background:#dcfce7;color:#166534;padding:4px 8px;font-size:12px;font-weight:900}.v4-prod-light-badge.is-warn{background:#fef3c7;color:#92400e}.v4-prod-light-badge.is-danger{background:#fee2e2;color:#991b1b}.v4-prod-light-design-alert{border:1px solid #fdba74;background:#fff7ed;color:#9a3412;border-radius:12px;padding:8px 10px;font-weight:900}.v4-prod-light-design-alert small{display:block;color:#9a3412;margin-top:3px}.v4-prod-light-card-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}.v4-prod-light-card-actions button{border:1px solid #bbf7d0;background:#f0fdf4;color:#166534;border-radius:12px;padding:8px 10px;font-weight:900}.v4-prod-light-card-actions .is-primary{background:#16a34a;border-color:#16a34a;color:#fff}@media(max-width:640px){.v4-prod-light-head{display:grid}.v4-prod-light-actions button,.v4-prod-light-card-actions button{width:100%}}`;
-  style.textContent += '.v4-prod-light-card{min-width:0;overflow-wrap:anywhere}.v4-design-task-text{white-space:pre-wrap;overflow-wrap:anywhere}.v4-prod-light-card summary{cursor:pointer;min-height:44px;display:flex;align-items:center}.v4-prod-light-card a{display:inline-block;padding:10px 0;min-height:24px}.v4-prod-light-grid{grid-template-columns:repeat(auto-fit,minmax(min(270px,100%),1fr))}';
+  style.textContent += '.v4-prod-light-card form{min-width:0}.v4-prod-light-card form button{min-height:44px}.v4-prod-light-card label{display:grid;gap:6px}.v4-prod-light-card input{box-sizing:border-box;width:100%;min-width:0;min-height:44px;padding:8px;border:1px solid #cbd5e1;border-radius:8px;font:inherit}.v4-prod-light-card [role=status]{font-size:14px;line-height:1.5}.v4-prod-light-card{min-width:0;overflow-wrap:anywhere}.v4-design-task-text{white-space:pre-wrap;overflow-wrap:anywhere}.v4-prod-light-card summary{cursor:pointer;min-height:44px;display:flex;align-items:center}.v4-prod-light-card a{display:inline-block;padding:10px 0;min-height:24px}.v4-prod-light-grid{grid-template-columns:repeat(auto-fit,minmax(min(270px,100%),1fr))}';
   document.head.appendChild(style);
 }
 
@@ -86,7 +90,7 @@ async function safeQuery(label, query) {
 async function fetchData(requestGeneration) {
   state.warning = '';
   const designPromise = canOpenV4ProductionKind('design')
-    ? safeQuery('Дизайн', supabaseClient.from('leader_design_tasks').select('id,order_id,title,task_status,priority,deadline,designer_name,task_text,layout_link,reference_link').order('deadline', { ascending: true }).limit(60))
+    ? safeQuery('Дизайн', supabaseClient.from('leader_design_tasks').select('id,order_id,title,task_status,priority,deadline,designer_name,task_text,layout_link,reference_link,updated_at').order('deadline', { ascending: true }).limit(60))
     : Promise.resolve([]);
   const productionPromise = canOpenV4ProductionKind('production')
     ? safeQuery('Производство', supabaseClient.from('leader_production_jobs').select('id,order_id,title,production_status,deadline,layout_status,file_url').order('deadline', { ascending: true }).limit(60))
@@ -157,12 +161,56 @@ function card(job, kind) {
 function safeLink(value, label) {
   try { const url = new URL(String(value || '').trim()); if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) return ''; return `<a href="${esc(url.href)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>`; } catch (_) { return ''; }
 }
+function designActions(task) {
+  if (!isDesignCommandEnvironment(V4_CONFIG.supabaseUrl) || !canPerformV4Action(CRM_V4_ACTIONS.DESIGN_WRITE)) return '';
+  const target = task.task_status === 'Новая' ? 'В работе' : task.task_status === 'В работе' ? 'На согласовании' : '';
+  if (!target) return '<small>Следующее действие: '+(task.task_status === 'На согласовании' ? 'получить решение клиента по макету.' : 'передать согласованный макет в производство.')+'</small>';
+  const input = target === 'На согласовании' ? `<label>Ссылка на макет<input type="url" name="layout_link" inputmode="url" maxlength="2000" required value="${esc(task.layout_link || '')}" placeholder="https://…"></label>` : '';
+  return `<form data-design-queue-command="${esc(task.id)}" data-design-queue-target="${esc(target)}">${input}<div class="v4-prod-light-card-actions"><button type="submit" class="is-primary">${target === 'В работе' ? 'Начать работу' : 'Передать на согласование'}</button></div><p role="status" aria-live="polite" data-design-queue-result></p></form>`;
+}
+async function submitDesignTask(form) {
+  const task = state.design.find(item => item.id === form.dataset.designQueueCommand);
+  if (!task || pendingDesign.has(task.id) || !canPerformV4Action(CRM_V4_ACTIONS.DESIGN_WRITE)) return;
+  const status = form.dataset.designQueueTarget;
+  const link = String(form.elements.layout_link?.value || '').trim();
+  const message = form.querySelector('[data-design-queue-result]');
+  if (status === 'На согласовании') {
+    try { const url = new URL(link); if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) throw new Error(); }
+    catch (_) { message.textContent = 'Укажите ссылку на файл макета: https:// или http://.'; form.elements.layout_link?.focus(); return; }
+  }
+  const requestGeneration = generation;
+  pendingDesign.add(task.id);
+  Array.from(form.elements).forEach(el => { el.disabled = true; });
+  message.textContent = 'Сохраняю…';
+  try {
+    const saved = await invokeStagingWorkflow({client:supabaseClient,supabaseUrl:V4_CONFIG.supabaseUrl,action:'design_task.transition',entity:task,status,layoutLink:link || task.layout_link});
+    if (requestGeneration !== generation) return;
+    // Keep the confirmation visible without another query or replacing the focused form.
+    task.task_status = status; task.updated_at = saved.task?.updated_at || task.updated_at; if (link) task.layout_link = link;
+    form.closest('[data-design-queue-task]')?.querySelector('.v4-prod-light-badge')?.replaceChildren(document.createTextNode(status));
+    message.textContent = status === 'В работе' ? 'Работа начата. Обновите очередь, когда макет будет готов.' : 'Макет передан на согласование. Дождитесь решения клиента.';
+    Array.from(form.elements).forEach(el => { el.disabled = false; });
+    form.querySelector('button').disabled = true;
+    form.querySelector('button').textContent = 'Сохранено';
+    message.tabIndex = -1; message.focus();
+  } catch (error) {
+    if (requestGeneration !== generation) return;
+    message.textContent = /forbidden|access_denied|inactive_profile/.test(String(error?.message)) ? 'Нет права изменить задачу. Обновите страницу или обратитесь к администратору.' : /conflict|invalid_transition|stale/.test(String(error?.message)) ? 'Задача изменилась. Обновите очередь и проверьте текущий статус.' : 'Не удалось сохранить. Проверьте соединение и повторите действие.';
+    Array.from(form.elements).forEach(el => { el.disabled = false; });
+    form.querySelector('button')?.focus();
+  } finally { pendingDesign.delete(task.id); }
+}
 function designCard(task) {
   const terminal = ['Согласовано', 'Завершено', 'Отменено'].includes(task.task_status);
   const overdue = isOverdue(task.deadline, terminal);
-  return `<article class="v4-prod-light-card ${overdue ? 'is-overdue' : ''}" data-design-queue-task="${esc(task.id)}"><span class="v4-prod-light-badge">${esc(task.task_status || 'Новая')}</span><h3>${esc(task.title || 'Дизайн-задача')}</h3><small>Срок: ${dateRu(task.deadline)}${overdue ? ' · Просрочено' : ''}</small><small>Дизайнер: ${esc(task.designer_name || 'Не назначен')}</small><small>Приоритет: ${esc(task.priority || 'Обычная')}</small><details><summary>Техническое задание и файлы</summary><p class="v4-design-task-text">${esc(task.task_text || 'Техническое задание пока не заполнено.')}</p>${safeLink(task.layout_link, 'Открыть макет')} ${safeLink(task.reference_link, 'Открыть материалы')}</details></article>`;
+  return `<article class="v4-prod-light-card ${overdue ? 'is-overdue' : ''}" data-design-queue-task="${esc(task.id)}"><span class="v4-prod-light-badge">${esc(task.task_status || 'Новая')}</span><h3>${esc(task.title || 'Дизайн-задача')}</h3><small>Срок: ${dateRu(task.deadline)}${overdue ? ' · Просрочено' : ''}</small><small>Дизайнер: ${esc(task.designer_name || 'Не назначен')}</small><small>Приоритет: ${esc(task.priority || 'Обычная')}</small><details><summary>Техническое задание и файлы</summary><p class="v4-design-task-text">${esc(task.task_text || 'Техническое задание пока не заполнено.')}</p>${safeLink(task.layout_link, 'Открыть макет')} ${safeLink(task.reference_link, 'Открыть материалы')}</details>${designActions(task)}</article>`;
 }
-function summaryCards() {
+function summaryCards(kind) {
+  if (kind === 'design') {
+    const working = state.design.filter(t => ['Новая','В работе'].includes(t.task_status)).length;
+    const review = state.design.filter(t => t.task_status === 'На согласовании').length;
+    return `<div><span>К работе</span><b>${working}</b></div><div><span>На согласовании</span><b>${review}</b></div>`;
+  }
   const cards = [];
   if (canOpenV4ProductionKind('design')) cards.push(`<div><span>Дизайн-задач</span><b>${state.design.length}</b></div>`);
   if (canOpenV4ProductionKind('production')) {
@@ -199,7 +247,7 @@ function render(requestedKind = document.body.dataset.productionBoardKind || fir
   }
   document.body.dataset.productionBoardKind = kind;
   const items = kind === 'design' ? state.design : kind === 'installation' ? state.installation : state.production;
-  box.innerHTML = `<div class="v4-prod-light"><div class="v4-prod-light-head"><div><p class="v4-kicker">Быстрая производственная доска</p><h2>Задания: дизайн, производство, монтаж</h2><p>Показываются только разрешённые для текущей роли типы заданий. Печатные листы не содержат клиентские контакты.</p></div><div class="v4-prod-light-actions"><button type="button" data-production-light-refresh>Обновить</button></div></div>${state.warning ? `<div class="v4-prod-light-warning">Часть данных не загрузилась: ${esc(state.warning)}</div>` : ''}<div class="v4-prod-light-summary">${summaryCards()}</div><div class="v4-prod-light-tabs">${kindTabs(kind)}</div><div class="v4-prod-light-grid">${items.length ? items.map((job) => kind === 'design' ? designCard(job) : card(job, kind)).join('') : '<div class="v4-empty">Заданий в этой группе нет.</div>'}</div></div>`;
+  box.innerHTML = `<div class="v4-prod-light"><div class="v4-prod-light-head"><div><p class="v4-kicker">Рабочая очередь</p><h2>${kind === 'design' ? 'Дизайн-задачи' : kind === 'installation' ? 'Монтаж' : 'Производство'}</h2><p>${kind === 'design' ? 'Откройте ТЗ, начните работу и передайте готовый макет на согласование.' : 'Проверьте сроки и откройте карточку задания для следующего действия.'}</p></div><div class="v4-prod-light-actions"><button type="button" data-production-light-refresh>Обновить</button></div></div>${state.warning ? `<div class="v4-prod-light-warning">Часть данных не загрузилась: ${esc(state.warning)}</div>` : ''}<div class="v4-prod-light-summary">${summaryCards(kind)}</div><div class="v4-prod-light-tabs">${kindTabs(kind)}</div><div class="v4-prod-light-grid">${items.length ? items.map((job) => kind === 'design' ? designCard(job) : card(job, kind)).join('') : '<div class="v4-empty">Заданий в этой группе нет.</div>'}</div></div>`;
   document.dispatchEvent(new CustomEvent('leader-v4:production-board-rendered', { detail: { kind } }));
 }
 
@@ -233,6 +281,7 @@ function mount() {
     const box = content(); if (box) box.innerHTML = '';
     delete document.body.dataset.productionBoardKind;
   });
+  document.addEventListener('submit', (event) => { const form = event.target.closest?.('[data-design-queue-command]'); if (form) { event.preventDefault(); submitDesignTask(form); } });
   document.addEventListener('click', (event) => {
     if (event.target.closest?.('[data-production-light-refresh]')) {
       event.preventDefault();

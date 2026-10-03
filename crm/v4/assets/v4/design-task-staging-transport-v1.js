@@ -1,4 +1,4 @@
-export const DESIGN_COMMAND_PRODUCTION_ENABLED = false;
+export const DESIGN_COMMAND_PRODUCTION_ENABLED = true;
 const PRODUCTION_HOST = 'ofewxuqfjhamgerwzull.supabase.co';
 const STAGING_PROJECT_REF = 'otulfnouybahfnsycxqn';
 const FUNCTION_SLUG = 'leader-crm-design';
@@ -126,17 +126,17 @@ export function stagingDesignResultMessage(kind, replay = false) {
   return ({
     created: 'Тестовая дизайн-задача создана только в staging.',
     wrong_environment: 'Тестовое создание разрешено только в staging.',
-    auth_required: 'Нужен вход отдельного тестового пользователя staging.',
-    forbidden: 'У staging-профиля нет права design.write или профиль неактивен.',
+    auth_required: 'Войдите в CRM и повторите действие.',
+    forbidden: 'Нет права изменять дизайн-задачи или профиль неактивен.',
     validation_error: 'Команда не прошла проверку. Обновите черновик и проверьте обязательные поля.',
     stale_order: 'Заказ изменился после подготовки черновика. Перечитайте заказ и повторите действие.',
     active_task_conflict: 'У заказа уже есть активная дизайн-задача.',
     idempotency_conflict: 'Этот ключ повтора уже использован с другим содержимым.',
     duplicate_request: 'Предыдущий запрос с этим ключом ещё выполняется.',
-    not_found: 'Заказ или подтверждающая потребность не найдены в staging.',
+    not_found: 'Заказ или потребность не найдены. Обновите данные.',
     conflict: 'Создание отклонено из-за конфликта актуального состояния.',
-    network_error: 'Не удалось связаться со staging Edge Function.',
-    persistence_failed: 'Staging не смог атомарно сохранить дизайн-задачу.'
+    network_error: 'Не удалось связаться с сервером. Проверьте соединение и повторите действие.',
+    persistence_failed: 'Не удалось сохранить дизайн-задачу. Повторите действие; повтор не создаст дубликат.'
   })[kind] || 'Staging вернул неизвестный результат.';
 }
 
