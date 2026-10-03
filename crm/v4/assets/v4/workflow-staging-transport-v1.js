@@ -1,3 +1,4 @@
+import { isDesignCommandEnvironment } from './design-task-staging-transport-v1.js?v=20260827-revision-1';
 const STAGING_HOST = 'otulfnouybahfnsycxqn.supabase.co';
 const FUNCTION_SLUG = 'leader-crm-workflow';
 
@@ -10,7 +11,7 @@ function uuid() {
   return value;
 }
 export async function invokeStagingWorkflow({ client, supabaseUrl, action, entity, status, layoutLink = '' }) {
-  if (!isStagingWorkflowEnvironment(supabaseUrl)) throw new Error('wrong_environment');
+  if (!(action === 'design_task.transition' ? isDesignCommandEnvironment(supabaseUrl) : isStagingWorkflowEnvironment(supabaseUrl))) throw new Error('wrong_environment');
   const idField = action === 'offer.transition' ? 'offer_id' : 'task_id';
   const id = String(entity?.id || '').trim();
   const expected = String(entity?.updated_at || '').trim();
@@ -26,9 +27,11 @@ export async function invokeStagingWorkflow({ client, supabaseUrl, action, entit
       ...(action === 'design_task.transition' ? { layout_link: String(layoutLink || '').trim() || null } : {})
     }
   };
-  const response = await client.functions.invoke(FUNCTION_SLUG, { body });
+  const response = await client.functions.invoke(action === 'design_task.transition' ? 'leader-crm-design' : FUNCTION_SLUG, { body });
   if (response?.error || response?.data?.ok !== true) {
-    const code = response?.data?.error?.code || response?.error?.message || 'workflow_failed';
+    let details = response?.data;
+    if (!details && response?.error?.context?.clone) { try { details = await response.error.context.clone().json(); } catch (_) {} }
+    const code = details?.error?.code || (typeof details?.error === 'string' ? details.error : null) || response?.error?.message || 'workflow_failed';
     throw new Error(String(code));
   }
   return response.data;

@@ -45,7 +45,12 @@ checks = {
         "select('id,order_id,title,install_status,scheduled_at,address,installer_name')",
         'function permittedKind(requested)',
         'function kindTabs(activeKind)',
-        'Показываются только разрешённые для текущей роли типы заданий',
+        "canOpenV4ProductionKind('design')",
+        "select('id,order_id,title,task_status,priority,deadline,designer_name,task_text,layout_link,reference_link,updated_at')",
+        'pendingDesign.has(task.id)',
+        '!canPerformV4Action(CRM_V4_ACTIONS.DESIGN_WRITE)',
+        'if (requestGeneration !== generation) return',
+        "ids.length && canOpenV4Tab('orders')",
     ],
     production_card: [
         'canOpenV4ProductionKind',

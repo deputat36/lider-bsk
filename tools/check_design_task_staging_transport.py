@@ -52,6 +52,9 @@ def main() -> None:
         "FUNCTION_SLUG = 'leader-crm-design'",
         "ACTION = 'design_task.create_from_order'",
         'designStagingTransportAvailability',
+        'DESIGN_COMMAND_PRODUCTION_ENABLED',
+        'isDesignCommandEnvironment',
+        PRODUCTION,
         'buildStagingDesignCommand',
         'invokeStagingDesignTask',
         'client.auth.getSession()',
@@ -63,7 +66,6 @@ def main() -> None:
         'persistence_failed',
     ], 'staging transport')
     forbid(transport, [
-        PRODUCTION,
         'SUPABASE_SERVICE_ROLE_KEY',
         'service_role',
         '.from(',
@@ -113,7 +115,7 @@ def main() -> None:
 
     assert contract['environment']['allowed_project_ref'] == STAGING
     assert contract['environment']['production_project_ref'] == PRODUCTION
-    assert contract['environment']['production_enabled'] is False
+    assert contract['environment']['production_enabled'] is True
     assert contract['authorization']['browser_service_role_allowed'] is False
     assert contract['authorization']['canonical_registry'].endswith('action-permissions-v1.js')
     assert contract['results']['read_after_success_required'] is True
@@ -151,7 +153,7 @@ def main() -> None:
             if re.search(pattern, source):
                 raise AssertionError(f'{label}: possible secret material')
 
-    print('CRM design task staging transport is production-locked and uses the canonical JWT/action boundary.')
+    print('CRM design commands use exact environment gates and uses the canonical JWT/action boundary.')
 
 
 if __name__ == '__main__':

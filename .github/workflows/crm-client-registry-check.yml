@@ -30,8 +30,10 @@ jobs:
           python3 tools/build_client_registry_test.py
           python3 tools/build_design_transition_test.py
           python3 tools/build_design_read_production_test.py
+          python3 tools/build_design_commands_test.py
           node --check tools/test_design_approval_browser.mjs
           node --check tools/test_worker_queues_browser.mjs
+          node --check tools/test_design_queue_actions_browser.mjs
           node --check tools/run_crm_staging_worker_role_api.mjs
           node tools/test_worker_queue_access.mjs
       - name: Exercise client transactions and RLS
@@ -40,4 +42,5 @@ jobs:
         run: |
           psql -h localhost -U postgres -d client_test -v ON_ERROR_STOP=1 -f build/client-registry-test.sql
           psql -h localhost -U postgres -d client_test -v ON_ERROR_STOP=1 -f build/design-transition-test.sql
+          psql -h localhost -U postgres -d client_test -v ON_ERROR_STOP=1 -f build/design-commands-test.sql
           psql -h localhost -U postgres -d client_test -v ON_ERROR_STOP=1 -f build/design-read-production-test.sql
