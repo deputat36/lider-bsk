@@ -9,7 +9,13 @@
 Исполнители не запрашивают заказы без orders.read; смена пользователя/роли очищает
 старые строки и не допускает поздний ответ прежнего запроса. 15 targeted browser
 cases (3 роли × 5 ширин) PASS: allowed queues, safe fields, long text, unsafe links,
-role-change cleanup и overflow. Полный authenticated worker UI/API proof запущен.
+role-change cleanup и overflow. Полный [authenticated E2E 37124020181](https://github.com/deputat36/lider-bsk/actions/runs/37124020181)
+PASS на `572fdaf`: manager/owner цикл и реальные входы designer/contractor/installer,
+fixture reads, wrong-role writes, private-column reads, service-only RPC. Cleanup
+PASS, независимый SQL: tasks/orders/profiles/Auth/payments/expenses/jobs/receipts=0.
+Временное доверие ветки снято. Positive worker mutations пока не доказаны.
+Production read ACL candidate готов: snapshot/role projection/stop rollback;
+проверяется в disposable PostgreSQL до включения чтения.
 Design queue production gate пока закрыт; это не завершённый operational cutover.
 
 ## Согласование макета: operational upgrade 03.10
