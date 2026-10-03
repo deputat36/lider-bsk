@@ -1,3 +1,4 @@
+import { V4_CONFIG } from './config.js';
 import { v4State } from './state.js';
 import { CRM_V4_ACTIONS, canPerformV4Action } from './action-permissions-v1.js';
 
@@ -60,13 +61,19 @@ export function canOpenV4Tab(tab, profile = v4State.profile) {
 export function canOpenV4ProductionKind(kind, profile = v4State.profile) {
   const value = String(kind || '').trim();
   if (!canOpenV4Tab('production', profile)) return false;
+  if (value === 'design') {
+    let staging = false;
+    try { staging = new URL(V4_CONFIG.supabaseUrl).hostname === 'otulfnouybahfnsycxqn.supabase.co'; } catch (_) {}
+    return staging && canPerformV4Action(CRM_V4_ACTIONS.DESIGN_READ, profile);
+  }
   if (value === 'production') return canPerformV4Action(CRM_V4_ACTIONS.PRODUCTION_READ, profile);
   if (value === 'installation') return canPerformV4Action(CRM_V4_ACTIONS.INSTALLATION_READ, profile);
   return false;
 }
 
 export function firstAllowedV4ProductionKind(profile = v4State.profile) {
-  return ['production', 'installation'].find((kind) => canOpenV4ProductionKind(kind, profile)) || '';
+  const kinds = normalizedRole(profile) === 'designer' ? ['design', 'production', 'installation'] : ['production', 'installation', 'design'];
+  return kinds.find((kind) => canOpenV4ProductionKind(kind, profile)) || '';
 }
 
 export function canViewV4Costs(profile = v4State.profile) {

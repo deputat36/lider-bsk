@@ -2,6 +2,16 @@
 
 Дата обновления: 2026-10-03.
 
+## Очереди исполнителей — текущий этап 03.10
+
+В существующую доску добавлена staging-очередь дизайна: статус, срок, дизайнер,
+приоритет, ТЗ и безопасные ссылки на файлы. Дизайнер открывает её первой.
+Исполнители не запрашивают заказы без orders.read; смена пользователя/роли очищает
+старые строки и не допускает поздний ответ прежнего запроса. 15 targeted browser
+cases (3 роли × 5 ширин) PASS: allowed queues, safe fields, long text, unsafe links,
+role-change cleanup и overflow. Полный authenticated worker UI/API proof запущен.
+Design queue production gate пока закрыт; это не завершённый operational cutover.
+
 ## Согласование макета: operational upgrade 03.10
 
 Убрана автоматическая подстановка synthetic URL при утверждении макета. Интерфейс
