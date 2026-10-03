@@ -4,6 +4,7 @@ const CRM_V4_MENU = Object.freeze([
   { tab: 'management_dashboard', label: 'Дашборд' },
   { tab: 'leads', label: 'Заявки' },
   { tab: 'orders', label: 'Заказы' },
+  { tab: 'clients', label: 'Клиенты' },
   { tab: 'order_control', label: 'Контроль заказов' },
   { tab: 'finance_control', label: 'Финансы' },
   { tab: 'production', label: 'Производство' },

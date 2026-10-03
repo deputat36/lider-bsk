@@ -326,3 +326,5 @@ function bootManualLead() {
 
 document.addEventListener('DOMContentLoaded', bootManualLead);
 document.addEventListener('leader-v4:crm-ready', bootManualLead);
+
+document.addEventListener('leader-v4:clients-changed', () => { clientsLoaded = false; if (byId('manualLeadBox')?.open) loadExistingClients(true); });

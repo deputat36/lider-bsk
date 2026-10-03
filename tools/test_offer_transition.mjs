@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import { transitionOffer } from '../crm/v4/assets/v4/offer-transition-transport-v1.js';
+const values=new Map();globalThis.sessionStorage={getItem:k=>values.get(k),setItem:(k,v)=>values.set(k,v),removeItem:k=>values.delete(k)};
+const offer={id:'offer-1',updated_at:'2026-10-02T12:00:00.123456Z'};
+const requests=[];let lost=true;
+const client={auth:{getSession:async()=>({data:{session:{user:{id:'actor-1'}}}})},functions:{invoke:async(name,{body})=>{assert.equal(name,'leader-crm-offer-transitions');requests.push(body);if(lost){lost=false;return{error:new Error('response lost')}}return{data:{ok:true,offer:{...offer,status:'Отправлено'}}}}}};
+const input={client,url:'https://otulfnouybahfnsycxqn.supabase.co',offer,status:'Отправлено'};
+await assert.rejects(transitionOffer(input),/Повторите/);assert.equal(values.size,1);
+await transitionOffer(input);assert.deepEqual(requests[0],requests[1]);assert.equal(values.size,0);assert.equal(requests[0].expected_updated_at,offer.updated_at);
+await assert.rejects(transitionOffer({...input,url:'https://unrelated.supabase.co'}),/не включено/);assert.equal(requests.length,2);
+client.functions.invoke=async()=>({error:{context:{status:409,clone:()=>({json:async()=>({ok:false,error:{code:'conflict'}})})}}});
+await assert.rejects(transitionOffer(input),/Обновите карточку/);assert.equal(values.size,0);
+console.log('Offer transition retry, revision, host gate and conflict recovery PASS');

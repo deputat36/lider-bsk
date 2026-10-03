@@ -2,6 +2,7 @@ export const CRM_NAVIGATION_TABS = Object.freeze([
   'management_dashboard',
   'leads',
   'orders',
+  'clients',
   'order_control',
   'finance_control',
   'production',

@@ -84,6 +84,15 @@ const TAB_REGISTRY = Object.freeze({
     loadingMessage: 'Загружаю рабочий стол…',
     errorMessage: 'Рабочий стол не загрузился.'
   }),
+  clients: Object.freeze({
+    requiredPermission: 'clients',
+    importModule: managedModule(() => import('./client-registry-v1.js?v=20261002-clients-1')),
+    mount: (module) => module.mount?.(),
+    load: (module) => module.load?.(),
+    refresh: (module) => module.refresh?.(),
+    loadingMessage: 'Загружаю клиентов…',
+    errorMessage: 'Реестр клиентов не загрузился.'
+  }),
   orders: Object.freeze({
     requiredPermission: 'orders',
     importModule: managedModule(

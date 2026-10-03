@@ -34,7 +34,7 @@ checks = {
     ],
     index: [
         'lead-create.css?v=20260718-existing-client-1',
-        'lead-create.js?v=20260718-existing-client-1',
+        'lead-create.js?v=20261002-clients-1',
     ],
     runtime_test: [
         'closed manual form must not load clients during CRM startup',

@@ -1,0 +1,34 @@
+name: CRM client registry check
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  clients:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: isolated-ci-only
+          POSTGRES_DB: client_test
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          node --check crm/v4/assets/v4/client-registry-v1.js
+          node tools/test_client_registry.mjs
+          node tools/test_offer_transition.mjs
+          python3 tools/build_client_registry_test.py
+      - name: Exercise client transactions and RLS
+        env:
+          PGPASSWORD: isolated-ci-only
+        run: psql -h localhost -U postgres -d client_test -v ON_ERROR_STOP=1 -f build/client-registry-test.sql

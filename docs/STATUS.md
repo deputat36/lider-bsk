@@ -2,6 +2,17 @@
 
 Дата обновления: 2026-10-02.
 
+## PR564: клиенты и переход КП → заказ
+
+Реестр клиентов и явные действия карточки КП готовы. Полный staging
+[37068003199](https://github.com/deputat36/lider-bsk/actions/runs/37068003199) PASS:
+клиенты/retry/stale, КП/согласование/заказ и полный цикл до финансов/закрытия.
+Cleanup 24/24=0, Auth удалён, временное OIDC-доверие ветки снято.
+Production backend установлен с закрытым backup; postflight подтвердил неизменность
+реальных данных, stop rollback проверен. Frontend gates включены после backend proof.
+[Scope, проверки и rollback](CRM_CLIENTS_OFFERS_PRODUCTION_2026-10-02.md).
+Pages-публикация подтверждается после merge; production UI записи не симулировались.
+
 ## Заказы и финансы: рабочий сервер
 
 01.10 установлен production backend PR563: финансовые записи, безопасные действия

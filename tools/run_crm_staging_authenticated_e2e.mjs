@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { clientsBrowserSource } from './crm_clients_e2e_source.mjs';
 import { financeBrowserSource } from './crm_finance_e2e_source.mjs';
 import { createServer } from 'node:http';
 import { request as httpsRequest } from 'node:https';
@@ -288,9 +289,11 @@ async function createOfferAndOrder(){
     }
   } finally {window.open=originalOpen;if(printedWindow&&!printedWindow.closed)printedWindow.close();}
 
-  await waitFor(()=>document.querySelector('.v4-offer-card[data-id="'+offer.id+'"] [data-action="mark-offer-sent"]'),'offer_send_missing');click('.v4-offer-card[data-id="'+offer.id+'"] [data-action="mark-offer-sent"]');await waitFor(async()=>{try{return (await one('leader_commercial_offers','id,status,updated_at',{id:offer.id})).status==='Отправлено';}catch(_){return false;}},'offer_send_timeout');
-  await waitFor(()=>document.querySelector('.v4-offer-card[data-id="'+offer.id+'"] [data-action="approve-offer"]'),'offer_approve_missing');click('.v4-offer-card[data-id="'+offer.id+'"] [data-action="approve-offer"]');await waitFor(async()=>{try{return (await one('leader_commercial_offers','id,status,updated_at',{id:offer.id})).status==='Согласовано';}catch(_){return false;}},'offer_approve_timeout');record('offer_transitions_projection');
-  await waitFor(()=>document.querySelector('.v4-offer-card[data-id="'+offer.id+'"] [data-open-offer-card]'),'offer_card_entry_missing');click('.v4-offer-card[data-id="'+offer.id+'"] [data-open-offer-card]');await waitFor(()=>document.getElementById('offerOrderCreateBox')&&document.querySelector('[data-create-order-from-offer]'),'order_from_offer_form_missing',30000);
+  await waitFor(()=>document.querySelector('.v4-offer-card[data-id="'+offer.id+'"] [data-open-offer-card]'),'offer_card_entry_missing');click('.v4-offer-card[data-id="'+offer.id+'"] [data-open-offer-card]');
+  await waitFor(()=>document.querySelector('[data-offer-transition="Отправлено"]'),'offer_send_missing');click('[data-offer-transition="Отправлено"]');
+  await waitFor(()=>document.querySelector('[data-offer-transition="Согласовано"]:not(:disabled)'),'offer_approve_missing');click('[data-offer-transition="Согласовано"]');
+  await waitFor(()=>document.getElementById('offerOrderCreateBox')&&document.querySelector('[data-create-order-from-offer]'),'order_from_offer_form_missing',30000);
+  assert((await one('leader_commercial_offers','id,status,updated_at',{id:offer.id})).status==='Согласовано','offer_approve_not_persisted');record('offer_card_transitions_and_next_action');
   setValue('#offerOrderProjectName',R.marker+' order');setValue('#offerOrderLayoutStatus','Нужен дизайн','change');setValue('#offerOrderComment',R.marker+' synthetic order');click('[data-create-order-from-offer]');
   const order=await waitFor(async()=>{try{const rows=await table('leader_orders','id,lead_id,project_name,status,layout_status,updated_at',{lead_id:R.leadId});return rows.length===1?rows[0]:false;}catch(_){return false;}},'order_create_timeout',45000);ids.order=order.id;assert(order.layout_status==='Нужен дизайн','order_layout_projection_failed');const linkedOffer=await one('leader_commercial_offers','id,order_id,calculation_id',{id:ids.offer});const linkedCalculation=await one('leader_lead_calculations','id,order_id',{id:ids.calculation});assert(linkedOffer.order_id===order.id&&linkedOffer.calculation_id===ids.calculation&&linkedCalculation.order_id===order.id,'order_source_links_failed');record('order_create_projection');const orderReplay=await invoke('leader-crm-leads',{action:'create_order_from_offer',offer_id:ids.offer,project_name:R.marker+' order',layout_status:'Нужен дизайн',comment:R.marker+' synthetic order'});assert(orderReplay.data?.ok===true&&orderReplay.data?.already_created===true&&orderReplay.data?.order?.id===order.id,'order_replay_failed');await assertCount('leader_orders',{lead_id:R.leadId},1);record('order_duplicate_prevention');
   document.querySelector('[data-offer-card-close]')?.click();
@@ -546,7 +549,7 @@ function evidenceFromDom(dom) {
   const evidence = sanitize(JSON.parse(decodeHtml(match[1]))); if (evidence.status !== 'passed') throw new Error(`browser_e2e_failed:${evidence.error || 'unknown'}`); return evidence;
 }
 
-async function run(env = process.env, roleUi = '', financeUi = false) {
+async function run(env = process.env, roleUi = '', financeUi = false, clientsUi = false) {
   const config = loadConfig(env); const chrome = await findChrome(); const xvfbRun = await findXvfbRun(); const tempRoot = await mkdtemp(path.join(tmpdir(), 'lider-crm-authenticated-e2e-')); const tempV4 = path.join(tempRoot, 'v4'); let server;
   try {
     await cp(path.resolve('crm/v4'), tempV4, { recursive: true });
@@ -574,7 +577,7 @@ async function run(env = process.env, roleUi = '', financeUi = false) {
     await writeFile(path.join(tempV4, 'assets/v4/config.js'), temporaryConfigSource(config), { mode: 0o600 });
     await writeFile(path.join(tempV4, 'assets/v4/supabase-client.js'), temporaryClientSource(), { mode: 0o600 });
     await writeFile(path.join(tempV4, 'crm-authenticated-e2e-runtime.mjs'), runtimeSource(config), { mode: 0o600 });
-    await writeFile(path.join(tempV4, 'crm-authenticated-e2e-page.mjs'), financeUi ? financeBrowserSource(roleBrowserSource('owner')) : roleUi ? roleBrowserSource(roleUi) : browserSource(), { mode: 0o600 });
+    await writeFile(path.join(tempV4, 'crm-authenticated-e2e-page.mjs'), clientsUi ? clientsBrowserSource(roleBrowserSource('manager')) : financeUi ? financeBrowserSource(roleBrowserSource('owner')) : roleUi ? roleBrowserSource(roleUi) : browserSource(), { mode: 0o600 });
     const indexPath = path.join(tempV4, 'index.html'); const html = await readFile(indexPath, 'utf8');
     await writeFile(indexPath, html.replace('<head>', '<head><script>globalThis.__crmE2eFatalErrors=[];globalThis.__crmE2eProgressSequence=0;globalThis.__crmE2eProgress=(name)=>{try{const sequence=String(globalThis.__crmE2eProgressSequence=(globalThis.__crmE2eProgressSequence||0)+1).padStart(4,"0");navigator.sendBeacon("/__crm_e2e_progress",sequence+":"+String(name).slice(0,75));}catch(_){}};for(const kind of ["error","unhandledrejection"])addEventListener(kind,()=>globalThis.__crmE2eFatalErrors.push(kind));</script>').replace('</body>', '<script src="./assets/vendor/supabase-v2.112.2.js"></script><pre id="crmAuthenticatedE2eResult" data-status="running" hidden>running</pre><script type="module" src="./crm-authenticated-e2e-page.mjs"></script></body>'), { mode: 0o600 });
 
@@ -603,6 +606,6 @@ async function run(env = process.env, roleUi = '', financeUi = false) {
 }
 
 function arg(name) { const entry = process.argv.find((value) => value.startsWith(`${name}=`)); return entry ? entry.slice(name.length + 1) : ''; }
-async function main() { const mode = arg('--mode') || 'plan'; if (mode === 'plan') { console.log(JSON.stringify(operatorPlan(), null, 2)); return; } const role = mode === 'finance-ui' ? 'owner' : mode === 'role-ui' ? required('STAGING_CRM_E2E_EXPECTED_ROLE', process.env).toLowerCase() : ''; if (mode !== 'run' && mode !== 'role-ui' && mode !== 'finance-ui') throw new Error('unsupported_mode'); if (role && !['manager', 'owner'].includes(role)) throw new Error('unsupported_role_ui'); const result = await run(process.env, role, mode === 'finance-ui'); console.log(JSON.stringify({ ok: true, project_ref: STAGING_REF, evidence_path: result.target, cleanup_required: true })); }
+async function main() { const mode = arg('--mode') || 'plan'; if (mode === 'plan') { console.log(JSON.stringify(operatorPlan(), null, 2)); return; } const role = mode === 'clients-ui' ? 'manager' : mode === 'finance-ui' ? 'owner' : mode === 'role-ui' ? required('STAGING_CRM_E2E_EXPECTED_ROLE', process.env).toLowerCase() : ''; if (mode !== 'run' && mode !== 'role-ui' && mode !== 'finance-ui' && mode !== 'clients-ui') throw new Error('unsupported_mode'); if (role && !['manager', 'owner'].includes(role)) throw new Error('unsupported_role_ui'); const result = await run(process.env, role, mode === 'finance-ui', mode === 'clients-ui'); console.log(JSON.stringify({ ok: true, project_ref: STAGING_REF, evidence_path: result.target, cleanup_required: true })); }
 const direct = process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href;
 if (direct) main().catch((error) => { console.error(JSON.stringify({ ok: false, project_ref: STAGING_REF, error: text(error?.message).slice(0, 260), cleanup_required: true })); process.exitCode = 1; });

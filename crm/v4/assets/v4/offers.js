@@ -16,6 +16,7 @@ import {
   rawOfferStatus,
   validateOfferStatusTransition
 } from './offer-status-ui-model-v1.js';
+import { offerTransitionAvailable, transitionOffer } from './offer-transition-transport-v1.js';
 import { V4_CONFIG } from './config.js';
 import { invokeStagingWorkflow, isStagingWorkflowEnvironment } from './workflow-staging-transport-v1.js';
 import { offerVisibilityVersion, publicOfferRows, shortOfferItemNames } from './offer-visibility-v1.js';
@@ -425,7 +426,7 @@ async function createOffer() {
       setState({
         offers: [offer, ...(v4State.offers || []).filter((item) => item.id !== offer.id)],
         calculations: (v4State.calculations || []).map((calc) => calc.id === updatedCalculation?.id ? { ...calc, ...updatedCalculation } : calc),
-        currentLead: updatedLead ? { ...(v4State.currentLead || {}), ...updatedLead } : v4State.currentLead,
+        currentLead: updatedLead && v4State.currentLead?.id === updatedLead.id ? { ...v4State.currentLead, ...updatedLead } : v4State.currentLead,
         leads: updatedLead ? (v4State.leads || []).map((lead) => lead.id === updatedLead.id ? { ...lead, ...updatedLead } : lead) : v4State.leads
       });
       renderOffers();
@@ -486,7 +487,7 @@ async function createOffer() {
     setState({
       offers: (v4State.offers || []).some((item) => item.id === offer.id) ? v4State.offers : [offer, ...(v4State.offers || [])],
       calculations: (v4State.calculations || []).map((calc) => calc.id === calculation.id ? { ...calc, ...calcUpdate.data } : calc),
-      currentLead: updatedLead ? { ...(v4State.currentLead || {}), ...updatedLead } : v4State.currentLead,
+      currentLead: updatedLead && v4State.currentLead?.id === updatedLead.id ? { ...v4State.currentLead, ...updatedLead } : v4State.currentLead,
       leads: updatedLead ? (v4State.leads || []).map((lead) => lead.id === updatedLead.id ? { ...lead, ...updatedLead } : lead) : v4State.leads
     });
     renderOffers();
@@ -511,25 +512,19 @@ async function updateOfferStatus(offerId, status) {
 
   const targetStatus = transition.label;
 
-  if (isStagingWorkflowEnvironment(V4_CONFIG.supabaseUrl)) {
-    const result = await invokeStagingWorkflow({
-      client: supabaseClient,
-      supabaseUrl: V4_CONFIG.supabaseUrl,
-      action: 'offer.transition',
-      entity: current,
-      status: targetStatus
-    });
+  if (offerTransitionAvailable(V4_CONFIG.supabaseUrl)) {
+    const result = await transitionOffer({client:supabaseClient,url:V4_CONFIG.supabaseUrl,offer:current,status:targetStatus});
     const updated = result.offer;
     const updatedCalculation = result.calculation;
     const updatedLead = result.lead;
     setState({
       offers: (v4State.offers || []).map((offer) => offer.id === offerId ? updated : offer),
       calculations: updatedCalculation ? (v4State.calculations || []).map((calc) => calc.id === updatedCalculation.id ? { ...calc, ...updatedCalculation } : calc) : v4State.calculations,
-      currentLead: updatedLead ? { ...(v4State.currentLead || {}), ...updatedLead } : v4State.currentLead,
+      currentLead: updatedLead && v4State.currentLead?.id === updatedLead.id ? { ...v4State.currentLead, ...updatedLead } : v4State.currentLead,
       leads: updatedLead ? (v4State.leads || []).map((lead) => lead.id === updatedLead.id ? { ...lead, ...updatedLead } : lead) : v4State.leads
     });
     renderOffers();
-    setStatus(`КП: ${targetStatus}. Проекции синхронизированы атомарно.`, targetStatus === 'Отклонено' ? 'warn' : 'good');
+    setStatus(`КП: ${targetStatus}. Следующий шаг доступен в карточке КП.`, targetStatus === 'Отклонено' ? 'warn' : 'good');
     toast(result.idempotent_replay ? 'Безопасный повтор перехода КП' : `Статус КП: ${targetStatus}`);
     return;
   }
@@ -572,7 +567,7 @@ async function updateOfferStatus(offerId, status) {
   setState({
     offers: (v4State.offers || []).map((offer) => offer.id === offerId ? updated : offer),
     calculations: updatedCalculation ? (v4State.calculations || []).map((calc) => calc.id === updatedCalculation.id ? { ...calc, ...updatedCalculation } : calc) : v4State.calculations,
-    currentLead: updatedLead ? { ...(v4State.currentLead || {}), ...updatedLead } : v4State.currentLead,
+    currentLead: updatedLead && v4State.currentLead?.id === updatedLead.id ? { ...v4State.currentLead, ...updatedLead } : v4State.currentLead,
     leads: updatedLead ? (v4State.leads || []).map((lead) => lead.id === updatedLead.id ? { ...lead, ...updatedLead } : lead) : v4State.leads
   });
   renderOffers();

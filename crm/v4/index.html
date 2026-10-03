@@ -113,6 +113,7 @@ html,body{max-width:100%;overflow-x:hidden!important}.v4-layout-tabs{position:st
       <b>Разделы CRM</b>
       <button type="button" data-v4-tab-button="leads" class="is-active">Заявки</button>
       <button type="button" data-v4-tab-button="orders">Заказы</button>
+      <button type="button" data-v4-tab-button="clients">Клиенты</button>
       <button type="button" data-v4-tab-button="order_control">Контроль заказов</button>
       <button type="button" data-v4-tab-button="finance_control">Финансы</button>
       <button type="button" data-v4-tab-button="production">Производство</button>
@@ -179,9 +180,16 @@ html,body{max-width:100%;overflow-x:hidden!important}.v4-layout-tabs{position:st
 <script type="importmap">
 {
   "imports": {
-    "./assets/v4/offer-card-v1.js?v=20260827-order-read-1": "./assets/v4/offer-card-v1.js?v=20261001-order-finance-1",
+    "./assets/v4/role-tab-permissions-v1.js": "./assets/v4/role-tab-permissions-v1.js?v=20261002-clients-1",
+    "./assets/v4/crm-navigation-route-v1.js": "./assets/v4/crm-navigation-route-v1.js?v=20261002-clients-1",
+    "./assets/v4/offer-card-v1.js?v=20260827-order-read-1": "./assets/v4/offer-card-v1.js?v=20261002-offers-1",
     "./assets/v4/orders.js?v=20260827-order-read-1": "./assets/v4/orders.js?v=20261001-order-finance-1",
-    "./assets/v4/offer-card-v1.js": "./assets/v4/offer-card-v1.js?v=20261001-order-finance-1",
+    "./assets/v4/offer-card-v1.js?v=20261001-order-finance-1": "./assets/v4/offer-card-v1.js?v=20261002-offers-1",
+    "./assets/v4/client-registry-transport-v1.js": "./assets/v4/client-registry-transport-v1.js?v=20261002-production-1",
+    "./assets/v4/offer-transition-transport-v1.js": "./assets/v4/offer-transition-transport-v1.js?v=20261002-production-1",
+    "./assets/v4/offer-card-v1.js": "./assets/v4/offer-card-v1.js?v=20261002-offers-1",
+    "./assets/v4/offer-order-create-v1.js?v=20260805-tab-loader-1": "./assets/v4/offer-order-create-v1.js?v=20261002-offers-1",
+    "./assets/v4/offers.js?v=20260907-client-privacy-1": "./assets/v4/offers.js?v=20261002-offers-1",
     "./assets/v4/orders.js": "./assets/v4/orders.js?v=20261001-order-finance-1",
     "./assets/v4/finance-record-transport-v1.js": "./assets/v4/finance-record-transport-v1.js?v=20261001-order-finance-1",
     "./assets/v4/order-operation-ui-v1.js": "./assets/v4/order-operation-ui-v1.js?v=20261001-order-finance-1",
@@ -209,7 +217,7 @@ html,body{max-width:100%;overflow-x:hidden!important}.v4-layout-tabs{position:st
     "./assets/v4/calculation-pricing-model-v1.js": "./assets/v4/calculation-pricing-model-v1.js?v=20260906-catalog-source-1",
     "./assets/v4/calculation-version-edit-model-v1.js": "./assets/v4/calculation-version-edit-model-v1.js?v=20260925-special-price-1",
     "./assets/v4/calculation-version-editor-v1.js?v=20260827-observer-fix-1": "./assets/v4/calculation-version-editor-v1.js?v=20260925-special-price-1",
-    "./assets/v4/crm-v4-tabs-lite.js?v=20260720-role-landing-1": "./assets/v4/crm-v4-tabs-lite.js?v=20260805-lazy-tabs-1",
+    "./assets/v4/crm-v4-tabs-lite.js?v=20260720-role-landing-1": "./assets/v4/crm-v4-tabs-lite.js?v=20261002-clients-1",
     "./assets/v4/lead-analytics-badges-v1.js?v=20260721-followup-1": "./assets/v4/lead-analytics-badges-v1.js?v=20260805-lazy-tabs-1",
     "./assets/v4/management-dashboard-v3.js?v=20260720-today-1": "./assets/v4/management-dashboard-v3.js?v=20260805-tab-loader-1",
     "./assets/v4/contact-control-v1.js?v=20260621-1": "./assets/v4/contact-control-v1.js?v=20260805-tab-loader-1",
@@ -233,15 +241,15 @@ html,body{max-width:100%;overflow-x:hidden!important}.v4-layout-tabs{position:st
 }
 </script>
 <script type="module" src="assets/v4/router.js?v=20260717-module-singleton-1"></script>
-<script type="module" src="assets/v4/crm-v4-tabs-lite.js?v=20260805-lazy-tabs-1"></script>
-<script type="module" src="assets/v4/crm-v4-tab-loader-v1.js?v=20261001-order-finance-1"></script>
-<script type="module" src="assets/v4/crm-v4-expanded-menu-v1.js?v=20260714-navigation-history-1"></script>
+<script type="module" src="assets/v4/crm-v4-tabs-lite.js?v=20261002-clients-1"></script>
+<script type="module" src="assets/v4/crm-v4-tab-loader-v1.js?v=20261002-clients-1"></script>
+<script type="module" src="assets/v4/crm-v4-expanded-menu-v1.js?v=20261002-clients-1"></script>
 <script type="module" src="assets/v4/auth.js?v=20260805-lazy-tabs-1"></script>
 <script type="module" src="assets/v4/auth-session-reset-v1.js?v=20260624-contour-1"></script>
 <script type="module" src="assets/v4/leads.js?v=20260721-followup-1"></script>
 <script type="module" src="assets/v4/lead-analytics-badges-v1.js?v=20260805-lazy-tabs-1"></script>
 <script type="module" src="assets/v4/followups.js?v=20260721-ownership-1"></script>
-<script type="module" src="assets/v4/lead-create.js?v=20260718-existing-client-1"></script>
+<script type="module" src="assets/v4/lead-create.js?v=20261002-clients-1"></script>
 <script type="module" src="assets/v4/crm-quick-start-v1.js?v=20260927-1"></script>
 </body>
 </html>

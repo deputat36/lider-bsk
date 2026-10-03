@@ -1,3 +1,7 @@
+import { canPerformV4Action } from './action-permissions-v1.js';
+import { offerStatusUiModel } from './offer-status-ui-model-v1.js';
+import { transitionOffer, offerTransitionAvailable } from './offer-transition-transport-v1.js';
+import { v4State, setState } from './state.js';
 import { orderOperationsAvailable } from './operational-server-contract-v1.js';
 import { supabaseClient } from './supabase-client.js';
 import { friendlyError } from './api.js';
@@ -5,6 +9,10 @@ import { invokeLeaderFunction } from './functions-client.js';
 import { V4_CONFIG } from './config.js';
 
 let busy = false;
+let returnFocus = null;
+let cardGeneration = 0;
+let currentOffer = null;
+let transitionBusy = false;
 let booted = false;
 let lastEnhanceAt = 0;
 
@@ -38,7 +46,7 @@ function ensureStyles() {
     .v4-offer-text{white-space:pre-wrap;border:1px solid #e2e8f0;background:#f8fafc;border-radius:14px;padding:12px;max-height:420px;overflow:auto;font-family:Arial,sans-serif;line-height:1.45}.v4-offer-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}.v4-offer-tabs button.is-active{background:#ea580c;color:#fff;border-color:#ea580c}
     .v4-offer-row{border:1px solid #e2e8f0;border-radius:14px;padding:10px;margin:8px 0;background:#f8fafc}.v4-offer-row-head{display:flex;justify-content:space-between;gap:10px}.v4-offer-row-head b{overflow-wrap:anywhere}
     .v4-offer-actions-line{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.v4-offer-empty{border:1px dashed #cbd5e1;border-radius:14px;padding:12px;color:#64748b;background:#f8fafc}.v4-offer-close{white-space:nowrap}
-    @media(max-width:860px){.v4-offer-modal-card{padding:12px;border-radius:18px}.v4-offer-head,.v4-offer-columns{display:grid;grid-template-columns:1fr}.v4-offer-actions-line button,.v4-offer-tabs button{width:100%}}
+    @media(max-width:860px){.v4-offer-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.v4-offer-grid div{min-width:0}.v4-offer-grid b{overflow-wrap:anywhere}.v4-offer-modal-card{padding:12px;border-radius:18px}.v4-offer-head,.v4-offer-columns{display:grid;grid-template-columns:1fr}.v4-offer-actions-line button,.v4-offer-tabs button{width:100%}}
   `;
   document.head.appendChild(style);
 }
@@ -52,6 +60,10 @@ function host() {
   return element;
 }
 function closeCard() {
+  if (transitionBusy) return;
+  currentOffer = null;
+  cardGeneration++;
+  returnFocus?.focus?.();
   host().innerHTML = '';
   busy = false;
 }
@@ -119,23 +131,61 @@ function renderRelation(lead, calculation, order) {
 function renderCard({ offer, lead, calculation, items, order, events }) {
   const full = offer.full_text || '';
   const short = offer.short_text || '';
-  host().innerHTML = `<div class="v4-offer-modal"><div class="v4-offer-modal-card"><div class="v4-offer-head"><div><p class="v4-kicker">Карточка КП</p><h2>${esc(offer.title || 'Коммерческое предложение')}</h2><p>№${esc(offer.offer_number || shortId(offer.id))} · ${esc(offer.offer_type || 'КП')} · создано ${dateTimeRu(offer.created_at)}</p></div><button type="button" class="v4-offer-close" data-offer-card-close>Закрыть</button></div><div class="v4-offer-grid"><div><span>Статус</span><b>${esc(offer.status || 'Черновик')}</b></div><div><span>Сумма</span><b>${money(offer.total_sum)}</b></div><div><span>Действует до</span><b>${dateRu(offer.valid_until)}</b></div><div><span>Отправлено</span><b>${dateTimeRu(offer.sent_at)}</b></div><div><span>Согласовано</span><b>${dateTimeRu(offer.approved_at)}</b></div><div><span>Заказ</span><b>${order ? 'создан' : 'нет'}</b></div></div><div class="v4-offer-actions-line"><button type="button" data-edit-type="offer" data-edit-id="${esc(offer.id)}">Редактировать КП</button>${lead ? `<button type="button" data-open-lead="${esc(lead.id)}" data-offer-card-close>Открыть заявку</button>` : ''}${order ? `<button type="button" data-open-order="${esc(order.id)}" data-offer-card-close>Открыть заказ</button>` : ''}<button type="button" data-offer-copy="full">Копировать полное</button><button type="button" data-offer-copy="short">Копировать короткое</button></div><div class="v4-offer-columns"><section class="v4-offer-section"><h3>Текст КП</h3><div class="v4-offer-tabs"><button type="button" class="is-active" data-offer-text-tab="full">Полное КП</button><button type="button" data-offer-text-tab="short">Короткое сообщение</button></div><pre class="v4-offer-text" data-offer-full="${esc(full)}" data-offer-short="${esc(short)}">${esc(full || 'Полный текст КП не заполнен.')}</pre></section><div>${renderRelation(lead, calculation, order)}<section class="v4-offer-section" style="margin-top:12px"><h3>История КП</h3>${renderEvents(events)}</section></div></div><section class="v4-offer-section" style="margin-top:12px"><h3>Состав из расчёта</h3>${renderItems(items)}</section></div></div>`;
+  currentOffer = offer;
+  host().innerHTML = `<div class="v4-offer-modal"><div class="v4-offer-modal-card" role="dialog" aria-modal="true" aria-label="Карточка КП"><div class="v4-offer-head"><div><p class="v4-kicker">Карточка КП</p><h2>${esc(offer.title || 'Коммерческое предложение')}</h2><p>№${esc(offer.offer_number || shortId(offer.id))} · ${esc(offer.offer_type || 'КП')} · создано ${dateTimeRu(offer.created_at)}</p></div><button type="button" class="v4-offer-close" data-offer-card-close>Закрыть</button></div><div class="v4-offer-grid"><div><span>Статус</span><b>${esc(offer.status || 'Черновик')}</b></div><div><span>Сумма</span><b>${money(offer.total_sum)}</b></div><div><span>Действует до</span><b>${dateRu(offer.valid_until)}</b></div><div><span>Отправлено</span><b>${dateTimeRu(offer.sent_at)}</b></div><div><span>Согласовано</span><b>${dateTimeRu(offer.approved_at)}</b></div><div><span>Заказ</span><b>${order ? 'создан' : 'нет'}</b></div></div><div class="v4-offer-actions-line">${offerStatusControls(offer)}<button type="button" data-edit-type="offer" data-edit-id="${esc(offer.id)}">Редактировать КП</button>${lead ? `<button type="button" data-open-lead="${esc(lead.id)}" data-offer-card-close>Открыть заявку</button>` : ''}${order ? `<button type="button" data-open-order="${esc(order.id)}" data-offer-card-close>Открыть заказ</button>` : ''}<button type="button" data-offer-copy="full">Копировать полное</button><button type="button" data-offer-copy="short">Копировать короткое</button></div><div class="v4-offer-columns"><section class="v4-offer-section"><h3>Текст КП</h3><div class="v4-offer-tabs"><button type="button" class="is-active" data-offer-text-tab="full">Полное КП</button><button type="button" data-offer-text-tab="short">Короткое сообщение</button></div><pre class="v4-offer-text" data-offer-full="${esc(full)}" data-offer-short="${esc(short)}">${esc(full || 'Полный текст КП не заполнен.')}</pre></section><div>${renderRelation(lead, calculation, order)}<section class="v4-offer-section" style="margin-top:12px"><h3>История КП</h3>${renderEvents(events)}</section></div></div><section class="v4-offer-section" style="margin-top:12px"><h3>Состав из расчёта</h3>${renderItems(items)}</section></div></div>`;
+  const card = host().querySelector('.v4-offer-modal-card');
+  const actions = card.querySelector('.v4-offer-actions-line');
+  const grid = card.querySelector('.v4-offer-grid');
+  grid.before(actions);
+  const secondary = document.createElement('details');
+  const summary = document.createElement('summary');
+  summary.textContent = 'Дополнительные действия';
+  secondary.append(summary);
+  actions.querySelectorAll('[data-edit-type], [data-open-lead], [data-offer-copy]').forEach(button=>secondary.append(button));
+  actions.append(secondary);
+
+}
+
+function offerStatusControls(offer) {
+  if (!offerTransitionAvailable(V4_CONFIG.supabaseUrl) || !canPerformV4Action('offers.transition') || offer.order_id) return '';
+  const labels={sent:'Отметить отправку',agreed:'Клиент согласовал',rejected:'Клиент отказался'};
+  return offerStatusUiModel(offer.status).actions.map(a=>`<button type="button" data-offer-transition="${esc(a.label)}">${labels[a.key]||esc(a.label)}</button>`).join('')+'<p data-offer-transition-notice role="status" aria-live="polite"></p>';
+}
+async function changeCardStatus(status) {
+  if (transitionBusy || !currentOffer || !canPerformV4Action('offers.transition')) return;
+  if (status==='Отклонено' && !window.confirm('Отметить отказ клиента от этого КП?')) return;
+  transitionBusy=true;const offer=currentOffer;
+  host().querySelectorAll('button').forEach(b=>b.disabled=true);
+  const notice=host().querySelector('[data-offer-transition-notice]');if(notice)notice.textContent='Сохраняю статус…';
+  try {
+    const result=await transitionOffer({client:supabaseClient,url:V4_CONFIG.supabaseUrl,offer,status});
+    setState({offers:(v4State.offers||[]).map(o=>o.id===offer.id?{...o,...result.offer}:o),currentLead:v4State.currentLead?.id===result.lead?.id?{...v4State.currentLead,...result.lead}:v4State.currentLead});
+    transitionBusy=false;await openOfferCard(offer.id);
+    document.dispatchEvent(new CustomEvent('leader-v4:offer-changed',{detail:{offerId:offer.id}}));
+  } catch(error){if(notice)notice.textContent=error.message;}
+  finally{transitionBusy=false;host().querySelectorAll('button').forEach(b=>b.disabled=false);}
 }
 
 async function openOfferCard(offerId) {
   if (!offerId || busy) return;
   busy = true;
+  const generation = ++cardGeneration;
+  if (!host().querySelector('[role=dialog]')) returnFocus = document.activeElement;
   ensureStyles();
   loading();
   try {
     const offer = await fetchOffer(offerId);
     const [lead, calculation, order, events] = await Promise.all([fetchLead(offer.lead_id), fetchCalculation(offer.calculation_id), fetchOrder(offer.order_id), fetchEvents(offer.id)]);
     const items = await fetchItems(offer.calculation_id);
+    if (generation !== cardGeneration) return;
     renderCard({ offer, lead, calculation, items, order, events });
+    host().querySelector('[data-offer-transition], [data-offer-card-close]')?.focus();
+    await import('./offer-order-create-v1.js?v=20261002-offers-1');
+    document.dispatchEvent(new CustomEvent('leader-v4:offer-card-rendered',{detail:{offerId:offer.id}}));
   } catch (error) {
-    errorBox(friendlyError(error));
+    if (generation === cardGeneration) errorBox(friendlyError(error));
   } finally {
-    busy = false;
+    if (generation === cardGeneration) busy = false;
   }
 }
 
@@ -181,6 +231,8 @@ function bind() {
   if (booted) return;
   booted = true;
   document.addEventListener('click', (event) => {
+    const statusButton=event.target.closest?.('[data-offer-transition]');
+    if(statusButton){event.preventDefault();changeCardStatus(statusButton.dataset.offerTransition);return;}
     const close = event.target.closest?.('[data-offer-card-close]');
     if (close) { closeCard(); return; }
     const open = event.target.closest?.('[data-open-offer-card]');
@@ -198,6 +250,17 @@ function bind() {
       document.querySelectorAll('[data-offer-text-tab]').forEach((button) => button.classList.toggle('is-active', button === tab));
       box.textContent = tab.dataset.offerTextTab === 'short' ? (box.dataset.offerShort || 'Короткий текст не заполнен.') : (box.dataset.offerFull || 'Полный текст КП не заполнен.');
     }
+  });
+  document.addEventListener('keydown', (event) => {
+    const dialog = host().querySelector('[role=dialog]');
+    if (!dialog) return;
+    if (event.key === 'Escape') { event.preventDefault(); closeCard(); return; }
+    if (event.key !== 'Tab') return;
+    const nodes = [...dialog.querySelectorAll('button:not(:disabled),a[href],input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex="0"]')].filter(n=>n.getClientRects().length);
+    const first=nodes[0],last=nodes.at(-1);
+    if (!first) {event.preventDefault();return;}
+    if (event.shiftKey && (document.activeElement===first || !dialog.contains(document.activeElement))) {event.preventDefault();last.focus();}
+    else if (!event.shiftKey && (document.activeElement===last || !dialog.contains(document.activeElement))) {event.preventDefault();first.focus();}
   });
   document.addEventListener('leader-v4:lead-card-rendered', () => setTimeout(enhance, 250));
   document.addEventListener('leader-v4:tab-opened', () => setTimeout(enhance, 250));
