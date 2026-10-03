@@ -41,12 +41,12 @@ $permission$;
   v_request_hash := encode(');
   END IF;
   IF position('if v_receipt.request_hash <> v_request_hash then' IN definition)=0
-    OR position("jsonb_build_object('idempotent_replay', true)" IN definition)=0
+    OR position($replay$jsonb_build_object('idempotent_replay', true)$replay$ IN definition)=0
    THEN RAISE EXCEPTION 'receipt_marker_missing:%',f.name; END IF;
   definition:=replace(definition,'if v_receipt.request_hash <> v_request_hash then',
    'if v_receipt.actor_id IS DISTINCT FROM v_actor_id or v_receipt.request_hash IS DISTINCT FROM v_request_hash then');
-  definition:=replace(definition,"jsonb_build_object('idempotent_replay', true)",
-   "jsonb_build_object('idempotent_replay', true, 'request_id', v_request_id)");
+  definition:=replace(definition,$replay$jsonb_build_object('idempotent_replay', true)$replay$,
+   $replay$jsonb_build_object('idempotent_replay', true, 'request_id', v_request_id)$replay$);
   EXECUTE definition;
  END LOOP;
  -- Wrapper must not query order/layout before authenticating the supplied server actor.
