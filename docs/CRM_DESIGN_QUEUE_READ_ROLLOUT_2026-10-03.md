@@ -30,3 +30,18 @@ REVOKE проверяется в BEGIN/ROLLBACK до rollout. Private backup —
 Перед apply: fresh production preflight, успешный staging worker proof, проверка
 безопасной projection. После apply: неизменность полного snapshot, отсутствие
 browser DML/PII SELECT, advisor, frontend gate и опубликованный importmap.
+
+## Фактическая установка 03.10
+
+Production `ofewxuqfjhamgerwzull`: `design_queue_production_read_v1` применена после
+успешного worker staging и disposable PostgreSQL candidate CI (SHA `03721c6`).
+Preflight: 0 design rows, backup ранее отсутствовал, canonical helper установлен.
+Private backup `design-read-20261003-v1` создан атомарно под lock. Postflight:
+полный snapshot равен текущим строкам; browser INSERT/UPDATE закрыт; client_phone
+SELECT запрещён; task_text доступен; обе canonical SELECT policies установлены.
+Реальный stop-read REVOKE проверен в production BEGIN/ROLLBACK: чтение остановилось,
+после rollback safe SELECT восстановлен, write ACL остался закрытым. Frontend read
+gate включён после проверки. Production RPC/Edge создания/переходов не включались.
+
+Пустая production таблица не является доказательством positive designer workflow.
+Authenticated production UI в текущей browser session не проверен (только login).

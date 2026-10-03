@@ -4,7 +4,7 @@
 
 ## Очереди исполнителей — текущий этап 03.10
 
-В существующую доску добавлена staging-очередь дизайна: статус, срок, дизайнер,
+В существующую доску добавлена очередь дизайна: статус, срок, дизайнер,
 приоритет, ТЗ и безопасные ссылки на файлы. Дизайнер открывает её первой.
 Исполнители не запрашивают заказы без orders.read; смена пользователя/роли очищает
 старые строки и не допускает поздний ответ прежнего запроса. 15 targeted browser
@@ -14,9 +14,13 @@ PASS на `572fdaf`: manager/owner цикл и реальные входы desig
 fixture reads, wrong-role writes, private-column reads, service-only RPC. Cleanup
 PASS, независимый SQL: tasks/orders/profiles/Auth/payments/expenses/jobs/receipts=0.
 Временное доверие ветки снято. Positive worker mutations пока не доказаны.
-Production read ACL candidate готов: snapshot/role projection/stop rollback;
-проверяется в disposable PostgreSQL до включения чтения.
-Design queue production gate пока закрыт; это не завершённый operational cutover.
+Production read activation выполнена: закрытый snapshot `design-read-20261003-v1`,
+canonical SELECT/точная projection, browser DML и contact SELECT закрыты, полный
+snapshot не изменился. Stop-read REVOKE проверен в BEGIN/ROLLBACK; safe SELECT
+восстановлен, DML остался закрытым. Disposable PostgreSQL CI: 7 ролей/неактивный
+профиль/legacy-policy bypass/rollback PASS. Frontend read gate включён после proof.
+Создание и переходы дизайна в production не включены. Auth/Storage/Edge production
+не менялись; установка общего core не повторялась. Это не полный operational cutover.
 
 ## Согласование макета: operational upgrade 03.10
 

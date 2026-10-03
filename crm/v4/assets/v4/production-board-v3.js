@@ -225,9 +225,9 @@ function mount() {
   if (window.LeaderV4ProductionBoardV3Mounted) return;
   window.LeaderV4ProductionBoardV3Mounted = true;
   ensureSection();
-  let identity = `${v4State.user?.id || ''}:${v4State.profile?.role || ''}:${v4State.profile?.is_active === true}`;
+  let identity = `${v4State.user?.id || ''}:${v4State.profile?.role || ''}:${v4State.profileLoaded === true}:${v4State.profile?.is_active === true}`;
   subscribeState(() => {
-    const next = `${v4State.user?.id || ''}:${v4State.profile?.role || ''}:${v4State.profile?.is_active === true}`;
+    const next = `${v4State.user?.id || ''}:${v4State.profile?.role || ''}:${v4State.profileLoaded === true}:${v4State.profile?.is_active === true}`;
     if (next === identity) return;
     identity = next; generation++; loaded = false; state = emptyState();
     const box = content(); if (box) box.innerHTML = '';
