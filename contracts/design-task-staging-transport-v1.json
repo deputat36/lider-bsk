@@ -1,10 +1,10 @@
 {
   "contract_version": "leader-design-task-staging-transport-v1",
-  "scope": "crm_v4_source_only_staging_transport",
+  "scope": "crm_v4_design_commands_stage_and_verified_production",
   "environment": {
     "allowed_project_ref": "otulfnouybahfnsycxqn",
     "production_project_ref": "ofewxuqfjhamgerwzull",
-    "production_enabled": false,
+    "production_enabled": true,
     "function_slug": "leader-crm-design",
     "verify_jwt_required": true
   },
@@ -67,11 +67,10 @@
     "read_after_success_required": true
   },
   "current_gates": [
-    "separate staging Auth user",
-    "active staging leader_user_profiles row",
-    "authenticated positive E2E",
-    "safe staging read-path grants and RLS validation",
-    "manual browser Network evidence",
-    "separate production approval"
+    "active CRM profile and canonical design.write",
+    "authenticated staging proof 37127188581",
+    "production backup design-commands-20261003-v1",
+    "verified server-only RPC and JWT Edge",
+    "safe read projection"
   ]
 }

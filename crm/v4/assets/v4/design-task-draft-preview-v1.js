@@ -8,6 +8,7 @@ import { V4_CONFIG } from './config.js';
 import { buildDesignTaskDraftPreview } from './design-task-draft-model-v1.js?v=20261003-approval-1';
 import {
   designStagingTransportAvailability,
+  isDesignCommandEnvironment,
   invokeStagingDesignTask
 } from './design-task-staging-transport-v1.js?v=20260827-revision-1';
 import { supabaseClient } from './supabase-client.js';
@@ -68,7 +69,7 @@ function host() {
 }
 
 function loadingHtml() {
-  return `<div class="v4-design-draft-dialog" role="dialog" aria-modal="true" aria-labelledby="designTaskDraftTitle"><div class="v4-design-draft-head"><div><h2 id="designTaskDraftTitle">Черновик дизайн-задачи</h2><p>Загружаю минимальные данные заказа и потребности…</p></div><button type="button" data-design-task-draft-close>Закрыть</button></div><div class="v4-design-draft-empty">Подготовка локального preview…</div></div>`;
+  return `<div class="v4-design-draft-dialog" role="dialog" aria-modal="true" aria-labelledby="designTaskDraftTitle"><div class="v4-design-draft-head"><div><h2 id="designTaskDraftTitle">Дизайн-задача</h2><p>Загружаю минимальные данные заказа и потребности…</p></div><button type="button" data-design-task-draft-close>Закрыть</button></div><div class="v4-design-draft-empty">Подготавливаю техническое задание…</div></div>`;
 }
 
 function stateClass(state) {
@@ -91,19 +92,19 @@ function stateLabel(state) {
 
 function orderSummary(result) {
   if (!result.order) return '';
-  return `<div class="v4-design-draft-grid"><div class="v4-design-draft-card"><span>Заказ</span><b>№${esc(result.order.orderNumber || String(result.order.id).slice(0, 8))}</b></div><div class="v4-design-draft-card"><span>Статус</span><b>${esc(result.order.statusLabel)}</b></div><div class="v4-design-draft-card"><span>Приоритет</span><b>${esc(result.order.priority || 'Обычный')}</b></div><div class="v4-design-draft-card"><span>Срок заказа</span><b>${esc(dateRu(result.order.deadline))}</b></div><div class="v4-design-draft-card"><span>Макет</span><b>${esc(result.order.layoutStatus || 'не указан')}</b></div><div class="v4-design-draft-card"><span>Права</span><b>${result.canWrite ? 'design.read + design.write' : 'только design.read'}</b></div></div>`;
+  return `<div class="v4-design-draft-grid"><div class="v4-design-draft-card"><span>Заказ</span><b>№${esc(result.order.orderNumber || String(result.order.id).slice(0, 8))}</b></div><div class="v4-design-draft-card"><span>Статус</span><b>${esc(result.order.statusLabel)}</b></div><div class="v4-design-draft-card"><span>Приоритет</span><b>${esc(result.order.priority || 'Обычный')}</b></div><div class="v4-design-draft-card"><span>Срок заказа</span><b>${esc(dateRu(result.order.deadline))}</b></div><div class="v4-design-draft-card"><span>Макет</span><b>${esc(result.order.layoutStatus || 'не указан')}</b></div><div class="v4-design-draft-card"><span>Права</span><b>${result.canWrite ? 'Можно изменять' : 'Только просмотр'}</b></div></div>`;
 }
 
 function needsHtml(result) {
   const rows = result.needs?.length
     ? result.needs.map((need) => `<article class="v4-design-draft-row"><b>${esc(need.title || need.type || 'Потребность')}</b><small>Тип: ${esc(need.type || 'не указан')} · полнота: ${need.completenessScore ?? '—'}%</small><small>Причина дизайна: ${esc(need.designReason || 'не заполнена')}</small><small>Срок: ${esc(dateRu(need.deadline))} · статус: ${esc(need.status || 'не указан')}</small></article>`).join('')
-    : '<div class="v4-design-draft-empty">Активные потребности с need_design=true не найдены.</div>';
+    : '<div class="v4-design-draft-empty">В потребности заказа пока не отмечена необходимость дизайна.</div>';
   return `<section class="v4-design-draft-section"><h3>Основание из потребности</h3><div class="v4-design-draft-list">${rows}</div></section>`;
 }
 
 function existingTasksHtml(result) {
   if (!result.existingTasks?.length) return '';
-  const rows = result.existingTasks.map((task) => `<article class="v4-design-draft-row"><b>${esc(task.label)}</b><small>Raw-статус: ${esc(task.raw)}${task.known ? '' : ' · неизвестный, сохранён без замены'}</small><small>Дизайнер: ${esc(task.designerName || 'не назначен')} · дедлайн: ${esc(dateRu(task.deadline))}</small><small>Макет: ${esc(task.layoutStatus || 'не указан')} · ссылка: ${task.layoutLinkPresent ? 'есть' : 'нет'}</small></article>`).join('');
+  const rows = result.existingTasks.map((task) => `<article class="v4-design-draft-row"><b>${esc(task.label)}</b><small>Статус: ${esc(task.raw)}${task.known ? '' : ' · неизвестный, сохранён без замены'}</small><small>Дизайнер: ${esc(task.designerName || 'не назначен')} · срок: ${esc(dateRu(task.deadline))}</small><small>Макет: ${esc(task.layoutStatus || 'не указан')} · ссылка: ${task.layoutLinkPresent ? 'есть' : 'нет'}</small></article>`).join('');
   return `<section class="v4-design-draft-section"><h3>Существующие дизайн-задачи</h3><div class="v4-design-draft-list">${rows}</div></section>`;
 }
 
@@ -114,20 +115,20 @@ function warningsHtml(result) {
 
 function flowHtml(result) {
   const allowed = result.statusFlow?.allowedFromInitial?.map((item) => item.label).join(' или ') || 'нет переходов';
-  return `<section class="v4-design-draft-section"><h3>Canonical status flow</h3><div class="v4-design-draft-row"><b>${esc(result.statusFlow?.initial?.label || 'Новая')}</b><small>Первый разрешённый переход: ${esc(allowed)}</small><small>Неизвестные raw-статусы существующих задач не перезаписываются автоматически.</small></div></section>`;
+  return `<section class="v4-design-draft-section"><h3>Следующий шаг</h3><div class="v4-design-draft-row"><b>${esc(result.statusFlow?.initial?.label || 'Новая')}</b><small>Первый разрешённый переход: ${esc(allowed)}</small><small>Если статус неизвестен, обратитесь к администратору.</small></div></section>`;
 }
 
 function payloadHtml(result) {
   if (!result.draft) return '';
-  return `<section class="v4-design-draft-section"><h3>Безопасный command envelope</h3><p>Payload не содержит имени клиента, телефона, оплаты, себестоимости, прибыли и внутренних комментариев.</p><pre class="v4-design-draft-code">${esc(moneylessJson(result.draft))}</pre></section>`;
+  return `<details class="v4-design-draft-section"><summary>Технические данные для диагностики</summary><p>Payload не содержит имени клиента, телефона, оплаты, себестоимости, прибыли и внутренних комментариев.</p><pre class="v4-design-draft-code">${esc(moneylessJson(result.draft))}</pre></details>`;
 }
 
 function stagingFeedbackHtml(feedback) {
   if (!feedback) return '';
   const suffix = feedback.ok && feedback.refreshFailed
-    ? '<br><small>Задача создана, но безопасное перечитывание не завершилось. Обновите preview.</small>'
+    ? '<br><small>Задача создана, но безопасное перечитывание не завершилось. Обновите задачу.</small>'
     : '';
-  return `<div class="v4-design-staging-result ${feedback.ok ? '' : 'is-error'}"><b>${feedback.ok ? 'Staging' : 'Staging: действие не выполнено'}</b><br>${esc(feedback.message)}${suffix}</div>`;
+  return `<div class="v4-design-staging-result ${feedback.ok ? '' : 'is-error'}"><b>${feedback.ok ? 'Сохранено' : 'Действие не выполнено'}</b><br>${esc(feedback.message)}${suffix}</div>`;
 }
 
 function stagingActionHtml(result) {
@@ -138,16 +139,17 @@ function stagingActionHtml(result) {
     expectedUpdatedAt: result.order?.updatedAt
   });
   if (availability.enabled) {
-    return `<button type="button" data-design-task-staging-create ${stagingBusy ? 'disabled' : ''}>${stagingBusy ? 'Создаю только в staging…' : 'Создать тестовую задачу в staging'}</button>`;
+    return `<button type="button" data-design-task-staging-create ${stagingBusy ? 'disabled' : ''}>${stagingBusy ? 'Создаю…' : availability.staging ? 'Создать тестовую задачу в staging' : 'Создать дизайн-задачу'}</button>`;
   }
   if (availability.staging) {
     return '<button type="button" disabled title="Нужны design.write, актуальный заказ и готовый command envelope">Тестовое создание в staging недоступно</button>';
   }
-  return '<button type="button" disabled title="Production rollout требует отдельного явного решения владельца">Создать задачу в CRM — отключено</button>';
+  if (isDesignCommandEnvironment(V4_CONFIG.supabaseUrl)) return '';
+  return '<button type="button" disabled title="Серверные команды ещё не включены для этого окружения">Создать задачу в CRM — отключено</button>';
 }
 
 function transitionActionHtml(result) {
-  if (!isStagingWorkflowEnvironment(V4_CONFIG.supabaseUrl) || !result.canWrite) return '';
+  if (!isDesignCommandEnvironment(V4_CONFIG.supabaseUrl) || !result.canWrite) return '';
   const task = result.existingTasks?.[0];
   const target = task?.key === 'new' ? 'В работе' : task?.key === 'in_progress' ? 'На согласовании' : task?.key === 'review' ? 'Согласовано' : '';
   if (!target) return '';
@@ -156,18 +158,18 @@ function transitionActionHtml(result) {
 }
 
 function renderResult(modal, result, feedback = null) {
-  const payloadButton = result.draft
+  const payloadButton = result.draft && isStagingWorkflowEnvironment(V4_CONFIG.supabaseUrl)
     ? '<button type="button" data-design-task-draft-copy>Скопировать JSON</button>'
     : '';
   const openOrder = result.order?.id
     ? `<button type="button" data-open-order="${esc(result.order.id)}" data-design-task-draft-close-after-open>Открыть заказ</button>`
     : '';
-  modal.innerHTML = `<div class="v4-design-draft-dialog" role="dialog" aria-modal="true" aria-labelledby="designTaskDraftTitle"><div class="v4-design-draft-head"><div><h2 id="designTaskDraftTitle">Черновик дизайн-задачи</h2><p>Production-запись отключена. Тестовый transport работает только при точном staging project ref.</p></div><button type="button" data-design-task-draft-close>Закрыть</button></div><div class="v4-design-draft-note ${stateClass(result.state)}"><b>${esc(stateLabel(result.state))}</b><br>${esc(result.message)}</div>${stagingFeedbackHtml(feedback)}${orderSummary(result)}${warningsHtml(result)}<div class="v4-design-draft-actions">${openOrder}${payloadButton}${stagingActionHtml(result)}${transitionActionHtml(result)}</div>${needsHtml(result)}${existingTasksHtml(result)}${flowHtml(result)}${payloadHtml(result)}</div>`;
+  modal.innerHTML = `<div class="v4-design-draft-dialog" role="dialog" aria-modal="true" aria-labelledby="designTaskDraftTitle"><div class="v4-design-draft-head"><div><h2 id="designTaskDraftTitle">Дизайн-задача</h2><p>Production-запись отключена. Тестовый transport работает только при точном staging project ref.</p></div><button type="button" data-design-task-draft-close>Закрыть</button></div><div class="v4-design-draft-note ${stateClass(result.state)}"><b>${esc(stateLabel(result.state))}</b><br>${esc(result.message)}</div>${stagingFeedbackHtml(feedback)}${orderSummary(result)}${warningsHtml(result)}<div class="v4-design-draft-actions">${openOrder}${payloadButton}${stagingActionHtml(result)}${transitionActionHtml(result)}</div>${needsHtml(result)}${existingTasksHtml(result)}${flowHtml(result)}${payloadHtml(result)}</div>`;
   modal.dataset.payload = result.draft ? moneylessJson(result.draft) : '';
 }
 
 function renderError(modal, error) {
-  modal.innerHTML = `<div class="v4-design-draft-dialog" role="dialog" aria-modal="true" aria-labelledby="designTaskDraftTitle"><div class="v4-design-draft-head"><div><h2 id="designTaskDraftTitle">Черновик дизайн-задачи</h2><p>Не удалось подготовить preview</p></div><button type="button" data-design-task-draft-close>Закрыть</button></div><div class="v4-design-draft-note is-danger">${esc(friendlyError(error))}</div></div>`;
+  modal.innerHTML = `<div class="v4-design-draft-dialog" role="dialog" aria-modal="true" aria-labelledby="designTaskDraftTitle"><div class="v4-design-draft-head"><div><h2 id="designTaskDraftTitle">Дизайн-задача</h2><p>Не удалось подготовить preview</p></div><button type="button" data-design-task-draft-close>Закрыть</button></div><div class="v4-design-draft-note is-danger">${esc(friendlyError(error))}</div></div>`;
 }
 
 async function fetchOrder(orderId) {

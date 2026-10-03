@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'supabase/functions/leader-crm-design/**'
+      - 'supabase/production-candidates/functions/leader-crm-design/**'
       - 'supabase/config.toml'
       - 'contracts/supabase-environments-v1.json'
       - 'tools/check_crm_design_edge.py'
@@ -16,6 +17,7 @@ on:
     branches: [main]
     paths:
       - 'supabase/functions/leader-crm-design/**'
+      - 'supabase/production-candidates/functions/leader-crm-design/**'
       - 'supabase/config.toml'
       - 'contracts/supabase-environments-v1.json'
       - 'tools/check_crm_design_edge.py'
@@ -53,3 +55,6 @@ jobs:
 
       - name: Validate staging deployment evidence
         run: python3 tools/check_crm_design_edge_deployment.py
+
+      - name: Check operational design bundle
+        run: deno check supabase/production-candidates/functions/leader-crm-design/index.ts
