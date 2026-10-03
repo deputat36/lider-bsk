@@ -41,5 +41,5 @@ jobs:
         run: |
           psql -h localhost -U postgres -d client_test -v ON_ERROR_STOP=1 -f build/client-registry-test.sql
           psql -h localhost -U postgres -d client_test -v ON_ERROR_STOP=1 -f build/design-transition-test.sql
-          psql -h localhost -U postgres -d client_test -v ON_ERROR_STOP=1 -f build/design-read-production-test.sql
           psql -h localhost -U postgres -d client_test -v ON_ERROR_STOP=1 -f build/design-commands-test.sql
+          psql -h localhost -U postgres -d client_test -v ON_ERROR_STOP=1 -f build/design-read-production-test.sql

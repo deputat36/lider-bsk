@@ -1,8 +1,6 @@
 name: CRM staging authenticated E2E
 
 on:
-  push:
-    branches: [agent/design-commands-20261003]
   workflow_call:
 
 permissions:

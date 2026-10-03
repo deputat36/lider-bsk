@@ -11,7 +11,7 @@ const headers = {
 }
 const object = (value: unknown): Record<string, unknown> | null => value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null
 const text = (value: unknown) => String(value ?? '').trim()
-const statusFor = (code: string) => ['forbidden', 'inactive_profile', 'access_denied'].includes(code) ? 403 : ['conflict','duplicate_request','invalid_transition','access_denied'].includes(code) ? 409 : ['not_found'].includes(code) ? 404 : ['design_operation_failed','persistence_failed'].includes(code) ? 500 : 400
+const statusFor = (code: string) => ['forbidden', 'inactive_profile', 'access_denied'].includes(code) ? 403 : ['conflict','duplicate_request','invalid_transition'].includes(code) ? 409 : ['not_found'].includes(code) ? 404 : ['design_operation_failed','persistence_failed'].includes(code) ? 500 : 400
 
 Deno.serve(async (req: Request) => {
   let requestId: string | null = null

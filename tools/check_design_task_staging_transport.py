@@ -52,6 +52,9 @@ def main() -> None:
         "FUNCTION_SLUG = 'leader-crm-design'",
         "ACTION = 'design_task.create_from_order'",
         'designStagingTransportAvailability',
+        'DESIGN_COMMAND_PRODUCTION_ENABLED',
+        'isDesignCommandEnvironment',
+        PRODUCTION,
         'buildStagingDesignCommand',
         'invokeStagingDesignTask',
         'client.auth.getSession()',
@@ -63,7 +66,6 @@ def main() -> None:
         'persistence_failed',
     ], 'staging transport')
     forbid(transport, [
-        PRODUCTION,
         'SUPABASE_SERVICE_ROLE_KEY',
         'service_role',
         '.from(',

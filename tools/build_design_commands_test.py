@@ -32,5 +32,11 @@ source=next((r/'supabase/production-candidates').glob('*_design_commands_product
 out=r/'build/design-commands-test.sql';out.parent.mkdir(exist_ok=True)
 tests=(r/'supabase/staging-tests/20261003_design_commands.sql').read_text().replace('BEGIN;','',1).replace('ROLLBACK;','',1)
 transition=(r/'supabase/staging-tests/20261003_design_transition_operational.sql').read_text().replace('BEGIN;','',1)
-out.write_text(setup+source+tests+transition)
+rollback="""SAVEPOINT design_stop;
+REVOKE EXECUTE ON FUNCTION public.leader_create_design_task_from_order_rpc(jsonb),public.leader_transition_design_task_rpc(jsonb) FROM service_role;
+DO $$BEGIN IF has_function_privilege('service_role','public.leader_create_design_task_from_order_rpc(jsonb)','EXECUTE') OR has_function_privilege('service_role','public.leader_transition_design_task_rpc(jsonb)','EXECUTE') THEN RAISE EXCEPTION 'stop_failed';END IF;END $$;
+ROLLBACK TO SAVEPOINT design_stop;
+DO $$BEGIN IF NOT has_function_privilege('service_role','public.leader_create_design_task_from_order_rpc(jsonb)','EXECUTE') OR NOT has_function_privilege('service_role','public.leader_transition_design_task_rpc(jsonb)','EXECUTE') THEN RAISE EXCEPTION 'stop_not_restored';END IF;END $$;
+"""
+out.write_text(setup+source+tests+rollback+transition)
 print('Built exact design command SQL test, isolated PostgreSQL only.')

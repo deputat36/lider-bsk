@@ -1,3 +1,5 @@
+export const DESIGN_COMMAND_PRODUCTION_ENABLED = false;
+const PRODUCTION_HOST = 'ofewxuqfjhamgerwzull.supabase.co';
 const STAGING_PROJECT_REF = 'otulfnouybahfnsycxqn';
 const FUNCTION_SLUG = 'leader-crm-design';
 const ACTION = 'design_task.create_from_order';
@@ -23,7 +25,12 @@ export function projectRefFromSupabaseUrl(value) {
 }
 
 export function isStagingDesignEnvironment(supabaseUrl) {
-  return projectRefFromSupabaseUrl(supabaseUrl) === STAGING_PROJECT_REF;
+  try { return new URL(supabaseUrl).hostname === `${STAGING_PROJECT_REF}.supabase.co`; } catch (_) { return false; }
+}
+
+export function isDesignCommandEnvironment(url) {
+  if (isStagingDesignEnvironment(url)) return true;
+  try { return DESIGN_COMMAND_PRODUCTION_ENABLED && new URL(url).hostname === PRODUCTION_HOST; } catch (_) { return false; }
 }
 
 export function designStagingTransportAvailability({
@@ -33,16 +40,17 @@ export function designStagingTransportAvailability({
   expectedUpdatedAt = null
 } = {}) {
   const staging = isStagingDesignEnvironment(supabaseUrl);
+  const allowedEnvironment = isDesignCommandEnvironment(supabaseUrl);
   const hasDraft = Boolean(asObject(draft));
   const hasTimestamp = Boolean(text(expectedUpdatedAt) && Number.isFinite(Date.parse(expectedUpdatedAt)));
   let reason = '';
-  if (!staging) reason = 'production_locked';
+  if (!allowedEnvironment) reason = 'production_locked';
   else if (!canWrite) reason = 'forbidden';
   else if (!hasDraft) reason = 'draft_missing';
   else if (!hasTimestamp) reason = 'expected_updated_at_missing';
 
   return Object.freeze({
-    enabled: staging && canWrite === true && hasDraft && hasTimestamp,
+    enabled: allowedEnvironment && canWrite === true && hasDraft && hasTimestamp,
     staging,
     reason,
     projectRef: projectRefFromSupabaseUrl(supabaseUrl),
@@ -227,9 +235,9 @@ export async function invokeStagingDesignTask({
     kind: replay ? 'replay' : 'created',
     code: replay ? 'idempotent_replay' : 'created',
     replay,
-    message: stagingDesignResultMessage('created', replay),
+    message: availability.staging ? stagingDesignResultMessage('created', replay) : replay ? 'Безопасный повтор: задача уже сохранена.' : 'Дизайн-задача создана.',
     requestId: text(data.request_id || command.request_id),
-    taskId: text(data.task?.id),
+    taskId: text(data.task?.id || data.entity?.id),
     refreshed,
     refreshFailed,
     command
