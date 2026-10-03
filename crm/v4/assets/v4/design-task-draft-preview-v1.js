@@ -5,7 +5,7 @@ import {
   requireV4Action
 } from './action-permissions-v1.js';
 import { V4_CONFIG } from './config.js';
-import { buildDesignTaskDraftPreview } from './design-task-draft-model-v1.js?v=20260827-revision-1';
+import { buildDesignTaskDraftPreview } from './design-task-draft-model-v1.js?v=20261003-approval-1';
 import {
   designStagingTransportAvailability,
   invokeStagingDesignTask
@@ -23,6 +23,7 @@ const TASK_FIELDS = 'id,order_id,task_status,layout_status,designer_name,deadlin
 let busy = false;
 let stagingBusy = false;
 let currentPreviewContext = null;
+let returnFocus = null;
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>\"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[char]));
@@ -43,17 +44,22 @@ function ensureStyles() {
   const style = document.createElement('style');
   style.id = STYLE_ID;
   style.textContent = `.v4-design-draft-modal{position:fixed;inset:0;z-index:840;background:rgba(15,23,42,.68);display:grid;place-items:center;padding:16px}.v4-design-draft-dialog{width:min(980px,100%);max-height:92vh;overflow:auto;background:#fff;border:1px solid #c4b5fd;border-radius:22px;padding:17px;box-shadow:0 30px 100px rgba(15,23,42,.4)}.v4-design-draft-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;border-bottom:1px solid #e2e8f0;padding-bottom:11px}.v4-design-draft-head h2{margin:0;color:#4c1d95}.v4-design-draft-head p{margin:5px 0 0;color:#64748b}.v4-design-draft-actions{display:flex;gap:8px;flex-wrap:wrap;margin:13px 0}.v4-design-draft-actions button{border:1px solid #c4b5fd;background:#f5f3ff;color:#5b21b6;border-radius:11px;padding:9px 12px;font-weight:900;cursor:pointer}.v4-design-draft-actions button[data-design-task-staging-create]{background:#5b21b6;color:#fff}.v4-design-draft-actions button[disabled]{cursor:not-allowed;opacity:.62}.v4-design-draft-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:9px;margin:12px 0}.v4-design-draft-card{border:1px solid #ddd6fe;background:#faf5ff;border-radius:15px;padding:11px}.v4-design-draft-card span{display:block;color:#6b7280;font-size:11px;font-weight:900;text-transform:uppercase}.v4-design-draft-card b{display:block;margin-top:4px;color:#312e81}.v4-design-draft-note{border:1px solid #c4b5fd;background:#f5f3ff;color:#4c1d95;border-radius:14px;padding:11px;font-weight:800;margin:11px 0}.v4-design-draft-note.is-warn{border-color:#fde68a;background:#fffbeb;color:#92400e}.v4-design-draft-note.is-danger{border-color:#fecaca;background:#fff1f2;color:#991b1b}.v4-design-staging-result{border:1px solid #86efac;background:#f0fdf4;color:#166534;border-radius:14px;padding:11px;font-weight:800;margin:11px 0}.v4-design-staging-result.is-error{border-color:#fecaca;background:#fff1f2;color:#991b1b}.v4-design-draft-section{border:1px solid #e2e8f0;border-radius:17px;padding:13px;margin-top:12px}.v4-design-draft-section h3{margin:0 0 9px}.v4-design-draft-list{display:grid;gap:8px}.v4-design-draft-row{border:1px solid #e2e8f0;background:#f8fafc;border-radius:13px;padding:10px}.v4-design-draft-row b,.v4-design-draft-row small{display:block}.v4-design-draft-row small{color:#64748b;margin-top:3px}.v4-design-draft-code{white-space:pre-wrap;overflow-wrap:anywhere;background:#0f172a;color:#e2e8f0;border-radius:15px;padding:13px;font:12px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace}.v4-design-draft-empty{border:1px dashed #c4b5fd;background:#faf5ff;color:#5b21b6;border-radius:14px;padding:12px;font-weight:800}@media(max-width:700px){.v4-design-draft-head{display:grid}.v4-design-draft-actions button{width:100%}}`;
+  style.textContent += `.v4-design-approval{flex-basis:100%;min-width:0;display:grid;gap:8px}.v4-design-approval input[type=url]{width:100%;box-sizing:border-box;min-height:44px;border:1px solid #64748b;border-radius:8px;padding:10px;font:inherit}.v4-design-approval p{margin:0;font-size:14px;color:#475569}.v4-design-approval-check{display:flex;align-items:center;gap:8px;min-height:44px}.v4-design-approval-check input{width:20px;height:20px}.v4-design-approval #designApprovalError{color:#991b1b}.v4-design-draft-dialog :focus-visible{outline:3px solid #b51721;outline-offset:2px}`;
   document.head.appendChild(style);
 }
 
 function closeModal() {
+  if (stagingBusy) return;
   document.getElementById(MODAL_ID)?.remove();
   currentPreviewContext = null;
   stagingBusy = false;
+  if (returnFocus?.isConnected) returnFocus.focus();
+  returnFocus = null;
 }
 
 function host() {
   closeModal();
+  returnFocus = document.activeElement;
   const modal = document.createElement('div');
   modal.id = MODAL_ID;
   modal.className = 'v4-design-draft-modal';
@@ -145,7 +151,8 @@ function transitionActionHtml(result) {
   const task = result.existingTasks?.[0];
   const target = task?.key === 'new' ? 'В работе' : task?.key === 'in_progress' ? 'На согласовании' : task?.key === 'review' ? 'Согласовано' : '';
   if (!target) return '';
-  return `<button type="button" data-design-task-transition="${esc(target)}">${target === 'Согласовано' ? 'Утвердить макет' : `Перевести: ${esc(target)}`}</button>`;
+  const approval = target === 'Согласовано' ? `<div class="v4-design-approval"><label for="designLayoutLink">Ссылка на согласованный макет</label><input id="designLayoutLink" type="url" inputmode="url" maxlength="2000" value="${esc(task.layoutLink || '')}" placeholder="https://…" aria-describedby="designApprovalHelp" ${stagingBusy ? 'disabled' : ''}><p id="designApprovalHelp">Укажите файл, который согласовал клиент. Без ссылки передача в производство недоступна.</p><label class="v4-design-approval-check"><input id="designApprovalConfirmed" type="checkbox" ${stagingBusy ? 'disabled' : ''}> Клиент согласовал этот макет</label><p id="designApprovalError" role="alert" hidden></p></div>` : '';
+  return `${approval}<button type="button" data-design-task-transition="${esc(target)}" ${stagingBusy ? 'disabled' : ''}>${stagingBusy ? 'Сохраняю…' : target === 'Согласовано' ? 'Утвердить макет' : target === 'В работе' ? 'Начать работу' : 'Отправить на согласование'}</button>`;
 }
 
 function renderResult(modal, result, feedback = null) {
@@ -217,6 +224,7 @@ async function openPreview(orderId) {
     });
     currentPreviewContext = { order, needs, result };
     renderResult(modal, result);
+    modal.querySelector('[data-design-task-draft-close]')?.focus();
   } catch (error) {
     currentPreviewContext = null;
     renderError(modal, error);
@@ -261,7 +269,22 @@ async function transitionStagingDesignTask(status) {
   if (stagingBusy || !currentPreviewContext?.order) return;
   const taskId = currentPreviewContext.result?.existingTasks?.[0]?.id;
   if (!taskId || !requireV4Action(CRM_V4_ACTIONS.DESIGN_WRITE)) return;
+  const context = currentPreviewContext;
+  const linkInput = document.getElementById('designLayoutLink');
+  const layoutLink = String(linkInput?.value || '').trim();
+  if (status === 'Согласовано') {
+    let valid = false;
+    try { const url = new URL(layoutLink); valid = ['https:', 'http:'].includes(url.protocol) && !url.username && !url.password; } catch (_) {}
+    const message = !valid ? 'Укажите ссылку на макет, начинающуюся с https:// или http://.' : !document.getElementById('designApprovalConfirmed')?.checked ? 'Подтвердите, что клиент согласовал указанный макет.' : '';
+    if (message) {
+      const error = document.getElementById('designApprovalError');
+      error.textContent = message; error.hidden = false;
+      (valid ? document.getElementById('designApprovalConfirmed') : linkInput)?.focus();
+      return;
+    }
+  }
   stagingBusy = true;
+  document.querySelectorAll(`#${MODAL_ID} [data-design-task-draft-close], #${MODAL_ID} [data-design-task-transition], #${MODAL_ID} input`).forEach((element) => { element.disabled = true; });
   try {
     const tasks = await fetchTasks(currentPreviewContext.order.id);
     const task = tasks.find((item) => item.id === taskId);
@@ -272,7 +295,7 @@ async function transitionStagingDesignTask(status) {
       action: 'design_task.transition',
       entity: task,
       status,
-      layoutLink: status === 'Согласовано' ? (task.layout_link || `https://example.invalid/synthetic-layout/${task.id}`) : task.layout_link
+      layoutLink: status === 'Согласовано' ? layoutLink : task.layout_link
     });
     const [order, refreshedTasks] = await Promise.all([fetchOrder(currentPreviewContext.order.id), fetchTasks(currentPreviewContext.order.id)]);
     currentPreviewContext.order = order;
@@ -281,8 +304,13 @@ async function transitionStagingDesignTask(status) {
       canRead: canPerformV4Action(CRM_V4_ACTIONS.DESIGN_READ),
       canWrite: canPerformV4Action(CRM_V4_ACTIONS.DESIGN_WRITE)
     });
+    stagingBusy = false;
     renderResult(document.getElementById(MODAL_ID), currentPreviewContext.result, { ok: true, message: result.idempotent_replay ? 'Безопасный повтор перехода дизайн-задачи.' : `Статус дизайн-задачи: ${status}.` });
-  } finally { stagingBusy = false; }
+  } finally {
+    stagingBusy = false;
+    document.querySelectorAll(`#${MODAL_ID} [data-design-task-draft-close], #${MODAL_ID} [data-design-task-transition], #${MODAL_ID} input`).forEach((element) => { element.disabled = false; });
+    if (currentPreviewContext === context) document.querySelector(`#${MODAL_ID} [data-design-task-transition]`)?.focus();
+  }
 }
 
 async function copyPayload() {
@@ -336,7 +364,18 @@ function boot() {
     }
     if (event.target.closest?.('[data-design-task-draft-close-after-open]')) setTimeout(closeModal, 0);
   }, true);
-  document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeModal(); });
+  document.addEventListener('keydown', (event) => {
+    const modal = document.getElementById(MODAL_ID);
+    if (!modal) return;
+    if (event.key === 'Escape') { event.preventDefault(); closeModal(); }
+    if (event.key === 'Tab') {
+      const controls = [...modal.querySelectorAll('button:not([disabled]), input:not([disabled]), a[href]')].filter((element) => element.getClientRects().length);
+      if (!controls.length) { event.preventDefault(); return; }
+      const first = controls[0], last = controls.at(-1);
+      if (event.shiftKey && (document.activeElement === first || !modal.contains(document.activeElement))) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && (document.activeElement === last || !modal.contains(document.activeElement))) { event.preventDefault(); first.focus(); }
+    }
+  });
 }
 
 if (!window.LeaderV4DesignTaskDraftPreviewV1Booted) {
