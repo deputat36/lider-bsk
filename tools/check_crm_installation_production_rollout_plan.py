@@ -154,6 +154,24 @@ if not errors:
                 if "P7 — frontend_loader_switch" not in checklist:
                     errors.append("generated_checklist_frontend_phase_missing")
 
+# The production core is shared with orders/finance/clients and must survive rollback.
+try:
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("installation_plan", FILES["generator"])
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    contracts = {name: module.load_json(path) for name, path in module.CONTRACT_PATHS.items()}
+    plan = module.build_plan(contracts, existing_core=True)
+    core = plan["phases"][1]
+    if core["mutating"] or "rollback" in core or core["name"] != "verify_existing_rbac_receipts":
+        errors.append("existing_core_reinstallation_or_rollback")
+    if plan["current_state"]["expected_row_counts"] is not None or plan["current_state"]["expected_missing_components"] is not None:
+        errors.append("existing_core_uses_stale_snapshot")
+    if any(phase["approved"] for phase in plan["phases"] if phase["mutating"]):
+        errors.append("existing_core_implicitly_approves_cutover")
+except Exception as exc:
+    errors.append("existing_core_plan_failed:" + str(exc))
+
 if errors:
     print("\n".join(errors), file=sys.stderr)
     raise SystemExit(1)

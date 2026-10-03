@@ -128,7 +128,7 @@ def source_inventory(contracts: dict[str, dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def build_plan(contracts: dict[str, dict[str, Any]]) -> dict[str, Any]:
+def build_plan(contracts: dict[str, dict[str, Any]], existing_core: bool = False) -> dict[str, Any]:
     readiness = contracts["readiness"]
     phases = [
         {
@@ -210,6 +210,16 @@ def build_plan(contracts: dict[str, dict[str, Any]]) -> dict[str, Any]:
         },
     ]
 
+    if existing_core:
+        phases[0]["success"] = "fresh preflight confirms existing canonical core and current business row counts"
+        phases[0]["stop"] = ["unknown roles", "source contract drift", "installation-specific advisor regression"]
+        phases[1] = {
+            "id": "P1", "name": "verify_existing_rbac_receipts", "mutating": False,
+            "approval_required": False, "approved": False,
+            "success": "verify active/inactive permissions and private ACL; preserve existing receipts and do not reapply or roll back shared core",
+        }
+        phases[3]["success"] = "update RPC matches validated baseline; existing receipts preserved and no synthetic residue remains"
+
     return {
         "plan": "crm-installation-production-rollout",
         "version": 1,
@@ -219,14 +229,15 @@ def build_plan(contracts: dict[str, dict[str, Any]]) -> dict[str, Any]:
         "production_project_ref": EXPECTED_PROJECT_REF,
         "current_state": {
             "database_layers_applied": False,
+            "shared_core_previously_installed": existing_core,
             "edge_deployed": False,
             "frontend_switched": False,
             "auth_or_fixture_mutation": False,
             "data_changed": False,
             "nav_changed": False,
             "expected_current_loader": EXPECTED_CURRENT_LOADER,
-            "expected_missing_components": readiness.get("missing_components", {}),
-            "expected_row_counts": {
+            "expected_missing_components": None if existing_core else readiness.get("missing_components", {}),
+            "expected_row_counts": None if existing_core else {
                 "orders": readiness["production_snapshot"]["orders_rows"],
                 "installation_jobs": readiness["production_snapshot"]["installation_jobs_rows"],
                 "installation_items": readiness["production_snapshot"]["installation_items_rows"],
@@ -295,11 +306,12 @@ def checklist_markdown(plan: dict[str, Any]) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--existing-core", action="store_true", help="Generate a read-only shared-core verification phase; never reapply RBAC or require empty global receipts")
     args = parser.parse_args()
 
     contracts = {name: load_json(path) for name, path in CONTRACT_PATHS.items()}
     validate_contracts(contracts)
-    plan = build_plan(contracts)
+    plan = build_plan(contracts, existing_core=args.existing_core)
 
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)

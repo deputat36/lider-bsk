@@ -1,6 +1,6 @@
 # Статус проекта РА «Лидер»
 
-Дата обновления: 2026-10-02.
+Дата обновления: 2026-10-03.
 
 ## PR564: клиенты и переход КП → заказ
 
@@ -11,7 +11,17 @@ Cleanup 24/24=0, Auth удалён, временное OIDC-доверие ве�
 Production backend установлен с закрытым backup; postflight подтвердил неизменность
 реальных данных, stop rollback проверен. Frontend gates включены после backend proof.
 [Scope, проверки и rollback](CRM_CLIENTS_OFFERS_PRODUCTION_2026-10-02.md).
-Pages-публикация подтверждается после merge; production UI записи не симулировались.
+PR564 merged: `c36e56b`; 67 checks success + 1 skipped. Main checks 72/72 без failures.
+Pages [37107636700](https://github.com/deputat36/lider-bsk/actions/runs/37107636700) success.
+Браузер 03.10 подтвердил новые importmap aliases клиентов/КП и форму входа на www.
+Authenticated production UI не проверен: текущая сессия не авторизована.
+Последний полный staging E2E SHA `741f87b`; delta `d366242` — gates/docs/OIDC cleanup
+и mobile CTA, targeted browser 5 widths PASS. Production mutations для proof не создавались.
+
+Следующий этап: design/production/installation server cutover. Read-only preflight
+03.10: их transactional RPC отсутствуют, browser DML ещё открыт. Shared RBAC/receipts
+уже установлены; installation plan теперь поддерживает `--existing-core`, исключая
+повторный apply/rollback общего слоя и использование старых row counts.
 
 ## Заказы и финансы: рабочий сервер
 
@@ -20,7 +30,7 @@ Pages-публикация подтверждается после merge; produc
 Backup/postflight подтвердили неизменность существующих данных; stop-rollback проверен.
 [Фактический scope, проверка и rollback](CRM_ORDER_FINANCE_PRODUCTION_2026-10-01.md).
 Staging browser E2E 36875276336 прошёл до оплаченного закрытого заказа, cleanup 23/23 = 0.
-Frontend gate включён в этом PR; доступность на www подтверждается после Pages deploy.
+Frontend PR563 опубликован: Pages 36963909369 success; backend повторно не устанавливался.
 
 ## Бренд и рабочие интерфейсы
 
@@ -43,7 +53,7 @@ rollback и postflight. Чужие проекты не затрагивать; �
 - [План #381, точный scope, SQL и rollback](PRODUCTION_DATA_INTEGRITY_2026-09-27.md). Кандидат по умолчанию ROLLBACK, проверяет approval/owner/status/timestamp/links/current revision, сохраняет snapshot и audit. TEMP-only PostgreSQL тест пройден; production DML не выполнялся.
 - Source/staging опережают production: catalog RPC и большинство operational write contracts там ещё отсутствуют; canonical RBAC/receipts установлены 01.10, legacy anon intake INSERT ещё разрешён. #201/#202/#204/#206 остаются открыты до проверенного cutover и proof.
 - #526 и #210 выполнены в своём source/staging scope; #552 закрыт, #553/#554 сведены к основным задачам. #152 и #226 уже имеют source/staging реализацию, а не пустой backlog.
-- #5: staging E2E [36520188081](https://github.com/deputat36/lider-bsk/actions/runs/36520188081) PASS, 60 workflows PASS, 22 категории cleanup=0 и Auth удалён. Реализованы формы оплат/расходов и отмена с причиной, серверная транзакция с правами/revision/receipt/audit, staging financial tables и cleanup. [Scope и production rollout/rollback](CRM_FINANCE_RECORDS_ROLLOUT_2026-09-29.md). Production ввод не включён; #5 остаётся открытым до общего cutover и proof.
+- #5: staging E2E [36520188081](https://github.com/deputat36/lider-bsk/actions/runs/36520188081) PASS, 60 workflows PASS, 22 категории cleanup=0 и Auth удалён. Реализованы формы оплат/расходов и отмена с причиной, серверная транзакция с правами/revision/receipt/audit, staging financial tables и cleanup. [Scope и production rollout/rollback](CRM_FINANCE_RECORDS_ROLLOUT_2026-09-29.md). Production ввод включён PR563; #5 остаётся открытым для общего финансового центра, возвратов и сверки.
 
 ## Специальные цены расчётов (#526)
 
