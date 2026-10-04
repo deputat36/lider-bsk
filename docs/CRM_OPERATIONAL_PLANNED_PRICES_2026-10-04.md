@@ -70,3 +70,18 @@ INSERT/UPDATE grants для authenticated; permissive policies допускаю�
 наличием SQL proof. Следующий этап — совместить актуальные staging upgrades в
 существующем operational candidate и пройти positive authenticated worker API/UI,
 затем backup/rollback/postflight перед production activation. Astra не требуется.
+
+## Проверенная интеграция PR571
+
+PR570 уже слит в main `03279a656a3b442c6b2f4ea62b705eb60861ba31`.
+Конфликты STATUS/test builder разрешены с сохранением обоих независимых upgrades
+и всех tests. Combined actual staging SQL PASS после интеграции.
+PostgreSQL run [37199422060](https://github.com/deputat36/lider-bsk/actions/runs/37199422060)
+completed/success на `19a936d5f7481e7b6def9437465e9e029727c4d2`: все command transactions,
+planned-price regression и два actual concurrent order → job RPC scenarios PASS.
+Финальная delta после этого proof — только данная запись доказательств.
+
+Staging migration history: planned-price upgrade version `20261004113208`; source
+filename timestamp `20261004113043` (MCP apply timestamp отличается). Не применять
+повторно по filename. Production read-only итог: 2 orders, 0 design/production/
+installation, 1 payment, 0 expenses; этим PR production не изменялся.
