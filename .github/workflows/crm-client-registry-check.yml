@@ -46,3 +46,9 @@ jobs:
           psql -h localhost -U postgres -d client_test -v ON_ERROR_STOP=1 -f build/design-commands-test.sql
           psql -h localhost -U postgres -d client_test -v ON_ERROR_STOP=1 -f build/operational-replay-test.sql
           psql -h localhost -U postgres -d client_test -v ON_ERROR_STOP=1 -f build/design-read-production-test.sql
+      - name: Exercise concurrent operational lock order in disposable database
+        env:
+          PGHOST: localhost
+          PGUSER: postgres
+          PGPASSWORD: isolated-ci-only
+        run: python3 tools/test_operational_lock_order.py
