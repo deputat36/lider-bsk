@@ -46,7 +46,7 @@ export function workerFixtureTools({ service, rpc, inspect }) {
       const tasks = await rows('leader_design_tasks', 'select=id,task_status,layout_link,updated_at&order_id=eq.' + order.id);
       assert(tasks.length === 1 && tasks[0].task_status === 'На согласовании' && tasks[0].layout_link === 'https://example.invalid/worker-layout', 'worker_design_not_reviewed');
       const task = tasks[0];
-      await command('leader_transition_design_task_rpc', fixture.user_id, 'design_task.transition', task.updated_at, { task_id: task.id, status: 'Согласована', layout_link: task.layout_link, idempotency_key: marker + ':worker-approve' });
+      await command('leader_transition_design_task_rpc', fixture.user_id, 'design_task.transition', task.updated_at, { task_id: task.id, status: 'Согласовано', layout_link: task.layout_link, idempotency_key: marker + ':worker-approve' });
       order = await orderFor(fixture, marker);
       const created = await command('leader_create_production_job_from_order_rpc', fixture.user_id, 'production_job.create_from_order', order.updated_at, { order_id: order.id, design_task_id: task.id, idempotency_key: marker + ':worker-production', job: { title: marker + '-WORKER-PRODUCTION', priority: 'Обычная', layout_status: 'Макет согласован', file_url: task.layout_link, technical_task: 'Synthetic worker production' } });
       return { ok: true, action: 'advance_workers', worker_production_id: created.entity.id };
@@ -69,7 +69,7 @@ export function workerFixtureTools({ service, rpc, inspect }) {
     const tasks = await rows('leader_design_tasks', 'select=id,task_status&order_id=eq.' + order.id);
     const production = await rows('leader_production_jobs', 'select=id,production_status&order_id=eq.' + order.id);
     const installation = await rows('leader_installation_jobs', 'select=id,install_status&order_id=eq.' + order.id);
-    assert(tasks.length === 1 && tasks[0].task_status === 'Согласована' && production.length === 1 && production[0].production_status === 'Готово' && installation.length === 1 && installation[0].install_status === 'Выполнен', 'worker_final_status_mismatch');
+    assert(tasks.length === 1 && tasks[0].task_status === 'Согласовано' && production.length === 1 && production[0].production_status === 'Готово' && installation.length === 1 && installation[0].install_status === 'Выполнен', 'worker_final_status_mismatch');
     const counts = {};
     for (const [kind, table, id] of [['design', 'leader_design_task_events', tasks[0].id], ['production', 'leader_production_events', production[0].id], ['installation', 'leader_installation_events', installation[0].id]]) {
       const events = await rows(table, 'select=id&' + (kind === 'design' ? 'task_id' : 'job_id') + '=eq.' + id);

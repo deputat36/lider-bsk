@@ -40,6 +40,9 @@ test('approved handoff uses canonical commands, fresh revisions and no planned p
   const { tools, writes } = harness();
   assert.equal((await tools.advance(marker, runKey, 'production')).worker_production_id, 'created');
   assert.deepEqual(writes.map(value => value.args.p_payload.request.action), ['design_task.transition', 'production_job.create_from_order']);
+  // The deployed transition RPC accepts this exact status; a grammatical alias
+  // passed the old mock but stopped the authenticated handoff in staging.
+  assert.equal(writes[0].args.p_payload.request.payload.status, 'Согласовано');
   assert.equal(writes[1].args.p_payload.actor_id, 'user');
   assert.equal(writes[1].args.p_payload.request.expected_updated_at, '2030-01-01Z');
   assert.equal('contractor_cost' in writes[1].args.p_payload.request.payload.job, false);
