@@ -46,18 +46,38 @@ authentication, а не пользовательский Supabase JWT.
 
 ## Проверки и rollback
 
-Локально 5/5 тестов: другой run/роль/владелец, незавершённые этапы, explicit
-boolean для active switch, canonical handoff без цен, syntax всех трёх
-сгенерированных browser modules. Существующий browser launcher test PASS.
-Первый полный прогон: [37201019503](https://github.com/deputat36/lider-bsk/actions/runs/37201019503),
-head `147a4ac5ca4ad4ef5844809276c9e445abb0f888`; результат ещё проверяется.
+Локально 6/6 тестов PASS: другой run/роль/владелец, незавершённые этапы,
+explicit boolean для active switch, canonical handoff без цен и точный статус
+«Согласовано», syntax и разрешение относительных imports всех трёх browser
+modules. Существующие browser launcher и worker queue access tests PASS.
 
-До первого deploy сохранён точный runtime bootstrap v32; staging v33 добавляет
-helper module и временный доверенный branch для этого прогона. До merge
-временные trust/trigger должны быть удалены из runtime и source. Для отката
-вернуть bootstrap из base `a2f0949b` и убрать worker step/new helper scripts;
-schema rollback не нужен. Cleanup — existing action с обязательной проверкой
-нулевого residue и удаления временного Auth user, включая failed run.
+Полный authenticated API + browser прогон
+[37208075574](https://github.com/deputat36/lider-bsk/actions/runs/37208075574)
+на head `a0fefa15b4ba2eb55389835c3e01a5904da6eb33` — SUCCESS.
+Для designer, contractor и installer: positive_api, positive_ui,
+inactive_replay_denied = true; API evidence также подтверждает idempotent
+replay, stale denial, wrong-role denial, service-only RPC denial и response
+privacy. Manager inspect: completed=true, audit counts design/production/
+installation = 4/4/4. Авторизованный браузерный прогон выполнен на desktop;
+мобильная визуальная проверка этим прогоном не подтверждается.
 
-Production operational cutover остаётся следующим отдельным блоком после
-успешного полного доказательства; прямые production DML сейчас не закрывались.
+Cleanup evidence: auth_user_deleted=true, все 24 категории residue=0.
+Независимый read-only staging postflight по префиксу этого run подтвердил
+8/8 нулевых результатов: profiles, orders, leads, Auth users, design tasks,
+production jobs, installation jobs, command receipts. Failed runs также
+очищены. Ошибки первых прогонов устранены: browser import теперь указывает
+на assets/v4/supabase-client.js; manager handoff использует canonical
+«Согласовано» вместо неверного «Согласована».
+
+До первого deploy сохранён точный runtime bootstrap v32. Финальный staging
+bootstrap v36 содержит helper и исправления; временный доверенный worker
+branch удалён из runtime и source, временный push trigger тоже удалён.
+Для отката вернуть bootstrap из base `a2f0949b` и убрать worker step/new
+helper scripts; schema rollback не нужен. Cleanup — existing action с
+обязательной проверкой нулевого residue и удаления временного Auth user.
+
+Production operational cutover остаётся следующим отдельным блоком:
+свежий preflight и staging proof кандидатов, scoped private backup,
+исполняемый rollback/postflight, закрытие direct DML/TRUNCATE и проверка
+read ACL, затем frontend gates. Production в этом блоке не изменялась;
+публичные формы и реальные финансовые записи не использовались.

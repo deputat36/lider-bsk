@@ -1,5 +1,24 @@
 # Статус проекта РА «Лидер»
 
+
+## 2026-10-04 — authenticated worker mutations, PR #572
+
+- Реальные designer → manager approval → contractor → installer команды
+  доказаны через Auth, Edge API и рабочие карточки браузера в staging.
+- Полный run [37208075574](https://github.com/deputat36/lider-bsk/actions/runs/37208075574)
+  SUCCESS на `a0fefa15`; повторы, stale revision, inactive replay, RBAC и
+  privacy PASS для всех трёх исполнителей. Audit событий: 4/4/4.
+- Cleanup: 24/24 категорий residue=0, Auth user удалён; независимый
+  staging postflight 8/8=0. Временные trust/trigger ветки удалены;
+  bootstrap runtime v36. Production не изменялась.
+- Исправлены отсутствующий browser import и неверный статус согласования;
+  локальный fixture suite 6/6 PASS. Desktop authenticated UI подтверждён,
+  mobile этим прогоном не подтверждён.
+- Следующий P0: production operational cutover с свежим preflight,
+  scoped backup, executable rollback/postflight и frontend gates после
+  backend; production direct DML/TRUNCATE остаётся незакрытым.
+- Подробности и rollback: [worker runbook](CRM_WORKER_AUTHENTICATED_MUTATIONS_2026-10-04.md).
+
 Дата обновления: 2026-10-04.
 
 ## Плановые цены operational команд — 04.10
