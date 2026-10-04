@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { workerFixtureTools } from '../supabase/staging-functions/leader-staging-authenticated-e2e-bootstrap/worker-fixture.mjs';
 import { roleBrowserSource } from './run_crm_staging_authenticated_e2e.mjs';
-import { readFile, writeFile, mkdtemp, rm } from 'node:fs/promises';
+import { readFile, writeFile, mkdtemp, rm, access } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
@@ -62,6 +62,12 @@ test('all worker browser programs parse as modules and enforce the selected synt
       const source = roleBrowserSource(role, true), file = path.join(dir, role + '.mjs');
       assert.match(source, /worker_read_binding/);
       assert.match(source, /worker_actions:true/);
+      // Generated page lives at crm/v4 root. Resolve each relative import there,
+      // so a syntactically valid but missing browser module fails before staging.
+      for (const match of source.matchAll(/(?:from\s*|import\(\s*)['"](\.[^'"]+)['"]/g)) {
+        if (match[1].startsWith('./crm-authenticated-e2e-')) continue; // generated runtime
+        await access(new URL('../crm/v4/' + match[1].slice(2), import.meta.url));
+      }
       await writeFile(file, source);
       execFileSync(process.execPath, ['--check', file]);
     }

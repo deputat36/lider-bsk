@@ -353,7 +353,7 @@ try{
 function workerBrowserActions(role) {
   const kind = role === 'designer' ? 'design' : role === 'contractor' ? 'production' : 'installation';
   return `
-const {supabaseClient}=await import('./supabase-client.js');
+const {supabaseClient}=await import('./assets/v4/supabase-client.js');
 assert(/^[0-9a-f-]{36}$/.test(R.workerEntityId),'worker_id_missing');
 async function workerRow(){const {data,error}=await supabaseClient.from('${kind === 'design' ? 'leader_design_tasks' : 'leader_' + kind + '_jobs'}').select('id,order_id,${kind === 'design' ? 'task_status' : kind === 'production' ? 'production_status' : 'install_status'}').eq('id',R.workerEntityId).single();assert(!error&&data?.order_id===R.workerOrderId,'worker_read_binding');return data;}
 ${role === 'designer' ? `
