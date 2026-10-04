@@ -18,8 +18,6 @@ scoped backup/rollback/candidates и postflight. Это не завершени�
 
 ## Авторизация повторных команд производства/монтажа — этап 03.10
 
-## Авторизация повторных команд производства/монтажа — этап 03.10
-
 Исправлена staging-проблема: production receipt replay и layout
 wrapper проверяли данные до fresh authorization. Новый scoped upgrade переносит
 production.write / internal_comment permissions до чтения receipt, проверяет actor

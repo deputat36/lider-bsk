@@ -20,7 +20,10 @@ def sql(query):
 subprocess.run(['createdb', DB], check=True)
 try:
     # Existing acceptance fixtures, committed only in this separate ephemeral database.
-    fixture = setup() + scenarios().replace('ROLLBACK;', 'COMMIT;')
+    # PostgreSQL roles belong to the cluster; preceding tests already created them.
+    assert sql("SELECT count(*) FROM pg_roles WHERE rolname IN ('anon','authenticated','service_role')") == '3'
+    fixture = setup().replace('CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;', '')
+    fixture += scenarios().replace('ROLLBACK;', 'COMMIT;')
     subprocess.run(['psql', '-Xq', '-v', 'ON_ERROR_STOP=1', '-d', DB], input=fixture, text=True, check=True, stdout=subprocess.DEVNULL)
     sql("UPDATE public.leader_user_profiles SET role='manager' WHERE user_id='b7311000-0000-4000-8000-000000000001'")
     for kind, prefix in [('production', 'b7311000'), ('installation', 'b7313000')]:
