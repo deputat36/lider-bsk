@@ -1,5 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createRemoteJWKSet, jwtVerify } from 'npm:jose@5.9.6'
+import { workerFixtureTools } from './worker-fixture.mjs'
 
 const STAGING_REF='otulfnouybahfnsycxqn'
 const ISSUER='https://token.actions.githubusercontent.com'
@@ -30,6 +31,10 @@ const CATALOG_WORKFLOW_REFS=new Set([
   `${REPOSITORY}/.github/workflows/crm-staging-catalog-authenticated-e2e.yml@${CATALOG_BRANCH_REF}`,
 ])
 const TRUSTED_CONTEXTS=new Map<string,{eventName:string,workflowRefs:Set<string>}>([
+  ['refs/heads/agent/worker-mutations-20261004',{eventName:'push',workflowRefs:new Set([
+    `${REPOSITORY}/.github/workflows/crm-staging-authenticated-e2e-dispatch.yml@refs/heads/agent/worker-mutations-20261004`,
+    `${REPOSITORY}/.github/workflows/crm-staging-authenticated-e2e.yml@refs/heads/agent/worker-mutations-20261004`,
+  ])}],
   [WORKSPACE_BRANCH_REF,{eventName:'push',workflowRefs:new Set([
     `${REPOSITORY}/.github/workflows/crm-staging-authenticated-e2e-dispatch.yml@${WORKSPACE_BRANCH_REF}`,
     `${REPOSITORY}/.github/workflows/crm-staging-authenticated-e2e.yml@${WORKSPACE_BRANCH_REF}`,

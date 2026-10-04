@@ -39,6 +39,8 @@ function loadConfig(env = process.env) {
     password: required('STAGING_CRM_E2E_PASSWORD', env),
     marker: required('STAGING_CRM_E2E_MARKER', env),
     leadId: required('STAGING_CRM_E2E_LEAD_ID', env),
+    workerEntityId: text(env.STAGING_CRM_E2E_WORKER_ENTITY_ID),
+    workerOrderId: text(env.STAGING_CRM_E2E_WORKER_ORDER_ID),
     evidencePath: required('STAGING_CRM_E2E_EVIDENCE_PATH', env),
     supabaseUmdPath: required('STAGING_CRM_E2E_SUPABASE_UMD', env)
   };
@@ -74,7 +76,7 @@ function temporaryClientSource() {
   return `import {V4_CONFIG} from './config.js';\nif(!globalThis.supabase?.createClient)throw new Error('local_supabase_umd_missing');\nexport const supabaseClient=globalThis.supabase.createClient(V4_CONFIG.supabaseUrl,V4_CONFIG.supabasePublishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey:V4_CONFIG.authStorageKey}});\n`;
 }
 function runtimeSource(config) {
-  return `export const CRM_E2E_RUNTIME=Object.freeze(${jsonScript({ email: config.email, password: config.password, marker: config.marker, leadId: config.leadId })});\n`;
+  return `export const CRM_E2E_RUNTIME=Object.freeze(${jsonScript({ email: config.email, password: config.password, marker: config.marker, leadId: config.leadId, workerEntityId: config.workerEntityId, workerOrderId: config.workerOrderId })});\n`;
 }
 
 export function browserSource() {
@@ -348,7 +350,25 @@ try{
 `;
 }
 
-export function roleBrowserSource(expectedRole) {
+function workerBrowserActions(role) {
+  const kind = role === 'designer' ? 'design' : role === 'contractor' ? 'production' : 'installation';
+  return `
+const {supabaseClient}=await import('./supabase-client.js');
+assert(/^[0-9a-f-]{36}$/.test(R.workerEntityId),'worker_id_missing');
+async function workerRow(){const {data,error}=await supabaseClient.from('${kind === 'design' ? 'leader_design_tasks' : 'leader_' + kind + '_jobs'}').select('id,order_id,${kind === 'design' ? 'task_status' : kind === 'production' ? 'production_status' : 'install_status'}').eq('id',R.workerEntityId).single();assert(!error&&data?.order_id===R.workerOrderId,'worker_read_binding');return data;}
+${role === 'designer' ? `
+const form=await waitFor(()=>document.querySelector('[data-design-queue-command="'+R.workerEntityId+'"]'),'worker_design_form_missing');assert(form.dataset.designQueueTarget==='На согласовании','worker_design_not_started');form.elements.layout_link.value='https://example.invalid/worker-layout';form.elements.layout_link.dispatchEvent(new Event('input',{bubbles:true}));form.requestSubmit();await waitFor(async()=> (await workerRow()).task_status==='На согласовании','worker_design_review_failed');assert(form.querySelector('[data-design-queue-result]')?.textContent.includes('передан'),'worker_design_confirmation_missing');
+` : `
+const open=await waitFor(()=>document.querySelector('[data-open-${kind}-job-card="'+R.workerEntityId+'"]'),'worker_card_missing');open.click();
+await waitFor(()=>document.getElementById('${kind === 'production' ? 'prod' : 'install'}JobStatus'),'worker_card_open_failed');
+for(const target of ${JSON.stringify(kind === 'production' ? ['В производстве','Готово'] : ['В работе','Выполнен'])}){
+ const select=document.getElementById('${kind === 'production' ? 'prod' : 'install'}JobStatus');select.value=target;select.dispatchEvent(new Event('change',{bubbles:true}));assert(select.value===target,'worker_target_option_missing');document.querySelector('[data-save-${kind}-job]').click();await waitFor(async()=> (await workerRow()).${kind === 'production' ? 'production_status' : 'install_status'}===target,'worker_save_failed:'+target);await waitFor(()=>document.getElementById('${kind === 'production' ? 'prod' : 'install'}JobStatus')?.value===target,'worker_card_refresh_failed');progress('worker_saved_status');
+}
+`}
+progress('worker_actions_passed');`;
+}
+
+export function roleBrowserSource(expectedRole, workerActions = false) {
   return `import {CRM_E2E_RUNTIME as R} from './crm-authenticated-e2e-runtime.mjs';
 const result=document.getElementById('crmAuthenticatedE2eResult');const sleep=(ms)=>new Promise((resolve)=>setTimeout(resolve,ms));
 const clean=(value)=>String(value??'').trim();function assert(value,code){if(!value)throw new Error(code);}function progress(name){try{const sequence=String(globalThis.__crmE2eProgressSequence=(globalThis.__crmE2eProgressSequence||0)+1).padStart(4,'0');navigator.sendBeacon('/__crm_e2e_progress',sequence+':'+String(name).slice(0,75));}catch(_){}}progress('role_ui_boot');async function waitFor(check,code,timeout=45000){const started=Date.now();let heartbeatAt=started;while(Date.now()-started<timeout){const value=await check();if(value)return value;if(Date.now()-heartbeatAt>=5000){progress('role_ui_wait:'+code);heartbeatAt=Date.now();}await sleep(50);}throw new Error(code);}
@@ -360,7 +380,8 @@ ${expectedRole === 'owner'
     : ['designer','contractor','installer'].includes(expectedRole)
       ? `assert(visible('production'),'worker_queue_hidden');for(const tab of ['leads','orders','clients','finance_control','user_admin'])assert(!visible(tab),'worker_forbidden_tab:'+tab);document.querySelector('[data-v4-tab-button="production"]').click();await waitFor(()=>document.querySelector('[data-production-light-refresh]'),'worker_board_missing');const kind='${expectedRole === 'designer' ? 'design' : expectedRole === 'installer' ? 'installation' : 'production'}';await waitFor(()=>document.querySelector('[data-production-light-kind="'+kind+'"]')?.classList.contains('is-active'),'worker_kind_missing');await waitFor(()=>document.querySelector('.v4-prod-light-card'),'worker_fixture_card_missing');assert(!document.querySelector('.v4-prod-light-warning'),'worker_queue_warning');assert(!document.querySelector('[data-production-light-kind="${expectedRole === 'installer' ? 'production' : 'installation'}"]'),'worker_wrong_kind');`
     : "for(const tab of ['leads','orders','order_control','production'])assert(visible(tab),'manager_tab_hidden:'+tab);for(const tab of ['finance_control','user_admin'])assert(!visible(tab),'manager_forbidden_tab_visible:'+tab);"}
-output('passed',{authenticated:true,role:'${expectedRole}',ui_allowed_controls:true,ui_forbidden_controls:${expectedRole === 'owner' ? "'not_applicable_full_access'" : 'true'},cleanup_required:true});}catch(error){output('failed',{error:clean(error?.message).slice(0,180),cleanup_required:true});}`;
+${workerActions ? workerBrowserActions(expectedRole) : ''}
+output('passed',{worker_actions:${workerActions},authenticated:true,role:'${expectedRole}',ui_allowed_controls:true,ui_forbidden_controls:${expectedRole === 'owner' ? "'not_applicable_full_access'" : 'true'},cleanup_required:true});}catch(error){output('failed',{error:clean(error?.message).slice(0,180),cleanup_required:true});}`;
 }
 
 function mimeType(filePath) {
@@ -551,7 +572,7 @@ function evidenceFromDom(dom) {
   const evidence = sanitize(JSON.parse(decodeHtml(match[1]))); if (evidence.status !== 'passed') throw new Error(`browser_e2e_failed:${evidence.error || 'unknown'}`); return evidence;
 }
 
-async function run(env = process.env, roleUi = '', financeUi = false, clientsUi = false) {
+async function run(env = process.env, roleUi = '', financeUi = false, clientsUi = false, workerUi = false) {
   const config = loadConfig(env); const chrome = await findChrome(); const xvfbRun = await findXvfbRun(); const tempRoot = await mkdtemp(path.join(tmpdir(), 'lider-crm-authenticated-e2e-')); const tempV4 = path.join(tempRoot, 'v4'); let server;
   try {
     await cp(path.resolve('crm/v4'), tempV4, { recursive: true });
@@ -579,7 +600,7 @@ async function run(env = process.env, roleUi = '', financeUi = false, clientsUi 
     await writeFile(path.join(tempV4, 'assets/v4/config.js'), temporaryConfigSource(config), { mode: 0o600 });
     await writeFile(path.join(tempV4, 'assets/v4/supabase-client.js'), temporaryClientSource(), { mode: 0o600 });
     await writeFile(path.join(tempV4, 'crm-authenticated-e2e-runtime.mjs'), runtimeSource(config), { mode: 0o600 });
-    await writeFile(path.join(tempV4, 'crm-authenticated-e2e-page.mjs'), clientsUi ? clientsBrowserSource(roleBrowserSource('manager')) : financeUi ? financeBrowserSource(roleBrowserSource('owner')) : roleUi ? roleBrowserSource(roleUi) : browserSource(), { mode: 0o600 });
+    await writeFile(path.join(tempV4, 'crm-authenticated-e2e-page.mjs'), clientsUi ? clientsBrowserSource(roleBrowserSource('manager')) : financeUi ? financeBrowserSource(roleBrowserSource('owner')) : roleUi ? roleBrowserSource(roleUi, workerUi) : browserSource(), { mode: 0o600 });
     const indexPath = path.join(tempV4, 'index.html'); const html = await readFile(indexPath, 'utf8');
     await writeFile(indexPath, html.replace('<head>', '<head><script>globalThis.__crmE2eFatalErrors=[];globalThis.__crmE2eProgressSequence=0;globalThis.__crmE2eProgress=(name)=>{try{const sequence=String(globalThis.__crmE2eProgressSequence=(globalThis.__crmE2eProgressSequence||0)+1).padStart(4,"0");navigator.sendBeacon("/__crm_e2e_progress",sequence+":"+String(name).slice(0,75));}catch(_){}};for(const kind of ["error","unhandledrejection"])addEventListener(kind,()=>globalThis.__crmE2eFatalErrors.push(kind));</script>').replace('</body>', '<script src="./assets/vendor/supabase-v2.112.2.js"></script><pre id="crmAuthenticatedE2eResult" data-status="running" hidden>running</pre><script type="module" src="./crm-authenticated-e2e-page.mjs"></script></body>'), { mode: 0o600 });
 
@@ -608,6 +629,6 @@ async function run(env = process.env, roleUi = '', financeUi = false, clientsUi 
 }
 
 function arg(name) { const entry = process.argv.find((value) => value.startsWith(`${name}=`)); return entry ? entry.slice(name.length + 1) : ''; }
-async function main() { const mode = arg('--mode') || 'plan'; if (mode === 'plan') { console.log(JSON.stringify(operatorPlan(), null, 2)); return; } const role = mode === 'clients-ui' ? 'manager' : mode === 'finance-ui' ? 'owner' : mode === 'role-ui' ? required('STAGING_CRM_E2E_EXPECTED_ROLE', process.env).toLowerCase() : ''; if (mode !== 'run' && mode !== 'role-ui' && mode !== 'finance-ui' && mode !== 'clients-ui') throw new Error('unsupported_mode'); if (role && !['manager', 'owner', 'designer', 'contractor', 'installer'].includes(role)) throw new Error('unsupported_role_ui'); const result = await run(process.env, role, mode === 'finance-ui', mode === 'clients-ui'); console.log(JSON.stringify({ ok: true, project_ref: STAGING_REF, evidence_path: result.target, cleanup_required: true })); }
+async function main() { const mode = arg('--mode') || 'plan'; if (mode === 'plan') { console.log(JSON.stringify(operatorPlan(), null, 2)); return; } const role = mode === 'clients-ui' ? 'manager' : mode === 'finance-ui' ? 'owner' : ['role-ui','worker-ui'].includes(mode) ? required('STAGING_CRM_E2E_EXPECTED_ROLE', process.env).toLowerCase() : ''; if (mode !== 'run' && mode !== 'role-ui' && mode !== 'worker-ui' && mode !== 'finance-ui' && mode !== 'clients-ui') throw new Error('unsupported_mode'); if (role && !['manager', 'owner', 'designer', 'contractor', 'installer'].includes(role)) throw new Error('unsupported_role_ui'); const result = await run(process.env, role, mode === 'finance-ui', mode === 'clients-ui', mode === 'worker-ui'); console.log(JSON.stringify({ ok: true, project_ref: STAGING_REF, evidence_path: result.target, cleanup_required: true })); }
 const direct = process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href;
 if (direct) main().catch((error) => { console.error(JSON.stringify({ ok: false, project_ref: STAGING_REF, error: text(error?.message).slice(0, 260), cleanup_required: true })); process.exitCode = 1; });
