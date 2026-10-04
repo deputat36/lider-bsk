@@ -24,7 +24,11 @@ production jobs/installation jobs = 0. Auth users и временный OIDC д�
 параллельными сессиями: A держит order, B вызывает update RPC и ждёт order,
 A получает job lock, затем B завершает update. Старый обратный порядок не проходит.
 Concurrency proof использует отдельную disposable localhost CI database, удаляемую
-в finally. CI результат фиксируется после завершения run.
+в finally. [CI 37199023832](https://github.com/deputat36/lider-bsk/actions/runs/37199023832)
+completed/success на `b586d3bf`: обе actual concurrent RPC проверки PASS. Head
+checks: 36 success + 1 skipped. Initial run `37198947931` выявил только ошибку
+подготовки CI database (cluster roles уже существуют); исправлено reuse roles.
+Последующая delta содержит только документацию доказательств.
 
 ## Production read-only preflight
 

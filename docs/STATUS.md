@@ -9,8 +9,9 @@ Staging update RPC используют order → job вместо обратн�
 после job lock; fresh RBAC/replay/privacy сохранены. Actual staging SQL create/update,
 replay/roles/inactive/private fields, четыре closed/archive варианта и stale PASS.
 Все fixtures ROLLBACK; независимый SELECT шести групп residue=0. Auth/OIDC не менялись.
-Существующий PostgreSQL CI дополнен actual concurrent RPC lock test; результат
-фиксируется после завершения CI. [Scope и следующий шаг](CRM_OPERATIONAL_LOCK_GUARDS_2026-10-04.md).
+Существующий PostgreSQL CI: [37199023832](https://github.com/deputat36/lider-bsk/actions/runs/37199023832)
+completed/success на `b586d3bf`: обе actual concurrent RPC order → job проверки PASS.
+На этом head: 36 completed success + 1 skipped; финальная delta — только proof docs. [Scope и следующий шаг](CRM_OPERATIONAL_LOCK_GUARDS_2026-10-04.md).
 Production read-only preflight подтвердил широкие DML/TRUNCATE grants, installation
 active-profile policies и production ALL active-profile policy: canonical permission
 на прямых путях отсутствует. Production не изменялся; cutover требует worker proof,
