@@ -1,6 +1,21 @@
 # Статус проекта РА «Лидер»
 
-Дата обновления: 2026-10-03.
+Дата обновления: 2026-10-04.
+
+## Плановые цены operational команд — 04.10
+
+Staging create RPC теперь требует fresh orders.update при явных contractor_cost /
+installer_cost / client_price (включая 0/null), до receipt/replay. Worker без этих
+полей проходит positive SQL create, response без финансов. Manager flow и существующий
+replay/RBAC regression сохранены. Rehearsal и post-apply SQL PASS, nested/outer ROLLBACK;
+независимый residue 9/9=0, Auth/OIDC не создавались. Stop REVOKE/ROLLBACK PASS.
+Production/Edge/frontend не менялись; полный authenticated worker UI ещё нужен.
+[Scope, fingerprints, rollback и совместимость с параллельным lock upgrade](CRM_OPERATIONAL_PLANNED_PRICES_2026-10-04.md).
+Pages после PR569 найден: 37146382201 completed/success на `4c6ef522`; повторный deploy
+не требуется. Production permissive active-profile DML производства/монтажа подтверждён;
+его закрытие остаётся частью проверенного operational cutover.
+
+## Авторизация повторных команд производства/монтажа — этап 03.10
 
 ## Авторизация повторных команд производства/монтажа — этап 03.10
 
