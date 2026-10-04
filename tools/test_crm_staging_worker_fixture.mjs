@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { workerFixtureTools } from '../supabase/staging-functions/leader-staging-authenticated-e2e-bootstrap/worker-fixture.mjs';
 import { roleBrowserSource } from './run_crm_staging_authenticated_e2e.mjs';
-import { writeFile, mkdtemp, rm } from 'node:fs/promises';
+import { readFile, writeFile, mkdtemp, rm } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
@@ -66,4 +66,24 @@ test('all worker browser programs parse as modules and enforce the selected synt
       execFileSync(process.execPath, ['--check', file]);
     }
   } finally { await rm(dir, { recursive: true, force: true }); }
+});
+test('actual bootstrap router dispatches all worker actions after signed-run validation', async () => {
+  const source = await readFile(new URL('../supabase/staging-functions/leader-staging-authenticated-e2e-bootstrap/index.ts', import.meta.url), 'utf8');
+  const router = source.slice(source.lastIndexOf('Deno.serve(')).replace('(req:Request)', '(req)').replaceAll(' as JsonObject', '').replaceAll(' as Error', '');
+  const calls = [];
+  let handler;
+  const workers = Object.fromEntries(['prepare', 'advance', 'active', 'verify'].map(name => [name, async (...args) => { calls.push({ name, args }); return { ok: true }; }]));
+  new Function('Deno', 'claims', 'workers', 'text', 'response', 'console', router)(
+    { serve(value) { handler = value; } }, async () => ({ runKey, ref: 'test', workflowRef: 'test' }), workers,
+    value => String(value ?? '').trim(), (status, value) => new Response(JSON.stringify(value), { status }), { log() {}, error() {} }
+  );
+  for (const [action, name, fields] of [['prepare_workers', 'prepare', {}], ['advance_workers', 'advance', { target: 'production' }], ['set_worker_active', 'active', { active: false }], ['inspect_workers', 'verify', {}]]) {
+    const result = await handler(new Request('https://example.invalid', { method: 'POST', body: JSON.stringify({ action, marker, run_key: runKey, ...fields }) }));
+    assert.equal(result.status, action === 'prepare_workers' ? 201 : 200);
+    assert.equal(calls.at(-1).name, name);
+    assert.deepEqual(calls.at(-1).args.slice(0, 2), [marker, runKey]);
+  }
+  const denied = await handler(new Request('https://example.invalid', { method: 'POST', body: JSON.stringify({ action: 'prepare_workers', marker, run_key: 'other-run' }) }));
+  assert.equal(denied.status, 403);
+  assert.equal(calls.length, 4);
 });
