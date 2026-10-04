@@ -18,6 +18,7 @@ def read(path):
 def scenarios():
     result = read('supabase/staging-tests/20261003_operational_replay_authorization.sql')
     result += read('supabase/staging-tests/20261004_operational_planned_price_permission.sql')
+    result += read('supabase/staging-tests/20261004_operational_order_guards.sql')
     for kind, filename in [('production', 'order_to_production'), ('installation', 'production_to_installation')]:
         source = read(f'supabase/staging-tests/20260731_{filename}_acceptance.sql')
         source = source.replace('\\set ON_ERROR_STOP on', '').replace('begin;', '', 1).replace('rollback;', '', 1)
@@ -33,6 +34,7 @@ def scenarios():
       'expected_updated_at',(select updated_at from public.leader_{kind}_jobs where id=v_job_id),
       'payload',jsonb_build_object('job_id',v_job_id,'idempotency_key','LIDER-REPLAY-20261003-{kind}-update',
         'patch',jsonb_build_object('title','LIDER replay regression updated title'{extra_patch}))));
+  perform pg_temp.check_operational_order_guards('leader_update_{kind}_job_rpc',v_update_request,v_job_id,'{kind}');
   v_response := public.leader_update_{kind}_job_rpc(v_update_request);
   if v_response->>'ok' is distinct from 'true' then raise exception 'positive_update_failed:%',v_response; end if;
   perform pg_temp.check_operational_replay('leader_update_{kind}_job_rpc',v_update_request);
@@ -92,10 +94,12 @@ CREATE TABLE leader_private.leader_role_action_matrix_v1(role text PRIMARY KEY,a
     sql += read('supabase/staging-migrations/20261003184404_operational_replay_authorization_v1.sql')
     sql += read('supabase/staging-migrations/20261003185613_operational_response_projection_v1.sql')
     sql += read('supabase/staging-migrations/20261004113043_operational_planned_price_permission_v1.sql')
+    sql += read('supabase/staging-migrations/20261004112419_operational_order_lock_guards_v1.sql')
     return sql
 
 
-output = ROOT / 'build' / ('operational-replay-staging-test.sql' if '--staging-test' in sys.argv else 'operational-replay-test.sql')
-output.parent.mkdir(exist_ok=True)
-output.write_text(('BEGIN;\n' if '--staging-test' in sys.argv else setup()) + scenarios())
-print(f'Built {output.name}; fixture transaction always ROLLBACK.')
+if __name__ == '__main__':
+    output = ROOT / 'build' / ('operational-replay-staging-test.sql' if '--staging-test' in sys.argv else 'operational-replay-test.sql')
+    output.parent.mkdir(exist_ok=True)
+    output.write_text(('BEGIN;\n' if '--staging-test' in sys.argv else setup()) + scenarios())
+    print(f'Built {output.name}; fixture transaction always ROLLBACK.')
