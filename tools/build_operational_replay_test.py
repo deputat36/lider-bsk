@@ -17,6 +17,7 @@ def read(path):
 
 def scenarios():
     result = read('supabase/staging-tests/20261003_operational_replay_authorization.sql')
+    result += read('supabase/staging-tests/20261004_operational_planned_price_permission.sql')
     result += read('supabase/staging-tests/20261004_operational_order_guards.sql')
     for kind, filename in [('production', 'order_to_production'), ('installation', 'production_to_installation')]:
         source = read(f'supabase/staging-tests/20260731_{filename}_acceptance.sql')
@@ -24,7 +25,7 @@ def scenarios():
         source = source.replace('  v_request jsonb;', '  v_update_request jsonb;\n  v_request jsonb;', 1)
         marker = '  v_replay := public.leader_create_' + kind + '_job_from_order_rpc(v_request);'
         assert source.count(marker) == 1
-        source = source.replace(marker, f"  perform pg_temp.check_operational_replay('leader_create_{kind}_job_from_order_rpc',v_request);\n" + marker)
+        source = source.replace(marker, f"  perform pg_temp.check_operational_price_permission('leader_create_{kind}_job_from_order_rpc',v_request);\n  perform pg_temp.check_operational_replay('leader_create_{kind}_job_from_order_rpc',v_request);\n" + marker)
         extra_patch = ", 'internal_comment','LIDER replay internal note'" if kind == 'production' else ''
         update = f"""
   v_update_request := jsonb_build_object(
@@ -92,6 +93,7 @@ CREATE TABLE leader_private.leader_role_action_matrix_v1(role text PRIMARY KEY,a
         sql += baseline
     sql += read('supabase/staging-migrations/20261003184404_operational_replay_authorization_v1.sql')
     sql += read('supabase/staging-migrations/20261003185613_operational_response_projection_v1.sql')
+    sql += read('supabase/staging-migrations/20261004113043_operational_planned_price_permission_v1.sql')
     sql += read('supabase/staging-migrations/20261004112419_operational_order_lock_guards_v1.sql')
     return sql
 
