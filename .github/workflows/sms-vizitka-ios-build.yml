@@ -21,45 +21,9 @@ jobs:
           base64 -D -i /tmp/ios-source.b64 -o /tmp/ios-source.zip
           echo "f47040eff92721799ff99c580c52178b20a6cdd918bac0476577e7a8206be1af  /tmp/ios-source.zip" | shasum -a 256 -c -
           unzip -q /tmp/ios-source.zip -d /tmp/ios-work
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path("/tmp/ios-work/etagi-sms-card-ios/SMSVizitka/App/EtazhiSMSVizitkaApp.swift")
-          s = p.read_text()
-          if "SMSVizitkaShortcuts.updateAppShortcutParameters()" not in s:
-              s = s.replace(
-                  "struct EtazhiSMSVizitkaApp: App {\n    @StateObject private var store = AppStore()\n",
-                  "struct EtazhiSMSVizitkaApp: App {\n    @StateObject private var store = AppStore()\n\n    init() {\n        SMSVizitkaShortcuts.updateAppShortcutParameters()\n    }\n"
-              )
-          p.write_text(s)
+          cp ios/sms-card-patches/SettingsView.swift /tmp/ios-work/etagi-sms-card-ios/SMSVizitka/Views/SettingsView.swift
+          cp ios/sms-card-patches/EtazhiSMSVizitkaApp.swift /tmp/ios-work/etagi-sms-card-ios/SMSVizitka/App/EtazhiSMSVizitkaApp.swift
 
-          p = Path("/tmp/ios-work/etagi-sms-card-ios/SMSVizitka/Views/SettingsView.swift")
-          s = p.read_text()
-          s = s.replace(
-              '''            Section("Шаблоны SMS") {
-                ForEach(SMSTemplate.allCases) { type in
-                    NavigationLink(type.title) {
-                        TemplateEditorView(type: type)
-                    }
-                }
-            } footer: {
-                Text("Весь текст каждого шаблона можно заменить. Приложение не дописывает обязательную подпись автоматически.")
-            }
-''',
-              '''            Section {
-                ForEach(SMSTemplate.allCases) { type in
-                    NavigationLink(type.title) {
-                        TemplateEditorView(type: type)
-                    }
-                }
-            } header: {
-                Text("Шаблоны SMS")
-            } footer: {
-                Text("Весь текст каждого шаблона можно заменить. Приложение не дописывает обязательную подпись автоматически.")
-            }
-'''
-          )
-          p.write_text(s)
-          PY
 
       - name: Install XcodeGen
         run: brew install xcodegen
