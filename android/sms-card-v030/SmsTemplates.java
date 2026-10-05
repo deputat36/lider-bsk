@@ -81,7 +81,7 @@ public final class SmsTemplates {
             }
         }
 
-        String result = out.toString().replaceAll("\\n{3,}", "\\n\\n");
+        String result = out.toString().replaceAll("\\n{3,}", "\n\n");
         return result.trim();
     }
 
