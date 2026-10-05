@@ -1,0 +1,58 @@
+name: Build iOS SMS Vizitka
+
+on:
+  push:
+    branches: ["sms-vizitka-ios-build"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore source
+        shell: bash
+        run: |
+          cat ios/sms-card-source/part*.b64 > /tmp/ios-source.b64
+          base64 --decode /tmp/ios-source.b64 > /tmp/ios-source.zip
+          echo "f47040eff92721799ff99c580c52178b20a6cdd918bac0476577e7a8206be1af  /tmp/ios-source.zip" | shasum -a 256 -c -
+          unzip -q /tmp/ios-source.zip -d /tmp/ios-work
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: /tmp/ios-work/etagi-sms-card-ios
+        run: xcodegen generate
+
+      - name: Build for iOS Simulator
+        working-directory: /tmp/ios-work/etagi-sms-card-ios
+        run: |
+          xcodebuild             -project EtazhiSMSVizitka.xcodeproj             -scheme EtazhiSMSVizitka             -configuration Debug             -sdk iphonesimulator             -destination 'generic/platform=iOS Simulator'             -derivedDataPath build             CODE_SIGNING_ALLOWED=NO             build
+
+      - name: Package generated Xcode project
+        working-directory: /tmp/ios-work
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent etagi-sms-card-ios Etazhi-SMS-Vizitka-iOS-v0.1.0-Xcode.zip
+          APP_PATH="$(find etagi-sms-card-ios/build/Build/Products/Debug-iphonesimulator -maxdepth 1 -name '*.app' -print -quit)"
+          if [ -n "$APP_PATH" ]; then
+            ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" Etazhi-SMS-Vizitka-iOS-v0.1.0-simulator-app.zip
+          fi
+
+      - name: Upload Xcode project
+        uses: actions/upload-artifact@v4
+        with:
+          name: Etazhi-SMS-Vizitka-iOS-v0.1.0-Xcode
+          path: /tmp/ios-work/Etazhi-SMS-Vizitka-iOS-v0.1.0-Xcode.zip
+          if-no-files-found: error
+
+      - name: Upload simulator build
+        uses: actions/upload-artifact@v4
+        with:
+          name: Etazhi-SMS-Vizitka-iOS-v0.1.0-Simulator
+          path: /tmp/ios-work/Etazhi-SMS-Vizitka-iOS-v0.1.0-simulator-app.zip
+          if-no-files-found: error
