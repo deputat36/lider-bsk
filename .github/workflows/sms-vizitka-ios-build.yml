@@ -31,6 +31,34 @@ jobs:
                   "struct EtazhiSMSVizitkaApp: App {\n    @StateObject private var store = AppStore()\n\n    init() {\n        SMSVizitkaShortcuts.updateAppShortcutParameters()\n    }\n"
               )
           p.write_text(s)
+
+          p = Path("/tmp/ios-work/etagi-sms-card-ios/SMSVizitka/Views/SettingsView.swift")
+          s = p.read_text()
+          s = s.replace(
+              '''            Section("Шаблоны SMS") {
+                ForEach(SMSTemplate.allCases) { type in
+                    NavigationLink(type.title) {
+                        TemplateEditorView(type: type)
+                    }
+                }
+            } footer: {
+                Text("Весь текст каждого шаблона можно заменить. Приложение не дописывает обязательную подпись автоматически.")
+            }
+''',
+              '''            Section {
+                ForEach(SMSTemplate.allCases) { type in
+                    NavigationLink(type.title) {
+                        TemplateEditorView(type: type)
+                    }
+                }
+            } header: {
+                Text("Шаблоны SMS")
+            } footer: {
+                Text("Весь текст каждого шаблона можно заменить. Приложение не дописывает обязательную подпись автоматически.")
+            }
+'''
+          )
+          p.write_text(s)
           PY
 
       - name: Install XcodeGen
