@@ -36,10 +36,12 @@ jobs:
       - name: Install build tools
         run: |
           brew install xcodegen
-          python3 -m pip install --user pillow
+          python3 -m venv /tmp/ios-venv
+          /tmp/ios-venv/bin/python -m pip install --upgrade pip
+          /tmp/ios-venv/bin/python -m pip install pillow
 
       - name: Generate app icon assets
-        run: python3 ios/sms-card-patches/generate_assets.py
+        run: /tmp/ios-venv/bin/python ios/sms-card-patches/generate_assets.py
 
       - name: Generate Xcode project
         working-directory: /tmp/ios-work/etagi-sms-card-ios
@@ -89,41 +91,41 @@ jobs:
         working-directory: /tmp/ios-work
         shell: bash
         run: |
-          rm -rf etagi-sms-card-ios/build-simulator etagi-sms-card-ios/build-device
+          rm -rf /tmp/ios-package
+          mkdir -p /tmp/ios-package
+
+          rsync -a \
+            --exclude build-simulator \
+            --exclude build-device \
+            etagi-sms-card-ios/ \
+            /tmp/ios-package/etagi-sms-card-ios/
 
           ditto -c -k --sequesterRsrc --keepParent \
-            etagi-sms-card-ios \
+            /tmp/ios-package/etagi-sms-card-ios \
             Etazhi-SMS-Vizitka-iOS-v0.2.1-Xcode-ready.zip
 
-          APP_PATH="$(find /tmp/ios-work/etagi-sms-card-ios/build-simulator/Build/Products/Debug-iphonesimulator -maxdepth 1 -name '*.app' -print -quit)"
-          if [ -n "$APP_PATH" ]; then
-            ditto -c -k --sequesterRsrc --keepParent \
-              "$APP_PATH" \
-              Etazhi-SMS-Vizitka-iOS-v0.2.1-simulator-app.zip
-          fi
-
-      - name: Rebuild device archive for artifact
-        working-directory: /tmp/ios-work/etagi-sms-card-ios
-        run: |
-          xcodebuild \
-            -project EtazhiSMSVizitka.xcodeproj \
-            -scheme EtazhiSMSVizitka \
-            -configuration Release \
-            -sdk iphoneos \
-            -destination 'generic/platform=iOS' \
-            -archivePath build-device/EtazhiSMSVizitka.xcarchive \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            archive
+          APP_PATH="$(find etagi-sms-card-ios/build-simulator/Build/Products/Debug-iphonesimulator -maxdepth 1 -name '*.app' -print -quit)"
+          test -n "$APP_PATH"
           ditto -c -k --sequesterRsrc --keepParent \
-            build-device/EtazhiSMSVizitka.xcarchive \
-            /tmp/ios-work/Etazhi-SMS-Vizitka-iOS-v0.2.1-unsigned-device-archive.zip
+            "$APP_PATH" \
+            Etazhi-SMS-Vizitka-iOS-v0.2.1-simulator-app.zip
+
+          ditto -c -k --sequesterRsrc --keepParent \
+            etagi-sms-card-ios/build-device/EtazhiSMSVizitka.xcarchive \
+            Etazhi-SMS-Vizitka-iOS-v0.2.1-unsigned-device-archive.zip
 
       - name: Upload Xcode-ready project
         uses: actions/upload-artifact@v4
         with:
           name: Etazhi-SMS-Vizitka-iOS-v0.2.1-Xcode-ready
           path: /tmp/ios-work/Etazhi-SMS-Vizitka-iOS-v0.2.1-Xcode-ready.zip
+          if-no-files-found: error
+
+      - name: Upload simulator build
+        uses: actions/upload-artifact@v4
+        with:
+          name: Etazhi-SMS-Vizitka-iOS-v0.2.1-Simulator
+          path: /tmp/ios-work/Etazhi-SMS-Vizitka-iOS-v0.2.1-simulator-app.zip
           if-no-files-found: error
 
       - name: Upload unsigned device archive
