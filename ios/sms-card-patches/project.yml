@@ -24,10 +24,3 @@ targets:
         TARGETED_DEVICE_FAMILY: "1"
         SUPPORTS_MACCATALYST: NO
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-    info:
-      path: SMSVizitka/Resources/Info.plist
-      properties:
-        CFBundleDisplayName: "Этажи • СМС Визитка"
-        UILaunchScreen: {}
-        UIApplicationSupportsIndirectInputEvents: true
-        ITSAppUsesNonExemptEncryption: false
