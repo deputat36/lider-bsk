@@ -328,7 +328,7 @@ s = replace_once(s,
             if (reader == null) throw new IllegalStateException("Не удалось открыть файл");
             StringBuilder json = new StringBuilder();
             String line;
-            while ((line = reader.readLine()) != null) json.append(line).append('\n');
+            while ((line = reader.readLine()) != null) json.append(line).append(System.lineSeparator());
             ConfigBackup.importJson(this, json.toString());
             Toast.makeText(this, "Настройки импортированы", Toast.LENGTH_SHORT).show();
             showSettings();
