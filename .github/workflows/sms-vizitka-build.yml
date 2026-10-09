@@ -2,7 +2,7 @@ name: Build SMS Vizitka Android
 
 on:
   push:
-    branches: ["sms-vizitka-build"]
+    branches: ["sms-vizitka-v050-staging"]
   workflow_dispatch:
 
 jobs:
@@ -122,7 +122,7 @@ jobs:
 
       - name: Build APKs
         working-directory: android/build-src/sms-card-app
-        run: gradle :app:assembleDebug :app:assembleRelease --stacktrace
+        run: gradle :app:assembleDebug :app:assembleRelease :app:lintDebug --stacktrace
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
