@@ -1,5 +1,14 @@
 # Статус проекта РА «Лидер»
 
+## 2026-10-09 — production operational command candidate
+
+Подготовлен scoped пакет create/update производства и create/read/update монтажа:
+проверенные staging runtime bodies, private snapshot, canonical queue reads,
+закрытие browser DML/TRUNCATE и stop rollback. Staging rehearsal PASS/ROLLBACK;
+независимый metadata/fixtures postflight=0. Exact production candidate проверяется
+в существующем PostgreSQL CI. Backend/Edge/frontend activation — после proof.
+[Scope, backup и rollback](CRM_OPERATIONAL_COMMANDS_PRODUCTION_2026-10-09.md).
+
 ## 2026-10-09 — завершение worker proof и стабильность client CI
 
 PR #572 merged `988cd12f`; Pages [37888132692](https://github.com/deputat36/lider-bsk/actions/runs/37888132692) SUCCESS.
