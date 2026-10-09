@@ -1,3 +1,4 @@
+import { OPERATIONAL_PRODUCTION_ENABLED, operationalProductionAvailable } from './operational-production-gate-v1.js';
 import { invokeStagingWorkflow } from './workflow-staging-transport-v1.js';
 import { isDesignCommandEnvironment } from './design-task-staging-transport-v1.js?v=20260827-revision-1';
 import { canPerformV4Action, CRM_V4_ACTIONS } from './action-permissions-v1.js';
@@ -102,7 +103,7 @@ async function fetchData(requestGeneration) {
   const ids = [...new Set([...production, ...installation].map((job) => job.order_id).filter(Boolean))];
   let orders = [];
   if (ids.length && canOpenV4Tab('orders')) {
-    const orderFields = isStagingProductionEnvironment(V4_CONFIG.supabaseUrl)
+    const orderFields = (isStagingProductionEnvironment(V4_CONFIG.supabaseUrl) || operationalProductionAvailable(V4_CONFIG.supabaseUrl))
       ? 'id,order_number,project_name,status,deadline,layout_status'
       : canViewV4InternalNotes()
         ? 'id,order_number,project_name,status,deadline,layout_status,installation_address,data'

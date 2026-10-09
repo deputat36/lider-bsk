@@ -1,4 +1,3 @@
-import { isExactOperationalProductionUrl } from './operational-production-gate-v1.js';
 const STAGING_PROJECT_REF = 'otulfnouybahfnsycxqn';
 const STAGING_HOSTNAME = `${STAGING_PROJECT_REF}.supabase.co`;
 const FUNCTION_SLUG = 'leader-crm-installation';
@@ -29,22 +28,21 @@ export function isStagingInstallationEnvironment(supabaseUrl) {
 }
 
 export function installationStagingTransportAvailability({
-  supabaseUrl = '', canWrite = false, job = null, patch = null, productionEnabled = false, expectedUpdatedAt = null
+  supabaseUrl = '', canWrite = false, job = null, patch = null, expectedUpdatedAt = null
 } = {}) {
   const staging = isStagingInstallationEnvironment(supabaseUrl);
-  const environmentEnabled = staging || (productionEnabled === true && isExactOperationalProductionUrl(supabaseUrl));
   const jobObject = asObject(job);
   const patchObject = asObject(patch);
   const hasTimestamp = Boolean(text(expectedUpdatedAt) && Number.isFinite(Date.parse(expectedUpdatedAt)));
   let reason = '';
-  if (!environmentEnabled) reason = 'production_locked';
+  if (!staging) reason = 'production_locked';
   else if (!canWrite) reason = 'forbidden';
   else if (!jobObject || !uuid(jobObject.id)) reason = 'job_missing';
   else if (!patchObject || Object.keys(patchObject).length === 0) reason = 'patch_missing';
   else if (!hasTimestamp) reason = 'expected_updated_at_missing';
 
   return Object.freeze({
-    enabled: environmentEnabled && canWrite === true && Boolean(jobObject && uuid(jobObject.id)) && Boolean(patchObject && Object.keys(patchObject).length) && hasTimestamp,
+    enabled: staging && canWrite === true && Boolean(jobObject && uuid(jobObject.id)) && Boolean(patchObject && Object.keys(patchObject).length) && hasTimestamp,
     staging,
     reason,
     projectRef: projectRefFromInstallationSupabaseUrl(supabaseUrl),
@@ -119,18 +117,18 @@ function classifyError(code) {
 export function installationStagingResultMessage(kind, replay = false) {
   if (replay) return 'Безопасный повтор: сервер вернул уже сохранённое состояние без дубликата.';
   return ({
-    updated: 'Монтажное задание сохранено.',
-    wrong_environment: 'Сохранение монтажа для этого окружения недоступно.',
-    auth_required: 'Войдите в CRM.',
-    forbidden: 'Нет права изменять монтаж.',
-    not_found: 'Монтажное задание не найдено.',
+    updated: 'Монтажное задание сохранено одной командой только в staging.',
+    wrong_environment: 'Серверное сохранение монтажа разрешено только в staging.',
+    auth_required: 'Нужен вход отдельного staging-пользователя.',
+    forbidden: 'У staging-профиля нет права installation.write.',
+    not_found: 'Монтажное задание не найдено в staging.',
     conflict: 'Задание изменилось. Перечитайте карточку и повторите.',
     invalid_transition: 'Переход статуса запрещён серверным registry.',
     duplicate_request: 'Команда с этим request_id уже обработана с другим содержимым.',
     validation_error: 'Команда не прошла проверку полей.',
-    network_error: 'Не удалось связаться с сервером.',
-    persistence_failed: 'Не удалось сохранить монтажное задание.'
-  })[kind] || 'Сервер вернул неизвестный результат.';
+    network_error: 'Не удалось связаться со staging Edge Function.',
+    persistence_failed: 'Staging не смог атомарно сохранить монтажное задание.'
+  })[kind] || 'Staging вернул неизвестный результат.';
 }
 
 async function edgeErrorDetails(error) {
@@ -149,10 +147,10 @@ async function edgeErrorDetails(error) {
 
 export async function invokeStagingInstallationJob({
   client, supabaseUrl = '', canWrite = false, job = null, patch = null,
-  expectedUpdatedAt = null, idempotencyKey = '', productionEnabled = false, cryptoObject = globalThis.crypto,
+  expectedUpdatedAt = null, idempotencyKey = '', cryptoObject = globalThis.crypto,
   readAfterSuccess = null
 } = {}) {
-  const availability = installationStagingTransportAvailability({ supabaseUrl, productionEnabled, canWrite, job, patch, expectedUpdatedAt });
+  const availability = installationStagingTransportAvailability({ supabaseUrl, canWrite, job, patch, expectedUpdatedAt });
   if (!availability.enabled) {
     const kind = availability.reason === 'production_locked' ? 'wrong_environment'
       : availability.reason === 'forbidden' ? 'forbidden' : 'validation_error';

@@ -1,4 +1,3 @@
-import { OPERATIONAL_PRODUCTION_ENABLED } from './operational-production-gate-v1.js';
 import { supabaseClient } from './supabase-client.js';
 import { friendlyError } from './api.js';
 import { V4_CONFIG } from './config.js';
@@ -29,11 +28,11 @@ let busy = false;
 let currentBundle = null;
 
 function persistenceRoute() {
-  return installationJobPersistenceRoute(V4_CONFIG.supabaseUrl, OPERATIONAL_PRODUCTION_ENABLED);
+  return installationJobPersistenceRoute(V4_CONFIG.supabaseUrl);
 }
 
 function stagingEdgeEnabled() {
-  return ['staging_edge','production_edge'].includes(persistenceRoute().mode);
+  return persistenceRoute().mode === 'staging_edge';
 }
 
 function jobFields() {
@@ -107,7 +106,6 @@ async function fetchBundle(jobId) {
     const result = await invokeStagingInstallationJobRead({
       client: supabaseClient,
       supabaseUrl: V4_CONFIG.supabaseUrl,
-      productionEnabled: OPERATIONAL_PRODUCTION_ENABLED,
       canRead: true,
       jobId
     });
@@ -144,12 +142,12 @@ function renderCard(bundle) {
   currentBundle = bundle;
   const { job, order, production, items, events, comments } = bundle;
   const route = persistenceRoute();
-  const isStaging = ['staging_edge','production_edge'].includes(route.mode);
+  const isStaging = route.mode === 'staging_edge';
   const data = !isStaging && canViewV4InternalNotes() ? dataObject(order?.data) : {};
   const costStat = !isStaging && canViewV4Costs() ? `<div data-v4-cost-sensitive><span>Оплата</span><b>${money(job.installer_cost)}</b></div>` : '';
   const orderButton = order && canOpenV4Tab('orders') ? `<button type="button" data-open-order="${esc(order.id)}">Открыть заказ</button>` : '';
   const commentsSection = isStaging
-    ? `<section class="v4-install-section"><h3>Комментарии</h3>${renderHistory(comments, 'Безопасных комментариев пока нет.')}<div class="v4-install-empty">История изменений доступна для просмотра. Рабочий комментарий можно изменить в форме задания.</div></section>`
+    ? `<section class="v4-install-section"><h3>Комментарии</h3>${renderHistory(comments, 'Безопасных комментариев пока нет.')}<div class="v4-install-empty">В staging комментарии доступны только для чтения до отдельной server action.</div></section>`
     : canViewV4InternalNotes()
       ? `<section class="v4-install-section"><h3>Внутренние комментарии</h3>${renderHistory(comments, 'Комментариев пока нет.')}<div class="v4-install-form"><textarea id="installJobNewComment" placeholder="Добавить внутренний комментарий"></textarea><button type="button" data-add-installation-comment="${esc(job.id)}">Добавить комментарий</button></div></section>`
       : '<section class="v4-install-section"><h3>Комментарии</h3><div class="v4-install-empty">Внутренние комментарии скрыты для этой роли.</div></section>';
@@ -199,7 +197,6 @@ async function saveJob(jobId) {
       const result = await invokeStagingInstallationJob({
         client: supabaseClient,
         supabaseUrl: V4_CONFIG.supabaseUrl,
-      productionEnabled: OPERATIONAL_PRODUCTION_ENABLED,
         canWrite: true,
         job: old,
         patch: edgePatch,
@@ -245,7 +242,7 @@ function rawInstallationFallback(value) {
 async function addComment(jobId) {
   if (!canViewV4InternalNotes()) return;
   if (stagingEdgeEnabled()) {
-    toast('История изменений доступна для просмотра. Рабочий комментарий можно изменить в форме задания.');
+    toast('В staging комментарии доступны только для чтения до отдельной server action.');
     return;
   }
   const body = field('installJobNewComment');

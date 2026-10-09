@@ -1,3 +1,4 @@
+import { isExactOperationalProductionUrl } from './operational-production-gate-v1.js';
 const STAGING_PROJECT_REF = 'otulfnouybahfnsycxqn';
 const STAGING_HOSTNAME = `${STAGING_PROJECT_REF}.supabase.co`;
 const FUNCTION_SLUG = 'leader-crm-production-create';
@@ -83,19 +84,20 @@ export function productionStagingTransportAvailability({
   supabaseUrl = '',
   canWrite = false,
   draft = null,
-  expectedUpdatedAt = null
+  productionEnabled = false, expectedUpdatedAt = null
 } = {}) {
   const staging = isStagingProductionEnvironment(supabaseUrl);
+  const environmentEnabled = staging || (productionEnabled === true && isExactOperationalProductionUrl(supabaseUrl));
   const hasDraft = Boolean(asObject(draft));
   const hasTimestamp = Boolean(text(expectedUpdatedAt) && Number.isFinite(Date.parse(expectedUpdatedAt)));
   let reason = '';
-  if (!staging) reason = 'production_locked';
+  if (!environmentEnabled) reason = 'production_locked';
   else if (!canWrite) reason = 'forbidden';
   else if (!hasDraft) reason = 'draft_missing';
   else if (!hasTimestamp) reason = 'expected_updated_at_missing';
 
   return Object.freeze({
-    enabled: staging && canWrite === true && hasDraft && hasTimestamp,
+    enabled: environmentEnabled && canWrite === true && hasDraft && hasTimestamp,
     staging,
     reason,
     projectRef: projectRefFromProductionSupabaseUrl(supabaseUrl),
@@ -172,21 +174,21 @@ function classifyError(code, message) {
 export function productionStagingResultMessage(kind, replay = false) {
   if (replay) return 'Безопасный повтор: существующее производственное задание возвращено без дубликата.';
   return ({
-    created: 'Тестовое производственное задание создано только в staging.',
-    wrong_environment: 'Создание производственного задания разрешено только в staging.',
-    auth_required: 'Нужен вход отдельного тестового пользователя staging.',
-    forbidden: 'У staging-профиля нет права production.write или профиль неактивен.',
+    created: 'Производственное задание создано.',
+    wrong_environment: 'Создание задания для этого окружения недоступно.',
+    auth_required: 'Войдите в CRM.',
+    forbidden: 'Нет права изменять производство или профиль неактивен.',
     validation_error: 'Команда не прошла проверку обязательных полей.',
     stale_order: 'Заказ изменился после подготовки черновика. Перечитайте заказ и повторите.',
     active_job_conflict: 'У заказа уже есть активное производственное задание.',
-    layout_conflict: 'Согласованный макет не подтверждён актуальным состоянием staging.',
+    layout_conflict: 'Согласованный макет не подтверждён актуальным состоянием заказа.',
     idempotency_conflict: 'Этот ключ повтора уже использован с другим содержимым.',
     duplicate_request: 'Предыдущий запрос с этим идентификатором ещё выполняется.',
-    not_found: 'Заказ или выбранная дизайн-задача не найдены в staging.',
+    not_found: 'Заказ или выбранная дизайн-задача не найдены.',
     conflict: 'Создание отклонено из-за конфликта актуального состояния.',
-    network_error: 'Не удалось связаться со staging Edge Function.',
-    persistence_failed: 'Staging не смог атомарно сохранить производственное задание.'
-  })[kind] || 'Staging вернул неизвестный результат.';
+    network_error: 'Не удалось связаться с сервером.',
+    persistence_failed: 'Не удалось сохранить производственное задание.'
+  })[kind] || 'Сервер вернул неизвестный результат.';
 }
 
 async function edgeErrorDetails(error) {
@@ -210,10 +212,10 @@ export async function invokeStagingProductionJob({
   canWrite = false,
   draft = null,
   expectedUpdatedAt = null,
-  cryptoObject = globalThis.crypto,
+  productionEnabled = false, cryptoObject = globalThis.crypto,
   readAfterSuccess = null
 } = {}) {
-  const availability = productionStagingTransportAvailability({ supabaseUrl, canWrite, draft, expectedUpdatedAt });
+  const availability = productionStagingTransportAvailability({ supabaseUrl, productionEnabled, canWrite, draft, expectedUpdatedAt });
   if (!availability.enabled) {
     const kind = availability.reason === 'production_locked' ? 'wrong_environment'
       : availability.reason === 'forbidden' ? 'forbidden'

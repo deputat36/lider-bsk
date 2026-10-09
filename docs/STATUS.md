@@ -1,5 +1,19 @@
 # Статус проекта РА «Лидер»
 
+## 2026-10-09 — production operational cutover, PR #574
+
+Установлены create/update производства и create/read/update монтажа: 15 runtime
+функций, private snapshot и canonical queue reads. Browser DML/TRUNCATE и legacy
+write RPC закрыты. Production rehearsal PASS/ROLLBACK, deployment SUCCESS,
+postflight snapshot/ACL/fingerprints PASS; actual stop REVOKE/ROLLBACK PASS.
+Четыре Edge v1 ACTIVE с JWT verification; unauthenticated probe HTTP 401.
+Frontend production gates включены после backend postflight; монтаж требует
+реальный адрес/дату. Локальные transport/form/replay тесты PASS, Deno 20/20 PASS.
+Начальный CI: 35 SUCCESS + 1 SKIPPED; финальные CI/Pages — в PR #574.
+Production business rows неизменны: 2 orders, 1 payment, 0 operational jobs.
+Authenticated production worker mutation/UI этим этапом не доказаны.
+[Scope, backup и rollback](CRM_OPERATIONAL_COMMANDS_PRODUCTION_2026-10-09.md).
+
 ## 2026-10-09 — завершение worker proof и стабильность client CI
 
 PR #572 merged `988cd12f`; Pages [37888132692](https://github.com/deputat36/lider-bsk/actions/runs/37888132692) SUCCESS.

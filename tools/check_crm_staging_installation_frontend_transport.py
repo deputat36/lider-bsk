@@ -74,13 +74,13 @@ require('card', [
     "from './installation-job-save-route-v1.js'",
     "from './installation-job-staging-transport-v1.js'",
     "from './installation-job-staging-read-transport-v1.js'",
-    'installationJobPersistenceRoute(V4_CONFIG.supabaseUrl)',
+    'installationJobPersistenceRoute(V4_CONFIG.supabaseUrl, OPERATIONAL_PRODUCTION_ENABLED)',
     'invokeStagingInstallationJobRead({', 'invokeStagingInstallationJob({',
     'expectedUpdatedAt: old.updated_at',
     'idempotencyKey: createInstallationJobIdempotencyKey(jobId)',
     'readAfterSuccess: () => fetchBundle(jobId)',
     'commentsSection = isStaging',
-    'В staging комментарии доступны только для чтения',
+    'История изменений доступна для просмотра.',
     'data-installation-staging-edge',
     ".from('leader_installation_jobs').update(patch)",
     ".from('leader_orders').update(",
@@ -211,4 +211,4 @@ if errors:
     print('\n'.join(errors), file=sys.stderr)
     raise SystemExit(1)
 
-print('Installation card uses exact-staging Edge read/write, preserves PostgreSQL timestamp precision, passes authenticated UI smoke, and keeps production unchanged.')
+print('Installation card uses exact-staging Edge read/write, preserves PostgreSQL timestamp precision, passes authenticated UI smoke, and preserves the default production lock; production opt-in has separate tests.')

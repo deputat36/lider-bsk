@@ -1,4 +1,3 @@
-import { isExactOperationalProductionUrl } from './operational-production-gate-v1.js';
 import { isStagingInstallationEnvironment } from './installation-job-staging-transport-v1.js';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -7,7 +6,7 @@ function text(value) {
   return String(value ?? '').trim();
 }
 
-export function installationJobPersistenceRoute(supabaseUrl = '', productionEnabled = false) {
+export function installationJobPersistenceRoute(supabaseUrl = '') {
   if (isStagingInstallationEnvironment(supabaseUrl)) {
     return Object.freeze({
       mode: 'staging_edge',
@@ -21,10 +20,6 @@ export function installationJobPersistenceRoute(supabaseUrl = '', productionEnab
     });
   }
 
-  if (productionEnabled === true && isExactOperationalProductionUrl(supabaseUrl)) {
-    return Object.freeze({mode:'production_edge',enabled:true,atomic:true,browserDirectWrite:false,
-      reason:'',title:'Монтажное задание',description:'Изменения сохраняются через защищённый сервер.',buttonPrefix:'Сохранить'});
-  }
   return Object.freeze({
     mode: 'production_locked',
     enabled: false,

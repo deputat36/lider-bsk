@@ -32,11 +32,13 @@ jobs:
           python3 tools/build_design_read_production_test.py
           python3 tools/build_design_commands_test.py
           python3 tools/build_operational_replay_test.py
+          python3 tools/build_operational_production_test.py
           node --check tools/test_design_approval_browser.mjs
           node --check tools/test_worker_queues_browser.mjs
           node --check tools/test_design_queue_actions_browser.mjs
           node --check tools/run_crm_staging_worker_role_api.mjs
           node tools/test_worker_queue_access.mjs
+          node tools/test_operational_production_frontend.mjs
       - name: Exercise client transactions and RLS
         env:
           PGPASSWORD: isolated-ci-only
@@ -45,6 +47,7 @@ jobs:
           psql -h localhost -U postgres -d client_test -v ON_ERROR_STOP=1 -f build/design-transition-test.sql
           psql -h localhost -U postgres -d client_test -v ON_ERROR_STOP=1 -f build/design-commands-test.sql
           psql -h localhost -U postgres -d client_test -v ON_ERROR_STOP=1 -f build/operational-replay-test.sql
+          psql -h localhost -U postgres -d client_test -v ON_ERROR_STOP=1 -f build/operational-production-test.sql
           psql -h localhost -U postgres -d client_test -v ON_ERROR_STOP=1 -f build/design-read-production-test.sql
       - name: Exercise concurrent operational lock order in disposable database
         env:
