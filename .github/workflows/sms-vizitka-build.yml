@@ -2,7 +2,7 @@ name: Build SMS Vizitka Android
 
 on:
   push:
-    branches: ["sms-vizitka-build"]
+    branches: ["sms-vizitka-v052-staging"]
   workflow_dispatch:
 
 jobs:
@@ -114,9 +114,15 @@ jobs:
           cp android/sms-card-v051/PhoneNormalizerTest.java android/build-src/sms-card-app/app/src/test/java/ru/etagi/borisoglebsk/smscard/PhoneNormalizerTest.java
           cp android/sms-card-v051/CallSessionStoreTest.java android/build-src/sms-card-app/app/src/test/java/ru/etagi/borisoglebsk/smscard/CallSessionStoreTest.java
 
-          python android/sms-card-v051/v051_core_patch.py
-          python android/sms-card-v051/v051_bulk_patch.py
+          python android/sms-card-v052/v052_core_patch.py
+          python android/sms-card-v052/v052_bulk_patch.py
           cp android/sms-card-v051/README.md android/build-src/sms-card-app/README.md
+
+          python android/sms-card-v052/v052_core_patch.py
+          python android/sms-card-v052/v052_bulk_patch.py
+          python android/sms-card-v052/v052_ui_patch.py
+
+          cp android/sms-card-v052/BugfixSafetyTest.java android/build-src/sms-card-app/app/src/test/java/ru/etagi/borisoglebsk/smscard/BugfixSafetyTest.java
 
           grep -q 'versionName = "0.5.1"' android/build-src/sms-card-app/app/build.gradle.kts
           grep -q 'RecipientPolicyStore' android/build-src/sms-card-app/app/src/main/java/ru/etagi/borisoglebsk/smscard/HistoryStore.java
@@ -127,9 +133,9 @@ jobs:
         shell: bash
         run: |
           cd android/build-src
-          zip -qr ../../sms-card-etagi-v0.5.1-source.zip sms-card-app
+          zip -qr ../../sms-card-etagi-v0.5.2-source.zip sms-card-app
           cd ../..
-          sha256sum sms-card-etagi-v0.5.1-source.zip
+          sha256sum sms-card-etagi-v0.5.2-source.zip
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -152,20 +158,20 @@ jobs:
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: sms-vizitka-v0.5.1-debug
+          name: sms-vizitka-v0.5.2-debug
           path: android/build-src/sms-card-app/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
       - name: Upload unsigned release APK
         uses: actions/upload-artifact@v4
         with:
-          name: sms-vizitka-v0.5.1-release-unsigned
+          name: sms-vizitka-v0.5.2-release-unsigned
           path: android/build-src/sms-card-app/app/build/outputs/apk/release/app-release-unsigned.apk
           if-no-files-found: error
 
       - name: Upload exact source
         uses: actions/upload-artifact@v4
         with:
-          name: sms-vizitka-v0.5.1-source
-          path: sms-card-etagi-v0.5.1-source.zip
+          name: sms-vizitka-v0.5.2-source
+          path: sms-card-etagi-v0.5.2-source.zip
           if-no-files-found: error
