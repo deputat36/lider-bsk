@@ -31,6 +31,7 @@ jobs:
           node --check tools/run_crm_staging_authenticated_e2e.mjs
           node --check tools/test_crm_staging_authenticated_e2e_browser_launcher.mjs
           node tools/test_crm_staging_authenticated_e2e_browser_launcher.mjs
+          node --test tools/test_crm_staging_worker_fixture.mjs
           node --check tools/run_crm_staging_role_permission_e2e.mjs
           node --check crm/v4/assets/v4/installation-job-staging-create-v1.js
           command -v xvfb-run >/dev/null
@@ -182,17 +183,8 @@ jobs:
           curl -fsS -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${OIDC_AUDIENCE}" > "${OIDC_FILE}"
           OIDC_TOKEN="$(jq -er '.value' "${OIDC_FILE}")"
           rm -f "${OIDC_FILE}"
-          for WORKER_ROLE in designer contractor installer; do
-            export STAGING_CRM_E2E_EXPECTED_ROLE="${WORKER_ROLE}"
-            RESPONSE_FILE="${RUNNER_TEMP}/crm-authenticated-e2e/${WORKER_ROLE}-role.json"
-            HTTP_CODE="$(curl -sS -o "${RESPONSE_FILE}" -w '%{http_code}' -X POST "${BOOTSTRAP_URL}" -H "Authorization: Bearer ${OIDC_TOKEN}" -H 'Content-Type: application/json' --data "{\"action\":\"set_role\",\"run_key\":\"${STAGING_CRM_E2E_RUN_KEY}\",\"marker\":\"${STAGING_CRM_E2E_MARKER}\",\"role\":\"${WORKER_ROLE}\"}")"
-            test "${HTTP_CODE}" = '200'
-            node tools/run_crm_staging_worker_role_api.mjs > "${RUNNER_TEMP}/crm-authenticated-e2e/${WORKER_ROLE}-api.json"
-            export STAGING_CRM_E2E_EVIDENCE_PATH="${RUNNER_TEMP}/crm-authenticated-e2e/${WORKER_ROLE}-ui.json"
-            node tools/run_crm_staging_authenticated_e2e.mjs --mode=role-ui > "${RUNNER_TEMP}/crm-authenticated-e2e/${WORKER_ROLE}-ui.log" 2>&1
-            jq -e '.status == "passed" and .authenticated == true and .ui_allowed_controls == true and .ui_forbidden_controls == true' "${STAGING_CRM_E2E_EVIDENCE_PATH}" >/dev/null
-          done
-          curl -fsS -X POST "${BOOTSTRAP_URL}" -H "Authorization: Bearer ${OIDC_TOKEN}" -H 'Content-Type: application/json' --data "{\"action\":\"set_role\",\"run_key\":\"${STAGING_CRM_E2E_RUN_KEY}\",\"marker\":\"${STAGING_CRM_E2E_MARKER}\",\"role\":\"manager\"}" > "${RUNNER_TEMP}/crm-authenticated-e2e/workers-restored-manager.json"
+          export OIDC_TOKEN
+          node tools/run_crm_staging_worker_roles.mjs
           unset OIDC_TOKEN
 
       - name: Inspect synthetic fixture before cleanup
@@ -209,7 +201,7 @@ jobs:
           HTTP_CODE="$(curl -sS -o "${RESPONSE_FILE}" -w '%{http_code}' -X POST "${BOOTSTRAP_URL}" -H "Authorization: Bearer ${OIDC_TOKEN}" -H 'Content-Type: application/json' --data "{\"action\":\"inspect\",\"run_key\":\"${STAGING_CRM_E2E_RUN_KEY}\",\"marker\":\"${STAGING_CRM_E2E_MARKER}\"}")"
           unset OIDC_TOKEN
           test "${HTTP_CODE}" = '200'
-          jq -e '.ok == true and .counts.needs == 1 and .counts.calculations == 4 and .counts.offers == 1 and .counts.orders == 1 and .counts.design_tasks == 1 and .counts.production_jobs == 1 and .counts.installation_jobs == 1 and .counts.payments == 2 and .counts.expenses == 1 and .counts.finance_audit == 4 and .counts.order_audit == 4' "${RESPONSE_FILE}" >/dev/null
+          jq -e '.ok == true and .counts.needs == 1 and .counts.calculations == 4 and .counts.offers == 1 and .counts.orders == 2 and .counts.design_tasks == 1 and .counts.production_jobs == 1 and .counts.installation_jobs == 1 and .counts.payments == 2 and .counts.expenses == 1 and .counts.finance_audit == 4 and .counts.order_audit == 4' "${RESPONSE_FILE}" >/dev/null
 
       - name: Cleanup all synthetic rows and Auth user
         id: cleanup
