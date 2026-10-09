@@ -7,8 +7,8 @@ def change(old,new,label):
     if old not in s: raise RuntimeError("BulkCampaignActivity marker missing: "+label)
     s=s.replace(old,new,1)
 
-change('import android.content.Intent;\\n', 'import android.content.Intent;\\nimport android.net.Uri;\\nimport android.os.Build;\\nimport android.view.WindowInsets;\\n', 'imports')
-change('    private ContactSelectionAdapter contactAdapter;\\n',
+change('import android.content.Intent;\n', 'import android.content.Intent;\nimport android.net.Uri;\nimport android.os.Build;\nimport android.view.WindowInsets;\n', 'imports')
+change('    private ContactSelectionAdapter contactAdapter;\n',
 '''    private ContactSelectionAdapter contactAdapter;
     private final Set<String> savedSelection = new LinkedHashSet<>();
     private String savedSearch = "";
@@ -154,11 +154,11 @@ change('''            List<ContactRepository.Item> selected = contactAdapter.sel
             }
             if (selected.isEmpty()) {
 ''','revalidate launch')
-change('''                    .setMessage("Получателей: " + selected.size() + "\\n\\nПриложение будет открывать SMS по одному. Отправку каждого сообщения вы подтверждаете в стандартном приложении сообщений.")
+change(r'''                    .setMessage("Получателей: " + selected.size() + "\n\nПриложение будет открывать SMS по одному. Отправку каждого сообщения вы подтверждаете в стандартном приложении сообщений.")
 ''',
-'''                    .setMessage("Получателей: " + selected.size()
-                            + "\\n\\nПроверьте согласие адресатов, если рассылка рекламная."
-                            + "\\n\\nКаждое SMS открывается отдельно и подтверждается в стандартном приложении сообщений.")
+r'''                    .setMessage("Получателей: " + selected.size()
+                            + "\n\nПроверьте согласие адресатов, если рассылка рекламная."
+                            + "\n\nКаждое SMS открывается отдельно и подтверждается в стандартном приложении сообщений.")
 ''','consent warning')
 change('''    private void showQueue() {
         choosingContacts = false;
