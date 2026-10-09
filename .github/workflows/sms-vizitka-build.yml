@@ -2,7 +2,7 @@ name: Build SMS Vizitka Android
 
 on:
   push:
-    branches: ["sms-vizitka-v052-staging"]
+    branches: ["sms-vizitka-build"]
   workflow_dispatch:
 
 jobs:
@@ -123,6 +123,7 @@ jobs:
           python android/sms-card-v052/v052_ui_patch.py
 
           cp android/sms-card-v052/BugfixSafetyTest.java android/build-src/sms-card-app/app/src/test/java/ru/etagi/borisoglebsk/smscard/BugfixSafetyTest.java
+          cp android/sms-card-v052/README.md android/build-src/sms-card-app/README.md
 
           grep -q 'versionName = "0.5.2"' android/build-src/sms-card-app/app/build.gradle.kts
           grep -q 'RecipientPolicyStore' android/build-src/sms-card-app/app/src/main/java/ru/etagi/borisoglebsk/smscard/HistoryStore.java
