@@ -154,7 +154,7 @@ patch_file("SmsTemplates.java", [
 r'''    public static boolean containsUnknownVariables(String text) {
         if (text == null) return false;
         java.util.regex.Matcher matcher = java.util.regex.Pattern
-                .compile("\\\\{[A-Za-z_][A-Za-z0-9_]*\\\\}")
+                .compile("\\{[A-Za-z_][A-Za-z0-9_]*\\}")
                 .matcher(text);
         while (matcher.find()) {
             boolean known = false;
