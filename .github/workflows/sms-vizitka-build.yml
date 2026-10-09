@@ -2,7 +2,7 @@ name: Build SMS Vizitka Android
 
 on:
   push:
-    branches: ["sms-vizitka-v051-staging"]
+    branches: ["sms-vizitka-build"]
   workflow_dispatch:
 
 jobs:
