@@ -114,8 +114,8 @@ jobs:
           cp android/sms-card-v051/PhoneNormalizerTest.java android/build-src/sms-card-app/app/src/test/java/ru/etagi/borisoglebsk/smscard/PhoneNormalizerTest.java
           cp android/sms-card-v051/CallSessionStoreTest.java android/build-src/sms-card-app/app/src/test/java/ru/etagi/borisoglebsk/smscard/CallSessionStoreTest.java
 
-          python android/sms-card-v052/v052_core_patch.py
-          python android/sms-card-v052/v052_bulk_patch.py
+          python android/sms-card-v051/v051_core_patch.py
+          python android/sms-card-v051/v051_bulk_patch.py
           cp android/sms-card-v051/README.md android/build-src/sms-card-app/README.md
 
           python android/sms-card-v052/v052_core_patch.py
@@ -124,7 +124,7 @@ jobs:
 
           cp android/sms-card-v052/BugfixSafetyTest.java android/build-src/sms-card-app/app/src/test/java/ru/etagi/borisoglebsk/smscard/BugfixSafetyTest.java
 
-          grep -q 'versionName = "0.5.1"' android/build-src/sms-card-app/app/build.gradle.kts
+          grep -q 'versionName = "0.5.2"' android/build-src/sms-card-app/app/build.gradle.kts
           grep -q 'RecipientPolicyStore' android/build-src/sms-card-app/app/src/main/java/ru/etagi/borisoglebsk/smscard/HistoryStore.java
           grep -q 'android:allowBackup="false"' android/build-src/sms-card-app/app/src/main/AndroidManifest.xml
           grep -q 'after_call_cards_popup_v3' android/build-src/sms-card-app/app/src/main/java/ru/etagi/borisoglebsk/smscard/NotificationHelper.java
