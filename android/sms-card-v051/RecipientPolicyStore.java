@@ -98,6 +98,27 @@ public final class RecipientPolicyStore {
         return blacklist == null ? 0 : blacklist.length();
     }
 
+    public static synchronized Set<String> blacklistedNumbers(Context context) {
+        HashSet<String> result = new HashSet<>();
+        JSONObject blacklist = readRoot(context).optJSONObject("blacklist");
+        if (blacklist == null) return result;
+        Iterator<String> keys = blacklist.keys();
+        while (keys.hasNext()) result.add(keys.next());
+        return result;
+    }
+
+    public static synchronized Set<String> preparedSince(Context context, long cutoff) {
+        HashSet<String> result = new HashSet<>();
+        JSONObject prepared = readRoot(context).optJSONObject("prepared");
+        if (prepared == null) return result;
+        Iterator<String> keys = prepared.keys();
+        while (keys.hasNext()) {
+            String phone = keys.next();
+            if (prepared.optLong(phone, 0L) >= cutoff) result.add(phone);
+        }
+        return result;
+    }
+
     public static synchronized List<BlockedItem> blacklist(Context context) {
         ArrayList<BlockedItem> result = new ArrayList<>();
         JSONObject blacklist = readRoot(context).optJSONObject("blacklist");
