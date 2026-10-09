@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>РА Лидер — CRM v4</title>
+<meta name="theme-color" content="#0f172a">
+<link rel="stylesheet" href="assets/v4/styles.css?v=20260908-lead-workspace-1">
+<link rel="stylesheet" href="assets/v4/lead-first-contact-v1.css?v=20260717-1">
+<link rel="stylesheet" href="assets/v4/needs.css?v=20260721-duplicates-1">
+<link rel="stylesheet" href="assets/v4/needs-brief.css?v=20260715-1">
+<link rel="stylesheet" href="assets/v4/calculations.css?v=20260528-1">
+<link rel="stylesheet" href="assets/v4/calculations-unified.css?v=20260715-draft-review-1">
+<link rel="stylesheet" href="assets/v4/calculations-saved-tools.css?v=20260715-review-1">
+<link rel="stylesheet" href="assets/v4/calculation-version-integrity-v1.css?v=20260715-1">
+<link rel="stylesheet" href="assets/v4/offers.css?v=20260907-client-privacy-1">
+<link rel="stylesheet" href="assets/v4/orders.css?v=20260621-1">
+<link rel="stylesheet" href="assets/v4/lead-create.css?v=20260718-existing-client-1">
+<link rel="stylesheet" href="assets/v4/followups.css?v=20260721-ownership-1">
+<link rel="stylesheet" href="assets/v4/lead-timeline.css?v=20260622-1">
+<link rel="stylesheet" href="assets/v4/ui-polish.css?v=20260927-system-1">
+<link rel="stylesheet" href="assets/v4/crm-quick-start-v1.css?v=20260712-3">
+<link rel="stylesheet" href="assets/v4/crm-training-scenario-v1.css?v=20260712-1">
+<link rel="stylesheet" href="assets/v4/responsive-ui-v2.css?v=20260622-1">
+<style id="v4-critical-tabs-fix">
+html,body{max-width:100%;overflow-x:hidden!important}.v4-layout-tabs{position:sticky;top:0;z-index:50;display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:rgba(248,250,252,.96);backdrop-filter:blur(10px);border:1px solid #dbeafe;border-radius:18px;padding:10px;margin:0 0 16px;box-shadow:0 10px 30px rgba(15,23,42,.08)}.v4-layout-tabs b{margin-right:auto;color:#1d4ed8}.v4-layout-tabs button{border:1px solid #cbd5e1;background:#fff;border-radius:999px;padding:10px 13px;font-weight:900}.v4-layout-tabs button.is-active{background:#1d4ed8;border-color:#1d4ed8;color:#fff}body[data-v4-tab="management_dashboard"] #leadsSection,body[data-v4-tab="management_dashboard"] #leadCardSection,body[data-v4-tab="management_dashboard"] .v4-next-card,body[data-v4-tab="orders"] #leadsSection,body[data-v4-tab="orders"] #leadCardSection,body[data-v4-tab="orders"] .v4-next-card,body[data-v4-tab="order_control"] #leadsSection,body[data-v4-tab="order_control"] #leadCardSection,body[data-v4-tab="order_control"] .v4-next-card,body[data-v4-tab="finance_control"] #leadsSection,body[data-v4-tab="finance_control"] #leadCardSection,body[data-v4-tab="finance_control"] .v4-next-card,body[data-v4-tab="production"] #leadsSection,body[data-v4-tab="production"] #leadCardSection,body[data-v4-tab="production"] .v4-next-card,body[data-v4-tab="public_lead_audit"] #leadsSection,body[data-v4-tab="public_lead_audit"] #leadCardSection,body[data-v4-tab="public_lead_audit"] .v4-next-card,body[data-v4-tab="contact_control"] #leadsSection,body[data-v4-tab="contact_control"] #leadCardSection,body[data-v4-tab="contact_control"] .v4-next-card,body[data-v4-tab="user_admin"] #leadsSection,body[data-v4-tab="user_admin"] #leadCardSection,body[data-v4-tab="user_admin"] .v4-next-card,body[data-v4-tab="card"] #leadsSection,body[data-v4-tab="card"] .v4-next-card{display:none!important}@media(max-width:560px){.v4-layout-tabs{border-radius:14px}.v4-layout-tabs b{width:100%;margin:0}.v4-layout-tabs button{flex:1 1 calc(50% - 8px)}}
+</style>
+<link rel="icon" type="image/svg+xml" href="../../assets/brand/logo-lider-mark.svg?v=4">
+</head>
+<body data-v4-tab="leads">
+<div class="v4-shell">
+  <header class="v4-hero">
+    <div class="v4-brand-heading">
+      <img class="v4-brand-logo" src="../../assets/brand/logo-lider-header.svg?v=4" width="76" height="69.2" alt="Лидер — рекламное агентство">
+      <div><p class="v4-kicker">Рекламное агентство · Борисоглебск</p>
+      <h1>Рабочее пространство</h1>
+      <p class="v4-subtitle">Заявки, заказы и следующие действия.</p></div>
+    </div>
+    <section class="v4-auth-card" aria-label="Авторизация">
+      <div id="authStatus" class="v4-status is-warn">Проверяю вход</div>
+      <form id="loginForm" class="v4-login-form" autocomplete="on">
+        <label>Email
+          <input id="loginEmail" name="email" type="email" autocomplete="email" placeholder="manager@example.com" required>
+        </label>
+        <label>Пароль
+          <input id="loginPassword" name="password" type="password" autocomplete="current-password" placeholder="••••••••" required>
+        </label>
+        <button id="loginBtn" class="v4-primary" type="submit">Войти</button>
+      </form>
+      <div id="userPanel" class="v4-user-panel hidden">
+        <div>
+          <span class="v4-muted">Пользователь</span>
+          <b id="userEmail">—</b>
+        </div>
+        <button id="logoutBtn" type="button">Выйти</button>
+      </div>
+      <div id="profileNotice" class="v4-profile-notice hidden" role="status"></div>
+    </section>
+  </header>
+
+  <main id="crmWorkspace" class="v4-workspace hidden">
+    <section id="crmQuickStart" class="v4-card v4-quick-start" aria-labelledby="crmQuickStartTitle">
+      <div class="v4-quick-start-head">
+        <div>
+          <p class="v4-kicker">Первые 15 минут</p>
+          <h2 id="crmQuickStartTitle">Первый рабочий маршрут</h2>
+          <p>Пройдите одну заявку от первого контакта до контроля выполнения. Подсказки не создают и не меняют данные сами.</p>
+        </div>
+        <div class="v4-quick-start-progress">
+          <span id="crmQuickStartProgressText">0 из 5 шагов</span>
+          <progress id="crmQuickStartProgress" max="5" value="0">0 из 5</progress>
+          <button type="button" data-quick-start-hide>Скрыть подсказки</button>
+          <button type="button" data-quick-start-show hidden>Показать подсказки</button>
+        </div>
+      </div>
+      <div id="crmQuickStartBody">
+        <div class="v4-quick-start-steps" role="list">
+          <article class="v4-quick-start-step" data-quick-start-step="lead" role="listitem">
+            <b>1</b><div><h3>Примите заявку</h3><p>Откройте реальную заявку, проверьте телефон, источник и что нужно клиенту. Сразу назначьте следующий контакт.</p><div class="v4-quick-start-actions"><button type="button" data-quick-start-tab="leads">Открыть заявки</button><label><input type="checkbox" data-quick-start-done="lead"> Шаг выполнен</label></div></div>
+          </article>
+          <article class="v4-quick-start-step" data-quick-start-step="need" role="listitem">
+            <b>2</b><div><h3>Уточните потребность</h3><p>В карточке заявки заполните размеры, материал, количество, сроки и макет. Красные предупреждения подскажут, чего не хватает.</p><div class="v4-quick-start-actions"><button type="button" data-quick-start-tab="leads">Найти заявку</button><label><input type="checkbox" data-quick-start-done="need"> Шаг выполнен</label></div></div>
+          </article>
+          <article class="v4-quick-start-step" data-quick-start-step="offer" role="listitem">
+            <b>3</b><div><h3>Сделайте расчёт и КП</h3><p>Создайте расчёт из заполненной потребности, затем сформируйте КП. Меняйте статус только по доступным кнопкам.</p><div class="v4-quick-start-actions"><button type="button" data-quick-start-tab="leads">Открыть карточку</button><label><input type="checkbox" data-quick-start-done="offer"> Шаг выполнен</label></div></div>
+          </article>
+          <article class="v4-quick-start-step" data-quick-start-step="order" role="listitem">
+            <b>4</b><div><h3>Проверьте заказ</h3><p>После согласования КП откройте созданный заказ: сумма, макет, производство, оплата и следующий ответственный должны быть понятны.</p><div class="v4-quick-start-actions"><button type="button" data-quick-start-tab="orders">Открыть заказы</button><button type="button" data-quick-start-tab="order_control">Контроль заказов</button><label><input type="checkbox" data-quick-start-done="order"> Шаг выполнен</label></div></div>
+          </article>
+          <article class="v4-quick-start-step" data-quick-start-step="finish" role="listitem">
+            <b>5</b><div><h3>Доведите до выдачи</h3><p>В производстве и монтаже используйте только предложенные переходы. Завершите оплату, выдачу и назначьте повторный контакт.</p><div class="v4-quick-start-actions"><button type="button" data-quick-start-tab="production">Открыть производство</button><label><input type="checkbox" data-quick-start-done="finish"> Шаг выполнен</label></div></div>
+          </article>
+        </div>
+        <div class="v4-quick-start-note"><b>Важно:</b> для обучения не создавайте вымышленных клиентов в рабочей базе. Используйте согласованную учебную карточку или реальную заявку.</div>
+        <div class="v4-quick-start-footer">
+          <button type="button" data-quick-start-reset>Сбросить отметки</button>
+          <button type="button" class="v4-primary" data-open-training-scenario>Пройти учебный заказ</button>
+          <details>
+            <summary>Кто вошёл и с какой ролью</summary>
+            <dl class="v4-profile-grid">
+              <div><dt>Email</dt><dd id="profileEmail">—</dd></div>
+              <div><dt>Имя</dt><dd id="profileName">—</dd></div>
+              <div><dt>Роль</dt><dd id="profileRole">—</dd></div>
+              <div><dt>Статус</dt><dd id="profileActive">—</dd></div>
+            </dl>
+            <p class="v4-muted">Пользователи, роли и приглашения находятся в разделе «Доступ и роли».</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <nav id="v4LayoutTabs" class="v4-layout-tabs" aria-label="Разделы CRM">
+      <b>Разделы CRM</b>
+      <button type="button" data-v4-tab-button="leads" class="is-active">Заявки</button>
+      <button type="button" data-v4-tab-button="orders">Заказы</button>
+      <button type="button" data-v4-tab-button="clients">Клиенты</button>
+      <button type="button" data-v4-tab-button="order_control">Контроль заказов</button>
+      <button type="button" data-v4-tab-button="finance_control">Финансы</button>
+      <button type="button" data-v4-tab-button="production">Производство</button>
+      <button type="button" data-v4-tab-button="user_admin">Доступ и роли</button>
+    </nav>
+
+    <section id="leadCardSection" class="v4-card v4-lead-card-section hidden" aria-label="Карточка заявки">
+      <div id="leadCardContent">
+        <div class="v4-empty">Выберите заявку из списка.</div>
+      </div>
+    </section>
+
+    <section id="leadsSection" class="v4-card v4-leads-section" aria-label="Заявки">
+      <div class="v4-section-head">
+        <div>
+          <h2>Заявки</h2>
+          <p>Последние 50 заявок. Откройте заявку, чтобы пройти путь от потребности до заказа.</p>
+        </div>
+        <button id="reloadLeadsBtn" type="button" class="v4-primary">Обновить заявки</button>
+      </div>
+      <div class="v4-lead-stats">
+        <div><span>Всего</span><b id="v4StatAllLeads">0</b></div>
+        <div><span>Новые</span><b id="v4StatNewLeads">0</b></div>
+        <div><span>В работе</span><b id="v4StatWorkLeads">0</b></div>
+        <div><span>Ждут ответ</span><b id="v4StatWaitingLeads">0</b></div>
+      </div>
+      <div class="v4-filters">
+        <label>Статус
+          <select id="leadStatusFilter"></select>
+        </label>
+        <label>Источник
+          <select id="leadSourceFilter"><option>Все</option></select>
+        </label>
+        <label>Поиск
+          <input id="leadSearch" type="search" placeholder="Имя, телефон, услуга, комментарий">
+        </label>
+        <label>Сортировка
+          <select id="leadSort">
+            <option value="created_desc">Сначала новые</option>
+            <option value="created_asc">Сначала старые</option>
+            <option value="next_contact_asc">Ближайший контакт</option>
+            <option value="status_asc">По статусу</option>
+          </select>
+        </label>
+      </div>
+      <div class="v4-filter-state-row">
+        <div id="leadActiveFilters" class="v4-muted" aria-live="polite">Активны стандартные фильтры: заявки в работе, сначала новые.</div>
+        <button id="resetLeadFiltersBtn" type="button">Сбросить фильтры</button>
+      </div>
+      <div id="leadsCounter" class="v4-muted">Заявки еще не загружены</div>
+      <div id="leadsList" class="v4-leads-list">
+        <div class="v4-empty">После входа заявки загрузятся автоматически.</div>
+      </div>
+    </section>
+
+    <section class="v4-card v4-next-card">
+      <h2>Рабочая схема</h2>
+      <p>Заявка → потребность → расчёт → КП → заказ → макет → производство → монтаж → оплата → повторный контакт.</p>
+      <div class="v4-quick-start-strip"><button type="button" data-quick-start-show>Открыть подсказки</button><span>Учебный маршрут хранит отметки только в этом браузере и не пишет их в CRM.</span></div>
+    </section>
+  </main>
+</div>
+<div id="toast" class="v4-toast" role="status" aria-live="polite"></div>
+<script type="importmap">
+{
+  "imports": {
+    "./assets/v4/role-tab-permissions-v1.js": "./assets/v4/role-tab-permissions-v1.js?v=20261003-worker-1",
+    "./assets/v4/crm-navigation-route-v1.js": "./assets/v4/crm-navigation-route-v1.js?v=20261002-clients-1",
+    "./assets/v4/offer-card-v1.js?v=20260827-order-read-1": "./assets/v4/offer-card-v1.js?v=20261002-offers-1",
+    "./assets/v4/orders.js?v=20260827-order-read-1": "./assets/v4/orders.js?v=20261001-order-finance-1",
+    "./assets/v4/offer-card-v1.js?v=20261001-order-finance-1": "./assets/v4/offer-card-v1.js?v=20261002-offers-1",
+    "./assets/v4/client-registry-transport-v1.js": "./assets/v4/client-registry-transport-v1.js?v=20261002-production-1",
+    "./assets/v4/offer-transition-transport-v1.js": "./assets/v4/offer-transition-transport-v1.js?v=20261002-production-1",
+    "./assets/v4/offer-card-v1.js": "./assets/v4/offer-card-v1.js?v=20261002-offers-1",
+    "./assets/v4/offer-order-create-v1.js?v=20260805-tab-loader-1": "./assets/v4/offer-order-create-v1.js?v=20261002-offers-1",
+    "./assets/v4/offers.js?v=20260907-client-privacy-1": "./assets/v4/offers.js?v=20261002-offers-1",
+    "./assets/v4/orders.js": "./assets/v4/orders.js?v=20261001-order-finance-1",
+    "./assets/v4/finance-record-transport-v1.js": "./assets/v4/finance-record-transport-v1.js?v=20261001-order-finance-1",
+    "./assets/v4/order-operation-ui-v1.js": "./assets/v4/order-operation-ui-v1.js?v=20261001-order-finance-1",
+    "./assets/v4/operational-server-contract-v1.js": "./assets/v4/operational-server-contract-v1.js?v=20261001-order-finance-1",
+    "./assets/v4/finance-plan-actual-model-v1.js": "./assets/v4/finance-plan-actual-model-v1.js?v=20260928-finance-1",
+    "./assets/v4/lead-first-contact-model-v1.js?v=20260717-1": "./assets/v4/lead-first-contact-model-v1.js?v=20260925-services-1",
+    "./assets/v4/lead-analytics-normalization.js": "./assets/v4/lead-analytics-normalization.js?v=20260925-services-1",
+    "./assets/v4/calculation-contractor-quote-model-v1.js": "./assets/v4/calculation-contractor-quote-model-v1.js?v=20260925-special-price-1",
+    "./assets/v4/lead-analytics-summary-v1.js": "./assets/v4/lead-analytics-summary-v1.js?v=20260911-language-1",
+    "./assets/v4/lead-status-ui-registry-v1.js?v=20260721-followup-1": "./assets/v4/lead-status-ui-registry-v1.js?v=20260911-language-1",
+    "./assets/v4/lead-status-ui-model-v1.js?v=20260721-followup-1": "./assets/v4/lead-status-ui-model-v1.js?v=20260911-language-1",
+    "./assets/v4/lead-status-ui-model-v1.js?v=20260721-assignment-1": "./assets/v4/lead-status-ui-model-v1.js?v=20260911-language-1",
+    "./assets/v4/lead-card.js?v=20260816-direct-card-1": "./assets/v4/lead-card.js?v=20260925-service-context-1",
+    "./assets/v4/need-readiness-panel-v1.js?v=20260713-readiness-1": "./assets/v4/need-readiness-panel-v1.js?v=20260911-language-1",
+    "./assets/v4/lead-exception-assistant-v1.js?v=20260721-one-action-1": "./assets/v4/lead-exception-assistant-v1.js?v=20260908-workspace-1",
+    "./assets/v4/need-calculation-prefill-v1.js": "./assets/v4/need-calculation-prefill-v1.js?v=20260907-metric-alias-1",
+    "./assets/v4/offer-print-brand-v4.js?v=20260621-logo-2": "./assets/v4/offer-print-brand-v4.js?v=20260927-owner-logo-1",
+    "./assets/v4/offer-print-brand-v4.js?v=20260907-client-privacy-1": "./assets/v4/offer-print-brand-v4.js?v=20260927-owner-logo-1",
+    "./assets/v4/calculation-catalog-source-v1.js": "./assets/v4/calculation-catalog-source-v1.js?v=20260906-catalog-source-1",
+    "./assets/v4/router.js": "./assets/v4/router.js?v=20260717-module-singleton-1",
+    "./assets/v4/leads.js": "./assets/v4/leads.js?v=20260721-followup-1",
+    "./assets/v4/calculations.js?v=20260914-manual-zero-1": "./assets/v4/calculations.js?v=20260925-special-price-1",
+    "./assets/v4/calculations.js": "./assets/v4/calculations.js?v=20260925-special-price-1",
+    "./assets/v4/calculations.js?v=20260717-module-singleton-1": "./assets/v4/calculations.js?v=20260925-special-price-1",
+    "./assets/v4/calculation-pricing-model-v1.js": "./assets/v4/calculation-pricing-model-v1.js?v=20260906-catalog-source-1",
+    "./assets/v4/calculation-version-edit-model-v1.js": "./assets/v4/calculation-version-edit-model-v1.js?v=20260925-special-price-1",
+    "./assets/v4/calculation-version-editor-v1.js?v=20260827-observer-fix-1": "./assets/v4/calculation-version-editor-v1.js?v=20260925-special-price-1",
+    "./assets/v4/crm-v4-tabs-lite.js?v=20260720-role-landing-1": "./assets/v4/crm-v4-tabs-lite.js?v=20261002-clients-1",
+    "./assets/v4/lead-analytics-badges-v1.js?v=20260721-followup-1": "./assets/v4/lead-analytics-badges-v1.js?v=20260805-lazy-tabs-1",
+    "./assets/v4/management-dashboard-v3.js?v=20260720-today-1": "./assets/v4/management-dashboard-v3.js?v=20260805-tab-loader-1",
+    "./assets/v4/contact-control-v1.js?v=20260621-1": "./assets/v4/contact-control-v1.js?v=20260805-tab-loader-1",
+    "./assets/v4/lead-card.js?v=20260721-assignment-1": "./assets/v4/lead-card.js?v=20260925-service-context-1",
+    "./assets/v4/needs.js?v=20260721-duplicates-1": "./assets/v4/needs.js?v=20260805-tab-loader-1",
+    "./assets/v4/calculations-saved-tools-v2.js?v=20260717-load-integrity-1": "./assets/v4/calculations-saved-tools-v2.js?v=20260805-tab-loader-1",
+    "./assets/v4/calculation-draft-review-v1.js?v=20260715-1": "./assets/v4/calculation-draft-review-v1.js?v=20260805-tab-loader-1",
+    "./assets/v4/offers.js?v=20260717-load-integrity-1": "./assets/v4/offers.js?v=20260805-tab-loader-1",
+    "./assets/v4/orders-fast-loader-v1.js?v=20260715-filter-state-1": "./assets/v4/orders-fast-loader-v1.js?v=20261001-order-finance-1",
+    "./assets/v4/order-card-v1.js?v=20260629-design-1": "./assets/v4/order-card-v1.js?v=20261001-order-finance-1",
+    "./assets/v4/order-act-preview-v1.js?v=20260713-contract-1": "./assets/v4/order-act-preview-v1.js?v=20260805-tab-loader-1",
+    "./assets/v4/order-control-v2.js?v=20260629-design-control-1": "./assets/v4/order-control-v2.js?v=20260805-tab-loader-1",
+    "./assets/v4/finance-control-v2.js?v=20260622-1": "./assets/v4/finance-control-v2.js?v=20260928-finance-1",
+    "./assets/v4/production-board-v3.js?v=20260629-layout-warn-1": "./assets/v4/production-board-v3.js?v=20261003-design-actions-1",
+    "./assets/v4/production-board-v3.js?v=20260805-tab-loader-1": "./assets/v4/production-board-v3.js?v=20261003-design-actions-1",
+    "./assets/v4/production-alerts-v1.js?v=20260622-2": "./assets/v4/production-alerts-v1.js?v=20260805-tab-loader-1",
+    "./assets/v4/production-job-card-v2.js?v=20260629-layout-alert-1": "./assets/v4/production-job-card-v2.js?v=20260805-tab-loader-1",
+    "./assets/v4/installation-job-card-v2.js?v=20260622-1": "./assets/v4/installation-job-card-v2.js?v=20260805-tab-loader-1",
+    "./assets/v4/design-task-draft-preview-v1.js?v=20260827-revision-1": "./assets/v4/design-task-draft-preview-v1.js?v=20261003-design-commands-1",
+    "./assets/v4/design-task-staging-transport-v1.js?v=20260827-revision-1": "./assets/v4/design-task-staging-transport-v1.js?v=20261003-design-commands-1",
+    "./assets/v4/workflow-staging-transport-v1.js": "./assets/v4/workflow-staging-transport-v1.js?v=20261003-design-commands-1",
+    "./assets/v4/site-cache-note-v1.js": "./assets/v4/site-cache-note-v1.js?v=20260718-deferred-1",
+    "./assets/v4/site-cache-note-v1.js?v=20260621-1": "./assets/v4/site-cache-note-v1.js?v=20260718-deferred-1"
+  }
+}
+</script>
+<script type="module" src="assets/v4/router.js?v=20260717-module-singleton-1"></script>
+<script type="module" src="assets/v4/crm-v4-tabs-lite.js?v=20261002-clients-1"></script>
+<script type="module" src="assets/v4/crm-v4-tab-loader-v1.js?v=20261002-clients-1"></script>
+<script type="module" src="assets/v4/crm-v4-expanded-menu-v1.js?v=20261002-clients-1"></script>
+<script type="module" src="assets/v4/auth.js?v=20260805-lazy-tabs-1"></script>
+<script type="module" src="assets/v4/auth-session-reset-v1.js?v=20260624-contour-1"></script>
+<script type="module" src="assets/v4/leads.js?v=20260721-followup-1"></script>
+<script type="module" src="assets/v4/lead-analytics-badges-v1.js?v=20260805-lazy-tabs-1"></script>
+<script type="module" src="assets/v4/followups.js?v=20260721-ownership-1"></script>
+<script type="module" src="assets/v4/lead-create.js?v=20261002-clients-1"></script>
+<script type="module" src="assets/v4/crm-quick-start-v1.js?v=20260927-1"></script>
+</body>
+</html>

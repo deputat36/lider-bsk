@@ -250,4 +250,4 @@ if ERRORS:
     print('\n'.join(ERRORS), file=sys.stderr)
     raise SystemExit(1)
 
-print('Production installation frontend candidate is deterministic, server-only, exact-host locked, and not switched in working CRM files.')
+print('Production installation frontend candidate is deterministic, server-only, exact-host locked, and retained as an archived candidate; current operational rollout is tested separately.')

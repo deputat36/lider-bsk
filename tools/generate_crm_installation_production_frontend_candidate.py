@@ -11,29 +11,31 @@ OUT_DIR = ROOT / 'build/installation-production-frontend-candidate'
 PRODUCTION_PROJECT_REF = 'ofewxuqfjhamgerwzull'
 PRODUCTION_HOSTNAME = f'{PRODUCTION_PROJECT_REF}.supabase.co'
 
+# Archived July candidate: keep pinned inputs reproducible after the October rollout.
+# Current production routes are verified by test_operational_production_frontend.mjs.
 SOURCES = {
     'route': {
-        'path': ROOT / 'crm/v4/assets/v4/installation-job-save-route-v1.js',
+        'path': ROOT / 'tools/fixtures/installation-frontend-candidate-20260723/installation-job-save-route-v1.js',
         'blob_sha': '64d6137600261d22397ff348f72a60eb908d5d4b',
     },
     'write_transport': {
-        'path': ROOT / 'crm/v4/assets/v4/installation-job-staging-transport-v1.js',
+        'path': ROOT / 'tools/fixtures/installation-frontend-candidate-20260723/installation-job-staging-transport-v1.js',
         'blob_sha': 'a4f265fe53c438095ebcbc7b58d22e90e551c057',
     },
     'read_transport': {
-        'path': ROOT / 'crm/v4/assets/v4/installation-job-staging-read-transport-v1.js',
+        'path': ROOT / 'tools/fixtures/installation-frontend-candidate-20260723/installation-job-staging-read-transport-v1.js',
         'blob_sha': 'b5ebf2a0b05404b639b63b7f8aae27c3574464ce',
     },
     'card': {
-        'path': ROOT / 'crm/v4/assets/v4/installation-job-card-v2.js',
+        'path': ROOT / 'tools/fixtures/installation-frontend-candidate-20260723/installation-job-card-v2.js',
         'blob_sha': '1c360e08ce954d7879bc075bc203d3fd406db0ae',
     },
     'loader': {
-        'path': ROOT / 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js',
+        'path': ROOT / 'tools/fixtures/installation-frontend-candidate-20260723/crm-v4-tab-loader-v1.js',
         'blob_sha': '5751b758b9a6d7f9fb47bcd7d35f3fddda136028',
     },
     'index': {
-        'path': ROOT / 'crm/v4/index.html',
+        'path': ROOT / 'tools/fixtures/installation-frontend-candidate-20260723/index.html',
         'blob_sha': 'c0dd11538139d9b67dd443109d134a42b9cff20f',
     },
 }

@@ -1,0 +1,1 @@
+Frozen, hash-verified inputs of the July 2026 source-only installation frontend candidate. These files are not browser runtime modules. October 2026 operational production rollout uses the current CRM modules and tools/test_operational_production_frontend.mjs. Historical candidate approval flags describe that archived package only.
