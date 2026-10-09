@@ -34,7 +34,7 @@ column writes и RPC EXECUTE закрываются; queues получают т�
 Backup id: `operational-commands-20261009-v1`, таблица
 `leader_private.leader_rollout_backups`; browser/service_role SELECT запрещён.
 Snapshot business rows проверяется внутри установки, не экспортируется в GitHub.
-Frontend gates включаются отдельным изменением после backend postflight.
+Frontend gates включены после успешного production backend postflight; URL ограничен точным Leader production hostname.
 
 ## Проверки
 
@@ -45,7 +45,22 @@ scenarios PASS, outer ROLLBACK. Production-only preflight в этой rehearsal 
 Disposable production candidate proof включён в существующий client registry CI:
 реальные commands/replay/RBAC/privacy/closed guards; старые permissive policies,
 table и column grants; семь ролей/inactive read и actual stop REVOKE/rollback.
-CI результат и deployment checkpoint фиксируются в PR перед активацией.
+Первый head PR #574: 35 checks SUCCESS, 1 SKIPPED; exact candidate PostgreSQL proof PASS.
+Production rehearsal exact candidate PASS/ROLLBACK, затем apply_migration SUCCESS.
+Production postflight: snapshot шести таблиц неизменен, ACL и все 15 fingerprints PASS.
+Executable stop с реальным REVOKE и внешним ROLLBACK PASS; service EXECUTE восстановлен
+откатом, browser DML не открыт.
+
+Четыре production Edge функции установлены v1 ACTIVE с verify_jwt=true:
+leader-crm-production, leader-crm-production-create, leader-crm-installation,
+leader-crm-installation-create. Unauthenticated production-create probe: HTTP 401.
+Deno contract suite: 20/20 PASS. Frontend production opt-in требует точный HTTPS
+Leader URL, права, актуальную revision и сессию; transport routes и реальная
+create-form validation/replay проверены локальным executable fixture test.
+Форма production монтажа запрашивает реальный адрес/дату/исполнителя; staging
+defaults остаются только в staging. Planned prices и internal fields в форме
+не отправляются. Проверки staging transports, draft, frontend boundaries и
+worker fixture suite 6/6 PASS. Финальные CI/Pages результаты — в PR #574.
 
 ## Откат и пределы
 
@@ -57,6 +72,6 @@ CI результат и deployment checkpoint фиксируются в PR пе
 `leader_operational_commands_postflight.sql`.
 
 Этот этап сам по себе не доказывает authenticated production worker UI.
-Production Edge и frontend ещё требуют согласованной активации; financial и
+Authenticated positive production mutation не выполнялась на реальных заказах; financial и
 internal fields не возвращаются через operational responses. Публичные формы,
 production test money и реальные заказы не используются для пробных записей.

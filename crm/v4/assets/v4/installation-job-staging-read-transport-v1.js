@@ -1,3 +1,4 @@
+import { isExactOperationalProductionUrl } from './operational-production-gate-v1.js';
 const STAGING_PROJECT_REF = 'otulfnouybahfnsycxqn';
 const STAGING_HOSTNAME = `${STAGING_PROJECT_REF}.supabase.co`;
 const FUNCTION_SLUG = 'leader-crm-installation';
@@ -14,14 +15,15 @@ export function isExactInstallationStagingUrl(value) {
   catch (_) { return false; }
 }
 
-export function installationStagingReadAvailability({ supabaseUrl = '', canRead = false, jobId = '' } = {}) {
+export function installationStagingReadAvailability({ supabaseUrl = '', canRead = false, productionEnabled = false, jobId = '' } = {}) {
   const staging = isExactInstallationStagingUrl(supabaseUrl);
+  const environmentEnabled = staging || (productionEnabled === true && isExactOperationalProductionUrl(supabaseUrl));
   let reason = '';
-  if (!staging) reason = 'production_locked';
+  if (!environmentEnabled) reason = 'production_locked';
   else if (!canRead) reason = 'forbidden';
   else if (!uuid(jobId)) reason = 'job_id_invalid';
   return Object.freeze({
-    enabled: staging && canRead === true && uuid(jobId),
+    enabled: environmentEnabled && canRead === true && uuid(jobId),
     staging,
     reason,
     functionSlug: FUNCTION_SLUG,
@@ -49,15 +51,15 @@ function classifyError(code) {
 
 export function installationStagingReadMessage(kind) {
   return ({
-    loaded: 'Монтажное задание загружено через защищённый staging Edge.',
-    wrong_environment: 'Серверное чтение монтажа разрешено только в staging.',
-    auth_required: 'Нужен вход отдельного staging-пользователя.',
-    forbidden: 'У staging-профиля нет права installation.read.',
-    not_found: 'Монтажное задание не найдено в staging.',
+    loaded: 'Монтажное задание загружено.',
+    wrong_environment: 'Чтение монтажа для этого окружения недоступно.',
+    auth_required: 'Войдите в CRM.',
+    forbidden: 'Нет права просматривать монтаж.',
+    not_found: 'Монтажное задание не найдено.',
     validation_error: 'Запрос чтения монтажа не прошёл проверку.',
-    network_error: 'Не удалось связаться со staging Edge Function.',
-    read_failed: 'Staging не смог безопасно загрузить монтажное задание.'
-  })[kind] || 'Staging вернул неизвестный результат чтения.';
+    network_error: 'Не удалось связаться с сервером.',
+    read_failed: 'Не удалось загрузить монтажное задание.'
+  })[kind] || 'Сервер вернул неизвестный результат чтения.';
 }
 
 async function edgeErrorDetails(error) {
@@ -91,9 +93,9 @@ export function installationReadBundle(value) {
 }
 
 export async function invokeStagingInstallationJobRead({
-  client, supabaseUrl = '', canRead = false, jobId = '', cryptoObject = globalThis.crypto
+  client, supabaseUrl = '', canRead = false, jobId = '', productionEnabled = false, cryptoObject = globalThis.crypto
 } = {}) {
-  const availability = installationStagingReadAvailability({ supabaseUrl, canRead, jobId });
+  const availability = installationStagingReadAvailability({ supabaseUrl, productionEnabled, canRead, jobId });
   if (!availability.enabled) {
     const kind = availability.reason === 'production_locked' ? 'wrong_environment'
       : availability.reason === 'forbidden' ? 'forbidden' : 'validation_error';

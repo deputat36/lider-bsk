@@ -38,6 +38,7 @@ jobs:
           node --check tools/test_design_queue_actions_browser.mjs
           node --check tools/run_crm_staging_worker_role_api.mjs
           node tools/test_worker_queue_access.mjs
+          node tools/test_operational_production_frontend.mjs
       - name: Exercise client transactions and RLS
         env:
           PGPASSWORD: isolated-ci-only

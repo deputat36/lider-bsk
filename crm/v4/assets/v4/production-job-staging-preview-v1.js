@@ -1,3 +1,4 @@
+import { OPERATIONAL_PRODUCTION_ENABLED, operationalProductionAvailable } from './operational-production-gate-v1.js';
 import { friendlyError } from './api.js';
 import {
   CRM_V4_ACTIONS,
@@ -77,37 +78,38 @@ function stateLabel(state) {
 function feedbackHtml(feedback) {
   if (!feedback) return '';
   const verified = feedback.ok && feedback.refreshed?.id
-    ? `<br><small>Read-after-success подтверждён безопасным idempotent replay: ${esc(feedback.refreshed.id)}</small>`
+    ? `<br><small>Повторная проверка подтвердила задание: ${esc(feedback.refreshed.id)}</small>`
     : feedback.ok && feedback.refreshFailed
       ? '<br><small>Задание создано, но контрольное перечитывание не завершилось.</small>'
       : '';
-  return `<div class="v4-production-staging-result ${feedback.ok ? '' : 'is-error'}"><b>${feedback.ok ? 'Staging' : 'Staging: действие не выполнено'}</b><br>${esc(feedback.message)}${verified}</div>`;
+  return `<div class="v4-production-staging-result ${feedback.ok ? '' : 'is-error'}"><b>${feedback.ok ? 'Задание создано' : 'Действие не выполнено'}</b><br>${esc(feedback.message)}${verified}</div>`;
 }
 
 function renderResult(modal, result, feedback = null) {
   const availability = productionStagingTransportAvailability({
     supabaseUrl: V4_CONFIG.supabaseUrl,
+    productionEnabled: OPERATIONAL_PRODUCTION_ENABLED,
     canWrite: result.canWrite,
     draft: result.draft,
     expectedUpdatedAt: result.order?.updatedAt
   });
   const action = availability.enabled
-    ? `<button type="button" data-production-staging-create ${createBusy ? 'disabled' : ''}>${createBusy ? 'Создаю и проверяю…' : 'Создать тестовое задание в staging'}</button>`
-    : '<button type="button" disabled>Создание в staging недоступно</button>';
+    ? `<button type="button" data-production-staging-create ${createBusy ? 'disabled' : ''}>${createBusy ? 'Создаю и проверяю…' : 'Создать производственное задание'}</button>`
+    : '<button type="button" disabled>Создание недоступно</button>';
   const order = result.order
-    ? `<div class="v4-production-staging-grid"><div class="v4-production-staging-card"><span>Заказ</span><b>№${esc(result.order.number || String(result.order.id).slice(0, 8))}</b></div><div class="v4-production-staging-card"><span>Статус</span><b>${esc(result.order.statusLabel)}</b></div><div class="v4-production-staging-card"><span>Макет</span><b>${esc(result.order.layoutStatus || 'не указан')}</b></div><div class="v4-production-staging-card"><span>Срок</span><b>${esc(dateRu(result.order.deadline))}</b></div><div class="v4-production-staging-card"><span>Права</span><b>${result.canWrite ? 'production.read + production.write' : 'только production.read'}</b></div></div>`
+    ? `<div class="v4-production-staging-grid"><div class="v4-production-staging-card"><span>Заказ</span><b>№${esc(result.order.number || String(result.order.id).slice(0, 8))}</b></div><div class="v4-production-staging-card"><span>Статус</span><b>${esc(result.order.statusLabel)}</b></div><div class="v4-production-staging-card"><span>Макет</span><b>${esc(result.order.layoutStatus || 'не указан')}</b></div><div class="v4-production-staging-card"><span>Срок</span><b>${esc(dateRu(result.order.deadline))}</b></div><div class="v4-production-staging-card"><span>Права</span><b>${result.canWrite ? 'создание и просмотр' : 'только просмотр'}</b></div></div>`
     : '';
   const warnings = result.warnings?.length
     ? `<div class="v4-production-staging-note is-warn">${result.warnings.map(esc).join('<br>')}</div>`
     : '';
-  const payload = result.draft
+  const payload = !operationalProductionAvailable(V4_CONFIG.supabaseUrl) && result.draft
     ? `<p>Envelope не содержит клиента, телефона, оплаты, прибыли, actor/status и других server-owned полей.</p><pre class="v4-production-staging-code">${esc(JSON.stringify(result.draft, null, 2))}</pre>`
     : '';
-  modal.innerHTML = `<div class="v4-production-staging-dialog" role="dialog" aria-modal="true" aria-labelledby="productionStagingTitle"><div class="v4-production-staging-head"><div><h2 id="productionStagingTitle">Заказ → производство</h2><p>Активно только для exact staging project ref. Production не получает кнопку или сетевой вызов.</p></div><button type="button" data-production-staging-close>Закрыть</button></div><div class="v4-production-staging-note ${stateClass(result.state)}"><b>${esc(stateLabel(result.state))}</b><br>${esc(result.message)}</div>${feedbackHtml(feedback)}${order}${warnings}<div class="v4-production-staging-actions">${action}</div>${payload}</div>`;
+  modal.innerHTML = `<div class="v4-production-staging-dialog" role="dialog" aria-modal="true" aria-labelledby="productionStagingTitle"><div class="v4-production-staging-head"><div><h2 id="productionStagingTitle">Заказ → производство</h2><p>Передайте заказ в производство после согласования макета.</p></div><button type="button" data-production-staging-close>Закрыть</button></div><div class="v4-production-staging-note ${stateClass(result.state)}"><b>${esc(stateLabel(result.state))}</b><br>${esc(operationalProductionAvailable(V4_CONFIG.supabaseUrl) && result.state === 'draft_ready' ? 'Задание готово к отправке в производство.' : result.message)}</div>${feedbackHtml(feedback)}${order}${warnings}<div class="v4-production-staging-actions">${action}</div>${payload}</div>`;
 }
 
 function renderError(modal, error) {
-  modal.innerHTML = `<div class="v4-production-staging-dialog" role="dialog" aria-modal="true" aria-labelledby="productionStagingTitle"><div class="v4-production-staging-head"><div><h2 id="productionStagingTitle">Заказ → производство</h2><p>Не удалось подготовить staging preview</p></div><button type="button" data-production-staging-close>Закрыть</button></div><div class="v4-production-staging-note is-danger">${esc(friendlyError(error))}</div></div>`;
+  modal.innerHTML = `<div class="v4-production-staging-dialog" role="dialog" aria-modal="true" aria-labelledby="productionStagingTitle"><div class="v4-production-staging-head"><div><h2 id="productionStagingTitle">Заказ → производство</h2><p>Не удалось подготовить задание</p></div><button type="button" data-production-staging-close>Закрыть</button></div><div class="v4-production-staging-note is-danger">${esc(friendlyError(error))}</div></div>`;
 }
 
 async function fetchOrder(orderId) {
@@ -135,7 +137,7 @@ async function openPreview(orderId) {
   if (!orderId || busy || !requireV4Action(CRM_V4_ACTIONS.PRODUCTION_READ)) return;
   busy = true;
   const modal = modalHost();
-  modal.innerHTML = '<div class="v4-production-staging-dialog"><div class="v4-production-staging-empty">Читаю безопасную проекцию заказа из staging…</div></div>';
+  modal.innerHTML = '<div class="v4-production-staging-dialog"><div class="v4-production-staging-empty">Загружаю заказ…</div></div>';
   try {
     const order = await fetchOrder(orderId);
     const designTasks = await fetchDesignTasks(order.id);
@@ -161,6 +163,7 @@ async function verifyByReplay(context) {
   const verification = await invokeStagingProductionJob({
     client: supabaseClient,
     supabaseUrl: V4_CONFIG.supabaseUrl,
+    productionEnabled: OPERATIONAL_PRODUCTION_ENABLED,
     canWrite: canPerformV4Action(CRM_V4_ACTIONS.PRODUCTION_WRITE),
     draft: context.result.draft,
     expectedUpdatedAt: context.result.order.updatedAt
@@ -178,6 +181,7 @@ async function createStagingJob() {
   const response = await invokeStagingProductionJob({
     client: supabaseClient,
     supabaseUrl: V4_CONFIG.supabaseUrl,
+    productionEnabled: OPERATIONAL_PRODUCTION_ENABLED,
     canWrite: canPerformV4Action(CRM_V4_ACTIONS.PRODUCTION_WRITE),
     draft: currentContext.result.draft,
     expectedUpdatedAt: currentContext.result.order.updatedAt,
@@ -198,7 +202,7 @@ function decorateOrderCard(orderId) {
   button.type = 'button';
   button.className = 'v4-production-staging-entry';
   button.dataset.productionStagingOrder = orderId;
-  button.textContent = 'Передать в производство (staging)';
+  button.textContent = 'Передать в производство';
   actions.appendChild(button);
   section.appendChild(actions);
 }
@@ -229,7 +233,7 @@ function boot() {
   document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeModal(); });
 }
 
-if (isStagingProductionEnvironment(V4_CONFIG.supabaseUrl) && !window.LeaderV4ProductionJobStagingPreviewV1Booted) {
+if ((isStagingProductionEnvironment(V4_CONFIG.supabaseUrl) || operationalProductionAvailable(V4_CONFIG.supabaseUrl)) && !window.LeaderV4ProductionJobStagingPreviewV1Booted) {
   window.LeaderV4ProductionJobStagingPreviewV1Booted = true;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();

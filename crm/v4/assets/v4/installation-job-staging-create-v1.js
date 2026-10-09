@@ -1,3 +1,4 @@
+import { operationalProductionAvailable } from './operational-production-gate-v1.js';
 import { supabaseClient } from './supabase-client.js';
 import { V4_CONFIG } from './config.js';
 import { friendlyError } from './api.js';
@@ -10,7 +11,7 @@ function esc(value) { return String(value ?? '').replace(/[&<>\"]/g, (m) => ({ '
 function close() { document.getElementById(MODAL_ID)?.remove(); busy = false; }
 async function load(orderId, productionId) {
   const [orderResponse, productionResponse] = await Promise.all([
-    supabaseClient.from('leader_orders').select('id,project_name,updated_at').eq('id', orderId).single(),
+    supabaseClient.from('leader_orders').select('id,project_name,installation_address,installation_scheduled_at,installer_name,updated_at').eq('id', orderId).single(),
     supabaseClient.from('leader_production_jobs').select('id,order_id,title,production_status,updated_at').eq('id', productionId).single()
   ]);
   if (orderResponse.error || productionResponse.error) throw orderResponse.error || productionResponse.error;
@@ -27,7 +28,10 @@ async function open(orderId, productionId) {
     const bundle = await load(orderId, productionId);
     modal.dataset.order = JSON.stringify(bundle.order);
     modal.dataset.production = JSON.stringify(bundle.production);
-    modal.innerHTML = `<div class="v4-install-card"><div class="v4-install-head"><div><h2>Создать монтаж в staging</h2><p>${esc(bundle.order.project_name || 'Synthetic order')}</p></div><button type="button" data-installation-staging-close>Закрыть</button></div><div class="v4-install-empty">Монтаж создаётся только из готового производства. Повтор команды не создаёт дубль.</div><div class="v4-install-actions"><button type="button" class="v4-primary" data-installation-staging-confirm>Создать монтаж</button></div></div>`;
+    const stagingFixture = isStagingInstallationEnvironment(V4_CONFIG.supabaseUrl);
+    const name = bundle.order.project_name || 'заказ';
+    const schedule = stagingFixture ? new Date(Date.now()+86400000).toISOString().slice(0,16) : '';
+    modal.innerHTML = `<div class="v4-install-card"><div class="v4-install-head"><div><h2>Создать монтаж</h2><p>${esc(bundle.order.project_name || 'Заказ')}</p></div><button type="button" data-installation-staging-close>Закрыть</button></div><div class="v4-install-empty">Монтаж создаётся только из готового производства. Повтор команды не создаёт дубль.</div><div class="v4-install-form" style="display:grid;gap:12px;margin:16px 0"><label>Название задания<input id="installationCreateTitle" value="${esc(`Монтаж ${name}`)}" maxlength="400"></label><label>Адрес монтажа<input id="installationCreateAddress" value="${esc(bundle.order.installation_address || (stagingFixture ? `Synthetic address ${name}` : ''))}" maxlength="800" required></label><label>Дата и время<input id="installationCreateSchedule" type="datetime-local" value="${esc(schedule)}" required></label><label>Исполнитель<input id="installationCreateInstaller" value="${esc(bundle.order.installer_name || (stagingFixture ? `Synthetic installer ${name}` : ''))}" maxlength="200"></label><label>Задание<textarea id="installationCreateTask" maxlength="8000">${esc(stagingFixture ? `Synthetic installation ${name}` : '')}</textarea></label></div><div class="v4-install-actions"><button type="button" class="v4-primary" data-installation-staging-confirm>Создать монтаж</button></div></div>`;
   } catch (error) {
     modal.innerHTML = `<div class="v4-install-card"><div class="v4-install-head"><h2>Монтаж</h2><button type="button" data-installation-staging-close>Закрыть</button></div><div class="v4-install-empty">${esc(friendlyError(error))}</div></div>`;
   }
@@ -40,8 +44,14 @@ async function create() {
   if (!order?.id || !production?.id) return;
   busy = true;
   try {
-    const marker = String(order.project_name || `synthetic-${order.id}`).slice(0, 180);
-    const scheduled = new Date(Date.now() + 86400000).toISOString();
+    const value = id => String(modal.querySelector('#'+id)?.value || '').trim();
+    const address = value('installationCreateAddress');
+    const scheduledInput = value('installationCreateSchedule');
+    if (!address) throw new Error('Укажите адрес монтажа');
+    if (!scheduledInput || !Number.isFinite(Date.parse(scheduledInput))) throw new Error('Укажите дату и время монтажа');
+    const scheduled = new Date(scheduledInput).toISOString();
+    const title = value('installationCreateTitle');
+    if (!title) throw new Error('Укажите название задания');
     const command = {
       action: 'installation_job.create_from_order',
       request_id: globalThis.crypto.randomUUID(),
@@ -51,15 +61,13 @@ async function create() {
         production_job_id: production.id,
         idempotency_key: `installation_job.create_from_order:${order.id}:v1`,
         job: {
-          title: `Монтаж ${marker}`,
+          title,
           priority: 'Обычный',
-          installer_name: `Synthetic installer ${marker}`,
+          installer_name: value('installationCreateInstaller') || null,
           installer_phone: null,
-          address: `Synthetic address ${marker}`,
+          address,
           scheduled_at: scheduled,
-          installer_cost: 0,
-          client_price: 0,
-          technical_task: `Synthetic installation ${marker}`,
+          technical_task: value('installationCreateTask') || null,
           tools_required: null
         }
       }
@@ -89,7 +97,7 @@ function boot() {
     if (event.target.closest?.('[data-installation-staging-confirm]')) { event.preventDefault(); create(); }
   }, true);
 }
-if (isStagingInstallationEnvironment(V4_CONFIG.supabaseUrl) && !window.LeaderV4InstallationStagingCreateV1Booted) {
+if ((isStagingInstallationEnvironment(V4_CONFIG.supabaseUrl) || operationalProductionAvailable(V4_CONFIG.supabaseUrl)) && !window.LeaderV4InstallationStagingCreateV1Booted) {
   window.LeaderV4InstallationStagingCreateV1Booted = true;
   boot();
 }
