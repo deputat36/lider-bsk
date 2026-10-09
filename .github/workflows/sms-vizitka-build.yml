@@ -116,6 +116,7 @@ jobs:
 
           python android/sms-card-v051/v051_core_patch.py
           python android/sms-card-v051/v051_bulk_patch.py
+          cp android/sms-card-v051/README.md android/build-src/sms-card-app/README.md
 
           grep -q 'versionName = "0.5.1"' android/build-src/sms-card-app/app/build.gradle.kts
           grep -q 'RecipientPolicyStore' android/build-src/sms-card-app/app/src/main/java/ru/etagi/borisoglebsk/smscard/HistoryStore.java
