@@ -1,5 +1,20 @@
 # Статус проекта РА «Лидер»
 
+## 2026-10-09 — завершение worker proof и стабильность client CI
+
+PR #572 merged `988cd12f`; Pages [37888132692](https://github.com/deputat36/lider-bsk/actions/runs/37888132692) SUCCESS.
+На PR head: 36 success + 1 skipped. После merge client SQL test выявил
+ложное срабатывание: поиск '%900%' в audit JSON совпадает со случайным request UUID.
+Проверка заменена строгим контрактом metadata: только request_id UUID и массив
+имён изменённых полей; контактные значения и лишние поля запрещены.
+Фиксированные request IDs с 900 воспроизводят прежний дефект детерминированно.
+Рабочая логика CRM и Supabase этим исправлением не изменяются.
+
+Read-only production preflight 09.10: 2 orders, 1 payment, 0 expenses/design/
+production/installation; production/installation RPC отсутствуют, широкие browser
+DML/TRUNCATE grants остаются. Следующий P0 — scoped operational cutover с backup,
+rollback, staging proof и frontend gates после backend. Реальные строки не менялись.
+
 
 ## 2026-10-04 — authenticated worker mutations, PR #572
 
@@ -19,7 +34,7 @@
   backend; production direct DML/TRUNCATE остаётся незакрытым.
 - Подробности и rollback: [worker runbook](CRM_WORKER_AUTHENTICATED_MUTATIONS_2026-10-04.md).
 
-Дата обновления: 2026-10-04.
+Дата обновления: 2026-10-09.
 
 ## Плановые цены operational команд — 04.10
 

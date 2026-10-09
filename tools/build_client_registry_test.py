@@ -21,7 +21,7 @@ SET LOCAL ROLE service_role;
 DO $tests$
 DECLARE a uuid:='90000000-0000-4000-8000-000000000502';req jsonb;r jsonb;c uuid;revision timestamptz;role_name text;
 BEGIN
- req:=jsonb_build_object('actor_id',a,'request',jsonb_build_object('action','client.create','request_id',gen_random_uuid(),'payload',jsonb_build_object('name','Synthetic client','phone','8 (900) 000-05-01','source','Test','comment','No personal data')));
+ req:=jsonb_build_object('actor_id',a,'request',jsonb_build_object('action','client.create','request_id','90000000-0000-4000-8000-000000000601'::uuid,'payload',jsonb_build_object('name','Synthetic client','phone','8 (900) 000-05-01','source','Test','comment','No personal data')));
  r:=public.leader_client_registry_rpc(req);
  IF r->>'ok' IS DISTINCT FROM 'true' THEN RAISE EXCEPTION 'create:%',r;END IF;
  c:=(r#>>'{client,id}')::uuid;revision:=(r#>>'{client,updated_at}')::timestamptz;
@@ -39,14 +39,25 @@ BEGIN
  IF r->>'total' IS DISTINCT FROM '0' THEN RAISE EXCEPTION 'wildcard_search:%',r;END IF;
  INSERT INTO public.leader_leads(converted_client_id,service,status)VALUES(c,'Test service','Новая');
  UPDATE public.leader_orders SET client_id=c,project_name='Test order',status='Новый';
- req:=jsonb_build_object('actor_id',a,'request',jsonb_build_object('action','client.update','request_id',gen_random_uuid(),'expected_updated_at',revision,'payload',jsonb_build_object('client_id',c,'name','Updated client','phone','+7 900 000 05 01','comment','Edited')));
+ req:=jsonb_build_object('actor_id',a,'request',jsonb_build_object('action','client.update','request_id','90000000-0000-4000-8000-000000000602'::uuid,'expected_updated_at',revision,'payload',jsonb_build_object('client_id',c,'name','Updated client','phone','+7 900 000 05 01','comment','Edited')));
  r:=public.leader_client_registry_rpc(req);
  IF r->>'ok' IS DISTINCT FROM 'true' THEN RAISE EXCEPTION 'update:%',r;END IF;
  r:=public.leader_client_registry_rpc(jsonb_set(req,'{request,request_id}',to_jsonb(gen_random_uuid())));
  IF r#>>'{error,code}' IS DISTINCT FROM 'source_changed' THEN RAISE EXCEPTION 'stale:%',r;END IF;
  r:=public.leader_client_registry_rpc(jsonb_build_object('actor_id',a,'request',jsonb_build_object('action','client.get','payload',jsonb_build_object('client_id',c))));
  IF r#>>'{links,lead_count}' IS DISTINCT FROM '1' OR r#>>'{links,order_count}' IS DISTINCT FROM '1' OR jsonb_array_length(r->'history')<>2 OR r#>'{client,owner_id}' IS NOT NULL THEN RAISE EXCEPTION 'links_history:%',r;END IF;
- IF EXISTS(SELECT 1 FROM public.leader_activity_log WHERE data::text LIKE '%Edited%' OR data::text LIKE '%900%') THEN RAISE EXCEPTION 'audit_copied_contact_data';END IF;
+ -- Check metadata structure; request UUIDs may legitimately contain 900.
+ -- Fixed request IDs above reproduce the old false positive deterministically.
+ IF EXISTS(
+  SELECT 1 FROM public.leader_activity_log
+  WHERE jsonb_typeof(data) IS DISTINCT FROM 'object'
+     OR NOT (data ?& ARRAY['request_id','fields'])
+     OR data - ARRAY['request_id','fields'] <> '{}'::jsonb
+     OR jsonb_typeof(data->'request_id') IS DISTINCT FROM 'string'
+     OR (data->>'request_id') !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+     OR jsonb_typeof(data->'fields') IS DISTINCT FROM 'array'
+     OR NOT (data->'fields' <@ '["name","phone","source","address","comment"]'::jsonb)
+ ) THEN RAISE EXCEPTION 'audit_copied_contact_data';END IF;
  FOREACH role_name IN ARRAY ARRAY['accountant','designer','installer','contractor'] LOOP
   UPDATE public.leader_user_profiles SET role=role_name WHERE user_id=a;
   r:=public.leader_client_registry_rpc(req);
