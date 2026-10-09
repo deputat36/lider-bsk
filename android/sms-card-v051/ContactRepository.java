@@ -52,7 +52,7 @@ public final class ContactRepository {
                     byPhone.put(normalized, new Item(name.trim(), normalized, mobile));
                 }
             }
-        } catch (RuntimeException | SecurityException ignored) {
+        } catch (RuntimeException ignored) {
             return new ArrayList<>(byPhone.values());
         } finally {
             if (cursor != null) cursor.close();
