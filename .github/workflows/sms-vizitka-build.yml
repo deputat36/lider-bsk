@@ -2,7 +2,7 @@ name: Build SMS Vizitka Android
 
 on:
   push:
-    branches: ["sms-vizitka-build"]
+    branches: ["sms-vizitka-v051-staging"]
   workflow_dispatch:
 
 jobs:
@@ -97,17 +97,38 @@ jobs:
           cp android/sms-card-v050/README.md android/build-src/sms-card-app/README.md
           python android/sms-card-v050/v050_patch.py
 
-          grep -q 'versionName = "0.5.0"' android/build-src/sms-card-app/app/build.gradle.kts
-          grep -q 'Рассылки' android/build-src/sms-card-app/app/src/main/java/ru/etagi/borisoglebsk/smscard/MainActivity.java
-          grep -q 'BulkCampaignActivity' android/build-src/sms-card-app/app/src/main/AndroidManifest.xml
+          cp android/sms-card-v051/PhoneNormalizer.java android/build-src/sms-card-app/app/src/main/java/ru/etagi/borisoglebsk/smscard/PhoneNormalizer.java
+          cp android/sms-card-v051/ContactRepository.java android/build-src/sms-card-app/app/src/main/java/ru/etagi/borisoglebsk/smscard/ContactRepository.java
+          cp android/sms-card-v051/BulkCampaignStore.java android/build-src/sms-card-app/app/src/main/java/ru/etagi/borisoglebsk/smscard/BulkCampaignStore.java
+          cp android/sms-card-v051/CallSessionStore.java android/build-src/sms-card-app/app/src/main/java/ru/etagi/borisoglebsk/smscard/CallSessionStore.java
+          cp android/sms-card-v051/DeviceDiagnostics.java android/build-src/sms-card-app/app/src/main/java/ru/etagi/borisoglebsk/smscard/DeviceDiagnostics.java
+          cp android/sms-card-v051/DismissNotificationReceiver.java android/build-src/sms-card-app/app/src/main/java/ru/etagi/borisoglebsk/smscard/DismissNotificationReceiver.java
+          cp android/sms-card-v051/NotificationHelper.java android/build-src/sms-card-app/app/src/main/java/ru/etagi/borisoglebsk/smscard/NotificationHelper.java
+          cp android/sms-card-v051/RecipientPolicyStore.java android/build-src/sms-card-app/app/src/main/java/ru/etagi/borisoglebsk/smscard/RecipientPolicyStore.java
+
+          mkdir -p android/build-src/sms-card-app/app/src/main/res/xml
+          cp android/sms-card-v051/backup_rules.xml android/build-src/sms-card-app/app/src/main/res/xml/backup_rules.xml
+          cp android/sms-card-v051/data_extraction_rules.xml android/build-src/sms-card-app/app/src/main/res/xml/data_extraction_rules.xml
+
+          mkdir -p android/build-src/sms-card-app/app/src/test/java/ru/etagi/borisoglebsk/smscard
+          cp android/sms-card-v051/PhoneNormalizerTest.java android/build-src/sms-card-app/app/src/test/java/ru/etagi/borisoglebsk/smscard/PhoneNormalizerTest.java
+          cp android/sms-card-v051/CallSessionStoreTest.java android/build-src/sms-card-app/app/src/test/java/ru/etagi/borisoglebsk/smscard/CallSessionStoreTest.java
+
+          python android/sms-card-v051/v051_core_patch.py
+          python android/sms-card-v051/v051_bulk_patch.py
+
+          grep -q 'versionName = "0.5.1"' android/build-src/sms-card-app/app/build.gradle.kts
+          grep -q 'RecipientPolicyStore' android/build-src/sms-card-app/app/src/main/java/ru/etagi/borisoglebsk/smscard/HistoryStore.java
+          grep -q 'android:allowBackup="false"' android/build-src/sms-card-app/app/src/main/AndroidManifest.xml
+          grep -q 'after_call_cards_popup_v3' android/build-src/sms-card-app/app/src/main/java/ru/etagi/borisoglebsk/smscard/NotificationHelper.java
 
       - name: Package exact source
         shell: bash
         run: |
           cd android/build-src
-          zip -qr ../../sms-card-etagi-v0.5.0-source.zip sms-card-app
+          zip -qr ../../sms-card-etagi-v0.5.1-source.zip sms-card-app
           cd ../..
-          sha256sum sms-card-etagi-v0.5.0-source.zip
+          sha256sum sms-card-etagi-v0.5.1-source.zip
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -120,27 +141,30 @@ jobs:
         with:
           gradle-version: "9.6.0"
 
-      - name: Build APKs
+      - name: Test, lint and build APKs
         working-directory: android/build-src/sms-card-app
-        run: gradle :app:assembleDebug :app:assembleRelease --stacktrace
+        run: |
+          gradle :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleRelease --stacktrace
+          echo "===== LINT TEXT REPORT ====="
+          cat app/build/reports/lint-results-debug.txt || true
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: sms-vizitka-v0.5.0-debug
+          name: sms-vizitka-v0.5.1-debug
           path: android/build-src/sms-card-app/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
       - name: Upload unsigned release APK
         uses: actions/upload-artifact@v4
         with:
-          name: sms-vizitka-v0.5.0-release-unsigned
+          name: sms-vizitka-v0.5.1-release-unsigned
           path: android/build-src/sms-card-app/app/build/outputs/apk/release/app-release-unsigned.apk
           if-no-files-found: error
 
       - name: Upload exact source
         uses: actions/upload-artifact@v4
         with:
-          name: sms-vizitka-v0.5.0-source
-          path: sms-card-etagi-v0.5.0-source.zip
+          name: sms-vizitka-v0.5.1-source
+          path: sms-card-etagi-v0.5.1-source.zip
           if-no-files-found: error
