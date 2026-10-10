@@ -8,3 +8,6 @@
 .leader-service-brief h4{margin:0 0 8px;font-size:17px}
 .leader-service-brief p{margin:0 0 16px;font-size:14px}
 .leader-service-brief>div+div{margin-top:12px}
+.leader-lead-widget .leader-service-brief h4,.leader-lead-widget .leader-service-brief p,.leader-lead-widget .leader-service-brief label{color:#171717}
+html body .leader-lead-widget button.leader-lead-more{margin:14px 0 16px;background:#f8fafc;color:#171717;border-color:#d0d5dd;box-shadow:none}
+html body .leader-lead-widget button.leader-lead-more:hover{background:#f2f4f7}

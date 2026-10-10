@@ -87,6 +87,8 @@ try {
         await page.locator('[name="brief_0"]').fill('Не переносить в другую услугу');
         await page.locator('[name="service"]').selectOption(service.label);
         assert.equal(await page.locator('[name="brief_0"]').inputValue(), `Ответ ${service.id} 0`, 'Restore the selected service draft');
+        assert.notEqual(await page.locator('[data-leader-more]').evaluate(el=>getComputedStyle(el).backgroundColor), await page.locator('button[type="submit"]').evaluate(el=>getComputedStyle(el).backgroundColor), 'Separate optional details from submission');
+        await page.screenshot({path:`artifacts/public-lead/${service.id}-brief-${width}.png`,fullPage:true});
       }
       await page.locator('[name="phone"]').fill('+7 900 000-00-00');
       await page.locator('[name="message"]').fill('Synthetic task ' + service.id);
@@ -113,6 +115,12 @@ try {
       assert.equal(await page.locator('h1').count(),1);
       const photos=page.locator('main img');
       for (const photo of await photos.all()) { await photo.scrollIntoViewIfNeeded(); await photo.evaluate(el=>el.decode()); assert.ok(await photo.evaluate(el=>el.naturalWidth>0)); }
+      if (name === 'nashi-raboty.html') {
+        const layout=page.locator('.work-card[data-work-kind="layout"] img');
+        assert.equal(await layout.evaluate(el=>getComputedStyle(el).objectFit),'contain','Show the complete 2D layout');
+        assert.equal(await layout.evaluate(el=>{ const img=el.getBoundingClientRect(); const card=el.closest('.work-card').getBoundingClientRect(); return img.left>=card.left && img.right<=card.right; }),true,'Keep the image inside its card');
+      }
+      await page.evaluate(()=>window.scrollTo(0,0));
       await page.screenshot({path:`artifacts/public-lead/${name.replace('.html','')}-${width}.png`,fullPage:true});
     }
     await context.close();
