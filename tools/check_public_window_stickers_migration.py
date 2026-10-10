@@ -68,7 +68,7 @@ def main() -> None:
         '"@type":"Service"',
         'id="leader-lead-form" data-leader-lead-form',
         'data-service="Наклейки"',
-        'assets/public-lead-form.js?v=30',
+        'assets/public-lead-form.js?v=31',
         'номер обращения — его можно использовать для быстрой проверки',
         'privacy.html',
         'Ориентиры по цене',
@@ -79,7 +79,7 @@ def main() -> None:
 
     expected_stylesheets = [
         'assets/public-landing.css?v=1',
-        'assets/public-lead-form.css?v=27',
+        'assets/public-lead-form.css?v=28',
         'assets/public-entry-detail.css?v=1',
     ]
     if parser.stylesheets[:3] != expected_stylesheets:

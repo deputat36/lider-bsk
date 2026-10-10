@@ -62,13 +62,13 @@ def main() -> None:
         'Они не выдаются за реальные работы или отзывы клиентов.',
         'Фотографии конкретных выполненных заказов публикуются только после отбора материалов и согласования с заказчиками.',
         'data-leader-lead-form',
-        'assets/public-lead-form.js?v=30',
+        'assets/public-lead-form.js?v=31',
         'Получите номер',
     ):
         require(examples, marker, EXAMPLES)
 
     expected_stylesheets = [
-        'assets/public-lead-form.css?v=27',
+        'assets/public-lead-form.css?v=28',
         'assets/public-examples.css?v=2',
         'assets/public-product-system.css?v=1',
     ]

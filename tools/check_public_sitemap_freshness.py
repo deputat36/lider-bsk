@@ -9,6 +9,10 @@ ROOT = Path(__file__).resolve().parents[1]
 SITEMAP = ROOT / 'sitemap.xml'
 ORIGIN = 'https://www.lider-bsk.ru/'
 PRIORITY_LASTMOD = date(2026, 7, 18)
+UPDATED_SERVICE_LASTMOD = {
+    'pechat-bannerov-borisoglebsk.html': date(2026, 10, 10),
+    'vyveski-borisoglebsk.html': date(2026, 10, 10),
+}
 PRIORITY_PAGES = {
     'bannery-borisoglebsk.html',
     'pechat-bannerov-borisoglebsk.html',
@@ -46,9 +50,10 @@ def main() -> None:
         if not (ROOT / page).is_file():
             errors.append(f'Missing priority public page: {page}')
         actual = entries.get(page)
-        if actual != PRIORITY_LASTMOD:
+        expected = UPDATED_SERVICE_LASTMOD.get(page, PRIORITY_LASTMOD)
+        if actual != expected:
             errors.append(
-                f'{page}: expected truthful lastmod {PRIORITY_LASTMOD}, found {actual}'
+                f'{page}: expected truthful lastmod {expected}, found {actual}'
             )
 
     if errors:
@@ -57,7 +62,7 @@ def main() -> None:
 
     print(
         f'Public sitemap freshness is valid: {len(entries)} canonical URLs and '
-        f'{len(PRIORITY_PAGES)} priority pages updated on {PRIORITY_LASTMOD}.'
+        f'{len(PRIORITY_PAGES)} priority pages have their verified modification dates.'
     )
 
 

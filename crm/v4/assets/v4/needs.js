@@ -14,6 +14,7 @@ import {
   needFormPresentation
 } from './need-workspace-model-v1.js';
 import { needCalculationGateDecision } from './need-calculation-readiness-v1.js';
+import { creativeNeedDraft } from './creative-need-draft-v1.js';
 
 const NEED_FIELDS = 'id,lead_id,client_id,need_type,title,description,structured_data,need_design,need_installation,design_reason,installation_reason,deadline_text,deadline_date,files,status,completeness_score,missing_fields,created_by,updated_by,created_at,updated_at';
 const NEED_ARCHIVE_DEPENDENCY_FIELDS = 'id,need_id,status,commercial_offer_id,order_id,is_current_revision,created_at';
@@ -392,7 +393,7 @@ function openNeedForm(mode, need = null) {
     mode,
     editingId: mode === 'edit' ? need?.id || null : null,
     draftId: mode === 'edit' ? null : createUuid(),
-    seed: need ? needDraftFromRecord(need) : null,
+    seed: need ? needDraftFromRecord(need) : mode === 'create' && activeNeeds(v4State.leadNeeds || []).length === 0 ? creativeNeedDraft(v4State.currentLead || {}, v4State.route.leadId) : null,
     copySourceFingerprint: mode === 'copy' && need ? needFingerprint(need) : null
   };
   renderNeeds();

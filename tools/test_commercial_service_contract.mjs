@@ -37,9 +37,9 @@ assert.ok(!firstContactServiceProfile('CRM и автоматизация').quest
 for (const page of fs.readdirSync('.').filter(p => p.endsWith('.html'))) {
   const html = fs.readFileSync(page, 'utf8');
   if (html.includes('src="assets/public-lead-form.js')) {
-    assert.ok(html.includes('src="assets/public-lead-form.js?v=30"'), page);
-    assert.ok(html.indexOf('src="assets/leader-service-catalog.js?v=1"') >= 0, page);
-    assert.ok(html.indexOf('src="assets/leader-service-catalog.js?v=1"') < html.indexOf('src="assets/public-lead-form.js'), page);
+    assert.ok(html.includes('src="assets/public-lead-form.js?v=31"'), page);
+    assert.ok(html.indexOf('src="assets/leader-service-catalog.js?v=2"') >= 0, page);
+    assert.ok(html.indexOf('src="assets/leader-service-catalog.js?v=2"') < html.indexOf('src="assets/public-lead-form.js'), page);
   }
 }
 console.log('PASS: shared site/form/CRM/analytics catalog, all page mappings, explicit demo labels and service-specific first contact.');

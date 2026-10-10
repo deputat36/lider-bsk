@@ -60,6 +60,14 @@ def main() -> None:
     ):
         require(core_bust, marker, CORE_BUST)
 
+    for marker in (
+        'Current #576 integration',
+        '64 public form pages',
+        'assets/public-lead-form.js?v=31',
+        'assets/leader-service-catalog.js?v=2',
+    ):
+        require(core_bust, marker, CORE_BUST)
+
     for source, text in ((CACHE_BUST, cache_bust), (COVERAGE, coverage), (CORE_BUST, core_bust)):
         for marker in (
             'Remaining blocked pages',
@@ -72,7 +80,7 @@ def main() -> None:
 
     for marker in (
         'MIN_VERSION = 5',
-        'CORE_VERSION = 30',
+        'CORE_VERSION = 31',
         "'index.html'",
         "'request.html'",
         "'uslugi.html'",

@@ -75,7 +75,7 @@ def main() -> None:
             raise SystemExit(f'Stale request marker remains: {marker}')
 
     expected_stylesheets = [
-        'assets/public-lead-form.css?v=27',
+        'assets/public-lead-form.css?v=28',
         'assets/public-request.css?v=1',
         'assets/public-product-system.css?v=1',
     ]
@@ -86,8 +86,8 @@ def main() -> None:
 
     expected_scripts = [
         'assets/public-lead-reference-v1.js?v=1',
-        'assets/leader-service-catalog.js?v=1',
-        'assets/public-lead-form.js?v=30',
+        'assets/leader-service-catalog.js?v=2',
+        'assets/public-lead-form.js?v=31',
     ]
     if parser.scripts != expected_scripts:
         raise SystemExit(f'Unexpected request script order: {parser.scripts}')

@@ -53,6 +53,18 @@ assert.equal(direct.sent[0].page_path, '/nakleyki-plotternaya-rezka-borisoglebsk
 assert.ok(direct.sent[0].message.includes('Услуга: Наклейки'));
 assert.ok(direct.sent[0].submitted_at);
 const changed = page('?service=Баннер&utm_source=vk&utm_campaign=opening');
+const creative = page();
+creative.fields.service = '3D-визуализация';
+creative.fields.message = 'x'.repeat(2000);
+for (let i=0;i<4;i++) creative.fields['brief_'+i] = `Параметр ${i} `+'z'.repeat(150);
+creative.fail(true);
+await creative.submit();
+creative.fail(false);
+await creative.submit();
+assert.equal(creative.sent[0].request_id,creative.sent[1].request_id,'Creative brief retry reuses the same request');
+assert.equal(creative.sent[1].service_id,'visualization-3d');
+assert.ok(creative.sent[1].message.length<=3000);
+for (let i=0;i<4;i++) assert.ok(creative.sent[1].message.includes(`Параметр ${i} `+'z'.repeat(150)),'Keep all brief answers within intake message budget');
 await changed.submit();
 assert.equal(changed.sent[0].service, 'Наклейки', 'User selection must win over the original link preset');
 assert.equal(changed.sent[0].utm_source, 'vk');

@@ -5,6 +5,8 @@ Historical audit documents may keep their original v8/v9 wording. This checker
 covers only the documents that operators should treat as current instructions.
 """
 from pathlib import Path
+from datetime import date
+import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -70,8 +72,13 @@ def main() -> int:
 
     # DECISIONS is also project-wide: its top-level date advances whenever a
     # new ADR is added, while the public-site ADR markers remain stable.
+    updated = re.search(r"^Дата обновления: (\d{4}-\d{2}-\d{2})\.$", decisions, re.M)
+    try:
+        if updated is None or date.fromisoformat(updated[1]) < date(2026, 10, 2):
+            errors.append("docs/DECISIONS.md: update date must be valid and at least 2026-10-02")
+    except ValueError:
+        errors.append("docs/DECISIONS.md: update date must be a valid calendar date")
     for marker in (
-        "Дата обновления: 2026-10-02.",
         "ADR-012. Публичный сайт не раскрывает внутреннюю терминологию и неподтверждённый NAP",
         "ADR-013. Browser E2E публичной заявки является approval-gated production-действием",
         "leader-public-lead v10",

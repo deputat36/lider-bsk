@@ -37,9 +37,10 @@ def main() -> None:
 
     # Preserve the original cascade: form CSS was before the homepage inline CSS.
     expected_stylesheets = [
-        'assets/public-lead-form.css?v=27',
+        'assets/public-lead-form.css?v=28',
         'assets/public-homepage.css?v=5',
         'assets/public-commercial-services.css?v=1',
+        'assets/public-creative-services.css?v=1',
         'assets/public-product-system.css?v=1',
     ]
     if parser.stylesheets != expected_stylesheets:
@@ -48,8 +49,8 @@ def main() -> None:
         raise SystemExit(f'Homepage must not contain inline style blocks, found {parser.style_count}')
 
     expected_scripts = [
-        'assets/leader-service-catalog.js?v=1',
-        'assets/public-lead-form.js?v=30',
+        'assets/leader-service-catalog.js?v=2',
+        'assets/public-lead-form.js?v=31',
         'assets/packages-link.js?v=2',
     ]
     if parser.scripts != expected_scripts:

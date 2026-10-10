@@ -68,4 +68,6 @@ Existing page-specific contracts were updated for the new marker:
 The #556 correction used `assets/public-lead-form.js?v=29` for the service-selection and campaign-navigation correction (#556). The v23 entry above records the completed July migration. Production Supabase was not changed.
 
 
-Current #555 integration: 58 public form pages load `assets/public-lead-form.js?v=30` after `assets/leader-service-catalog.js?v=1`. The new catalog supplies the same service names to forms and CRM; July and #556 records above are historical. Production Supabase was not changed.
+#555 integration: 58 public form pages loaded `assets/public-lead-form.js?v=30` after `assets/leader-service-catalog.js?v=1`. The catalog supplied the same service names to forms and CRM; this record and the July/#556 records above are historical. Production Supabase was not changed.
+
+Current #576 integration (2026-10-10): 64 public form pages load `assets/public-lead-form.js?v=31` after `assets/leader-service-catalog.js?v=2`; form CSS is `v=28`. Four creative services and optional service-specific briefs use the same catalog in the site and CRM. The five core pages and all active form pages use v31. Production Supabase was not changed.

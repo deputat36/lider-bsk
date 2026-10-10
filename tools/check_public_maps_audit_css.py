@@ -31,9 +31,9 @@ if re.search(
 ):
     raise SystemExit('Executable inline JavaScript is not allowed on maps audit page')
 
-form_css = 'assets/public-lead-form.css?v=27'
+form_css = 'assets/public-lead-form.css?v=28'
 page_css = 'assets/public-maps-audit.css?v=1'
-form_js = 'assets/public-lead-form.js?v=30'
+form_js = 'assets/public-lead-form.js?v=31'
 for marker in (form_css, page_css, form_js):
     if html.count(marker) != 1:
         raise SystemExit(f'Expected exactly one {marker}')
