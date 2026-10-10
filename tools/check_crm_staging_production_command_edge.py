@@ -193,7 +193,8 @@ require('ui', [
     'isStagingProductionEnvironment(V4_CONFIG.supabaseUrl)',
     "supabaseClient.functions.invoke('leader-crm-production'",
     "action: 'production_job.update'",
-    'expected_updated_at: old.updated_at',
+    'expectedUpdatedAt: old.updated_at',
+    'commandRetry.prepare({',
     'idempotent_replay',
 ])
 forbid('ui', ['leader_update_production_job_rpc'])
