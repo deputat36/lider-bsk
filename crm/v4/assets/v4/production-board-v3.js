@@ -143,7 +143,7 @@ function jobActions(job, kind) {
   const jobId = esc(job.id);
   const orderButton = job.order_id && canOpenV4Tab('orders') ? `<button type="button" data-open-order="${esc(job.order_id)}">Открыть заказ</button>` : '';
   if (kind === 'production') {
-    const install = canOpenV4ProductionKind('installation') && installationReady(job.production_status) && !state.installation.some((item) => item.order_id === job.order_id)
+    const install = canOpenV4ProductionKind('installation') && canOpenV4Tab('orders') && canPerformV4Action(CRM_V4_ACTIONS.INSTALLATION_WRITE) && installationReady(job.production_status) && !state.installation.some((item) => item.order_id === job.order_id)
       ? `<button type="button" data-installation-staging-create="${jobId}" data-installation-order="${esc(job.order_id)}">Создать монтаж</button>` : '';
     return `<div class="v4-prod-light-card-actions"><button type="button" class="is-primary" data-open-production-job-card="${jobId}">Карточка</button><button type="button" data-print-production-job="${jobId}">Печать</button>${install}${orderButton}</div>`;
   }
