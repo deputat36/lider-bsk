@@ -9,8 +9,8 @@ ROOT = Path(__file__).resolve().parents[1]
 PAGE = ROOT / "reklama-dlya-biznesa.html"
 CSS = ROOT / "assets" / "public-business-advertising.css"
 CSS_LINK = '<link rel="stylesheet" href="assets/public-business-advertising.css?v=1">'
-FORM_CSS_LINK = '<link rel="stylesheet" href="assets/public-lead-form.css?v=27">'
-FORM_SCRIPT = '<script src="assets/public-lead-form.js?v=30"></script>'
+FORM_CSS_LINK = '<link rel="stylesheet" href="assets/public-lead-form.css?v=28">'
+FORM_SCRIPT = '<script src="assets/public-lead-form.js?v=31"></script>'
 
 
 def main() -> None:

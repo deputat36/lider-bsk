@@ -32,7 +32,7 @@ for page in pages:
         assert 'alt="Лидер — рекламное агентство"' in brand, page.name
         assert not re.search(r'<(?:i|svg|strong)\b', brand), f'{page.name}: logo imitation'
     if 'assets/public-lead-form.css?' in text:
-        assert 'assets/public-lead-form.css?v=27' in text, f'{page.name}: stale shared form CSS'
+        assert 'assets/public-lead-form.css?v=28' in text, f'{page.name}: stale shared form CSS'
         styles = re.findall(r'<link[^>]+rel="stylesheet"[^>]+href="([^"]+)"', text)
         assert styles[-1] == 'assets/public-product-system.css?v=1', f'{page.name}: shared system must load last'
     assert 'logo-lider-light.svg' not in text, f'{page.name}: obsolete asset'

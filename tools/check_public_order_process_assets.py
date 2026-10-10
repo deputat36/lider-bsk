@@ -10,9 +10,9 @@ PAGE = ROOT / "kak-prohodit-zakaz.html"
 CSS = ROOT / "assets" / "public-order-process.css"
 JS = ROOT / "assets" / "public-order-process.js"
 LANDING_CSS = '<link rel="stylesheet" href="assets/public-landing.css?v=1">'
-FORM_CSS = '<link rel="stylesheet" href="assets/public-lead-form.css?v=27">'
+FORM_CSS = '<link rel="stylesheet" href="assets/public-lead-form.css?v=28">'
 PAGE_CSS = '<link rel="stylesheet" href="assets/public-order-process.css?v=1">'
-FORM_JS = '<script src="assets/public-lead-form.js?v=30"></script>'
+FORM_JS = '<script src="assets/public-lead-form.js?v=31"></script>'
 PAGE_JS = '<script src="assets/public-order-process.js?v=1"></script>'
 PRESET = 'Страница «Как проходит заказ». Нужна консультация и расчёт рекламной задачи.'
 

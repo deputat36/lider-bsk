@@ -104,8 +104,8 @@ PRIORITY_FORM_PAGES = {
 }
 
 FORM_SCRIPT_OVERRIDES = {
-    **{name: 'assets/public-lead-form.js?v=30' for name in PRIORITY_FORM_PAGES},
-    'outdoor-advertising-borisoglebsk.html': 'assets/public-lead-form.js?v=30',
+    **{name: 'assets/public-lead-form.js?v=31' for name in PRIORITY_FORM_PAGES},
+    'outdoor-advertising-borisoglebsk.html': 'assets/public-lead-form.js?v=31',
 }
 
 css = CSS.read_text(encoding='utf-8')
@@ -147,9 +147,9 @@ for page_name, expected in PAGES.items():
     ):
         raise SystemExit(f'{page_name}: executable inline script is not allowed')
 
-    form_css = 'assets/public-lead-form.css?v=27'
+    form_css = 'assets/public-lead-form.css?v=28'
     shared_css = expected['shared_css']
-    form_js = FORM_SCRIPT_OVERRIDES.get(page_name, 'assets/public-lead-form.js?v=30')
+    form_js = FORM_SCRIPT_OVERRIDES.get(page_name, 'assets/public-lead-form.js?v=31')
     for marker in (form_css, shared_css, form_js):
         if html.count(marker) != 1:
             raise SystemExit(f'{page_name}: expected exactly one {marker}')

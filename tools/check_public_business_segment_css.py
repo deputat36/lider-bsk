@@ -10,8 +10,8 @@ PAGES = {
         'canonical': 'https://www.lider-bsk.ru/reklama-dlya-magazina-borisoglebsk.html',
         'h1': 'Реклама для магазина в Борисоглебске',
         'cta': 'Рассчитать рекламу для магазина',
-        'form_css': 'assets/public-lead-form.css?v=27',
-        'form_js': 'assets/public-lead-form.js?v=30',
+        'form_css': 'assets/public-lead-form.css?v=28',
+        'form_js': 'assets/public-lead-form.js?v=31',
         'cards': 14,
     },
     'reklama-dlya-kafe-borisoglebsk.html': {
@@ -19,8 +19,8 @@ PAGES = {
         'canonical': 'https://www.lider-bsk.ru/reklama-dlya-kafe-borisoglebsk.html',
         'h1': 'Реклама для кафе, кофейни и доставки в Борисоглебске',
         'cta': 'Рассчитать рекламу для кафе или доставки',
-        'form_css': 'assets/public-lead-form.css?v=27',
-        'form_js': 'assets/public-lead-form.js?v=30',
+        'form_css': 'assets/public-lead-form.css?v=28',
+        'form_js': 'assets/public-lead-form.js?v=31',
         'cards': 14,
     },
     'reklama-dlya-salona-krasoty-borisoglebsk.html': {
@@ -28,8 +28,8 @@ PAGES = {
         'canonical': 'https://www.lider-bsk.ru/reklama-dlya-salona-krasoty-borisoglebsk.html',
         'h1': 'Реклама для салона красоты, студии и частного мастера',
         'cta': 'Рассчитать рекламу для салона или мастера',
-        'form_css': 'assets/public-lead-form.css?v=27',
-        'form_js': 'assets/public-lead-form.js?v=30',
+        'form_css': 'assets/public-lead-form.css?v=28',
+        'form_js': 'assets/public-lead-form.js?v=31',
         'cards': 17,
     },
     'reklama-dlya-servisa-masterskoy-borisoglebsk.html': {
@@ -37,8 +37,8 @@ PAGES = {
         'canonical': 'https://www.lider-bsk.ru/reklama-dlya-servisa-masterskoy-borisoglebsk.html',
         'h1': 'Реклама для сервиса, ремонта и мастерской',
         'cta': 'Рассчитать рекламу для сервиса',
-        'form_css': 'assets/public-lead-form.css?v=27',
-        'form_js': 'assets/public-lead-form.js?v=30',
+        'form_css': 'assets/public-lead-form.css?v=28',
+        'form_js': 'assets/public-lead-form.js?v=31',
         'cards': 17,
     },
 }

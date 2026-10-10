@@ -18,7 +18,7 @@ const server = createServer(async (req, res) => {
 });
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const origin = `http://127.0.0.1:${server.address().port}`;
-const browser = await chromium.launch();
+const browser = await chromium.launch({executablePath:process.env.LEADER_BROWSER_EXECUTABLE || undefined});
 await mkdir('artifacts/public-lead', {recursive:true});
 try {
   for (const width of [1440,390]) {
@@ -74,6 +74,20 @@ try {
       await page.keyboard.press('Enter');
       assert.equal(await question.locator('p').isVisible(), true);
       await page.locator('.hero .btn').click();
+      if (service.brief) {
+        await page.locator('[data-leader-more]').click();
+        assert.equal(await page.locator('[data-leader-more]').getAttribute('aria-expanded'), 'true');
+        const questions = page.locator('[data-leader-service-brief] label');
+        assert.equal(await questions.count(), 4);
+        assert.deepEqual(await questions.allTextContents(), service.questions);
+        for (let i=0;i<4;i++) await page.locator(`[name="brief_${i}"]`).fill(`Ответ ${service.id} ${i}`);
+        const other = catalog.find(service.id === 'animation' ? 'visualization-3d' : 'animation');
+        await page.locator('[name="service"]').selectOption(other.label);
+        assert.equal(await page.locator('[name="brief_0"]').inputValue(), '', 'New service starts with its own brief');
+        await page.locator('[name="brief_0"]').fill('Не переносить в другую услугу');
+        await page.locator('[name="service"]').selectOption(service.label);
+        assert.equal(await page.locator('[name="brief_0"]').inputValue(), `Ответ ${service.id} 0`, 'Restore the selected service draft');
+      }
       await page.locator('[name="phone"]').fill('+7 900 000-00-00');
       await page.locator('[name="message"]').fill('Synthetic task ' + service.id);
       await page.locator('button[type="submit"]').click();
@@ -84,8 +98,22 @@ try {
       assert.equal(submitted.utm_source, 'vk');
       assert.equal(submitted.page_path, '/' + service.pages[0]);
       assert.ok(submitted.message.includes('Задача клиента: Synthetic task ' + service.id));
+      if (service.brief) {
+        for (let i=0;i<4;i++) assert.ok(submitted.message.includes(`Бриф — ${service.questions[i]} Ответ ${service.id} ${i}`));
+        assert.ok(!submitted.message.includes('Не переносить в другую услугу'));
+        assert.equal(await page.locator('[name="brief_0"]').inputValue(), '', 'Successful submit clears the answers');
+      }
       assert.equal(await page.locator('[name="service"]').inputValue(), service.label, 'Keep service after success');
       assert.equal(errors.length, 0, errors.join('\n'));
+    }
+    for (const name of ['dizayn-3d-animaciya.html','nashi-raboty.html','dizayn-maketov.html']) {
+      await page.goto(origin + '/' + name);
+      await page.locator('[name="service"]').waitFor();
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, name);
+      assert.equal(await page.locator('h1').count(),1);
+      const photos=page.locator('main img');
+      for (const photo of await photos.all()) { await photo.scrollIntoViewIfNeeded(); await photo.evaluate(el=>el.decode()); assert.ok(await photo.evaluate(el=>el.naturalWidth>0)); }
+      await page.screenshot({path:`artifacts/public-lead/${name.replace('.html','')}-${width}.png`,fullPage:true});
     }
     await context.close();
   }

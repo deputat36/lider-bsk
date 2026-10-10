@@ -132,12 +132,46 @@
       const service=form.querySelector('[name="service"]');
       const message=form.querySelector('[name="message"]');
       if(service&&preset.service)service.value=preset.service;
-      if(message&&preset.text&&!message.value.trim())message.value=preset.text;
+      if(message&&preset.text&&!message.value.trim()){
+        message.value=preset.text;
+        form.__leaderAutoMessage=preset.text;
+      }
+      renderServiceBrief(form);
     });
     if(scroll)scrollToForm();
   }
   function applyScenario(key,scroll){const s=scenarios[key];if(s)applyServicePreset(s,scroll)}
   function currentPreset(){const q=qs();const selected=catalog&&catalog.find(q.service);if(selected)return{service:selected.label,text:'Услуга выбрана по ссылке: '+selected.label};const legacy=servicePresets[pageKey()];const item=catalog&&catalog.forPage(pageKey());return item?{service:item.label,text:legacy?legacy.text:'Интересует: '+item.label}:legacy||null}
+
+  // Keep optional answers in this form only; changing a service never mixes briefs.
+  function renderServiceBrief(form){
+    const box=form.querySelector('[data-leader-service-brief]');
+    if(!box)return;
+    const drafts=form.__leaderBriefDrafts||(form.__leaderBriefDrafts=Object.create(null));
+    if(form.__leaderBriefId)drafts[form.__leaderBriefId]=[0,1,2,3].map(i=>field(form,'brief_'+i));
+    const item=catalog&&catalog.find(field(form,'service'));
+    box.replaceChildren();
+    box.hidden=!(item&&item.brief);
+    form.__leaderBriefId=item&&item.brief?item.id:'';
+    if(box.hidden)return;
+    const title=document.createElement('h4');
+    title.textContent='Подробности: '+item.label;
+    box.appendChild(title);
+    const note=document.createElement('p');
+    note.textContent='Заполните то, что уже известно. Эти поля необязательные; фото и файлы можно передать при обсуждении.';
+    box.appendChild(note);
+    item.questions.forEach((question,i)=>{
+      const row=document.createElement('div');
+      const label=document.createElement('label');
+      const input=document.createElement('input');
+      input.type='text';input.name='brief_'+i;input.maxLength=180;
+      input.id=form.querySelector('[name="service"]').id+'-brief-'+i;
+      input.placeholder='Если известно';input.autocomplete='off';
+      input.value=(drafts[item.id]||[])[i]||'';
+      label.htmlFor=input.id;label.textContent=question;
+      row.append(label,input);box.appendChild(row);
+    });
+  }
 
   function buildFormHtml(id){
     return `<form class="leader-lead-widget" data-leader-lead-widget>
@@ -150,8 +184,9 @@
         <div class="leader-lead-span-12"><label for="${id}-service">Что нужно?</label><select id="${id}-service" name="service" required>${catalog?catalog.services.map(item=>`<option value="${item.label}"${item.id==='other'?' selected':''}>${item.label}</option>`).join(''):'<option value="">Услуги временно недоступны</option>'}</select></div>
         <div class="leader-lead-span-12"><label for="${id}-message">Коротко опишите задачу</label><textarea id="${id}-message" name="message" maxlength="2000" rows="3" placeholder="Например: нужен рекламный пост, баннер или наклейки"></textarea></div>
       </div>
-      <button class="leader-lead-more" type="button" data-leader-more>Добавить подробности для точного расчёта ↓</button>
-      <div class="leader-lead-details" data-leader-details hidden>
+      <button class="leader-lead-more" type="button" data-leader-more aria-expanded="false" aria-controls="${id}-details">Добавить подробности для точного расчёта ↓</button>
+      <div class="leader-lead-details" id="${id}-details" data-leader-details hidden>
+        <div class="leader-service-brief" data-leader-service-brief hidden></div>
         <div class="leader-lead-grid">
           <div class="leader-lead-span-6"><label for="${id}-city">Город</label><input id="${id}-city" name="city" autocomplete="address-level2" maxlength="120" placeholder="Борисоглебск"></div>
           <div class="leader-lead-span-6"><label for="${id}-contact">Как удобнее связаться?</label><select id="${id}-contact" name="contact_method"><option>Позвонить по указанному номеру</option><option>Написать в MAX по указанному номеру</option><option>Написать ВКонтакте</option><option>Написать на email</option><option>Любой удобный способ</option></select></div>
@@ -185,13 +220,24 @@
     };
     form.addEventListener('input',markFormStart);
     form.addEventListener('change',markFormStart);
+    form.querySelector('[name="service"]').addEventListener('change',()=>{
+      const message=form.querySelector('[name="message"]');
+      if(message&&message.value===form.__leaderAutoMessage&&/^Интересует:|^Услуга выбрана/.test(message.value)){
+        message.value='Интересует: '+field(form,'service');
+        form.__leaderAutoMessage=message.value;
+      }
+      renderServiceBrief(form);
+    });
+    renderServiceBrief(form);
     more.addEventListener('click',()=>{
       if(details.hasAttribute('hidden')){
         details.removeAttribute('hidden');
+        more.setAttribute('aria-expanded','true');
         more.textContent='Скрыть подробности ↑';
         goal('form_details_open',{page:location.href,page_path:location.pathname,service:field(form,'service')});
       }else{
         details.setAttribute('hidden','');
+        more.setAttribute('aria-expanded','false');
         more.textContent='Добавить подробности для точного расчёта ↓';
       }
     });
@@ -227,10 +273,15 @@
     const parts=[];
     parts.push('Источник: сайт РА Лидер');
     parts.push('Страница: '+pageTitle);
-    parts.push('URL: '+location.href);
     const serviceInfo=catalog&&catalog.find(service);
     if(service)parts.push('Услуга: '+service);
     if(serviceInfo)parts.push('Направление: '+catalog.directions[serviceInfo.direction]);
+    if(serviceInfo&&serviceInfo.brief){
+      serviceInfo.questions.forEach((question,i)=>{
+        const answer=field(form,'brief_'+i).slice(0,180);
+        if(answer)parts.push('Бриф — '+question+' '+answer);
+      });
+    }
     if(message)parts.push('Задача клиента: '+message);
     if(city)parts.push('Город: '+city);
     if(business)parts.push('Бизнес/объект: '+business);
@@ -241,6 +292,7 @@
     if(mockup)parts.push('Макет: '+mockup);
     if(delivery)parts.push('Доставка/монтаж: '+delivery);
     if(budget)parts.push('Бюджет: '+budget);
+    parts.push('URL: '+location.href);
 
     const utm=campaignAttribution();
     const payload={
@@ -250,7 +302,7 @@
       service_id:serviceInfo?serviceInfo.id:'',
       direction:serviceInfo?serviceInfo.direction:'',
       source:'Сайт',
-      message:parts.join('\n')||'Клиент оставил быструю заявку без подробного описания.',
+      message:parts.join('\n').slice(0,3000)||'Клиент оставил быструю заявку без подробного описания.',
       page_url:location.href,
       page_path:location.pathname,
       page_title:pageTitle,
@@ -292,6 +344,9 @@
       form.reset();
       const serviceSelect=form.querySelector('[name="service"]');
       if(serviceSelect)serviceSelect.value=service;
+      form.__leaderBriefDrafts=Object.create(null);
+      form.__leaderBriefId='';
+      renderServiceBrief(form);
     }catch(err){
       console.error(err);
       setStatus(form,'err','Не удалось отправить заявку. Позвоните по номеру 8 980 245-74-71 или попробуйте ещё раз.');

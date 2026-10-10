@@ -308,6 +308,80 @@
           "alt": null
         }
       ]
+    },
+    {
+      "id": "volume-letters-production",
+      "owner_label": "Объёмные буквы «ЦВЕТЫ»",
+      "categories": [
+        "signs"
+      ],
+      "service_pages": [
+        "vyveski-borisoglebsk.html",
+        "3d-vizualizaciya-reklamy.html"
+      ],
+      "status": "ready",
+      "publish": true,
+      "material_kind": "photo",
+      "stage_label": "Фотография. Этап производства",
+      "public_description": "Объёмные буквы на рабочем столе в мастерской. Фотография показывает изделие на этапе производства и помогает рассмотреть форму и детали.",
+      "public_links": [
+        [
+          "vyveski-borisoglebsk.html",
+          "Заказать вывеску"
+        ],
+        [
+          "3d-vizualizaciya-reklamy.html",
+          "Сначала увидеть на фасаде"
+        ]
+      ],
+      "photos": [
+        {
+          "slot": "production",
+          "expected_web_path": "assets/portfolio/volume-letters-production/letters-production.jpg",
+          "description_from_owner": "Объёмные буквы «ЦВЕТЫ»",
+          "source_file": "1000003569.jpg",
+          "width": 1264,
+          "height": 1536,
+          "alt": "Объёмные розовые буквы «ЦВЕТЫ» на рабочем столе в мастерской"
+        }
+      ]
+    },
+    {
+      "id": "bormash-decal-design",
+      "owner_label": "Макет наклейки «БОРМАШ»",
+      "categories": [
+        "print"
+      ],
+      "service_pages": [
+        "dizayn-maketov.html",
+        "podgotovka-maketov-k-pechati.html"
+      ],
+      "status": "ready",
+      "publish": true,
+      "material_kind": "layout",
+      "stage_label": "2D-макет. Графический материал",
+      "public_description": "Макет наклейки с обозначением «БОРМАШ». Здесь показана графика для подготовки производства; это изображение макета.",
+      "public_links": [
+        [
+          "dizayn-maketov.html",
+          "Заказать 2D-макет"
+        ],
+        [
+          "podgotovka-maketov-k-pechati.html",
+          "Подготовить файл к печати"
+        ]
+      ],
+      "photos": [
+        {
+          "slot": "layout",
+          "expected_web_path": "assets/portfolio/bormash-decal-design/bormash-decal.webp",
+          "description_from_owner": "Макет наклейки «БОРМАШ»",
+          "source_file": "наклейка бормаш пески 125 на 32.png",
+          "width": 2048,
+          "height": 544,
+          "alt": "Сине-серый макет наклейки с надписью «БОРМАШ — Борисоглебское машиностроение»"
+        }
+      ]
     }
   ]
 }

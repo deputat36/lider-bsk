@@ -10,8 +10,8 @@ PAGE = ROOT / "srochnaya-reklama-borisoglebsk.html"
 CSS = ROOT / "assets" / "public-urgent-advertising.css"
 JS = ROOT / "assets" / "public-urgent-advertising.js"
 CSS_LINK = '<link rel="stylesheet" href="assets/public-urgent-advertising.css?v=1">'
-FORM_CSS_LINK = '<link rel="stylesheet" href="assets/public-lead-form.css?v=27">'
-FORM_SCRIPT = '<script src="assets/public-lead-form.js?v=30"></script>'
+FORM_CSS_LINK = '<link rel="stylesheet" href="assets/public-lead-form.css?v=28">'
+FORM_SCRIPT = '<script src="assets/public-lead-form.js?v=31"></script>'
 STICKY_SCRIPT = '<script src="assets/mobile-sticky-cta.js?v=1"></script>'
 PAGE_SCRIPT = '<script src="assets/public-urgent-advertising.js?v=1"></script>'
 PRESET = "Срочная заявка: нужно быстро рассчитать рекламу. Срок: "

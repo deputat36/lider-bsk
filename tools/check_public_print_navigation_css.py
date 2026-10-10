@@ -41,8 +41,8 @@ hub_markers = (
     '<link rel="canonical" href="https://www.lider-bsk.ru/poligrafiya-borisoglebsk.html">',
     '<h1>Печатные материалы для бизнеса</h1>',
     '<h2>Рассчитать полиграфию</h2>',
-    'assets/public-lead-form.css?v=27',
-    'assets/public-lead-form.js?v=30',
+    'assets/public-lead-form.css?v=28',
+    'assets/public-lead-form.js?v=31',
     'assets/public-related-services.js?v=2',
     'assets/public-print-product.js?v=1',
     'id="leader-lead-form" data-leader-lead-form',
@@ -50,7 +50,7 @@ hub_markers = (
 for marker in hub_markers:
     if marker not in hub:
         raise SystemExit(f'Hub marker missing: {marker}')
-if hub.index('assets/public-lead-form.css?v=27') > hub.index('assets/public-print-navigation.css?v=1'):
+if hub.index('assets/public-lead-form.css?v=28') > hub.index('assets/public-print-navigation.css?v=1'):
     raise SystemExit('Hub page CSS must load after form CSS')
 if hub.count('class="card"') != 6:
     raise SystemExit(f'Hub must preserve six cards, found {hub.count("class=\"card\"")}')

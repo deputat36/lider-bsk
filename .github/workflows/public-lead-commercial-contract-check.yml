@@ -18,6 +18,13 @@ on:
       - 'tools/check_public_lead_commercial_contract.py'
       - 'tools/test_public_lead_submission.mjs'
       - 'tools/test_public_lead_browser.mjs'
+      - 'tools/test_creative_need_draft.mjs'
+      - 'tools/build_creative_service_hub.py'
+      - 'docs/PUBLIC_PORTFOLIO_MANIFEST_V1.json'
+      - 'assets/portfolio/**'
+      - 'assets/public-creative-services.css'
+      - 'crm/v4/assets/v4/creative-need-draft-v1.js'
+      - 'crm/v4/assets/v4/needs.js'
       - '.github/workflows/public-lead-commercial-contract-check.yml'
   pull_request:
     branches: [main]
@@ -35,6 +42,13 @@ on:
       - 'tools/check_public_lead_commercial_contract.py'
       - 'tools/test_public_lead_submission.mjs'
       - 'tools/test_public_lead_browser.mjs'
+      - 'tools/test_creative_need_draft.mjs'
+      - 'tools/build_creative_service_hub.py'
+      - 'docs/PUBLIC_PORTFOLIO_MANIFEST_V1.json'
+      - 'assets/portfolio/**'
+      - 'assets/public-creative-services.css'
+      - 'crm/v4/assets/v4/creative-need-draft-v1.js'
+      - 'crm/v4/assets/v4/needs.js'
       - '.github/workflows/public-lead-commercial-contract-check.yml'
 
 jobs:
@@ -52,7 +66,10 @@ jobs:
           python3 tools/check_public_lead_commercial_contract.py
           node tools/test_public_lead_submission.mjs
           node tools/test_commercial_service_contract.mjs
+          node tools/test_creative_need_draft.mjs
           python3 tools/build_commercial_service_pages.py --check
+          python3 tools/build_creative_service_hub.py --check
+          python3 tools/check_public_portfolio_manifest.py
 
       - uses: actions/setup-node@v4
         with:
