@@ -1,5 +1,22 @@
 # Статус проекта РА «Лидер»
 
+## 2026-10-10 — повторное сохранение рабочих заданий
+
+Устранён конфликт production update: прежний ключ включал только job/status и
+запрещал следующую правку в том же статусе. Production и installation карточки
+теперь сохраняют одну команду при неизвестном результате запроса; после
+подтверждённого успеха следующая правка получает новый ключ. Контекст изолирован
+по пользователю, окружению, revision и patch; PostgreSQL microseconds сохранены.
+Pending command хранится только в памяти вкладки, до перезагрузки страницы.
+
+Кнопки и обработчики сохранения требуют write permission, создание монтажа —
+installation.write + orders.read; подрядчик без orders.read не запрашивает заказ.
+Actual save-function regression: remote commit + lost response + receipt replay,
+вторая правка того же статуса, write denial PASS для обеих карточек. Actual form
+permission/validation/replay и contractor query boundary PASS. Изменения backend,
+Auth и production business rows не выполнялись. CI/Pages checkpoint — в PR.
+
+
 ## 2026-10-09 — production operational cutover, PR #574
 
 Установлены create/update производства и create/read/update монтажа: 15 runtime
@@ -9,7 +26,7 @@ postflight snapshot/ACL/fingerprints PASS; actual stop REVOKE/ROLLBACK PASS.
 Четыре Edge v1 ACTIVE с JWT verification; unauthenticated probe HTTP 401.
 Frontend production gates включены после backend postflight; монтаж требует
 реальный адрес/дату. Локальные transport/form/replay тесты PASS, Deno 20/20 PASS.
-Начальный CI: 35 SUCCESS + 1 SKIPPED; финальные CI/Pages — в PR #574.
+PR #574 merged a39625d5; final head 68 SUCCESS + 1 SKIPPED, main 73/73 PASS; Pages 37920619341 SUCCESS, опубликованный index совпал с reviewed source.
 Production business rows неизменны: 2 orders, 1 payment, 0 operational jobs.
 Authenticated production worker mutation/UI этим этапом не доказаны.
 [Scope, backup и rollback](CRM_OPERATIONAL_COMMANDS_PRODUCTION_2026-10-09.md).

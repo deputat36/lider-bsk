@@ -1,3 +1,4 @@
+import { CRM_V4_ACTIONS, canPerformV4Action } from './action-permissions-v1.js';
 import { operationalProductionAvailable } from './operational-production-gate-v1.js';
 import { supabaseClient } from './supabase-client.js';
 import { V4_CONFIG } from './config.js';
@@ -18,6 +19,7 @@ async function load(orderId, productionId) {
   return { order: orderResponse.data, production: productionResponse.data };
 }
 async function open(orderId, productionId) {
+  if (!canPerformV4Action(CRM_V4_ACTIONS.INSTALLATION_WRITE) || !canPerformV4Action(CRM_V4_ACTIONS.ORDERS_READ)) return;
   close();
   const modal = document.createElement('div');
   modal.id = MODAL_ID;
@@ -37,7 +39,7 @@ async function open(orderId, productionId) {
   }
 }
 async function create() {
-  if (busy) return;
+  if (busy || !canPerformV4Action(CRM_V4_ACTIONS.INSTALLATION_WRITE) || !canPerformV4Action(CRM_V4_ACTIONS.ORDERS_READ)) return;
   const modal = document.getElementById(MODAL_ID);
   const order = JSON.parse(modal?.dataset.order || 'null');
   const production = JSON.parse(modal?.dataset.production || 'null');

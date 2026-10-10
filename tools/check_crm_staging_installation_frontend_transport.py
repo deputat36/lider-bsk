@@ -77,7 +77,7 @@ require('card', [
     'installationJobPersistenceRoute(V4_CONFIG.supabaseUrl, OPERATIONAL_PRODUCTION_ENABLED)',
     'invokeStagingInstallationJobRead({', 'invokeStagingInstallationJob({',
     'expectedUpdatedAt: old.updated_at',
-    'idempotencyKey: createInstallationJobIdempotencyKey(jobId)',
+    'idempotencyKey: command.payload.idempotency_key',
     'readAfterSuccess: () => fetchBundle(jobId)',
     'commentsSection = isStaging',
     'История изменений доступна для просмотра.',

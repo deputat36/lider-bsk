@@ -45,14 +45,19 @@ globalThis.document={
   addEventListener:(type,fn)=>{listeners[type]=fn},querySelector:()=>null
 };
 globalThis.window={};
-globalThis.__createFixture={V4_CONFIG:{supabaseUrl:url},operationalProductionAvailable,friendlyError:e=>e.message,toast:t=>notices.push(t),isStagingInstallationEnvironment:()=>false,
+let createAllowed=true;
+globalThis.__createFixture={CRM_V4_ACTIONS:{INSTALLATION_WRITE:'installation.write',ORDERS_READ:'orders.read'},canPerformV4Action:()=>createAllowed,V4_CONFIG:{supabaseUrl:url},operationalProductionAvailable,friendlyError:e=>e.message,toast:t=>notices.push(t),isStagingInstallationEnvironment:()=>false,
   supabaseClient:{from:table=>({select(){return this},eq(){return this},single:async()=>({data:table==='leader_orders'?order:{id,order_id:id,production_status:'Готово',updated_at:timestamp}})}),functions:{invoke:async(slug,options)=>{requests.push({slug,options});return {data:{ok:true,entity:{id},idempotent_replay:requests.length>1}}}}}
 };
 let source=await readFile(new URL('../crm/v4/assets/v4/installation-job-staging-create-v1.js',import.meta.url),'utf8');
 source=source.replace(/^import .*;\n/gm,'');
-source='const {V4_CONFIG,operationalProductionAvailable,friendlyError,toast,isStagingInstallationEnvironment,supabaseClient}=globalThis.__createFixture;\n'+source;
+source='const {CRM_V4_ACTIONS,canPerformV4Action,V4_CONFIG,operationalProductionAvailable,friendlyError,toast,isStagingInstallationEnvironment,supabaseClient}=globalThis.__createFixture;\n'+source;
 await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 const click=selector=>listeners.click({preventDefault(){},target:{closest:query=>query===selector?{dataset:{installationOrder:id,installationStagingCreate:id}}:null}});
+createAllowed=false;
+click('[data-installation-staging-create]');
+assert.equal(elements.installationStagingCreateV1,undefined);
+createAllowed=true;
 click('[data-installation-staging-create]');
 await new Promise(resolve=>setImmediate(resolve));
 const modal=elements.installationStagingCreateV1;
@@ -63,6 +68,10 @@ await new Promise(resolve=>setImmediate(resolve));
 assert.equal(requests.length,0);
 assert.match(notices.at(-1),/адрес/);
 Object.assign(fields,{installationCreateTitle:'Монтаж вывески',installationCreateAddress:'Воронеж, адрес клиента',installationCreateSchedule:'2026-10-15T10:00',installationCreateInstaller:'Исполнитель',installationCreateTask:'По согласованному макету'});
+createAllowed=false;
+click('[data-installation-staging-confirm]');
+assert.equal(requests.length,0);
+createAllowed=true;
 click('[data-installation-staging-confirm]');
 await new Promise(resolve=>setImmediate(resolve));
 assert.equal(requests.length,2);

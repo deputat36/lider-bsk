@@ -1,3 +1,5 @@
+import { createOperationalCommandRetry } from './operational-command-retry-v1.js';
+import { CRM_V4_ACTIONS, canPerformV4Action } from './action-permissions-v1.js';
 import { OPERATIONAL_PRODUCTION_ENABLED } from './operational-production-gate-v1.js';
 import { supabaseClient } from './supabase-client.js';
 import { friendlyError } from './api.js';
@@ -11,7 +13,6 @@ import {
   validateInstallationStatusTransition
 } from './installation-status-ui-model-v1.js';
 import {
-  createInstallationJobIdempotencyKey,
   installationJobPersistenceRoute
 } from './installation-job-save-route-v1.js';
 import { invokeStagingInstallationJob } from './installation-job-staging-transport-v1.js';
@@ -25,6 +26,7 @@ const ITEM_FIELDS_SAFE = ['id','job_id','name','unit','qty','width','height','co
 const EVENT_FIELDS = 'id,event_type,old_status,new_status,body,created_at';
 const COMMENT_FIELDS = 'id,comment_type,body,created_at';
 
+const commandRetry = createOperationalCommandRetry();
 let busy = false;
 let currentBundle = null;
 
@@ -157,7 +159,7 @@ function renderCard(bundle) {
   const statusDisplay = statusModel.original === null ? 'Не назначен (raw: NULL)' : (statusModel.known && statusModel.legacy ? `${statusModel.raw} (legacy: ${statusModel.label})` : statusModel.raw);
   const saveLabel = isStaging ? route.buttonPrefix : 'Сохранить';
   const routeNotice = isStaging ? `<div class="v4-install-status-alert" data-installation-staging-edge>${esc(route.description)}</div>` : '';
-  host().innerHTML = `<div class="v4-install-modal"><div class="v4-install-card"><div class="v4-install-head"><div><p class="v4-kicker">Монтажное задание</p><h2>${esc(job.title || order?.project_name || 'Монтаж')}</h2><p>Заказ №${esc(order?.order_number || String(job.order_id || '').slice(0, 8))}. Клиентские контакты не показываются.</p>${routeNotice}</div><button type="button" data-installation-job-close>Закрыть</button></div><div class="v4-install-grid"><div><span>Статус</span><b>${esc(statusDisplay)}</b></div><div><span>Дата</span><b>${dateRu(job.scheduled_at)}</b></div><div><span>Монтажник</span><b>${esc(job.installer_name || 'Не назначен')}</b></div><div><span>Адрес</span><b>${esc(job.address || order?.installation_address || data.install_place || '—')}</b></div><div><span>Позиции</span><b>${items.length}</b></div>${costStat}</div><div class="v4-install-actions"><button type="button" class="v4-primary" data-save-installation-job="${esc(job.id)}">${esc(saveLabel)}</button><button type="button" data-print-installation-job="${esc(job.id)}">Печать листа</button>${orderButton}<button type="button" data-installation-job-close>Закрыть</button></div><div class="v4-install-columns"><section class="v4-install-section"><h3>Редактирование</h3><div class="v4-install-form v4-form-grid"><label>Название<input id="installJobTitle" value="${esc(job.title || '')}"></label><label>Статус<select id="installJobStatus">${renderInstallationStatusOptions(job.install_status)}</select>${renderInstallationStatusNotice(job.install_status)}</label><label>Дата<input id="installJobScheduled" type="datetime-local" value="${localDateTime(job.scheduled_at)}"></label><label>Монтажник<input id="installJobInstaller" value="${esc(job.installer_name || '')}"></label><label>Телефон монтажника<input id="installJobInstallerPhone" value="${esc(job.installer_phone || '')}"></label><label class="wide">Адрес<input id="installJobAddress" value="${esc(job.address || order?.installation_address || data.install_place || '')}"></label><label>Фото места<input id="installJobBefore" value="${esc(job.before_photo_url || data.place_photo_link || '')}"></label><label>Фото результата<input id="installJobAfter" value="${esc(job.after_photo_url || '')}"></label><label class="wide">ТЗ<textarea id="installJobTask">${esc(job.technical_task || '')}</textarea></label><label class="wide">Инструмент<textarea id="installJobTools">${esc(job.tools_required || '')}</textarea></label><label class="wide">Комментарий монтажнику<textarea id="installJobComment">${esc(job.installer_comment || '')}</textarea></label></div></section><section class="v4-install-section"><h3>Данные для монтажа</h3><div class="v4-install-row"><b>Производство</b><p>${production ? `${esc(production.title || 'Производство')} · ${esc(production.production_status || '—')}` : 'Не связано'}</p></div><div class="v4-install-row"><b>Макет</b><p>${esc(production?.file_url || order?.layout_link || 'Ссылка не указана')}</p></div><div class="v4-install-row"><b>Фото места</b><p>${esc(job.before_photo_url || data.place_photo_link || 'Ссылка не указана')}</p></div></section></div><section class="v4-install-section"><h3>Состав монтажа</h3>${renderItems(items)}</section><div class="v4-install-columns">${commentsSection}<section class="v4-install-section"><h3>История</h3>${renderHistory(events, 'Истории пока нет.')}</section></div></div></div>`;
+  host().innerHTML = `<div class="v4-install-modal"><div class="v4-install-card"><div class="v4-install-head"><div><p class="v4-kicker">Монтажное задание</p><h2>${esc(job.title || order?.project_name || 'Монтаж')}</h2><p>Заказ №${esc(order?.order_number || String(job.order_id || '').slice(0, 8))}. Клиентские контакты не показываются.</p>${routeNotice}</div><button type="button" data-installation-job-close>Закрыть</button></div><div class="v4-install-grid"><div><span>Статус</span><b>${esc(statusDisplay)}</b></div><div><span>Дата</span><b>${dateRu(job.scheduled_at)}</b></div><div><span>Монтажник</span><b>${esc(job.installer_name || 'Не назначен')}</b></div><div><span>Адрес</span><b>${esc(job.address || order?.installation_address || data.install_place || '—')}</b></div><div><span>Позиции</span><b>${items.length}</b></div>${costStat}</div><div class="v4-install-actions"><button type="button" class="v4-primary" data-save-installation-job="${esc(job.id)}" ${canPerformV4Action(CRM_V4_ACTIONS.INSTALLATION_WRITE) ? '' : 'disabled'}>${esc(saveLabel)}</button><button type="button" data-print-installation-job="${esc(job.id)}">Печать листа</button>${orderButton}<button type="button" data-installation-job-close>Закрыть</button></div><div class="v4-install-columns"><section class="v4-install-section"><h3>Редактирование</h3><div class="v4-install-form v4-form-grid"><label>Название<input id="installJobTitle" value="${esc(job.title || '')}"></label><label>Статус<select id="installJobStatus">${renderInstallationStatusOptions(job.install_status)}</select>${renderInstallationStatusNotice(job.install_status)}</label><label>Дата<input id="installJobScheduled" type="datetime-local" value="${localDateTime(job.scheduled_at)}"></label><label>Монтажник<input id="installJobInstaller" value="${esc(job.installer_name || '')}"></label><label>Телефон монтажника<input id="installJobInstallerPhone" value="${esc(job.installer_phone || '')}"></label><label class="wide">Адрес<input id="installJobAddress" value="${esc(job.address || order?.installation_address || data.install_place || '')}"></label><label>Фото места<input id="installJobBefore" value="${esc(job.before_photo_url || data.place_photo_link || '')}"></label><label>Фото результата<input id="installJobAfter" value="${esc(job.after_photo_url || '')}"></label><label class="wide">ТЗ<textarea id="installJobTask">${esc(job.technical_task || '')}</textarea></label><label class="wide">Инструмент<textarea id="installJobTools">${esc(job.tools_required || '')}</textarea></label><label class="wide">Комментарий монтажнику<textarea id="installJobComment">${esc(job.installer_comment || '')}</textarea></label></div></section><section class="v4-install-section"><h3>Данные для монтажа</h3><div class="v4-install-row"><b>Производство</b><p>${production ? `${esc(production.title || 'Производство')} · ${esc(production.production_status || '—')}` : 'Не связано'}</p></div><div class="v4-install-row"><b>Макет</b><p>${esc(production?.file_url || order?.layout_link || 'Ссылка не указана')}</p></div><div class="v4-install-row"><b>Фото места</b><p>${esc(job.before_photo_url || data.place_photo_link || 'Ссылка не указана')}</p></div></section></div><section class="v4-install-section"><h3>Состав монтажа</h3>${renderItems(items)}</section><div class="v4-install-columns">${commentsSection}<section class="v4-install-section"><h3>История</h3>${renderHistory(events, 'Истории пока нет.')}</section></div></div></div>`;
 }
 
 async function openCard(jobId) {
@@ -172,7 +174,7 @@ async function openCard(jobId) {
 
 function field(id) { return document.getElementById(id)?.value?.trim() || ''; }
 async function saveJob(jobId) {
-  if (busy || !canOpenV4ProductionKind('installation')) return;
+  if (busy || !canOpenV4ProductionKind('installation') || !canPerformV4Action(CRM_V4_ACTIONS.INSTALLATION_WRITE)) return;
   busy = true;
   try {
     const old = currentBundle?.job || (await fetchBundle(jobId)).job;
@@ -196,18 +198,24 @@ async function saveJob(jobId) {
     };
 
     if (stagingEdgeEnabled()) {
+      const command = commandRetry.prepare({
+        actorId: v4State.user?.id, supabaseUrl: V4_CONFIG.supabaseUrl,
+        action: 'installation_job.update', jobId, expectedUpdatedAt: old.updated_at, patch: edgePatch
+      });
       const result = await invokeStagingInstallationJob({
         client: supabaseClient,
         supabaseUrl: V4_CONFIG.supabaseUrl,
-      productionEnabled: OPERATIONAL_PRODUCTION_ENABLED,
-        canWrite: true,
+        productionEnabled: OPERATIONAL_PRODUCTION_ENABLED,
+        canWrite: canPerformV4Action(CRM_V4_ACTIONS.INSTALLATION_WRITE),
         job: old,
         patch: edgePatch,
         expectedUpdatedAt: old.updated_at,
-        idempotencyKey: createInstallationJobIdempotencyKey(jobId),
+        idempotencyKey: command.payload.idempotency_key,
+        cryptoObject: { randomUUID: () => command.request_id },
         readAfterSuccess: () => fetchBundle(jobId)
       });
       if (!result.ok) throw new Error(result.message);
+      commandRetry.confirm(command);
       toast(result.message);
       setStatus(result.message, 'good');
       document.dispatchEvent(new CustomEvent('leader-v4-order-updated', { detail: { order: { id: old.order_id, installation_status: status } } }));

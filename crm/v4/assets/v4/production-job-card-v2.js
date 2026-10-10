@@ -1,4 +1,6 @@
-import { OPERATIONAL_PRODUCTION_ENABLED, operationalProductionAvailable } from './operational-production-gate-v1.js';
+import { createOperationalCommandRetry } from './operational-command-retry-v1.js';
+import { CRM_V4_ACTIONS, canPerformV4Action } from './action-permissions-v1.js';
+import { operationalProductionAvailable } from './operational-production-gate-v1.js';
 import { supabaseClient } from './supabase-client.js';
 import { friendlyError } from './api.js';
 import { v4State } from './state.js';
@@ -18,6 +20,7 @@ const ORDER_FIELDS_SAFE = ['id','order_number','project_name','status','layout_s
 const ITEM_FIELDS_SAFE = ['id','job_id','name','unit','qty','width','height','comment','created_at'];
 const EVENT_FIELDS_SAFE = ['id','event_type','old_status','new_status','body','created_at'];
 
+const commandRetry = createOperationalCommandRetry();
 let busy = false;
 let currentBundle = null;
 
@@ -116,7 +119,7 @@ async function fetchBundle(jobId) {
   if (jobResponse.error || !jobResponse.data) throw jobResponse.error || new Error('Производственное задание не найдено');
   const job = jobResponse.data;
   const [orderResponse, itemsResponse, eventsResponse] = await Promise.all([
-    job.order_id ? supabaseClient.from('leader_orders').select(orderFields()).eq('id', job.order_id).single() : Promise.resolve({ data: null, error: null }),
+    job.order_id && canOpenV4Tab('orders') ? supabaseClient.from('leader_orders').select(orderFields()).eq('id', job.order_id).single() : Promise.resolve({ data: null, error: null }),
     (isStagingProductionEnvironment(V4_CONFIG.supabaseUrl) || operationalProductionAvailable(V4_CONFIG.supabaseUrl)) ? Promise.resolve({ data: [], error: null }) : supabaseClient.from('leader_production_job_items').select(itemFields()).eq('job_id', jobId).order('created_at', { ascending: true }).limit(120),
     supabaseClient.from('leader_production_events').select(eventFields()).eq('job_id', jobId).order('created_at', { ascending: false }).limit(30)
   ]);
@@ -144,7 +147,7 @@ function renderCard(bundle) {
   const orderButton = order && canOpenV4Tab('orders') ? `<button type="button" data-open-order="${esc(order.id)}">Открыть заказ</button>` : '';
   const statusModel = productionStatusUiModel(job.production_status);
   const statusDisplay = statusModel.known && statusModel.legacy ? `${statusModel.raw} (legacy: ${statusModel.label})` : statusModel.raw;
-  host().innerHTML = `<div class="v4-job-modal"><div class="v4-job-card"><div class="v4-job-head"><div><p class="v4-kicker">Производственное задание</p><h2>${esc(job.title || order?.project_name || 'Задание')}</h2><p>Заказ №${esc(order?.order_number || String(job.order_id || '').slice(0, 8))}. Клиентские контакты не показываются.</p></div><button type="button" data-production-job-close>Закрыть</button></div><div class="v4-job-grid"><div><span>Статус</span><b>${esc(statusDisplay)}</b></div><div><span>Дизайн / макет</span><b>${esc(layoutStatus(job, order))}</b></div><div><span>Приоритет</span><b>${esc(job.priority || 'Обычная')}</b></div><div><span>Срок</span><b>${dateRu(job.deadline)}</b></div><div><span>Позиции</span><b>${items.length}</b></div>${costStat}</div>${renderLayoutAlert(job, order)}<div class="v4-job-actions"><button type="button" class="v4-primary" data-save-production-job="${esc(job.id)}">Сохранить</button><button type="button" data-print-production-job="${esc(job.id)}">Печать листа</button>${orderButton}<button type="button" data-production-job-close>Закрыть</button></div><div class="v4-job-columns"><section class="v4-job-section"><h3>Редактирование</h3><div class="v4-job-form v4-form-grid"><label>Название<input id="prodJobTitle" value="${esc(job.title || '')}"></label><label>Статус<select id="prodJobStatus">${renderProductionStatusOptions(job.production_status)}</select>${renderProductionStatusNotice(job.production_status)}</label><label>Макет<select id="prodJobLayout"><option ${job.layout_status === 'Макет не проверен' ? 'selected' : ''}>Макет не проверен</option><option ${job.layout_status === 'На согласовании' ? 'selected' : ''}>На согласовании</option><option ${job.layout_status === 'Макет согласован' ? 'selected' : ''}>Макет согласован</option><option ${job.layout_status === 'Нужны правки' ? 'selected' : ''}>Нужны правки</option></select></label><label>Приоритет<select id="prodJobPriority"><option ${job.priority === 'Обычная' ? 'selected' : ''}>Обычная</option><option ${job.priority === 'Высокая' ? 'selected' : ''}>Высокая</option><option ${job.priority === 'Срочно' ? 'selected' : ''}>Срочно</option></select></label><label>Срок<input id="prodJobDeadline" type="datetime-local" value="${localDateTime(job.deadline)}"></label><label>Файл / макет<input id="prodJobFile" value="${esc(job.file_url || order?.layout_link || '')}"></label><label class="wide">Техническое задание<textarea id="prodJobTask">${esc(job.technical_task || '')}</textarea></label><label class="wide">Комментарий производству<textarea id="prodJobContractorComment">${esc(job.contractor_comment || '')}</textarea></label>${internalField}</div></section><section class="v4-job-section"><h3>Данные для производства</h3><div class="v4-job-row"><b>Объект</b><p>${esc(order?.project_name || '—')}</p></div><div class="v4-job-row"><b>Место размещения</b><p>${esc(data.install_place || data.installPlace || order?.installation_address || '—')}</p></div><div class="v4-job-row"><b>Дизайн / макет</b><p>${esc(job.file_url || order?.layout_link || 'Ссылка не указана')}</p></div></section></div><section class="v4-job-section"><h3>Состав задания</h3>${renderItems(items)}</section><section class="v4-job-section"><h3>История</h3>${renderEvents(events)}</section></div></div>`;
+  host().innerHTML = `<div class="v4-job-modal"><div class="v4-job-card"><div class="v4-job-head"><div><p class="v4-kicker">Производственное задание</p><h2>${esc(job.title || order?.project_name || 'Задание')}</h2><p>Заказ №${esc(order?.order_number || String(job.order_id || '').slice(0, 8))}. Клиентские контакты не показываются.</p></div><button type="button" data-production-job-close>Закрыть</button></div><div class="v4-job-grid"><div><span>Статус</span><b>${esc(statusDisplay)}</b></div><div><span>Дизайн / макет</span><b>${esc(layoutStatus(job, order))}</b></div><div><span>Приоритет</span><b>${esc(job.priority || 'Обычная')}</b></div><div><span>Срок</span><b>${dateRu(job.deadline)}</b></div><div><span>Позиции</span><b>${items.length}</b></div>${costStat}</div>${renderLayoutAlert(job, order)}<div class="v4-job-actions"><button type="button" class="v4-primary" data-save-production-job="${esc(job.id)}" ${canPerformV4Action(CRM_V4_ACTIONS.PRODUCTION_WRITE) ? '' : 'disabled'}>Сохранить</button><button type="button" data-print-production-job="${esc(job.id)}">Печать листа</button>${orderButton}<button type="button" data-production-job-close>Закрыть</button></div><div class="v4-job-columns"><section class="v4-job-section"><h3>Редактирование</h3><div class="v4-job-form v4-form-grid"><label>Название<input id="prodJobTitle" value="${esc(job.title || '')}"></label><label>Статус<select id="prodJobStatus">${renderProductionStatusOptions(job.production_status)}</select>${renderProductionStatusNotice(job.production_status)}</label><label>Макет<select id="prodJobLayout"><option ${job.layout_status === 'Макет не проверен' ? 'selected' : ''}>Макет не проверен</option><option ${job.layout_status === 'На согласовании' ? 'selected' : ''}>На согласовании</option><option ${job.layout_status === 'Макет согласован' ? 'selected' : ''}>Макет согласован</option><option ${job.layout_status === 'Нужны правки' ? 'selected' : ''}>Нужны правки</option></select></label><label>Приоритет<select id="prodJobPriority"><option ${job.priority === 'Обычная' ? 'selected' : ''}>Обычная</option><option ${job.priority === 'Высокая' ? 'selected' : ''}>Высокая</option><option ${job.priority === 'Срочно' ? 'selected' : ''}>Срочно</option></select></label><label>Срок<input id="prodJobDeadline" type="datetime-local" value="${localDateTime(job.deadline)}"></label><label>Файл / макет<input id="prodJobFile" value="${esc(job.file_url || order?.layout_link || '')}"></label><label class="wide">Техническое задание<textarea id="prodJobTask">${esc(job.technical_task || '')}</textarea></label><label class="wide">Комментарий производству<textarea id="prodJobContractorComment">${esc(job.contractor_comment || '')}</textarea></label>${internalField}</div></section><section class="v4-job-section"><h3>Данные для производства</h3><div class="v4-job-row"><b>Объект</b><p>${esc(order?.project_name || '—')}</p></div><div class="v4-job-row"><b>Место размещения</b><p>${esc(data.install_place || data.installPlace || order?.installation_address || '—')}</p></div><div class="v4-job-row"><b>Дизайн / макет</b><p>${esc(job.file_url || order?.layout_link || 'Ссылка не указана')}</p></div></section></div><section class="v4-job-section"><h3>Состав задания</h3>${renderItems(items)}</section><section class="v4-job-section"><h3>История</h3>${renderEvents(events)}</section></div></div>`;
 }
 
 async function openJobCard(jobId) {
@@ -159,7 +162,7 @@ async function openJobCard(jobId) {
 
 function field(id) { return document.getElementById(id)?.value?.trim() || ''; }
 async function saveJob(jobId) {
-  if (busy || !canOpenV4ProductionKind('production')) return;
+  if (busy || !canOpenV4ProductionKind('production') || !canPerformV4Action(CRM_V4_ACTIONS.PRODUCTION_WRITE)) return;
   busy = true;
   try {
     const old = currentBundle?.job || (await fetchBundle(jobId)).job;
@@ -182,20 +185,17 @@ async function saveJob(jobId) {
     };
     if (!(isStagingProductionEnvironment(V4_CONFIG.supabaseUrl) || operationalProductionAvailable(V4_CONFIG.supabaseUrl)) && canViewV4InternalNotes()) patch.internal_comment = field('prodJobInternalComment') || null;
     if ((isStagingProductionEnvironment(V4_CONFIG.supabaseUrl) || operationalProductionAvailable(V4_CONFIG.supabaseUrl))) {
-      const result = await supabaseClient.functions.invoke('leader-crm-production', { body: {
-        action: 'production_job.update',
-        request_id: globalThis.crypto.randomUUID(),
-        expected_updated_at: old.updated_at,
-        payload: {
-          job_id: jobId,
-          idempotency_key: `production_job.update:${jobId}:${status}:v1`,
-          patch: Object.fromEntries(Object.entries(patch).filter(([key]) => [
-            'title','production_status','layout_status','priority','deadline','file_url',
-            'technical_task','contractor_comment','internal_comment'
-          ].includes(key)))
-        }
-      } });
+      const command = commandRetry.prepare({
+        actorId: v4State.user?.id, supabaseUrl: V4_CONFIG.supabaseUrl,
+        action: 'production_job.update', jobId, expectedUpdatedAt: old.updated_at,
+        patch: Object.fromEntries(Object.entries(patch).filter(([key]) => [
+          'title','production_status','layout_status','priority','deadline','file_url',
+          'technical_task','contractor_comment','internal_comment'
+        ].includes(key)))
+      });
+      const result = await supabaseClient.functions.invoke('leader-crm-production', { body: command });
       if (result.error || result.data?.ok !== true) throw new Error(result.data?.error?.code || result.error?.message || 'production_update_failed');
+      commandRetry.confirm(command);
       toast(result.data.idempotent_replay ? 'Безопасный повтор сохранения производства' : 'Производственное задание сохранено через сервер');
       setStatus('Производственное задание сохранено через защищённый сервер', 'good');
       document.dispatchEvent(new CustomEvent('leader-v4-order-updated', { detail: { order: result.data.order } }));

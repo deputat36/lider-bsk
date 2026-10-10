@@ -1,3 +1,4 @@
+import { createOperationalCommandRetry } from '../crm/v4/assets/v4/operational-command-retry-v1.js';
 import assert from 'node:assert/strict';
 import {
   productionStatusDefinition,
@@ -77,6 +78,7 @@ const { runInNewContext } = await import('node:vm');
 const cardSource = readFileSync(new URL('../crm/v4/assets/v4/production-job-card-v2.js', import.meta.url), 'utf8');
 const fieldFunctions = cardSource.slice(cardSource.indexOf('const JOB_FIELDS_SAFE'), cardSource.indexOf('function esc('));
 const fieldContext = {
+  createOperationalCommandRetry,
   V4_CONFIG: { supabaseUrl: 'staging' }, isStagingProductionEnvironment: (url) => url === 'staging',
   operationalProductionAvailable: () => false,
   canViewV4Costs: () => true, canViewV4InternalNotes: () => true
