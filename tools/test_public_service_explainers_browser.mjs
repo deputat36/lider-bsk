@@ -34,6 +34,16 @@ function mockMetrika(){
 async function count(page,name){return page.evaluate(goal=>window.__ymCalls.filter(c=>c[1]==='reachGoal'&&c[2]===goal).length,name);}
 async function noOverflow(page,label){
   const size=await page.evaluate(()=>({width:innerWidth,document:document.documentElement.scrollWidth,body:document.body.scrollWidth}));
+  if(size.document>size.width+1||size.body>size.width+1){
+    const offenders=await page.evaluate(()=>[...document.querySelectorAll('body *')].map(el=>{
+      const box=el.getBoundingClientRect();
+      return {tag:el.tagName,id:el.id,className:typeof el.className==='string'?el.className:'',left:box.left,right:box.right,width:box.width};
+    }).filter(el=>el.width>0&&(el.left < -1||el.right>innerWidth+1)).slice(0,12));
+    const name=label.replace(/[^a-z0-9-]/gi,'_');
+    await writeFile(output+'/overflow-'+name+'.json',JSON.stringify({size,offenders},null,2));
+    await page.screenshot({path:output+'/overflow-'+name+'.png'});
+    size.offenders=offenders;
+  }
   assert.ok(size.document<=size.width+1&&size.body<=size.width+1,label+': '+JSON.stringify(size));
 }
 const shotPages=new Set(['bannery-borisoglebsk.html','vizitki-borisoglebsk.html','dizayn-maketov.html','3d-vizualizaciya-reklamy.html','3d-modelirovanie-konstrukciy.html','animaciya-motion-dizayn.html','yandex-karty-2gis.html','sozdanie-saytov.html','suvenirnaya-produkciya.html']);

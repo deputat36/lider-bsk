@@ -44,7 +44,10 @@ def main() -> None:
         'responseRequestId',
         'form.dataset.lastRequestId=responseRequestId',
         'duplicate=data&&data.duplicate===true',
-        "goal('lead_sent',{service,page:location.href,page_path:location.pathname,request_id:responseRequestId,duplicate})",
+        'if(firstLeadConfirmation(responseRequestId))',
+        "goal('lead_confirmed',confirmedParams)",
+        "if(!duplicate)goal('lead_sent',confirmedParams)",
+        "if(duplicate)goal('lead_duplicate',confirmedParams)",
     ):
         require(public_form, marker, PUBLIC_FORM)
 

@@ -119,7 +119,8 @@ try {
       assert.equal(await page.locator('.brand-logo').evaluate(el => el.complete && el.naturalWidth > 0), true);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
       assert.equal(await page.locator('.service-more').count(), 4);
-      assert.equal(await page.locator('.service-list a').count(), 49);
+      assert.equal(await page.locator('.service-list a').count(), 56);
+      assert.equal(await page.locator('.service-cards a[data-service-explanation]').count(), 27, 'All services and the creative design cross-link are visible in the catalog');
       assert.equal(await page.locator('#leader-lead-form form').count(), 1);
       await page.screenshot({ path: `artifacts/public-homepage/services-${width}.png` });
       if (width <= 1060) {
