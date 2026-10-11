@@ -196,7 +196,9 @@ try {
       assert.equal(await page.evaluate(()=>sessionStorage.getItem('leader_public_lead_pending_v1')),pendingBefore);
       assert.equal(await message.inputValue(),originalTask);
       assert.equal(await message.evaluate(el=>el===document.activeElement),true,'Focus the described text field');
+      assert.equal(await budget.evaluate(el=>{const r=el.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight}),true,'The length hint is visible in the actual viewport after focus');
       for(let i=0;i<4;i++)assert.equal(await page.locator(`[name="brief_${i}"]`).inputValue(),answers[i]);
+      await page.screenshot({path:`artifacts/public-lead/budget-viewport-${service.id}-${width}.png`});
       await page.locator('[data-leader-lead-widget]').screenshot({path:`artifacts/public-lead/budget-${service.id}-${width}.png`});
       const corrected=originalTask.slice(0,originalTask.length-excess);
       await message.fill(corrected);
