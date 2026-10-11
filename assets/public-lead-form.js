@@ -595,12 +595,15 @@
       const duplicate=data&&data.duplicate===true;
       const successText=(duplicate?'Заявка уже была отправлена ранее. ':'Заявка отправлена. ')+'Номер обращения: '+responseRequestId+'. Мы свяжемся с вами для уточнения деталей.';
       setStatus(form,'ok',successText);
-      const confirmedParams={service,page_path:location.pathname,request_id:responseRequestId,duplicate};
-      if(firstLeadConfirmation(responseRequestId)){
-        goal('lead_confirmed',confirmedParams);
-        if(!duplicate)goal('lead_sent',confirmedParams);
+      // The backend acknowledges a filled honeypot without creating a lead.
+      if(!payload.website){
+        const confirmedParams={service,page_path:location.pathname,request_id:responseRequestId,duplicate};
+        if(firstLeadConfirmation(responseRequestId)){
+          goal('lead_confirmed',confirmedParams);
+          if(!duplicate)goal('lead_sent',confirmedParams);
+        }
+        if(duplicate)goal('lead_duplicate',confirmedParams);
       }
-      if(duplicate)goal('lead_duplicate',confirmedParams);
       form.reset();
       applyContactMode(form);
       const serviceSelect=form.querySelector('[name="service"]');

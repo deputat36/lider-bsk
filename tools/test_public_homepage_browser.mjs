@@ -237,7 +237,8 @@ try {
   } else if (servicesOnly) {
     await noJs.locator('#branding summary').click();
     assert.equal(await noJs.locator('#branding details a').first().isVisible(), true);
-    assert.equal(await noJs.locator('.service-list a').count(), 49);
+    assert.equal(await noJs.locator('.service-list a').count(), 56);
+    assert.equal(await noJs.locator('.service-cards a[data-service-explanation]').count(), 27);
   } else assert.equal(await noJs.locator('#service-pages a').count(), 6);
   console.log('No-JavaScript commercial navigation: PASS');
   await noJs.close();
