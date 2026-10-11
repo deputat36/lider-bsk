@@ -287,9 +287,10 @@ try {
         assert.equal(await hint.isVisible(),true);
         assert.equal(await page.locator('[name="brief_3"]').inputValue(),'Сохранить ответ 3');
       }
-      assert.equal(await hint.evaluate(el=>{const r=el.getBoundingClientRect();return r.top>=0&&r.bottom<innerHeight-70}),true,'Contact guidance stays clear of the fixed mobile actions');
-      assert.equal(await detail.evaluate(el=>{const input=el.getBoundingClientRect(),label=el.closest('.leader-lead-span-12').querySelector('label').getBoundingClientRect();return label.top>=0&&input.bottom<innerHeight-70}),true,'The contact label and whole input remain visible after native invalid');
+      const bounds=await detail.evaluate(el=>{const field=el.getBoundingClientRect(),label=el.closest('.leader-lead-span-12').querySelector('label').getBoundingClientRect(),hint=el.parentElement.querySelector('[data-leader-contact-hint]').getBoundingClientRect();return {labelTop:label.top,fieldBottom:field.bottom,hintTop:hint.top,hintBottom:hint.bottom,viewport:innerHeight,scrollBehavior:getComputedStyle(document.documentElement).scrollBehavior};});
       await page.screenshot({path:`artifacts/public-lead/contact-${choice==='Написать на email'?'email':'vk'}-${width}.png`});
+      assert.ok(bounds.hintTop>=0&&bounds.hintBottom<bounds.viewport-70,'Contact guidance stays clear of fixed actions: '+choice+' @'+width+' '+JSON.stringify(bounds));
+      assert.ok(bounds.labelTop>=0&&bounds.fieldBottom<bounds.viewport-70,'Contact label and whole input stay visible: '+choice+' @'+width+' '+JSON.stringify(bounds));
       await detail.fill(valid);
       assert.equal(await detail.getAttribute('aria-invalid'),'false');
       assert.equal(await page.locator('[data-leader-lead-status]').textContent(),'');

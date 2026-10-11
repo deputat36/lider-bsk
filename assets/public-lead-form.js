@@ -306,7 +306,7 @@
     const hint=form.querySelector('[data-leader-contact-hint]');
     if(hint){hint.textContent=error;hint.classList.add('leader-contact-hint-error')}
     detail.focus?.({preventScroll:true});
-    detail.scrollIntoView?.({block:'center'});
+    detail.scrollIntoView?.({behavior:'instant',block:'center'});
     const params={contact_method:field(form,'contact_method'),page_path:location.pathname};
     if(!field(form,'contact_detail'))goal('contact_detail_missing',params);
     else goal('lead_validation_error',{...params,reason:'contact_detail_invalid'});
