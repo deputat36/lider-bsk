@@ -141,6 +141,17 @@ for(const [key,value] of Object.entries(contact.fields).filter(([key])=>key!=='w
   assert.ok(contact.sent[0].message.includes(value),'Do not clip '+key);
 }
 assert.equal(contact.sent[0].contact_detail,contactBefore.contact_detail);
+
+const mixedValidation=page();
+mixedValidation.fields.service='3D-визуализация';
+mixedValidation.fields.message='д'.repeat(2000);
+for(let i=0;i<4;i++)mixedValidation.fields['brief_'+i]='б'.repeat(180);
+await mixedValidation.submit();assert.equal(mixedValidation.sent.length,0);
+mixedValidation.fields.phone='';await mixedValidation.submit();
+const phoneError=mixedValidation.status.textContent;
+assert.ok(phoneError.includes('Укажите телефон'));
+mixedValidation.fields.message='Краткое описание';mixedValidation.budget();
+assert.equal(mixedValidation.status.textContent,phoneError,'Correcting length must not clear another current validation error');
 await changed.submit();
 assert.equal(changed.sent[0].service, 'Наклейки', 'User selection must win over the original link preset');
 assert.equal(changed.sent[0].utm_source, 'vk');

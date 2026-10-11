@@ -250,8 +250,9 @@
       note.textContent=note.hidden?'':messageLengthHint(length);
     }
     if(form.__leaderMessageTooLong&&length<=MAX_MESSAGE_LENGTH){
-      form.__leaderMessageTooLong=false;
-      setStatus(form,'','');
+      const lengthError=form.__leaderMessageTooLong;
+      form.__leaderMessageTooLong='';
+      if(form.querySelector('[data-leader-lead-status]')?.textContent===lengthError)setStatus(form,'','');
     }
     return length;
   }
@@ -359,8 +360,9 @@
     const message=messageForSubmission(form);
     updateMessageBudget(form);
     if(message.length>MAX_MESSAGE_LENGTH){
-      form.__leaderMessageTooLong=true;
-      setStatus(form,'err',messageLengthHint(message.length));
+      const lengthError=messageLengthHint(message.length);
+      setStatus(form,'err',lengthError);
+      form.__leaderMessageTooLong=lengthError;
       form.querySelector('[name="message"]').focus?.();
       goal('lead_validation_error',{reason:'message_too_long',page_path:location.pathname});
       return;
