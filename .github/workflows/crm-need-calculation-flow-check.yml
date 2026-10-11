@@ -2,17 +2,34 @@ name: CRM need calculation flow check
 on:
   push:
     branches: [main]
-    paths: ['crm/v4/index.html', 'crm/v4/assets/v4/needs.js', 'crm/v4/assets/v4/needs-brief.css', 'crm/v4/assets/v4/calculations.js', 'crm/v4/assets/v4/need-calculation-prefill-v1.js', 'tools/test_need_calculation_prefill.mjs', 'tools/check_crm_need_calculation_flow.py', '.github/workflows/crm-need-calculation-flow-check.yml']
+    paths: ['crm/v4/index.html', 'crm/v4/assets/v4/needs.js', 'crm/v4/assets/v4/needs-brief.css', 'crm/v4/assets/v4/calculations.js', 'crm/v4/assets/v4/calculations.css', 'crm/v4/assets/v4/need-calculation-prefill-v1.js', 'tools/test_need_calculation_prefill.mjs', 'tools/test_need_calculation_handoff.mjs', 'tools/test_need_calculation_browser.mjs', 'tools/check_crm_need_calculation_flow.py', '.github/workflows/crm-need-calculation-flow-check.yml']
   pull_request:
     branches: [main]
-    paths: ['crm/v4/index.html', 'crm/v4/assets/v4/needs.js', 'crm/v4/assets/v4/needs-brief.css', 'crm/v4/assets/v4/calculations.js', 'crm/v4/assets/v4/need-calculation-prefill-v1.js', 'tools/test_need_calculation_prefill.mjs', 'tools/check_crm_need_calculation_flow.py', '.github/workflows/crm-need-calculation-flow-check.yml']
+    paths: ['crm/v4/index.html', 'crm/v4/assets/v4/needs.js', 'crm/v4/assets/v4/needs-brief.css', 'crm/v4/assets/v4/calculations.js', 'crm/v4/assets/v4/calculations.css', 'crm/v4/assets/v4/need-calculation-prefill-v1.js', 'tools/test_need_calculation_prefill.mjs', 'tools/test_need_calculation_handoff.mjs', 'tools/test_need_calculation_browser.mjs', 'tools/check_crm_need_calculation_flow.py', '.github/workflows/crm-need-calculation-flow-check.yml']
 jobs:
   need-calculation-flow:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - run: |
+          set -euo pipefail
           node --check crm/v4/assets/v4/needs.js
           node --check crm/v4/assets/v4/calculations.js
           node tools/test_need_calculation_prefill.mjs
+          node tools/test_need_calculation_handoff.mjs
           python3 tools/check_crm_need_calculation_flow.py
+      - name: Install browser regression dependency
+        run: |
+          npm install --no-save --package-lock=false playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Verify need handoff without production requests
+        run: node tools/test_need_calculation_browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: need-calculation-browser
+          path: artifacts/need-calculation/
+          retention-days: 7
