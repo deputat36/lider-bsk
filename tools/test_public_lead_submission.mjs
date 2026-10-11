@@ -10,12 +10,12 @@ const storage = {
   setItem: (key, value) => values.set(key, value),
   removeItem: key => values.delete(key),
 };
-function page(search = '', sessionStorage = storage) {
+function page(search = '', sessionStorage = storage, response = null) {
   const sent = [];
   const goals = [];
   const fields = { phone: '+7 900 000-00-00', name: 'Synthetic local test', service: 'Наклейки', message: 'Тестовый расчёт', website: '' };
   const button = {};
-  const status = {};
+  const status = { focused:false, focus() { this.focused=true; }, scrollIntoView() {}, getBoundingClientRect() { return {top:400,bottom:500,height:100}; } };
   const offerNote = {};
   const budgetNote = {};
   const detailPanel = { removeAttribute() {} };
@@ -35,7 +35,7 @@ function page(search = '', sessionStorage = storage) {
   } };
   let networkFailure = false;
   const context = vm.createContext({
-    window: { sessionStorage, dispatchEvent(event) { goals.push(event.detail); } },
+    window: { sessionStorage, innerHeight:900, dispatchEvent(event) { goals.push(event.detail); } },
     document: { readyState: 'loading', title: 'Наклейки', addEventListener() {}, querySelectorAll(selector) { return selector === '[data-leader-lead-widget]' ? [form] : []; } },
     location: { pathname: '/nakleyki-plotternaya-rezka-borisoglebsk.html', href: 'https://www.lider-bsk.ru/nakleyki-plotternaya-rezka-borisoglebsk.html' + search, search },
     navigator: { userAgent: 'local-contract-test' },
@@ -43,7 +43,7 @@ function page(search = '', sessionStorage = storage) {
     fetch: async (url, options) => {
       const payload = JSON.parse(options.body); sent.push(payload);
       if (networkFailure) throw new Error('Synthetic network failure');
-      return { ok: true, status: 200, json: async () => ({ ok: true, request_id: payload.request_id }) };
+      return { ok: true, status: 200, json: async () => response || ({ ok: true, request_id: payload.request_id }) };
     },
   });
   vm.runInContext(fs.readFileSync('assets/leader-service-catalog.js', 'utf8'), context);
@@ -52,9 +52,24 @@ function page(search = '', sessionStorage = storage) {
   const instrumented = source.slice(0, marker) + '\nwindow.testSubmit=submit; window.testApplyPreset=()=>applyServicePreset(currentPreset(),false); window.testAttribution=typeof campaignAttribution === "function" ? campaignAttribution : qs; window.testMessage=()=>messageForSubmission(formForTest); window.testBudget=()=>updateMessageBudget(formForTest); window.testContact=()=>applyContactMode(formForTest);\n' + source.slice(marker);
   context.formForTest=form;
   vm.runInContext(instrumented, context);
-  return { sent, goals, fields, status, offerNote, budgetNote, contact:()=>context.window.testContact(), message: () => context.window.testMessage(), budget: () => context.window.testBudget(), applyPreset: () => context.window.testApplyPreset(), capture: () => context.window.testAttribution(), fail: value => { networkFailure = value; }, submit: () => context.window.testSubmit({ preventDefault() {}, currentTarget: form }) };
+  return { sent, goals, fields, form, status, offerNote, budgetNote, contact:()=>context.window.testContact(), message: () => context.window.testMessage(), budget: () => context.window.testBudget(), applyPreset: () => context.window.testApplyPreset(), capture: () => context.window.testAttribution(), fail: value => { networkFailure = value; }, submit: () => context.window.testSubmit({ preventDefault() {}, currentTarget: form }) };
 }
 
+for(const duplicate of [false,true]){
+  const accepted=page('',storage,{ok:true,request_id:'web-server-confirmed',duplicate});
+  accepted.fail(true);await accepted.submit();
+  assert.equal(accepted.status.focused,false,'A failed request never focuses a success confirmation');
+  assert.ok(accepted.status.className.includes('err'));
+  accepted.fail(false);await accepted.submit();
+  assert.equal(accepted.sent[0].request_id,accepted.sent[1].request_id,'Confirmation preserves the retry contract');
+  assert.equal(accepted.form.dataset.lastRequestId,'web-server-confirmed','Keep the reference returned by the server');
+  assert.ok(accepted.status.textContent.startsWith(duplicate?'Заявка уже была отправлена ранее.':'Заявка отправлена.'));
+  assert.ok(accepted.status.textContent.includes('Номер обращения: web-server-confirmed.'));
+  assert.equal(accepted.status.focused,true,'Successful and previously accepted requests focus their confirmation');
+  assert.equal(accepted.goals.at(-1).params.request_id,'web-server-confirmed');
+  assert.equal(accepted.goals.at(-1).params.duplicate,duplicate);
+  assert.equal(values.has('leader_public_lead_pending_v1'),false);
+}
 const direct = page();
 for(const [method,detail] of [['Написать на email','synthetic@example.test'],['Написать ВКонтакте','vk.com/id123']]){
   const missing=page('?service=visualization-3d&offer=onsite-preview');missing.applyPreset();

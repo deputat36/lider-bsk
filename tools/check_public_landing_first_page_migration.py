@@ -39,9 +39,9 @@ if missing_docs:
 
 required_page = [
     'assets/public-landing.css?v=1',
-    'assets/public-lead-form.css?v=29',
+    'assets/public-lead-form.css?v=30',
     'assets/public-banner-detail.css?v=1',
-    'assets/public-lead-form.js?v=34',
+    'assets/public-lead-form.js?v=35',
     'data-leader-lead-form',
     'data-service="Баннер"',
     '<script type="application/ld+json">',

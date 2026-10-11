@@ -95,6 +95,25 @@
     return id;
   }
   function setStatus(form,type,msg){const s=form.querySelector('[data-leader-lead-status]');if(s){s.className='leader-lead-status show '+type;s.textContent=msg}}
+  function revealSuccess(form){
+    const status=form.querySelector('[data-leader-lead-status]');
+    if(!status)return;
+    status.focus({preventScroll:true});
+    status.scrollIntoView({behavior:'instant',block:'center'});
+    // Account for the actual header and mobile actions after the form reset.
+    const height=window.innerHeight;
+    let top=12,bottom=height-12;
+    for(const element of document.querySelectorAll('header,.mobile-cta,#leader-mobile-sticky-cta')){
+      if(!['fixed','sticky'].includes(window.getComputedStyle(element).position))continue;
+      const box=element.getBoundingClientRect();
+      if(!box.width||!box.height)continue;
+      if(box.top<=12&&box.bottom>0)top=Math.max(top,box.bottom+12);
+      if(box.bottom>=height-12&&box.top<height)bottom=Math.min(bottom,box.top-12);
+    }
+    const box=status.getBoundingClientRect();
+    const delta=box.height>bottom-top||box.top<top?box.top-top:box.bottom>bottom?box.bottom-bottom:0;
+    if(delta)window.scrollBy({top:delta,behavior:'instant'});
+  }
   function qs(){const p=new URLSearchParams(location.search);return{utm_source:p.get('utm_source')||'',utm_medium:p.get('utm_medium')||'',utm_campaign:p.get('utm_campaign')||'',utm_term:p.get('utm_term')||'',utm_content:p.get('utm_content')||'',scenario:p.get('scenario')||'',service:p.get('service')||'',offer:p.get('offer')||''}}
 
   // Retain the last campaign during this visit, including navigation without UTM.
@@ -372,7 +391,7 @@
       </div>
       <button type="submit">Отправить заявку</button>
       <div class="leader-lead-note">Нажимая кнопку, вы соглашаетесь с <a href="privacy.html">политикой обработки персональных данных</a> для связи и расчёта заказа.</div>
-      <div class="leader-lead-status" data-leader-lead-status role="status" aria-live="polite" aria-atomic="true"></div>
+      <div class="leader-lead-status" data-leader-lead-status role="status" aria-live="polite" aria-atomic="true" tabindex="-1"></div>
     </form>`;
   }
 
@@ -514,6 +533,7 @@
       form.__leaderBriefId='';
       renderServiceBrief(form);
       updateMessageBudget(form);
+      revealSuccess(form);
     }catch(err){
       console.error(err);
       setStatus(form,'err','Не удалось отправить заявку. Позвоните по номеру 8 980 245-74-71 или попробуйте ещё раз.');

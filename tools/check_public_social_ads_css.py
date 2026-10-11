@@ -22,9 +22,9 @@ def main() -> None:
     css = CSS.read_text(encoding='utf-8')
 
     for marker in (
-        '<link rel="stylesheet" href="assets/public-lead-form.css?v=29">',
+        '<link rel="stylesheet" href="assets/public-lead-form.css?v=30">',
         '<link rel="stylesheet" href="assets/public-social-ads.css?v=1">',
-        '<script src="assets/public-lead-form.js?v=34"></script>',
+        '<script src="assets/public-lead-form.js?v=35"></script>',
         '<script src="assets/mobile-sticky-cta.js?v=1"></script>',
         '<link rel="canonical" href="https://www.lider-bsk.ru/reklama-v-socsetyah-borisoglebsk.html">',
         '<meta name="robots" content="index, follow">',
@@ -34,7 +34,7 @@ def main() -> None:
     ):
         require(html, marker, PAGE)
 
-    if html.index('public-lead-form.css?v=29') > html.index('public-social-ads.css?v=1'):
+    if html.index('public-lead-form.css?v=30') > html.index('public-social-ads.css?v=1'):
         raise SystemExit('Page CSS must load after the shared lead-form CSS')
 
     forbid(html, '<style>', PAGE)

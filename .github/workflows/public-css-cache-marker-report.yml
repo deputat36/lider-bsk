@@ -25,8 +25,8 @@ jobs:
           echo '### Public CSS cache marker report' >> "$GITHUB_STEP_SUMMARY"
           echo '' >> "$GITHUB_STEP_SUMMARY"
 
-          stale_files=$(grep -R -l 'assets/public-lead-form.css?v=3' -- *.html || true)
-          fresh_files=$(grep -R -l 'assets/public-lead-form.css?v=4' -- *.html || true)
+          stale_files=$(grep -F -l 'assets/public-lead-form.css?v=3"' -- *.html || true)
+          fresh_files=$(grep -F -l 'assets/public-lead-form.css?v=30"' -- *.html || true)
           unexpected_stale=$(printf '%s\n' "$stale_files" | grep -v '^$' | grep -v '^index\.html$' || true)
 
           if [ -n "$stale_files" ]; then
@@ -45,7 +45,7 @@ jobs:
           fi
 
           echo '' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Current ?v=4 references:' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Current ?v=30 references:' >> "$GITHUB_STEP_SUMMARY"
           if [ -n "$fresh_files" ]; then
             echo "$fresh_files" | sed 's/^/- /' >> "$GITHUB_STEP_SUMMARY"
           else
