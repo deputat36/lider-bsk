@@ -9,7 +9,7 @@ const commercial = JSON.parse(await readFile('data/commercial-services.json', 'u
 const catalog = globalThis.LeaderServiceCatalog;
 const publicForms=[];
 for(const name of (await readdir(root)).filter(name=>name.endsWith('.html')).sort()){
-  if((await readFile(name,'utf8')).includes('assets/public-lead-form.js?v=34'))publicForms.push(name);
+  if((await readFile(name,'utf8')).includes('assets/public-lead-form.js?v=35'))publicForms.push(name);
 }
 assert.equal(publicForms.length,64,'Exercise the actual release on all public form pages');
 const server = createServer(async (req, res) => {
@@ -25,6 +25,23 @@ await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const origin = `http://127.0.0.1:${server.address().port}`;
 const browser = await chromium.launch({executablePath:process.env.LEADER_BROWSER_EXECUTABLE || undefined});
 await mkdir('artifacts/public-lead', {recursive:true});
+async function assertConfirmation(page,requestId){
+  const status=page.locator('[data-leader-lead-status].ok');
+  await status.waitFor();
+  assert.ok((await status.textContent()).includes('Номер обращения: '+requestId+'.'),'Show the accepted server reference');
+  assert.equal(await status.getAttribute('role'),'status');
+  assert.equal(await status.getAttribute('tabindex'),'-1','No permanent tab stop');
+  assert.equal(await status.evaluate(el=>el===document.activeElement),true,'Focus follows the confirmed result');
+  const bounds=await status.evaluate(el=>{
+    const box=el.getBoundingClientRect();
+    const header=document.querySelector('header');
+    const fixedHeader=header&&['fixed','sticky'].includes(getComputedStyle(header).position)?header.getBoundingClientRect().bottom:0;
+    const bars=[...document.querySelectorAll('.mobile-cta,#leader-mobile-sticky-cta')].map(item=>item.getBoundingClientRect()).filter(item=>item.width&&item.height&&item.top<innerHeight);
+    return {top:box.top,bottom:box.bottom,left:box.left,right:box.right,header:Math.max(0,fixedHeader),actions:Math.min(innerHeight,...bars.map(item=>item.top)),width:innerWidth,height:innerHeight};
+  });
+  assert.ok(bounds.top>=bounds.header+3&&bounds.bottom<=bounds.actions-3,'Entire confirmation clears the header and fixed actions: '+JSON.stringify(bounds));
+  assert.ok(bounds.left>=0&&bounds.right<=bounds.width,'Reference stays within the viewport');
+}
 try {
   for (const width of [1440,390]) {
     const context = await browser.newContext({viewport:{width,height:900}});
@@ -34,6 +51,7 @@ try {
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     let rejectNext = true;
+    let nextResponse = null;
     await context.route('**/*', route => {
       const request = route.request();
       if (request.url().startsWith(origin + '/') && request.method() === 'GET') return route.continue();
@@ -41,7 +59,8 @@ try {
         const payload = request.postDataJSON(); payloads.push(payload);
         // Never forward to production; both outcomes are local fixtures.
         if (rejectNext) { rejectNext = false; return route.fulfill({status:503,contentType:'application/json',body:'{"ok":false}'}); }
-        return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,request_id:payload.request_id})});
+        const response=nextResponse||{ok:true,request_id:payload.request_id};nextResponse=null;
+        return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(response)});
       }
       return route.abort();
     });
@@ -60,6 +79,9 @@ try {
     assert.equal(payloads[1].service, 'Наклейки');
     assert.equal(payloads[1].utm_source, 'vk');
     assert.equal(payloads[1].utm_campaign, 'opening');
+    await assertConfirmation(page,payloads[1].request_id);
+    await page.locator('[data-leader-lead-status]').press('Enter');
+    assert.equal(payloads.length,2,'Enter on the confirmation does not resubmit');
     assert.equal(errors.length, 0, errors.join('\n'));
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     await page.screenshot({path:`artifacts/public-lead/submission-${width}.png`});
@@ -103,6 +125,7 @@ try {
       await page.locator('button[type="submit"]').click();
       await page.locator('[data-leader-lead-status].ok').waitFor();
       const submitted=payloads.at(-1);
+      await assertConfirmation(page,submitted.request_id);
       assert.equal(submitted.service, service.label);
       assert.equal(submitted.direction, service.direction);
       assert.equal(submitted.utm_source, 'vk');
@@ -260,6 +283,11 @@ try {
         assert.equal(await detail.evaluate(el=>el.validity.valid),true);
         assert.equal(await page.locator('[data-leader-lead-status]').textContent(),'');
       }
+      rejectNext=false;
+      await form.evaluate(el=>el.requestSubmit());
+      await page.locator('[data-leader-lead-status].ok').waitFor();
+      assert.equal(payloads.length,postsBefore+1,name+' has one accepted request');
+      await assertConfirmation(page,payloads.at(-1).request_id);
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,name);
     }
     for(const [name,choice,valid] of [
@@ -305,6 +333,7 @@ try {
       await page.locator('button[type="submit"]').click();
       await page.locator('[data-leader-lead-status].ok').waitFor();
       assert.equal(payloads.at(-1).request_id,failed.request_id);
+      await assertConfirmation(page,failed.request_id);
       assert.equal(await method.inputValue(),'Позвонить по указанному номеру');
       assert.equal(await detail.inputValue(),'');
       assert.equal(await detail.getAttribute('aria-required'),'false');
@@ -316,8 +345,32 @@ try {
       const validationGoals=await page.evaluate(()=>window.__leaderTestGoals.filter(event=>event.goal==='contact_detail_missing'||event.goal==='lead_validation_error'));
       assert.ok(!JSON.stringify(validationGoals).includes(valid),'Validation goals contain no customer contacts');
     }
+    if(width===390)for(const [name,w,h] of [
+      ['index.html',320,568],
+      ['request.html?service=modeling-3d',390,667],
+      ['3d-vizualizaciya-reklamy.html?service=visualization-3d&offer=onsite-preview',1040,390],
+    ]){
+      await page.setViewportSize({width:w,height:h});
+      await page.goto(origin+'/'+name);
+      await page.locator('[name="phone"]').fill('+7 900 000-00-00');
+      await page.locator('[name="message"]').fill('Synthetic duplicate confirmation');
+      rejectNext=false;
+      // A long fixture ID also verifies wrapping; this is never sent to production.
+      const requestId='web-confirmed-'+ 'r'.repeat(80);
+      nextResponse={ok:true,request_id:requestId,duplicate:true};
+      const before=payloads.length;
+      await page.locator('button[type="submit"]').focus();
+      await page.keyboard.press('Enter');
+      await assertConfirmation(page,requestId);
+      assert.equal(payloads.length,before+1);
+      assert.ok((await page.locator('[data-leader-lead-status]').textContent()).startsWith('Заявка уже была отправлена ранее.'));
+      assert.equal(await page.locator('[data-leader-lead-widget]').getAttribute('data-last-request-id'),requestId);
+      assert.equal(await page.evaluate(()=>sessionStorage.getItem('leader_public_lead_pending_v1')),null);
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+      await page.screenshot({path:`artifacts/public-lead/confirmation-duplicate-${w}-${h}.png`});
+    }
     assert.equal(errors.length,0,errors.join('\n'));
     await context.close();
   }
-  console.log('PASS: all 64 forms on desktop/mobile, native contact validation, correction/reset/retry, full message/brief, campaign and service selection; zero production requests forwarded.');
+  console.log('PASS: all 64 forms on desktop/mobile, fully visible focused confirmations, server references and duplicate responses on small/landscape screens, native contact validation, correction/reset/retry, full message/brief, campaign and service selection; zero production requests forwarded.');
 } finally { await browser.close(); server.close(); }

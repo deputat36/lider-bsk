@@ -9,9 +9,9 @@ ROOT = Path(__file__).resolve().parents[1]
 PAGE = ROOT / "kontakty.html"
 CSS = ROOT / "assets" / "public-contacts.css"
 JS = ROOT / "assets" / "public-contacts.js"
-FORM_CSS = 'assets/public-lead-form.css?v=29'
+FORM_CSS = 'assets/public-lead-form.css?v=30'
 PAGE_CSS = 'assets/public-contacts.css?v=1'
-FORM_JS = 'assets/public-lead-form.js?v=34'
+FORM_JS = 'assets/public-lead-form.js?v=35'
 PAGE_JS = 'assets/public-contacts.js?v=1'
 
 

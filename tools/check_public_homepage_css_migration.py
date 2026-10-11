@@ -37,7 +37,7 @@ def main() -> None:
 
     # Preserve the original cascade: form CSS was before the homepage inline CSS.
     expected_stylesheets = [
-        'assets/public-lead-form.css?v=29',
+        'assets/public-lead-form.css?v=30',
         'assets/public-homepage.css?v=5',
         'assets/public-commercial-services.css?v=1',
         'assets/public-creative-services.css?v=1',
@@ -50,7 +50,7 @@ def main() -> None:
 
     expected_scripts = [
         'assets/leader-service-catalog.js?v=3',
-        'assets/public-lead-form.js?v=34',
+        'assets/public-lead-form.js?v=35',
         'assets/packages-link.js?v=2',
     ]
     if parser.scripts != expected_scripts:
@@ -78,9 +78,9 @@ def main() -> None:
         require(css, marker, 'assets/public-homepage.css')
 
     for marker in (
-        'assets/public-lead-form.css?v=3',
-        'assets/public-lead-form.js?v=4',
-        'assets/public-lead-form.js?v=5',
+        'assets/public-lead-form.css?v=3"',
+        'assets/public-lead-form.js?v=4"',
+        'assets/public-lead-form.js?v=5"',
         '<style>',
         '</style>',
     ):

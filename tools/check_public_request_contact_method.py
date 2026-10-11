@@ -6,8 +6,8 @@ Source-only: no production request or customer data is used.
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-FORM_SCRIPT = 'assets/public-lead-form.js?v=34'
-FORM_CSS = 'assets/public-lead-form.css?v=29'
+FORM_SCRIPT = 'assets/public-lead-form.js?v=35'
+FORM_CSS = 'assets/public-lead-form.css?v=30'
 
 
 def main() -> None:
@@ -56,10 +56,10 @@ def main() -> None:
     for marker in ('.leader-contact-hint', '.leader-contact-detail-required', '.leader-contact-hint-error'):
         if marker not in css:
             raise SystemExit(f'Shared CSS is missing contact guidance: {marker}')
-    for marker in ('64', 'v34', 'HTML5 constraint validation', 'событие '+chr(96)+'invalid'+chr(96), 'production-заявка не создаётся', 'Edge Function и Supabase production не меняются'):
+    for marker in ('64', 'v35', 'HTML5 constraint validation', 'событие '+chr(96)+'invalid'+chr(96), 'production-заявка не создаётся', 'Edge Function и Supabase production не меняются'):
         if marker not in doc:
             raise SystemExit(f'Contact guard document is missing: {marker}')
-    print('Shared contact method guard is deployed to all 64 forms with JS v34 / CSS v29.')
+    print('Shared contact method guard is deployed to all 64 forms with JS v35 / CSS v30.')
 
 
 if __name__ == '__main__':

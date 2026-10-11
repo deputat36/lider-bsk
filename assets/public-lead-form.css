@@ -15,3 +15,7 @@ html body .leader-lead-widget button.leader-lead-more:hover{background:#f2f4f7}
 .leader-lead-widget .leader-contact-hint{display:block;margin-top:7px;color:inherit;opacity:.8;font-size:13px;line-height:1.4;overflow-wrap:anywhere}
 .leader-lead-widget .leader-contact-detail-required label:after{content:" *";color:#ff6a00}
 .leader-lead-widget .leader-contact-hint-error{font-weight:700;opacity:1}
+
+/* Keep the complete success reference readable and its keyboard focus visible. */
+.leader-lead-status{overflow-wrap:anywhere}
+.leader-lead-status.ok:focus{outline:3px solid #ff6a00;outline-offset:3px}

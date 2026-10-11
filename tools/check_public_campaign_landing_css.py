@@ -4,7 +4,7 @@ import re
 
 ROOT = Path(__file__).resolve().parents[1]
 CSS_PATH = ROOT / 'assets' / 'public-campaign-landing.css'
-FORM_CSS = 'assets/public-lead-form.css?v=29'
+FORM_CSS = 'assets/public-lead-form.css?v=30'
 SHARED_CSS = 'assets/public-campaign-landing.css?v=1'
 
 PAGES = {
@@ -20,7 +20,7 @@ PAGES = {
         ),
         'data_service': 'Соцсети и контент',
         'price_cards': 3,
-        'form_js': 'assets/public-lead-form.js?v=34',
+        'form_js': 'assets/public-lead-form.js?v=35',
     },
     'reklama-otkrytiya-magazina-borisoglebsk.html': {
         'body_class': 'page-store-opening',
@@ -34,7 +34,7 @@ PAGES = {
         ),
         'data_service': 'Комплексная реклама',
         'price_cards': 0,
-        'form_js': 'assets/public-lead-form.js?v=34',
+        'form_js': 'assets/public-lead-form.js?v=35',
     },
 }
 

@@ -11,9 +11,9 @@ SITEMAP = ROOT / 'sitemap.xml'
 
 EXPECTED_URL = 'https://www.lider-bsk.ru/kak-prohodit-zakaz.html'
 SHARED_CSS = 'assets/public-landing.css?v=1'
-FORM_CSS = 'assets/public-lead-form.css?v=29'
+FORM_CSS = 'assets/public-lead-form.css?v=30'
 PAGE_CSS = 'assets/public-order-process.css?v=1'
-FORM_JS = 'assets/public-lead-form.js?v=34'
+FORM_JS = 'assets/public-lead-form.js?v=35'
 PAGE_JS = 'assets/public-order-process.js?v=1'
 PRESET = 'Страница «Как проходит заказ». Нужна консультация и расчёт рекламной задачи.'
 
@@ -77,8 +77,8 @@ def main() -> None:
             errors.append('Process preset must live in external JS, not inline HTML')
 
         for stale in (
-            'assets/public-lead-form.js?v=10',
-            'assets/public-lead-form.css?v=3',
+            'assets/public-lead-form.js?v=10"',
+            'assets/public-lead-form.css?v=3"',
             ':root{--text:',
             '*{box-sizing:border-box}html{scroll-behavior:smooth}body{',
         ):
