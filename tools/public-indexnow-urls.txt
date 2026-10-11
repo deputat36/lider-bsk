@@ -1,6 +1,8 @@
-/banner-dlya-magazina-borisoglebsk.html
-/oformlenie-vhoda-borisoglebsk.html
-/nakleyki-na-vitrinu-borisoglebsk.html
-/rezhim-raboty-tablichki-borisoglebsk.html
-/outdoor-advertising-borisoglebsk.html
-/reklama-otkrytiya-magazina-borisoglebsk.html
+/uslugi.html
+/dizayn-3d-animaciya.html
+/dizayn-maketov.html
+/3d-modelirovanie-konstrukciy.html
+/3d-vizualizaciya-reklamy.html
+/animaciya-motion-dizayn.html
+/podgotovka-maketov-k-pechati.html
+/nashi-raboty.html

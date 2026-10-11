@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 import io
+from http.client import RemoteDisconnected
 import json
 from pathlib import Path
 import sys
 import unittest
-from unittest.mock import patch
-from urllib.error import HTTPError
+from unittest.mock import call, patch
+from urllib.error import HTTPError, URLError
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -32,8 +33,10 @@ class PublicIndexNowTest(unittest.TestCase):
     def test_payload_is_canonical_and_scoped(self) -> None:
         value = public_indexnow.payload()
         self.assertEqual(value['host'], 'www.lider-bsk.ru')
-        self.assertEqual(len(value['urlList']), 6)
-        self.assertEqual(len(set(value['urlList'])), 6)
+        self.assertEqual(len(value['urlList']), 8)
+        self.assertEqual(len(set(value['urlList'])), 8)
+        self.assertIn('https://www.lider-bsk.ru/dizayn-3d-animaciya.html', value['urlList'])
+        self.assertIn('https://www.lider-bsk.ru/nashi-raboty.html', value['urlList'])
         self.assertTrue(all(url.startswith('https://www.lider-bsk.ru/') for url in value['urlList']))
         self.assertTrue(all('?' not in url and '#' not in url for url in value['urlList']))
 
@@ -68,6 +71,45 @@ class PublicIndexNowTest(unittest.TestCase):
             side_effect=[FakeResponse(public_indexnow.KEY), error],
         ):
             self.assertEqual(public_indexnow.submit(), 1)
+
+    def test_network_retry_preserves_the_payload(self) -> None:
+        requests = []
+
+        def fake_urlopen(request, timeout):
+            requests.append(request)
+            if len(requests) == 1:
+                return FakeResponse(public_indexnow.KEY)
+            if len(requests) == 2:
+                raise RemoteDisconnected('Remote end closed connection without response')
+            return FakeResponse(status=200)
+
+        with patch.object(public_indexnow, 'urlopen', side_effect=fake_urlopen), \
+                patch.object(public_indexnow.time, 'sleep') as sleep:
+            self.assertEqual(public_indexnow.submit(), 0)
+        self.assertEqual(len(requests), 3)
+        self.assertEqual(requests[1].full_url, public_indexnow.ENDPOINT)
+        self.assertEqual(requests[1].data, requests[2].data)
+        self.assertEqual(json.loads(requests[2].data), public_indexnow.payload())
+        sleep.assert_called_once_with(5)
+
+    def test_network_failure_stops_after_three_attempts(self) -> None:
+        for error in (RemoteDisconnected('closed'), URLError('connection failed'), TimeoutError('timeout')):
+            with self.subTest(error=type(error).__name__), \
+                    patch.object(public_indexnow, 'urlopen', side_effect=[FakeResponse(public_indexnow.KEY), error, error, error]) as opener, \
+                    patch.object(public_indexnow.time, 'sleep') as sleep:
+                self.assertEqual(public_indexnow.submit(), 1)
+                self.assertEqual(opener.call_count, 4)
+                self.assertEqual(sleep.call_args_list, [call(5), call(10)])
+
+    def test_http_refusals_do_not_retry(self) -> None:
+        for status in (400, 403, 422, 429, 503):
+            with self.subTest(status=status):
+                error = HTTPError(public_indexnow.ENDPOINT, status, 'Rejected', hdrs=None, fp=io.BytesIO(b''))
+                with patch.object(public_indexnow, 'urlopen', side_effect=[FakeResponse(public_indexnow.KEY), error]) as opener, \
+                        patch.object(public_indexnow.time, 'sleep') as sleep:
+                    self.assertEqual(public_indexnow.submit(), 1)
+                self.assertEqual(opener.call_count, 2)
+                sleep.assert_not_called()
 
 
 if __name__ == '__main__':

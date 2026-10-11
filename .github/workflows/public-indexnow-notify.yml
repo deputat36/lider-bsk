@@ -5,37 +5,39 @@ on:
     branches: [main]
     paths:
       - '93997a8ea7f1013d09703e47ac5ece584a3b0fcaf26738f8.txt'
-      - 'banner-dlya-magazina-borisoglebsk.html'
-      - 'oformlenie-vhoda-borisoglebsk.html'
-      - 'nakleyki-na-vitrinu-borisoglebsk.html'
-      - 'rezhim-raboty-tablichki-borisoglebsk.html'
-      - 'outdoor-advertising-borisoglebsk.html'
-      - 'reklama-otkrytiya-magazina-borisoglebsk.html'
+      - 'uslugi.html'
+      - 'dizayn-3d-animaciya.html'
+      - 'dizayn-maketov.html'
+      - '3d-modelirovanie-konstrukciy.html'
+      - '3d-vizualizaciya-reklamy.html'
+      - 'animaciya-motion-dizayn.html'
+      - 'podgotovka-maketov-k-pechati.html'
+      - 'nashi-raboty.html'
       - 'sitemap.xml'
       - 'tools/public-indexnow-urls.txt'
       - 'tools/public_indexnow.py'
       - 'tools/check_public_indexnow.py'
       - 'tools/test_public_indexnow.py'
-      - 'docs/PUBLIC_INDEXNOW_2026-07-18.md'
-      - 'docs/STATUS.md'
+      - 'docs/PUBLIC_CREATIVE_INDEXING_2026-10-11.md'
       - '.github/workflows/public-indexnow-notify.yml'
   push:
     branches: [main]
     paths:
       - '93997a8ea7f1013d09703e47ac5ece584a3b0fcaf26738f8.txt'
-      - 'banner-dlya-magazina-borisoglebsk.html'
-      - 'oformlenie-vhoda-borisoglebsk.html'
-      - 'nakleyki-na-vitrinu-borisoglebsk.html'
-      - 'rezhim-raboty-tablichki-borisoglebsk.html'
-      - 'outdoor-advertising-borisoglebsk.html'
-      - 'reklama-otkrytiya-magazina-borisoglebsk.html'
+      - 'uslugi.html'
+      - 'dizayn-3d-animaciya.html'
+      - 'dizayn-maketov.html'
+      - '3d-modelirovanie-konstrukciy.html'
+      - '3d-vizualizaciya-reklamy.html'
+      - 'animaciya-motion-dizayn.html'
+      - 'podgotovka-maketov-k-pechati.html'
+      - 'nashi-raboty.html'
       - 'sitemap.xml'
       - 'tools/public-indexnow-urls.txt'
       - 'tools/public_indexnow.py'
       - 'tools/check_public_indexnow.py'
       - 'tools/test_public_indexnow.py'
-      - 'docs/PUBLIC_INDEXNOW_2026-07-18.md'
-      - 'docs/STATUS.md'
+      - 'docs/PUBLIC_CREATIVE_INDEXING_2026-10-11.md'
       - '.github/workflows/public-indexnow-notify.yml'
 
 permissions:
@@ -60,5 +62,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Notify Yandex about the six updated URLs
+      - name: Notify IndexNow about the reviewed creative URLs
         run: python3 tools/public_indexnow.py --submit
