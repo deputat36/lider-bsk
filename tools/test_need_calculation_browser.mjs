@@ -55,8 +55,10 @@ try{
       assert.equal(await brief.locator('.v4-calc-need-description').isVisible(),true);
       if(!custom){assert.ok((await brief.textContent()).includes('Ответ 3'));assert.ok((await brief.textContent()).includes('synthetic@example.test'));}
       assert.equal(await brief.locator('img').count(),0,'Brief is rendered as text');assert.equal(await page.evaluate(()=>window.__xss||false),false);
-      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
       await brief.screenshot({path:path.join(out,`brief-${id}-${width}.png`)});
+      const overflow=await page.evaluate(()=>({width:innerWidth,scrollWidth:document.documentElement.scrollWidth,wide:[...document.querySelectorAll('#calculationsBox *')].map(el=>({tag:el.tagName,id:el.id,className:el.className,right:Math.round(el.getBoundingClientRect().right)})).filter(el=>el.right>innerWidth+1).slice(0,10)}));
+      if(overflow.scrollWidth>overflow.width)await page.screenshot({path:path.join(out,`overflow-${id}-${width}.png`)});
+      assert.equal(overflow.scrollWidth>overflow.width,false,`${id} at ${width}: ${JSON.stringify(overflow)}`);
       await page.locator(custom?'#calcCustomCost':'#calcServiceCost').fill('100');
       await page.locator(custom?'#calcCustomClient':'#calcServiceClient').fill('200');
       await page.locator('#addSmartCalcItemBtn').click();
@@ -64,6 +66,7 @@ try{
       assert.equal(await row.locator('[data-calc-row-field="qty"]').inputValue(),custom?'2.5':'4');
       assert.ok((await page.locator('#calcDraftTotals').textContent()).includes(custom?'500':'800'),'Total includes the actual quantity');
       assert.equal(await page.locator('#calcPublicComment').inputValue(),'Условия согласованы вручную');
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`${id} at ${width}: added item must fit the page`);
       await page.locator('#calcModeFields').scrollIntoViewIfNeeded();await page.screenshot({path:path.join(out,`position-${id}-${width}.png`)});
       const before=await name.inputValue();await page.evaluate(()=>__testApi.handoff('archived'));assert.equal(await name.inputValue(),before,'Archive cannot replace the draft');
       await page.evaluate(()=>document.dispatchEvent(new CustomEvent('leader-v4:calculate-need',{detail:{need:{id:'foreign',lead_id:'other-lead',title:'Чужая заявка'}}})));assert.equal(await name.inputValue(),before);

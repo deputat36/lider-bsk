@@ -3,3 +3,5 @@
 .v4-calc-need-context summary{cursor:pointer;font-weight:900;overflow-wrap:anywhere}
 .v4-calc-need-description{margin-top:10px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5}
 .v4-calc-need-context p{margin:10px 0 0;color:#475569;font-size:13px;line-height:1.45}
+.v4-calc-form .v4-form-grid>label{min-width:0;overflow-wrap:anywhere}
+.v4-calc-form .v4-form-grid input,.v4-calc-form .v4-form-grid select,.v4-calc-form .v4-form-grid textarea{min-width:0;max-width:100%}
