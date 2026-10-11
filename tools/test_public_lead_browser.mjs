@@ -163,8 +163,62 @@ try {
       await page.locator('[name="service"]').waitFor();
       assert.equal(await page.locator('[data-leader-offer-note]').isVisible(),false);
     }
+    for(const service of catalog.services.filter(item=>item.brief)){
+      await page.goto(origin+'/'+service.pages[0]);
+      await page.locator('[name="phone"]').fill('+7 900 000-00-00');
+      const originalTask='Полное ТЗ '+ 'т'.repeat(1988)+'🔶';
+      await page.locator('[name="message"]').fill(originalTask);
+      await page.locator('[data-leader-more]').click();
+      const answers=[];
+      for(let i=0;i<4;i++){
+        answers.push('Ответ '+i+' '+ 'б'.repeat(172));
+        await page.locator(`[name="brief_${i}"]`).fill(answers[i]);
+      }
+      const budget=page.locator('[data-leader-message-budget]');
+      await budget.waitFor({state:'visible'});
+      const match=(await budget.textContent()).match(/на (\d+) символ/);
+      assert.ok(match,'Describe the exact excess before submit');
+      const excess=Number(match[1]);
+      const message=page.locator('[name="message"]');
+      assert.equal(await message.getAttribute('aria-describedby'),await budget.getAttribute('id'));
+      assert.equal(await page.locator('[name="brief_3"]').getAttribute('aria-describedby'),await budget.getAttribute('id'));
+      await page.locator('[name="service"]').selectOption('Наклейки');
+      assert.equal(await budget.isVisible(),false,'Changing service recalculates the active brief');
+      assert.equal(await message.inputValue(),originalTask);
+      await page.locator('[name="service"]').selectOption(service.label);
+      assert.equal(await page.locator('[name="brief_3"]').inputValue(),answers[3]);
+      assert.equal(await budget.isVisible(),true);
+      const postsBefore=payloads.length;
+      const pendingBefore=await page.evaluate(()=>sessionStorage.getItem('leader_public_lead_pending_v1'));
+      await page.locator('button[type="submit"]').click();
+      await page.locator('[data-leader-lead-status].err').waitFor();
+      assert.equal(payloads.length,postsBefore,'An overlong message produces no HTTP request');
+      assert.equal(await page.evaluate(()=>sessionStorage.getItem('leader_public_lead_pending_v1')),pendingBefore);
+      assert.equal(await message.inputValue(),originalTask);
+      assert.equal(await message.evaluate(el=>el===document.activeElement),true,'Focus the described text field');
+      assert.equal(await budget.evaluate(el=>{const r=el.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight}),true,'The length hint is visible in the actual viewport after focus');
+      for(let i=0;i<4;i++)assert.equal(await page.locator(`[name="brief_${i}"]`).inputValue(),answers[i]);
+      await page.screenshot({path:`artifacts/public-lead/budget-viewport-${service.id}-${width}.png`});
+      await page.locator('[data-leader-lead-widget]').screenshot({path:`artifacts/public-lead/budget-${service.id}-${width}.png`});
+      const corrected=originalTask.slice(0,originalTask.length-excess);
+      await message.fill(corrected);
+      assert.equal(await page.locator('[data-leader-lead-status]').textContent(),'','A corrected length clears the validation error');
+      rejectNext=true;
+      await page.locator('button[type="submit"]').click();
+      await page.locator('[data-leader-lead-status].err').waitFor();
+      const failed=payloads.at(-1);
+      assert.equal(failed.message.length,3000);
+      assert.ok(failed.message.includes('Задача клиента: '+corrected));
+      for(let i=0;i<4;i++)assert.ok(failed.message.includes('Бриф — '+service.questions[i]+' '+answers[i]));
+      await page.locator('button[type="submit"]').click();
+      await page.locator('[data-leader-lead-status].ok').waitFor();
+      assert.equal(payloads.at(-1).request_id,failed.request_id,'Corrected message keeps its request ID on retry');
+      assert.equal(await message.inputValue(),'');
+      assert.equal(await budget.isVisible(),false,'Success resets the budget and answers');
+      assert.equal(await page.locator('[name="service"]').inputValue(),service.label);
+    }
     assert.equal(errors.length,0,errors.join('\n'));
     await context.close();
   }
-  console.log('PASS: desktop/mobile submit, campaign navigation, user service selection, retry; zero production requests forwarded.');
+  console.log('PASS: desktop/mobile submit, full message/brief, length guard and correction, campaign navigation, service selection and retry; zero production requests forwarded.');
 } finally { await browser.close(); server.close(); }

@@ -16,10 +16,12 @@ function page(search = '', sessionStorage = storage) {
   const button = {};
   const status = {};
   const offerNote = {};
+  const budgetNote = {};
   const form = { dataset: {}, reset() {}, querySelector(selector) {
     if (selector === 'button[type="submit"]') return button;
     if (selector === '[data-leader-lead-status]') return status;
     if (selector === '[data-leader-offer-note]') return offerNote;
+    if (selector === '[data-leader-message-budget]') return budgetNote;
     const name = selector.match(/^\[name="([^"]+)"\]$/)?.[1];
     return name ? { get value() { return fields[name] || ''; }, set value(value) { fields[name] = value; } } : null;
   } };
@@ -39,9 +41,10 @@ function page(search = '', sessionStorage = storage) {
   vm.runInContext(fs.readFileSync('assets/leader-service-catalog.js', 'utf8'), context);
   context.window.LeaderServiceCatalog = context.LeaderServiceCatalog;
   const marker = source.lastIndexOf('})();');
-  const instrumented = source.slice(0, marker) + '\nwindow.testSubmit=submit; window.testApplyPreset=()=>applyServicePreset(currentPreset(),false); window.testAttribution=typeof campaignAttribution === "function" ? campaignAttribution : qs;\n' + source.slice(marker);
+  const instrumented = source.slice(0, marker) + '\nwindow.testSubmit=submit; window.testApplyPreset=()=>applyServicePreset(currentPreset(),false); window.testAttribution=typeof campaignAttribution === "function" ? campaignAttribution : qs; window.testMessage=()=>messageForSubmission(formForTest); window.testBudget=()=>updateMessageBudget(formForTest);\n' + source.slice(marker);
+  context.formForTest=form;
   vm.runInContext(instrumented, context);
-  return { sent, fields, status, offerNote, applyPreset: () => context.window.testApplyPreset(), capture: () => context.window.testAttribution(), fail: value => { networkFailure = value; }, submit: () => context.window.testSubmit({ preventDefault() {}, currentTarget: form }) };
+  return { sent, fields, status, offerNote, budgetNote, message: () => context.window.testMessage(), budget: () => context.window.testBudget(), applyPreset: () => context.window.testApplyPreset(), capture: () => context.window.testAttribution(), fail: value => { networkFailure = value; }, submit: () => context.window.testSubmit({ preventDefault() {}, currentTarget: form }) };
 }
 
 const direct = page();
@@ -65,13 +68,14 @@ for (const [id,service,label] of [
   assert.equal(selected.offerNote.hidden,false);
   assert.ok(selected.offerNote.textContent.includes(label));
   selected.fields.message='x'.repeat(2000);
-  for(let i=0;i<4;i++)selected.fields['brief_'+i]=`Offer answer ${i} `+'z'.repeat(150);
+  for(let i=0;i<4;i++)selected.fields['brief_'+i]=`Offer answer ${i} `+'z'.repeat(120);
   selected.fail(true); await selected.submit();
   selected.fail(false); await selected.submit();
   assert.equal(selected.sent[0].request_id,selected.sent[1].request_id,'Offer retry keeps its request ID');
   assert.ok(selected.sent[1].message.includes('Состав заказа: '+label));
+  assert.ok(selected.sent[1].message.includes('Задача клиента: '+'x'.repeat(2000)), 'Keep the full customer task alongside the package and brief');
   assert.ok(selected.sent[1].message.length<=3000);
-  if(service!=='campaign')for(let i=0;i<4;i++)assert.ok(selected.sent[1].message.includes(`Offer answer ${i} `+'z'.repeat(150)),'Keep package and all brief answers within budget');
+  if(service!=='campaign')for(let i=0;i<4;i++)assert.ok(selected.sent[1].message.includes(`Offer answer ${i} `+'z'.repeat(120)),'Keep package and all brief answers within budget');
   selected.fields.service='Полиграфия';
   await selected.submit();
   assert.ok(!selected.sent.at(-1).message.includes('Состав заказа:'),'Do not submit an offer for a different service');
@@ -85,7 +89,7 @@ const changed = page('?service=Баннер&utm_source=vk&utm_campaign=opening')
 const creative = page();
 creative.fields.service = '3D-визуализация';
 creative.fields.message = 'x'.repeat(2000);
-for (let i=0;i<4;i++) creative.fields['brief_'+i] = `Параметр ${i} `+'z'.repeat(150);
+for (let i=0;i<4;i++) creative.fields['brief_'+i] = `Параметр ${i} `+'z'.repeat(120);
 creative.fail(true);
 await creative.submit();
 creative.fail(false);
@@ -93,7 +97,61 @@ await creative.submit();
 assert.equal(creative.sent[0].request_id,creative.sent[1].request_id,'Creative brief retry reuses the same request');
 assert.equal(creative.sent[1].service_id,'visualization-3d');
 assert.ok(creative.sent[1].message.length<=3000);
-for (let i=0;i<4;i++) assert.ok(creative.sent[1].message.includes(`Параметр ${i} `+'z'.repeat(150)),'Keep all brief answers within intake message budget');
+assert.ok(creative.sent[1].message.includes('Задача клиента: '+'x'.repeat(2000)),'Never clip the end of a long customer task');
+for (let i=0;i<4;i++) assert.ok(creative.sent[1].message.includes(`Параметр ${i} `+'z'.repeat(120)),'Keep all brief answers within intake message budget');
+
+for(const service of ['Дизайн макета','3D-визуализация','3D-моделирование','3D-анимация и моушн-дизайн','Подготовка макетов к печати и ретушь']){
+  const long=page();long.fields.service=service;
+  long.fields.message='Полное ТЗ '+ 'т'.repeat(1988)+'🔶';
+  assert.equal(long.fields.message.length,2000);
+  for(let i=0;i<4;i++)long.fields['brief_'+i]='Ответ '+i+' '+ 'б'.repeat(172);
+  const before={...long.fields};const pendingBefore=values.get('leader_public_lead_pending_v1');
+  const excess=long.budget()-3000;assert.ok(excess>0,service);
+  assert.equal(long.budgetNote.hidden,false);
+  assert.ok(long.budgetNote.textContent.includes('на '+excess+' символ'));
+  await long.submit();
+  assert.equal(long.sent.length,0,'An overlong message never reaches HTTP or allocates a request ID');
+  assert.equal(values.get('leader_public_lead_pending_v1'),pendingBefore);
+  assert.deepEqual(long.fields,before,'Validation preserves every entered field');
+  assert.ok(long.status.textContent.includes('на '+excess+' символ'));
+  long.fields.message=long.fields.message.slice(0,1999-excess);
+  long.budget();assert.equal(long.status.textContent,'','Correcting the text clears only the length error');
+  assert.equal(long.message().length,2999);
+  long.fields.message+='я';assert.equal(long.budget(),3000);
+  await long.submit();
+  const payload=long.sent.at(-1);
+  assert.equal(payload.message.length,3000,'The exact endpoint limit is accepted');
+  assert.ok(payload.message.includes('Задача клиента: '+long.fields.message));
+  for(let i=0;i<4;i++)assert.ok(payload.message.includes(long.fields['brief_'+i]));
+  assert.equal(payload.page_path,'/nakleyki-plotternaya-rezka-borisoglebsk.html');
+  assert.equal(payload.page_title,'Наклейки','Compact message keeps attribution in the payload');
+  long.fields.message+='я';assert.equal(long.budget(),3001);
+  await long.submit();assert.equal(long.sent.length,1,'One extra character is rejected, not truncated');
+  assert.ok(long.status.textContent.includes('на 1 символ,'));
+}
+
+const contact=page();
+Object.assign(contact.fields,{service:'3D-визуализация',message:'Описание '+ 'я'.repeat(1600),city:'Город '+ 'г'.repeat(100),business:'Объект '+ 'о'.repeat(150),contact_method:'Написать на email',contact_detail:'a'.repeat(280)+'@example.test',quantity:'Формат '+ 'ф'.repeat(100),deadline:'К определённой дате',mockup:'Есть пример, нужно доработать',delivery:'Нужен монтаж',budget:'Не знаю, нужен расчёт'});
+for(let i=0;i<4;i++)contact.fields['brief_'+i]='Параметр '+i+' '+ 'п'.repeat(150);
+const contactBefore={...contact.fields};
+await contact.submit();assert.equal(contact.sent.length,0);
+assert.deepEqual(contact.fields,contactBefore,'Contact details survive validation too');
+contact.fields.message='Краткое описание';await contact.submit();
+for(const [key,value] of Object.entries(contact.fields).filter(([key])=>key!=='website'&&key!=='name'&&key!=='phone')){
+  assert.ok(contact.sent[0].message.includes(value),'Do not clip '+key);
+}
+assert.equal(contact.sent[0].contact_detail,contactBefore.contact_detail);
+
+const mixedValidation=page();
+mixedValidation.fields.service='3D-визуализация';
+mixedValidation.fields.message='д'.repeat(2000);
+for(let i=0;i<4;i++)mixedValidation.fields['brief_'+i]='б'.repeat(180);
+await mixedValidation.submit();assert.equal(mixedValidation.sent.length,0);
+mixedValidation.fields.phone='';await mixedValidation.submit();
+const phoneError=mixedValidation.status.textContent;
+assert.ok(phoneError.includes('Укажите телефон'));
+mixedValidation.fields.message='Краткое описание';mixedValidation.budget();
+assert.equal(mixedValidation.status.textContent,phoneError,'Correcting length must not clear another current validation error');
 await changed.submit();
 assert.equal(changed.sent[0].service, 'Наклейки', 'User selection must win over the original link preset');
 assert.equal(changed.sent[0].utm_source, 'vk');

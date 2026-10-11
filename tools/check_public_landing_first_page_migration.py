@@ -41,7 +41,7 @@ required_page = [
     'assets/public-landing.css?v=1',
     'assets/public-lead-form.css?v=28',
     'assets/public-banner-detail.css?v=1',
-    'assets/public-lead-form.js?v=32',
+    'assets/public-lead-form.js?v=33',
     'data-leader-lead-form',
     'data-service="Баннер"',
     '<script type="application/ld+json">',

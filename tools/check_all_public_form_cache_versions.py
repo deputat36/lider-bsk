@@ -5,7 +5,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 MIN_VERSION = 5
-CORE_VERSION = 32
+CORE_VERSION = 33
 CORE_PAGES = {
     'index.html',
     'request.html',
