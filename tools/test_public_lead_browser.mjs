@@ -288,6 +288,7 @@ try {
         assert.equal(await page.locator('[name="brief_3"]').inputValue(),'Сохранить ответ 3');
       }
       assert.equal(await hint.evaluate(el=>{const r=el.getBoundingClientRect();return r.top>=0&&r.bottom<innerHeight-70}),true,'Contact guidance stays clear of the fixed mobile actions');
+      assert.equal(await detail.evaluate(el=>{const input=el.getBoundingClientRect(),label=el.closest('.leader-lead-span-12').querySelector('label').getBoundingClientRect();return label.top>=0&&input.bottom<innerHeight-70}),true,'The contact label and whole input remain visible after native invalid');
       await page.screenshot({path:`artifacts/public-lead/contact-${choice==='Написать на email'?'email':'vk'}-${width}.png`});
       await detail.fill(valid);
       assert.equal(await detail.getAttribute('aria-invalid'),'false');

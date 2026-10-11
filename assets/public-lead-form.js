@@ -337,9 +337,9 @@
     const detail=form.querySelector('[name="contact_detail"]');
     method.addEventListener('change',()=>applyContactMode(form));
     detail.addEventListener('input',()=>updateContactValidity(form));
-    detail.addEventListener('invalid',()=>{
+    detail.addEventListener('invalid',event=>{
       const error=updateContactValidity(form);
-      if(error)showContactError(form,error);
+      if(error){event.preventDefault();showContactError(form,error)}
     });
     applyContactMode(form);
   }
@@ -443,7 +443,7 @@
     if(!phone){setStatus(form,'err','Укажите телефон, чтобы мы могли связаться с вами.');return}
 
     const contactError=applyContactMode(form);
-    if(contactError){showContactError(form,contactError);form.querySelector('[name="contact_detail"]').focus?.();return}
+    if(contactError){showContactError(form,contactError);return}
 
     const pageTitle=(document.title||'').replace(/\s+/g,' ').trim();
     const submittedAt=new Date().toISOString();
