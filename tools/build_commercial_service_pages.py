@@ -50,7 +50,7 @@ def render(p):
 <section class="section"><div class="wrap"><h2>Дополнить решение</h2><nav class="service-related" aria-label="Связанные услуги">{related}</nav><p><a href="dizayn-3d-animaciya.html">Дизайн, 3D и анимация</a> · <a href="nashi-raboty.html">Фото и макеты работ</a></p></div></section>
 <section class="section" id="request"><div class="wrap"><div class="cta"><div><h2>Обсудим вашу задачу</h2><p>Выбранная услуга: {e(s['label'])}. Опишите желаемый результат и оставьте телефон. Уточним детали и подготовим расчёт.</p><p><strong>Телефон:</strong> <a href="tel:+79802457471">8 980 245-74-71</a></p></div><div id="leader-lead-form"></div></div></div></section>
 </main>{footer}
-<script src="assets/packages-link.js?v=2" defer></script><script src="assets/leader-service-catalog.js?v=3"></script><script src="assets/public-lead-form.js?v=32"></script>
+<script src="assets/packages-link.js?v=2" defer></script><script src="assets/leader-service-catalog.js?v=3"></script><script src="assets/public-lead-form.js?v=33"></script>
 </body></html>
 '''
 errors=[]

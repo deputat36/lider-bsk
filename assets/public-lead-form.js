@@ -11,6 +11,7 @@
   const UTM_KEYS=['utm_source','utm_medium','utm_campaign','utm_term','utm_content'];
   let campaignMemory=null;
   const CONSENT_VERSION='privacy-2026-07-12-v1';
+  const MAX_MESSAGE_LENGTH=3000;
 
   const scenarios={
     shop:{service:'Комплексная реклама',text:'Сценарий: открываем / оформляем магазин. Нужны рекомендации по вывеске, баннеру, режиму работы, наклейкам, картам и соцсетям.'},
@@ -139,6 +140,7 @@
         form.__leaderAutoMessage=preset.text;
       }
       renderServiceBrief(form);
+      updateMessageBudget(form);
     });
     if(scroll)scrollToForm();
   }
@@ -192,11 +194,66 @@
       const input=document.createElement('input');
       input.type='text';input.name='brief_'+i;input.maxLength=180;
       input.id=form.querySelector('[name="service"]').id+'-brief-'+i;
+      const budgetNote=form.querySelector('[data-leader-message-budget]');
+      if(budgetNote)input.setAttribute('aria-describedby',budgetNote.id);
       input.placeholder='Если известно';input.autocomplete='off';
       input.value=(drafts[item.id]||[])[i]||'';
       label.htmlFor=input.id;label.textContent=question;
       row.append(label,input);box.appendChild(row);
     });
+  }
+
+  function composeMessage(form,compact){
+    const parts=['Источник: сайт РА Лидер'];
+    const service=field(form,'service');
+    const serviceInfo=catalog&&catalog.find(service);
+    if(!compact)parts.push('Страница: '+(document.title||'').replace(/\s+/g,' ').trim());
+    if(service)parts.push('Услуга: '+service);
+    if(!compact&&serviceInfo)parts.push('Направление: '+catalog.directions[serviceInfo.direction]);
+    const offer=selectedOffer(form);
+    if(offer)parts.push('Состав заказа: '+offer.label);
+    if(serviceInfo&&serviceInfo.brief){
+      serviceInfo.questions.forEach((question,i)=>{
+        const answer=field(form,'brief_'+i);
+        if(answer)parts.push('Бриф — '+question+' '+answer);
+      });
+    }
+    const labels=[['message','Задача клиента'],['city','Город'],['business','Бизнес/объект'],
+      ['contact_method','Удобная связь'],['contact_detail','Контакт для выбранного способа'],
+      ['quantity','Количество/формат'],['deadline','Срок'],['mockup','Макет'],
+      ['delivery','Доставка/монтаж'],['budget','Бюджет']];
+    labels.forEach(([name,label])=>{const value=field(form,name);if(value)parts.push(label+': '+value)});
+    if(!compact)parts.push('URL: '+location.href);
+    return parts.join('\n');
+  }
+
+  function messageForSubmission(form){
+    const full=composeMessage(form,false);
+    // Page and direction also travel in separate payload fields. Only
+    // their repeated presentation can be omitted; client answers never are.
+    return full.length<=MAX_MESSAGE_LENGTH?full:composeMessage(form,true);
+  }
+
+  function messageLengthHint(length){
+    const remaining=MAX_MESSAGE_LENGTH-length;
+    const count=Math.abs(remaining),last=count%10,hundred=count%100;
+    const unit=hundred>=11&&hundred<=14?'символов':last===1?'символ':last>=2&&last<=4?'символа':'символов';
+    return remaining<0?'Сократите описание или ответы на '+count+' '+unit+', чтобы отправить заявку целиком. Подробное ТЗ можно передать при обсуждении заказа.':
+      'До лимита заявки: '+count+' '+unit+'. Подробное ТЗ можно передать при обсуждении заказа.';
+  }
+
+  function updateMessageBudget(form){
+    const length=messageForSubmission(form).length;
+    const note=form.querySelector('[data-leader-message-budget]');
+    if(note){
+      note.hidden=length<MAX_MESSAGE_LENGTH*0.9;
+      note.textContent=note.hidden?'':messageLengthHint(length);
+    }
+    if(form.__leaderMessageTooLong&&length<=MAX_MESSAGE_LENGTH){
+      form.__leaderMessageTooLong=false;
+      setStatus(form,'','');
+    }
+    return length;
   }
 
   function buildFormHtml(id){
@@ -208,7 +265,7 @@
         <div class="leader-lead-span-6"><label for="${id}-name">Имя / организация</label><input id="${id}-name" name="name" type="text" autocomplete="name" maxlength="200" placeholder="Например, Алексей"></div>
         <div class="leader-lead-span-6"><label for="${id}-phone">Телефон</label><input id="${id}-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="80" placeholder="+7..." required></div>
         <div class="leader-lead-span-12"><label for="${id}-service">Что нужно?</label><select id="${id}-service" name="service" required>${catalog?catalog.services.map(item=>`<option value="${item.label}"${item.id==='other'?' selected':''}>${item.label}</option>`).join(''):'<option value="">Услуги временно недоступны</option>'}</select><div class="leader-lead-note" data-leader-offer-note role="status" hidden></div></div>
-        <div class="leader-lead-span-12"><label for="${id}-message">Коротко опишите задачу</label><textarea id="${id}-message" name="message" maxlength="2000" rows="3" placeholder="Например: нужен рекламный пост, баннер или наклейки"></textarea></div>
+        <div class="leader-lead-span-12"><label for="${id}-message">Коротко опишите задачу</label><textarea id="${id}-message" name="message" maxlength="2000" rows="3" aria-describedby="${id}-message-budget" placeholder="Например: нужен рекламный пост, баннер или наклейки"></textarea><div id="${id}-message-budget" class="leader-lead-note" data-leader-message-budget role="status" aria-live="polite" hidden></div></div>
       </div>
       <button class="leader-lead-more" type="button" data-leader-more aria-expanded="false" aria-controls="${id}-details">Добавить подробности для точного расчёта ↓</button>
       <div class="leader-lead-details" id="${id}-details" data-leader-details hidden>
@@ -246,6 +303,8 @@
     };
     form.addEventListener('input',markFormStart);
     form.addEventListener('change',markFormStart);
+    form.addEventListener('input',()=>updateMessageBudget(form));
+    form.addEventListener('change',()=>updateMessageBudget(form));
     form.querySelector('[name="service"]').addEventListener('change',()=>{
       const message=form.querySelector('[name="message"]');
       if(message&&message.value===form.__leaderAutoMessage&&/^Интересует:|^Услуга выбрана/.test(message.value)){
@@ -281,7 +340,6 @@
     const name=field(form,'name');
     const phone=field(form,'phone');
     const service=field(form,'service');
-    const message=field(form,'message');
     const city=field(form,'city');
     const contact_method=field(form,'contact_method');
     const contact_detail=field(form,'contact_detail');
@@ -297,31 +355,16 @@
 
     const pageTitle=(document.title||'').replace(/\s+/g,' ').trim();
     const submittedAt=new Date().toISOString();
-    const parts=[];
-    parts.push('Источник: сайт РА Лидер');
-    parts.push('Страница: '+pageTitle);
     const serviceInfo=catalog&&catalog.find(service);
-    if(service)parts.push('Услуга: '+service);
-    if(serviceInfo)parts.push('Направление: '+catalog.directions[serviceInfo.direction]);
-    const offer=selectedOffer(form);
-    if(offer)parts.push('Состав заказа: '+offer.label);
-    if(serviceInfo&&serviceInfo.brief){
-      serviceInfo.questions.forEach((question,i)=>{
-        const answer=field(form,'brief_'+i).slice(0,180);
-        if(answer)parts.push('Бриф — '+question+' '+answer);
-      });
+    const message=messageForSubmission(form);
+    updateMessageBudget(form);
+    if(message.length>MAX_MESSAGE_LENGTH){
+      form.__leaderMessageTooLong=true;
+      setStatus(form,'err',messageLengthHint(message.length));
+      form.querySelector('[name="message"]').focus?.();
+      goal('lead_validation_error',{reason:'message_too_long',page_path:location.pathname});
+      return;
     }
-    if(message)parts.push('Задача клиента: '+message);
-    if(city)parts.push('Город: '+city);
-    if(business)parts.push('Бизнес/объект: '+business);
-    if(contact_method)parts.push('Удобная связь: '+contact_method);
-    if(contact_detail)parts.push('Контакт для выбранного способа: '+contact_detail);
-    if(quantity)parts.push('Количество/формат: '+quantity);
-    if(deadline)parts.push('Срок: '+deadline);
-    if(mockup)parts.push('Макет: '+mockup);
-    if(delivery)parts.push('Доставка/монтаж: '+delivery);
-    if(budget)parts.push('Бюджет: '+budget);
-    parts.push('URL: '+location.href);
 
     const utm=campaignAttribution();
     const payload={
@@ -331,7 +374,7 @@
       service_id:serviceInfo?serviceInfo.id:'',
       direction:serviceInfo?serviceInfo.direction:'',
       source:'Сайт',
-      message:parts.join('\n').slice(0,3000)||'Клиент оставил быструю заявку без подробного описания.',
+      message,
       page_url:location.href,
       page_path:location.pathname,
       page_title:pageTitle,
@@ -376,6 +419,7 @@
       form.__leaderBriefDrafts=Object.create(null);
       form.__leaderBriefId='';
       renderServiceBrief(form);
+      updateMessageBudget(form);
     }catch(err){
       console.error(err);
       setStatus(form,'err','Не удалось отправить заявку. Позвоните по номеру 8 980 245-74-71 или попробуйте ещё раз.');
