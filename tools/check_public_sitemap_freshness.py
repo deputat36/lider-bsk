@@ -24,6 +24,38 @@ PRIORITY_PAGES = {
 }
 
 
+# Authored explanations and images changed these pages on 2026-10-11.
+EXPLAINER_PAGES = {
+    '3d-modelirovanie-konstrukciy.html',
+    '3d-vizualizaciya-reklamy.html',
+    'ai-dlya-biznesa.html',
+    'animaciya-motion-dizayn.html',
+    'avtomatizaciya-biznesa.html',
+    'bannery-borisoglebsk.html',
+    'dizayn-maketov.html',
+    'kartochki-tovarov-marketpleysy.html',
+    'komplekty-reklamy.html',
+    'logotip-firmennyy-stil.html',
+    'nakleyki-plotternaya-rezka-borisoglebsk.html',
+    'pechat-na-plenke-borisoglebsk.html',
+    'podgotovka-maketov-k-pechati.html',
+    'poligrafiya-borisoglebsk.html',
+    'prilozheniya-dlya-biznesa.html',
+    'promoakcii-borisoglebsk.html',
+    'promoutery-borisoglebsk.html',
+    'qr-katalogi-onlayn-zapis.html',
+    'reklama-v-socsetyah-borisoglebsk.html',
+    'sozdanie-saytov.html',
+    'suvenirnaya-produkciya.html',
+    'tablichki-borisoglebsk.html',
+    'uslugi.html',
+    'vizitki-borisoglebsk.html',
+    'vyveski-borisoglebsk.html',
+    'yandex-karty-2gis.html',
+}
+UPDATED_SERVICE_LASTMOD.update({page: date(2026, 10, 11) for page in EXPLAINER_PAGES})
+PRIORITY_PAGES |= EXPLAINER_PAGES
+
 def main() -> None:
     errors: list[str] = []
     namespace = {'sm': 'http://www.sitemaps.org/schemas/sitemap/0.9'}

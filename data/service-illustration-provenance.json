@@ -1,0 +1,426 @@
+{
+  "date": "2026-10-11",
+  "processing": "WebP compression and uniform resizing only; no creative edits",
+  "images": [
+    {
+      "id": "signs",
+      "mode": "builtin imagegen",
+      "kind": "explanatory illustration, not portfolio proof",
+      "prompt": "Use case: stylized-concept. Asset type: explanatory service illustration for Russian advertising agency RA Lider, not a real completed project. Create one polished editorial 3D clay illustration, landscape 1536x1024, clean warm ivory background #F8F6F2, graphite #0D0F12 and bright orange #FF6A00 accents only, fine soft shadows and realistic material distinctions, restrained premium visual style, slightly elevated three-quarter view, generous safe margins on every side. Subject: a small storefront with glass entrance, a clearly visible blank illuminated orange sign above it, a dark vertical sign panel beside the entrance, and a small freestanding plaque in the foreground. Show how signage makes an entrance recognizable; emphasize the mounted sign, its bracket and illumination. Abstract simple geometry and no lettering. Image must be clearly a designed illustration rather than a photograph or real portfolio proof. No logos, company names, readable text, watermark, people, pricing, map or diagram arrows. All objects must be fully visible within the central 80% and legible on a mobile service card.",
+      "original_sha256": "99f03d34ff3e19b86dbd4012c5f3d9e3050153c1e72c961a5b17ca9f927be380",
+      "outputs": [
+        {
+          "path": "assets/service-illustrations/signs.webp",
+          "width": 1080,
+          "height": 720,
+          "bytes": 40858,
+          "sha256": "182a15872b293c790bc240fdca3b71d0ffe631a51c53f14dd777d15424e1c3e6"
+        },
+        {
+          "path": "assets/service-illustrations/signs-mobile.webp",
+          "width": 720,
+          "height": 480,
+          "bytes": 20750,
+          "sha256": "acda1d88f3825b9d3812a07106590b4294087f22e5000521503ff291738a1144"
+        },
+        {
+          "path": "assets/service-illustrations/signs-thumb.webp",
+          "width": 240,
+          "height": 160,
+          "bytes": 4304,
+          "sha256": "dfd16d5ad57e181664ce1a1d5890115177fbcb0abd078e901a5ee791293e408a"
+        }
+      ]
+    },
+    {
+      "id": "banner",
+      "mode": "builtin imagegen",
+      "kind": "explanatory illustration, not portfolio proof",
+      "prompt": "Use case: stylized-concept. Asset type: explanatory service illustration for Russian advertising agency RA Lider, not a real completed project. One polished editorial 3D still life, landscape 1536x1024, warm ivory background #F8F6F2, graphite #0D0F12, white and bright orange #FF6A00 accents only, soft studio lighting, subtle material textures, premium restrained aesthetic, slightly elevated three-quarter view, generous margins. Clear object hierarchy, no people, no logos, no company names, no readable text, no watermark, no prices, no diagram arrows. Clearly a designed illustration, not evidence of a real completed job. All objects fully visible in central 80%, legible on a mobile service card. Subject: A freestanding stretched orange outdoor advertising banner with reinforced edges and clearly visible metal eyelets on a simple graphite rectangular frame; beside it, one partly rolled white banner with an orange printed geometric stripe. The fabric surface and eyelets must clearly distinguish banners from rigid signs. Restrained simple composition.",
+      "original_sha256": "4ae84c4b5accfcd6bd04782e6df164233b9cbc0c01da8bba4c003937f82222ad",
+      "outputs": [
+        {
+          "path": "assets/service-illustrations/banner.webp",
+          "width": 1080,
+          "height": 720,
+          "bytes": 33176,
+          "sha256": "ddb444b8953e28a80390398bc500a80bd04cf303d561d7de49fd18ad6a53e288"
+        },
+        {
+          "path": "assets/service-illustrations/banner-mobile.webp",
+          "width": 720,
+          "height": 480,
+          "bytes": 17604,
+          "sha256": "03a7d336ac40fea301ca182a47c157dc7fedfa5f17966e914f519f098985666d"
+        },
+        {
+          "path": "assets/service-illustrations/banner-thumb.webp",
+          "width": 240,
+          "height": 160,
+          "bytes": 3854,
+          "sha256": "746faa55dd5a883be42d131b0fef2c19a3b08aa14ec08abb76e42caca515676d"
+        }
+      ]
+    },
+    {
+      "id": "print",
+      "mode": "builtin imagegen",
+      "kind": "explanatory illustration, not portfolio proof",
+      "prompt": "Use case: stylized-concept. Asset type: explanatory service illustration for Russian advertising agency RA Lider, not a real completed project. One polished editorial 3D still life, landscape 1536x1024, warm ivory background #F8F6F2, graphite #0D0F12, white and bright orange #FF6A00 accents only, soft studio lighting, subtle material textures, premium restrained aesthetic, slightly elevated three-quarter view, generous margins. Clear object hierarchy, no people, no logos, no company names, no readable text, no watermark, no prices, no diagram arrows. Clearly a designed illustration, not evidence of a real completed job. All objects fully visible in central 80%, legible on a mobile service card. Subject: A tabletop arrangement of physical printed products: one open tri-fold leaflet with orange abstract graphics, a folded small brochure, a neat stack of white business cards, and two orange-and-white flyers. Realistic paper thickness and folded edges, blank layouts with abstract geometric blocks only, no lettering. Editorial print production still life.",
+      "original_sha256": "943738fcd359de7c19fa0b03940cf213b53deab16d183f22ec5175ae931155e6",
+      "outputs": [
+        {
+          "path": "assets/service-illustrations/print.webp",
+          "width": 1080,
+          "height": 720,
+          "bytes": 38006,
+          "sha256": "758497827885d3b4d15e33f496269a81c43eb0e253bf09c462d10788df58b1ee"
+        },
+        {
+          "path": "assets/service-illustrations/print-mobile.webp",
+          "width": 720,
+          "height": 480,
+          "bytes": 20772,
+          "sha256": "c17c896ad59eb8d576c4e866e0ddd8388dbb398d8655cbff4a34c65256848c84"
+        },
+        {
+          "path": "assets/service-illustrations/print-thumb.webp",
+          "width": 240,
+          "height": 160,
+          "bytes": 4492,
+          "sha256": "b23dbb89c2c5e80b3439f925c1caa74a2facff35a4559ca98f466208ef46399d"
+        }
+      ]
+    },
+    {
+      "id": "vinyl",
+      "mode": "builtin imagegen",
+      "kind": "explanatory illustration, not portfolio proof",
+      "prompt": "Use case: stylized-concept. Asset type: explanatory service illustration for Russian advertising agency RA Lider, not a real completed project. One polished editorial 3D still life, landscape 1536x1024, warm ivory background #F8F6F2, graphite #0D0F12, white and bright orange #FF6A00 accents only, soft studio lighting, subtle material textures, premium restrained aesthetic, slightly elevated three-quarter view, generous margins. Clear object hierarchy, no people, no logos, no company names, no readable text, no watermark, no prices, no diagram arrows. Clearly a designed illustration, not evidence of a real completed job. All objects fully visible in central 80%, legible on a mobile service card. Subject: An upright frameless glass shop window sample bearing cut orange geometric vinyl decals, a partially peeled adhesive sticker on white backing paper in the foreground, and a small roll of white self-adhesive film with orange printed shapes. Show clear distinction between transparent glass, adhesive vinyl and paper backing. Simple physical materials, no machinery.",
+      "original_sha256": "9d91e11cc036ab354d68bb1a0dbb4124a88be82eecf793fc3ce1c1b1dfff96c3",
+      "outputs": [
+        {
+          "path": "assets/service-illustrations/vinyl.webp",
+          "width": 1080,
+          "height": 720,
+          "bytes": 32058,
+          "sha256": "0d753362a7552ef0ae0bdf593e0e6ba3d9bb6facf93cc8b697c70ce91f4d0750"
+        },
+        {
+          "path": "assets/service-illustrations/vinyl-mobile.webp",
+          "width": 720,
+          "height": 480,
+          "bytes": 17322,
+          "sha256": "712a64e27354aaa50d485df54a5a37ac365204ea4f2edd18ab5e675d56f54d02"
+        },
+        {
+          "path": "assets/service-illustrations/vinyl-thumb.webp",
+          "width": 240,
+          "height": 160,
+          "bytes": 4156,
+          "sha256": "af2570f2bac1ec3707e7a31ff9e18a8daafd563d9fc28fc3dddf5690ad540313"
+        }
+      ]
+    },
+    {
+      "id": "design",
+      "mode": "builtin imagegen",
+      "kind": "explanatory illustration, not portfolio proof",
+      "prompt": "Use case: stylized-concept. Asset type: explanatory service illustration for Russian advertising agency RA Lider, not a real completed project. One polished editorial 3D still life, landscape 1536x1024, warm ivory background #F8F6F2, graphite #0D0F12, white and bright orange #FF6A00 accents only, soft studio lighting, subtle material textures, premium restrained aesthetic, slightly elevated three-quarter view, generous margins. Clear object hierarchy, no people, no logos, no company names, no readable text, no watermark, no prices, no diagram arrows. Clearly a designed illustration, not evidence of a real completed job. All objects fully visible in central 80%, legible on a mobile service card. Subject: A designer's tabletop with an upright orange-and-white abstract poster layout, a stack of paper color swatches, one blank business card layout, a graphite pencil, and a thin desktop display showing the same abstract geometric artwork on a white canvas. Emphasize that a consistent flat 2D layout can become several print materials. No application branding or legible user-interface text.",
+      "original_sha256": "5e1d9f6450f59190f98ddcfcf518b3adf96cd8a33733ff0046bb826a8d2cb50e",
+      "outputs": [
+        {
+          "path": "assets/service-illustrations/design.webp",
+          "width": 1080,
+          "height": 720,
+          "bytes": 43062,
+          "sha256": "affab165474ab36dfdc2f0dec4a82aac6bce63645d1c3302a62d9f70d8183677"
+        },
+        {
+          "path": "assets/service-illustrations/design-mobile.webp",
+          "width": 720,
+          "height": 480,
+          "bytes": 23482,
+          "sha256": "efc5c7651b0411bf800636a642ee891a3a70c45f46ec6ee9f9421a3df8433d98"
+        },
+        {
+          "path": "assets/service-illustrations/design-thumb.webp",
+          "width": 240,
+          "height": 160,
+          "bytes": 5790,
+          "sha256": "bbeafe0abab7f5f9a2cece664d92b16a01217538d08620b9f7d98f964b1cb00a"
+        }
+      ]
+    },
+    {
+      "id": "modeling-3d",
+      "mode": "builtin imagegen",
+      "kind": "explanatory illustration, not portfolio proof",
+      "prompt": "Use case: stylized-concept. Asset type: explanatory service illustration for Russian advertising agency RA Lider, not a real completed project. One polished editorial 3D still life, landscape 1536x1024, warm ivory background #F8F6F2, graphite #0D0F12, white and bright orange #FF6A00 accents only, soft studio lighting, subtle material textures, premium restrained aesthetic, slightly elevated three-quarter view, generous margins. Clear object hierarchy, no people, no logos, no company names, no readable text, no watermark, no prices, no diagram arrows. Clearly a designed illustration, not evidence of a real completed job. All objects fully visible in central 80%, legible on a mobile service card. Subject: A single advertising entrance structure model on a low pedestal: a graphite rectangular frame with a blank orange rectangular sign and a slim freestanding orange pylon. A separate small graphite wireframe version of the exact same frame sits beside it. Clearly distinguish the solid model and mesh geometry, avoid complicated engineering dimensions or invented construction drawings. Product-scale model only, no real building photograph.",
+      "original_sha256": "7f091f0bf9a5714262afe8d722de4d421617c858b43fb096d33a8171165df4fc",
+      "outputs": [
+        {
+          "path": "assets/service-illustrations/modeling-3d.webp",
+          "width": 1080,
+          "height": 720,
+          "bytes": 36368,
+          "sha256": "aad0911b4ed472c75ca5812f96d9cbe69261d8c4d9b0aef89252a28428d53de5"
+        },
+        {
+          "path": "assets/service-illustrations/modeling-3d-mobile.webp",
+          "width": 720,
+          "height": 480,
+          "bytes": 17294,
+          "sha256": "93e1e291e19d17ee9ec0e14acb7cb4263bdb6c9c64aff61dde286bef9051866e"
+        },
+        {
+          "path": "assets/service-illustrations/modeling-3d-thumb.webp",
+          "width": 240,
+          "height": 160,
+          "bytes": 3510,
+          "sha256": "5f05219568da3d688c37b1343d04e6b3033bc707ded90caa994cd0cdae27cdcf"
+        }
+      ]
+    },
+    {
+      "id": "visualization-3d",
+      "mode": "builtin imagegen",
+      "kind": "explanatory illustration, not portfolio proof",
+      "prompt": "Use case: stylized-concept. Asset type: explanatory service illustration for Russian advertising agency RA Lider, not a real completed project. One polished editorial 3D still life, landscape 1536x1024, warm ivory background #F8F6F2, graphite #0D0F12, white and bright orange #FF6A00 accents only, soft studio lighting, subtle material textures, premium restrained aesthetic, slightly elevated three-quarter view, generous margins. Clear object hierarchy, no people, no logos, no company names, no readable text, no watermark, no prices, no diagram arrows. Clearly a designed illustration, not evidence of a real completed job. All objects fully visible in central 80%, legible on a mobile service card. Subject: A thin graphite monitor displaying a highly polished 3D-rendered miniature storefront with a blank orange sign and soft warm lighting. In front of the monitor, a small ivory scale model of the same storefront and a discreet neutral photo reference card of its undecorated facade. The rendered final appearance is the main subject; communicate previewing signage before manufacturing. No application branding, letters, captions, or UI text.",
+      "original_sha256": "7af5ab57021b567694ebf1fc37d9a873bac81710d80fe47321f3ea1068d5e010",
+      "outputs": [
+        {
+          "path": "assets/service-illustrations/visualization-3d.webp",
+          "width": 1080,
+          "height": 720,
+          "bytes": 72546,
+          "sha256": "3b81ac97e19a734ec15d470649c43e63073cffe4e88ab258d45efedd4b24d368"
+        },
+        {
+          "path": "assets/service-illustrations/visualization-3d-mobile.webp",
+          "width": 720,
+          "height": 480,
+          "bytes": 37278,
+          "sha256": "03e45e0e790137db351ac2f5d3d69148582294b2dd7f3c8121f14330cb1bb49c"
+        },
+        {
+          "path": "assets/service-illustrations/visualization-3d-thumb.webp",
+          "width": 240,
+          "height": 160,
+          "bytes": 7290,
+          "sha256": "ca7469ee764c4f091d0f46c426faacba53a65a5c02730fa994f54a288b9583e7"
+        }
+      ]
+    },
+    {
+      "id": "animation",
+      "mode": "builtin imagegen",
+      "kind": "explanatory illustration, not portfolio proof",
+      "prompt": "Use case: stylized-concept. Asset type: explanatory service illustration for Russian advertising agency RA Lider, not a real completed project. One polished editorial 3D still life, landscape 1536x1024, warm ivory background #F8F6F2, graphite #0D0F12, white and bright orange #FF6A00 accents only, soft studio lighting, subtle material textures, premium restrained aesthetic, slightly elevated three-quarter view, generous margins. Clear object hierarchy, no people, no logos, no company names, no readable text, no watermark, no prices, no diagram arrows. Clearly a designed illustration, not evidence of a real completed job. All objects fully visible in central 80%, legible on a mobile service card. Subject: A wide graphite display standing on a clean desk, showing a luminous orange-and-white abstract 3D sphere and ribbon composition. Three small image cards in front of the display show the same sphere at three visibly different positions, suggesting animation keyframes. A simple orange triangular play symbol as a physical object beside the screen. Show digital motion content rather than print or fabrication. No logos, numbers, words, or real video platform interface.",
+      "original_sha256": "c11ab2170c55da72a09246fd4bd17c32e28e1162c34131d88899ceb457c6659c",
+      "outputs": [
+        {
+          "path": "assets/service-illustrations/animation.webp",
+          "width": 1080,
+          "height": 720,
+          "bytes": 51460,
+          "sha256": "8c0c5e5a413aef04d801832fc5248c3df03fe287ae9e69e6f2be9183225ba886"
+        },
+        {
+          "path": "assets/service-illustrations/animation-mobile.webp",
+          "width": 720,
+          "height": 480,
+          "bytes": 28236,
+          "sha256": "db8a9b451dc02e392bdddaa06e526300318fe2741ca38bcc721a86b71cf4f19f"
+        },
+        {
+          "path": "assets/service-illustrations/animation-thumb.webp",
+          "width": 240,
+          "height": 160,
+          "bytes": 6346,
+          "sha256": "dd6888033340a59e70379a8005b950df9aaa545d18b9bd1830d21d9723d02a02"
+        }
+      ]
+    },
+    {
+      "id": "social",
+      "mode": "builtin imagegen",
+      "kind": "explanatory illustration, not portfolio proof",
+      "prompt": "Use case: stylized-concept. Asset type: explanatory service illustration for Russian advertising agency RA Lider, not a real completed project. One polished editorial 3D still life, landscape 1536x1024, warm ivory background #F8F6F2, graphite #0D0F12, white and bright orange #FF6A00 accents only, soft studio lighting, subtle material textures, premium restrained aesthetic, slightly elevated three-quarter view, generous margins. Clear object hierarchy, no people, no logos, no company names, no readable text, no watermark, no prices, no diagram arrows. Clearly a designed illustration, not evidence of a real completed job. All objects fully visible in central 80%, legible on a mobile service card. Subject: One upright graphite smartphone displaying a clean social-media style feed of three orange-and-white abstract promotional image cards, with two separate physical image cards beside it: one square product card and one vertical promotional poster. A small neutral orange geometric product sits in front. Emphasize preparing content and product images for online promotion. No recognizable platform logos, no text, no invented likes or follower counts.",
+      "original_sha256": "9496511f0baca3559d21aa74522477519e42a7c1f225df3e805584c36c91428c",
+      "outputs": [
+        {
+          "path": "assets/service-illustrations/social.webp",
+          "width": 1080,
+          "height": 720,
+          "bytes": 59392,
+          "sha256": "82ecd0f24a14b3d29e30c75700b2be5573f8156460454effdfc63179a066fc5f"
+        },
+        {
+          "path": "assets/service-illustrations/social-mobile.webp",
+          "width": 720,
+          "height": 480,
+          "bytes": 30256,
+          "sha256": "b464b449b5615da0a55b48459a683076ffdb5628ba2be43f69d324b55afe8fda"
+        },
+        {
+          "path": "assets/service-illustrations/social-thumb.webp",
+          "width": 240,
+          "height": 160,
+          "bytes": 6244,
+          "sha256": "f09b3b3dc30f404b8ca8c53cb5affb524df36321a714e2843fee0f322e463e20"
+        }
+      ]
+    },
+    {
+      "id": "maps",
+      "mode": "builtin imagegen",
+      "kind": "explanatory illustration, not portfolio proof",
+      "prompt": "Use case: stylized-concept. Asset type: explanatory service illustration for Russian advertising agency RA Lider, not a real completed project. One polished editorial 3D still life, landscape 1536x1024, warm ivory background #F8F6F2, graphite #0D0F12, white and bright orange #FF6A00 accents only, soft studio lighting, subtle material textures, premium restrained aesthetic, slightly elevated three-quarter view, generous margins. Clear object hierarchy, no people, no logos, no company names, no readable text, no watermark, no prices, no diagram arrows. Clearly a designed illustration, not evidence of a real completed job. All objects fully visible in central 80%, legible on a mobile service card. Subject: A stylized miniature ivory city block with three small simple storefront buildings. One storefront is emphasized by a large orange location pin hovering above it. Beside the city, an upright graphite phone shows a minimalist map with the same orange location pin and a blank business-card area. Neutral abstract mapping illustration only, not an accurate map. No labels, brand icons, stars, reviews or rankings.",
+      "original_sha256": "de367e377a68a4ab541ccbb0551feaeeed843299daff28b9649dd0394e9bbbb3",
+      "outputs": [
+        {
+          "path": "assets/service-illustrations/maps.webp",
+          "width": 1080,
+          "height": 720,
+          "bytes": 62684,
+          "sha256": "f809afe24466baeb72f07aa06e32604ba14d71c9f947ead6e8bccc0b051a8d63"
+        },
+        {
+          "path": "assets/service-illustrations/maps-mobile.webp",
+          "width": 720,
+          "height": 480,
+          "bytes": 32316,
+          "sha256": "f96e5755e1d9021fca06082732769ce682ddf5906e22e76c494ee78f848c628a"
+        },
+        {
+          "path": "assets/service-illustrations/maps-thumb.webp",
+          "width": 240,
+          "height": 160,
+          "bytes": 6588,
+          "sha256": "c848b913f5365ba0ef150d4e20eb0896722cf3fe6c2497f67e38e7f233e8b814"
+        }
+      ]
+    },
+    {
+      "id": "digital",
+      "mode": "builtin imagegen",
+      "kind": "explanatory illustration, not portfolio proof",
+      "prompt": "Use case: stylized-concept. Asset type: explanatory service illustration for Russian advertising agency RA Lider, not a real completed project. One polished editorial 3D still life, landscape 1536x1024, warm ivory background #F8F6F2, graphite #0D0F12, white and bright orange #FF6A00 accents only, soft studio lighting, subtle material textures, premium restrained aesthetic, slightly elevated three-quarter view, generous margins. Clear object hierarchy, no people, no logos, no company names, no readable text, no watermark, no prices, no diagram arrows. Clearly a designed illustration, not evidence of a real completed job. All objects fully visible in central 80%, legible on a mobile service card. Subject: A desktop monitor and upright smartphone showing the same responsive business website layout: large orange abstract hero panel, three white service cards and a small plain orange form button. In front of the devices, one understated blank white form card with three horizontal fields. Emphasize a readable website on desktop and mobile. No app branding, browser labels, code, login screen or readable text.",
+      "original_sha256": "c8811d3d9e7896134618e5759ac7719d8ce70d5a1f461b619697e4d7f92df8bf",
+      "outputs": [
+        {
+          "path": "assets/service-illustrations/digital.webp",
+          "width": 1080,
+          "height": 720,
+          "bytes": 43174,
+          "sha256": "8b8cd340d7c296998a99ab7dff8522d56b8b9c835144dbb06b79c308ea9d5752"
+        },
+        {
+          "path": "assets/service-illustrations/digital-mobile.webp",
+          "width": 720,
+          "height": 480,
+          "bytes": 23802,
+          "sha256": "8bfbd24019c11a3e915840008cee4e468cdff4ba501c8bf8f2cb1ce2eb0de646"
+        },
+        {
+          "path": "assets/service-illustrations/digital-thumb.webp",
+          "width": 240,
+          "height": 160,
+          "bytes": 5942,
+          "sha256": "c4ed40585190351fe1e1d53495e41bd02f5abc459d51cc41375982518ff47e6b"
+        }
+      ]
+    },
+    {
+      "id": "automation",
+      "mode": "builtin imagegen",
+      "kind": "explanatory illustration, not portfolio proof",
+      "prompt": "Use case: stylized-concept. Asset type: explanatory service illustration for Russian advertising agency RA Lider, not a real completed project. One polished editorial 3D still life, landscape 1536x1024, warm ivory background #F8F6F2, graphite #0D0F12, white and bright orange #FF6A00 accents only, soft studio lighting, subtle material textures, premium restrained aesthetic, slightly elevated three-quarter view, generous margins. Clear object hierarchy, no people, no logos, no company names, no readable text, no watermark, no prices, no diagram arrows. Clearly a designed illustration, not evidence of a real completed job. All objects fully visible in central 80%, legible on a mobile service card. Subject: A graphite desktop display showing three clear columns of blank customer-order cards, and one small white form card in the foreground. Beside it sits a simple abstract graphite-and-orange assistant sphere, plus a neat stack of white document cards. Communicate organizing business requests and helping with repetitive tasks. Plain interface shapes only; no code, readable labels, numbers, robots with faces, statistics, chart axes or diagram arrows.",
+      "original_sha256": "8ae213971f84531237aa3f2c0c60b1e782863fa8b47fd166ff2e5f2cf1432042",
+      "outputs": [
+        {
+          "path": "assets/service-illustrations/automation.webp",
+          "width": 1080,
+          "height": 720,
+          "bytes": 42088,
+          "sha256": "25637eab906818f655f6d22b8285c7cf59767342ff0c7dc2f4355f24e8020e02"
+        },
+        {
+          "path": "assets/service-illustrations/automation-mobile.webp",
+          "width": 720,
+          "height": 480,
+          "bytes": 23718,
+          "sha256": "496fe77628662150078bc2daec4ebef8d9f8182e17ebb2c3dfc2f2a48f3c2f77"
+        },
+        {
+          "path": "assets/service-illustrations/automation-thumb.webp",
+          "width": 240,
+          "height": 160,
+          "bytes": 5450,
+          "sha256": "b18994992b6ce3eeb2a207501e4a1394f3bb431cd540305a6533dd684a82094f"
+        }
+      ]
+    },
+    {
+      "id": "promotion",
+      "mode": "builtin imagegen",
+      "kind": "explanatory illustration, not portfolio proof",
+      "prompt": "Use case: stylized-concept. Asset type: explanatory service illustration for Russian advertising agency RA Lider, not a real completed project. One polished editorial 3D still life, landscape 1536x1024, warm ivory background #F8F6F2, graphite #0D0F12, white and bright orange #FF6A00 accents only, soft studio lighting, subtle material textures, premium restrained aesthetic, slightly elevated three-quarter view, generous margins. Clear object hierarchy, no people, no logos, no company names, no readable text, no watermark, no prices, no diagram arrows. Clearly a designed illustration, not evidence of a real completed job. All objects fully visible in central 80%, legible on a mobile service card. Subject: A tabletop advertising event kit: a compact graphite megaphone with orange interior, a neat stack of orange-and-white flyers, a blank graphite lanyard badge with an orange stripe, and a small upright orange event poster on an easel. Communicate a coordinated opening or promotional campaign with printed handouts. No people, clothing, readable text, brands or performance metrics.",
+      "original_sha256": "6ad7d377f0ae81b0037a91a8694d660ac43ad64d2eb1b67ae8f86efe0d072d7b",
+      "outputs": [
+        {
+          "path": "assets/service-illustrations/promotion.webp",
+          "width": 1080,
+          "height": 720,
+          "bytes": 51872,
+          "sha256": "b4ee7f42139438adc8baeafc921bec837acf6d82f48568cfb0b54b886bfb4a35"
+        },
+        {
+          "path": "assets/service-illustrations/promotion-mobile.webp",
+          "width": 720,
+          "height": 480,
+          "bytes": 26844,
+          "sha256": "cf730c25d3a5d2d337dd1b178b900cb5bbd4547dd9327184412518a49be06723"
+        },
+        {
+          "path": "assets/service-illustrations/promotion-thumb.webp",
+          "width": 240,
+          "height": 160,
+          "bytes": 5628,
+          "sha256": "eb38d65436773d6d06a478f5cddde7ee842490374d89a85f3f6b19059fa65918"
+        }
+      ]
+    },
+    {
+      "id": "souvenirs",
+      "mode": "builtin imagegen",
+      "kind": "explanatory illustration, not portfolio proof",
+      "prompt": "Use case: stylized-concept. Asset type: explanatory service illustration for Russian advertising agency RA Lider, not a real completed project. One polished editorial 3D still life, landscape 1536x1024, warm ivory background #F8F6F2, graphite #0D0F12, white and bright orange #FF6A00 accents only, soft studio lighting, subtle material textures, premium restrained aesthetic, slightly elevated three-quarter view, generous margins. Clear object hierarchy, no people, no logos, no company names, no readable text, no watermark, no prices, no diagram arrows. Clearly a designed illustration, not evidence of a real completed job. All objects fully visible in central 80%, legible on a mobile service card. Subject: A carefully arranged set of blank promotional gift products: a matte white mug with one simple orange geometric mark, an ivory canvas tote bag with the same orange mark, a graphite ballpoint pen, an orange notebook and a small plain graphite gift box. Distinct realistic materials and tasteful product photography style within an obviously composed 3D illustration. No logos, names, text or claims of completed real work.",
+      "original_sha256": "6c46caf9a787554ae375e3414669930116e638fa5796024fbbf74023fd41ab85",
+      "outputs": [
+        {
+          "path": "assets/service-illustrations/souvenirs.webp",
+          "width": 1080,
+          "height": 720,
+          "bytes": 43334,
+          "sha256": "b14ff0e3a1a645971208efd2743df2c6f8c2ac2f2a1794fa91d188097b0677a0"
+        },
+        {
+          "path": "assets/service-illustrations/souvenirs-mobile.webp",
+          "width": 720,
+          "height": 480,
+          "bytes": 17856,
+          "sha256": "0cd0e32afb0401edceb50d7fb9842d004b1e1597716c56dba91ca9f1c79b41df"
+        },
+        {
+          "path": "assets/service-illustrations/souvenirs-thumb.webp",
+          "width": 240,
+          "height": 160,
+          "bytes": 4146,
+          "sha256": "1178ff78283e4a2d6c4f1eddf8f43e590ba8ef0af83e4cbfd9d465086d347086"
+        }
+      ]
+    }
+  ]
+}

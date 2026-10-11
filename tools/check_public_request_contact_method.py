@@ -6,7 +6,7 @@ Source-only: no production request or customer data is used.
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-FORM_SCRIPT = 'assets/public-lead-form.js?v=35'
+FORM_SCRIPT = 'assets/public-lead-form.js?v=36'
 FORM_CSS = 'assets/public-lead-form.css?v=30'
 
 

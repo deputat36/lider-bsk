@@ -47,7 +47,7 @@ def main() -> None:
         'Производство рекламы',
         'Не нашли точное название услуги?',
         'data-leader-lead-form',
-        'assets/public-lead-form.js?v=35',
+        'assets/public-lead-form.js?v=36',
         '"@type":"CollectionPage"',
         '"@type":"ItemList"',
         'privacy.html',

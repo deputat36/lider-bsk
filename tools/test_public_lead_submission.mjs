@@ -13,6 +13,7 @@ const storage = {
 function page(search = '', sessionStorage = storage, response = null) {
   const sent = [];
   const goals = [];
+  const metrika = [];
   const fields = { phone: '+7 900 000-00-00', name: 'Synthetic local test', service: 'Наклейки', message: 'Тестовый расчёт', website: '' };
   const button = {};
   const status = { focused:false, focus() { this.focused=true; }, scrollIntoView() {}, getBoundingClientRect() { return {top:400,bottom:500,height:100}; } };
@@ -35,7 +36,7 @@ function page(search = '', sessionStorage = storage, response = null) {
   } };
   let networkFailure = false;
   const context = vm.createContext({
-    window: { sessionStorage, innerHeight:900, dispatchEvent(event) { goals.push(event.detail); } },
+    window: { sessionStorage, innerHeight:900, ym(...args) { metrika.push(args); }, dispatchEvent(event) { goals.push(event.detail); } },
     document: { readyState: 'loading', title: 'Наклейки', addEventListener() {}, querySelectorAll(selector) { return selector === '[data-leader-lead-widget]' ? [form] : []; } },
     location: { pathname: '/nakleyki-plotternaya-rezka-borisoglebsk.html', href: 'https://www.lider-bsk.ru/nakleyki-plotternaya-rezka-borisoglebsk.html' + search, search },
     navigator: { userAgent: 'local-contract-test' },
@@ -52,8 +53,33 @@ function page(search = '', sessionStorage = storage, response = null) {
   const instrumented = source.slice(0, marker) + '\nwindow.testSubmit=submit; window.testApplyPreset=()=>applyServicePreset(currentPreset(),false); window.testAttribution=typeof campaignAttribution === "function" ? campaignAttribution : qs; window.testMessage=()=>messageForSubmission(formForTest); window.testBudget=()=>updateMessageBudget(formForTest); window.testContact=()=>applyContactMode(formForTest);\n' + source.slice(marker);
   context.formForTest=form;
   vm.runInContext(instrumented, context);
-  return { sent, goals, fields, form, status, offerNote, budgetNote, contact:()=>context.window.testContact(), message: () => context.window.testMessage(), budget: () => context.window.testBudget(), applyPreset: () => context.window.testApplyPreset(), capture: () => context.window.testAttribution(), fail: value => { networkFailure = value; }, submit: () => context.window.testSubmit({ preventDefault() {}, currentTarget: form }) };
+  return { sent, goals, metrika, fields, form, status, offerNote, budgetNote, reply:value=>{response=value;}, contact:()=>context.window.testContact(), message: () => context.window.testMessage(), budget: () => context.window.testBudget(), applyPreset: () => context.window.testApplyPreset(), capture: () => context.window.testAttribution(), fail: value => { networkFailure = value; }, submit: () => context.window.testSubmit({ preventDefault() {}, currentTarget: form }) };
 }
+
+function freshSession(){
+  const rows=new Map();
+  return {getItem:key=>rows.get(key)||null,setItem:(key,value)=>rows.set(key,value),removeItem:key=>rows.delete(key)};
+}
+function goalCount(client,name){return client.metrika.filter(call=>call[1]==='reachGoal'&&call[2]===name).length;}
+const confirmationSession=freshSession();
+const confirmation=page('?email=synthetic@example.test',confirmationSession,{ok:true,request_id:'web-confirmation-synthetic'});
+confirmation.fields.name='Private synthetic name';confirmation.fields.message='Private synthetic task';
+confirmation.fail(true);await confirmation.submit();
+assert.equal(goalCount(confirmation,'lead_confirmed'),0,'Network failure is not a conversion');
+confirmation.fail(false);confirmation.reply({ok:true,request_id:'web-confirmation-synthetic',duplicate:true});
+await confirmation.submit();
+assert.equal(goalCount(confirmation,'lead_confirmed'),1,'First acknowledgement after a lost reply still confirms the lead');
+assert.equal(goalCount(confirmation,'lead_sent'),0,'An existing server record is not a new lead');
+await confirmation.submit();
+assert.equal(goalCount(confirmation,'lead_confirmed'),1,'The same accepted reference does not count twice');
+const reloaded=page('?email=synthetic@example.test',confirmationSession,{ok:true,request_id:'web-confirmation-synthetic',duplicate:true});
+await reloaded.submit();
+assert.equal(goalCount(reloaded,'lead_confirmed'),0,'Confirmation deduplication survives page navigation');
+const rejected=page('',freshSession(),{ok:false,request_id:'web-rejected-synthetic'});await rejected.submit();
+assert.equal(goalCount(rejected,'lead_confirmed'),0,'HTTP 200 without ok:true is not a conversion');
+const analytics=JSON.stringify(confirmation.metrika);
+for(const privateValue of ['synthetic@example.test','Private synthetic name','Private synthetic task','web-confirmation-synthetic','request_id','page":'])assert.ok(!analytics.includes(privateValue),'Do not transmit customer data, URL queries or request references: '+privateValue);
+assert.ok(confirmation.metrika.every(call=>call[0]===109387236),'Use the existing counter');
 
 for(const duplicate of [false,true]){
   const accepted=page('',storage,{ok:true,request_id:'web-server-confirmed',duplicate});

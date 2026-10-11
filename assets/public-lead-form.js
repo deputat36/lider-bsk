@@ -12,6 +12,9 @@
   let campaignMemory=null;
   const CONSENT_VERSION='privacy-2026-07-12-v1';
   const MAX_MESSAGE_LENGTH=3000;
+  const CONFIRMED_STORAGE_KEY='leader_public_lead_confirmed_v1';
+  const confirmedReferences=new Set();
+  let confirmedLoaded=false;
 
   const scenarios={
     shop:{service:'Комплексная реклама',text:'Сценарий: открываем / оформляем магазин. Нужны рекомендации по вывеске, баннеру, режиму работы, наклейкам, картам и соцсетям.'},
@@ -56,9 +59,37 @@
   };
 
   window.LEADER_METRIKA_ID=METRIKA_ID;
+  // Goal parameters use catalog values and URL paths only, never customer fields.
+  function metrikaParams(params){
+    params=params||{};
+    const safe={page_path:location.pathname};
+    const item=catalog&&(catalog.find(params.service_id||params.service)||catalog.forPage(pageKey()));
+    if(item){safe.service_id=item.id;safe.direction=item.direction}
+    const allowed={
+      placement:['header','footer','mobile','content','catalog'],
+      channel:['phone','email','vk','max','telegram','whatsapp'],
+      reason:['contact_invalid','message_too_long'],
+      contact_method:['phone','email','vk','max','any']
+    };
+    const method=String(params.contact_method||'');
+    const contact=method==='email'||method.includes('email')?'email':method==='vk'||method.includes('ВКонтакте')?'vk':method==='max'||method.includes('MAX')?'max':method==='any'||method.includes('Любой')?'any':method==='phone'||method.includes('Позвонить')?'phone':'';
+    for(const [key,values] of Object.entries(allowed)){
+      const value=key==='contact_method'?contact:params[key];
+      if(values.includes(value))safe[key]=value;
+    }
+    if(typeof params.duplicate==='boolean')safe.duplicate=params.duplicate;
+    if(params.target_path){
+      try{
+        const target=new URL(params.target_path,location.href);
+        if(target.origin===new URL(location.href).origin&&target.pathname.endsWith('.html'))safe.target_path=target.pathname;
+      }catch(_){}
+    }
+    return safe;
+  }
   window.leaderGoal=function(name,params){
     params=params||{};
-    try{if(typeof window.ym==='function')window.ym(METRIKA_ID,'reachGoal',name,params)}catch(e){}
+    try{if(typeof window.ym==='function')window.ym(METRIKA_ID,'reachGoal',name,metrikaParams(params))}catch(e){}
+    // Preserve the local reference event used by site helpers; it is not sent to Metrika.
     try{window.dispatchEvent(new CustomEvent('leader:goal',{detail:{goal:name,params:params}}))}catch(e){}
   };
 
@@ -94,7 +125,21 @@
     writePending({request_id:id,fingerprint:currentFingerprint,created_at:Date.now()});
     return id;
   }
-  function setStatus(form,type,msg){const s=form.querySelector('[data-leader-lead-status]');if(s){s.className='leader-lead-status show '+type;s.textContent=msg}}
+  function setStatus(form,type,msg){const s=form.querySelector('[data-leader-lead-status]');if(s){s.className='leader-lead-status ym-hide-content show '+type;s.textContent=msg}}
+  function firstLeadConfirmation(reference){
+    if(!confirmedLoaded){
+      confirmedLoaded=true;
+      try{
+        const saved=JSON.parse(window.sessionStorage.getItem(CONFIRMED_STORAGE_KEY)||'[]');
+        if(Array.isArray(saved))for(const id of saved.slice(-50))if(typeof id==='string')confirmedReferences.add(id);
+      }catch(_){}
+    }
+    if(confirmedReferences.has(reference))return false;
+    confirmedReferences.add(reference);
+    while(confirmedReferences.size>50)confirmedReferences.delete(confirmedReferences.values().next().value);
+    try{window.sessionStorage.setItem(CONFIRMED_STORAGE_KEY,JSON.stringify([...confirmedReferences]))}catch(_){}
+    return true;
+  }
   function revealSuccess(form){
     const status=form.querySelector('[data-leader-lead-status]');
     if(!status)return;
@@ -161,7 +206,7 @@
       renderServiceBrief(form);
       updateMessageBudget(form);
     });
-    if(scroll)scrollToForm();
+    if(scroll){goal('service_select',{service:preset.service});scrollToForm()}
   }
   function applyScenario(key,scroll){const s=scenarios[key];if(s)applyServicePreset(s,scroll)}
   function currentPreset(){
@@ -211,7 +256,7 @@
       const row=document.createElement('div');
       const label=document.createElement('label');
       const input=document.createElement('input');
-      input.type='text';input.name='brief_'+i;input.maxLength=180;
+      input.type='text';input.name='brief_'+i;input.maxLength=180;input.className='ym-disable-keys';
       input.id=form.querySelector('[name="service"]').id+'-brief-'+i;
       const budgetNote=form.querySelector('[data-leader-message-budget]');
       if(budgetNote)input.setAttribute('aria-describedby',budgetNote.id);
@@ -354,7 +399,7 @@
     form.dataset.contactMethodGuard='1';
     const method=form.querySelector('[name="contact_method"]');
     const detail=form.querySelector('[name="contact_detail"]');
-    method.addEventListener('change',()=>applyContactMode(form));
+    method.addEventListener('change',()=>{applyContactMode(form);goal('contact_method_select',{service:field(form,'service'),contact_method:field(form,'contact_method')})});
     detail.addEventListener('input',()=>updateContactValidity(form));
     detail.addEventListener('invalid',event=>{
       const error=updateContactValidity(form);
@@ -364,7 +409,7 @@
   }
 
   function buildFormHtml(id){
-    return `<form class="leader-lead-widget" data-leader-lead-widget>
+    return `<form class="leader-lead-widget ym-disable-submit" data-leader-lead-widget>
       <h3>Быстрая заявка</h3>
       <p>Заполните коротко. Мы сами уточним детали, если данных будет недостаточно.</p>
       <input class="leader-lead-hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
@@ -391,7 +436,7 @@
       </div>
       <button type="submit">Отправить заявку</button>
       <div class="leader-lead-note">Нажимая кнопку, вы соглашаетесь с <a href="privacy.html">политикой обработки персональных данных</a> для связи и расчёта заказа.</div>
-      <div class="leader-lead-status" data-leader-lead-status role="status" aria-live="polite" aria-atomic="true" tabindex="-1"></div>
+      <div class="leader-lead-status ym-hide-content" data-leader-lead-status role="status" aria-live="polite" aria-atomic="true" tabindex="-1"></div>
     </form>`;
   }
 
@@ -401,6 +446,7 @@
     const id=uid('ll');
     target.innerHTML=buildFormHtml(id);
     const form=target.querySelector('form');
+    form.querySelectorAll('input,textarea').forEach(input=>input.classList.add('ym-disable-keys'));
     const more=form.querySelector('[data-leader-more]');
     const details=form.querySelector('[data-leader-details]');
     const markFormStart=function(){
@@ -413,6 +459,7 @@
     form.addEventListener('input',()=>updateMessageBudget(form));
     form.addEventListener('change',()=>updateMessageBudget(form));
     form.querySelector('[name="service"]').addEventListener('change',()=>{
+      goal('service_select',{service:field(form,'service')});
       const message=form.querySelector('[name="message"]');
       if(message&&message.value===form.__leaderAutoMessage&&/^Интересует:|^Услуга выбрана/.test(message.value)){
         message.value='Интересует: '+field(form,'service');
@@ -436,7 +483,32 @@
     });
     mountContactMethod(form);
     form.addEventListener('submit',submit);
-    setTimeout(()=>goal('form_view',{page:location.href,page_path:location.pathname,service:field(form,'service')}),0);
+    observeFormView(form);
+  }
+
+  function observeFormView(form){
+    let viewed=false;
+    function mark(){
+      if(viewed)return;
+      viewed=true;
+      goal('form_view',{page_path:location.pathname,service:field(form,'service')});
+    }
+    if(typeof window.IntersectionObserver==='function'){
+      const observer=new window.IntersectionObserver(entries=>{
+        if(entries.some(entry=>entry.isIntersecting&&entry.intersectionRatio>=0.1)){mark();observer.disconnect()}
+      },{threshold:0.1});
+      observer.observe(form);
+    }else{
+      const visible=function(){
+        const box=form.getBoundingClientRect();
+        if(box.width>0&&box.bottom>0&&box.top<window.innerHeight){
+          mark();window.removeEventListener('scroll',visible);window.removeEventListener('resize',visible);
+        }
+      };
+      window.addEventListener('scroll',visible,{passive:true});
+      window.addEventListener('resize',visible,{passive:true});
+      setTimeout(visible,0);
+    }
   }
 
   async function submit(e){
@@ -523,8 +595,12 @@
       const duplicate=data&&data.duplicate===true;
       const successText=(duplicate?'Заявка уже была отправлена ранее. ':'Заявка отправлена. ')+'Номер обращения: '+responseRequestId+'. Мы свяжемся с вами для уточнения деталей.';
       setStatus(form,'ok',successText);
-      // Legacy CI marker: goal('lead_sent',{service,page:location.href,request_id:rid})
-      goal('lead_sent',{service,page:location.href,page_path:location.pathname,request_id:responseRequestId,duplicate});
+      const confirmedParams={service,page_path:location.pathname,request_id:responseRequestId,duplicate};
+      if(firstLeadConfirmation(responseRequestId)){
+        goal('lead_confirmed',confirmedParams);
+        if(!duplicate)goal('lead_sent',confirmedParams);
+      }
+      if(duplicate)goal('lead_duplicate',confirmedParams);
       form.reset();
       applyContactMode(form);
       const serviceSelect=form.querySelector('[name="service"]');
@@ -582,12 +658,24 @@
       const a=e.target.closest&&e.target.closest('a');
       if(!a)return;
       const href=a.getAttribute('href')||'';
-      const text=(a.textContent||'').trim();
-      if(href==='#request'||href==='#leader-lead-form')goal('request_block_click',{service:field(document.querySelector('[data-leader-lead-widget]')||document,'service'),page_path:location.pathname});
-      if(href.indexOf('tel:')===0)goal('phone_click',{href,text,page:location.href,page_path:location.pathname});
+      const placement=a.closest('.mobile-cta,#leader-mobile-sticky-cta')?'mobile':a.closest('header')?'header':a.closest('footer')?'footer':a.closest('.service-cards')?'catalog':'content';
+      if(href==='#request'||href==='#leader-lead-form'||href==='/#request')goal('request_block_click',{service:field(document.querySelector('[data-leader-lead-widget]')||document,'service'),placement});
+      if(href.indexOf('tel:')===0)goal('phone_click',{channel:'phone',placement});
+      if(href.indexOf('mailto:')===0)goal('email_click',{channel:'email',placement});
       if(a.dataset&&a.dataset.service){e.preventDefault();applyServicePreset({service:a.dataset.service,text:'Услуга выбрана кнопкой: '+a.dataset.service},true)}
       if(a.dataset&&a.dataset.scenario){e.preventDefault();applyScenario(a.dataset.scenario,true)}
-      if(/\.html($|#|\?)/.test(href))goal('service_page_click',{href,text,page:location.href,page_path:location.pathname});
+      try{
+        const target=new URL(href,location.href);
+        const host=target.hostname.toLowerCase();
+        if(target.origin===new URL(location.href).origin&&target.pathname.endsWith('.html')){
+          const item=catalog&&(catalog.find(target.searchParams.get('service'))||catalog.forPage(target.pathname.split('/').pop()));
+          if(item)goal('service_page_click',{service:item.id,target_path:target.pathname,placement});
+        }
+        const channels={'vk.me':'vk','t.me':'telegram','telegram.me':'telegram','wa.me':'whatsapp','api.whatsapp.com':'whatsapp','max.ru':'max'};
+        const contactVk=a.dataset.contactChannel==='vk'&&['vk.com','vk.ru'].includes(host);
+        if(['http:','https:'].includes(target.protocol)&&(channels[host]||contactVk))goal('messenger_click',{channel:channels[host]||'vk',placement});
+        else if(['vk.com','vk.ru'].includes(host))goal('community_click',{channel:'vk',placement});
+      }catch(_){}
     });
   }
 

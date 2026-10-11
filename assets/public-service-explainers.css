@@ -1,0 +1,37 @@
+/* Pairs authored service explanations with explicitly labelled illustrations. */
+html body .service-explainer-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.08fr);gap:36px;align-items:center}
+html body .service-explainer-grid>*{min-width:0}
+html body .service-explainer-figure{margin:0;align-self:start}
+html body .service-explainer-figure img{display:block;width:100%;height:auto;aspect-ratio:3/2;object-fit:contain;background:#f8f6f2;border-radius:20px}
+html body .service-explainer-figure figcaption{font-size:13px;line-height:1.5;color:#59616d;margin-top:10px}
+html body .service-explainer-copy h2{font-size:clamp(24px,3vw,34px);line-height:1.15;text-transform:none;letter-spacing:normal;margin:0 0 16px}
+html body .service-explainer-label{font-size:12px;line-height:1.5;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9b3e00;margin:0 0 10px}
+html body .service-explainer-copy p{font-size:16px;line-height:1.6;margin:0 0 16px}
+html body .service-explainer-copy ul{margin:0 0 20px;padding-left:22px;line-height:1.6}
+html body .service-explainer-copy li+li{margin-top:6px}
+html body .service-explainer-copy .service-explainer-label{font-size:12px}
+html body .service-explainer-copy .service-explainer-boundary{font-size:14px;color:#59616d}
+html body .service-explainer-action{display:inline-flex;min-height:44px;align-items:center;justify-content:center;padding:10px 18px;background:#0d0f12;color:#fff;border-radius:12px;text-decoration:none;font-weight:700}
+html body .service-explainer-action:hover{background:#34383f}
+html body .service-explainer-action:focus-visible,html body .service-cards a:focus-visible{outline:3px solid #ff6a00;outline-offset:4px}
+html body .service-explainer{scroll-margin-top:150px}
+html body .service-illustration-note{font-size:14px;color:#59616d;margin:0 0 20px}
+html body .service-illustration-note a,html body .service-catalog-related a{text-decoration:underline;text-underline-offset:3px}
+html body .service-cards{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+html body .service-cards a.service-card{display:grid;grid-template-columns:96px minmax(0,1fr);align-items:start;gap:14px;padding:12px;background:#f6f7f8;border:1px solid #e6e8eb;border-radius:14px;min-width:0;min-height:96px;text-decoration:none;line-height:1.4}
+html body .service-cards a.service-card:after{content:none}
+html body .service-cards a.service-card:hover{border-color:#ffbf91;background:#fff5ec}
+html body .service-card img{display:block;width:96px;height:64px;object-fit:contain;border-radius:8px;background:#f8f6f2}
+html body .service-card-copy{display:block;min-width:0;overflow-wrap:anywhere}
+html body .service-card-copy strong{display:block;font-size:16px;line-height:1.35;color:#0d0f12}
+html body .service-card-summary{display:block;font-size:14px;line-height:1.5;font-weight:400;color:#4b5563;margin-top:5px}
+html body .service-card-next{display:block;font-size:12px;line-height:1.5;font-weight:600;color:#9b3e00;margin-top:6px}
+html body .creative-service-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+html body .service-catalog-related{margin:20px 0 0}
+@media(max-width:760px){
+ html body .service-explainer-grid{grid-template-columns:minmax(0,1fr);gap:24px}
+ html body .service-explainer{scroll-margin-top:110px}
+ html body .creative-service-cards{grid-template-columns:minmax(0,1fr)}
+ html body .service-cards a.service-card{grid-template-columns:80px minmax(0,1fr);gap:12px;padding:10px}
+ html body .service-card img{width:80px;height:auto;aspect-ratio:3/2}
+}

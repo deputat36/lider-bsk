@@ -9,7 +9,7 @@ const commercial = JSON.parse(await readFile('data/commercial-services.json', 'u
 const catalog = globalThis.LeaderServiceCatalog;
 const publicForms=[];
 for(const name of (await readdir(root)).filter(name=>name.endsWith('.html')).sort()){
-  if((await readFile(name,'utf8')).includes('assets/public-lead-form.js?v=35'))publicForms.push(name);
+  if((await readFile(name,'utf8')).includes('assets/public-lead-form.js?v=36'))publicForms.push(name);
 }
 assert.equal(publicForms.length,64,'Exercise the actual release on all public form pages');
 const server = createServer(async (req, res) => {
