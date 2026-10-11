@@ -11,3 +11,7 @@
 .leader-lead-widget .leader-service-brief h4,.leader-lead-widget .leader-service-brief p,.leader-lead-widget .leader-service-brief label{color:#171717}
 html body .leader-lead-widget button.leader-lead-more{margin:14px 0 16px;background:#f8fafc;color:#171717;border-color:#d0d5dd;box-shadow:none}
 html body .leader-lead-widget button.leader-lead-more:hover{background:#f2f4f7}
+/* Contact guidance is shared by every public form, including dark sections. */
+.leader-lead-widget .leader-contact-hint{display:block;margin-top:7px;color:inherit;opacity:.8;font-size:13px;line-height:1.4;overflow-wrap:anywhere}
+.leader-lead-widget .leader-contact-detail-required label:after{content:" *";color:#ff6a00}
+.leader-lead-widget .leader-contact-hint-error{font-weight:700;opacity:1}

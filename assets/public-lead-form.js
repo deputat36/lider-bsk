@@ -257,6 +257,93 @@
     return length;
   }
 
+  function contactMode(form){
+    const method=field(form,'contact_method');
+    return method==='Написать на email'?'email':method==='Написать ВКонтакте'?'vk':'optional';
+  }
+
+  function contactDetailError(form){
+    const mode=contactMode(form),value=field(form,'contact_detail');
+    if(mode==='optional')return '';
+    if(!value)return mode==='email'?'Укажите email для выбранного способа связи.':'Укажите ссылку на профиль ВКонтакте.';
+    const detail=form.querySelector('[name="contact_detail"]');
+    if(mode==='email')return detail.validity?.typeMismatch?'Проверьте email: например, name@example.ru.':'';
+    try{
+      const url=new URL(/^https?:\/\//i.test(value)?value:'https://'+value);
+      if(['http:','https:'].includes(url.protocol)&&/^(?:(?:www|m)\.)?vk\.(?:com|ru)$/.test(url.hostname)&&!url.username&&!url.password&&!url.port&&url.pathname.replace(/\//g,'').trim())return '';
+    }catch(_){}
+    return 'Укажите ссылку на страницу ВКонтакте: например, https://vk.com/id123.';
+  }
+
+  function revealContactDetails(form){
+    const details=form.querySelector('[data-leader-details]');
+    const more=form.querySelector('[data-leader-more]');
+    if(details){details.removeAttribute('hidden');more?.setAttribute('aria-expanded','true');if(more)more.textContent='Скрыть подробности ↑'}
+  }
+
+  function updateContactValidity(form){
+    const detail=form.querySelector('[name="contact_detail"]');
+    const error=contactDetailError(form);
+    detail.setCustomValidity?.(error);
+    // Only remove this validator's own status, preserving network/phone/length errors.
+    const previous=form.__leaderContactError;
+    if(previous&&form.querySelector('[data-leader-lead-status]')?.textContent===previous){
+      if(error)setStatus(form,'err',error);else setStatus(form,'','');
+    }
+    form.__leaderContactError=previous?error:'';
+    detail.setAttribute('aria-invalid',form.__leaderContactError?'true':'false');
+    const hint=form.querySelector('[data-leader-contact-hint]');
+    if(hint){hint.textContent=form.__leaderContactError||hint.dataset.defaultText;hint.classList.toggle('leader-contact-hint-error',!!form.__leaderContactError)}
+    return error;
+  }
+
+  function showContactError(form,error){
+    revealContactDetails(form);
+    form.__leaderContactError=error;
+    setStatus(form,'err',error);
+    const detail=form.querySelector('[name="contact_detail"]');
+    detail.setAttribute('aria-invalid','true');
+    const hint=form.querySelector('[data-leader-contact-hint]');
+    if(hint){hint.textContent=error;hint.classList.add('leader-contact-hint-error')}
+    detail.focus?.({preventScroll:true});
+    detail.scrollIntoView?.({behavior:'instant',block:'center'});
+    const params={contact_method:field(form,'contact_method'),page_path:location.pathname};
+    if(!field(form,'contact_detail'))goal('contact_detail_missing',params);
+    else goal('lead_validation_error',{...params,reason:'contact_detail_invalid'});
+  }
+
+  function applyContactMode(form){
+    const mode=contactMode(form),required=mode!=='optional';
+    const detail=form.querySelector('[name="contact_detail"]');
+    detail.required=required;
+    detail.setAttribute('aria-required',required?'true':'false');
+    detail.type=mode==='email'?'email':'text';
+    detail.inputMode=mode==='email'?'email':mode==='vk'?'url':'text';
+    detail.autocomplete=mode==='email'?'email':'off';
+    detail.closest('.leader-lead-span-12')?.classList.toggle('leader-contact-detail-required',required);
+    const label=form.querySelector('label[for="'+detail.id+'"]');
+    const hint=form.querySelector('[data-leader-contact-hint]');
+    if(label)label.textContent=mode==='email'?'Email для ответа':mode==='vk'?'Ссылка на профиль ВКонтакте':'Email или ссылка на профиль';
+    detail.placeholder=mode==='email'?'Например, name@example.ru':mode==='vk'?'Например, https://vk.com/id123':'Необязательно для звонка или MAX по указанному номеру';
+    if(hint){hint.dataset.defaultText=mode==='email'?'Укажите адрес, на который отправить ответ.':mode==='vk'?'Подойдёт ссылка на профиль или страницу: vk.com/имя или vk.ru/имя.':'Для звонка или MAX достаточно указанного телефона.';hint.textContent=hint.dataset.defaultText}
+    if(required)revealContactDetails(form);
+    return updateContactValidity(form);
+  }
+
+  function mountContactMethod(form){
+    if(form.dataset.contactMethodGuard==='1')return;
+    form.dataset.contactMethodGuard='1';
+    const method=form.querySelector('[name="contact_method"]');
+    const detail=form.querySelector('[name="contact_detail"]');
+    method.addEventListener('change',()=>applyContactMode(form));
+    detail.addEventListener('input',()=>updateContactValidity(form));
+    detail.addEventListener('invalid',event=>{
+      const error=updateContactValidity(form);
+      if(error){event.preventDefault();showContactError(form,error)}
+    });
+    applyContactMode(form);
+  }
+
   function buildFormHtml(id){
     return `<form class="leader-lead-widget" data-leader-lead-widget>
       <h3>Быстрая заявка</h3>
@@ -274,7 +361,7 @@
         <div class="leader-lead-grid">
           <div class="leader-lead-span-6"><label for="${id}-city">Город</label><input id="${id}-city" name="city" autocomplete="address-level2" maxlength="120" placeholder="Борисоглебск"></div>
           <div class="leader-lead-span-6"><label for="${id}-contact">Как удобнее связаться?</label><select id="${id}-contact" name="contact_method"><option>Позвонить по указанному номеру</option><option>Написать в MAX по указанному номеру</option><option>Написать ВКонтакте</option><option>Написать на email</option><option>Любой удобный способ</option></select></div>
-          <div class="leader-lead-span-12"><label for="${id}-contact-detail">Email или ссылка на профиль</label><input id="${id}-contact-detail" name="contact_detail" maxlength="300" placeholder="Заполните, если выбрали email или ВКонтакте"></div>
+          <div class="leader-lead-span-12"><label for="${id}-contact-detail">Email или ссылка на профиль</label><input id="${id}-contact-detail" name="contact_detail" maxlength="300" aria-describedby="${id}-contact-hint" placeholder="Заполните, если выбрали email или ВКонтакте"><small id="${id}-contact-hint" class="leader-contact-hint" data-leader-contact-hint></small></div>
           <div class="leader-lead-span-6"><label for="${id}-quantity">Количество / формат</label><input id="${id}-quantity" name="quantity" maxlength="120" placeholder="1 пост, пакет, закреп, 100 наклеек"></div>
           <div class="leader-lead-span-6"><label for="${id}-deadline">Когда нужно?</label><select id="${id}-deadline" name="deadline"><option>Не срочно</option><option>Как можно быстрее</option><option>В течение 2–3 дней</option><option>В течение недели</option><option>К определённой дате</option><option>Нужно обсудить</option></select></div>
           <div class="leader-lead-span-6"><label for="${id}-mockup">Макет</label><select id="${id}-mockup" name="mockup"><option>Макета нет, нужен дизайн</option><option>Макет готов</option><option>Есть пример, нужно доработать</option><option>Пока не знаю</option></select></div>
@@ -328,6 +415,7 @@
         more.textContent='Добавить подробности для точного расчёта ↓';
       }
     });
+    mountContactMethod(form);
     form.addEventListener('submit',submit);
     setTimeout(()=>goal('form_view',{page:location.href,page_path:location.pathname,service:field(form,'service')}),0);
   }
@@ -353,6 +441,9 @@
 
     if(!service){setStatus(form,'err','Выберите услугу или позвоните по номеру 8 980 245-74-71.');return}
     if(!phone){setStatus(form,'err','Укажите телефон, чтобы мы могли связаться с вами.');return}
+
+    const contactError=applyContactMode(form);
+    if(contactError){showContactError(form,contactError);return}
 
     const pageTitle=(document.title||'').replace(/\s+/g,' ').trim();
     const submittedAt=new Date().toISOString();
@@ -416,6 +507,7 @@
       // Legacy CI marker: goal('lead_sent',{service,page:location.href,request_id:rid})
       goal('lead_sent',{service,page:location.href,page_path:location.pathname,request_id:responseRequestId,duplicate});
       form.reset();
+      applyContactMode(form);
       const serviceSelect=form.querySelector('[name="service"]');
       if(serviceSelect)serviceSelect.value=service;
       form.__leaderBriefDrafts=Object.create(null);

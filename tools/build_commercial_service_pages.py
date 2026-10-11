@@ -33,7 +33,7 @@ def render(p):
 <meta property="og:title" content="{e(title)}"><meta property="og:description" content="{e(description)}"><meta property="og:url" content="{url}">
 <meta property="og:image" content="{origin}assets/og-lider-default.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="РА Лидер — рекламное агентство в Борисоглебске">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="{e(title)}"><meta name="twitter:description" content="{e(description)}"><meta name="twitter:image" content="{origin}assets/og-lider-default.png">
-<link rel="stylesheet" href="assets/public-lead-form.css?v=28"><link rel="stylesheet" href="assets/public-simple-service.css?v=7"><link rel="stylesheet" href="assets/public-commercial-services.css?v=1"><link rel="stylesheet" href="assets/public-creative-services.css?v=1">
+<link rel="stylesheet" href="assets/public-lead-form.css?v=29"><link rel="stylesheet" href="assets/public-simple-service.css?v=7"><link rel="stylesheet" href="assets/public-commercial-services.css?v=1"><link rel="stylesheet" href="assets/public-creative-services.css?v=1">
 <script type="application/ld+json">{json.dumps(ld,ensure_ascii=False,separators=(',',':'))}</script>
 <link rel="icon" type="image/svg+xml" href="assets/brand/logo-lider-mark.svg?v=4">
 <link rel="stylesheet" href="assets/public-product-system.css?v=1">
@@ -50,7 +50,7 @@ def render(p):
 <section class="section"><div class="wrap"><h2>Дополнить решение</h2><nav class="service-related" aria-label="Связанные услуги">{related}</nav><p><a href="dizayn-3d-animaciya.html">Дизайн, 3D и анимация</a> · <a href="nashi-raboty.html">Фото и макеты работ</a></p></div></section>
 <section class="section" id="request"><div class="wrap"><div class="cta"><div><h2>Обсудим вашу задачу</h2><p>Выбранная услуга: {e(s['label'])}. Опишите желаемый результат и оставьте телефон. Уточним детали и подготовим расчёт.</p><p><strong>Телефон:</strong> <a href="tel:+79802457471">8 980 245-74-71</a></p></div><div id="leader-lead-form"></div></div></div></section>
 </main>{footer}
-<script src="assets/packages-link.js?v=2" defer></script><script src="assets/leader-service-catalog.js?v=3"></script><script src="assets/public-lead-form.js?v=33"></script>
+<script src="assets/packages-link.js?v=2" defer></script><script src="assets/leader-service-catalog.js?v=3"></script><script src="assets/public-lead-form.js?v=34"></script>
 </body></html>
 '''
 errors=[]

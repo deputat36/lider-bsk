@@ -1,12 +1,17 @@
 import { chromium } from 'playwright';
 import { createServer } from 'node:http';
-import { readFile, mkdir } from 'node:fs/promises';
+import { readFile, readdir, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 const root = process.cwd();
 await import('../assets/leader-service-catalog.js');
 const commercial = JSON.parse(await readFile('data/commercial-services.json', 'utf8'));
 const catalog = globalThis.LeaderServiceCatalog;
+const publicForms=[];
+for(const name of (await readdir(root)).filter(name=>name.endsWith('.html')).sort()){
+  if((await readFile(name,'utf8')).includes('assets/public-lead-form.js?v=34'))publicForms.push(name);
+}
+assert.equal(publicForms.length,64,'Exercise the actual release on all public form pages');
 const server = createServer(async (req, res) => {
   const pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
   const file = path.resolve(root, '.' + (pathname === '/' ? '/index.html' : pathname));
@@ -23,6 +28,7 @@ await mkdir('artifacts/public-lead', {recursive:true});
 try {
   for (const width of [1440,390]) {
     const context = await browser.newContext({viewport:{width,height:900}});
+    await context.addInitScript(()=>{window.__leaderTestGoals=[];window.addEventListener('leader:goal',event=>window.__leaderTestGoals.push(event.detail));});
     const page = await context.newPage();
     const payloads = [];
     const errors = [];
@@ -217,8 +223,101 @@ try {
       assert.equal(await budget.isVisible(),false,'Success resets the budget and answers');
       assert.equal(await page.locator('[name="service"]').inputValue(),service.label);
     }
+    for(const name of publicForms){
+      await page.goto(origin+'/'+name);
+      const form=page.locator('[data-leader-lead-widget]');
+      const detail=page.locator('[name="contact_detail"]');
+      const method=page.locator('[name="contact_method"]');
+      const more=page.locator('[data-leader-more]');
+      const hint=page.locator('[data-leader-contact-hint]');
+      await page.locator('[name="phone"]').fill('+7 900 000-00-00');
+      const task='Synthetic contact task '+name;
+      await page.locator('[name="message"]').fill(task);
+      await more.click();
+      const postsBefore=payloads.length;
+      const pending=await page.evaluate(()=>sessionStorage.getItem('leader_public_lead_pending_v1'));
+      for(const choice of ['Написать на email','Написать ВКонтакте']){
+        await method.selectOption(choice);
+        assert.equal(await detail.getAttribute('aria-required'),'true');
+        assert.equal(await detail.getAttribute('aria-describedby'),await hint.getAttribute('id'));
+        await more.click();
+        assert.equal(await more.getAttribute('aria-expanded'),'false');
+        // Native HTML5 validation can prevent the submit event itself.
+        await form.evaluate(el=>el.requestSubmit());
+        assert.equal(await more.getAttribute('aria-expanded'),'true');
+        assert.equal(await detail.evaluate(el=>el===document.activeElement),true);
+        assert.equal(await detail.getAttribute('aria-invalid'),'true');
+        assert.ok((await hint.textContent()).startsWith('Укажите'));
+        assert.equal(await hint.isVisible(),true);
+        assert.equal(payloads.length,postsBefore,name+' missing '+choice+' never posts');
+        assert.equal(await page.evaluate(()=>sessionStorage.getItem('leader_public_lead_pending_v1')),pending);
+        assert.equal(await page.locator('[name="message"]').inputValue(),task);
+      }
+      assert.equal(await page.evaluate(()=>window.__leaderTestGoals.filter(event=>event.goal==='contact_detail_missing').length),2,'One event per native validation attempt');
+      for(const choice of ['Позвонить по указанному номеру','Написать в MAX по указанному номеру','Любой удобный способ']){
+        await method.selectOption(choice);
+        assert.equal(await detail.getAttribute('aria-required'),'false');
+        assert.equal(await detail.evaluate(el=>el.validity.valid),true);
+        assert.equal(await page.locator('[data-leader-lead-status]').textContent(),'');
+      }
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,name);
+    }
+    for(const [name,choice,valid] of [
+      ['3d-vizualizaciya-reklamy.html?service=visualization-3d&offer=onsite-preview','Написать на email','synthetic@example.test'],
+      ['request.html?service=modeling-3d','Написать ВКонтакте','vk.com/id123'],
+    ]){
+      await page.goto(origin+'/'+name);
+      const form=page.locator('[data-leader-lead-widget]');
+      const detail=page.locator('[name="contact_detail"]');
+      const method=page.locator('[name="contact_method"]');
+      const hint=page.locator('[data-leader-contact-hint]');
+      const more=page.locator('[data-leader-more]');
+      await page.locator('[name="phone"]').fill('+7 900 000-00-00');
+      await page.locator('[name="message"]').fill('Synthetic full contact brief');
+      await more.click();
+      for(let i=0;i<4;i++)await page.locator(`[name="brief_${i}"]`).fill('Сохранить ответ '+i);
+      const service=await page.locator('[name="service"]').inputValue();
+      const postsBefore=payloads.length;
+      await method.selectOption(choice);
+      for(const invalid of choice==='Написать на email'?['   ','not-an-email','name@']:['   ','https://vk.com/','https://vk.com.evil.example/id123']){
+        await detail.fill(invalid);
+        await page.locator('button[type="submit"]').click();
+        assert.equal(payloads.length,postsBefore,'Malformed contact never posts');
+        assert.equal(await detail.evaluate(el=>el===document.activeElement),true);
+        assert.equal(await hint.isVisible(),true);
+        assert.equal(await page.locator('[name="brief_3"]').inputValue(),'Сохранить ответ 3');
+      }
+      const bounds=await detail.evaluate(el=>{const field=el.getBoundingClientRect(),label=el.closest('.leader-lead-span-12').querySelector('label').getBoundingClientRect(),hint=el.parentElement.querySelector('[data-leader-contact-hint]').getBoundingClientRect();return {labelTop:label.top,fieldBottom:field.bottom,hintTop:hint.top,hintBottom:hint.bottom,viewport:innerHeight,scrollBehavior:getComputedStyle(document.documentElement).scrollBehavior};});
+      await page.screenshot({path:`artifacts/public-lead/contact-${choice==='Написать на email'?'email':'vk'}-${width}.png`});
+      assert.ok(bounds.hintTop>=0&&bounds.hintBottom<bounds.viewport-70,'Contact guidance stays clear of fixed actions: '+choice+' @'+width+' '+JSON.stringify(bounds));
+      assert.ok(bounds.labelTop>=0&&bounds.fieldBottom<bounds.viewport-70,'Contact label and whole input stay visible: '+choice+' @'+width+' '+JSON.stringify(bounds));
+      await detail.fill(valid);
+      assert.equal(await detail.getAttribute('aria-invalid'),'false');
+      assert.equal(await page.locator('[data-leader-lead-status]').textContent(),'');
+      rejectNext=true;
+      await page.locator('button[type="submit"]').click();
+      await page.locator('[data-leader-lead-status].err').waitFor();
+      const failed=payloads.at(-1);
+      assert.equal(failed.contact_detail,valid);assert.equal(failed.contact_method,choice);
+      assert.equal(failed.service,service);assert.ok(failed.message.includes('Задача клиента: Synthetic full contact brief'));
+      for(let i=0;i<4;i++)assert.ok(failed.message.includes('Сохранить ответ '+i));
+      if(choice==='Написать на email')assert.ok(failed.message.includes('Состав заказа: Увидеть на объекте'));
+      await page.locator('button[type="submit"]').click();
+      await page.locator('[data-leader-lead-status].ok').waitFor();
+      assert.equal(payloads.at(-1).request_id,failed.request_id);
+      assert.equal(await method.inputValue(),'Позвонить по указанному номеру');
+      assert.equal(await detail.inputValue(),'');
+      assert.equal(await detail.getAttribute('aria-required'),'false');
+      assert.equal(await detail.getAttribute('type'),'text');
+      assert.equal(await page.locator('[name="service"]').inputValue(),service);
+      assert.equal(await page.locator('[name="brief_0"]').inputValue(),'');
+      await method.selectOption('Написать в MAX по указанному номеру');
+      assert.equal(await detail.evaluate(el=>el.validity.valid),true);
+      const validationGoals=await page.evaluate(()=>window.__leaderTestGoals.filter(event=>event.goal==='contact_detail_missing'||event.goal==='lead_validation_error'));
+      assert.ok(!JSON.stringify(validationGoals).includes(valid),'Validation goals contain no customer contacts');
+    }
     assert.equal(errors.length,0,errors.join('\n'));
     await context.close();
   }
-  console.log('PASS: desktop/mobile submit, full message/brief, length guard and correction, campaign navigation, service selection and retry; zero production requests forwarded.');
+  console.log('PASS: all 64 forms on desktop/mobile, native contact validation, correction/reset/retry, full message/brief, campaign and service selection; zero production requests forwarded.');
 } finally { await browser.close(); server.close(); }

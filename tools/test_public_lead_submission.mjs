@@ -12,26 +12,34 @@ const storage = {
 };
 function page(search = '', sessionStorage = storage) {
   const sent = [];
+  const goals = [];
   const fields = { phone: '+7 900 000-00-00', name: 'Synthetic local test', service: 'Наклейки', message: 'Тестовый расчёт', website: '' };
   const button = {};
   const status = {};
   const offerNote = {};
   const budgetNote = {};
+  const detailPanel = { removeAttribute() {} };
+  const more = { setAttribute() {} };
+  const elements = new Map();
   const form = { dataset: {}, reset() {}, querySelector(selector) {
     if (selector === 'button[type="submit"]') return button;
     if (selector === '[data-leader-lead-status]') return status;
     if (selector === '[data-leader-offer-note]') return offerNote;
     if (selector === '[data-leader-message-budget]') return budgetNote;
+    if (selector === '[data-leader-details]') return detailPanel;
+    if (selector === '[data-leader-more]') return more;
     const name = selector.match(/^\[name="([^"]+)"\]$/)?.[1];
-    return name ? { get value() { return fields[name] || ''; }, set value(value) { fields[name] = value; } } : null;
+    if (!name) return null;
+    if (!elements.has(name)) elements.set(name, { id:'test-'+name, get value() { return fields[name] || ''; }, set value(value) { fields[name] = value; }, validity:{typeMismatch:false}, setCustomValidity() {}, setAttribute() {}, closest() { return null; }, focus() {} });
+    return elements.get(name);
   } };
   let networkFailure = false;
   const context = vm.createContext({
-    window: { sessionStorage, dispatchEvent() {} },
+    window: { sessionStorage, dispatchEvent(event) { goals.push(event.detail); } },
     document: { readyState: 'loading', title: 'Наклейки', addEventListener() {}, querySelectorAll(selector) { return selector === '[data-leader-lead-widget]' ? [form] : []; } },
     location: { pathname: '/nakleyki-plotternaya-rezka-borisoglebsk.html', href: 'https://www.lider-bsk.ru/nakleyki-plotternaya-rezka-borisoglebsk.html' + search, search },
     navigator: { userAgent: 'local-contract-test' },
-    URLSearchParams, CustomEvent: class {}, console: { error() {} },
+    URL, URLSearchParams, CustomEvent: class { constructor(name,options) { this.detail=options.detail; } }, console: { error() {} },
     fetch: async (url, options) => {
       const payload = JSON.parse(options.body); sent.push(payload);
       if (networkFailure) throw new Error('Synthetic network failure');
@@ -41,13 +49,51 @@ function page(search = '', sessionStorage = storage) {
   vm.runInContext(fs.readFileSync('assets/leader-service-catalog.js', 'utf8'), context);
   context.window.LeaderServiceCatalog = context.LeaderServiceCatalog;
   const marker = source.lastIndexOf('})();');
-  const instrumented = source.slice(0, marker) + '\nwindow.testSubmit=submit; window.testApplyPreset=()=>applyServicePreset(currentPreset(),false); window.testAttribution=typeof campaignAttribution === "function" ? campaignAttribution : qs; window.testMessage=()=>messageForSubmission(formForTest); window.testBudget=()=>updateMessageBudget(formForTest);\n' + source.slice(marker);
+  const instrumented = source.slice(0, marker) + '\nwindow.testSubmit=submit; window.testApplyPreset=()=>applyServicePreset(currentPreset(),false); window.testAttribution=typeof campaignAttribution === "function" ? campaignAttribution : qs; window.testMessage=()=>messageForSubmission(formForTest); window.testBudget=()=>updateMessageBudget(formForTest); window.testContact=()=>applyContactMode(formForTest);\n' + source.slice(marker);
   context.formForTest=form;
   vm.runInContext(instrumented, context);
-  return { sent, fields, status, offerNote, budgetNote, message: () => context.window.testMessage(), budget: () => context.window.testBudget(), applyPreset: () => context.window.testApplyPreset(), capture: () => context.window.testAttribution(), fail: value => { networkFailure = value; }, submit: () => context.window.testSubmit({ preventDefault() {}, currentTarget: form }) };
+  return { sent, goals, fields, status, offerNote, budgetNote, contact:()=>context.window.testContact(), message: () => context.window.testMessage(), budget: () => context.window.testBudget(), applyPreset: () => context.window.testApplyPreset(), capture: () => context.window.testAttribution(), fail: value => { networkFailure = value; }, submit: () => context.window.testSubmit({ preventDefault() {}, currentTarget: form }) };
 }
 
 const direct = page();
+for(const [method,detail] of [['Написать на email','synthetic@example.test'],['Написать ВКонтакте','vk.com/id123']]){
+  const missing=page('?service=visualization-3d&offer=onsite-preview');missing.applyPreset();
+  Object.assign(missing.fields,{message:'Сохранить описание и контакт',contact_method:method,contact_detail:'   ',brief_0:'Фасад, фото передам при обсуждении'});
+  const before={...missing.fields},pending=values.get('leader_public_lead_pending_v1');
+  await missing.submit();
+  assert.equal(missing.sent.length,0,'Missing contact blocks the actual handler before HTTP');
+  assert.equal(values.get('leader_public_lead_pending_v1'),pending,'Invalid contact does not allocate a request ID');
+  assert.deepEqual(missing.fields,before,'Preserve task, selected offer and brief on a contact error');
+  assert.equal(missing.goals.at(-1).goal,'contact_detail_missing');
+  assert.deepEqual(Object.keys(missing.goals.at(-1).params).sort(),['contact_method','page_path'],'Contact validation analytics contains no customer data or URL query');
+  missing.fields.contact_detail=detail;missing.contact();
+  assert.equal(missing.status.textContent,'','Correction clears its own error');
+  missing.fail(true);await missing.submit();missing.fail(false);await missing.submit();
+  assert.equal(missing.sent.length,2);assert.equal(missing.sent[0].request_id,missing.sent[1].request_id);
+  assert.equal(missing.sent[1].contact_detail,detail);assert.equal(missing.sent[1].contact_method,method);
+  assert.ok(missing.sent[1].message.includes('Состав заказа: Увидеть на объекте'));
+  assert.ok(missing.sent[1].message.includes(before.message));assert.ok(missing.sent[1].message.includes(before.brief_0));
+  assert.ok(!JSON.stringify(missing.goals).includes(detail),'Analytics does not include the email or profile');
+}
+for(const detail of ['https://vk.com/id123','vk.com/user_name','https://vk.ru/club123','https://m.vk.com/id123?ref=test','https://www.vk.com/public123']){
+  const valid=page();Object.assign(valid.fields,{contact_method:'Написать ВКонтакте',contact_detail:detail});
+  await valid.submit();assert.equal(valid.sent.length,1,detail);assert.equal(valid.sent[0].contact_detail,detail);
+}
+for(const detail of ['not-a-link','https://vk.com/','https://vk.com.evil.example/id123','https://evil.example/?next=https://vk.com/id123','https://user:password@vk.com/id123','https://vk.com:9443/id123','javascript:alert(1)']){
+  const invalid=page();Object.assign(invalid.fields,{contact_method:'Написать ВКонтакте',contact_detail:detail});
+  const pending=values.get('leader_public_lead_pending_v1');await invalid.submit();
+  assert.equal(invalid.sent.length,0,detail);assert.equal(values.get('leader_public_lead_pending_v1'),pending);
+  assert.ok(invalid.status.textContent.includes('ссылку на страницу ВКонтакте'));
+}
+for(const method of ['Позвонить по указанному номеру','Написать в MAX по указанному номеру','Любой удобный способ']){
+  const optional=page();optional.fields.contact_method='Написать ВКонтакте';await optional.submit();
+  assert.equal(optional.sent.length,0);optional.fields.contact_method=method;optional.contact();
+  assert.equal(optional.status.textContent,'');await optional.submit();assert.equal(optional.sent.length,1,method);
+}
+const contactThenPhone=page();contactThenPhone.fields.contact_method='Написать ВКонтакте';await contactThenPhone.submit();
+contactThenPhone.fields.phone='';await contactThenPhone.submit();const currentPhoneError=contactThenPhone.status.textContent;
+contactThenPhone.fields.contact_detail='vk.com/id123';contactThenPhone.contact();
+assert.equal(contactThenPhone.status.textContent,currentPhoneError,'Contact correction preserves a newer phone error');
 await direct.submit();
 assert.equal(direct.sent[0].service, 'Наклейки', 'Selected service must survive an URL without service');
 assert.equal(direct.sent[0].source, 'Сайт');

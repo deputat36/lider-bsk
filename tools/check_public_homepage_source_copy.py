@@ -5,7 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PAGE = ROOT / 'index.html'
 HELPER = ROOT / 'assets' / 'packages-link.js'
-FORM_SCRIPT = 'assets/public-lead-form.js?v=33'
+FORM_SCRIPT = 'assets/public-lead-form.js?v=34'
 
 
 class HomepageParser(HTMLParser):
@@ -92,7 +92,7 @@ def main() -> None:
         raise SystemExit(f'Homepage must contain exactly one mobile menu button, found {parser.menu_button_count}')
 
     expected_stylesheets = [
-        'assets/public-lead-form.css?v=28',
+        'assets/public-lead-form.css?v=29',
         'assets/public-homepage.css?v=5',
         'assets/public-commercial-services.css?v=1',
         'assets/public-creative-services.css?v=1',

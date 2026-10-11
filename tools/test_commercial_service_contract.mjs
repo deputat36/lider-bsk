@@ -49,7 +49,7 @@ assert.ok(!firstContactServiceProfile('CRM и автоматизация').quest
 for (const page of fs.readdirSync('.').filter(p => p.endsWith('.html'))) {
   const html = fs.readFileSync(page, 'utf8');
   if (html.includes('src="assets/public-lead-form.js')) {
-    assert.ok(html.includes('src="assets/public-lead-form.js?v=33"'), page);
+    assert.ok(html.includes('src="assets/public-lead-form.js?v=34"'), page);
     assert.ok(html.indexOf('src="assets/leader-service-catalog.js?v=3"') >= 0, page);
     assert.ok(html.indexOf('src="assets/leader-service-catalog.js?v=3"') < html.indexOf('src="assets/public-lead-form.js'), page);
   }
