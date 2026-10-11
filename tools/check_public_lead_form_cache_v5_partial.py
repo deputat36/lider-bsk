@@ -4,9 +4,9 @@ import sys
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CORE_SCRIPT = 'assets/public-lead-form.js?v=33'
-V28_SCRIPT = 'assets/public-lead-form.js?v=33'
-V5_SCRIPT = 'assets/public-lead-form.js?v=33'
+CORE_SCRIPT = 'assets/public-lead-form.js?v=34'
+V28_SCRIPT = 'assets/public-lead-form.js?v=34'
+V5_SCRIPT = 'assets/public-lead-form.js?v=34'
 V4_SCRIPT = 'assets/public-lead-form.js?v=4'
 
 CORE_PAGES = (

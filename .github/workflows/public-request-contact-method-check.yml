@@ -6,6 +6,7 @@ on:
     paths:
       - 'request.html'
       - 'assets/public-lead-form.js'
+      - 'assets/public-lead-form.css'
       - 'assets/public-request-contact-method-v1.js'
       - 'assets/public-request-contact-method-v1.css'
       - 'tools/check_public_request_contact_method.py'
@@ -16,6 +17,7 @@ on:
     paths:
       - 'request.html'
       - 'assets/public-lead-form.js'
+      - 'assets/public-lead-form.css'
       - 'assets/public-request-contact-method-v1.js'
       - 'assets/public-request-contact-method-v1.css'
       - 'tools/check_public_request_contact_method.py'
@@ -27,9 +29,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate request contact method guard
+      - name: Validate shared contact method guard
         shell: bash
         run: |
           set -euo pipefail
-          node --check assets/public-request-contact-method-v1.js
+          node --check assets/public-lead-form.js
           python3 tools/check_public_request_contact_method.py

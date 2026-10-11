@@ -45,9 +45,9 @@ if re.search(r'<script(?![^>]*\bsrc=)(?![^>]*type=["\']application/ld\+json["\']
     raise SystemExit('Executable inline script returned to business card page')
 
 assets = (
-    'assets/public-lead-form.css?v=28',
+    'assets/public-lead-form.css?v=29',
     'assets/public-business-card-builder.css?v=1',
-    'assets/public-lead-form.js?v=33',
+    'assets/public-lead-form.js?v=34',
     'assets/public-related-services.js?v=1',
     'assets/public-business-card-builder.js?v=1',
 )

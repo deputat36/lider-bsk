@@ -1,132 +1,66 @@
 #!/usr/bin/env python3
+"""Check shared contact validation and its deployment to all public forms.
+
+Source-only: no production request or customer data is used.
+"""
 from pathlib import Path
-import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-REQUEST = ROOT / "request.html"
-FORM = ROOT / "assets/public-lead-form.js"
-GUARD = ROOT / "assets/public-request-contact-method-v1.js"
-STYLE = ROOT / "assets/public-request-contact-method-v1.css"
-DOC = ROOT / "docs/PUBLIC_REQUEST_CONTACT_METHOD_GUARD_2026-07-13.md"
-FORM_SCRIPT = 'assets/public-lead-form.js?v=33'
+FORM_SCRIPT = 'assets/public-lead-form.js?v=34'
+FORM_CSS = 'assets/public-lead-form.css?v=29'
 
 
-def read(path: Path, errors: list[str]) -> str:
-    if not path.is_file():
-        errors.append(f"Missing file: {path.relative_to(ROOT)}")
-        return ""
-    return path.read_text(encoding="utf-8")
+def main() -> None:
+    form = (ROOT / 'assets/public-lead-form.js').read_text()
+    css = (ROOT / 'assets/public-lead-form.css').read_text()
+    doc = (ROOT / 'docs/PUBLIC_REQUEST_CONTACT_METHOD_GUARD_2026-07-13.md').read_text()
+    pages = []
+    for path in sorted(ROOT.glob('*.html')):
+        text = path.read_text()
+        if 'assets/public-request-contact-method-v1.js' in text:
+            raise SystemExit(f'{path.name}: retired request-only bootstrap remains active')
+        if 'assets/public-lead-form.js' not in text:
+            continue
+        if text.count(FORM_SCRIPT) != 1 or FORM_CSS not in text:
+            raise SystemExit(f'{path.name}: shared contact guard cache release is incomplete')
+        pages.append(path.name)
+    if len(pages) != 64:
+        raise SystemExit(f'Expected 64 shared public forms, found {len(pages)}')
 
-
-def require(text: str, marker: str, path: Path, errors: list[str]) -> None:
-    if marker not in text:
-        errors.append(f"{path.relative_to(ROOT)}: missing marker {marker!r}")
-
-
-def forbid(text: str, marker: str, path: Path, errors: list[str]) -> None:
-    if marker in text:
-        errors.append(f"{path.relative_to(ROOT)}: forbidden marker {marker!r}")
-
-
-def main() -> int:
-    errors: list[str] = []
-    request = read(REQUEST, errors)
-    form = read(FORM, errors)
-    guard = read(GUARD, errors)
-    style = read(STYLE, errors)
-    doc = read(DOC, errors)
-
-    request_markers = (
-        'data-request-page-version="20260628-clarity-2"',
-        "script.src='assets/public-request-contact-method-v1.js?v=2'",
-        "script.async=false",
-        'assets/public-lead-reference-v1.js?v=1',
-        FORM_SCRIPT,
-    )
-    for marker in request_markers:
-        require(request, marker, REQUEST, errors)
-    for stale in ('assets/public-lead-form.js?v=4', 'assets/public-lead-form.js?v=5'):
-        forbid(request, stale, REQUEST, errors)
-    forbid(request, "script.src='assets/public-request-contact-method-v1.js?v=1'", REQUEST, errors)
-
-    ordered = (
-        'assets/public-lead-reference-v1.js?v=1',
-        FORM_SCRIPT,
-        "script.src='assets/public-request-contact-method-v1.js?v=2'",
-    )
+    request = (ROOT / 'request.html').read_text()
+    ordered = ['assets/public-lead-reference-v1.js?v=1', 'assets/leader-service-catalog.js?v=3', FORM_SCRIPT]
     positions = [request.find(marker) for marker in ordered]
-    if any(position < 0 for position in positions) or positions != sorted(positions):
-        errors.append("request.html: public request scripts must keep reference → form → contact guard bootstrap order")
+    if min(positions) < 0 or positions != sorted(positions):
+        raise SystemExit('request.html: reference, catalog and shared form order changed')
 
     for marker in (
-        '<option>Написать ВКонтакте</option>',
-        '<option>Написать на email</option>',
-        'name="contact_detail"',
-        'name="contact_method"',
+        'mountContactMethod(form);',
+        'const contactError=applyContactMode(form);',
+        "detail.addEventListener('invalid'",
+        "detail.setCustomValidity?.(error)",
+        "detail.setAttribute('aria-required'",
+        "detail.setAttribute('aria-invalid'",
+        'data-leader-contact-hint',
+        'aria-describedby=',
+        "goal('contact_detail_missing',params)",
+        "reason:'contact_detail_invalid'",
+        "form.reset();\n      applyContactMode(form);",
+        'Email для ответа',
+        'Ссылка на профиль ВКонтакте',
     ):
-        require(form, marker, FORM, errors)
-
-    guard_markers = (
-        "const EMAIL_METHOD='Написать на email'",
-        "const VK_METHOD='Написать ВКонтакте'",
-        "const STYLE_HREF='assets/public-request-contact-method-v1.css?v=1'",
-        "document.head.appendChild(link)",
-        "function validationMessage(current)",
-        "function updateValidity()",
-        "detail.setCustomValidity(current!=='optional'&&!value?validationMessage(current):'')",
-        "detail.required=required",
-        "detail.setAttribute('aria-required',required?'true':'false')",
-        "details.removeAttribute('hidden')",
-        "detail.addEventListener('input',updateValidity)",
-        "detail.addEventListener('invalid',function()",
-        "trackMissingDetail()",
-        "event.stopImmediatePropagation()",
-        "detail.reportValidity()",
-        "window.leaderGoal('contact_detail_missing'",
-        "form.addEventListener('submit',validateBeforeSubmit,true)",
-        "Email для ответа",
-        "Ссылка на профиль ВКонтакте",
-    )
-    for marker in guard_markers:
-        require(guard, marker, GUARD, errors)
-
-    for marker in (
-        "fetch(",
-        "supabase",
-        "leader-public-lead",
-        "localStorage",
-        "sessionStorage",
-    ):
-        forbid(guard, marker, GUARD, errors)
-
-    for marker in (
-        ".leader-contact-hint",
-        ".leader-contact-detail-required",
-        "#ff6a00",
-    ):
-        require(style, marker, STYLE, errors)
-
-    for marker in (
-        "Email без адреса",
-        "ВКонтакте без ссылки",
-        "HTML5 constraint validation",
-        "событие `invalid`",
-        "POST в `leader-public-lead` отсутствует",
-        "production-заявка не создаётся",
-        "v2",
-        "bootstrap",
-        "общий form JS не меняется",
-        "Edge Function и Supabase production не меняются",
-    ):
-        require(doc, marker, DOC, errors)
-
-    if errors:
-        print("\n".join(errors))
-        return 1
-
-    print("Public request contact method guard contract is valid with core form cache v23.")
-    return 0
+        if marker not in form:
+            raise SystemExit(f'Shared form is missing contact contract: {marker}')
+    submit = form[form.index('async function submit(e)'):]
+    if submit.index('const contactError=applyContactMode(form)') > submit.index('stableRequestId(payload)'):
+        raise SystemExit('Contact validation must precede request ID allocation and HTTP')
+    for marker in ('.leader-contact-hint', '.leader-contact-detail-required', '.leader-contact-hint-error'):
+        if marker not in css:
+            raise SystemExit(f'Shared CSS is missing contact guidance: {marker}')
+    for marker in ('64', 'v34', 'HTML5 constraint validation', 'событие '+chr(96)+'invalid'+chr(96), 'production-заявка не создаётся', 'Edge Function и Supabase production не меняются'):
+        if marker not in doc:
+            raise SystemExit(f'Contact guard document is missing: {marker}')
+    print('Shared contact method guard is deployed to all 64 forms with JS v34 / CSS v29.')
 
 
-if __name__ == "__main__":
-    sys.exit(main())
+if __name__ == '__main__':
+    main()

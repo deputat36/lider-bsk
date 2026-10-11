@@ -34,14 +34,14 @@ def page(name, title, description, content, service_id):
 <meta property="og:title" content="{escape(title,quote=True)} | РА Лидер"><meta property="og:description" content="{escape(description,quote=True)}"><meta property="og:url" content="{url}">
 <meta property="og:image" content="{ORIGIN}assets/og-lider-default.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="{escape(title,quote=True)} | РА Лидер"><meta name="twitter:description" content="{escape(description,quote=True)}"><meta name="twitter:image" content="{ORIGIN}assets/og-lider-default.png">
-<link rel="stylesheet" href="assets/public-lead-form.css?v=28"><link rel="stylesheet" href="assets/public-simple-service.css?v=7"><link rel="stylesheet" href="assets/public-commercial-services.css?v=1"><link rel="stylesheet" href="assets/public-creative-services.css?v=1">
+<link rel="stylesheet" href="assets/public-lead-form.css?v=29"><link rel="stylesheet" href="assets/public-simple-service.css?v=7"><link rel="stylesheet" href="assets/public-commercial-services.css?v=1"><link rel="stylesheet" href="assets/public-creative-services.css?v=1">
 <link rel="icon" type="image/svg+xml" href="assets/brand/logo-lider-mark.svg?v=4"><link rel="stylesheet" href="assets/public-product-system.css?v=1">
 <script type="application/ld+json">{json.dumps(schema,ensure_ascii=False,separators=(',',':'))}</script>
 </head><body class="page-service-modern page-commercial-service" data-commercial-service="{service_id}">
 {header}{content}
 <section class="section" id="request"><div class="wrap"><div class="cta"><div><h2>Обсудим вашу задачу</h2><p>Опишите, что хотите получить, где будет использоваться результат и когда он нужен. Подробности можно уточнить вместе.</p><p><strong>Телефон:</strong> <a href="tel:+79802457471">8 980 245-74-71</a></p></div><div id="leader-lead-form"></div></div></div></section>
 </main>{footer}
-<script src="assets/packages-link.js?v=2" defer></script><script src="assets/leader-service-catalog.js?v=3"></script><script src="assets/public-lead-form.js?v=33"></script>
+<script src="assets/packages-link.js?v=2" defer></script><script src="assets/leader-service-catalog.js?v=3"></script><script src="assets/public-lead-form.js?v=34"></script>
 </body></html>
 '''
 
