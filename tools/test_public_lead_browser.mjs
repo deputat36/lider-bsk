@@ -88,6 +88,8 @@ try {
         await page.locator('[name="service"]').selectOption(service.label);
         assert.equal(await page.locator('[name="brief_0"]').inputValue(), `Ответ ${service.id} 0`, 'Restore the selected service draft');
         assert.notEqual(await page.locator('[data-leader-more]').evaluate(el=>getComputedStyle(el).backgroundColor), await page.locator('button[type="submit"]').evaluate(el=>getComputedStyle(el).backgroundColor), 'Separate optional details from submission');
+        for(const photo of await page.locator('main img').all()){await photo.scrollIntoViewIfNeeded(); await photo.evaluate(el=>el.decode());}
+        await page.evaluate(()=>window.scrollTo(0,0));
         await page.screenshot({path:`artifacts/public-lead/${service.id}-brief-${width}.png`,fullPage:true});
       }
       await page.locator('[name="phone"]').fill('+7 900 000-00-00');
@@ -123,6 +125,45 @@ try {
       await page.evaluate(()=>window.scrollTo(0,0));
       await page.screenshot({path:`artifacts/public-lead/${name.replace('.html','')}-${width}.png`,fullPage:true});
     }
+    for(const [index,offer] of catalog.offers.entries()){
+      await page.goto(origin+'/dizayn-3d-animaciya.html?utm_source=vk&utm_campaign=creative-offers');
+      await page.locator('.creative-packages .btn').nth(index).click();
+      const note=page.locator('[data-leader-offer-note]');
+      await note.waitFor({state:'visible'});
+      const service=catalog.find(offer.service_id);
+      assert.equal(await page.locator('[name="service"]').inputValue(),service.label);
+      assert.ok((await note.textContent()).includes(offer.label));
+      await page.locator('[name="phone"]').fill('+7 900 000-00-00');
+      const task='Synthetic selected offer '+offer.id;
+      await page.locator('[name="message"]').fill(task);
+      await page.locator('[data-leader-lead-widget]').screenshot({path:`artifacts/public-lead/offer-${offer.id}-${width}.png`});
+      rejectNext=true;
+      await page.locator('button[type="submit"]').click();
+      await page.locator('[data-leader-lead-status].err').waitFor();
+      const failed=payloads.at(-1);
+      await page.locator('button[type="submit"]').click();
+      await page.locator('[data-leader-lead-status].ok').waitFor();
+      const sent=payloads.at(-1);
+      assert.equal(sent.request_id,failed.request_id);
+      assert.equal(sent.service_id,offer.service_id);
+      assert.equal(sent.utm_campaign,'creative-offers');
+      assert.ok(sent.message.includes('Состав заказа: '+offer.label));
+      assert.ok(sent.message.includes('Задача клиента: '+task));
+      await page.locator('[name="phone"]').fill('+7 900 000-00-00');
+      await page.locator('[name="message"]').fill('Synthetic changed service');
+      await page.locator('[name="service"]').selectOption('Полиграфия');
+      assert.equal(await note.isVisible(),false,'A different service clears the selected offer');
+      assert.equal(await page.locator('[name="message"]').inputValue(),'Synthetic changed service');
+      await page.locator('button[type="submit"]').click();
+      await page.locator('[data-leader-lead-status].ok').waitFor();
+      assert.ok(!payloads.at(-1).message.includes('Состав заказа:'));
+    }
+    for(const query of ['service=design&offer=onsite-preview','service=design&offer=unknown']){
+      await page.goto(origin+'/dizayn-maketov.html?'+query);
+      await page.locator('[name="service"]').waitFor();
+      assert.equal(await page.locator('[data-leader-offer-note]').isVisible(),false);
+    }
+    assert.equal(errors.length,0,errors.join('\n'));
     await context.close();
   }
   console.log('PASS: desktop/mobile submit, campaign navigation, user service selection, retry; zero production requests forwarded.');

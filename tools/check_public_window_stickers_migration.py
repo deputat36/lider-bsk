@@ -68,7 +68,7 @@ def main() -> None:
         '"@type":"Service"',
         'id="leader-lead-form" data-leader-lead-form',
         'data-service="Наклейки"',
-        'assets/public-lead-form.js?v=31',
+        'assets/public-lead-form.js?v=32',
         'номер обращения — его можно использовать для быстрой проверки',
         'privacy.html',
         'Ориентиры по цене',

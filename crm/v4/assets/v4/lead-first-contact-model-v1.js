@@ -1,4 +1,4 @@
-import '../../../../assets/leader-service-catalog.js?v=2';
+import '../../../../assets/leader-service-catalog.js?v=3';
 
 const DEFAULT_SERVICE = 'вашей задаче';
 

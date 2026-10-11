@@ -70,4 +70,6 @@ The #556 correction used `assets/public-lead-form.js?v=29` for the service-selec
 
 #555 integration: 58 public form pages loaded `assets/public-lead-form.js?v=30` after `assets/leader-service-catalog.js?v=1`. The catalog supplied the same service names to forms and CRM; this record and the July/#556 records above are historical. Production Supabase was not changed.
 
-Current #576 integration (2026-10-10): 64 public form pages load `assets/public-lead-form.js?v=31` after `assets/leader-service-catalog.js?v=2`; form CSS is `v=28`. Four creative services and optional service-specific briefs use the same catalog in the site and CRM. The five core pages and all active form pages use v31. Production Supabase was not changed.
+#576 integration (2026-10-10): 64 public form pages loaded `assets/public-lead-form.js?v=31` after `assets/leader-service-catalog.js?v=2`; form CSS was `v=28`. Four creative services and optional service-specific briefs used the same catalog in the site and CRM. This is a historical checkpoint. Production Supabase was not changed.
+
+Current creative offer integration (2026-10-11): 64 public form pages load `assets/public-lead-form.js?v=32` after `assets/leader-service-catalog.js?v=3`; form CSS remains `v=28`. Three creative offer choices come from the shared catalog, remain visible in the form and are included in the intake message independently of customer text. A service change clears incompatible choices. Production Supabase was not changed.
