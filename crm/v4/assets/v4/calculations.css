@@ -5,3 +5,5 @@
 .v4-calc-need-context p{margin:10px 0 0;color:#475569;font-size:13px;line-height:1.45}
 .v4-calc-form .v4-form-grid>label{min-width:0;overflow-wrap:anywhere}
 .v4-calc-form .v4-form-grid input,.v4-calc-form .v4-form-grid select,.v4-calc-form .v4-form-grid textarea{min-width:0;max-width:100%}
+.v4-calculations-section{min-width:0;grid-template-columns:minmax(0,1fr)}
+.v4-calculations-section>*{min-width:0}
