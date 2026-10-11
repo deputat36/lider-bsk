@@ -97,6 +97,7 @@ console.log('Builder pricing controls: explicit apply, zero tiers, manual/catalo
 // New-item forms must distinguish an explicit zero from an empty automatic price.
 ctx.contractorQuoteDraftValidation = (await import('../crm/v4/assets/v4/calculation-contractor-quote-model-v1.js')).contractorQuoteDraftValidation;
 fields.set('calcContractorClientTitle', { value: 'Работа подрядчика' });
+fields.set('calcServiceQty', { value: '1' }); // Default of the real service form.
 ctx.parseCalculationPairs = () => [{ name: 'A', qty: 2 }];
 fields.get('calcMarkup').value = '30';
 vm.runInContext('draftItems = [];', ctx);

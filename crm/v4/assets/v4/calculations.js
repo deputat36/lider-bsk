@@ -390,6 +390,20 @@ function refreshNeedSelect() {
   const current = select.value || '';
   select.innerHTML = needOptions(current);
   if (current && ![...select.options].some((option) => option.value === current)) select.value = '';
+  renderCalculationNeedContext();
+}
+
+function renderCalculationNeedContext() {
+  const host = byId('calcNeedContext');
+  if (!host) return;
+  const need = (v4State.leadNeeds || []).find((item) => item.id === val('calcNeedId') && item.lead_id === v4State.route.leadId && item.status !== 'Архив');
+  if (!need || !canPerformV4Action(CRM_V4_ACTIONS.NEEDS_READ) || !canPerformV4Action(CRM_V4_ACTIONS.CALCULATIONS_WRITE)) {
+    host.hidden = true;
+    host.innerHTML = '';
+    return;
+  }
+  host.hidden = false;
+  host.innerHTML = `<details><summary>Сверить бриф: ${esc(need.title || need.need_type || 'Потребность')}</summary><div class="v4-calc-need-description">${esc(need.description || 'Описание не заполнено. Уточните бриф в потребности.')}</div></details><p>Бриф — для внутренней сверки. Условия для клиента укажите отдельно в поле «Общее примечание для клиента».</p>`;
 }
 
 function renderCalcCard(calc) {
@@ -690,13 +704,16 @@ function renderModeFields(mode = 'banner') {
   if (mode === 'service') {
     return `
       <div class="v4-form-grid">
-        <label>Тип услуги
+        <label>Услуга / работа
           <select id="calcServiceName"><option>Дизайн</option><option>Монтаж</option><option>Доставка</option><option>Выезд / замер</option><option>Срочность</option><option>Другое</option></select>
         </label>
-        <label>Себестоимость / подрядчик, ₽
+        <label>Количество
+          <input id="calcServiceQty" type="number" min="0.01" step="0.01" value="1">
+        </label>
+        <label>Себестоимость за услугу, ₽
           <input id="calcServiceCost" type="number" min="0" step="1" value="0">
         </label>
-        <label>Цена клиенту, ₽
+        <label>Цена клиенту за услугу, ₽
           <input id="calcServiceClient" type="number" min="0" step="1" placeholder="Пусто = по общей наценке; 0 = бесплатно">
         </label>
         <label>Комментарий
@@ -888,7 +905,7 @@ function currentModeItems() {
   if (mode === 'service') {
     const cost = num('calcServiceCost');
     const client = num('calcServiceClient');
-    return applyAutoPrice([makeRawItem({ category: 'Услуги', itemType: 'Услуга', name: val('calcServiceName') || 'Услуга', unit: 'услуга', qty: 1, contractorPrice: cost, clientPrice: client, comment: val('calcServiceComment'), data: { calculation_mode: 'service', price_source: val('calcServiceClient') !== '' ? 'manual' : 'auto' } })]);
+    return applyAutoPrice([makeRawItem({ category: 'Услуги', itemType: 'Услуга', name: val('calcServiceName') || 'Услуга', unit: 'услуга', qty: num('calcServiceQty'), contractorPrice: cost, clientPrice: client, comment: val('calcServiceComment'), data: { calculation_mode: 'service', price_source: val('calcServiceClient') !== '' ? 'manual' : 'auto' } })]);
   }
   const customCost = num('calcCustomCost');
   const customClient = num('calcCustomClient');
@@ -977,7 +994,7 @@ function renderCalcForm() {
           <input id="calcPublicComment" placeholder="Условия, которые относятся ко всему расчёту">
         </label>
       </div>
-
+      <div id="calcNeedContext" class="v4-calc-need-context" hidden></div>
       <div class="v4-calc-auto-box">
         <div class="v4-calc-section-heading">
           <span class="v4-calc-section-number">1</span>
@@ -1071,6 +1088,7 @@ export function renderCalculations() {
     </section>
   `;
   renderDraftItems();
+  renderCalculationNeedContext();
 }
 
 async function doLoadCalculations(leadId) {
@@ -1333,13 +1351,21 @@ function setCalcMode(mode) {
 }
 
 function applyNeedToCalculation(need) {
-  const prefill = needCalculationPrefill(need);
+  const currentNeed = (v4State.leadNeeds || []).find((item) => item.id === need.id && item.lead_id === v4State.route.leadId && item.status !== 'Архив');
+  if (!currentNeed || !canPerformV4Action(CRM_V4_ACTIONS.NEEDS_READ) || !canPerformV4Action(CRM_V4_ACTIONS.CALCULATIONS_WRITE)) return;
+  const prefill = needCalculationPrefill(currentNeed);
   setCalcMode(prefill.mode);
-  const values = { calcNeedId: prefill.needId, calcTitle: prefill.title, calcPublicComment: prefill.comment, calcWidth: prefill.width, calcHeight: prefill.height, calcQty: prefill.quantity };
+  const values = { calcNeedId: prefill.needId, calcTitle: prefill.title, calcCustomName: prefill.title, calcWidth: prefill.width, calcHeight: prefill.height, calcQty: prefill.quantity, calcCustomQty: prefill.quantity, calcServiceQty: prefill.quantity };
   Object.entries(values).forEach(([id, value]) => { const element = byId(id); if (element && value !== '') element.value = value; });
+  const serviceName = byId('calcServiceName');
+  if (serviceName) {
+    if (![...serviceName.options].some((option) => option.value === prefill.title)) serviceName.add(new Option(prefill.title, prefill.title));
+    serviceName.value = prefill.title;
+  }
   const material = byId('calcCatalogItem');
   if (material && prefill.material) { const option = [...material.options].find((item) => item.textContent.toLowerCase().includes(prefill.material.toLowerCase())); if (option) material.value = option.value; }
   renderSmartPreview();
+  renderCalculationNeedContext();
   byId('calculationsBox')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   toast('Потребность перенесена в расчёт');
 }
@@ -1444,6 +1470,7 @@ function bindCalculationEvents() {
       return;
     }
     if (event.target.closest('#calcSmartMode')) setCalcMode(event.target.value);
+    if (event.target.id === 'calcNeedId') renderCalculationNeedContext();
     if (event.target.closest('#calculationsBox')) renderSmartPreview();
   });
   byId('leadCardSection')?.addEventListener('input', (event) => {
