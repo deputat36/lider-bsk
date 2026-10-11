@@ -12,7 +12,16 @@ SCRIPT = ROOT / 'tools' / 'public_indexnow.py'
 URLS_FILE = ROOT / 'tools' / 'public-indexnow-urls.txt'
 WORKFLOW = ROOT / '.github' / 'workflows' / 'public-indexnow-notify.yml'
 SITEMAP = ROOT / 'sitemap.xml'
-EXPECTED_LASTMOD = '2026-07-18'
+EXPECTED_LASTMOD = {
+    "/uslugi.html": "2026-10-10",
+    "/dizayn-3d-animaciya.html": "2026-10-11",
+    "/dizayn-maketov.html": "2026-10-10",
+    "/3d-modelirovanie-konstrukciy.html": "2026-10-10",
+    "/3d-vizualizaciya-reklamy.html": "2026-10-10",
+    "/animaciya-motion-dizayn.html": "2026-10-10",
+    "/podgotovka-maketov-k-pechati.html": "2026-10-10",
+    "/nashi-raboty.html": "2026-10-10"
+}
 
 
 def main() -> None:
@@ -31,8 +40,8 @@ def main() -> None:
         if not key_file.is_file() or key_file.read_text(encoding='utf-8').strip() != key:
             errors.append('Root IndexNow key file is missing or does not match the declared key')
 
-    if len(paths) != 6 or len(set(paths)) != len(paths):
-        errors.append('IndexNow URL list must contain six unique updated page paths')
+    if set(paths) != set(EXPECTED_LASTMOD) or len(set(paths)) != len(paths):
+        errors.append('IndexNow URL list must match the eight reviewed creative page paths')
 
     sitemap_root = ET.parse(SITEMAP).getroot()
     namespace = {'sm': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
@@ -49,13 +58,15 @@ def main() -> None:
             errors.append(f'IndexNow path must be canonical and parameter-free: {path}')
         if not (ROOT / page_name).is_file():
             errors.append(f'IndexNow page is missing: {page_name}')
-        if sitemap_entries.get(url) != EXPECTED_LASTMOD:
-            errors.append(f'IndexNow page must have lastmod {EXPECTED_LASTMOD}: {url}')
+        if path not in EXPECTED_LASTMOD:
+            continue
+        if sitemap_entries.get(url) != EXPECTED_LASTMOD[path]:
+            errors.append(f'IndexNow page must have lastmod {EXPECTED_LASTMOD[path]}: {url}')
         if page_name not in workflow:
             errors.append(f'Workflow path trigger is missing: {page_name}')
 
     for marker in (
-        "ENDPOINT = 'https://yandex.com/indexnow'",
+        "ENDPOINT = 'https://api.indexnow.org/indexnow'",
         "'Content-Type': 'application/json; charset=utf-8'",
         "status not in (200, 202)",
         'wait_for_published_key()',
