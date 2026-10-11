@@ -10,9 +10,9 @@ ROOT = Path(__file__).resolve().parents[1]
 CACHE_CHECK = ROOT / 'tools/check_public_lead_form_cache_v5_partial.py'
 SITEMAP = ROOT / 'sitemap.xml'
 BASE_URL = 'https://www.lider-bsk.ru/'
-CORE_SCRIPT = 'assets/public-lead-form.js?v=35'
-V28_SCRIPT = 'assets/public-lead-form.js?v=35'
-V5_SCRIPT = 'assets/public-lead-form.js?v=35'
+CORE_SCRIPT = 'assets/public-lead-form.js?v=36'
+V28_SCRIPT = 'assets/public-lead-form.js?v=36'
+V5_SCRIPT = 'assets/public-lead-form.js?v=36'
 FORBIDDEN_MARKERS = (
     '/crm/',
     '/nav/',

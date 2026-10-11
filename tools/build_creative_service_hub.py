@@ -41,7 +41,7 @@ def page(name, title, description, content, service_id):
 {header}{content}
 <section class="section" id="request"><div class="wrap"><div class="cta"><div><h2>Обсудим вашу задачу</h2><p>Опишите, что хотите получить, где будет использоваться результат и когда он нужен. Подробности можно уточнить вместе.</p><p><strong>Телефон:</strong> <a href="tel:+79802457471">8 980 245-74-71</a></p></div><div id="leader-lead-form"></div></div></div></section>
 </main>{footer}
-<script src="assets/packages-link.js?v=2" defer></script><script src="assets/leader-service-catalog.js?v=3"></script><script src="assets/public-lead-form.js?v=35"></script>
+<script src="assets/packages-link.js?v=2" defer></script><script src="assets/leader-service-catalog.js?v=3"></script><script src="assets/public-lead-form.js?v=36"></script>
 </body></html>
 '''
 

@@ -3,6 +3,7 @@
 from pathlib import Path
 from html import escape as esc
 import json,re,subprocess,sys
+from service_explainers import CSS as EXPLAINER_CSS, render_block
 ROOT=Path(__file__).resolve().parents[1]
 registry=json.loads(subprocess.check_output(['node','--input-type=module','-e',"await import('./assets/leader-service-catalog.js'); console.log(JSON.stringify(globalThis.LeaderServiceCatalog));"],cwd=ROOT,text=True))
 services={s['id']:s for s in registry['services']}
@@ -36,10 +37,12 @@ def render(p):
 <link rel="stylesheet" href="assets/public-lead-form.css?v=30"><link rel="stylesheet" href="assets/public-simple-service.css?v=7"><link rel="stylesheet" href="assets/public-commercial-services.css?v=1"><link rel="stylesheet" href="assets/public-creative-services.css?v=1">
 <script type="application/ld+json">{json.dumps(ld,ensure_ascii=False,separators=(',',':'))}</script>
 <link rel="icon" type="image/svg+xml" href="assets/brand/logo-lider-mark.svg?v=4">
+{EXPLAINER_CSS}
 <link rel="stylesheet" href="assets/public-product-system.css?v=1">
 </head><body class="page-service-modern page-commercial-service" data-commercial-service="{e(s['id'])}">
 {header}
 <section class="hero"><div class="wrap"><a class="back" href="uslugi.html">Все услуги</a><p class="commercial-direction">{e(direction)}</p><h1>{e(p['title'])}</h1><p>{e(description)}</p><div class="service-actions"><a class="btn" href="#request">Обсудить задачу</a><a class="service-secondary" href="#formats">Выбрать вариант</a></div><p class="service-note">Начать можно с описания задачи — готовое техническое задание не требуется.</p></div></section>
+{render_block(s['id'],s['label'])}
 <section class="section" id="formats"><div class="wrap"><h2>Выберите подходящий вариант</h2><p>{e(p['audience'])}</p><div class="grid service-formats">{formats}</div></div></section>
 {proof}
 <section class="section soft"><div class="wrap service-estimate"><div><h2>Что входит в работу</h2><ul class="commercial-includes">{includes}</ul></div><div><h3>Состав согласуем заранее</h3><p>В расчёте будут понятны результат, объём работ и отдельные дополнительные позиции. Дату и стоимость подтвердим после уточнения задачи.</p><a href="#request">Подобрать состав для меня</a></div></div></section>
@@ -50,7 +53,7 @@ def render(p):
 <section class="section"><div class="wrap"><h2>Дополнить решение</h2><nav class="service-related" aria-label="Связанные услуги">{related}</nav><p><a href="dizayn-3d-animaciya.html">Дизайн, 3D и анимация</a> · <a href="nashi-raboty.html">Фото и макеты работ</a></p></div></section>
 <section class="section" id="request"><div class="wrap"><div class="cta"><div><h2>Обсудим вашу задачу</h2><p>Выбранная услуга: {e(s['label'])}. Опишите желаемый результат и оставьте телефон. Уточним детали и подготовим расчёт.</p><p><strong>Телефон:</strong> <a href="tel:+79802457471">8 980 245-74-71</a></p></div><div id="leader-lead-form"></div></div></div></section>
 </main>{footer}
-<script src="assets/packages-link.js?v=2" defer></script><script src="assets/leader-service-catalog.js?v=3"></script><script src="assets/public-lead-form.js?v=35"></script>
+<script src="assets/packages-link.js?v=2" defer></script><script src="assets/leader-service-catalog.js?v=3"></script><script src="assets/public-lead-form.js?v=36"></script>
 </body></html>
 '''
 errors=[]

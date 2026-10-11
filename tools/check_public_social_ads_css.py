@@ -24,7 +24,7 @@ def main() -> None:
     for marker in (
         '<link rel="stylesheet" href="assets/public-lead-form.css?v=30">',
         '<link rel="stylesheet" href="assets/public-social-ads.css?v=1">',
-        '<script src="assets/public-lead-form.js?v=35"></script>',
+        '<script src="assets/public-lead-form.js?v=36"></script>',
         '<script src="assets/mobile-sticky-cta.js?v=1"></script>',
         '<link rel="canonical" href="https://www.lider-bsk.ru/reklama-v-socsetyah-borisoglebsk.html">',
         '<meta name="robots" content="index, follow">',

@@ -102,7 +102,7 @@ for forbidden in ('fetch(', 'XMLHttpRequest', 'localStorage', 'sessionStorage'):
 
 form_css = 'assets/public-lead-form.css?v=30'
 shared_css = 'assets/public-print-product.css?v=1'
-form_js = 'assets/public-lead-form.js?v=35'
+form_js = 'assets/public-lead-form.js?v=36'
 related_js = 'assets/public-related-services.js?v=2'
 preset_js = 'assets/public-print-product.js?v=1'
 

@@ -13,13 +13,13 @@ URLS_FILE = ROOT / 'tools' / 'public-indexnow-urls.txt'
 WORKFLOW = ROOT / '.github' / 'workflows' / 'public-indexnow-notify.yml'
 SITEMAP = ROOT / 'sitemap.xml'
 EXPECTED_LASTMOD = {
-    "/uslugi.html": "2026-10-10",
+    "/uslugi.html": "2026-10-11",
     "/dizayn-3d-animaciya.html": "2026-10-11",
-    "/dizayn-maketov.html": "2026-10-10",
-    "/3d-modelirovanie-konstrukciy.html": "2026-10-10",
-    "/3d-vizualizaciya-reklamy.html": "2026-10-10",
-    "/animaciya-motion-dizayn.html": "2026-10-10",
-    "/podgotovka-maketov-k-pechati.html": "2026-10-10",
+    "/dizayn-maketov.html": "2026-10-11",
+    "/3d-modelirovanie-konstrukciy.html": "2026-10-11",
+    "/3d-vizualizaciya-reklamy.html": "2026-10-11",
+    "/animaciya-motion-dizayn.html": "2026-10-11",
+    "/podgotovka-maketov-k-pechati.html": "2026-10-11",
     "/nashi-raboty.html": "2026-10-10"
 }
 

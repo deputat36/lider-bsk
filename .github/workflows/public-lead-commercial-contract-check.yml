@@ -9,6 +9,13 @@ on:
       - 'assets/leader-service-catalog.js'
       - 'assets/public-commercial-services.css'
       - 'data/commercial-services.json'
+      - 'data/service-explainers.json'
+      - 'data/service-illustration-provenance.json'
+      - 'assets/service-illustrations/**'
+      - 'assets/public-service-explainers.css'
+      - 'tools/service_explainers.py'
+      - 'tools/build_service_explainers.py'
+      - 'tools/test_public_service_explainers_browser.mjs'
       - 'sitemap.xml'
       - 'tools/check_all_public_form_cache_versions.py'
       - 'tools/test_commercial_service_contract.mjs'
@@ -35,6 +42,13 @@ on:
       - 'assets/leader-service-catalog.js'
       - 'assets/public-commercial-services.css'
       - 'data/commercial-services.json'
+      - 'data/service-explainers.json'
+      - 'data/service-illustration-provenance.json'
+      - 'assets/service-illustrations/**'
+      - 'assets/public-service-explainers.css'
+      - 'tools/service_explainers.py'
+      - 'tools/build_service_explainers.py'
+      - 'tools/test_public_service_explainers_browser.mjs'
       - 'sitemap.xml'
       - 'tools/check_all_public_form_cache_versions.py'
       - 'tools/test_commercial_service_contract.mjs'
@@ -73,6 +87,7 @@ jobs:
           node tools/test_commercial_service_contract.mjs
           node tools/test_creative_need_draft.mjs
           python3 tools/build_commercial_service_pages.py --check
+          python3 tools/build_service_explainers.py --check
           python3 tools/build_creative_service_hub.py --check
           python3 tools/check_public_portfolio_manifest.py
 
@@ -85,6 +100,8 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Verify desktop and mobile submission without production writes
         run: node tools/test_public_lead_browser.mjs
+      - name: Verify illustrations, service selection and Metrika events with external HTTP blocked
+        run: node tools/test_public_service_explainers_browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

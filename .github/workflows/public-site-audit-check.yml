@@ -181,7 +181,7 @@ jobs:
           grep -Fq "website:field(form,'website')" "$form"
           grep -Fq 'page_path' "$form"
           grep -Fq 'submitted_at' "$form"
-          grep -Fq "goal('lead_sent',{service,page:location.href,page_path:location.pathname,request_id:responseRequestId,duplicate})" "$form"
+          grep -Fq "if(!duplicate)goal('lead_sent',confirmedParams)" "$form"
           grep -Fq 'leader-lead-hp' "$css"
           grep -Fq 'overflow-x:hidden' "$css"
           grep -Fq '@media(max-width:1180px) and (min-width:1025px)' "$css"
@@ -218,7 +218,7 @@ jobs:
           from pathlib import Path
           page = Path('request.html').read_text(encoding='utf-8')
           helper = 'assets/public-lead-reference-v1.js?v=1'
-          form = 'assets/public-lead-form.js?v=35'
+          form = 'assets/public-lead-form.js?v=36'
           assert page.count(helper) == 1
           assert page.count(form) == 1
           assert page.index(helper) < page.index(form)
