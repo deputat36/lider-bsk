@@ -4,13 +4,18 @@ from pathlib import Path
 from html import escape
 import json
 import re
+import subprocess
 import sys
+from urllib.parse import urlencode
 
 ROOT = Path(__file__).resolve().parents[1]
 ORIGIN = 'https://www.lider-bsk.ru/'
 reference = (ROOT / 'vyveski-borisoglebsk.html').read_text()
 header = re.search(r'<a class="skip-link".*?<main id="main">', reference, re.S).group(0)
 footer = re.search(r'<footer class="service-footer">.*?</footer>', reference, re.S).group(0)
+registry = json.loads(subprocess.check_output(['node','--input-type=module','-e',"await import('./assets/leader-service-catalog.js'); console.log(JSON.stringify(globalThis.LeaderServiceCatalog));"],cwd=ROOT,text=True))
+offers = {item['id']: item for item in registry['offers']}
+offer_links = {key: escape(item['page']+'?'+urlencode({'service':item['service_id'],'offer':key})+'#request',quote=True) for key,item in offers.items()}
 
 def page(name, title, description, content, service_id):
     url = ORIGIN + name
@@ -36,11 +41,11 @@ def page(name, title, description, content, service_id):
 {header}{content}
 <section class="section" id="request"><div class="wrap"><div class="cta"><div><h2>Обсудим вашу задачу</h2><p>Опишите, что хотите получить, где будет использоваться результат и когда он нужен. Подробности можно уточнить вместе.</p><p><strong>Телефон:</strong> <a href="tel:+79802457471">8 980 245-74-71</a></p></div><div id="leader-lead-form"></div></div></div></section>
 </main>{footer}
-<script src="assets/packages-link.js?v=2" defer></script><script src="assets/leader-service-catalog.js?v=2"></script><script src="assets/public-lead-form.js?v=31"></script>
+<script src="assets/packages-link.js?v=2" defer></script><script src="assets/leader-service-catalog.js?v=3"></script><script src="assets/public-lead-form.js?v=32"></script>
 </body></html>
 '''
 
-hub = '''
+hub = f'''
 <section class="hero"><div class="wrap creative-split"><div><a class="back" href="uslugi.html">Все услуги</a><p class="commercial-direction">От идеи до материалов для рекламы</p><h1>Дизайн, 3D-визуализация и анимация</h1><p>Сначала увидеть будущую вывеску. Согласовать конструкцию. Подготовить макет или ролик — и только затем переходить к изготовлению и размещению.</p><div class="service-actions"><a class="btn" href="#formats">Выбрать задачу</a><a class="service-secondary" href="#request">Обсудить проект</a></div></div><figure class="creative-photo"><img src="assets/portfolio/volume-letters-production/letters-production.jpg" width="1264" height="1536" alt="Объёмные розовые буквы «ЦВЕТЫ» на рабочем столе в мастерской" fetchpriority="high"><figcaption>Объёмные буквы «ЦВЕТЫ». Фото этапа производства.</figcaption></figure></div></section>
 <section class="section" id="formats"><div class="wrap"><h2>Что вы хотите получить?</h2><p>Можно начать с одной задачи и добавить другие этапы после согласования.</p><div class="grid service-formats">
 <article class="card"><h3>Увидеть рекламу на объекте</h3><p>Вывеска на фото фасада, дневной и ночной вид, входная группа, стела или интерьер.</p><a href="3d-vizualizaciya-reklamy.html">3D-визуализация</a></article>
@@ -56,9 +61,9 @@ hub = '''
 <article class="card"><h3>Дизайнеру или маркетологу</h3><p>«Есть материалы, нужна адаптация». Расскажите о площадках, размерах, версии для печати или технических требованиях экрана.</p><a href="podgotovka-maketov-k-pechati.html#request">Подготовить материалы</a></article>
 </div></div></section>
 <section class="section"><div class="wrap"><h2>Три состава заказа</h2><p>Это варианты комплектации. Стоимость, срок, число вариантов и правок согласуем после брифа.</p><div class="creative-packages">
-<article class="card"><h3>Макет на согласование</h3><p>Для понятной задачи, когда нужно показать текст, композицию и размеры.</p><ul><li>2D-макет</li><li>просмотрный файл</li><li>согласованный объём исправлений</li></ul><a class="btn" href="dizayn-maketov.html?service=design#request">Заказать макет</a></article>
-<article class="card"><h3>Увидеть на объекте</h3><p>Когда важно оценить пропорции и сочетание рекламы с фасадом или пространством.</p><ul><li>модель, если требуется</li><li>согласованные ракурсы</li><li>изображения для обсуждения</li></ul><a class="btn" href="3d-vizualizaciya-reklamy.html?service=visualization-3d#request">Обсудить визуализацию</a></article>
-<article class="card"><h3>Подготовить запуск</h3><p>Когда нужны связанные материалы для печати, размещения и цифровой рекламы.</p><ul><li>макеты под выбранные носители</li><li>ролик или версии для площадок при необходимости</li><li>отдельный расчёт изготовления и монтажа</li></ul><a class="btn" href="dizayn-3d-animaciya.html?service=campaign#request">Подобрать комплект</a></article>
+<article class="card"><h3>{offers['layout-approval']['label']}</h3><p>Для понятной задачи, когда нужно показать текст, композицию и размеры.</p><ul><li>2D-макет</li><li>просмотрный файл</li><li>согласованный объём исправлений</li></ul><a class="btn" href="{offer_links['layout-approval']}">Заказать макет</a></article>
+<article class="card"><h3>{offers['onsite-preview']['label']}</h3><p>Когда важно оценить пропорции и сочетание рекламы с фасадом или пространством.</p><ul><li>модель, если требуется</li><li>согласованные ракурсы</li><li>изображения для обсуждения</li></ul><a class="btn" href="{offer_links['onsite-preview']}">Обсудить визуализацию</a></article>
+<article class="card"><h3>{offers['launch-kit']['label']}</h3><p>Когда нужны связанные материалы для печати, размещения и цифровой рекламы.</p><ul><li>макеты под выбранные носители</li><li>ролик или версии для площадок при необходимости</li><li>отдельный расчёт изготовления и монтажа</li></ul><a class="btn" href="{offer_links['launch-kit']}">Подобрать комплект</a></article>
 </div><p class="creative-composition">До начала работы фиксируем результат, форматы, число ракурсов и версий, порядок правок, сроки и состав исходников. Изготовление, монтаж и размещение включаются только по согласованному составу.</p></div></section>
 <section class="section soft"><div class="wrap"><h2>Посмотрите материалы работ</h2><p>Фотография производства и 2D-макет показывают разные этапы. Подписи помогают понять, что именно вы видите.</p><nav class="creative-links" aria-label="Работы и следующие этапы"><a href="nashi-raboty.html">Фото и макеты</a><a href="vyveski-borisoglebsk.html">Изготовление вывесок</a><a href="pechat-bannerov-borisoglebsk.html">Печать баннеров</a><a href="socseti-kontent.html">Контент для соцсетей</a></nav></div></section>
 '''

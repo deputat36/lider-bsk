@@ -366,8 +366,14 @@
     "questions": []
   }
 ].map(item=>Object.freeze({...item,pages:Object.freeze(item.pages),questions:Object.freeze(item.questions||[])}));
+  const offers=Object.freeze([
+    {id:'layout-approval',label:'Макет на согласование',service_id:'design',page:'dizayn-maketov.html'},
+    {id:'onsite-preview',label:'Увидеть на объекте',service_id:'visualization-3d',page:'3d-vizualizaciya-reklamy.html'},
+    {id:'launch-kit',label:'Подготовить запуск',service_id:'campaign',page:'dizayn-3d-animaciya.html'}
+  ].map(item=>Object.freeze(item)));
   const clean=value=>String(value||'').trim().toLocaleLowerCase('ru-RU').replace(/ё/g,'е');
   function find(value){const key=clean(value);return services.find(item=>clean(item.label)===key||item.id===key)||null;}
   function forPage(path){const page=String(path||'').split('?')[0].split('#')[0].split('/').pop();return services.find(item=>item.pages.includes(page))||null;}
-  root.LeaderServiceCatalog=Object.freeze({services:Object.freeze(services),directions,find,forPage});
+  function findOffer(value){return offers.find(item=>item.id===String(value||''))||null;}
+  root.LeaderServiceCatalog=Object.freeze({services:Object.freeze(services),directions,offers,find,forPage,findOffer});
 })(globalThis);

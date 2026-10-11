@@ -61,10 +61,10 @@ def main() -> None:
         require(core_bust, marker, CORE_BUST)
 
     for marker in (
-        'Current #576 integration',
+        'Current creative offer integration',
         '64 public form pages',
-        'assets/public-lead-form.js?v=31',
-        'assets/leader-service-catalog.js?v=2',
+        'assets/public-lead-form.js?v=32',
+        'assets/leader-service-catalog.js?v=3',
     ):
         require(core_bust, marker, CORE_BUST)
 
@@ -80,7 +80,7 @@ def main() -> None:
 
     for marker in (
         'MIN_VERSION = 5',
-        'CORE_VERSION = 31',
+        'CORE_VERSION = 32',
         "'index.html'",
         "'request.html'",
         "'uslugi.html'",

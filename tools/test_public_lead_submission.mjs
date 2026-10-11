@@ -15,16 +15,18 @@ function page(search = '', sessionStorage = storage) {
   const fields = { phone: '+7 900 000-00-00', name: 'Synthetic local test', service: 'Наклейки', message: 'Тестовый расчёт', website: '' };
   const button = {};
   const status = {};
+  const offerNote = {};
   const form = { dataset: {}, reset() {}, querySelector(selector) {
     if (selector === 'button[type="submit"]') return button;
     if (selector === '[data-leader-lead-status]') return status;
+    if (selector === '[data-leader-offer-note]') return offerNote;
     const name = selector.match(/^\[name="([^"]+)"\]$/)?.[1];
-    return name ? { value: fields[name] || '' } : null;
+    return name ? { get value() { return fields[name] || ''; }, set value(value) { fields[name] = value; } } : null;
   } };
   let networkFailure = false;
   const context = vm.createContext({
     window: { sessionStorage, dispatchEvent() {} },
-    document: { readyState: 'loading', title: 'Наклейки', addEventListener() {} },
+    document: { readyState: 'loading', title: 'Наклейки', addEventListener() {}, querySelectorAll(selector) { return selector === '[data-leader-lead-widget]' ? [form] : []; } },
     location: { pathname: '/nakleyki-plotternaya-rezka-borisoglebsk.html', href: 'https://www.lider-bsk.ru/nakleyki-plotternaya-rezka-borisoglebsk.html' + search, search },
     navigator: { userAgent: 'local-contract-test' },
     URLSearchParams, CustomEvent: class {}, console: { error() {} },
@@ -37,9 +39,9 @@ function page(search = '', sessionStorage = storage) {
   vm.runInContext(fs.readFileSync('assets/leader-service-catalog.js', 'utf8'), context);
   context.window.LeaderServiceCatalog = context.LeaderServiceCatalog;
   const marker = source.lastIndexOf('})();');
-  const instrumented = source.slice(0, marker) + '\nwindow.testSubmit=submit; window.testAttribution=typeof campaignAttribution === "function" ? campaignAttribution : qs;\n' + source.slice(marker);
+  const instrumented = source.slice(0, marker) + '\nwindow.testSubmit=submit; window.testApplyPreset=()=>applyServicePreset(currentPreset(),false); window.testAttribution=typeof campaignAttribution === "function" ? campaignAttribution : qs;\n' + source.slice(marker);
   vm.runInContext(instrumented, context);
-  return { sent, fields, status, capture: () => context.window.testAttribution(), fail: value => { networkFailure = value; }, submit: () => context.window.testSubmit({ preventDefault() {}, currentTarget: form }) };
+  return { sent, fields, status, offerNote, applyPreset: () => context.window.testApplyPreset(), capture: () => context.window.testAttribution(), fail: value => { networkFailure = value; }, submit: () => context.window.testSubmit({ preventDefault() {}, currentTarget: form }) };
 }
 
 const direct = page();
@@ -52,6 +54,33 @@ assert.ok(direct.sent[0].message.includes('Направление: Произв�
 assert.equal(direct.sent[0].page_path, '/nakleyki-plotternaya-rezka-borisoglebsk.html');
 assert.ok(direct.sent[0].message.includes('Услуга: Наклейки'));
 assert.ok(direct.sent[0].submitted_at);
+for (const [id,service,label] of [
+  ['layout-approval','design','Макет на согласование'],
+  ['onsite-preview','visualization-3d','Увидеть на объекте'],
+  ['launch-kit','campaign','Подготовить запуск'],
+]) {
+  const selected = page(`?service=${service}&offer=${id}`);
+  selected.applyPreset();
+  assert.equal(selected.fields.message,'Тестовый расчёт','Selecting a package preserves customer text');
+  assert.equal(selected.offerNote.hidden,false);
+  assert.ok(selected.offerNote.textContent.includes(label));
+  selected.fields.message='x'.repeat(2000);
+  for(let i=0;i<4;i++)selected.fields['brief_'+i]=`Offer answer ${i} `+'z'.repeat(150);
+  selected.fail(true); await selected.submit();
+  selected.fail(false); await selected.submit();
+  assert.equal(selected.sent[0].request_id,selected.sent[1].request_id,'Offer retry keeps its request ID');
+  assert.ok(selected.sent[1].message.includes('Состав заказа: '+label));
+  assert.ok(selected.sent[1].message.length<=3000);
+  if(service!=='campaign')for(let i=0;i<4;i++)assert.ok(selected.sent[1].message.includes(`Offer answer ${i} `+'z'.repeat(150)),'Keep package and all brief answers within budget');
+  selected.fields.service='Полиграфия';
+  await selected.submit();
+  assert.ok(!selected.sent.at(-1).message.includes('Состав заказа:'),'Do not submit an offer for a different service');
+}
+for (const query of ['?service=design&offer=onsite-preview','?service=design&offer=unknown','?service=design&offer=%3Cscript%3E']) {
+  const invalid=page(query); invalid.applyPreset(); await invalid.submit();
+  assert.equal(invalid.offerNote.hidden,true);
+  assert.ok(!invalid.sent[0].message.includes('Состав заказа:'),'Ignore unknown or incompatible offers');
+}
 const changed = page('?service=Баннер&utm_source=vk&utm_campaign=opening');
 const creative = page();
 creative.fields.service = '3D-визуализация';

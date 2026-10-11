@@ -94,7 +94,7 @@
     return id;
   }
   function setStatus(form,type,msg){const s=form.querySelector('[data-leader-lead-status]');if(s){s.className='leader-lead-status show '+type;s.textContent=msg}}
-  function qs(){const p=new URLSearchParams(location.search);return{utm_source:p.get('utm_source')||'',utm_medium:p.get('utm_medium')||'',utm_campaign:p.get('utm_campaign')||'',utm_term:p.get('utm_term')||'',utm_content:p.get('utm_content')||'',scenario:p.get('scenario')||'',service:p.get('service')||''}}
+  function qs(){const p=new URLSearchParams(location.search);return{utm_source:p.get('utm_source')||'',utm_medium:p.get('utm_medium')||'',utm_campaign:p.get('utm_campaign')||'',utm_term:p.get('utm_term')||'',utm_content:p.get('utm_content')||'',scenario:p.get('scenario')||'',service:p.get('service')||'',offer:p.get('offer')||''}}
 
   // Retain the last campaign during this visit, including navigation without UTM.
   // Only campaign fields are stored; contact data and full URLs are never saved.
@@ -132,6 +132,8 @@
       const service=form.querySelector('[name="service"]');
       const message=form.querySelector('[name="message"]');
       if(service&&preset.service)service.value=preset.service;
+      form.__leaderOfferId=preset.offer_id||'';
+      renderSelectedOffer(form);
       if(message&&preset.text&&!message.value.trim()){
         message.value=preset.text;
         form.__leaderAutoMessage=preset.text;
@@ -141,7 +143,31 @@
     if(scroll)scrollToForm();
   }
   function applyScenario(key,scroll){const s=scenarios[key];if(s)applyServicePreset(s,scroll)}
-  function currentPreset(){const q=qs();const selected=catalog&&catalog.find(q.service);if(selected)return{service:selected.label,text:'Услуга выбрана по ссылке: '+selected.label};const legacy=servicePresets[pageKey()];const item=catalog&&catalog.forPage(pageKey());return item?{service:item.label,text:legacy?legacy.text:'Интересует: '+item.label}:legacy||null}
+  function currentPreset(){
+    const q=qs();
+    const selected=catalog&&catalog.find(q.service);
+    const legacy=servicePresets[pageKey()];
+    const item=selected||(catalog&&catalog.forPage(pageKey()));
+    if(!item)return legacy||null;
+    const offer=catalog.findOffer&&catalog.findOffer(q.offer);
+    return{service:item.label,text:selected?'Услуга выбрана по ссылке: '+item.label:(legacy?legacy.text:'Интересует: '+item.label),offer_id:offer&&offer.service_id===item.id?offer.id:''};
+  }
+
+  function selectedOffer(form){
+    const offer=catalog&&catalog.findOffer&&catalog.findOffer(form.__leaderOfferId);
+    const service=catalog&&catalog.find(field(form,'service'));
+    return offer&&service&&offer.service_id===service.id?offer:null;
+  }
+
+  function renderSelectedOffer(form){
+    const offer=selectedOffer(form);
+    if(!offer)form.__leaderOfferId='';
+    const note=form.querySelector('[data-leader-offer-note]');
+    if(note){
+      note.hidden=!offer;
+      note.textContent=offer?'Выбранный состав: «'+offer.label+'». Стоимость и сроки согласуем после уточнения задачи.':'';
+    }
+  }
 
   // Keep optional answers in this form only; changing a service never mixes briefs.
   function renderServiceBrief(form){
@@ -181,7 +207,7 @@
       <div class="leader-lead-grid">
         <div class="leader-lead-span-6"><label for="${id}-name">Имя / организация</label><input id="${id}-name" name="name" type="text" autocomplete="name" maxlength="200" placeholder="Например, Алексей"></div>
         <div class="leader-lead-span-6"><label for="${id}-phone">Телефон</label><input id="${id}-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="80" placeholder="+7..." required></div>
-        <div class="leader-lead-span-12"><label for="${id}-service">Что нужно?</label><select id="${id}-service" name="service" required>${catalog?catalog.services.map(item=>`<option value="${item.label}"${item.id==='other'?' selected':''}>${item.label}</option>`).join(''):'<option value="">Услуги временно недоступны</option>'}</select></div>
+        <div class="leader-lead-span-12"><label for="${id}-service">Что нужно?</label><select id="${id}-service" name="service" required>${catalog?catalog.services.map(item=>`<option value="${item.label}"${item.id==='other'?' selected':''}>${item.label}</option>`).join(''):'<option value="">Услуги временно недоступны</option>'}</select><div class="leader-lead-note" data-leader-offer-note role="status" hidden></div></div>
         <div class="leader-lead-span-12"><label for="${id}-message">Коротко опишите задачу</label><textarea id="${id}-message" name="message" maxlength="2000" rows="3" placeholder="Например: нужен рекламный пост, баннер или наклейки"></textarea></div>
       </div>
       <button class="leader-lead-more" type="button" data-leader-more aria-expanded="false" aria-controls="${id}-details">Добавить подробности для точного расчёта ↓</button>
@@ -226,6 +252,7 @@
         message.value='Интересует: '+field(form,'service');
         form.__leaderAutoMessage=message.value;
       }
+      renderSelectedOffer(form);
       renderServiceBrief(form);
     });
     renderServiceBrief(form);
@@ -276,6 +303,8 @@
     const serviceInfo=catalog&&catalog.find(service);
     if(service)parts.push('Услуга: '+service);
     if(serviceInfo)parts.push('Направление: '+catalog.directions[serviceInfo.direction]);
+    const offer=selectedOffer(form);
+    if(offer)parts.push('Состав заказа: '+offer.label);
     if(serviceInfo&&serviceInfo.brief){
       serviceInfo.questions.forEach((question,i)=>{
         const answer=field(form,'brief_'+i).slice(0,180);
