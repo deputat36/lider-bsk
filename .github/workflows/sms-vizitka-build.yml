@@ -132,6 +132,8 @@ jobs:
           cp android/sms-card-v060/CampaignQueueTest.java android/build-src/sms-card-app/app/src/test/java/ru/etagi/borisoglebsk/smscard/CampaignQueueTest.java
           python android/sms-card-v060/v060_patch.py
           python android/sms-card-v060/v060_ui_patch.py
+          python android/sms-card-v060/v060_perf_patch.py
+          cp android/sms-card-v060/README.md android/build-src/sms-card-app/README.md
 
           grep -q 'versionName = "0.6.0"' android/build-src/sms-card-app/app/build.gradle.kts
           grep -q 'SqliteStores' android/build-src/sms-card-app/app/src/main/java/ru/etagi/borisoglebsk/smscard/HistoryStore.java
@@ -170,6 +172,37 @@ jobs:
           name: sms-vizitka-v0.6.0-debug
           path: android/build-src/sms-card-app/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      - name: Sign release APK when protected secrets are configured
+        env:
+          SMS_SIGNING_KEYSTORE_B64: ${{ secrets.SMS_SIGNING_KEYSTORE_B64 }}
+          SMS_SIGNING_STORE_PASSWORD: ${{ secrets.SMS_SIGNING_STORE_PASSWORD }}
+          SMS_SIGNING_KEY_PASSWORD: ${{ secrets.SMS_SIGNING_KEY_PASSWORD }}
+          SMS_SIGNING_ALIAS: ${{ secrets.SMS_SIGNING_ALIAS }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$SMS_SIGNING_KEYSTORE_B64" || -z "$SMS_SIGNING_STORE_PASSWORD" || -z "$SMS_SIGNING_KEY_PASSWORD" || -z "$SMS_SIGNING_ALIAS" ]]; then
+            echo "Signing secrets not configured: signed Release artifact will be skipped."
+            exit 0
+          fi
+          work="$(mktemp -d)"
+          trap 'rm -rf "$work"' EXIT
+          umask 077
+          printf '%s' "$SMS_SIGNING_KEYSTORE_B64" | base64 -d > "$work/release.jks"
+          tools="$(find "$ANDROID_HOME/build-tools" -maxdepth 2 -name apksigner -type f | sort -V | tail -n 1)"
+          align="$(find "$ANDROID_HOME/build-tools" -maxdepth 2 -name zipalign -type f | sort -V | tail -n 1)"
+          [[ -x "$tools" && -x "$align" ]]
+          "$align" -f -p 4 android/build-src/sms-card-app/app/build/outputs/apk/release/app-release-unsigned.apk "$work/aligned.apk"
+          "$tools" sign --ks "$work/release.jks" --ks-key-alias "$SMS_SIGNING_ALIAS" --ks-pass env:SMS_SIGNING_STORE_PASSWORD --key-pass env:SMS_SIGNING_KEY_PASSWORD --out android/build-src/sms-card-app/app/build/outputs/apk/release/app-release-signed.apk "$work/aligned.apk"
+          "$tools" verify --verbose android/build-src/sms-card-app/app/build/outputs/apk/release/app-release-signed.apk
+
+      - name: Upload signed release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: sms-vizitka-v0.6.0-release-signed
+          path: android/build-src/sms-card-app/app/build/outputs/apk/release/app-release-signed.apk
+          if-no-files-found: ignore
 
       - name: Upload unsigned release APK
         uses: actions/upload-artifact@v4
