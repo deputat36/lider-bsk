@@ -134,7 +134,7 @@ jobs:
           python android/sms-card-v060/v060_ui_patch.py
 
           grep -q 'versionName = "0.6.0"' android/build-src/sms-card-app/app/build.gradle.kts
-          grep -q 'RecipientPolicyStore' android/build-src/sms-card-app/app/src/main/java/ru/etagi/borisoglebsk/smscard/HistoryStore.java
+          grep -q 'SqliteStores' android/build-src/sms-card-app/app/src/main/java/ru/etagi/borisoglebsk/smscard/HistoryStore.java
           grep -q 'android:allowBackup="false"' android/build-src/sms-card-app/app/src/main/AndroidManifest.xml
           grep -q 'after_call_cards_popup_v3' android/build-src/sms-card-app/app/src/main/java/ru/etagi/borisoglebsk/smscard/NotificationHelper.java
 
