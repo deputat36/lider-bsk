@@ -340,4 +340,31 @@ public final class SqliteStores {
         }
         return result;
     }
+    /** Read-only health check for the settings diagnostics panel. */
+    public static synchronized String healthReport(Context context) {
+        try {
+            SQLiteDatabase database = db(context);
+            String integrity = "неизвестно";
+            try (Cursor cursor = database.rawQuery("PRAGMA quick_check(1)", null)) {
+                if (cursor.moveToFirst()) integrity = cursor.getString(0);
+            }
+            if (!"ok".equalsIgnoreCase(integrity)) {
+                return "⚠ База данных: " + integrity;
+            }
+            long active = count(database, "SELECT COUNT(*) FROM campaigns WHERE state='active'");
+            long history = count(database, "SELECT COUNT(*) FROM sms_history");
+            long blocked = count(database, "SELECT COUNT(*) FROM stoplist");
+            return "SQLite: исправна • активных кампаний: " + active
+                    + " • записей истории: " + history + " • стоп-лист: " + blocked;
+        } catch (Exception e) {
+            return "⚠ Проверка SQLite не удалась: " + e.getClass().getSimpleName();
+        }
+    }
+
+    private static long count(SQLiteDatabase database, String query) {
+        try (Cursor c = database.rawQuery(query, null)) {
+            return c.moveToFirst() ? c.getLong(0) : 0L;
+        }
+    }
+
 }
