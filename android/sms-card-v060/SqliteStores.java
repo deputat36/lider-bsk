@@ -233,10 +233,17 @@ public final class SqliteStores {
         String normalized = PhoneNormalizer.normalize(phone);
         if (normalized.isEmpty() || at <= 0) return false;
         SQLiteDatabase database = db(context);
-        database.execSQL("INSERT INTO prepared_ledger(phone, prepared_at) VALUES(?,?) " +
-                "ON CONFLICT(phone) DO UPDATE SET prepared_at=MAX(prepared_at,excluded.prepared_at)",
-                new Object[]{normalized, at});
-        return true;
+        database.beginTransaction();
+        try {
+            database.execSQL("INSERT OR IGNORE INTO prepared_ledger(phone,prepared_at) VALUES(?,?)",
+                    new Object[]{normalized, at});
+            database.execSQL("UPDATE prepared_ledger SET prepared_at=MAX(prepared_at,?) WHERE phone=?",
+                    new Object[]{at, normalized});
+            database.setTransactionSuccessful();
+            return true;
+        } finally {
+            database.endTransaction();
+        }
     }
 
     public static synchronized boolean clearPrepared(Context context) {
