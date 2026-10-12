@@ -126,6 +126,7 @@ marker='''        diagnostics.addView(small(DeviceDiagnostics.manufacturerAdvice
 '''
 assert marker in s
 s=s.replace(marker,marker+'''
+        diagnostics.addView(small(SqliteStores.healthReport(this)), topMargin(8));
         diagnostics.addView(sectionTitle("Последние события"), topMargin(14));
         List<String> eventLines = SqliteStores.lastEvents(this, 8);
         if (eventLines.isEmpty()) {
