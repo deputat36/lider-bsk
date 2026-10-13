@@ -64,7 +64,7 @@ def main() -> None:
         'Current creative offer integration',
         '64 public form pages',
         'assets/public-lead-form.js?v=36',
-        'assets/leader-service-catalog.js?v=3',
+        'assets/leader-service-catalog.js?v=4',
     ):
         require(core_bust, marker, CORE_BUST)
 

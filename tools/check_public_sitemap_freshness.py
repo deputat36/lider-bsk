@@ -54,6 +54,10 @@ EXPLAINER_PAGES = {
     'yandex-karty-2gis.html',
 }
 UPDATED_SERVICE_LASTMOD.update({page: date(2026, 10, 11) for page in EXPLAINER_PAGES})
+UPDATED_SERVICE_LASTMOD.update({page: date(2026, 10, 13) for page in (
+    'uslugi.html', 'dizayn-maketov.html', 'tablichki-borisoglebsk.html',
+    'nakleyki-plotternaya-rezka-borisoglebsk.html',
+)})
 PRIORITY_PAGES |= EXPLAINER_PAGES
 
 def main() -> None:

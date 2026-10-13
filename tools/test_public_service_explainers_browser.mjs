@@ -6,9 +6,10 @@ import assert from 'node:assert/strict';
 
 const root=process.cwd();
 const data=JSON.parse(await readFile('data/service-explainers.json','utf8'));
+const useCases=JSON.parse(await readFile('data/service-use-cases.json','utf8')).cases;
 await import('../assets/leader-service-catalog.js');
 const catalog=globalThis.LeaderServiceCatalog;
-const report={pages:[],catalog:[],analytics:[],externalBlocked:0};
+const report={pages:[],catalog:[],useCases:[],analytics:[],externalBlocked:0};
 const server=createServer(async(req,res)=>{
   const file=path.resolve(root,'.'+new URL(req.url,'http://localhost').pathname);
   if(!file.startsWith(root+path.sep)||req.method!=='GET'){res.writeHead(403).end();return;}
@@ -99,6 +100,38 @@ try{
     assert.equal(new URL(page.url()).hash,'#plotternaya-rezka');
     report.catalog.push({width,uniqueServices:new Set(ids).size,plotterDeepLink:true});
 
+    for(const item of useCases){
+      await page.goto(origin+'/uslugi.html');
+      await page.locator('[data-service-use-case-link="'+item.id+'"]').click();
+      const block=page.locator('[data-service-use-case="'+item.id+'"]');
+      await block.locator('img').scrollIntoViewIfNeeded();
+      await page.waitForFunction(id=>{
+        const img=document.querySelector('[data-service-use-case="'+id+'"] img');
+        return img?.complete&&img.naturalWidth>0;
+      },item.id);
+      assert.equal(new URL(page.url()).hash,'#'+item.id);
+      assert.ok((await block.locator('figcaption').textContent()).includes('не фотография выполненной работы'));
+      assert.equal(await block.locator('details').count(),item.faq.length);
+      const question=block.locator('summary').first();
+      await question.focus();await page.keyboard.press('Enter');
+      assert.equal(await block.locator('details').first().getAttribute('open'),'');
+      assert.ok((await block.locator('details').first().textContent()).includes(item.faq[0].answer));
+      await noOverflow(page,item.id+' '+width);
+      await block.screenshot({path:output+'/use-case-'+item.id+'-'+width+'.png'});
+      await block.locator('.service-explainer-action').click();
+      await page.locator('[data-leader-lead-widget]').waitFor();
+      assert.equal(await page.locator('[name="service"]').inputValue(),catalog.find(item.service_id).label);
+      const note=page.locator('[data-leader-offer-note]');
+      assert.equal(await note.isVisible(),true);
+      assert.ok((await note.textContent()).includes(item.label));
+      assert.equal(new URL(page.url()).searchParams.get('offer'),item.id);
+      await page.locator('[name="message"]').fill('Synthetic local customer task');
+      await page.locator('[name="service"]').selectOption('Полиграфия');
+      assert.equal(await note.isVisible(),false,'A different service clears the offer');
+      assert.equal(await page.locator('[name="message"]').inputValue(),'Synthetic local customer task');
+      report.useCases.push({id:item.id,width,imageLoaded:true,questions:item.faq.length,selected:true,incompatibleCleared:true});
+    }
+
     await page.goto(origin+'/bannery-borisoglebsk.html?email=private@example.test');
     await page.locator('[data-leader-lead-widget]').waitFor();
     assert.equal(await count(page,'form_view'),0);
@@ -155,5 +188,5 @@ try{
   assert.equal(await count(page,'form_view'),1,'Fallback observation is also once-only');
   await fallback.close();
   await writeFile(output+'/report.json',JSON.stringify(report,null,2)+'\n');
-  console.log('PASS: 26 service explanations at desktop/mobile, 14 illustrations, exact selection, visible forms and safe Metrika calls; all external HTTP blocked.');
+  console.log('PASS: 26 service explanations, 3 use cases and 17 illustrations at desktop/mobile; exact selections, keyboard FAQ, visible forms and safe Metrika calls; all external HTTP blocked.');
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}

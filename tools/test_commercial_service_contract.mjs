@@ -23,15 +23,25 @@ for (const service of services) {
 const catalog = fs.readFileSync('uslugi.html', 'utf8');
 const sitemap = fs.readFileSync('sitemap.xml', 'utf8');
 const hub = fs.readFileSync('dizayn-3d-animaciya.html','utf8');
-assert.equal(offers.length,3);
-assert.equal(new Set(offers.map(item=>item.id)).size,3);
+const useCases=JSON.parse(fs.readFileSync('data/service-use-cases.json','utf8')).cases;
+assert.equal(offers.length,6);
+assert.equal(new Set(offers.map(item=>item.id)).size,6);
 for(const offer of offers){
   assert.ok(Object.isFrozen(offer));
   assert.equal(findOffer(offer.id),offer);
   assert.ok(find(offer.service_id));
   assert.ok(fs.existsSync(offer.page));
-  assert.ok(hub.includes(`href="${offer.page}?service=${offer.service_id}&amp;offer=${offer.id}#request"`));
-  assert.ok(hub.includes(`<h3>${offer.label}</h3>`));
+  const useCase=useCases.find(item=>item.id===offer.id);
+  const surface=useCase?fs.readFileSync(offer.page,'utf8'):hub;
+  assert.ok(surface.includes(`href="${offer.page}?service=${offer.service_id}&amp;offer=${offer.id}#request"`));
+  if(useCase){
+    assert.equal(useCase.label,offer.label);
+    assert.equal(useCase.service_id,offer.service_id);
+    assert.equal(useCase.page,offer.page);
+    assert.ok(surface.includes(`<h2>${useCase.title}</h2>`));
+    assert.ok(surface.includes(`data-service-use-case="${offer.id}"`));
+    assert.ok(catalog.includes(`href="${offer.page}#${offer.id}"`));
+  }else assert.ok(hub.includes(`<h3>${offer.label}</h3>`));
 }
 assert.equal(findOffer('unknown'),null);
 for (const copy of JSON.parse(fs.readFileSync('data/commercial-services.json', 'utf8'))) {
@@ -50,8 +60,8 @@ for (const page of fs.readdirSync('.').filter(p => p.endsWith('.html'))) {
   const html = fs.readFileSync(page, 'utf8');
   if (html.includes('src="assets/public-lead-form.js')) {
     assert.ok(html.includes('src="assets/public-lead-form.js?v=36"'), page);
-    assert.ok(html.indexOf('src="assets/leader-service-catalog.js?v=3"') >= 0, page);
-    assert.ok(html.indexOf('src="assets/leader-service-catalog.js?v=3"') < html.indexOf('src="assets/public-lead-form.js'), page);
+    assert.ok(html.indexOf('src="assets/leader-service-catalog.js?v=4"') >= 0, page);
+    assert.ok(html.indexOf('src="assets/leader-service-catalog.js?v=4"') < html.indexOf('src="assets/public-lead-form.js'), page);
   }
 }
 console.log('PASS: shared site/form/CRM/analytics catalog, all page mappings, explicit demo labels and service-specific first contact.');

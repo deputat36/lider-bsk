@@ -421,6 +421,100 @@
           "sha256": "1178ff78283e4a2d6c4f1eddf8f43e590ba8ef0af83e4cbfd9d465086d347086"
         }
       ]
+    },
+    {
+      "id": "presentation-design",
+      "created_at": "2026-10-13",
+      "mode": "builtin imagegen",
+      "kind": "explanatory illustration, not portfolio proof",
+      "prompt": "Use case: stylized-concept. Asset type: explanatory service illustration for the Russian advertising agency RA Lider website, explicitly a concept example rather than a real completed project. Create one premium editorial 3D still life, landscape 1536x1024, clean warm ivory background #F8F6F2, restrained graphite #0D0F12 and bright orange #FF6A00 accents, softly textured materials, soft studio shadows, three-quarter view. Match a consistent polished understated advertising-service illustration family. Everything fully visible inside central 80%, generous safe margins, legible at mobile card size. No people, readable lettering, company names, brand logos, watermarks, prices, real project claims, or numerical data. Subject: an open graphite laptop displaying a clean presentation slide made from abstract orange and graphite layout blocks, with three freestanding presentation slide cards beside it and a compact printed proposal booklet in the foreground. A clear distinction between digital slides and the document version. Show page composition and a consistent visual language. No fake charts or statistics; graphic blocks and simple decorative shapes only.",
+      "original_sha256": "588ce5e370ed15875912373d0682ffa81a49794c03419bb43711010ab2b55a9c",
+      "outputs": [
+        {
+          "path": "assets/service-illustrations/presentation-design.webp",
+          "width": 1080,
+          "height": 720,
+          "bytes": 50882,
+          "sha256": "a89f7400683cec48beaf956e18e33219edd6726e09e0766424fafcdce06aaa76"
+        },
+        {
+          "path": "assets/service-illustrations/presentation-design-mobile.webp",
+          "width": 720,
+          "height": 480,
+          "bytes": 28236,
+          "sha256": "db282c3c28a9730e2d9ef713ef6115ffef5c70a75cded33e075568637dad622c"
+        },
+        {
+          "path": "assets/service-illustrations/presentation-design-thumb.webp",
+          "width": 240,
+          "height": 160,
+          "bytes": 5984,
+          "sha256": "a46c15d780b8eff37a80ebfcc61edc06ad5a5e307303bede3e6900e487c13f50"
+        }
+      ]
+    },
+    {
+      "id": "navigation-kit",
+      "created_at": "2026-10-13",
+      "mode": "builtin imagegen",
+      "kind": "explanatory illustration, not portfolio proof",
+      "prompt": "Use case: stylized-concept. Asset type: explanatory service illustration for the Russian advertising agency RA Lider website, explicitly a concept example rather than a real completed project. Create one premium editorial 3D still life, landscape 1536x1024, clean warm ivory background #F8F6F2, restrained graphite #0D0F12 and bright orange #FF6A00 accents, softly textured materials, soft studio shadows, three-quarter view. Match a consistent polished understated advertising-service illustration family. Everything fully visible inside central 80%, generous safe margins, legible at mobile card size. No people, readable lettering, company names, brand logos, watermarks, prices, real project claims, or numerical data. Subject: a small clean office entrance corner with two blank door plaques, a graphite wall directory containing three rows with orange directional arrow glyphs, and several matching freestanding blank rectangular sign plaques in the foreground. Show a coordinated family of wayfinding signs for indoor business premises. Direction arrows are physical signage symbols, not a map or a technical route diagram. No safety certification or evacuation scheme, no readable text.",
+      "original_sha256": "fc98da7c8c38462fae9c2a1ea2915bcc43999e85e548e61706c6374eed955a77",
+      "outputs": [
+        {
+          "path": "assets/service-illustrations/navigation-kit.webp",
+          "width": 1080,
+          "height": 720,
+          "bytes": 42688,
+          "sha256": "6c1332e43d1263e613deb94132c68bd8f09562797b2643d8f28f6c35070c44c6"
+        },
+        {
+          "path": "assets/service-illustrations/navigation-kit-mobile.webp",
+          "width": 720,
+          "height": 480,
+          "bytes": 22248,
+          "sha256": "5233a6db1b4212a675b622ff7f0623d5921e1799d0e68e620bde97c5c10d1bda"
+        },
+        {
+          "path": "assets/service-illustrations/navigation-kit-thumb.webp",
+          "width": 240,
+          "height": 160,
+          "bytes": 5080,
+          "sha256": "639719264f05ee444a63c2f03c6d09cd9b98ae6df60816b1193b1b79eda0e3f1"
+        }
+      ]
+    },
+    {
+      "id": "car-decals",
+      "created_at": "2026-10-13",
+      "mode": "builtin imagegen",
+      "kind": "explanatory illustration, not portfolio proof",
+      "prompt": "Use case: stylized-concept. Asset type: explanatory service illustration for the Russian advertising agency RA Lider website, explicitly a concept example rather than a real completed project. Create one premium editorial 3D still life, landscape 1536x1024, clean warm ivory background #F8F6F2, restrained graphite #0D0F12 and bright orange #FF6A00 accents, softly textured materials, soft studio shadows, three-quarter view. Match a consistent polished understated advertising-service illustration family. Everything fully visible inside central 80%, generous safe margins, legible at mobile card size. No people, readable lettering, company names, brand logos, watermarks, prices, real project claims, or numerical data. Subject: a generic compact white commercial vehicle in a broadside three-quarter view, branded using a few distinct orange and graphite rectangular vinyl decals on the door and side panel below the windows; a small roll of orange vinyl and two decal pieces on release liner nearby. Keep most original white body paint visible, emphasize separate advertising decals instead of full wrapping. Clearly stylized as a concept illustration, no recognizable car manufacturer logo, readable license plate, company name, person, or street scene.",
+      "original_sha256": "2be0198e5658e25f55df248eecc19756b6b9d4f56175f08da1e821455457df8a",
+      "outputs": [
+        {
+          "path": "assets/service-illustrations/car-decals.webp",
+          "width": 1080,
+          "height": 720,
+          "bytes": 45512,
+          "sha256": "653f5bbee8aa8d284230f4a5b7a9d4cab068b7b5c4c177aa398ccb0f3a739c28"
+        },
+        {
+          "path": "assets/service-illustrations/car-decals-mobile.webp",
+          "width": 720,
+          "height": 480,
+          "bytes": 25856,
+          "sha256": "67db62c503c413d30aacf470794e24fe79c0978268996b42b579a7d74e3230e8"
+        },
+        {
+          "path": "assets/service-illustrations/car-decals-thumb.webp",
+          "width": 240,
+          "height": 160,
+          "bytes": 5868,
+          "sha256": "21210943935b49c3566b7896e5d0b3bba5c580180451c6df13f9602da08c8b12"
+        }
+      ]
     }
-  ]
+  ],
+  "updated_at": "2026-10-13"
 }

@@ -28,9 +28,26 @@ html body .service-card-summary{display:block;font-size:14px;line-height:1.5;fon
 html body .service-card-next{display:block;font-size:12px;line-height:1.5;font-weight:600;color:#9b3e00;margin-top:6px}
 html body .creative-service-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
 html body .service-catalog-related{margin:20px 0 0}
+html body .service-use-case{scroll-margin-top:150px}
+html body .service-use-case-questions{grid-column:1/-1;min-width:0}
+html body .service-use-case-questions details{border-top:1px solid #d9dde3;padding:14px 0}
+html body .service-use-case-questions summary{cursor:pointer;font-size:16px;line-height:1.5;font-weight:700}
+html body .service-use-case-questions details p{font-size:16px;line-height:1.6;margin:12px 0 0;max-width:82ch}
+html body .service-use-case-catalog{margin:28px 0}
+html body .service-use-case-catalog h2{margin:0 0 16px}
+html body .service-use-case-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+html body .service-use-case-cards a{display:grid;grid-template-columns:80px minmax(0,1fr);gap:12px;align-items:start;padding:14px;background:#f8f6f2;border:1px solid #e0e2e7;border-radius:14px;min-width:0;text-decoration:none}
+html body .service-use-case-cards img{display:block;width:80px;height:auto;aspect-ratio:3/2;border-radius:8px}
+html body .service-use-case-cards a>span,html body .service-use-case-cards a>span>span{display:block;min-width:0}
+html body .service-use-case-cards strong{display:block;font-size:16px;line-height:1.4;color:#0d0f12}
+html body .service-use-case-cards a>span>span{font-size:14px;line-height:1.5;color:#4b5563;margin-top:6px}
+html body .service-use-case-cards a:hover{border-color:#ff6a00}
+html body .service-use-case-cards a:focus-visible,html body .service-use-case-questions summary:focus-visible{outline:3px solid #ff6a00;outline-offset:4px}
+@media(max-width:1060px){html body .service-use-case-cards{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:760px){
  html body .service-explainer-grid{grid-template-columns:minmax(0,1fr);gap:24px}
  html body .service-explainer{scroll-margin-top:110px}
+ html body .service-use-case{scroll-margin-top:110px}
  html body .creative-service-cards{grid-template-columns:minmax(0,1fr)}
  html body .service-cards a.service-card{grid-template-columns:80px minmax(0,1fr);gap:12px;padding:10px}
  html body .service-card img{width:80px;height:auto;aspect-ratio:3/2}

@@ -1,4 +1,4 @@
-import '../../../../assets/leader-service-catalog.js?v=3';
+import '../../../../assets/leader-service-catalog.js?v=4';
 
 // A reviewable first-need draft; it neither assigns a designer nor saves a record.
 export function creativeNeedDraft(lead = {}, leadId = '') {
