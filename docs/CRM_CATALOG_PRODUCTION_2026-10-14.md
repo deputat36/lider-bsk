@@ -22,7 +22,8 @@ Production test rows не создавались.
 CLI 2.120.0 получен из официального release, архив проверен по SHA-256;
 `migration new` создал `20261014095201_catalog_management_production_v1.sql`.
 Файл перенесён в `production-candidates`, чтобы исключить случайный общий db push.
-Builder берёт точный staging business RPC и narrow receipt helper. JWT Edge
+Builder берёт staging business RPC и narrow receipt helper. Live тела сверены:
+различия только в форматировании и одном комментарии. JWT Edge
 меняет только exact project gate. Секреты не входят в пакет.
 
 Установка выполняется одной транзакцией с коротким lock timeout. До изменений
@@ -51,3 +52,36 @@ savepoint. Этот тест не подключается к production.
 просмотра. Activation разрешена только после успешного exact package CI,
 повторного live preflight, private backup и postflight. Authenticated production
 owner UI ещё не доказан; локальные fixtures и staging API не подменяют его.
+
+## Результат установки и точка продолжения
+
+PR #587 объединён в main `d46b3f9ea131b2de97540fd0c01e0f977f61caa8`, дерево
+`c931b72af5f2a69270f328dda8a209e4cd7027ca` совпало с проверенным локальным.
+Финальный PR head `473b3e13`: 36/36 check-runs успешны. Main: 40/40 check-runs,
+включая PostgreSQL package proof и Pages. Старый acceptance выбирал update
+по времени и UUID; в одной транзакции оба события имеют одинаковый now().
+Builder выбирает `price_update`, сохраняя old/new/actor и exactly-two assertions.
+
+После green CI и повторного native preflight два вызова `apply_migration`
+вернули `McpServerError: Invalid or expired requestState`, code `-32602`,
+reason `invalid_request_state`. Повтор был выполнен только после независимого
+чтения, исключившего частичную установку. После второй ошибки снова проверено:
+RPC=false, helper=false, scoped snapshot=0, catalog=69, price logs=0;
+прежний browser UPDATE grant остаётся. Следовательно, cutover не выполнен.
+Edge deployment и production frontend opt-in не запускались. Реальные цены,
+профили, Auth, Storage, роли и RLS не изменены этим этапом.
+
+Подключение Supabase обнаружено как installed/ENABLED; чтение работает.
+Причина отказа обработки write-запроса не установлена. Это техническая ошибка
+сервиса, не подтверждённый отказ владельца или automatic approval review.
+Обход через другой write endpoint не выполняется. Runtime-файл интерфейса
+сохранён с прежним staging gate; экспериментальный frontend transport не
+опубликован. Backup/rollback подготовлены, но новый production snapshot ещё
+не создан: его запись входит в атомарную миграцию.
+
+Продолжать с этой точки: после восстановления выполнения изменений повторить
+native preflight, сверить отсутствие RPC/helper/Edge/snapshot и взять candidate
+из проверенного main. Выполнить миграцию, проверить private backup и ACL,
+доставить exact JWT Edge, снять advisors и сверить неизменность business rows.
+Только затем готовить и проверять frontend opt-in, retry и смену роли.
+Ни общий core, ни старые цены, ни cleanup #381 не повторять.
