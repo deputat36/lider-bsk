@@ -1,5 +1,21 @@
 # Статус проекта РА «Лидер»
 
+## 2026-10-14 — прайс подготовлен; Supabase не выполнил установку
+
+PR #587 опубликован: main `d46b3f9e`, дерево `c931b72a`, 40/40 checks success,
+включая exact PostgreSQL candidate/stop proof и Pages. Fresh native preflight
+сохранил 69 позиций и 0 logs, shared canonical core уже существует.
+
+Два scoped вызова миграции завершились `Invalid or expired requestState`.
+После каждого независимое read-only чтение подтвердило отсутствие новых
+RPC/helper/snapshot и прежние 69 цен / 0 logs. Cutover, Edge и frontend opt-in
+не выполнены; runtime сохраняет прежний staging gate. Supabase plugin виден
+как installed/ENABLED, чтение доступно; причина write-сбоя не установлена.
+Безопасный пакет и stop rollback сохранены, новый private snapshot ещё не
+создан. Следующий шаг — восстановить выполнение изменений, повторить preflight
+и завершить серверную установку до включения редактора. Рабочие данные, Auth,
+Storage и #381 не тронуты. [Точка продолжения](CRM_CATALOG_PRODUCTION_2026-10-14.md).
+
 ## 2026-10-14 — финансовый центр опубликован; прайс проходит подготовку
 
 PR #586 объединён в main `437ea2d5c77d7127951261d2f46fc4aa185f8b3b`.
