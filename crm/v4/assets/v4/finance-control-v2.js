@@ -4,6 +4,9 @@ import { friendlyError } from './api.js';
 import { setStatus, toast } from './ui.js';
 import { isActiveOrderStatus, orderStatusUiModel } from './order-status-ui-model-v1.js';
 import { paymentNeedsAttention, paymentStatusUiModel } from './payment-status-ui-model-v1.js';
+import { v4State, subscribeState } from './state.js';
+import { canOpenV4Tab } from './role-tab-permissions-v1.js';
+import { canPerformV4Action, CRM_V4_ACTIONS } from './action-permissions-v1.js';
 
 const FIELDS = 'id,order_number,project_name,status,deadline,client_name,client_phone,client_total,contractor_cost,profit,payment_status,created_at,layout_status,data';
 
@@ -11,6 +14,23 @@ let rows = [];
 let warnings = [];
 let busy = false;
 let loaded = false;
+let generation = 0;
+let contextKey = '';
+
+function readContext() {
+  if (!v4State.crmReady || !canOpenV4Tab('finance_control') || !canPerformV4Action(CRM_V4_ACTIONS.FINANCE_READ)) return '';
+  return `${v4State.profile?.user_id || v4State.user?.id || ''}:${v4State.profile?.role}`;
+}
+
+function resetContext() {
+  const key = readContext();
+  if (contextKey === key) return;
+  contextKey = key;
+  generation++;
+  rows = []; warnings = []; loaded = false; busy = false;
+  const content = document.getElementById('financeControlContent');
+  if (content) content.innerHTML = '';
+}
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
@@ -151,6 +171,7 @@ function top(list, mapper) {
 }
 
 function render() {
+  if (!readContext()) return;
   ensureSection();
   const content = document.getElementById('financeControlContent');
   if (!content) return;
@@ -170,40 +191,47 @@ function render() {
   const unpaidTotal = groups.unpaid.reduce((sum, order) => sum + clientTotal(order), 0);
   const margin = activeTotal ? Math.round((activeProfit / activeTotal) * 100) : 0;
   const warningHtml = warnings.length ? `<div class="v4-fin-warnings">${warnings.map(esc).join('; ')}. Раздел показан в частичном режиме.</div>` : '';
-  content.innerHTML = `${warningHtml}<div class="v4-fin-grid">${stat('Активных заказов', groups.active.length)}${stat('Активная сумма', money(activeTotal), activeTotal ? 'is-good' : '')}${stat('Себестоимость', money(activeCost))}${stat('Потенц. прибыль', money(activeProfit), activeProfit > 0 ? 'is-good' : 'is-warn')}${stat('Средняя маржа', `${margin}%`, margin < 25 && activeTotal ? 'is-danger' : 'is-good')}${stat('Не оплачено / частично', groups.unpaid.length, groups.unpaid.length ? 'is-danger' : '')}${stat('Сумма к контролю оплаты', money(unpaidTotal), unpaidTotal ? 'is-danger' : '')}${stat('Неизвестный статус оплаты', groups.unknownPayment.length, groups.unknownPayment.length ? 'is-warn' : '')}${stat('Без себестоимости', groups.noCost.length, groups.noCost.length ? 'is-warn' : '')}${stat('Низкая маржа', groups.lowMargin.length, groups.lowMargin.length ? 'is-danger' : '')}</div><div class="v4-fin-actions"><button type="button" class="v4-primary" data-order-tab-open>Открыть все заказы</button><button type="button" data-finance-control-refresh>Обновить</button></div><div class="v4-fin-columns"><section class="v4-fin-column"><h3>Оплата под контролем</h3><div class="v4-fin-list">${top(groups.unpaid, (order) => card(order, 'Проверьте оплату.', 'is-danger'))}</div></section><section class="v4-fin-column"><h3>Без себестоимости</h3><div class="v4-fin-list">${top(groups.noCost, (order) => card(order, 'Себестоимость не заполнена.', 'is-warn'))}</div></section><section class="v4-fin-column"><h3>Низкая маржа</h3><div class="v4-fin-list">${top(groups.lowMargin, (order) => card(order, 'Маржа ниже 25%.', 'is-danger'))}</div></section><section class="v4-fin-column"><h3>Финансовые риски</h3><div class="v4-fin-list">${top(groups.risky, (order) => card(order, 'Есть финансовый риск.', 'is-warn'))}</div></section></div>`;
+  content.innerHTML = `<details><summary>Плановые суммы и риски недавних заказов · ${rows.length}</summary>${warningHtml}<div class="v4-fin-grid">${stat('Активных заказов', groups.active.length)}${stat('Активная сумма', money(activeTotal), activeTotal ? 'is-good' : '')}${stat('Себестоимость', money(activeCost))}${stat('Потенц. прибыль', money(activeProfit), activeProfit > 0 ? 'is-good' : 'is-warn')}${stat('Средняя маржа', `${margin}%`, margin < 25 && activeTotal ? 'is-danger' : 'is-good')}${stat('Не оплачено / частично', groups.unpaid.length, groups.unpaid.length ? 'is-danger' : '')}${stat('Сумма заказов с незавершённой оплатой', money(unpaidTotal), unpaidTotal ? 'is-danger' : '')}${stat('Неизвестный статус оплаты', groups.unknownPayment.length, groups.unknownPayment.length ? 'is-warn' : '')}${stat('Без себестоимости', groups.noCost.length, groups.noCost.length ? 'is-warn' : '')}${stat('Низкая маржа', groups.lowMargin.length, groups.lowMargin.length ? 'is-danger' : '')}</div><div class="v4-fin-actions"><button type="button" class="v4-primary" data-order-tab-open>Открыть все заказы</button><button type="button" data-finance-control-refresh>Обновить</button></div><div class="v4-fin-columns"><section class="v4-fin-column"><h3>Оплата под контролем</h3><div class="v4-fin-list">${top(groups.unpaid, (order) => card(order, 'Проверьте оплату.', 'is-danger'))}</div></section><section class="v4-fin-column"><h3>Без себестоимости</h3><div class="v4-fin-list">${top(groups.noCost, (order) => card(order, 'Себестоимость не заполнена.', 'is-warn'))}</div></section><section class="v4-fin-column"><h3>Низкая маржа</h3><div class="v4-fin-list">${top(groups.lowMargin, (order) => card(order, 'Маржа ниже 25%.', 'is-danger'))}</div></section><section class="v4-fin-column"><h3>Финансовые риски</h3><div class="v4-fin-list">${top(groups.risky, (order) => card(order, 'Есть финансовый риск.', 'is-warn'))}</div></section></div></details>`;
 }
 
 async function loadData(force = false) {
+  resetContext();
+  if (!readContext()) return;
   if (busy) return;
   if (loaded && !force) {
     render();
     return;
   }
   busy = true;
+  const request = ++generation;
+  const context = contextKey;
   warnings = [];
   render();
   try {
     setStatus('Загружаю финансовый контроль...', 'warn');
     const response = await supabaseClient.from('leader_orders').select(FIELDS).order('created_at', { ascending: false }).limit(60);
     if (response.error) throw response.error;
+    if (request !== generation || context !== readContext()) return;
     rows = response.data || [];
     setStatus('Финансовый контроль загружен', 'good');
   } catch (error) {
+    if (request !== generation || context !== readContext()) return;
     rows = [];
     warnings.push(`Заказы/финансы — ${friendlyError(error)}`);
     toast('Финансовый контроль загружен частично');
     setStatus('Финансовый контроль загружен частично', 'warn');
   } finally {
-    loaded = true;
-    busy = false;
-    render();
+    if (request === generation && context === readContext()) { loaded = true; busy = false; render(); }
   }
 }
 
 function mount() {
   if (window.LeaderV4FinanceControlV2Mounted) return;
   window.LeaderV4FinanceControlV2Mounted = true;
+  resetContext();
+  subscribeState(resetContext);
   ensureSection();
+  document.addEventListener('leader-v4:finance-changed', () => { loaded = false; if (document.body.getAttribute('data-v4-tab') === 'finance_control') loadData(true); });
   document.addEventListener('click', (event) => {
     if (event.target.closest?.('[data-finance-control-refresh]')) {
       event.preventDefault();

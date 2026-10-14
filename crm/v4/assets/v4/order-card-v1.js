@@ -2,7 +2,7 @@ import { orderOperationsAvailable } from './operational-server-contract-v1.js';
 import { renderOrderOperations, mountOrderOperations } from './order-operation-ui-v1.js';
 import { invokeLeaderFunction } from './functions-client.js';
 import { V4_CONFIG } from './config.js';
-import { v4State } from './state.js';
+import { v4State, subscribeState } from './state.js';
 import { canPerformV4Action, CRM_V4_ACTIONS } from './action-permissions-v1.js';
 import { fetchAllOrderFinance } from './finance-record-model-v1.js';
 import { financeWriteAvailable } from './finance-record-transport-v1.js';
@@ -36,6 +36,8 @@ let financeWriter = null;
 let orderWriter = null;
 let opener = null;
 let cardRequest = 0;
+let cardContext = '';
+const readCardContext = () => canPerformV4Action(CRM_V4_ACTIONS.ORDERS_READ) ? `${v4State.profile?.user_id || v4State.user?.id || ''}:${v4State.profile?.role}` : '';
 const canReadFinance = () => canPerformV4Action(CRM_V4_ACTIONS.FINANCE_READ);
 const canWriteFinance = () => canPerformV4Action(CRM_V4_ACTIONS.FINANCE_WRITE);
 const canReadCosts = () => canPerformV4Action(CRM_V4_ACTIONS.COSTS_READ);
@@ -338,8 +340,11 @@ function renderCard(order, items, payments, expenses, financeError = '') {
   }));
 }
 
-async function openOrderCard(orderId, message = '', refresh = false, trigger = null) {
+async function openOrderCard(orderId, message = '', refresh = false, trigger = null, financeKind = '') {
   if (!orderId || busy || financeWriter?.isBusy() || orderWriter?.isBusy()) return;
+  if (!canPerformV4Action(CRM_V4_ACTIONS.ORDERS_READ)) return;
+  const context = readCardContext();
+  cardContext = context;
   if (!refresh) opener = trigger || document.activeElement;
   const request = ++cardRequest;
   busy = true;
@@ -362,9 +367,14 @@ async function openOrderCard(orderId, message = '', refresh = false, trigger = n
       } catch (_) { finance.financeError = 'Не удалось проверить актуальность финансовых итогов. Повторите загрузку.'; }
     }
     if (request !== cardRequest) return;
+    if (!canPerformV4Action(CRM_V4_ACTIONS.ORDERS_READ) || context !== readCardContext()) return;
     renderCard(order, items, finance.payments, finance.expenses, finance.financeError);
     const target = host().querySelector(refresh ? '#orderFinanceTitle' : '#orderCardTitle');
     target?.focus();
+    if (!finance.financeError && writeEnabled() && ['payment', 'expense'].includes(financeKind)) {
+      financeWriter?.openCreate?.(financeKind);
+      host().querySelector('[data-finance-form]')?.scrollIntoView({ block: 'nearest' });
+    }
     if (message && !finance.financeError) {
       const saved = host().querySelector('[data-finance-saved]');
       if (saved) saved.textContent = message;
@@ -379,6 +389,12 @@ async function openOrderCard(orderId, message = '', refresh = false, trigger = n
 function boot() {
   if (booted) return;
   booted = true;
+  subscribeState(() => {
+    if (cardContext && cardContext !== readCardContext()) {
+      cardRequest++; busy = false; cardContext = ''; currentBundle = null; financeWriter = null; orderWriter = null;
+      host().innerHTML = '';
+    }
+  });
   ensureStyles();
   document.addEventListener('keydown', event => {
     const dialog = host().querySelector('[role="dialog"]');
@@ -400,7 +416,7 @@ function boot() {
     const close = event.target.closest?.('[data-order-card-close]');
     if (close) { event.preventDefault(); closeCard(); return; }
     const open = event.target.closest?.('[data-open-order]');
-    if (open) { event.preventDefault(); openOrderCard(open.dataset.openOrder, '', false, open); return; }
+    if (open) { event.preventDefault(); openOrderCard(open.dataset.openOrder, '', false, open, open.dataset.orderFinanceAction || ''); return; }
     const openLead = event.target.closest?.('[data-order-card-open-lead]');
     if (openLead) { event.preventDefault(); closeCard(); openLeadRoute(openLead.dataset.orderCardOpenLead); return; }
     const primary = event.target.closest?.('[data-order-primary-target]');
