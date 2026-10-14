@@ -232,6 +232,6 @@ export function orderContractWarnings(raw = {}) {
   if (orderContractTotal(draft) <= 0) warnings.push('Общая стоимость должна быть больше нуля.');
   if (!draft.subject) warnings.push('Не заполнен предмет договора.');
   if (draft.templateId === 'advertising_installation' && !draft.workAddress) warnings.push('Для монтажных работ укажите адрес объекта.');
-  warnings.push('Это несохранённый черновик: проверьте реквизиты и юридические условия перед подписанием.');
+  warnings.push('Это рабочий черновик, не зарегистрированный в CRM: проверьте реквизиты и юридические условия перед подписанием.');
   return Object.freeze(warnings);
 }

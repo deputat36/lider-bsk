@@ -26,7 +26,7 @@ checks = {
         'orderContractSections',
         'orderContractWarnings',
         'налог на профессиональный доход',
-        'несохранённый черновик',
+        'не зарегистрированный в CRM',
     ],
     preview: [
         "from './order-contract-model-v1.js'",
@@ -39,7 +39,7 @@ checks = {
         'data-order-contract-preview',
         'Создать договор',
         'orderContractWarnings',
-        'Предварительный несохранённый черновик',
+        'Предварительный черновик · не зарегистрирован в CRM',
         'Приложение № 1. Спецификация',
         'Печать / PDF',
     ],

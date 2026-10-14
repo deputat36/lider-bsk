@@ -45,7 +45,7 @@ assert.match(sections.flatMap((section) => section.paragraphs).join('\n'), /на
 assert.match(sections.flatMap((section) => section.paragraphs).join('\n'), /Акт сдачи-приёмки/);
 
 const warnings = orderContractWarnings(draft);
-assert.deepEqual(warnings, ['Это несохранённый черновик: проверьте реквизиты и юридические условия перед подписанием.']);
+assert.deepEqual(warnings, ['Это рабочий черновик, не зарегистрированный в CRM: проверьте реквизиты и юридические условия перед подписанием.']);
 
 const incomplete = orderContractWarnings({
   templateId: 'advertising_installation',
