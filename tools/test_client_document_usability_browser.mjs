@@ -59,6 +59,10 @@ try{
    if(width===1440){await popup.pdf({path:path.join(output,`${kind}-preview.pdf`),format:'A4',printBackground:true});await popup.screenshot({path:path.join(output,`${kind}-print.png`),fullPage:true});}
    await popup.close();await page.keyboard.press('Escape');await page.waitForFunction(id=>!document.getElementById(id),form);
   }
+  if(width===1440){
+   await page.evaluate(()=>mock.rows=36);await page.click('#openAct');await page.waitForSelector('#orderActDraftForm');page.once('dialog',d=>d.accept());await page.click('[data-document-draft-reset]');await page.waitForFunction(()=>document.querySelectorAll('[data-act-item-row]').length===36);assert.match(await page.textContent('.document-draft-notice'),/Черновик/);
+   const printed=page.waitForEvent('popup');await page.click('#orderActDraftForm [type=submit]');const long=await printed;await long.waitForLoadState('domcontentloaded');assert.equal(await long.locator('.items tbody tr').count(),37);await long.pdf({path:path.join(output,'act-multipage-preview.pdf'),format:'A4',printBackground:true});await long.close();await page.keyboard.press('Escape');await page.evaluate(()=>mock.rows=1);
+  }
   // Storage failure is explicit and canceling close preserves the form.
   await page.click('#openAct');await page.waitForSelector('#orderActDraftForm');await page.evaluate(()=>{globalThis.originalSetItem=Storage.prototype.setItem;Storage.prototype.setItem=function(){throw Error('synthetic storage full')}});await page.fill('#actDraftNote','Несохранённая правка');await page.waitForFunction(()=>document.querySelector('.document-draft-notice').textContent.includes('не удалось'));page.once('dialog',d=>d.dismiss());await page.keyboard.press('Escape');assert.equal(await page.inputValue('#actDraftNote'),'Несохранённая правка');await page.evaluate(()=>Storage.prototype.setItem=originalSetItem);await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.getElementById('orderActDraftForm'));
   // The editor rejects over-limit source rows instead of silently truncating.
@@ -68,7 +72,7 @@ try{
   await page.click('#openAct');await page.waitForSelector('#orderActDraftForm');await page.evaluate(id=>changeActor(id,'owner'),other);await page.waitForFunction(()=>!document.getElementById('orderActDraftForm'));await page.waitForSelector('[data-client-open]');assert.equal(await page.locator('#clientEditForm').count(),0);
   assert.equal(await page.evaluate(id=>Object.keys(sessionStorage).some(k=>k.startsWith('leader-document-draft-v1:'+id+':')||k==='leader-company-document-draft-v1:'+id),actor),false);
   const before=await page.evaluate(()=>mock.reads.length);await page.evaluate(id=>changeActor(id,'designer'),other);await page.click('#openAct');assert.equal(await page.evaluate(()=>mock.reads.length),before,'forbidden document entry performs no read');assert.equal(await page.locator('#clientRegistryV1').count(),0);
-  assert.deepEqual(errors,[]);report.push({width,clientConflict:true,clientReplay:true,boundActor:true,workingCompanyDetails:true,actAndContractRestore:true,invalidNumbersRejected:true,popupEscaped:true,revisionWarningRetained:true,templateConfirm:true,storageFailureCloseGuard:true,sourceRowsNotTruncated:true,closeLateResponse:true,actorChangeClears:true,forbiddenNoRead:true,errors});await context.close();
+  assert.deepEqual(errors,[]);report.push({width,clientConflict:true,clientReplay:true,boundActor:true,workingCompanyDetails:true,actAndContractRestore:true,invalidNumbersRejected:true,popupEscaped:true,revisionWarningRetained:true,templateConfirm:true,storageFailureCloseGuard:true,sourceRowsNotTruncated:true,multipagePrint:width===1440,closeLateResponse:true,actorChangeClears:true,forbiddenNoRead:true,errors});await context.close();
  }
  await writeFile(path.join(output,'report.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));
 }finally{await browser.close();await new Promise(r=>server.close(r));}
