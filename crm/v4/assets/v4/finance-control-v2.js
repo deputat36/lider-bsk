@@ -231,7 +231,7 @@ function mount() {
   resetContext();
   subscribeState(resetContext);
   ensureSection();
-  document.addEventListener('leader-v4:finance-changed', () => { loaded = false; if (document.body.dataset.v4Tab === 'finance_control') loadData(true); });
+  document.addEventListener('leader-v4:finance-changed', () => { loaded = false; if (document.body.getAttribute('data-v4-tab') === 'finance_control') loadData(true); });
   document.addEventListener('click', (event) => {
     if (event.target.closest?.('[data-finance-control-refresh]')) {
       event.preventDefault();
