@@ -213,7 +213,7 @@ function mount() {
   document.addEventListener('change', event => {
     if (event.target.matches?.('[data-finance-filter]')) { filter = event.target.value; renderOrderList(); }
   });
-  document.addEventListener('leader-v4:finance-changed', () => { loadedAt = 0; if (document.body.dataset.v4Tab === 'finance_control') load(true); });
+  document.addEventListener('leader-v4:finance-changed', () => { loadedAt = 0; if (document.body.getAttribute('data-v4-tab') === 'finance_control') load(true); });
   document.addEventListener('click', (event) => {
     if (event.target.closest?.('[data-plan-actual-refresh]')) {
       event.preventDefault();
