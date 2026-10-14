@@ -1,0 +1,45 @@
+name: CRM catalog production package check
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/build_catalog_production_*.py'
+      - 'supabase/production-candidates/*catalog_management*'
+      - 'supabase/staging-migrations/20260904_02_catalog_management_write_harness.sql'
+      - 'supabase/staging-migrations/20260904_04_catalog_receipt_cleanup_helper.sql'
+      - 'supabase/functions/leader-crm-catalog/**'
+      - '.github/workflows/crm-catalog-production-package-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/build_catalog_production_*.py'
+      - 'supabase/production-candidates/*catalog_management*'
+      - 'supabase/staging-migrations/20260904_02_catalog_management_write_harness.sql'
+      - 'supabase/staging-migrations/20260904_04_catalog_receipt_cleanup_helper.sql'
+      - 'supabase/functions/leader-crm-catalog/**'
+      - '.github/workflows/crm-catalog-production-package-check.yml'
+permissions:
+  contents: read
+jobs:
+  catalog-production-package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: isolated-ci-only
+          POSTGRES_DB: catalog_test
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and verify exact package
+        run: |
+          python3 tools/build_catalog_production_test.py
+          python3 tools/build_catalog_production_package.py
+          git diff --exit-code -- supabase/production-candidates
+      - name: Exercise transactions privileges privacy and emergency stop
+        env:
+          PGPASSWORD: isolated-ci-only
+        run: psql -h localhost -U postgres -d catalog_test -v ON_ERROR_STOP=1 -f build/catalog-production-test.sql
