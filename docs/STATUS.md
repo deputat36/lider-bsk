@@ -1,5 +1,23 @@
 # Статус проекта РА «Лидер»
 
+## 2026-10-14 — финансовый центр опубликован; прайс проходит подготовку
+
+PR #586 объединён в main `437ea2d5c77d7127951261d2f46fc4aa185f8b3b`.
+Дерево `d16ab96c` совпало с проверенным. Main: 68/68 checks и 63/63 workflows,
+Pages `38544741928` — success. GET-only postflight: все шесть изменённых
+публичных файлов HTTP 200 и SHA-256 совпадают; реальные оплаты не создавались.
+Финальный browser artifact проверен и снимки просмотрены до merge.
+
+Прайс #152: свежий production preflight подтверждает существующий canonical
+core и owner/admin catalog.manage; RPC/helper ещё отсутствуют, 69 цен прежние.
+Свежий authenticated staging E2E `38545478671` доказал manager deny, owner
+create/replay/update/stale/readback; временный Auth user удалён, 24 группы
+остатка нулевые, независимое чтение это подтвердило. Подготовлен отдельный
+Leader-only пакет с private backup, закрытием table+column browser writes и
+неразрушающим stop rollback. До exact package CI и повторного preflight
+production write activation не выполняется; UI остаётся в режиме просмотра.
+[Прайс: доказательства и порядок включения](CRM_CATALOG_PRODUCTION_2026-10-14.md).
+
 ## 2026-10-14 — финансовый центр и свежая проверка рабочего контура
 
 Operational-команды уже установлены PR #574 от 09.10; повторный cutover не нужен.
