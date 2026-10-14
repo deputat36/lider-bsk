@@ -71,7 +71,7 @@ export function mountDocumentDraft({ form, kind, order, itemRow, onRestore, onRe
   try { storage = sessionStorage; } catch (_) {}
   const valid = () => !disposed && form.isConnected && canPrepareDocument() && context === documentActorContext();
   const notice = document.createElement('p'); notice.setAttribute('role','status'); notice.setAttribute('aria-live','polite'); notice.className='document-draft-notice';
-  notice.textContent='Правки черновика сохраняются в этой вкладке. Документ ещё не зарегистрирован в CRM.';
+  notice.textContent='Правки черновика хранятся в этой вкладке до 3 суток после последнего сохранения. Документ ещё не зарегистрирован в CRM.';
   const bar = document.createElement('div');bar.className='document-draft-controls';
   const reset = document.createElement('button');reset.type='button';reset.textContent='Начать заново из заказа';reset.dataset.documentDraftReset='1';
   bar.append(notice,reset);form.prepend(bar);
@@ -83,7 +83,7 @@ export function mountDocumentDraft({ form, kind, order, itemRow, onRestore, onRe
       const draft = capture();
       if (!storage || draft.rows.length > 160 || Object.values(draft.fields).some(v=>v.length>16000) || draft.rows.some(row=>Object.values(row).some(v=>v.length>16000))) throw new Error('draft_unavailable');
       storage.setItem(key, JSON.stringify(draft)); dirty=false;
-      notice.textContent=(revision!==(order.updated_at||'')?'Заказ с тех пор изменился: проверьте стороны, состав и суммы или начните заново. ':'')+'Черновик сохранён в этой вкладке. Документ ещё не зарегистрирован в CRM.';
+      notice.textContent=(revision!==(order.updated_at||'')?'Заказ с тех пор изменился: проверьте стороны, состав и суммы или начните заново. ':'')+'Черновик сохранён в этой вкладке на срок до 3 суток. Документ ещё не зарегистрирован в CRM.';
       return true;
     } catch (_) { dirty=true; notice.textContent='Черновик не удалось сохранить в этой вкладке. Скопируйте важные правки перед закрытием.'; return false; }
   }
@@ -100,7 +100,7 @@ export function mountDocumentDraft({ form, kind, order, itemRow, onRestore, onRe
         for (const name of ['name','qty','unit','price','sum']) if (typeof row[name] === 'string' && row[name].length <= 16000) node.querySelector(`[data-${kind}-item-${name}]`).value=row[name];
       }
       form.dataset.companySettingsApplied='1';
-      notice.textContent=draft.revision !== (order.updated_at || '') ? 'Восстановлен черновик. Заказ с тех пор изменился: проверьте стороны, состав и суммы или начните заново.' : 'Восстановлен черновик из этой вкладки. Проверьте данные перед печатью.';
+      notice.textContent=draft.revision !== (order.updated_at || '') ? 'Восстановлен черновик. Заказ с тех пор изменился: проверьте стороны, состав и суммы или начните заново.' : 'Восстановлен черновик из этой вкладки, срок хранения — до 3 суток после сохранения. Проверьте данные перед печатью.';
       onRestore?.();
     } else if (raw) storage?.removeItem(key);
   } catch (_) { notice.textContent='Сохранённый черновик недоступен. Новые правки будут сохранены при возможности.'; }

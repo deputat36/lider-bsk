@@ -15,8 +15,11 @@ mobile карточки позиций, Escape/focus/Tab и отмену поз�
 read-only metadata вновь подтвердило отсутствие leader_order_documents.
 
 Backend/production rows/RLS/roles/Auth/Storage/Edge прежние; прайс и #381 не
-меняются. Unit/source checks и CI browser/визуальные previews/Pages фиксируются
-в PR. [Сценарии и границы редактирования](CRM_CLIENT_DOCUMENT_EDITING_2026-10-14.md).
+меняются. Unit/source checks пройдены; browser scenarios и визуальная проверка PDF
+на синтетических данных фиксируются в [PR #589](https://github.com/deputat36/lider-bsk/pull/589).
+Черновики/рабочие реквизиты хранятся в текущей вкладке до 3 суток после
+последнего сохранения; это явно показано в формах. Публикация и final-head proof
+также фиксируются в PR. [Сценарии и границы редактирования](CRM_CLIENT_DOCUMENT_EDITING_2026-10-14.md).
 
 ## 2026-10-14 — прайс подготовлен; Supabase не выполнил установку
 

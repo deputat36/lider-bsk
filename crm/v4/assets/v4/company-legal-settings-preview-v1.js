@@ -180,7 +180,7 @@ async function openPreview() {
     ? '<details class="v4-company-settings-json"><summary>Техническая копия реквизитов</summary><textarea readonly data-company-settings-json aria-label="JSON реквизитов"></textarea></details>'
     : '';
   const note = mode === COMPANY_LEGAL_SETTINGS_ENTRY_MODES.DOCUMENT
-    ? 'Проверенные реквизиты применяются к открытому черновику и сохраняются для следующих документов в этой вкладке. Общие настройки CRM не изменяются.'
+    ? 'Проверенные реквизиты применяются к открытому черновику и сохраняются для следующих документов в этой вкладке на срок до 3 суток. Общие настройки CRM не изменяются.'
     : esc(copy.note);
   host().innerHTML = `<div class="v4-company-settings-modal" role="dialog" aria-modal="true" aria-label="${esc(copy.title)}"><div class="v4-company-settings-card"><header class="v4-company-settings-head"><div><h2>${esc(copy.title)}</h2><p>${esc(copy.subtitle)}</p></div><button type="button" data-company-settings-close>Закрыть</button></header><form id="companyLegalSettingsPreviewForm" data-company-settings-entry-mode="${esc(mode)}"><div class="v4-company-settings-grid">${groups}</div><div class="v4-company-settings-result"><section class="v4-company-settings-preview"><b>Предпросмотр блока исполнителя</b><pre data-company-settings-preview-text></pre></section><section data-company-settings-validation class="v4-company-settings-validation"></section></div>${jsonBlock}<div class="v4-company-settings-note">${note}</div><div class="v4-company-settings-actions"><button type="submit" class="primary">${esc(copy.action)}</button><button type="button" data-company-settings-close>Отмена</button></div></form></div></div>`;
   initialValues=JSON.stringify(readDraft());
