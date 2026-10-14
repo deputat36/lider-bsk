@@ -70,7 +70,14 @@ GRANT USAGE ON SCHEMA leader_staging TO service_role;
 GRANT SELECT ON leader_staging.environment_guard TO service_role;
 SET LOCAL ROLE service_role;
 """
-    sql += read('supabase/staging-tests/20260904_catalog_management_write_acceptance.sql').replace('begin;','',1).rsplit('rollback;',1)[0]
+    acceptance = read('supabase/staging-tests/20260904_catalog_management_write_acceptance.sql')
+    # Both events use transaction_timestamp() in this single transaction. A UUID
+    # tie-breaker cannot identify the update; inspect its explicit event type,
+    # retaining every old/new value, actor and exactly-two-events assertion.
+    log_query = 'where catalog_id = v_catalog_id\n  order by created_at desc, id desc'
+    assert acceptance.count(log_query) == 1
+    acceptance = acceptance.replace(log_query, "where catalog_id = v_catalog_id and change_type = 'price_update'\n  order by created_at desc, id desc")
+    sql += acceptance.replace('begin;','',1).rsplit('rollback;',1)[0]
     sql += """
 DO $fresh$ DECLARE a uuid:='15200000-0000-4000-8000-000000000001'; req jsonb;r jsonb;role_name text; BEGIN
  req:=jsonb_build_object('actor_id',a,'request',jsonb_build_object('action','catalog.manage','request_id',gen_random_uuid(),'payload',jsonb_build_object('operation','create','idempotency_key','catalog-fresh-auth','patch',jsonb_build_object('name','Fresh authorization fixture','category','Synthetic','unit','шт'))));
