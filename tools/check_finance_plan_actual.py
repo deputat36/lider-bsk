@@ -40,7 +40,7 @@ checks = {
     ],
     panel: [
         "canOpenV4Tab('finance_control')",
-        "from(table).select(fields).limit(1000)",
+        "from(table).select(fields).order('id', { ascending: true }).range(offset, offset + 499)",
         "readRows('leader_orders', ORDER_FIELDS)",
         "readRows('leader_payments', PAYMENT_FIELDS)",
         "readRows('leader_expenses', EXPENSE_FIELDS)",
@@ -59,7 +59,7 @@ checks = {
         'Денежный результат', 'Не рассчитана', 'Учтено в подтверждённом факте',
     ],
     loader: [
-        "import('./finance-plan-actual-panel-v1.js?v=20260713-finance-1')",
+        "import('./finance-plan-actual-panel-v1.js?v=20261014-finance-center-1')",
     ],
     test: [
         'confirmedPaymentEffect', 'confirmedExpenseEffect',

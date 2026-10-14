@@ -1,0 +1,115 @@
+{
+  "date": "2026-10-14",
+  "project": "ofewxuqfjhamgerwzull",
+  "method": "SELECT in read-only transaction",
+  "checks": [
+    {
+      "check_name": "converted_lead_without_order",
+      "affected_count": 5
+    },
+    {
+      "check_name": "lead_client_orphan",
+      "affected_count": 0
+    },
+    {
+      "check_name": "lead_order_mismatch",
+      "affected_count": 0
+    },
+    {
+      "check_name": "calculation_without_need",
+      "affected_count": 11
+    },
+    {
+      "check_name": "calculation_need_mismatch",
+      "affected_count": 0
+    },
+    {
+      "check_name": "converted_calculation_without_order",
+      "affected_count": 5
+    },
+    {
+      "check_name": "offer_without_calculation",
+      "affected_count": 0
+    },
+    {
+      "check_name": "agreed_offer_without_order",
+      "affected_count": 5
+    },
+    {
+      "check_name": "order_without_client",
+      "affected_count": 0
+    },
+    {
+      "check_name": "order_without_items",
+      "affected_count": 0
+    },
+    {
+      "check_name": "production_without_order",
+      "affected_count": 0
+    },
+    {
+      "check_name": "installation_without_order",
+      "affected_count": 0
+    },
+    {
+      "check_name": "design_without_source",
+      "affected_count": 0
+    },
+    {
+      "check_name": "payment_without_order",
+      "affected_count": 0
+    },
+    {
+      "check_name": "expense_broken_order",
+      "affected_count": 0
+    },
+    {
+      "check_name": "calculation_totals_mismatch",
+      "affected_count": 0
+    },
+    {
+      "check_name": "calculation_items_totals_mismatch",
+      "affected_count": 3
+    },
+    {
+      "check_name": "order_totals_mismatch",
+      "affected_count": 0
+    },
+    {
+      "check_name": "duplicate_request_id",
+      "affected_count": 0
+    },
+    {
+      "check_name": "suspected_lead_duplicates",
+      "affected_count": 0
+    }
+  ],
+  "tables": [
+    {
+      "entity": "orders",
+      "rows": 2
+    },
+    {
+      "entity": "payments",
+      "rows": 1
+    },
+    {
+      "entity": "expenses",
+      "rows": 0
+    },
+    {
+      "entity": "design_tasks",
+      "rows": 0
+    },
+    {
+      "entity": "production_jobs",
+      "rows": 0
+    },
+    {
+      "entity": "installation_jobs",
+      "rows": 0
+    }
+  ],
+  "businessChanges": false,
+  "classificationRequired": "Historical statuses require identifying real versus test orders; no statuses reset."
+}

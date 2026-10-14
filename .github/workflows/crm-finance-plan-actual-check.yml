@@ -26,6 +26,7 @@ on:
       - 'crm/v4/assets/v4/role-tab-permissions-v1.js'
       - 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
       - 'tools/test_finance_plan_actual.mjs'
+      - 'tools/test_finance_center_browser.mjs'
       - 'tools/test_crm_payment_record_status.mjs'
       - 'tools/check_finance_plan_actual.py'
       - 'tools/check_crm_payment_record_status_registry.py'
@@ -58,6 +59,7 @@ on:
       - 'crm/v4/assets/v4/role-tab-permissions-v1.js'
       - 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
       - 'tools/test_finance_plan_actual.mjs'
+      - 'tools/test_finance_center_browser.mjs'
       - 'tools/test_crm_payment_record_status.mjs'
       - 'tools/check_finance_plan_actual.py'
       - 'tools/check_crm_payment_record_status_registry.py'
@@ -127,3 +129,24 @@ jobs:
         with:
           name: crm-finance-production-candidate
           path: build/crm-finance-production-candidate
+
+  finance-center-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned browser dependency
+        run: |
+          npm install --no-save --package-lock=false playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Verify finance center with local data and blocked external HTTP
+        run: node tools/test_finance_center_browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: finance-center-browser
+          path: artifacts/finance-center/
+          retention-days: 7

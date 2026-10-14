@@ -25,7 +25,7 @@ export function mountFinanceWriter(root, { order, payments, expenses, client, ur
     if (node) { node.textContent = message; node.dataset.error = String(error); }
   };
   function openForm(kind, record) {
-    if (inFlight || uncertain) return;
+    if (inFlight || uncertain || !canWrite() || !['payment', 'expense'].includes(kind)) return;
     prepared = null;
     const isVoid = Boolean(record);
     editor.innerHTML = `<form data-finance-form data-kind="${kind}"${isVoid ? ` data-record-id="${esc(record.id)}"` : ''}>
@@ -92,6 +92,7 @@ export function mountFinanceWriter(root, { order, payments, expenses, client, ur
         setMessage('Сохранено. Обновляем итоги заказа…');
         inFlight = false;
         await refresh('Финансовая запись сохранена. Итоги обновлены.');
+        document.dispatchEvent(new CustomEvent('leader-v4:finance-changed', { detail: { orderId: order.id } }));
         return;
       }
       uncertain = result.uncertain === true;
@@ -117,5 +118,5 @@ export function mountFinanceWriter(root, { order, payments, expenses, client, ur
       }
     }
   });
-  return { isBusy: () => inFlight };
+  return { isBusy: () => inFlight, openCreate: kind => openForm(kind) };
 }

@@ -98,7 +98,7 @@ const TAB_REGISTRY = Object.freeze({
     importModule: managedModule(
       () => import('./orders-fast-loader-v1.js?v=20261001-order-finance-1'),
       [
-        () => import('./order-card-v1.js?v=20261001-order-finance-1'),
+        () => import('./order-card-v1.js?v=20261014-finance-center-1'),
         () => import('./order-act-preview-v1.js?v=20260805-tab-loader-1'),
         () => import('./design-task-draft-preview-v1.js?v=20260827-revision-1'),
         () => import('./design-task-draft-entrypoints-v1.js?v=20260714-design-staging-1'),
@@ -126,8 +126,11 @@ const TAB_REGISTRY = Object.freeze({
   finance_control: Object.freeze({
     requiredPermission: 'finance_control',
     importModule: managedModule(
-      () => import('./finance-control-v2.js?v=20260928-finance-1'),
-      [() => import('./finance-plan-actual-panel-v1.js?v=20260713-finance-1')]
+      () => import('./finance-control-v2.js?v=20261014-finance-center-1'),
+      [
+        () => import('./finance-plan-actual-panel-v1.js?v=20261014-finance-center-1'),
+        () => canOpenV4Tab('orders') ? import('./order-card-v1.js?v=20261014-finance-center-1') : Promise.resolve({})
+      ]
     ),
     mount: (module) => module.mount?.(),
     load: (module) => module.load?.(),
