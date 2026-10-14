@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 const root = process.cwd();
 await import('../assets/leader-service-catalog.js');
 const commercial = JSON.parse(await readFile('data/commercial-services.json', 'utf8'));
+const useCases = JSON.parse(await readFile('data/service-use-cases.json', 'utf8')).cases;
 const catalog = globalThis.LeaderServiceCatalog;
 const publicForms=[];
 for(const name of (await readdir(root)).filter(name=>name.endsWith('.html')).sort()){
@@ -154,9 +155,14 @@ try {
       await page.evaluate(()=>window.scrollTo(0,0));
       await page.screenshot({path:`artifacts/public-lead/${name.replace('.html','')}-${width}.png`,fullPage:true});
     }
-    for(const [index,offer] of catalog.offers.entries()){
-      await page.goto(origin+'/dizayn-3d-animaciya.html?utm_source=vk&utm_campaign=creative-offers');
-      await page.locator('.creative-packages .btn').nth(index).click();
+    for(const offer of catalog.offers){
+      const useCase=useCases.find(item=>item.id===offer.id);
+      const source=useCase?useCase.page:'dizayn-3d-animaciya.html';
+      await page.goto(origin+'/'+source+'?utm_source=vk&utm_campaign=creative-offers');
+      const scope=page.locator(useCase?'[data-service-use-case="'+offer.id+'"]':'.creative-packages');
+      const action=scope.locator('a[href="'+offer.page+'?service='+offer.service_id+'&offer='+offer.id+'#request"]');
+      assert.equal(await action.count(),1,'Each offer has one matching action on its source page: '+offer.id);
+      await action.click();
       const note=page.locator('[data-leader-offer-note]');
       await note.waitFor({state:'visible'});
       const service=catalog.find(offer.service_id);
