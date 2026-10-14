@@ -46,8 +46,8 @@ require('entry', [
     'companyLegalSettingsEntryCopy',
     'companyLegalSettingsJson',
     'Применить к текущему черновику',
-    'Проверка завершена',
-    'Сохранение в CRM отключено',
+    'Использовать в этой вкладке',
+    'На другом устройстве и у других сотрудников они не появятся',
 ])
 
 require('preview', [
@@ -60,9 +60,9 @@ require('preview', [
     'data-company-settings-admin-entry',
     'Реквизиты документов',
     'Открыть реквизиты',
-    'JSON для будущей безопасной настройки',
+    'Техническая копия реквизитов',
     'data-company-settings-json',
-    'Проверка завершена. Сохранение реквизитов пока отключено.',
+    'Рабочие реквизиты сохранены для документов в этой вкладке.',
     'CRM_V4_ACTIONS.SETTINGS_MANAGE',
     'requireV4Action',
     'canPerformV4Action',
@@ -85,14 +85,14 @@ require('act', [
     "import './order-act-company-settings-v1.js';",
 ])
 
-if 'company-legal-settings-preview-v1.js' in texts['index'] or 'company-legal-settings-entry-v1.js' in texts['index']:
+if re.search(r'<script\b[^>]*src=[\"\'][^\"\']*company-legal-settings-(?:preview|entry)-v1\.js',texts['index']):
     errors.append('index: company settings must remain activated through the existing order-act module')
 
 require('test', [
     'COMPANY_LEGAL_SETTINGS_ENTRY_MODES.DOCUMENT',
     'COMPANY_LEGAL_SETTINGS_ENTRY_MODES.STANDALONE',
     "documentCopy.action, 'Применить к текущему черновику'",
-    "standaloneCopy.action, 'Проверка завершена'",
+    "standaloneCopy.action, 'Использовать в этой вкладке'",
     'companyLegalSettingsJson',
     'CRM company legal settings entry model is document-aware and standalone-safe.',
 ])

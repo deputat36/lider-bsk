@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import { clientEditChanges,reconcileClientEdit } from '../crm/v4/assets/v4/client-edit-model-v1.js';
+const base={id:'a',name:'Клиент',phone:'100',address:'Адрес',comment:'',updated_at:'old'};
+const local={...base,name:'Новое имя',comment:'Позвонить'};
+const current={...base,name:'Имя другого сотрудника',phone:'200',updated_at:'new'};
+const merged=reconcileClientEdit(base,local,current);
+assert.deepEqual(merged.conflicts,['name']);
+assert.equal(merged.values.name,'Новое имя');
+assert.equal(merged.values.phone,'200');
+assert.equal(merged.values.comment,'Позвонить');
+assert.equal(merged.values.updated_at,'new');
+assert.deepEqual(clientEditChanges(base,{...base,name:' Клиент '}),[]);
+assert.equal(reconcileClientEdit(base,{...base,comment:''},{...base,comment:'Изменено'}).values.comment,'Изменено');
+assert.deepEqual(reconcileClientEdit(base,{...base,name:'Одинаково'},{...base,name:'Одинаково'}).conflicts,[]);
+assert.deepEqual(reconcileClientEdit({}, {name:'Новый'}, {id:'b',name:'Другой'}).conflicts,['name']);
+console.log('Client edit reconciliation keeps untouched server fields, identifies overlapping changes and preserves current revision.');

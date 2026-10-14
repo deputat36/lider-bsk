@@ -1,0 +1,59 @@
+name: CRM client and document usability check
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'crm/v4/index.html'
+      - 'crm/v4/assets/v4/client-*.js'
+      - 'crm/v4/assets/v4/company-legal-*.js'
+      - 'crm/v4/assets/v4/document-draft-session-v1.js'
+      - 'crm/v4/assets/v4/order-act-*.js'
+      - 'crm/v4/assets/v4/order-contract-*.js'
+      - 'tools/test_client_document_usability_browser.mjs'
+      - 'tools/test_client_edit_model.mjs'
+      - 'tools/test_document_working_settings.mjs'
+      - '.github/workflows/crm-client-document-usability-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'crm/v4/index.html'
+      - 'crm/v4/assets/v4/client-*.js'
+      - 'crm/v4/assets/v4/company-legal-*.js'
+      - 'crm/v4/assets/v4/document-draft-session-v1.js'
+      - 'crm/v4/assets/v4/order-act-*.js'
+      - 'crm/v4/assets/v4/order-contract-*.js'
+      - 'tools/test_client_document_usability_browser.mjs'
+      - 'tools/test_client_edit_model.mjs'
+      - 'tools/test_document_working_settings.mjs'
+      - '.github/workflows/crm-client-document-usability-check.yml'
+permissions:
+  contents: read
+jobs:
+  client-document-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test edit reconciliation identity binding and working settings
+        run: |
+          node tools/test_client_edit_model.mjs
+          node tools/test_client_registry.mjs
+          node tools/test_document_working_settings.mjs
+          node tools/test_crm_company_legal_settings.mjs
+      - name: Install pinned browser test runtime
+        run: |
+          npm install --no-save --package-lock=false playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Exercise client and document editors with blocked external HTTP
+        run: node tools/test_client_document_usability_browser.mjs
+      - name: Upload screenshots and fixture print previews
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-document-usability
+          path: artifacts/client-document-usability/
+          if-no-files-found: warn
+          retention-days: 7

@@ -86,7 +86,7 @@ const TAB_REGISTRY = Object.freeze({
   }),
   clients: Object.freeze({
     requiredPermission: 'clients',
-    importModule: managedModule(() => import('./client-registry-v1.js?v=20261002-clients-1')),
+    importModule: managedModule(() => import('./client-registry-v1.js?v=20261014-client-documents-1')),
     mount: (module) => module.mount?.(),
     load: (module) => module.load?.(),
     refresh: (module) => module.refresh?.(),
@@ -99,7 +99,7 @@ const TAB_REGISTRY = Object.freeze({
       () => import('./orders-fast-loader-v1.js?v=20261001-order-finance-1'),
       [
         () => import('./order-card-v1.js?v=20261014-finance-center-1'),
-        () => import('./order-act-preview-v1.js?v=20260805-tab-loader-1'),
+        () => import('./order-act-preview-v1.js?v=20261014-client-documents-1'),
         () => import('./design-task-draft-preview-v1.js?v=20260827-revision-1'),
         () => import('./design-task-draft-entrypoints-v1.js?v=20260714-design-staging-1'),
         () => import('./production-job-staging-preview-v1.js?v=20260827-revision-1')

@@ -35,6 +35,7 @@ const valid = validateCompanyLegalSettingsDraft({
 assert.equal(valid.valid, true);
 assert.deepEqual(valid.errors, []);
 
+assert.equal(validateCompanyLegalSettingsDraft({ legal_name: 'Д'.repeat(301) }).valid, false, 'overlength is rejected before persistence');
 assert.equal(validateCompanyLegalSettingsDraft({ tax_id: '123' }).valid, false);
 assert.equal(validateCompanyLegalSettingsDraft({ email: 'wrong' }).valid, false);
 assert.equal(validateCompanyLegalSettingsDraft({ bank_code: '123' }).valid, false);

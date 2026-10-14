@@ -25,11 +25,14 @@ export async function prepareClientCommand(actorId, action, payload, revision, s
   return { key, command: { action, ...saved, payload: { ...payload } } };
 }
 export function completeClientCommand(key, storage = sessionStorage) { try { storage.removeItem(key); } catch (_) { /* retained receipt remains safe */ } }
-export async function invokeClientCommand(client, url, command, timeoutMs = 20000) {
+export async function invokeClientCommand(client, url, command, timeoutMs = 20000, context = {}) {
   if (!clientRegistryAvailable(url)) return { ok:false, code:'production_locked', uncertain:false };
+  if(context.canInvokeNow && !context.canInvokeNow())return {ok:false,code:'forbidden',uncertain:false};
+  if(context.actorId && (!context.session?.access_token || context.session.user?.id!==context.actorId))return {ok:false,code:'missing_or_invalid_jwt',uncertain:false};
   let timer;
   try {
-    const result = await Promise.race([client.functions.invoke('leader-crm-clients', { body:command }),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('timeout')),timeoutMs);})]);
+    const options={body:command,...(context.actorId?{headers:{Authorization:`Bearer ${context.session.access_token}`}}:{})};
+    const result = await Promise.race([client.functions.invoke('leader-crm-clients', options),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('timeout')),timeoutMs);})]);
     if (result.error) {
       let body; try { body=await result.error.context?.clone?.().json(); } catch (_) { /* transport error */ }
       return { ok:false, code:body?.error?.code || body?.error || 'network_error', existing_client_id:body?.existing_client_id, uncertain:!body || result.error.context?.status>=500 };

@@ -1,4 +1,5 @@
 import './company-legal-settings-preview-v1.js';
+import { documentActorContext } from './document-draft-session-v1.js';
 import {
   companyLegalDetailsText,
   companyLegalName,
@@ -24,6 +25,7 @@ function setExecutorName(value) {
 function setSelectValue(id, value) {
   const element = document.getElementById(id);
   if (!element || !value) return;
+  if(!element.options){if(!element.value.trim())element.value=value;return;}
   const option = [...element.options].find((item) => item.value === value || item.textContent === value);
   if (option) element.value = option.value;
 }
@@ -32,18 +34,21 @@ async function applyCompanySettings() {
   const form = document.getElementById('orderActDraftForm');
   if (!form || form.dataset.companySettingsApplied === '1' || applying) return;
   applying = true;
+  const context=documentActorContext();
   try {
     const settings = await loadCompanyLegalSettings();
-    if (!document.getElementById('orderActDraftForm')) return;
+    if (document.getElementById('orderActDraftForm')!==form || context!==documentActorContext() || form.dataset.companySettingsApplied==='1') return;
     setExecutorName(companyLegalName(settings));
     setIfBlank('actDraftExecutorDetails', companyLegalDetailsText(settings));
     setIfBlank('actDraftSignatory', settings.signatory_name);
     setIfBlank('actDraftSignatoryRole', settings.signatory_role);
-    setSelectValue('actDraftTax', settings.tax_mode);
+    if(settings.configured) setSelectValue('actDraftTax', settings.tax_mode);
     form.dataset.companySettingsApplied = '1';
     form.dataset.companySettingsConfigured = settings.configured ? '1' : '0';
+    document.dispatchEvent(new CustomEvent('leader-v4:document-draft-changed'));
   } finally {
     applying = false;
+    if(document.getElementById('orderActDraftForm')!==form)queueMicrotask(applyCompanySettings);
   }
 }
 

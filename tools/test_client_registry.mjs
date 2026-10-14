@@ -17,3 +17,10 @@ const timeout=await invokeClientCommand({functions:{invoke:()=>new Promise(()=>{
 v4State.profileLoaded=true;
 for(const role of ['owner','admin','manager','accountant','designer','installer','contractor']) assert.equal(canOpenV4Tab('clients',{role,is_active:true}),['owner','admin','manager'].includes(role),role);
 console.log('Client retry, privacy, uncertain result and UI permissions PASS.');
+let sent;
+const client={functions:{invoke:async(name,options)=>{sent=options;return{data:{ok:true}}}}};
+const context={actorId:actor,session:{access_token:'synthetic-bound-token',user:{id:actor}},canInvokeNow:()=>true};
+assert.equal((await invokeClientCommand(client,'https://otulfnouybahfnsycxqn.supabase.co',first.command,20,context)).ok,true);
+assert.equal(sent.headers.Authorization,'Bearer synthetic-bound-token');sent=null;
+assert.equal((await invokeClientCommand(client,'https://otulfnouybahfnsycxqn.supabase.co',first.command,20,{...context,canInvokeNow:()=>false})).code,'forbidden');assert.equal(sent,null);
+assert.equal((await invokeClientCommand(client,'https://otulfnouybahfnsycxqn.supabase.co',first.command,20,{...context,actorId:'other'})).code,'missing_or_invalid_jwt');assert.equal(sent,null);

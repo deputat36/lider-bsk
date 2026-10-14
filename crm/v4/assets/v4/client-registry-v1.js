@@ -3,16 +3,20 @@ import { V4_CONFIG } from './config.js';
 import { v4State, subscribeState } from './state.js';
 import { canPerformV4Action } from './action-permissions-v1.js';
 import { openLeadRoute } from './router.js';
+import { clientEditChanges, reconcileClientEdit } from './client-edit-model-v1.js';
 import { clientRegistryAvailable, clientError, prepareClientCommand, completeClientCommand, invokeClientCommand } from './client-registry-transport-v1.js';
 
 const fieldLabels = { name:'Имя или название',phone:'Телефон',source:'Источник',address:'Адрес',comment:'Комментарий' };
-const state = { search:'',offset:0,total:0,rows:[],loaded:false,sequence:0,detailSequence:0,selected:null,busy:false,uncertain:false,pending:null };
+const state = { search:'',offset:0,total:0,rows:[],loaded:false,sequence:0,detailSequence:0,selected:null,busy:false,uncertain:false,pending:null,editing:false,base:null };
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const canRead = () => canPerformV4Action('clients.read');
 const canWrite = () => canPerformV4Action('clients.write') && clientRegistryAvailable(V4_CONFIG.supabaseUrl);
-const request = command => invokeClientCommand(supabaseClient,V4_CONFIG.supabaseUrl,command);
+const clientContext = () => JSON.stringify([v4State.user?.id,v4State.profile?.role,v4State.profile?.is_active,canRead(),canWrite()]);
+const request = command => {const context=clientContext();return invokeClientCommand(supabaseClient,V4_CONFIG.supabaseUrl,command,20000,{actorId:v4State.user?.id,session:v4State.session,canInvokeNow:()=>context===clientContext()&&canRead()});};
 const date = value => Number.isFinite(Date.parse(value)) ? new Date(value).toLocaleString('ru-RU') : '—';
 const byId = id => document.getElementById(id);
+const editValues = () => {const form=byId('clientEditForm');return form?Object.fromEntries(Object.keys(fieldLabels).map(k=>[k,form.elements[k].value.trim()])):{};};
+const mayDiscard = () => !state.editing || !clientEditChanges(state.base||{},editValues()).length || window.confirm('Отбросить несохранённые правки клиента?');
 
 export function mount() {
   if (byId('clientRegistryV1') || !canRead()) return;
@@ -38,11 +42,12 @@ export function mount() {
   });
   section.addEventListener('click',async event=>{
     const button=event.target.closest('button');if(!button)return;
-    if(button.hasAttribute('data-client-new') && !state.busy && !state.uncertain){state.selected=null;edit();}
+    if(button.hasAttribute('data-client-new') && !state.busy && !state.uncertain && mayDiscard()){state.selected=null;edit();}
     if(button.dataset.clientOpen && !state.busy && !state.uncertain) await openClient(button.dataset.clientOpen);
     if(button.hasAttribute('data-client-edit')) edit(state.selected);
-    if(button.hasAttribute('data-client-cancel') && !state.busy && !state.uncertain){state.selected?openClient(state.selected.id):byId('clientDetail').replaceChildren();}
-    if(button.hasAttribute('data-client-reload')) await openClient(state.selected.id);
+    if(button.hasAttribute('data-client-cancel') && !state.busy && !state.uncertain && mayDiscard()){state.editing=false;state.selected?openClient(state.selected.id):byId('clientDetail').replaceChildren();}
+    if(button.hasAttribute('data-client-reload')) await reloadEdit();
+    if(button.dataset.clientAcceptCurrent){const input=byId(`clientField-${button.dataset.clientAcceptCurrent}`);if(input&&state.base)input.value=state.base[button.dataset.clientAcceptCurrent]||'';button.closest('li')?.remove();}
     if(button.hasAttribute('data-client-prev')){state.offset=Math.max(0,state.offset-50);await loadList();}
     if(button.hasAttribute('data-client-next')){state.offset+=50;await loadList();}
     if(button.hasAttribute('data-client-list-retry'))await loadList();
@@ -50,13 +55,16 @@ export function mount() {
     if(button.dataset.clientOrder && !button.dataset.openOrder){await import('./order-card-v1.js?v=20261001-order-finance-1');button.dataset.openOrder=button.dataset.clientOrder;button.click();delete button.dataset.openOrder;}
   });
   section.addEventListener('keydown',event=>{if(event.key==='Escape' && byId('clientEditForm') && !state.busy && !state.uncertain){event.preventDefault();byId('clientDetail').querySelector('[data-client-cancel]')?.click();}});
-  const unsubscribe=subscribeState(()=>{if(!canRead()){state.sequence++;state.detailSequence++;state.rows=[];state.selected=null;state.pending=null;state.busy=false;state.uncertain=false;section.remove();style.remove();state.loaded=false;unsubscribe();}});
+  const beforeLeave=event=>{if(section.isConnected&&state.editing&&clientEditChanges(state.base||{},editValues()).length){event.preventDefault();event.returnValue='';}};
+  window.addEventListener('beforeunload',beforeLeave);
+  const context=clientContext();
+  const unsubscribe=subscribeState(()=>{if(context!==clientContext()){state.sequence++;state.detailSequence++;state.rows=[];state.selected=null;state.pending=null;state.busy=false;state.uncertain=false;state.editing=false;state.base=null;state.search='';state.offset=0;section.remove();style.remove();state.loaded=false;window.removeEventListener('beforeunload',beforeLeave);unsubscribe();queueMicrotask(()=>{if(canRead()){mount();if(document.body.getAttribute('data-v4-tab')==='clients')loadList();}});}});
 }
 async function loadList() {
-  if(!canRead())return;const sequence=++state.sequence;
+  if(!canRead()||!byId('clientList'))return;const sequence=++state.sequence,context=clientContext();
   byId('clientListNotice').textContent='Загружаю клиентов…';byId('clientList').setAttribute('aria-busy','true');
   const result=await request({action:'client.list',payload:{search:state.search,offset:state.offset}});
-  if(sequence!==state.sequence || !canRead() || !byId('clientList'))return;
+  if(sequence!==state.sequence || context!==clientContext() || !canRead() || !byId('clientList'))return;
   byId('clientList').removeAttribute('aria-busy');
   if(!result.ok){byId('clientListNotice').textContent=clientError(result.code);byId('clientList').innerHTML='<button type="button" data-client-list-retry>Повторить загрузку</button>';byId('clientPager').innerHTML='';return;}
   state.rows=result.clients;state.total=result.total;state.loaded=true;
@@ -66,9 +74,10 @@ async function loadList() {
 }
 export async function openClient(id) {
   if(!canRead() || state.busy || state.uncertain)return;
-  const sequence=++state.detailSequence;const host=byId('clientDetail');host.innerHTML='<p role="status">Загружаю карточку…</p>';
+  if(!mayDiscard())return;state.editing=false;
+  const sequence=++state.detailSequence,context=clientContext();const host=byId('clientDetail');if(!host)return;host.innerHTML='<p role="status">Загружаю карточку…</p>';
   const result=await request({action:'client.get',payload:{client_id:id}});
-  if(sequence!==state.detailSequence || !canRead() || !host.isConnected)return;
+  if(sequence!==state.detailSequence || context!==clientContext() || !canRead() || !host.isConnected)return;
   if(!result.ok){host.innerHTML=`<p role="alert">${esc(clientError(result.code))}</p><button type="button" data-client-open="${esc(id)}">Повторить</button>`;return;}
   state.selected=result.client;
   const c=result.client,links=result.links||{},history=result.history||[];
@@ -80,37 +89,57 @@ export async function openClient(id) {
   host.focus({preventScroll:true});if(innerWidth<=800)host.scrollIntoView({block:'start'});
 }
 function linkList(rows=[],kind) {return rows.length?`<ul class="client-links">${rows.map(r=>`<li><button type="button" data-client-${kind}="${esc(r.id)}">${esc(r.title||'Без названия')}</button><br><small>${esc(r.status||'')} · ${date(r.created_at)}</small></li>`).join('')}</ul>${rows.length===20?'<p class="client-note">Показаны последние 20 записей.</p>':''}`:'<p class="client-note">Связанных записей пока нет.</p>';}
-function edit(client={}) {
+function edit(client={},draft=null) {
   if(!canWrite() || state.busy || state.uncertain)return;state.detailSequence++;state.pending=null;
-  const c=client||{},host=byId('clientDetail');
+  state.base={...(client||{})};state.editing=true;
+  const c=draft||client||{},host=byId('clientDetail');
   host.innerHTML=`<h3>${c.id?'Редактировать клиента':'Новый клиент'}</h3><form id="clientEditForm"><div class="client-fields">
     ${Object.entries(fieldLabels).map(([k,v])=>`<label class="${['name','address','comment'].includes(k)?'client-wide':''}" for="clientField-${k}">${v}${k==='name'?' *':''}${k==='comment'?`<textarea id="clientField-${k}" name="${k}" maxlength="2000" rows="3">${esc(c[k])}</textarea>`:`<input id="clientField-${k}" name="${k}" value="${esc(c[k])}" type="${k==='phone'?'tel':'text'}" maxlength="${({name:200,phone:80,source:120,address:500})[k]}" ${k==='name'?'required':''} autocomplete="${({name:'name',phone:'tel',address:'street-address'})[k]||'off'}">`}</label>`).join('')}</div>
     <p class="client-note">* Обязательное поле. Телефон помогает находить повторные обращения. Сохранённые заказы и документы сохранят свои исходные данные.</p>
     <div id="clientSaveNotice" class="client-notice" role="status" aria-live="polite"></div><div class="client-actions"><button class="v4-primary" type="submit">Сохранить клиента</button><button type="button" data-client-cancel>Отмена</button></div></form>`;
   byId('clientField-name').focus();if(innerWidth<=800)host.scrollIntoView({block:'start'});
 }
+async function reloadEdit() {
+  if(!canWrite()||state.busy||state.uncertain||!state.selected?.id)return;
+  const base=state.base||{},id=state.selected.id,context=clientContext(),sequence=++state.detailSequence;
+  state.busy=true;
+  const result=await request({action:'client.get',payload:{client_id:id}});
+  if(context!==clientContext()||sequence!==state.detailSequence||!byId('clientEditForm'))return;
+  state.busy=false;
+  if(!result.ok){byId('clientSaveNotice').textContent=clientError(result.code);return;}
+  const merge=reconcileClientEdit(base,editValues(),result.client);state.selected=result.client;
+  edit(result.client,merge.values);
+  const notice=byId('clientSaveNotice');notice.textContent='Актуальная карточка загружена. Ваши правки сохранены в форме; проверьте данные и сохраните снова.';
+  if(merge.conflicts.length)notice.insertAdjacentHTML('beforeend',`<p><b>Эти поля также изменил другой сотрудник:</b></p><ul>${merge.conflicts.map(key=>`<li>${fieldLabels[key]}: сейчас в CRM «${esc(result.client[key]||'Не указано')}». <button type="button" data-client-accept-current="${key}">Оставить актуальное значение</button></li>`).join('')}</ul>`);
+}
 async function save(form) {
   if(!canWrite() || state.busy)return;
   const payload=Object.fromEntries(Object.keys(fieldLabels).map(k=>[k,form.elements[k].value.trim()]));
   const selected=state.selected;if(selected?.id)payload.client_id=selected.id;
+  const context=clientContext(),sequence=state.detailSequence,actor=v4State.user?.id;
+  const current=()=>context===clientContext()&&sequence===state.detailSequence&&form.isConnected&&canWrite();
   if(!payload.name){form.elements.name.focus();return;}
   state.busy=true;const notice=byId('clientSaveNotice');notice.textContent='Сохраняю…';notice.dataset.error='false';
   form.querySelectorAll('input,textarea,button').forEach(n=>n.disabled=true);
   let result;
   try {
-    if(!state.pending)state.pending=await prepareClientCommand(v4State.user.id,selected?.id?'client.update':'client.create',payload,selected?.updated_at);
+    const prepared=state.pending||await prepareClientCommand(actor,selected?.id?'client.update':'client.create',payload,selected?.updated_at);
+    if(!current())return;
+    state.pending=prepared;
     result=await request(state.pending.command);
   } catch(error){result={ok:false,code:error.message,uncertain:false};}
+  if(!current())return;
   state.busy=false;state.uncertain=result.uncertain===true;
   if(!result.ok){
     notice.textContent=clientError(result.code);notice.dataset.error='true';
     if(!state.uncertain){if(state.pending)completeClientCommand(state.pending.key);state.pending=null;}
     form.querySelectorAll('input,textarea,button').forEach(n=>n.disabled=state.uncertain && n.type!=='submit');
     if(result.existing_client_id)notice.insertAdjacentHTML('beforeend',` <button type="button" data-client-open="${esc(result.existing_client_id)}">Открыть существующего клиента</button>`);
-    if(result.code==='source_changed')notice.insertAdjacentHTML('beforeend',' <button type="button" data-client-reload>Загрузить актуальную карточку</button>');
+    if(result.code==='source_changed')notice.insertAdjacentHTML('beforeend',' <button type="button" data-client-reload>Сравнить с актуальной карточкой</button>');
     return;
   }
   completeClientCommand(state.pending.key);state.pending=null;state.uncertain=false;
+  state.editing=false;
   document.dispatchEvent(new CustomEvent('leader-v4:clients-changed',{detail:{id:result.client.id}}));
   await loadList();await openClient(result.client.id);
   byId('clientDetail').insertAdjacentHTML('afterbegin','<p role="status">Данные клиента сохранены.</p>');

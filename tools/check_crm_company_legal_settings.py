@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import sys
+import re
 
 root = Path(__file__).resolve().parents[1]
 helper = root / 'crm/v4/assets/v4/company-legal-settings-v1.js'
@@ -48,8 +49,8 @@ checks = {
         'companyLegalSettingsEntryCopy',
         'companyLegalSettingsJson',
         'Применить к текущему черновику',
-        'Проверка завершена',
-        'Сохранение в CRM отключено',
+        'Использовать в этой вкладке',
+        'На другом устройстве и у других сотрудников они не появятся',
     ],
     sidecar: [
         "import './company-legal-settings-preview-v1.js';",
@@ -74,10 +75,10 @@ checks = {
         'companyLegalSettingsJson',
         'Реквизиты документов',
         'Открыть реквизиты',
-        'JSON для будущей безопасной настройки',
+        'Техническая копия реквизитов',
         'data-company-settings-json',
-        'Проверка завершена. Сохранение реквизитов пока отключено.',
-        'Данные не записываются в <code>leader_settings</code>',
+        'Рабочие реквизиты сохранены для документов в этой вкладке.',
+        'Общие настройки CRM не изменяются.',
         'applyToOpenAct',
         'new MutationObserver(injectOpenButton)',
     ],
@@ -118,7 +119,7 @@ checks = {
         'COMPANY_LEGAL_SETTINGS_ENTRY_MODES.DOCUMENT',
         'COMPANY_LEGAL_SETTINGS_ENTRY_MODES.STANDALONE',
         "documentCopy.action, 'Применить к текущему черновику'",
-        "standaloneCopy.action, 'Проверка завершена'",
+        "standaloneCopy.action, 'Использовать в этой вкладке'",
         'CRM company legal settings entry model is document-aware and standalone-safe.',
     ],
 }
@@ -132,7 +133,7 @@ for path, markers in checks.items():
         if marker not in text:
             errors.append(f'Missing company legal settings marker in {path.relative_to(root)}: {marker}')
 
-for path in [helper, draft, entry, sidecar, preview]:
+for path in [helper, draft, entry, sidecar, preview, root / 'crm/v4/assets/v4/document-draft-session-v1.js']:
     if not path.exists():
         continue
     text = path.read_text(encoding='utf-8')
@@ -149,7 +150,7 @@ if helper.exists():
 if index.exists():
     text = index.read_text(encoding='utf-8')
     for marker in ['order-act-company-settings-v1.js', 'company-legal-settings-preview-v1.js', 'company-legal-settings-entry-v1.js']:
-        if marker in text:
+        if re.search(r'<script\b[^>]*src=[\"\'][^\"\']*'+re.escape(marker), text):
             errors.append('Company settings modules must be activated through the existing act module, not a new index script tag')
 
 if errors:

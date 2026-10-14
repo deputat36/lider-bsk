@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {setState} from '../crm/v4/assets/v4/state.js';
+import {readCompanyDocumentDraft,saveCompanyDocumentDraft,clearActorDocumentDrafts} from '../crm/v4/assets/v4/document-draft-session-v1.js';
+const store=new Map();globalThis.sessionStorage=new Proxy({getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v),removeItem:k=>store.delete(k)},{ownKeys:()=>[...store.keys()],getOwnPropertyDescriptor:()=>({enumerable:true,configurable:true})});
+const a='90000000-0000-4000-8000-000000000901',b='90000000-0000-4000-8000-000000000902';
+const auth=role=>setState({user:{id:a},profileLoaded:true,profile:{role,is_active:true}});
+auth('owner');
+assert.equal(saveCompanyDocumentDraft({legal_name:'Рабочие реквизиты',tax_mode:'Без НДС',api_token:'must be excluded'}),true);
+assert.equal(readCompanyDocumentDraft().legal_name,'Рабочие реквизиты');
+assert.equal(readCompanyDocumentDraft().api_token,undefined);
+setState({user:{id:b}});assert.equal(readCompanyDocumentDraft(),null);
+auth('manager');assert.equal(readCompanyDocumentDraft(),null);assert.equal(saveCompanyDocumentDraft({legal_name:'Forbidden'}),false);
+auth('admin');assert.equal(readCompanyDocumentDraft().legal_name,'Рабочие реквизиты');
+store.set('other-project-data','keep');clearActorDocumentDrafts(a);assert.equal(readCompanyDocumentDraft(),null);assert.equal(store.get('other-project-data'),'keep');
+console.log('Working company details are actor-scoped, owner/admin-only, sanitized and cleared without touching other projects.');
