@@ -21,11 +21,11 @@ assert.equal(
 
 const documentCopy = companyLegalSettingsEntryCopy(COMPANY_LEGAL_SETTINGS_ENTRY_MODES.DOCUMENT);
 assert.equal(documentCopy.action, 'Применить к текущему черновику');
-assert.match(documentCopy.note, /не записываются/i);
+assert.match(documentCopy.note, /Общие настройки CRM не изменяются/i);
 
 const standaloneCopy = companyLegalSettingsEntryCopy(COMPANY_LEGAL_SETTINGS_ENTRY_MODES.STANDALONE);
-assert.equal(standaloneCopy.action, 'Проверка завершена');
-assert.match(standaloneCopy.note, /Сохранение в CRM отключено/i);
+assert.equal(standaloneCopy.action, 'Использовать в этой вкладке');
+assert.match(standaloneCopy.note, /На другом устройстве и у других сотрудников они не появятся/i);
 
 const json = companyLegalSettingsJson({ schema_version: 1, legal_name: 'ООО «Лидер»' });
 assert.match(json, /"schema_version": 1/);

@@ -5,6 +5,8 @@ import {
 } from './company-legal-settings-v1.js';
 import { CRM_V4_ACTIONS, canPerformV4Action, requireV4Action } from './action-permissions-v1.js';
 import { toast } from './ui.js';
+import { v4State, subscribeState } from './state.js';
+import { documentActorContext, clearActorDocumentDrafts, saveCompanyDocumentDraft } from './document-draft-session-v1.js';
 import {
   COMPANY_LEGAL_SETTINGS_ENTRY_MODES,
   companyLegalSettingsEntryCopy,
@@ -13,6 +15,7 @@ import {
 } from './company-legal-settings-entry-v1.js';
 import {
   COMPANY_LEGAL_SCHEMA_VERSION,
+  COMPANY_LEGAL_FIELD_LIMITS,
   COMPANY_LEGAL_TAX_MODES,
   companyLegalSettingsPreviewText,
   validateCompanyLegalSettingsDraft
@@ -21,6 +24,8 @@ import {
 const HOST_ID = 'companyLegalSettingsPreviewV1';
 const STYLE_ID = 'companyLegalSettingsPreviewV1Styles';
 const ADMIN_ENTRY_ATTR = 'data-company-settings-admin-entry';
+let initialValues='',opener=null;
+let sequence=0,context=documentActorContext(),actor=v4State.user?.id;
 const esc = (value) => String(value ?? '').replace(/[&<>\"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[character]));
 
 const FIELD_GROUPS = Object.freeze([
@@ -66,25 +71,33 @@ function host() {
   return element;
 }
 
-function closePreview() {
+function closePreview({purge=false,saved=false}={}) {
+  const form=document.getElementById('companyLegalSettingsPreviewForm');
+  if (!purge && !saved && form && JSON.stringify(readDraft())!==initialValues && !window.confirm('Закрыть реквизиты и потерять несохранённые правки?')) return false;
+  sequence++;
   host().innerHTML = '';
+  if(!purge&&opener?.isConnected)opener.focus();
+  opener=null;
+  return true;
 }
 
 function ensureStyles() {
   if (document.getElementById(STYLE_ID)) return;
   const style = document.createElement('style');
   style.id = STYLE_ID;
-  style.textContent = `.v4-company-settings-modal{position:fixed;inset:0;z-index:790;background:rgba(15,23,42,.72);display:grid;place-items:center;padding:14px}.v4-company-settings-card{width:min(1040px,100%);max-height:94vh;overflow:auto;background:#fff;border-radius:24px;padding:18px;box-shadow:0 32px 100px rgba(15,23,42,.48)}.v4-company-settings-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;border-bottom:1px solid #e2e8f0;padding-bottom:12px}.v4-company-settings-head h2{margin:0}.v4-company-settings-head p{margin:6px 0 0;color:#64748b}.v4-company-settings-head button,.v4-company-settings-actions button,.v4-company-settings-open,.v4-company-settings-admin-entry button{border:1px solid #fdba74;background:#fff7ed;color:#9a3412;border-radius:12px;padding:10px 14px;font-weight:900;cursor:pointer}.v4-company-settings-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:14px}.v4-company-settings-group{border:1px solid #e2e8f0;border-radius:18px;padding:12px}.v4-company-settings-group h3{margin:0 0 10px}.v4-company-settings-group label{display:grid;gap:5px;margin-top:9px;color:#334155;font-size:12px;font-weight:900}.v4-company-settings-group input,.v4-company-settings-group textarea,.v4-company-settings-group select{width:100%;border:1px solid #cbd5e1;border-radius:11px;padding:9px;font:inherit}.v4-company-settings-group textarea{min-height:66px;resize:vertical}.v4-company-settings-result{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}.v4-company-settings-preview,.v4-company-settings-validation,.v4-company-settings-json{border:1px solid #dbeafe;background:#f8fafc;border-radius:16px;padding:12px}.v4-company-settings-preview pre{white-space:pre-wrap;margin:8px 0 0;font:12px/1.5 Arial,sans-serif}.v4-company-settings-json{margin-top:12px}.v4-company-settings-json textarea{width:100%;min-height:180px;margin-top:8px;border:1px solid #cbd5e1;border-radius:11px;padding:10px;background:#fff;font:12px/1.5 Consolas,monospace;resize:vertical}.v4-company-settings-validation ul{margin:7px 0 0;padding-left:20px}.v4-company-settings-validation.is-error{border-color:#fecaca;background:#fff1f2;color:#991b1b}.v4-company-settings-validation.is-warn{border-color:#fde68a;background:#fffbeb;color:#92400e}.v4-company-settings-note{margin-top:12px;border:1px dashed #94a3b8;background:#f8fafc;border-radius:12px;padding:10px;color:#475569;font-size:12px;font-weight:800}.v4-company-settings-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.v4-company-settings-actions .primary{background:#ea580c;border-color:#ea580c;color:#fff}.v4-company-settings-admin-entry{display:flex;justify-content:space-between;gap:14px;align-items:center;margin:0 0 16px;border:1px solid #fed7aa;background:#fff7ed;border-radius:16px;padding:14px}.v4-company-settings-admin-entry h3{margin:0;color:#9a3412}.v4-company-settings-admin-entry p{margin:5px 0 0;color:#7c2d12}.v4-company-settings-admin-entry button{flex:0 0 auto;background:#ea580c;border-color:#ea580c;color:#fff}@media(max-width:860px){.v4-company-settings-grid{grid-template-columns:1fr}.v4-company-settings-result{grid-template-columns:1fr}.v4-company-settings-card{border-radius:16px;padding:12px}.v4-company-settings-admin-entry{display:grid}.v4-company-settings-admin-entry button{width:100%}}`;
+  style.textContent = `.v4-company-settings-modal *{box-sizing:border-box;min-width:0}.v4-company-settings-modal{position:fixed;inset:0;z-index:790;background:rgba(15,23,42,.72);display:grid;place-items:center;padding:14px}.v4-company-settings-card{width:min(1040px,100%);max-height:94vh;overflow:auto;background:#fff;border-radius:24px;padding:18px;box-shadow:0 32px 100px rgba(15,23,42,.48)}.v4-company-settings-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;border-bottom:1px solid #e2e8f0;padding-bottom:12px}.v4-company-settings-head h2{margin:0}.v4-company-settings-head p{margin:6px 0 0;color:#64748b}.v4-company-settings-head button,.v4-company-settings-actions button,.v4-company-settings-open,.v4-company-settings-admin-entry button{border:1px solid #fdba74;background:#fff7ed;color:#9a3412;border-radius:12px;padding:10px 14px;font-weight:900;cursor:pointer}.v4-company-settings-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:14px}.v4-company-settings-group{border:1px solid #e2e8f0;border-radius:18px;padding:12px}.v4-company-settings-group h3{margin:0 0 10px}.v4-company-settings-group label{display:grid;gap:5px;margin-top:9px;color:#334155;font-size:12px;font-weight:900}.v4-company-settings-group input,.v4-company-settings-group textarea,.v4-company-settings-group select{width:100%;border:1px solid #cbd5e1;border-radius:11px;padding:9px;font:inherit}.v4-company-settings-group textarea{min-height:66px;resize:vertical}.v4-company-settings-result{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}.v4-company-settings-preview,.v4-company-settings-validation,.v4-company-settings-json{border:1px solid #dbeafe;background:#f8fafc;border-radius:16px;padding:12px}.v4-company-settings-preview pre{white-space:pre-wrap;margin:8px 0 0;font:12px/1.5 Arial,sans-serif}.v4-company-settings-json{margin-top:12px}.v4-company-settings-json textarea{width:100%;min-height:180px;margin-top:8px;border:1px solid #cbd5e1;border-radius:11px;padding:10px;background:#fff;font:12px/1.5 Consolas,monospace;resize:vertical}.v4-company-settings-validation ul{margin:7px 0 0;padding-left:20px}.v4-company-settings-validation.is-error{border-color:#fecaca;background:#fff1f2;color:#991b1b}.v4-company-settings-validation.is-warn{border-color:#fde68a;background:#fffbeb;color:#92400e}.v4-company-settings-note{margin-top:12px;border:1px dashed #94a3b8;background:#f8fafc;border-radius:12px;padding:10px;color:#475569;font-size:12px;font-weight:800}.v4-company-settings-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.v4-company-settings-actions .primary{background:#ea580c;border-color:#ea580c;color:#fff}.v4-company-settings-admin-entry{display:flex;justify-content:space-between;gap:14px;align-items:center;margin:0 0 16px;border:1px solid #fed7aa;background:#fff7ed;border-radius:16px;padding:14px}.v4-company-settings-admin-entry h3{margin:0;color:#9a3412}.v4-company-settings-admin-entry p{margin:5px 0 0;color:#7c2d12}.v4-company-settings-admin-entry button{flex:0 0 auto;background:#ea580c;border-color:#ea580c;color:#fff}@media(max-width:860px){.v4-company-settings-grid{grid-template-columns:1fr}.v4-company-settings-result{grid-template-columns:1fr}.v4-company-settings-card{border-radius:16px;padding:12px}.v4-company-settings-admin-entry{display:grid}.v4-company-settings-admin-entry button{width:100%}}`;
   document.head.appendChild(style);
 }
 
 function fieldHtml([name, label, type = 'text'], settings) {
-  if (type === 'textarea') return `<label>${esc(label)}<textarea data-company-setting-field="${name}">${esc(settings[name])}</textarea></label>`;
+  const attrs=`name="${name}" maxlength="${COMPANY_LEGAL_FIELD_LIMITS[name]}" data-company-setting-field="${name}"`;
+  if (type === 'textarea') return `<label>${esc(label)}<textarea ${attrs}>${esc(settings[name])}</textarea></label>`;
   if (type === 'select') {
-    const options = COMPANY_LEGAL_TAX_MODES.map((option) => `<option${settings[name] === option ? ' selected' : ''}>${esc(option)}</option>`).join('');
-    return `<label>${esc(label)}<select data-company-setting-field="${name}">${options}</select></label>`;
+    const selected=settings.configured?settings[name]:'';
+    const options = '<option value="">Укажите по вашим реквизитам</option>' + COMPANY_LEGAL_TAX_MODES.map((option) => `<option${selected === option ? ' selected' : ''}>${esc(option)}</option>`).join('');
+    return `<label>${esc(label)}<select required name="${name}" data-company-setting-field="${name}">${options}</select></label>`;
   }
-  return `<label>${esc(label)}<input type="${type}" value="${esc(settings[name])}" data-company-setting-field="${name}"></label>`;
+  return `<label>${esc(label)}<input type="${type}" value="${esc(settings[name])}" ${attrs}></label>`;
 }
 
 function readDraft() {
@@ -139,6 +152,7 @@ function applyToOpenContract(settings) {
 function applyToOpenDocument(settings) {
   applyToOpenAct(settings);
   applyToOpenContract(settings);
+  document.dispatchEvent(new CustomEvent('leader-v4:document-draft-changed'));
 }
 
 function currentEntryMode() {
@@ -153,19 +167,25 @@ async function openPreview() {
     toast('Настройки реквизитов доступны только владельцу или администратору');
     return;
   }
+  if(document.getElementById('companyLegalSettingsPreviewForm')&&!closePreview())return;
+  opener=document.activeElement;
   ensureStyles();
+  const ticket=++sequence,expected=documentActorContext();
   const settings = await loadCompanyLegalSettings();
+  if(ticket!==sequence||expected!==documentActorContext()||!canPerformV4Action(CRM_V4_ACTIONS.SETTINGS_MANAGE))return;
   const mode = currentEntryMode();
   const copy = companyLegalSettingsEntryCopy(mode);
   const groups = FIELD_GROUPS.map((group) => `<section class="v4-company-settings-group"><h3>${esc(group.title)}</h3>${group.fields.map((field) => fieldHtml(field, settings)).join('')}</section>`).join('');
   const jsonBlock = mode === COMPANY_LEGAL_SETTINGS_ENTRY_MODES.STANDALONE
-    ? '<section class="v4-company-settings-json"><b>JSON для будущей безопасной настройки</b><textarea readonly data-company-settings-json aria-label="JSON реквизитов"></textarea></section>'
+    ? '<details class="v4-company-settings-json"><summary>Техническая копия реквизитов</summary><textarea readonly data-company-settings-json aria-label="JSON реквизитов"></textarea></details>'
     : '';
   const note = mode === COMPANY_LEGAL_SETTINGS_ENTRY_MODES.DOCUMENT
-    ? 'Данные не записываются в <code>leader_settings</code>. Проверенные значения применяются только к открытому несохранённому черновику.'
+    ? 'Проверенные реквизиты применяются к открытому черновику и сохраняются для следующих документов в этой вкладке. Общие настройки CRM не изменяются.'
     : esc(copy.note);
   host().innerHTML = `<div class="v4-company-settings-modal" role="dialog" aria-modal="true" aria-label="${esc(copy.title)}"><div class="v4-company-settings-card"><header class="v4-company-settings-head"><div><h2>${esc(copy.title)}</h2><p>${esc(copy.subtitle)}</p></div><button type="button" data-company-settings-close>Закрыть</button></header><form id="companyLegalSettingsPreviewForm" data-company-settings-entry-mode="${esc(mode)}"><div class="v4-company-settings-grid">${groups}</div><div class="v4-company-settings-result"><section class="v4-company-settings-preview"><b>Предпросмотр блока исполнителя</b><pre data-company-settings-preview-text></pre></section><section data-company-settings-validation class="v4-company-settings-validation"></section></div>${jsonBlock}<div class="v4-company-settings-note">${note}</div><div class="v4-company-settings-actions"><button type="submit" class="primary">${esc(copy.action)}</button><button type="button" data-company-settings-close>Отмена</button></div></form></div></div>`;
+  initialValues=JSON.stringify(readDraft());
   renderResult();
+  host().querySelector('input,select,textarea')?.focus();
 }
 
 function injectAdminEntry() {
@@ -179,7 +199,7 @@ function injectAdminEntry() {
   const card = document.createElement('section');
   card.setAttribute(ADMIN_ENTRY_ATTR, '1');
   card.className = 'v4-company-settings-admin-entry';
-  card.innerHTML = '<div><h3>Реквизиты документов</h3><p>Проверьте данные исполнителя для актов и договоров. Сохранение в CRM пока отключено.</p></div><button type="button" data-company-settings-open>Открыть реквизиты</button>';
+  card.innerHTML = '<div><h3>Реквизиты документов</h3><p>Подготовьте данные исполнителя для актов и договоров. Рабочие реквизиты сохраняются в этой вкладке; общие настройки CRM пока не изменяются.</p></div><button type="button" data-company-settings-open>Открыть реквизиты</button>';
   content.prepend(card);
 }
 
@@ -224,6 +244,15 @@ function boot() {
       closePreview();
     }
   }, true);
+  document.addEventListener('keydown',event=>{
+    const dialog=host().querySelector('[role=dialog]');
+    if(!dialog)return;
+    if(event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();closePreview();return;}
+    if(event.key!=='Tab')return;
+    const nodes=[...dialog.querySelectorAll('button,input,textarea,select,summary')].filter(e=>!e.disabled&&e.getClientRects().length),first=nodes[0],last=nodes.at(-1);
+    if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+    else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+  },true);
   document.addEventListener('input', (event) => {
     if (event.target.closest?.('#companyLegalSettingsPreviewForm')) renderResult();
   });
@@ -236,16 +265,18 @@ function boot() {
       toast('Исправьте ошибки в реквизитах');
       return;
     }
+    if(!saveCompanyDocumentDraft(result.value)){toast('Рабочие реквизиты не удалось сохранить в этой вкладке. Скопируйте данные перед закрытием.');return;}
     const mode = event.target.dataset.companySettingsEntryMode;
     if (mode === COMPANY_LEGAL_SETTINGS_ENTRY_MODES.STANDALONE) {
-      closePreview();
-      toast('Проверка завершена. Сохранение реквизитов пока отключено.');
+      closePreview({saved:true});
+      toast('Рабочие реквизиты сохранены для документов в этой вкладке.');
       return;
     }
     applyToOpenDocument(result.value);
-    closePreview();
-    toast('Реквизиты применены только к открытому черновику');
+    closePreview({saved:true});
+    toast('Рабочие реквизиты применены к черновику и сохранены в этой вкладке.');
   });
+  subscribeState(()=>{const next=documentActorContext();if(next!==context){clearActorDocumentDrafts(actor);closePreview({purge:true});context=next;actor=v4State.user?.id;}});
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);

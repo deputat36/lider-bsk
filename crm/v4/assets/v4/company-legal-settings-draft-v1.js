@@ -7,7 +7,7 @@ export const COMPANY_LEGAL_TAX_MODES = Object.freeze([
   'НДС 20%'
 ]);
 
-const LIMITS = Object.freeze({
+export const COMPANY_LEGAL_FIELD_LIMITS = Object.freeze({
   brand_name: 200,
   legal_name: 300,
   tax_id: 40,
@@ -32,7 +32,7 @@ const digits = (value) => String(value || '').replace(/\D/g, '');
 export function normalizeCompanyLegalSettingsDraft(raw) {
   const source = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
   const normalized = {};
-  Object.entries(LIMITS).forEach(([field, max]) => {
+  Object.entries(COMPANY_LEGAL_FIELD_LIMITS).forEach(([field, max]) => {
     normalized[field] = clean(source[field], max);
   });
   normalized.brand_name ||= 'Рекламное агентство «Лидер»';
@@ -48,6 +48,9 @@ export function validateCompanyLegalSettingsDraft(raw) {
   const errors = [];
   const warnings = [];
 
+  for (const [field, max] of Object.entries(COMPANY_LEGAL_FIELD_LIMITS)) {
+    if (String(source[field] ?? '').trim().length > max) errors.push(`Поле ${field}: не более ${max} символов. Введённый текст не сохранён.`);
+  }
   const forbidden = Object.keys(source).filter((key) => SECRET_FIELD.test(key));
   if (forbidden.length) errors.push(`Запрещённые поля: ${forbidden.join(', ')}`);
   if (value.schema_version !== COMPANY_LEGAL_SCHEMA_VERSION) errors.push('Поддерживается только schema_version = 1');

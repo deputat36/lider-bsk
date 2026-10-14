@@ -1,4 +1,6 @@
 import { supabaseClient } from './supabase-client.js';
+import { v4State, subscribeState } from './state.js';
+import { readCompanyDocumentDraft } from './document-draft-session-v1.js';
 
 export const COMPANY_LEGAL_SETTINGS_KEY = 'company_legal_details_v1';
 
@@ -23,6 +25,8 @@ export const DEFAULT_COMPANY_LEGAL_SETTINGS = Object.freeze({
 });
 
 let cached = null;
+const companyContext=()=>JSON.stringify([v4State.user?.id,v4State.profile?.role,v4State.profile?.is_active]);
+let cacheContext=companyContext(),generation=0;
 let pending = null;
 
 function clean(value, max = 500) {
@@ -72,9 +76,13 @@ export function companyLegalDetailsText(settings = DEFAULT_COMPANY_LEGAL_SETTING
 }
 
 export async function loadCompanyLegalSettings({ force = false } = {}) {
+  if(cacheContext!==companyContext())clearCompanyLegalSettingsCache();
+  const working=readCompanyDocumentDraft();
+  if(working)return {...normalizeCompanyLegalSettings(working),configured:true};
   if (!force && cached) return cached;
   if (!force && pending) return pending;
 
+  const context=companyContext(),ticket=++generation;
   pending = (async () => {
     try {
       const response = await supabaseClient
@@ -83,14 +91,16 @@ export async function loadCompanyLegalSettings({ force = false } = {}) {
         .eq('key', COMPANY_LEGAL_SETTINGS_KEY)
         .maybeSingle();
       if (response.error) throw response.error;
+      if(context!==companyContext()||ticket!==generation)return {...DEFAULT_COMPANY_LEGAL_SETTINGS};
       cached = response.data?.value
         ? normalizeCompanyLegalSettings(response.data.value)
         : { ...DEFAULT_COMPANY_LEGAL_SETTINGS };
     } catch (error) {
+      if(context!==companyContext()||ticket!==generation)return {...DEFAULT_COMPANY_LEGAL_SETTINGS};
       console.warn('CRM company legal settings read warning:', error);
       cached = { ...DEFAULT_COMPANY_LEGAL_SETTINGS };
     } finally {
-      pending = null;
+      if(ticket===generation)pending = null;
     }
     return cached;
   })();
@@ -99,6 +109,8 @@ export async function loadCompanyLegalSettings({ force = false } = {}) {
 }
 
 export function clearCompanyLegalSettingsCache() {
+  generation++;cacheContext=companyContext();
   cached = null;
   pending = null;
 }
+subscribeState(()=>{if(cacheContext!==companyContext())clearCompanyLegalSettingsCache();});
