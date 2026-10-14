@@ -5,7 +5,8 @@ import re
 import subprocess
 import sys
 from service_explainers import (
-    CATALOG_GROUPS, CREATIVE, CSS, DATA, END, ROOT, START, render_block, render_cards,
+    CASES_END, CASES_START, CATALOG_GROUPS, CREATIVE, CSS, DATA, END, ROOT, START,
+    USE_CASES, render_block, render_cards, render_use_case_cards,
 )
 
 registry = json.loads(subprocess.check_output([
@@ -17,6 +18,15 @@ expected = set(labels) - {'other'}
 actual = {item['id'] for item in DATA['services']}
 if expected != actual or len(actual) != len(DATA['services']):
     raise SystemExit('Explanation IDs must match all real services in the shared catalog')
+offers = {item['id']: item for item in registry['offers']}
+if len({item['id'] for item in USE_CASES}) != len(USE_CASES):
+    raise SystemExit('Use-case offer IDs must be unique')
+for item in USE_CASES:
+    offer = offers.get(item['id'])
+    if not offer or any(item[key] != offer[key] for key in ('label', 'service_id', 'page')):
+        raise SystemExit('Use-case selection must match the shared catalog: ' + item['id'])
+    if item['service_id'] not in actual or item['page'] != next(service['page'] for service in DATA['services'] if service['id'] == item['service_id']):
+        raise SystemExit('Use-case must belong to an existing explained service')
 
 commercial_ids = {item['id'] for item in json.loads((ROOT / 'data/commercial-services.json').read_text())}
 pages = {}
@@ -26,7 +36,7 @@ for item in DATA['services']:
 
 
 def with_css(text):
-    text = re.sub(r'\n?' + re.escape(CSS), '', text, count=1)
+    text = re.sub(r'\n?<link rel="stylesheet" href="assets/public-service-explainers.css\?v=\d+">', '', text)
     shared = '<link rel="stylesheet" href="assets/public-product-system.css?v=1">'
     if shared not in text:
         raise ValueError('Missing shared product stylesheet')
@@ -46,6 +56,8 @@ def update_page(text, service_ids):
 
 def update_catalog(text):
     text = with_css(text)
+    text = re.sub(r'\n?' + re.escape(CASES_START) + r'.*?' + re.escape(CASES_END), '', text, flags=re.S)
+    text = text.replace('<div class="catalog">', render_use_case_cards() + '<div class="catalog">', 1)
     def structured_list(match):
         graph = json.loads(match[1])
         list_id = 'https://www.lider-bsk.ru/uslugi.html#services-list'

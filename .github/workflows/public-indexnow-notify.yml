@@ -8,6 +8,8 @@ on:
       - 'uslugi.html'
       - 'dizayn-3d-animaciya.html'
       - 'dizayn-maketov.html'
+      - 'tablichki-borisoglebsk.html'
+      - 'nakleyki-plotternaya-rezka-borisoglebsk.html'
       - '3d-modelirovanie-konstrukciy.html'
       - '3d-vizualizaciya-reklamy.html'
       - 'animaciya-motion-dizayn.html'
@@ -27,6 +29,8 @@ on:
       - 'uslugi.html'
       - 'dizayn-3d-animaciya.html'
       - 'dizayn-maketov.html'
+      - 'tablichki-borisoglebsk.html'
+      - 'nakleyki-plotternaya-rezka-borisoglebsk.html'
       - '3d-modelirovanie-konstrukciy.html'
       - '3d-vizualizaciya-reklamy.html'
       - 'animaciya-motion-dizayn.html'
@@ -62,5 +66,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Notify IndexNow about the reviewed creative URLs
+      - name: Notify IndexNow about the reviewed service URLs
         run: python3 tools/public_indexnow.py --submit

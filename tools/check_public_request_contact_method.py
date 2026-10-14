@@ -28,7 +28,7 @@ def main() -> None:
         raise SystemExit(f'Expected 64 shared public forms, found {len(pages)}')
 
     request = (ROOT / 'request.html').read_text()
-    ordered = ['assets/public-lead-reference-v1.js?v=1', 'assets/leader-service-catalog.js?v=3', FORM_SCRIPT]
+    ordered = ['assets/public-lead-reference-v1.js?v=1', 'assets/leader-service-catalog.js?v=4', FORM_SCRIPT]
     positions = [request.find(marker) for marker in ordered]
     if min(positions) < 0 or positions != sorted(positions):
         raise SystemExit('request.html: reference, catalog and shared form order changed')

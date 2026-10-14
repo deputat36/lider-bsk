@@ -178,6 +178,21 @@ for (const query of ['?service=design&offer=onsite-preview','?service=design&off
   assert.ok(!invalid.sent[0].message.includes('Состав заказа:'),'Ignore unknown or incompatible offers');
 }
 const changed = page('?service=Баннер&utm_source=vk&utm_campaign=opening');
+for(const item of JSON.parse(fs.readFileSync('data/service-use-cases.json','utf8')).cases){
+  const client=page('?service='+item.service_id+'&offer='+item.id,freshSession());
+  const task='Сохранить подробную задачу клиента для '+item.id;
+  client.fields.message=task;
+  client.applyPreset();
+  assert.equal(client.offerNote.hidden,false,item.id);
+  assert.ok(client.offerNote.textContent.includes(item.label),item.id);
+  client.fail(true);await client.submit();client.fail(false);await client.submit();
+  assert.equal(client.sent[0].request_id,client.sent[1].request_id,'Offer retry preserves the same request: '+item.id);
+  assert.equal(client.sent[1].service_id,item.service_id,'Keep the canonical CRM category: '+item.id);
+  assert.ok(client.sent[1].message.includes('Состав заказа: '+item.label),item.id);
+  assert.ok(client.sent[1].message.includes(task),'Keep customer task alongside the selected offer');
+  client.fields.service='Полиграфия';await client.submit();
+  assert.ok(!client.sent.at(-1).message.includes('Состав заказа:'),'Drop the incompatible offer after changing service');
+}
 const creative = page();
 creative.fields.service = '3D-визуализация';
 creative.fields.message = 'x'.repeat(2000);

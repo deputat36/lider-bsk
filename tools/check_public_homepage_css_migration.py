@@ -49,7 +49,7 @@ def main() -> None:
         raise SystemExit(f'Homepage must not contain inline style blocks, found {parser.style_count}')
 
     expected_scripts = [
-        'assets/leader-service-catalog.js?v=3',
+        'assets/leader-service-catalog.js?v=4',
         'assets/public-lead-form.js?v=36',
         'assets/packages-link.js?v=2',
     ]

@@ -1,4 +1,4 @@
-import '../../../../assets/leader-service-catalog.js?v=3';
+import '../../../../assets/leader-service-catalog.js?v=4';
 
 export function leadDirectionLabel(lead = {}) {
   const service = globalThis.LeaderServiceCatalog.find(lead.service);
