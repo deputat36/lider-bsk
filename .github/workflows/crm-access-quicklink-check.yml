@@ -32,7 +32,7 @@ jobs:
           grep -Fq 'data-v4-tab-button="user_admin"' "$index"
           grep -Eq 'crm-v4-tabs-lite\.js\?v=[[:alnum:]-]+' "$index"
           grep -Eq 'crm-v4-expanded-menu-v1\.js\?v=[[:alnum:]-]+' "$index"
-          grep -Fq 'auth.js?v=20260805-lazy-tabs-1' "$index"
+          grep -Fq 'auth.js?v=20261015-profile-recovery-1' "$index"
           ! grep -Fq 'user-admin-v1.js' "$auth"
           grep -Fq "import('./user-admin-v1.js?v=20260805-tab-loader-1')" "$loader"
           grep -Fq "{ tab: 'user_admin', label: 'Доступ и роли' }" "$menu"

@@ -56,7 +56,7 @@ function buildSupabaseSource() {
     + `const active={user_id:user.id,email:user.email,role:'manager',is_active:true,full_name:'Browser Check'};\n`
     + `const inactive={...active,is_active:false};\n`
     + `window.__PROFILE_MOCK_METRICS__={getSession:0,profileReads:0,ensureProfile:0,signOut:0,fromTables:[]};\n`
-    + `function query(){return {select(){return this;},eq(){return this;},async maybeSingle(){window.__PROFILE_MOCK_METRICS__.profileReads+=1;if(scenario==='network_error')throw new Error('Failed to fetch profile');if(scenario==='missing_profile')return {data:null,error:null};if(scenario==='inactive')return {data:inactive,error:null};return {data:active,error:null};}};}\n`
+    + `function query(){return {select(){return this;},eq(){return this;},abortSignal(){return this;},async maybeSingle(){window.__PROFILE_MOCK_METRICS__.profileReads+=1;if(scenario==='network_error')throw new Error('Failed to fetch profile');if(scenario==='missing_profile')return {data:null,error:null};if(scenario==='inactive')return {data:inactive,error:null};return {data:active,error:null};}};}\n`
     + `export const supabaseClient={\n`
     + `  auth:{\n`
     + `    async getSession(){window.__PROFILE_MOCK_METRICS__.getSession+=1;if(scenario==='expired_session')return {data:{session:null},error:{code:'refresh_token_not_found',message:'Invalid Refresh Token'}};return {data:{session:{user,access_token:'synthetic'}},error:null};},\n`

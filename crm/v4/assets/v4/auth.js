@@ -5,6 +5,40 @@ import { invokeLeaderFunction } from './functions-client.js';
 import { setState, resetAuthState, v4State } from './state.js';
 import { bindAuthUi, byId, readCredentials, renderProfile, setAuthBusy, setProfileNotice, setStatus, showLoggedIn, showLoggedOut, toast } from './ui.js';
 
+let authGeneration = 0;
+let profileController = null;
+let retryBusy = false;
+
+function invalidateProfileCheck() {
+  authGeneration++;
+  profileController?.abort();
+  profileController = null;
+  return authGeneration;
+}
+
+function offerProfileRetry() {
+  const notice = byId('profileNotice');
+  if (!notice || !v4State.user || byId('profileRetryBtn')) return;
+  const button = document.createElement('button');
+  button.id = 'profileRetryBtn';
+  button.type = 'button';
+  button.className = 'v4-primary';
+  button.textContent = 'Повторить проверку';
+  button.style.cssText = 'display:block;min-height:44px;margin-top:12px';
+  button.addEventListener('click', async () => {
+    if (retryBusy || v4State.authBusy) return;
+    retryBusy = true;
+    button.disabled = true;
+    try { await checkAuth(); } finally { retryBusy = false; }
+  });
+  notice.appendChild(button);
+}
+
+function isProfileUnavailable(error) {
+  return error?.code === 'profile_timeout' || error?.name === 'AbortError'
+    || isNetworkError(error) || [429, 500, 502, 503, 504].includes(Number(error?.status));
+}
+
 function isInvalidStoredSession(error) {
   const details = `${error?.code || ''} ${error?.message || ''}`.toLowerCase();
   return details.includes('refresh_token_not_found')
@@ -67,15 +101,33 @@ function beginProfileCheck(session) {
 async function resolveProfile(user) {
   if (!user?.id) throw new Error('bad_user');
 
-  const response = await timeout(
-    supabaseClient
-      .from('leader_user_profiles')
-      .select('user_id,email,role,is_active,full_name')
-      .eq('user_id', user.id)
-      .maybeSingle(),
-    V4_CONFIG.timeouts.profileMs,
-    'Профиль доступа не загрузился вовремя'
-  );
+  const controller = new AbortController();
+  profileController = controller;
+  let timer;
+  const deadline = new Promise((_, reject) => {
+    timer = window.setTimeout(() => {
+      const error = new Error('Профиль доступа не загрузился вовремя');
+      error.code = 'profile_timeout';
+      reject(error);
+      controller.abort();
+    }, V4_CONFIG.timeouts.profileMs);
+  });
+  let response;
+  try {
+    response = await Promise.race([
+      supabaseClient
+        .from('leader_user_profiles')
+        .select('user_id,email,role,is_active,full_name')
+        .eq('user_id', user.id)
+        .abortSignal(controller.signal)
+        .maybeSingle(),
+      deadline
+    ]);
+  } finally {
+    window.clearTimeout(timer);
+    if (profileController === controller) profileController = null;
+  }
+  if (response.error) response.error.status ||= response.status;
   if (response.error) throw response.error;
   if (response.data) return response.data;
 
@@ -108,14 +160,19 @@ function denyInactiveProfile(profile) {
   hideWorkspace();
   setStatus('Доступ ожидает активации', 'warn');
   setProfileNotice('Профиль создан, но доступ к CRM ещё не активирован владельцем или администратором.');
+  offerProfileRetry();
 }
 
 async function prepareCrm(session, statusText = 'CRM готова') {
   if (!session?.user) return false;
+  const generation = invalidateProfileCheck();
+  const current = () => generation === authGeneration && v4State.user?.id === session.user.id;
   beginProfileCheck(session);
   try {
     const profile = await resolveProfile(session.user);
+    if (!current()) return false;
     if (!profile || typeof profile !== 'object') throw new Error('profile_not_found');
+    if (profile.user_id !== session.user.id || typeof profile.role !== 'string' || !profile.role.trim()) throw new Error('profile_identity_or_role_invalid');
     if (profile.is_active !== true) {
       denyInactiveProfile(profile);
       return false;
@@ -123,6 +180,7 @@ async function prepareCrm(session, statusText = 'CRM готова') {
     activateCrm(session, profile, statusText);
     return true;
   } catch (error) {
+    if (!current()) return false;
     console.warn('CRM v4 profile check warning:', error);
     setState({ profile: null, profileLoaded: false, crmReady: false });
     renderProfile(null);
@@ -131,18 +189,21 @@ async function prepareCrm(session, statusText = 'CRM готова') {
     if (message.includes('access_denied')) {
       setStatus('Доступ не активирован', 'warn');
       setProfileNotice('Вход выполнен, но профиль CRM не активирован. Обратитесь к владельцу или администратору.');
-    } else if (isNetworkError(error)) {
-      setStatus('Профиль не проверен: ошибка сети', 'error');
-      setProfileNotice('Не удалось подтвердить доступ к CRM. Проверьте интернет и повторите вход или обновите страницу.');
+    } else if (isProfileUnavailable(error)) {
+      const delayed = error?.code === 'profile_timeout';
+      setStatus(delayed ? 'Профиль не проверен: ответ задержался' : 'Профиль не проверен: ошибка сети', 'warn');
+      setProfileNotice('Вход сохранён, но профиль не удалось загрузить. Повторите проверку. До получения активного профиля рабочие данные остаются закрыты.');
     } else {
       setStatus('Профиль CRM не подтверждён', 'error');
       setProfileNotice('Рабочие данные не загружаются, пока профиль и роль не будут подтверждены.');
     }
+    offerProfileRetry();
     return false;
   }
 }
 
 export async function checkAuth() {
+  const generation = invalidateProfileCheck();
   setStatus('Проверяю вход', 'warn');
   try {
     const { data, error } = await timeout(
@@ -150,6 +211,7 @@ export async function checkAuth() {
       12000,
       'Проверка сессии не ответила вовремя'
     );
+    if (generation !== authGeneration) return false;
     if (error) throw error;
     if (!data.session?.user) {
       resetAuthState();
@@ -160,8 +222,10 @@ export async function checkAuth() {
     }
     return await prepareCrm(data.session, 'CRM готова');
   } catch (error) {
+    if (generation !== authGeneration) return false;
     const staleSession = isInvalidStoredSession(error);
     if (staleSession) await clearLocalSession();
+    if (generation !== authGeneration) return false;
     resetAuthState();
     showLoggedOut();
     hideWorkspace();
@@ -182,6 +246,7 @@ export async function login() {
     toast('Введите email и пароль');
     return;
   }
+  const generation = invalidateProfileCheck();
   setState({ authBusy: true });
   setAuthBusy(true);
   setStatus('Проверяю вход', 'warn');
@@ -191,11 +256,13 @@ export async function login() {
       22000,
       'Вход не ответил за 22 секунды. Проверьте интернет и повторите.'
     );
+    if (generation !== authGeneration) return;
     if (error) throw error;
     if (!data.session?.user) throw new Error('Сессия не получена');
     const active = await prepareCrm(data.session, 'Вход выполнен. CRM открыта');
-    toast(active ? 'Вход выполнен' : 'Вход выполнен, но доступ к CRM пока не подтверждён');
+    if (v4State.user?.id === data.session.user.id) toast(active ? 'Вход выполнен' : 'Вход сохранён. Проверьте сообщение о доступе к CRM');
   } catch (error) {
+    if (generation !== authGeneration) return;
     resetAuthState();
     showLoggedOut();
     hideWorkspace();
@@ -210,6 +277,11 @@ export async function login() {
 
 export async function logout() {
   if (v4State.authBusy) return;
+  invalidateProfileCheck();
+  resetAuthState();
+  showLoggedOut();
+  hideWorkspace();
+  renderProfile(null);
   setState({ authBusy: true });
   setAuthBusy(true);
   setStatus('Выход из CRM...', 'warn');

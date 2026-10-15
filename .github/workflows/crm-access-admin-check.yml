@@ -72,7 +72,7 @@ jobs:
           grep -Fq "import('./user-admin-v1.js?v=20260805-tab-loader-1')" "$loader"
           grep -Eq 'assets/v4/crm-v4-tabs-lite\.js\?v=[[:alnum:]-]+' "$page"
           grep -Eq 'assets/v4/crm-v4-expanded-menu-v1\.js\?v=[[:alnum:]-]+' "$page"
-          grep -Fq "assets/v4/auth.js?v=20260805-lazy-tabs-1" "$page"
+          grep -Fq "assets/v4/auth.js?v=20261015-profile-recovery-1" "$page"
           grep -Fq "Доступ ожидает активации" "$auth"
           grep -Fq "CRM access admin v1" "$admin"
           grep -Fq "Доступ и роли CRM" "$admin"

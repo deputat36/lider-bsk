@@ -6,7 +6,7 @@ export const V4_CONFIG = Object.freeze({
     sessionMs: 9000,
     loginMs: 18000,
     logoutMs: 8000,
-    profileMs: 5000,
+    profileMs: 15000,
     requestMs: 12000
   })
 });
