@@ -146,7 +146,8 @@ const TAB_REGISTRY = Object.freeze({
         () => import('./production-alerts-v1.js?v=20260805-tab-loader-1'),
         () => import('./production-job-card-v2.js?v=20260827-order-read-1'),
         () => import('./installation-job-card-v2.js?v=20260805-tab-loader-1'),
-        () => import('./installation-job-staging-create-v1.js?v=20260827-entity-1')
+        () => import('./installation-job-staging-create-v1.js?v=20260827-entity-1'),
+        () => import('./quote-workspace-v1.js?v=20261022-recovery-1')
       ]
     ),
     mount: (module) => module.mount?.(),
@@ -166,7 +167,7 @@ const TAB_REGISTRY = Object.freeze({
   }),
   catalog: Object.freeze({
     requiredPermission: 'catalog',
-    importModule: managedModule(() => import('./catalog-management-v1.js?v=20260904-read-1')),
+    importModule: managedModule(() => import('./catalog-management-v1.js?v=20261022-recovery-1')),
     mount: (module) => module.mount?.(),
     load: (module) => module.load?.(),
     refresh: (module) => module.refresh?.(),

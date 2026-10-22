@@ -1,0 +1,545 @@
+{
+  "public_columns": [
+    {
+      "type": "uuid",
+      "table": "leader_quote_events",
+      "column": "id",
+      "default": "gen_random_uuid()",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "leader_quote_events",
+      "column": "task_id",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "leader_quote_events",
+      "column": "kind",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "leader_quote_events",
+      "column": "message",
+      "default": "''::text",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "leader_quote_events",
+      "column": "actor_id",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "leader_quote_events",
+      "column": "created_at",
+      "default": "clock_timestamp()",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "leader_quote_requests",
+      "column": "id",
+      "default": "gen_random_uuid()",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "leader_quote_requests",
+      "column": "lead_id",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "leader_quote_requests",
+      "column": "need_id",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "uuid",
+      "table": "leader_quote_requests",
+      "column": "assignee_id",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "text",
+      "table": "leader_quote_requests",
+      "column": "vendor_name",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "leader_quote_requests",
+      "column": "title",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "leader_quote_requests",
+      "column": "brief",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "leader_quote_requests",
+      "column": "reference_url",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "leader_quote_requests",
+      "column": "deadline",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "text",
+      "table": "leader_quote_requests",
+      "column": "status",
+      "default": "'new'::text",
+      "nullable": "NO"
+    },
+    {
+      "type": "integer",
+      "table": "leader_quote_requests",
+      "column": "revision",
+      "default": "1",
+      "nullable": "NO"
+    },
+    {
+      "type": "integer",
+      "table": "leader_quote_requests",
+      "column": "brief_version",
+      "default": "1",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "leader_quote_requests",
+      "column": "current_quote_id",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "uuid",
+      "table": "leader_quote_requests",
+      "column": "created_by",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "leader_quote_requests",
+      "column": "created_at",
+      "default": "clock_timestamp()",
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "leader_quote_requests",
+      "column": "updated_at",
+      "default": "clock_timestamp()",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "leader_quote_revisions",
+      "column": "id",
+      "default": "gen_random_uuid()",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "leader_quote_revisions",
+      "column": "task_id",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "integer",
+      "table": "leader_quote_revisions",
+      "column": "version",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "integer",
+      "table": "leader_quote_revisions",
+      "column": "brief_version",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "jsonb",
+      "table": "leader_quote_revisions",
+      "column": "items",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "leader_quote_revisions",
+      "column": "note",
+      "default": "''::text",
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "leader_quote_revisions",
+      "column": "valid_until",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "text",
+      "table": "leader_quote_revisions",
+      "column": "lead_time",
+      "default": "''::text",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "leader_quote_revisions",
+      "column": "created_by",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "leader_quote_revisions",
+      "column": "created_at",
+      "default": "clock_timestamp()",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "leader_quote_templates",
+      "column": "id",
+      "default": "gen_random_uuid()",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "leader_quote_templates",
+      "column": "name",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "leader_quote_templates",
+      "column": "category",
+      "default": "''::text",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "leader_quote_templates",
+      "column": "vendor_name",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "jsonb",
+      "table": "leader_quote_templates",
+      "column": "items",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "leader_quote_templates",
+      "column": "source_task_id",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "leader_quote_templates",
+      "column": "source_quote_id",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "leader_quote_templates",
+      "column": "cost_date",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "leader_quote_templates",
+      "column": "valid_until",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "boolean",
+      "table": "leader_quote_templates",
+      "column": "is_active",
+      "default": "true",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "leader_quote_templates",
+      "column": "created_by",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamp with time zone",
+      "table": "leader_quote_templates",
+      "column": "created_at",
+      "default": "clock_timestamp()",
+      "nullable": "NO"
+    }
+  ],
+  "project": "otulfnouybahfnsycxqn",
+  "captured": "2026-10-22",
+  "columns": [
+    {
+      "data_type": "uuid",
+      "table_name": "leader_quote_receipts",
+      "column_name": "actor_id",
+      "is_nullable": "NO",
+      "table_schema": "leader_private",
+      "column_default": null
+    },
+    {
+      "data_type": "uuid",
+      "table_name": "leader_quote_receipts",
+      "column_name": "request_id",
+      "is_nullable": "NO",
+      "table_schema": "leader_private",
+      "column_default": null
+    },
+    {
+      "data_type": "jsonb",
+      "table_name": "leader_quote_receipts",
+      "column_name": "payload",
+      "is_nullable": "NO",
+      "table_schema": "leader_private",
+      "column_default": null
+    },
+    {
+      "data_type": "jsonb",
+      "table_name": "leader_quote_receipts",
+      "column_name": "response",
+      "is_nullable": "NO",
+      "table_schema": "leader_private",
+      "column_default": null
+    },
+    {
+      "data_type": "timestamp with time zone",
+      "table_name": "leader_quote_receipts",
+      "column_name": "created_at",
+      "is_nullable": "NO",
+      "table_schema": "leader_private",
+      "column_default": "clock_timestamp()"
+    }
+  ],
+  "counts": {
+    "quotes": 0,
+    "receipts": 0,
+    "requests": 0,
+    "templates": 0
+  },
+  "tables": [
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arDxtm/postgres"
+      ],
+      "rls": true,
+      "name": "leader_quote_events",
+      "schema": "public",
+      "force_rls": false
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=ar/postgres"
+      ],
+      "rls": true,
+      "name": "leader_quote_receipts",
+      "schema": "leader_private",
+      "force_rls": false
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwDxtm/postgres"
+      ],
+      "rls": true,
+      "name": "leader_quote_requests",
+      "schema": "public",
+      "force_rls": false
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arDxtm/postgres"
+      ],
+      "rls": true,
+      "name": "leader_quote_revisions",
+      "schema": "public",
+      "force_rls": false
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwDxtm/postgres"
+      ],
+      "rls": true,
+      "name": "leader_quote_templates",
+      "schema": "public",
+      "force_rls": false
+    }
+  ],
+  "policies": null,
+  "constraints": [
+    {
+      "name": "leader_quote_events_actor_id_fkey",
+      "table": "leader_quote_events",
+      "definition": "FOREIGN KEY (actor_id) REFERENCES leader_user_profiles(user_id)"
+    },
+    {
+      "name": "leader_quote_events_pkey",
+      "table": "leader_quote_events",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "leader_quote_events_task_id_fkey",
+      "table": "leader_quote_events",
+      "definition": "FOREIGN KEY (task_id) REFERENCES leader_quote_requests(id)"
+    },
+    {
+      "name": "leader_quote_receipts_pkey",
+      "table": "leader_private.leader_quote_receipts",
+      "definition": "PRIMARY KEY (actor_id, request_id)"
+    },
+    {
+      "name": "leader_quote_requests_assignee_id_fkey",
+      "table": "leader_quote_requests",
+      "definition": "FOREIGN KEY (assignee_id) REFERENCES leader_user_profiles(user_id)"
+    },
+    {
+      "name": "leader_quote_requests_brief_check",
+      "table": "leader_quote_requests",
+      "definition": "CHECK (((length(brief) >= 1) AND (length(brief) <= 10000)))"
+    },
+    {
+      "name": "leader_quote_requests_created_by_fkey",
+      "table": "leader_quote_requests",
+      "definition": "FOREIGN KEY (created_by) REFERENCES leader_user_profiles(user_id)"
+    },
+    {
+      "name": "leader_quote_requests_lead_id_fkey",
+      "table": "leader_quote_requests",
+      "definition": "FOREIGN KEY (lead_id) REFERENCES leader_leads(id)"
+    },
+    {
+      "name": "leader_quote_requests_need_id_fkey",
+      "table": "leader_quote_requests",
+      "definition": "FOREIGN KEY (need_id) REFERENCES leader_lead_needs(id)"
+    },
+    {
+      "name": "leader_quote_requests_pkey",
+      "table": "leader_quote_requests",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "leader_quote_requests_status_check",
+      "table": "leader_quote_requests",
+      "definition": "CHECK ((status = ANY (ARRAY['new'::text, 'clarification'::text, 'review'::text, 'changes'::text, 'accepted'::text, 'cancelled'::text])))"
+    },
+    {
+      "name": "leader_quote_requests_title_check",
+      "table": "leader_quote_requests",
+      "definition": "CHECK (((length(title) >= 1) AND (length(title) <= 300)))"
+    },
+    {
+      "name": "leader_quote_requests_vendor_name_check",
+      "table": "leader_quote_requests",
+      "definition": "CHECK (((length(vendor_name) >= 1) AND (length(vendor_name) <= 300)))"
+    },
+    {
+      "name": "leader_quote_revisions_created_by_fkey",
+      "table": "leader_quote_revisions",
+      "definition": "FOREIGN KEY (created_by) REFERENCES leader_user_profiles(user_id)"
+    },
+    {
+      "name": "leader_quote_revisions_pkey",
+      "table": "leader_quote_revisions",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "leader_quote_revisions_task_id_fkey",
+      "table": "leader_quote_revisions",
+      "definition": "FOREIGN KEY (task_id) REFERENCES leader_quote_requests(id)"
+    },
+    {
+      "name": "leader_quote_revisions_task_id_version_key",
+      "table": "leader_quote_revisions",
+      "definition": "UNIQUE (task_id, version)"
+    },
+    {
+      "name": "leader_quote_templates_created_by_fkey",
+      "table": "leader_quote_templates",
+      "definition": "FOREIGN KEY (created_by) REFERENCES leader_user_profiles(user_id)"
+    },
+    {
+      "name": "leader_quote_templates_name_check",
+      "table": "leader_quote_templates",
+      "definition": "CHECK (((length(name) >= 1) AND (length(name) <= 300)))"
+    },
+    {
+      "name": "leader_quote_templates_pkey",
+      "table": "leader_quote_templates",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "leader_quote_templates_source_quote_id_fkey",
+      "table": "leader_quote_templates",
+      "definition": "FOREIGN KEY (source_quote_id) REFERENCES leader_quote_revisions(id)"
+    },
+    {
+      "name": "leader_quote_templates_source_task_id_fkey",
+      "table": "leader_quote_templates",
+      "definition": "FOREIGN KEY (source_task_id) REFERENCES leader_quote_requests(id)"
+    }
+  ],
+  "function_acl": [
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "name": "leader_private.leader_quote_clean_items_v1",
+      "security_definer": false
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "name": "public.leader_quote_workspace_rpc",
+      "security_definer": false
+    }
+  ]
+}

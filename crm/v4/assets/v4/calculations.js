@@ -13,6 +13,7 @@ import { createCalculationCatalogItem } from './calculation-catalog-create-v1.js
 import { canPerformV4Action, CRM_V4_ACTIONS } from './action-permissions-v1.js';
 import { contractorQuoteDraftItem, contractorQuoteDraftValidation } from './calculation-contractor-quote-model-v1.js';
 import { compositeDraftValidation } from './calculation-composite-model-v1.js';
+import { quoteEnvironment, quoteCalculationItems } from './quote-workspace-model-v1.js';
 
 const CALC_FIELDS = 'id,lead_id,need_id,client_id,title,status,version_number,client_total,contractor_cost,profit,margin_percent,warning_level,warnings,public_comment,internal_comment,commercial_offer_id,order_id,created_by,updated_by,created_at,updated_at';
 const ITEM_FIELDS = 'id,calculation_id,lead_id,catalog_id,category,item_type,name,unit,qty,contractor_price,contractor_sum,markup_percent,client_price,client_sum,profit,margin_percent,comment,data,sort_order,created_at,updated_at';
@@ -66,6 +67,24 @@ let draftItems = [];
 const calculationLoads = new Map();
 let saveBusy = false;
 let calculationModeError = '';
+
+// Append to the existing draft and writer; importing a quote never edits a saved
+// calculation, offer or order. Source IDs also stop double-click duplicates.
+export function appendQuoteSelection(selection, { template = false, actorId } = {}) {
+  if (!quoteEnvironment(V4_CONFIG.supabaseUrl) || !v4State.crmReady || !actorId || actorId !== v4State.user?.id || !canPerformV4Action(CRM_V4_ACTIONS.CALCULATIONS_WRITE) || selection.lead_id !== v4State.route.leadId) throw Error('Откройте нужную заявку с правом создания расчёта.');
+  if (saveBusy) throw Error('Дождитесь сохранения текущего расчёта.');
+  if (!byId('calculationsBox')) throw Error('Сначала откройте карточку заявки и расчёт.');
+  const items = quoteCalculationItems(selection, { template });
+  if (!targetMarginState().valid) throw Error('Исправьте целевую маржу текущего расчёта перед добавлением позиций.');
+  const key = item => JSON.stringify([item.data?.quote_source?.quote_id, item.data?.quote_source?.item_id, item.data?.quote_source?.template_id]);
+  const known = new Set(draftItems.filter(item => item.data?.quote_source).map(key));
+  const added = items.filter(item => !known.has(key(item)));
+  const settings = calcSettings();
+  draftItems = repriceAutomaticItems([...draftItems, ...added], { ...settings, mediumLimit: settings.medLimit });
+  if (!byId('calcTitle')) renderCalculations();
+  renderDraftItems();
+  return added.length;
+}
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
@@ -1078,6 +1097,7 @@ export function renderCalculations() {
         <div>
           <h3>Расчёты</h3>
           <p>Работайте сверху вниз: выберите, что считаете, добавьте позиции, проверьте состав и настройте цену. Технические данные подрядчиков остаются внутри CRM.</p>
+          ${quoteEnvironment(V4_CONFIG.supabaseUrl) && canPerformV4Action(CRM_V4_ACTIONS.CALCULATIONS_WRITE) ? '<button type="button" data-v4-tab-button="production">Запросить расчёт подрядчика</button>' : ''}
         </div>
         <span class="v4-muted">Расчётов: ${calculations.length}</span>
       </div>

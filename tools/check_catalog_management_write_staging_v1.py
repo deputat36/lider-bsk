@@ -111,7 +111,7 @@ for forbidden in ['.from(', '.insert(', '.update(', '.delete(', '.upsert(', '.rp
 for marker in [
     'catalogManagementCreateBtn', 'catalogManagementEditBtn', 'catalogManagementEditor',
     'invokeStagingCatalogManagement', 'catalogManagementWriteAvailability',
-    'V4_CONFIG.supabaseUrl', 'Production read-only',
+    'V4_CONFIG.supabaseUrl', 'Редактирование рабочего прайса ещё не включено.',
 ]: require(view, marker, 'view')
 for forbidden in ['.insert(', '.update(', '.delete(', '.upsert(', '.rpc(', 'service_role', 'sb_secret_']:
     if forbidden in view: errors.append('view: direct browser write/elevation forbidden: ' + forbidden)
