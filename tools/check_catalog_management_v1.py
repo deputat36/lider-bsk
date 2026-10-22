@@ -44,7 +44,7 @@ for marker in [
     'catalogManagementCategory', 'catalogManagementStatus', 'catalogManagementSort',
     'История цены', 'catalogManagementCreateBtn', 'catalogManagementEditBtn',
     'catalogManagementEditor', 'invokeStagingCatalogManagement',
-    'catalogManagementWriteAvailability', 'Production read-only',
+    'catalogManagementWriteAvailability', 'Редактирование рабочего прайса ещё не включено.',
     'export async function mount()', 'loadCatalogManagement', 'refreshCatalogManagement',
 ]:
     if marker not in view:

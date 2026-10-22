@@ -1,0 +1,58 @@
+name: CRM recovery regression
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'crm/v4/index.html'
+      - 'crm/v4/assets/v4/quote-*.js'
+      - 'crm/v4/assets/v4/catalog-management*.js'
+      - 'crm/v4/assets/v4/calculations.js'
+      - 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
+      - 'supabase/functions/leader-crm-quotes/**'
+      - 'supabase/staging-recovered/**'
+      - 'tools/test_crm_recovery_browser.mjs'
+      - 'tools/test_quote_workspace.mjs'
+      - '.github/workflows/crm-recovery-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'crm/v4/index.html'
+      - 'crm/v4/assets/v4/quote-*.js'
+      - 'crm/v4/assets/v4/catalog-management*.js'
+      - 'crm/v4/assets/v4/calculations.js'
+      - 'crm/v4/assets/v4/crm-v4-tab-loader-v1.js'
+      - 'supabase/functions/leader-crm-quotes/**'
+      - 'supabase/staging-recovered/**'
+      - 'tools/test_crm_recovery_browser.mjs'
+      - 'tools/test_quote_workspace.mjs'
+      - '.github/workflows/crm-recovery-check.yml'
+permissions:
+  contents: read
+jobs:
+  recovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Quote models and transport
+        run: |
+          node tools/test_quote_workspace.mjs
+          node tools/test_catalog_management_staging_transport_v1.mjs
+          node --check crm/v4/assets/v4/quote-workspace-v1.js
+      - name: Install pinned browser
+        run: |
+          npm install --no-save --package-lock=false playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Real editors and calculator with blocked external HTTP
+        run: node tools/test_crm_recovery_browser.mjs
+      - name: Preserve synthetic browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crm-recovery
+          path: artifacts/crm-recovery/
+          if-no-files-found: warn
+          retention-days: 7

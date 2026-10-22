@@ -10,7 +10,7 @@ function asObject(value) { return value && typeof value === 'object' && !Array.i
 function uuid(value) { return UUID_PATTERN.test(text(value)); }
 
 export function isStagingCatalogManagementEnvironment(supabaseUrl = '') {
-  try { return new URL(supabaseUrl).hostname.toLowerCase() === STAGING_HOSTNAME; }
+  try { return new URL(supabaseUrl).origin === `https://${STAGING_HOSTNAME}`; }
   catch (_) { return false; }
 }
 
@@ -107,25 +107,28 @@ export function catalogManagementResultMessage(kind, replay = false) {
   })[kind] || 'Не удалось сохранить каталог.';
 }
 
-export async function invokeStagingCatalogManagement({ client, supabaseUrl = '', canManage = false, operation, catalogId = null, expectedUpdatedAt = null, idempotencyKey, reason = null, patch = {}, cryptoObject = globalThis.crypto } = {}) {
+export async function invokeStagingCatalogManagement({ client, supabaseUrl = '', canManage = false, operation, catalogId = null, expectedUpdatedAt = null, idempotencyKey, reason = null, patch = {}, requestId, actorId, cryptoObject = globalThis.crypto } = {}) {
   const availability = catalogManagementWriteAvailability({ supabaseUrl, canManage });
   if (!availability.enabled) {
     const kind = availability.reason === 'forbidden' ? 'forbidden' : 'production_locked';
     return Object.freeze({ ok: false, status: kind === 'forbidden' ? 403 : 503, kind, message: catalogManagementResultMessage(kind) });
   }
   if (!client?.auth?.getSession || !client?.functions?.invoke) return Object.freeze({ ok: false, status: 500, kind: 'persistence_failed', message: catalogManagementResultMessage('persistence_failed') });
-  const session = await client.auth.getSession();
+  let session;
+  try { session = await client.auth.getSession(); }
+  catch (_) { return Object.freeze({ ok: false, status: 0, kind: 'persistence_failed', message: catalogManagementResultMessage('persistence_failed') }); }
   if (session?.error || !session?.data?.session?.access_token) return Object.freeze({ ok: false, status: 401, kind: 'auth_required', message: catalogManagementResultMessage('auth_required') });
+  if (actorId && session.data.session.user?.id !== actorId) return Object.freeze({ ok: false, status: 401, kind: 'auth_required', message: catalogManagementResultMessage('auth_required') });
 
   let command;
   try {
-    command = buildCatalogManagementCommand({ operation, catalogId, expectedUpdatedAt, idempotencyKey, reason, patch, requestId: secureUuid(cryptoObject) });
+    command = buildCatalogManagementCommand({ operation, catalogId, expectedUpdatedAt, idempotencyKey, reason, patch, requestId: requestId || secureUuid(cryptoObject) });
   } catch (error) {
     return Object.freeze({ ok: false, status: 400, kind: 'validation_error', code: text(error?.message), message: catalogManagementResultMessage('validation_error') });
   }
 
   let invoked;
-  try { invoked = await client.functions.invoke(FUNCTION_SLUG, { body: command }); }
+  try { invoked = await client.functions.invoke(FUNCTION_SLUG, { body: command, headers: { Authorization: `Bearer ${session.data.session.access_token}` } }); }
   catch (_) { return Object.freeze({ ok: false, status: 0, kind: 'persistence_failed', code: 'network_error', message: catalogManagementResultMessage('persistence_failed'), command }); }
 
   if (invoked?.error || invoked?.data?.ok !== true) {

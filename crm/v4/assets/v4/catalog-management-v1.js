@@ -1,7 +1,7 @@
 import { supabaseClient } from './supabase-client.js';
 import { friendlyError } from './api.js';
 import { V4_CONFIG } from './config.js';
-import { v4State } from './state.js';
+import { v4State, subscribeState } from './state.js';
 import { CRM_V4_ACTIONS, canPerformV4Action } from './action-permissions-v1.js';
 import {
   CATALOG_MANAGEMENT_MODEL_V1,
@@ -33,8 +33,74 @@ const state = {
   saveBusy: false,
   saveNotice: '',
   pendingSaveKey: '',
+  pendingSave: null,
+  editorRaw: null,
+  editorBase: null,
+  conflict: null,
   filters: { search: '', category: 'all', status: 'all', sort: 'sort_order' }
 };
+
+let generation = 0;
+let historyGeneration = 0;
+const identity = () => JSON.stringify([v4State.user?.id, v4State.profile?.role, v4State.profile?.is_active, v4State.profileLoaded, v4State.crmReady]);
+let currentIdentity = identity();
+const FIELD_LABELS = { name: 'Название', category: 'Категория', unit: 'Единица', item_type: 'Тип позиции', contractor_price: 'Себестоимость', markup_percent: 'Наценка', min_client_price: 'Минимум клиенту', default_client_price: 'Фиксированная цена', calculation_mode: 'Режим расчёта', sort_order: 'Порядок', is_active: 'Активность', description: 'Описание' };
+subscribeState(() => {
+  const next = identity();
+  if (next === currentIdentity) return;
+  currentIdentity = next;
+  generation += 1;
+  historyGeneration += 1;
+  Object.assign(state, { rows: [], logs: [], selectedId: '', loaded: false, busy: false, historyBusy: false, historyUnavailable: false, editorMode: 'view', saveBusy: false, saveNotice: '', pendingSaveKey: '', pendingSave: null, editorRaw: null, editorBase: null, conflict: null });
+  if (root()) root().innerHTML = '';
+});
+
+function captureEditor(form = document.getElementById('catalogManagementEditor')) {
+  if (!form) return;
+  state.editorRaw = Object.fromEntries(new FormData(form));
+  state.editorRaw.is_active = form.elements.is_active.checked;
+}
+
+function leaveEditor() {
+  if (state.saveBusy || state.pendingSave) return false;
+  if (state.editorRaw && !window.confirm('Закрыть редактор и потерять несохранённые изменения?')) return false;
+  state.editorRaw = null;
+  state.editorBase = null;
+  state.conflict = null;
+  return true;
+}
+
+async function reviewCurrent() {
+  if (!state.selectedId || state.saveBusy) return;
+  const token = generation, id = state.selectedId;
+  state.saveBusy = true;
+  render();
+  try {
+    const response = await supabaseClient.from('leader_catalog').select(CATALOG_FIELDS).eq('id', id).single();
+    if (token !== generation || id !== state.selectedId) return;
+    if (response.error || !response.data) throw response.error || new Error('Позиция не найдена');
+    const latest = normalizeCatalogManagementRow(response.data), base = state.editorBase || {};
+    const mine = state.editorRaw || {}, conflicts = [];
+    const merged = { ...latest, reason: mine.reason || '' };
+    for (const key of Object.keys(latest)) {
+      if (!(key in mine)) continue;
+      const same = (a, b) => String(a ?? '') === String(b ?? '');
+      if (!same(mine[key], base[key])) {
+        merged[key] = mine[key];
+        if (!same(latest[key], base[key]) && !same(latest[key], mine[key])) conflicts.push(key);
+      }
+    }
+    state.rows = state.rows.map(row => row.id === id ? response.data : row);
+    state.editorBase = latest;
+    state.editorRaw = merged;
+    state.conflict = conflicts.length ? { latest, keys: conflicts } : null;
+    state.saveNotice = conflicts.length ? 'Сравните пересекающиеся изменения и выберите значения.' : 'Свежие данные загружены. Ваши правки сохранены; проверьте позицию перед сохранением.';
+  } catch (_) {
+    if (token === generation) state.saveNotice = 'Ошибка: актуальную позицию загрузить не удалось. Ваши поля сохранены.';
+  } finally {
+    if (token === generation) { state.saveBusy = false; render(); }
+  }
+}
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>\"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[char]));
@@ -89,7 +155,7 @@ function ensureStyle() {
     .v4-catalog-filters{display:grid;grid-template-columns:minmax(200px,1.4fr) repeat(3,minmax(150px,.7fr));gap:10px;margin:14px 0}.v4-catalog-filters label{display:grid;gap:6px;font-weight:900;color:#334155}.v4-catalog-filters input,.v4-catalog-filters select{width:100%;border:1px solid #cbd5e1;border-radius:12px;padding:10px;background:#fff;font:inherit}
     .v4-catalog-layout{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(320px,.85fr);gap:14px;align-items:start}.v4-catalog-table-wrap{overflow:auto;border:1px solid #dbeafe;border-radius:16px;background:#fff}.v4-catalog-table{width:100%;border-collapse:collapse;min-width:940px}.v4-catalog-table th,.v4-catalog-table td{padding:10px;border-bottom:1px solid #e2e8f0;text-align:left;vertical-align:top}.v4-catalog-table th{position:sticky;top:0;background:#f8fafc;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.03em}.v4-catalog-table tr[data-catalog-id]{cursor:pointer}.v4-catalog-table tr[data-catalog-id]:hover,.v4-catalog-table tr.is-selected{background:#eff6ff}.v4-catalog-name small{display:block;color:#64748b;margin-top:4px;max-width:360px}.v4-catalog-badge{display:inline-flex;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:900;background:#dcfce7;color:#166534}.v4-catalog-badge.off{background:#fee2e2;color:#991b1b}.v4-catalog-price-main{font-weight:900}.v4-catalog-muted{color:#64748b;font-size:12px}
     .v4-catalog-detail{position:sticky;top:78px;border:1px solid #dbeafe;border-radius:16px;background:#fff;padding:14px}.v4-catalog-detail h3{margin:0 0 4px}.v4-catalog-detail dl{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}.v4-catalog-detail dl>div{border:1px solid #e2e8f0;border-radius:12px;padding:9px}.v4-catalog-detail dt{font-size:11px;color:#64748b;font-weight:900;text-transform:uppercase}.v4-catalog-detail dd{margin:3px 0 0;font-weight:900}.v4-catalog-history{display:grid;gap:8px;margin-top:10px}.v4-catalog-history-item{border-left:3px solid #93c5fd;background:#f8fafc;border-radius:10px;padding:9px 10px}.v4-catalog-history-item b{display:block}.v4-catalog-history-item small{color:#64748b}.v4-catalog-history-item ul{margin:6px 0 0;padding-left:18px}
-    .v4-catalog-editor{display:grid;gap:10px;margin-top:12px}.v4-catalog-editor-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.v4-catalog-editor label{display:grid;gap:5px;font-size:12px;font-weight:900;color:#334155}.v4-catalog-editor input,.v4-catalog-editor select,.v4-catalog-editor textarea{width:100%;border:1px solid #cbd5e1;border-radius:10px;padding:9px;background:#fff;font:inherit}.v4-catalog-editor textarea{resize:vertical;min-height:72px}.v4-catalog-editor-actions{display:flex;gap:8px;flex-wrap:wrap}.v4-catalog-check{display:flex!important;grid-column:1/-1;grid-template-columns:auto 1fr!important;align-items:center;gap:8px!important}.v4-catalog-check input{width:auto}
+    .v4-catalog-editor *{box-sizing:border-box;min-width:0}.v4-catalog-filters input,.v4-catalog-filters select{box-sizing:border-box;min-width:0}.v4-catalog-editor{display:grid;gap:10px;margin-top:12px}.v4-catalog-editor-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.v4-catalog-editor label{display:grid;gap:5px;font-size:12px;font-weight:900;color:#334155}.v4-catalog-editor input,.v4-catalog-editor select,.v4-catalog-editor textarea{width:100%;border:1px solid #cbd5e1;border-radius:10px;padding:9px;background:#fff;font:inherit}.v4-catalog-editor textarea{resize:vertical;min-height:72px}.v4-catalog-editor-actions{display:flex;gap:8px;flex-wrap:wrap}.v4-catalog-check{display:flex!important;grid-column:1/-1;grid-template-columns:auto 1fr!important;align-items:center;gap:8px!important}.v4-catalog-check input{width:auto}
     @media(max-width:1000px){.v4-catalog-layout{grid-template-columns:1fr}.v4-catalog-detail{position:static}.v4-catalog-filters{grid-template-columns:1fr 1fr}.v4-catalog-stats{grid-template-columns:1fr 1fr}}
     @media(max-width:620px){.v4-catalog-filters,.v4-catalog-editor-grid{grid-template-columns:1fr}.v4-catalog-stats{grid-template-columns:1fr 1fr}.v4-catalog-table{min-width:760px}}
   `;
@@ -108,7 +174,7 @@ function ensureSection() {
   node.hidden = true;
   node.innerHTML = `
     <div class="v4-section-head">
-      <div><h2>Каталог услуг и материалов</h2><p>Единая номенклатура для расчётов. ${CATALOG_MANAGEMENT_MODEL_V1}</p></div>
+      <div><h2>Каталог услуг и материалов</h2><p>Единый прайс для подготовки расчётов.</p></div>
       <div class="v4-catalog-head-actions">
         <button id="catalogManagementCreateBtn" type="button" class="v4-primary" hidden>+ Новая позиция</button>
         <button id="catalogManagementReloadBtn" type="button" class="v4-primary">Обновить каталог</button>
@@ -165,14 +231,17 @@ function modeOptions(selected = 'markup') {
 }
 
 function editorHtml(raw, operation) {
-  const row = operation === 'create'
+  const initial = operation === 'create'
     ? { category: '', name: '', unit: 'шт', contractor_price: 0, is_active: true, sort_order: 0, description: '', item_type: 'Изготовление', markup_percent: 70, min_client_price: 0, default_client_price: null, calculation_mode: 'markup' }
     : normalizeCatalogManagementRow(raw || {});
+  const row = { ...initial, ...(state.editorRaw || {}) };
   return `<aside class="v4-catalog-detail">
     <h3>${operation === 'create' ? 'Новая позиция' : `Редактирование: ${esc(row.name)}`}</h3>
-    <p class="v4-catalog-muted">Сохранение доступно только в staging и выполняется одной серверной командой вместе с журналом изменений.</p>
+    <p class="v4-catalog-muted">Сохранение доступно в тестовой среде. Изменения цены сохраняются вместе с историей.</p>
     ${state.saveNotice ? `<div class="v4-catalog-note ${state.saveNotice.startsWith('Ошибка:') ? 'is-error' : ''}">${esc(state.saveNotice)}</div>` : ''}
+    ${state.conflict ? `<div class="v4-catalog-note" role="alert">${state.conflict.keys.map(key => `<p><b>${esc(FIELD_LABELS[key] || key)}</b>: актуальное значение — ${esc(state.conflict.latest[key])}; ваше — ${esc(row[key])}</p>`).join('')}<button type="button" id="catalogUseCurrent">Принять актуальные значения</button> <button type="button" id="catalogKeepMine">Оставить мои значения</button></div>` : ''}
     <form id="catalogManagementEditor" class="v4-catalog-editor" data-operation="${operation}">
+      <fieldset ${state.saveBusy || state.pendingSave || state.conflict ? 'disabled' : ''} style="border:0;padding:0;margin:0;min-width:0;display:grid;gap:10px">
       <div class="v4-catalog-editor-grid">
         <label>Название<input name="name" required maxlength="500" value="${esc(row.name)}"></label>
         <label>Категория<input name="category" required maxlength="300" value="${esc(row.category)}"></label>
@@ -187,10 +256,12 @@ function editorHtml(raw, operation) {
         <label class="v4-catalog-check"><input name="is_active" type="checkbox" ${row.is_active ? 'checked' : ''}> Активна и доступна для расчётов</label>
       </div>
       <label>Описание<textarea name="description" maxlength="4000">${esc(row.description)}</textarea></label>
-      <label>Причина изменения<textarea name="reason" maxlength="1000" placeholder="Например: новый прайс подрядчика"></textarea></label>
+      <label>Причина изменения<textarea name="reason" maxlength="1000" placeholder="Например: новый прайс подрядчика">${esc(row.reason || '')}</textarea></label>
+      </fieldset>
       <div class="v4-catalog-editor-actions">
-        <button type="submit" class="v4-primary" ${state.saveBusy ? 'disabled' : ''}>${state.saveBusy ? 'Сохраняю…' : 'Сохранить'}</button>
-        <button id="catalogManagementCancelEditBtn" type="button" ${state.saveBusy ? 'disabled' : ''}>Отмена</button>
+        <button type="submit" class="v4-primary" ${state.saveBusy || state.conflict ? 'disabled' : ''}>${state.saveBusy ? 'Сохраняю…' : state.pendingSave ? 'Повторить сохранение' : 'Сохранить'}</button>
+        ${operation === 'update' && !state.pendingSave ? '<button id="catalogReviewCurrent" type="button">Сверить с актуальной позицией</button>' : ''}
+        <button id="catalogManagementCancelEditBtn" type="button" ${state.saveBusy || state.pendingSave ? 'disabled' : ''}>Отмена</button>
       </div>
     </form>
   </aside>`;
@@ -217,7 +288,7 @@ function detailHtml() {
     </dl>
     ${availability.enabled
       ? '<button id="catalogManagementEditBtn" type="button" class="v4-primary">Редактировать</button>'
-      : '<div class="v4-catalog-note"><b>Production read-only.</b><br>Просмотр каталога доступен, но серверный write-path включён только в staging до отдельного production rollout.</div>'}
+      : '<div class="v4-catalog-note"><b>Прайс доступен для просмотра.</b><br>Цены можно использовать в расчётах. Редактирование рабочего прайса ещё не включено.</div>'}
     <h4>История цены</h4>${historyHtml()}
   </aside>`;
 }
@@ -231,7 +302,7 @@ function render() {
   const summary = catalogManagementSummary(state.rows);
   const rows = visibleRows();
   host.innerHTML = `
-    <div class="v4-catalog-note"><b>Источник для расчётов:</b> здесь видны реальные параметры ` + '`leader_catalog`' + `. ${availability.enabled ? 'В staging owner/admin может безопасно менять каталог через Edge.' : 'В production изменение пока заблокировано.'}</div>
+    <div class="v4-catalog-note"><b>Прайс для расчётов.</b> ${availability.enabled ? 'В тестовой среде руководитель может редактировать позиции. История цен сохраняется.' : 'Рабочий прайс доступен для просмотра и подготовки расчётов.'}</div>
     <div class="v4-catalog-stats"><div><span>Всего</span><b>${summary.total}</b></div><div><span>Активных</span><b>${summary.active}</b></div><div><span>Выключено</span><b>${summary.inactive}</b></div><div><span>Категорий</span><b>${summary.categories}</b></div></div>
     <div class="v4-catalog-filters">
       <label>Поиск<input id="catalogManagementSearch" type="search" value="${esc(state.filters.search)}" placeholder="Название, категория, описание"></label>
@@ -253,6 +324,7 @@ function renderError(error) {
 
 async function loadHistory(catalogId) {
   if (!catalogId) return;
+  const token = generation, historyToken = ++historyGeneration;
   state.historyBusy = true;
   state.historyUnavailable = false;
   state.logs = [];
@@ -264,6 +336,7 @@ async function loadHistory(catalogId) {
       .eq('catalog_id', catalogId)
       .order('created_at', { ascending: false })
       .limit(40);
+    if (token !== generation || historyToken !== historyGeneration || state.selectedId !== catalogId) return;
     if (response.error) {
       const code = String(response.error.code || '');
       const message = String(response.error.message || '').toLowerCase();
@@ -275,11 +348,11 @@ async function loadHistory(catalogId) {
     }
     if (state.selectedId === catalogId) state.logs = response.data || [];
   } catch (error) {
+    if (token !== generation || historyToken !== historyGeneration) return;
     console.warn('Catalog price history load failed:', error);
     state.historyUnavailable = true;
   } finally {
-    state.historyBusy = false;
-    render();
+    if (token === generation && historyToken === historyGeneration) { state.historyBusy = false; render(); }
   }
 }
 
@@ -294,19 +367,21 @@ async function load(force = false) {
     return;
   }
   if (state.busy) return;
+  const token = generation;
   state.busy = true;
   if (root()) root().innerHTML = '<div class="v4-empty">Загружаю каталог...</div>';
   try {
     const response = await supabaseClient.from('leader_catalog').select(CATALOG_FIELDS).order('sort_order', { ascending: true }).order('name', { ascending: true });
+    if (token !== generation || !canReadCatalog()) return;
     if (response.error) throw response.error;
     state.rows = response.data || [];
     state.loaded = true;
     if (state.selectedId && !state.rows.some((row) => row.id === state.selectedId)) state.selectedId = '';
     render();
   } catch (error) {
-    renderError(error);
+    if (token === generation) renderError(error);
   } finally {
-    state.busy = false;
+    if (token === generation) state.busy = false;
   }
 }
 
@@ -354,11 +429,13 @@ function editorDraft(form) {
 }
 
 async function saveEditor(form) {
-  if (state.saveBusy) return;
+  if (state.saveBusy || state.conflict || !writeAvailability().enabled) return;
+  if (!state.pendingSave) captureEditor(form);
+  const token = generation;
   const operation = form.dataset.operation === 'create' ? 'create' : 'update';
   const current = operation === 'update' ? state.rows.find((row) => row.id === state.selectedId) : null;
   let draft;
-  try { draft = editorDraft(form); }
+  try { draft = state.pendingSave ? { patch: state.pendingSave.patch, reason: state.pendingSave.reason } : editorDraft(form); }
   catch (_) {
     state.saveNotice = 'Ошибка: проверьте числовые поля и порядок.';
     render();
@@ -381,32 +458,31 @@ async function saveEditor(form) {
 
   state.saveBusy = true;
   state.saveNotice = '';
+  state.pendingSave ||= { operation, catalogId: current?.id || null, expectedUpdatedAt: current?.updated_at || null, idempotencyKey: state.pendingSaveKey, requestId: crypto.randomUUID(), actorId: v4State.user?.id, reason: draft.reason, patch: draft.patch };
   render();
   const result = await invokeStagingCatalogManagement({
     client: supabaseClient,
     supabaseUrl: V4_CONFIG.supabaseUrl,
     canManage: canManageCatalog(),
-    operation,
-    catalogId: current?.id || null,
-    expectedUpdatedAt: current?.updated_at || null,
-    idempotencyKey: state.pendingSaveKey,
-    reason: draft.reason,
-    patch: draft.patch
+    ...state.pendingSave
   });
+  if (token !== generation || !canManageCatalog()) return;
   state.saveBusy = false;
 
   if (!result.ok) {
     state.saveNotice = `Ошибка: ${result.message}`;
-    if (!['persistence_failed'].includes(result.kind)) state.pendingSaveKey = '';
+    if (result.kind !== 'persistence_failed') { state.pendingSaveKey = ''; state.pendingSave = null; }
     if (result.kind === 'stale_source') {
-      state.editorMode = 'view';
-      state.loaded = false;
-      await load(true);
+      state.saveNotice += ' Ваши поля сохранены. Нажмите «Сверить с актуальной позицией».';
+      render();
     } else render();
     return;
   }
 
   state.pendingSaveKey = '';
+  state.pendingSave = null;
+  state.editorRaw = null;
+  state.editorBase = null;
   state.saveNotice = result.message;
   state.editorMode = 'view';
   state.selectedId = result.catalog?.id || state.selectedId;
@@ -419,8 +495,21 @@ function bind() {
   const workspace = document.getElementById('crmWorkspace');
   if (!workspace || workspace.dataset.catalogManagementBound === '1') return;
   workspace.dataset.catalogManagementBound = '1';
+  window.addEventListener('beforeunload', event => {
+    if (!state.editorRaw && !state.pendingSave) return;
+    event.preventDefault(); event.returnValue = '';
+  });
   workspace.addEventListener('click', (event) => {
+    if (event.target.closest('#catalogReviewCurrent')) { reviewCurrent(); return; }
+    if (event.target.closest('#catalogUseCurrent, #catalogKeepMine')) {
+      if (state.saveBusy || !state.conflict) return;
+      if (event.target.closest('#catalogUseCurrent')) for (const key of state.conflict.keys) state.editorRaw[key] = state.conflict.latest[key];
+      state.conflict = null;
+      state.saveNotice = 'Значения выбраны. Проверьте позицию и сохраните.';
+      render(); return;
+    }
     if (event.target.closest('#catalogManagementReloadBtn')) {
+      if (!leaveEditor()) return;
       state.loaded = false;
       state.editorMode = 'view';
       state.pendingSaveKey = '';
@@ -429,6 +518,7 @@ function bind() {
     }
     if (event.target.closest('#catalogManagementCreateBtn')) {
       if (!writeAvailability().enabled) return;
+      if (!leaveEditor()) return;
       state.editorMode = 'create';
       state.saveNotice = '';
       state.pendingSaveKey = '';
@@ -437,6 +527,7 @@ function bind() {
     }
     if (event.target.closest('#catalogManagementEditBtn')) {
       if (!writeAvailability().enabled || !state.selectedId) return;
+      state.editorBase = normalizeCatalogManagementRow(state.rows.find(row => row.id === state.selectedId));
       state.editorMode = 'edit';
       state.saveNotice = '';
       state.pendingSaveKey = '';
@@ -444,6 +535,7 @@ function bind() {
       return;
     }
     if (event.target.closest('#catalogManagementCancelEditBtn')) {
+      if (!leaveEditor()) return;
       state.editorMode = 'view';
       state.saveNotice = '';
       state.pendingSaveKey = '';
@@ -452,6 +544,7 @@ function bind() {
     }
     const row = event.target.closest('tr[data-catalog-id]');
     if (row) {
+      if (!leaveEditor()) return;
       state.selectedId = row.dataset.catalogId || '';
       state.editorMode = 'view';
       state.saveNotice = '';
@@ -474,12 +567,14 @@ function bind() {
     row.click();
   });
   workspace.addEventListener('input', (event) => {
+    if (event.target.closest('#catalogManagementEditor')) { captureEditor(); return; }
     if (event.target?.id !== 'catalogManagementSearch') return;
     readFilters();
     render();
     document.getElementById('catalogManagementSearch')?.focus();
   });
   workspace.addEventListener('change', (event) => {
+    if (event.target.closest('#catalogManagementEditor')) { captureEditor(); return; }
     if (!['catalogManagementCategory', 'catalogManagementStatus', 'catalogManagementSort'].includes(event.target?.id)) return;
     readFilters();
     render();
