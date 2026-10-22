@@ -10,7 +10,6 @@ crm_dir = root / 'crm' / 'v4' / 'assets' / 'v4'
 
 errors = []
 known_direct_write_files = {
-    'calculation-catalog-create-v1.js',
     'calculations.js',
     'contact-control-v1.js',
     'followups.js',

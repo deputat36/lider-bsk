@@ -28,7 +28,7 @@ if 'calculations.css?v=20261011-need-handoff-1' not in html:
 match = re.search(r'<script type="importmap">\s*(\{.*?\})\s*</script>', html, re.S)
 imports = json.loads(match.group(1)).get('imports', {}) if match else {}
 for suffix in ['', '?v=20260717-module-singleton-1', '?v=20260805-tab-loader-1', '?v=20260914-manual-zero-1', '?v=20260925-special-price-1']:
-    if imports.get('./assets/v4/calculations.js' + suffix) != './assets/v4/calculations.js?v=20261022-recovery-1':
+    if imports.get('./assets/v4/calculations.js' + suffix) != './assets/v4/calculations.js?v=20261022-catalog-command-1':
         errors.append('Calculation imports must share the current handoff module: ' + suffix)
 if errors:
     print('\n'.join(errors)); sys.exit(1)

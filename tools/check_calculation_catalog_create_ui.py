@@ -32,19 +32,21 @@ for marker in [
 for marker in [
     'catalogCreateValidation',
     'normalizeCatalogCreateInput',
-    ".from('leader_catalog')",
-    '.insert(validation.payload)',
+    'invokeStagingCatalogManagement',
+    'createCalculationCatalogAttempt',
+    'catalogManagementWriteAvailability',
     'catalog_write_not_allowed',
-    'catalog_duplicate',
-    'catalog_forbidden',
+    'catalog_actor_changed',
 ]:
     if marker not in create:
         errors.append(f'Missing catalog-create helper marker: {marker}')
 
-# Exact staging must never perform a catalog write: its schema intentionally does
-# not contain leader_catalog. The UI permission helper must include the same guard.
-if '!isStagingWorkflowEnvironment(V4_CONFIG.supabaseUrl)' not in calc:
-    errors.append('Catalog create UI is missing exact-staging write guard')
+# The same exact-origin gate protects catalog management and calculator creation.
+if 'catalogManagementWriteAvailability({ supabaseUrl: V4_CONFIG.supabaseUrl' not in calc:
+    errors.append('Catalog create UI is missing the shared environment gate')
+for token in ['.insert(', '.update(', '.upsert(', '.delete(', '.rpc(']:
+    if token in create:
+        errors.append('Catalog create helper bypasses the shared server command: '+token)
 
 # Browser helper must rely on ordinary authenticated RLS, never elevated secrets.
 for forbidden in ['service_role', 'sb_secret_', 'SUPABASE_SERVICE_ROLE_KEY']:
