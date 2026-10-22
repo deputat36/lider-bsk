@@ -1,122 +1,25 @@
 import assert from 'node:assert/strict';
-import {
-  catalogCreateValidation,
-  createCalculationCatalogItem,
-  normalizeCatalogCreateInput
-} from '../crm/v4/assets/v4/calculation-catalog-create-v1.js';
-
-function fakeClient({ data = null, error = null } = {}) {
-  const calls = [];
-  return {
-    calls,
-    from(table) {
-      calls.push(['from', table]);
-      return {
-        insert(payload) {
-          calls.push(['insert', payload]);
-          return {
-            select(fields) {
-              calls.push(['select', fields]);
-              return {
-                async single() {
-                  calls.push(['single']);
-                  return { data, error };
-                }
-              };
-            }
-          };
-        }
-      };
-    }
-  };
-}
-
-{
-  const payload = normalizeCatalogCreateInput({
-    category: ' Печать ',
-    name: ' Новая услуга ',
-    unit: 'шт',
-    contractor_price: '1 250,50',
-    markup_percent: '40',
-    min_client_price: '1800',
-    default_client_price: '2000'
-  });
-  assert.equal(payload.category, 'Печать');
-  assert.equal(payload.name, 'Новая услуга');
-  assert.equal(payload.contractor_price, 1250.5);
-  assert.equal(payload.markup_percent, 40);
-  assert.equal(payload.default_client_price, 2000);
-  assert.equal(payload.calculation_mode, 'fixed');
-  assert.equal(payload.is_active, true);
-}
-
-{
-  const validation = catalogCreateValidation({ category: 'Печать', unit: 'шт' });
-  assert.equal(validation.ok, false);
-  assert.equal(validation.code, 'catalog_name_required');
-}
-
-{
-  const client = fakeClient();
-  const result = await createCalculationCatalogItem({
-    supabaseClient: client,
-    input: { category: 'Печать', name: 'Тест', unit: 'шт' },
-    allowWrite: false
-  });
-  assert.equal(result.ok, false);
-  assert.equal(result.error.code, 'catalog_write_not_allowed');
-  assert.equal(client.calls.length, 0, 'write-disabled path must not touch Supabase');
-}
-
-{
-  const client = fakeClient({ data: {
-    id: 'catalog-new',
-    category: 'Печать',
-    name: 'Новая услуга',
-    unit: 'шт',
-    contractor_price: 500,
-    markup_percent: 30,
-    min_client_price: 0,
-    default_client_price: null,
-    calculation_mode: 'markup',
-    settings: {},
-    sort_order: 0,
-    is_active: true
-  } });
-  const result = await createCalculationCatalogItem({
-    supabaseClient: client,
-    input: { category: 'Печать', name: 'Новая услуга', unit: 'шт', contractor_price: 500 },
-    allowWrite: true
-  });
-  assert.equal(result.ok, true);
-  assert.equal(result.row.id, 'catalog-new');
-  assert.equal(result.row.contractor_price, 500);
-  assert.deepEqual(client.calls[0], ['from', 'leader_catalog']);
-  assert.equal(client.calls[1][0], 'insert');
-  assert.equal(client.calls[1][1].name, 'Новая услуга');
-}
-
-{
-  const client = fakeClient({ error: { code: '23505', message: 'duplicate key value' } });
-  const result = await createCalculationCatalogItem({
-    supabaseClient: client,
-    input: { category: 'Печать', name: 'Дубль', unit: 'шт' },
-    allowWrite: true
-  });
-  assert.equal(result.ok, false);
-  assert.equal(result.error.code, 'catalog_duplicate');
-  assert.match(result.error.message, /уже есть/);
-}
-
-{
-  const client = fakeClient({ error: { code: '42501', message: 'permission denied' } });
-  const result = await createCalculationCatalogItem({
-    supabaseClient: client,
-    input: { category: 'Печать', name: 'Запрещено', unit: 'шт' },
-    allowWrite: true
-  });
-  assert.equal(result.ok, false);
-  assert.equal(result.error.code, 'catalog_forbidden');
-}
-
-console.log('calculation catalog create v1 tests: PASS');
+import { catalogCreateValidation, createCalculationCatalogItem, createCalculationCatalogAttempt, normalizeCatalogCreateInput } from '../crm/v4/assets/v4/calculation-catalog-create-v1.js';
+const actorId='90000000-0000-4000-8000-000000000901',other='90000000-0000-4000-8000-000000000902',url='https://otulfnouybahfnsycxqn.supabase.co';
+const input={category:' Печать ',name:' Новая услуга ',unit:'шт',contractor_price:'1 250,50',markup_percent:'40',min_client_price:'1800',default_client_price:'2000'};
+const payload=normalizeCatalogCreateInput(input);assert.equal(payload.category,'Печать');assert.equal(payload.name,'Новая услуга');assert.equal(payload.contractor_price,1250.5);assert.equal(payload.calculation_mode,'fixed');
+assert.equal(catalogCreateValidation({category:'Печать',unit:'шт'}).code,'catalog_name_required');
+for(const cost of ['-1','NaN','1e999',1e10])assert.equal(catalogCreateValidation({...input,contractor_price:cost}).ok,false);
+assert.equal(catalogCreateValidation({...input,name:'a'.repeat(501)}).ok,false);assert.equal(catalogCreateValidation({...input,sort_order:1.1}).ok,false);
+const zero=normalizeCatalogCreateInput({...input,contractor_price:0,markup_percent:0});assert.equal(zero.contractor_price,0);assert.equal(zero.markup_percent,0);
+const calls=[],receipts=new Map();let lose=true;
+const client={from(){throw Error('Direct browser write forbidden')},auth:{getSession:async()=>({data:{session:{user:{id:actorId},access_token:'fixture-user-jwt'}}})},functions:{invoke:async(slug,options)=>{
+ calls.push(structuredClone({slug,...options}));assert.equal(slug,'leader-crm-catalog');assert.equal(options.headers.Authorization,'Bearer fixture-user-jwt');
+ const body=options.body;let data=receipts.get(body.request_id);if(!data){data={ok:true,catalog:{id:other,...body.payload.patch}};receipts.set(body.request_id,data);}if(lose){lose=false;throw Error('synthetic response loss');}return{data:{...data,idempotent_replay:calls.length>1}};
+}}};
+const options={supabaseClient:client,supabaseUrl:url,input,actorId,allowWrite:true};
+assert.equal((await createCalculationCatalogItem({...options,allowWrite:false})).ok,false);assert.equal(calls.length,0);
+assert.equal((await createCalculationCatalogItem({...options,supabaseUrl:'https://ofewxuqfjhamgerwzull.supabase.co'})).ok,false);assert.equal(calls.length,0);
+const attempt=createCalculationCatalogAttempt({input,actorId});input.name='Изменённый ввод';
+const result=await createCalculationCatalogItem({...options,attempt});assert.equal(result.uncertain,true);assert.equal(result.attempt.patch.name,'Новая услуга');
+const replay=await createCalculationCatalogItem({...options,attempt:result.attempt});assert.equal(replay.ok,true);assert.equal(replay.replay,true);assert.equal(replay.row.contractor_price,1250.5);assert.equal(receipts.size,1);assert.deepEqual(calls[0].body,calls[1].body);
+assert.equal(calls[0].body.payload.reason,'Добавлено из расчёта');assert.equal(calls[0].body.expected_updated_at,null);
+assert.equal((await createCalculationCatalogItem({...options,actorId:other,attempt})).error.code,'catalog_actor_changed');assert.equal(calls.length,2);
+client.functions.invoke=async()=>({data:{ok:false,error:{code:'catalog_duplicate'}}});assert.equal((await createCalculationCatalogItem({...options,attempt})).error.code,'catalog_duplicate');
+client.functions.invoke=async()=>({error:{context:new Response(JSON.stringify({error:{code:'forbidden'}}),{status:403})}});assert.equal((await createCalculationCatalogItem({...options,attempt})).uncertain,false);
+console.log('Calculation catalog creation uses shared JWT command; validation, exact retry, actor binding, audit reason and production gate PASS');

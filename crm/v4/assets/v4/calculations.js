@@ -1,7 +1,7 @@
 import { calculationSaveDecision } from './calculation-save-policy-v1.js';
 import { supabaseClient } from './supabase-client.js';
 import { timeout, friendlyError } from './api.js';
-import { v4State, setState } from './state.js';
+import { v4State, setState, subscribeState } from './state.js';
 import { byId, setStatus, toast } from './ui.js';
 import { marginPercentFromMarkup, markupPercentForSubtotal, markupPercentFromMargin, normalizeMarginPercent, normalizePricingSettings, priceWithMarkup, repriceAutomaticItems } from './calculation-pricing-model-v1.js';
 import { needCalculationPrefill } from './need-calculation-prefill-v1.js';
@@ -9,9 +9,10 @@ import { circleAreaSquareMeters, parseCalculationDiameters, parseCalculationPair
 import { V4_CONFIG } from './config.js';
 import { isStagingWorkflowEnvironment } from './workflow-staging-transport-v1.js';
 import { catalogRowToDraftItem, catalogRowToTypicalDraftItem, legacyCatalogFallbackRows, loadCalculationCatalog } from './calculation-catalog-source-v1.js';
-import { createCalculationCatalogItem } from './calculation-catalog-create-v1.js';
+import { createCalculationCatalogItem, createCalculationCatalogAttempt } from './calculation-catalog-create-v1.js';
 import { canPerformV4Action, CRM_V4_ACTIONS } from './action-permissions-v1.js';
 import { contractorQuoteDraftItem, contractorQuoteDraftValidation } from './calculation-contractor-quote-model-v1.js';
+import { catalogManagementWriteAvailability } from './catalog-management-staging-transport-v1.js';
 import { compositeDraftValidation } from './calculation-composite-model-v1.js';
 import { quoteEnvironment, quoteCalculationItems } from './quote-workspace-model-v1.js';
 
@@ -67,6 +68,15 @@ let draftItems = [];
 const calculationLoads = new Map();
 let saveBusy = false;
 let calculationModeError = '';
+let catalogCreateBusy = false, pendingCatalogCreate = null, catalogCreateDraft = {}, catalogCreateGeneration = 0;
+const catalogCreateContext = () => JSON.stringify([v4State.user?.id, v4State.profile?.role, v4State.profile?.is_active, v4State.profileLoaded, v4State.crmReady, v4State.route.leadId]);
+function lockCatalogCreate() {
+  const locked = catalogCreateBusy || Boolean(pendingCatalogCreate);
+  byId('calcCatalogCreatePanel')?.querySelectorAll('input,select').forEach(node => node.disabled = locked);
+  const button = byId('calcCreateCatalogItemBtn');
+  if (button) { button.disabled = catalogCreateBusy; button.textContent = catalogCreateBusy ? 'Сохраняю…' : pendingCatalogCreate ? 'Повторить сохранение' : 'Добавить в каталог'; }
+}
+
 
 // Append to the existing draft and writer; importing a quote never edits a saved
 // calculation, offer or order. Source IDs also stop double-click duplicates.
@@ -133,38 +143,38 @@ function catalogSourceLabel() {
 }
 
 function canManageCalculationCatalog() {
-  return !isStagingWorkflowEnvironment(V4_CONFIG.supabaseUrl)
-    && canPerformV4Action(CRM_V4_ACTIONS.CATALOG_MANAGE);
+  return catalogManagementWriteAvailability({ supabaseUrl: V4_CONFIG.supabaseUrl, canManage: canPerformV4Action(CRM_V4_ACTIONS.CATALOG_MANAGE) }).enabled;
 }
 
 function renderCatalogCreatePanel() {
-  if (isStagingWorkflowEnvironment(V4_CONFIG.supabaseUrl)) {
-    return '<div class="v4-calc-mode-help">Добавление новой номенклатуры отключено в staging. Для разовой работы используйте ручную позицию.</div>';
-  }
+  if (!catalogManagementWriteAvailability({ supabaseUrl: V4_CONFIG.supabaseUrl, canManage: true }).enabled) return '<div class="v4-calc-mode-help">Рабочий прайс доступен для просмотра. Разовую работу можно добавить своей позицией; изменение прайса ещё не включено.</div>';
   if (!canManageCalculationCatalog()) {
     return '<div class="v4-calc-mode-help">Новой номенклатурой управляет руководитель. Разовую работу можно добавить режимом «Ручная позиция».</div>';
   }
+  const saved = pendingCatalogCreate?.input || catalogCreateDraft;
+  const value = (key, fallback='') => esc(saved[key] ?? fallback);
+  const disabled = catalogCreateBusy || pendingCatalogCreate ? 'disabled' : '';
   return `
-    <details class="v4-calc-settings">
+    <details id="calcCatalogCreatePanel" class="v4-calc-settings" ${Object.keys(saved).length?'open':''}>
       <summary>+ Новая позиция каталога</summary>
       <div class="v4-calc-mode-help">Добавьте повторно используемую услугу или материал. После сохранения позиция сразу будет выбрана в этом расчёте.</div>
       <div class="v4-form-grid">
-        <label>Категория<input id="calcCatalogCreateCategory" placeholder="Например: Наружная реклама"></label>
-        <label>Название<input id="calcCatalogCreateName" placeholder="Например: Табличка ПВХ 3 мм"></label>
+        <label>Категория<input id="calcCatalogCreateCategory" ${disabled} value="${value('category')}" placeholder="Например: Наружная реклама"></label>
+        <label>Название<input id="calcCatalogCreateName" ${disabled} value="${value('name')}" placeholder="Например: Табличка ПВХ 3 мм"></label>
         <label>Ед. измерения
-          <select id="calcCatalogCreateUnit"><option>шт</option><option>м²</option><option>м</option><option>комплект</option><option>услуга</option><option>100 шт</option></select>
+          <select id="calcCatalogCreateUnit" ${disabled}>${['шт','м²','м','комплект','услуга','100 шт'].map(unit=>`<option ${unit===(saved.unit||'шт')?'selected':''}>${unit}</option>`).join('')}</select>
         </label>
         <label>Тип
-          <select id="calcCatalogCreateType"><option>Изготовление</option><option>Материал</option><option>Услуга</option><option>Дизайн</option><option>Монтаж</option></select>
+          <select id="calcCatalogCreateType" ${disabled}>${['Изготовление','Материал','Услуга','Дизайн','Монтаж'].map(kind=>`<option ${kind===(saved.item_type||'Изготовление')?'selected':''}>${kind}</option>`).join('')}</select>
         </label>
-        <label>Себестоимость за ед., ₽<input id="calcCatalogCreateCost" type="number" min="0" step="0.01" value="0"></label>
-        <label>Наценка по умолчанию, %<input id="calcCatalogCreateMarkup" type="number" min="0" step="0.1" value="30"></label>
-        <label>Минимальная цена клиенту, ₽<input id="calcCatalogCreateMin" type="number" min="0" step="0.01" value="0"></label>
-        <label>Фиксированная цена клиенту, ₽<input id="calcCatalogCreateClient" type="number" min="0" step="0.01" placeholder="Пусто = по наценке"></label>
-        <label>Описание<input id="calcCatalogCreateDescription" placeholder="Что входит в позицию"></label>
+        <label>Себестоимость за ед., ₽<input id="calcCatalogCreateCost" ${disabled} type="number" min="0" step="0.01" value="${value('contractor_price','0')}"></label>
+        <label>Наценка по умолчанию, %<input id="calcCatalogCreateMarkup" ${disabled} type="number" min="0" step="0.1" value="${value('markup_percent','30')}"></label>
+        <label>Минимальная цена клиенту, ₽<input id="calcCatalogCreateMin" ${disabled} type="number" min="0" step="0.01" value="${value('min_client_price','0')}"></label>
+        <label>Фиксированная цена клиенту, ₽<input id="calcCatalogCreateClient" ${disabled} value="${value('default_client_price')}" type="number" min="0" step="0.01" placeholder="Пусто = по наценке"></label>
+        <label>Описание<input id="calcCatalogCreateDescription" ${disabled} value="${value('description')}" placeholder="Что входит в позицию"></label>
       </div>
       <div class="v4-form-actions">
-        <button id="calcCreateCatalogItemBtn" type="button">Добавить в каталог</button>
+        <button id="calcCreateCatalogItemBtn" type="button" ${catalogCreateBusy?'disabled':''}>${catalogCreateBusy?'Сохраняю…':pendingCatalogCreate?'Повторить сохранение':'Добавить в каталог'}</button>
       </div>
     </details>`;
 }
@@ -175,51 +185,47 @@ function catalogCreateInputFromForm() {
     name: val('calcCatalogCreateName'),
     unit: val('calcCatalogCreateUnit') || 'шт',
     item_type: val('calcCatalogCreateType') || 'Изготовление',
-    contractor_price: num('calcCatalogCreateCost'),
-    markup_percent: num('calcCatalogCreateMarkup'),
-    min_client_price: num('calcCatalogCreateMin'),
-    default_client_price: num('calcCatalogCreateClient'),
+    contractor_price: val('calcCatalogCreateCost'),
+    markup_percent: val('calcCatalogCreateMarkup'),
+    min_client_price: val('calcCatalogCreateMin'),
+    default_client_price: val('calcCatalogCreateClient'),
     description: val('calcCatalogCreateDescription')
   };
 }
 
 async function createCatalogItemFromCalculation() {
-  if (!canManageCalculationCatalog()) {
-    toast('Добавлять номенклатуру могут только администратор или владелец');
-    return;
-  }
-  const button = byId('calcCreateCatalogItemBtn');
-  if (button) button.disabled = true;
+  if (catalogCreateBusy || !canManageCalculationCatalog()) return;
+  const token = catalogCreateGeneration, context = catalogCreateContext(), actorId = v4State.user?.id;
   try {
+    if (!pendingCatalogCreate) {
+      catalogCreateDraft = catalogCreateInputFromForm();
+      pendingCatalogCreate = createCalculationCatalogAttempt({ input: catalogCreateDraft, actorId });
+    }
+    catalogCreateBusy = true;
+    lockCatalogCreate();
     setStatus('Добавляю позицию в каталог...', 'warn');
-    const result = await timeout(createCalculationCatalogItem({
-      supabaseClient,
-      input: catalogCreateInputFromForm(),
-      allowWrite: canManageCalculationCatalog()
-    }), 10000, 'Каталог не ответил за 10 секунд');
+    const result = await createCalculationCatalogItem({ supabaseClient, supabaseUrl: V4_CONFIG.supabaseUrl, allowWrite: canManageCalculationCatalog(), actorId, attempt: pendingCatalogCreate });
+    if (token !== catalogCreateGeneration || context !== catalogCreateContext() || !canManageCalculationCatalog()) return;
     if (!result.ok || !result.row) {
-      const message = result.error?.message || 'Не удалось добавить позицию в каталог.';
-      toast(message);
-      setStatus(message, 'error');
+      if (!result.uncertain) pendingCatalogCreate = null;
+      toast(result.error?.message || 'Не удалось добавить позицию.');
+      setStatus(result.error?.message || 'Ввод сохранён.', 'error');
       return;
     }
+    pendingCatalogCreate = null; catalogCreateDraft = {};
     const row = result.row;
-    calculationCatalogRows = [...calculationCatalogRows.filter((item) => item.id !== row.id && item.name !== row.name), row]
-      .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0) || String(a.category || '').localeCompare(String(b.category || ''), 'ru') || String(a.name || '').localeCompare(String(b.name || ''), 'ru'));
+    calculationCatalogRows = [...calculationCatalogRows.filter(item => item.id !== row.id), row]
+      .sort((a,b) => Number(a.sort_order || 0)-Number(b.sort_order || 0) || String(a.name).localeCompare(String(b.name),'ru'));
     calculationCatalogSource = 'remote';
     setCalcMode('catalog');
     const select = byId('calcCatalogBackedItem');
     if (select) select.value = row.id || row.name;
     renderSmartPreview();
-    toast('Позиция добавлена в каталог и выбрана в расчёте');
-    setStatus('Новая позиция каталога готова к расчёту.', 'good');
-  } catch (error) {
-    const message = friendlyError(error);
-    toast(message);
-    setStatus(`Ошибка каталога: ${message}`, 'error');
+    toast(result.replay ? 'Сохранение подтверждено без дубля' : 'Позиция добавлена в каталог и выбрана в расчёте');
+  } catch (_) {
+    if (token === catalogCreateGeneration && context === catalogCreateContext()) toast('Проверьте поля позиции. Введённые значения сохранены.');
   } finally {
-    const currentButton = byId('calcCreateCatalogItemBtn');
-    if (currentButton) currentButton.disabled = false;
+    if (token === catalogCreateGeneration && context === catalogCreateContext()) { catalogCreateBusy = false; lockCatalogCreate(); }
   }
 }
 
@@ -1470,6 +1476,7 @@ function bindCalculationEvents() {
     }
   });
   byId('leadCardSection')?.addEventListener('change', (event) => {
+    if (event.target.closest?.('#calcCatalogCreatePanel')) { if(!pendingCatalogCreate) catalogCreateDraft = catalogCreateInputFromForm(); return; }
     const rowInput = event.target.closest('[data-calc-row-field]');
     if (rowInput) {
       const index = Number(rowInput.dataset.index);
@@ -1494,6 +1501,7 @@ function bindCalculationEvents() {
     if (event.target.closest('#calculationsBox')) renderSmartPreview();
   });
   byId('leadCardSection')?.addEventListener('input', (event) => {
+    if (event.target.closest?.('#calcCatalogCreatePanel')) { if(!pendingCatalogCreate) catalogCreateDraft = catalogCreateInputFromForm(); return; }
     if (event.target?.id === 'calcMarkup') {
       if (String(event.target.value || '').trim()) {
         const marginInput = byId('calcTargetMargin');
@@ -1539,6 +1547,14 @@ function bindCalculationEvents() {
 export function bootCalculations() {
   if (window.LeaderV4CalculationsBooted) return;
   window.LeaderV4CalculationsBooted = true;
+  let context = catalogCreateContext();
+  subscribeState(() => {
+    const next = catalogCreateContext();
+    if (next === context) return;
+    context = next; catalogCreateGeneration++;
+    pendingCatalogCreate = null; catalogCreateDraft = {}; catalogCreateBusy = false;
+    byId('calcCatalogCreatePanel')?.remove();
+  });
   ensureCalculationCatalog();
   bindCalculationEvents();
   renderCalculations();

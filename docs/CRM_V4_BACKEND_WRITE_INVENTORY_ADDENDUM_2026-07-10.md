@@ -138,3 +138,14 @@ Any new CRM v4 JavaScript file containing a direct insert/update/delete must be 
 - normal creation in the existing unified calculator remains outside this lock and is unchanged;
 - no `nav_*` object was inspected or changed for this inventory;
 - UI action guards remain defense-in-depth only.
+
+
+## 2026-10-22 — удалён прямой writer каталога из калькулятора
+
+`crm/v4/assets/v4/calculation-catalog-create-v1.js` больше не выполняет browser
+INSERT. Создание использует прежнюю JWT команду `leader-crm-catalog` с
+catalog.manage, причиной изменения и стабильными request/idempotency IDs.
+Exact staging gate общий с редактором прайса. Production добавление новой
+номенклатуры закрыто до установки серверного пакета; ручные позиции расчёта
+и чтение существующих 69 цен сохраняются. Исторический inventory выше
+не является текущим списком writer-файлов.
