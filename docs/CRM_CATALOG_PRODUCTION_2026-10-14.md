@@ -85,3 +85,17 @@ native preflight, сверить отсутствие RPC/helper/Edge/snapshot �
 доставить exact JWT Edge, снять advisors и сверить неизменность business rows.
 Только затем готовить и проверять frontend opt-in, retry и смену роли.
 Ни общий core, ни старые цены, ни cleanup #381 не повторять.
+
+## Read-only сверка 23.10.2026
+
+Пакет #587 пока не установлен: native SELECT и список Edge подтверждают отсутствие
+RPC/helper/catalog Edge/scoped snapshot. Все его предусловия по прежнему core,
+canonical helpers, owner/admin matrix, private backup, RLS и SELECT policy
+выполняются. Имеются прежние 69 позиций и 0 price logs; рабочие строки не менялись.
+Успех read-only preflight не подтверждает исправление прежнего write-сбоя сервиса.
+
+PR #591/#592 опубликованы; frontend исправляет сохранность полей, конфликт,
+точный повтор и поздний ответ. Калькулятор теперь вызывает общий command writer
+вместо прямого browser INSERT. Оба интерфейса сохраняют production gate до
+серверного cutover. Последовательность установки, postflight и неразрушающей
+остановки выше остаётся актуальной; изменять production одним frontend-флагом нельзя.
