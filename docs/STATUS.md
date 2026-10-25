@@ -1,5 +1,26 @@
 # Статус проекта РА «Лидер»
 
+## 2026-10-25 — сервер прайса установлен в production с разрешения владельца
+
+На явное «Разрешаю» установлен точный серверный пакет #587: migration
+`20261025155115_catalog_management_production_v1`, private backup, SQL/ACL и
+`leader-crm-catalog` v1 ACTIVE с verify_jwt=true. Общий core не повторялся.
+Actual RPC/helper bodies и полученные после deploy Edge files совпали с candidate.
+Старая техническая ошибка requestState не повторилась.
+
+Сохранены все 69 позиций и полный hash каталога. Табличные и колонковые browser
+writes закрыты; SELECT/RLS сохранены, business RPC invoker/service-only, helper
+private/service-only. Нативный create/replay/update/audit/stale/forbidden/RLS
+probe прошёл и полностью откатился. Независимый SELECT: 0 тестовых рядов/receipts,
+0 price logs, 2 заказа / 1 оплата / 0 расходов, backup совпадает с данными.
+Security advisors без новых findings; запрос без JWT получает HTTP 401.
+
+Frontend сохраняет staging gate: серверная установка завершена, рабочее
+редактирование ещё не включено. Следующий этап — authenticated Edge smoke
+и проверенный frontend opt-in; SQL/RLS probe не является полным Auth→Edge→UI E2E.
+Профили, Auth и другие проекты/модули не менялись.
+[Доказательства и безопасная остановка](CRM_CATALOG_SERVER_INSTALLATION_2026-10-25.md).
+
 ## 2026-10-23 — восстановленные исправления опубликованы, остаток сверён
 
 PR #591 и #592 объединены. Проверенный runtime checkpoint — main
