@@ -99,3 +99,15 @@ PR #591/#592 опубликованы; frontend исправляет сохра�
 вместо прямого browser INSERT. Оба интерфейса сохраняют production gate до
 серверного cutover. Последовательность установки, postflight и неразрушающей
 остановки выше остаётся актуальной; изменять production одним frontend-флагом нельзя.
+
+## Серверная установка завершена 25.10.2026
+
+После нового явного разрешения владельца точный пакет #587 успешно установлен:
+migration `20261025155115_catalog_management_production_v1`, private backup,
+SQL/ACL и JWT Edge `leader-crm-catalog` v1 ACTIVE. Прежний requestState-сбой
+не повторился. Native RPC/RLS probe и независимый cleanup подтвердили прежние
+69 цен, тот же полный hash, 0 logs/receipts и отсутствие тестового остатка.
+Повторять установку SQL или общий core больше не требуется.
+
+Frontend gate сохраняется до authenticated Edge smoke и отдельного проверенного
+opt-in. [Точная установленная версия, доказательства и stop](CRM_CATALOG_SERVER_INSTALLATION_2026-10-25.md).
