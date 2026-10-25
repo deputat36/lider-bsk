@@ -44,7 +44,7 @@ for marker in [
     'catalogManagementCategory', 'catalogManagementStatus', 'catalogManagementSort',
     'История цены', 'catalogManagementCreateBtn', 'catalogManagementEditBtn',
     'catalogManagementEditor', 'invokeStagingCatalogManagement',
-    'catalogManagementWriteAvailability', 'Редактирование рабочего прайса ещё не включено.',
+    'catalogManagementWriteAvailability', 'checkCatalogManagementAccess',
     'export async function mount()', 'loadCatalogManagement', 'refreshCatalogManagement',
 ]:
     if marker not in view:
@@ -63,6 +63,7 @@ for marker in [
     'catalogManagementWriteAvailability', 'buildCatalogManagementCommand',
     'catalogManagementIdempotencyKey', 'client.auth.getSession',
     'client.functions.invoke(FUNCTION_SLUG', 'production_locked',
+    'isProductionCatalogManagementEnvironment', 'accessProofs', 'actor_id', 'data.request_id !== requestId',
 ]:
     if marker not in transport:
         errors.append('Missing catalog staging transport marker: ' + marker)
@@ -85,4 +86,4 @@ if errors:
     print('\n'.join(errors))
     sys.exit(1)
 
-print('Catalog management v1 keeps production read-only and enables owner/admin staging writes only through JWT Edge: PASS')
+print('Catalog management uses JWT Edge; production requires actor-bound server access proof: PASS')

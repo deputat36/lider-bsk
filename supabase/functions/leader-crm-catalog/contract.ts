@@ -1,6 +1,8 @@
 export const CATALOG_EDGE_CONTRACT_VERSION = 'leader-crm-catalog-edge-v1'
 export const CATALOG_ACTION = 'catalog.manage'
 export const CATALOG_PERMISSION = 'catalog.manage'
+export const CATALOG_ACCESS_ACTION = 'catalog.access'
+export const CATALOG_ACCESS_CONTRACT = 'leader-catalog-access-v1'
 export const STAGING_PROJECT_REF = 'otulfnouybahfnsycxqn'
 
 const REQUEST_FIELDS = new Set(['action', 'request_id', 'expected_updated_at', 'payload'])
@@ -35,6 +37,12 @@ function uuid(value: unknown): boolean {
 
 function only(value: JsonObject, allowed: Set<string>): boolean {
   return Object.keys(value).every((key) => allowed.has(key))
+}
+
+export function isCatalogAccessRequest(value: unknown): boolean {
+  const request = asObject(value)
+  return !!request && only(request, new Set(['action', 'request_id']))
+    && request.action === CATALOG_ACCESS_ACTION && uuid(request.request_id)
 }
 
 function finite(value: unknown): number | null {

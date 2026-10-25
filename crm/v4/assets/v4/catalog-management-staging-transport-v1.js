@@ -1,5 +1,8 @@
 const STAGING_PROJECT_REF = 'otulfnouybahfnsycxqn';
 const STAGING_HOSTNAME = `${STAGING_PROJECT_REF}.supabase.co`;
+const PRODUCTION_PROJECT_REF = 'ofewxuqfjhamgerwzull';
+const accessProofs = new WeakMap();
+const accessRequests = new WeakMap();
 const FUNCTION_SLUG = 'leader-crm-catalog';
 const ACTION = 'catalog.manage';
 const PERMISSION = 'catalog.manage';
@@ -14,16 +17,70 @@ export function isStagingCatalogManagementEnvironment(supabaseUrl = '') {
   catch (_) { return false; }
 }
 
-export function catalogManagementWriteAvailability({ supabaseUrl = '', canManage = false } = {}) {
+export function isProductionCatalogManagementEnvironment(supabaseUrl = '') {
+  try { return new URL(supabaseUrl).origin === `https://${PRODUCTION_PROJECT_REF}.supabase.co`; }
+  catch (_) { return false; }
+}
+
+export function clearCatalogManagementAccess(client) {
+  if (!client || !['object', 'function'].includes(typeof client)) return;
+  accessProofs.set(client, null); accessRequests.set(client, null);
+}
+
+export function catalogManagementWriteAvailability({ supabaseUrl = '', canManage = false, client, actorId } = {}) {
   const staging = isStagingCatalogManagementEnvironment(supabaseUrl);
-  const enabled = staging && canManage === true;
+  const proof = client && accessProofs.get(client);
+  const production = isProductionCatalogManagementEnvironment(supabaseUrl)
+    && !!actorId && proof?.actorId === actorId;
+  const enabled = (staging || production) && canManage === true;
   return Object.freeze({
     enabled,
     staging,
-    reason: !staging ? 'production_locked' : !canManage ? 'forbidden' : '',
+    reason: !staging && !production ? 'production_locked' : !canManage ? 'forbidden' : '',
     functionSlug: FUNCTION_SLUG,
     permission: PERMISSION
   });
+}
+
+export async function checkCatalogManagementAccess({ client, supabaseUrl = '', canManage = false, actorId, force = false } = {}) {
+  if (isStagingCatalogManagementEnvironment(supabaseUrl)) return { ok: canManage === true };
+  if (!client || !['object', 'function'].includes(typeof client) || !isProductionCatalogManagementEnvironment(supabaseUrl) || !canManage || !uuid(actorId)) {
+    if (client) clearCatalogManagementAccess(client);
+    return { ok: false };
+  }
+  if (force) clearCatalogManagementAccess(client);
+  if (accessProofs.get(client)?.actorId === actorId) return { ok: true };
+  const previous = accessRequests.get(client);
+  if (previous?.actorId === actorId) return previous.promise;
+  const entry = { actorId, promise: null };
+  accessRequests.set(client, entry);
+  let timeout;
+  const task = (async () => {
+    try {
+      const session = await client.auth.getSession();
+      if (session?.error || session?.data?.session?.user?.id !== actorId || !session.data.session.access_token) return { ok: false };
+      const requestId = secureUuid();
+      const result = await client.functions.invoke(FUNCTION_SLUG, {
+        body: { action: 'catalog.access', request_id: requestId },
+        headers: { Authorization: `Bearer ${session.data.session.access_token}` }
+      });
+      const data = result?.data;
+      const latest = await client.auth.getSession();
+      if (accessRequests.get(client) !== entry || latest?.error || latest?.data?.session?.user?.id !== actorId
+        || result?.error || data?.ok !== true || data.can_manage !== true || data.actor_id !== actorId
+        || data.request_id !== requestId || data.project_ref !== PRODUCTION_PROJECT_REF || data.contract !== 'leader-catalog-access-v1') return { ok: false };
+      accessProofs.set(client, { actorId });
+      return { ok: true };
+    } catch (_) { return { ok: false }; }
+    finally { if (accessRequests.get(client) === entry) accessRequests.set(client, null); }
+  })();
+  entry.promise = Promise.race([task, new Promise(resolve => {
+    timeout = setTimeout(() => {
+      if (accessRequests.get(client) === entry) accessRequests.set(client, null);
+      resolve({ ok: false });
+    }, 8000);
+  })]).finally(() => clearTimeout(timeout));
+  return entry.promise;
 }
 
 function secureUuid(cryptoObject = globalThis.crypto) {
@@ -74,7 +131,7 @@ async function edgeErrorDetails(error) {
   const nested = asObject(root?.error);
   return {
     status: Number(context?.status || error?.status || 0) || 0,
-    code: text(nested?.code || root?.error || error?.code || 'catalog_manage_failed')
+    code: text(nested?.code || root?.code || root?.error || error?.code || 'catalog_manage_failed')
   };
 }
 
@@ -95,9 +152,9 @@ export function catalogManagementResultMessage(kind, replay = false) {
   if (replay) return 'Безопасный повтор: каталог уже сохранён, дубликат не создан.';
   return ({
     saved: 'Каталог сохранён, история изменения записана.',
-    production_locked: 'Редактирование каталога пока включено только в staging.',
-    auth_required: 'Нужен действующий вход в staging CRM.',
-    forbidden: 'У профиля нет права catalog.manage.',
+    production_locked: 'Сервер ещё не подтвердил доступ к редактированию. Обновите каталог.',
+    auth_required: 'Войдите в CRM для редактирования прайса.',
+    forbidden: 'Недостаточно прав для изменения прайса.',
     duplicate: 'Позиция с таким названием уже есть в каталоге.',
     not_found: 'Позиция каталога не найдена.',
     stale_source: 'Позиция уже изменилась. Обновите каталог перед сохранением.',
@@ -108,7 +165,7 @@ export function catalogManagementResultMessage(kind, replay = false) {
 }
 
 export async function invokeStagingCatalogManagement({ client, supabaseUrl = '', canManage = false, operation, catalogId = null, expectedUpdatedAt = null, idempotencyKey, reason = null, patch = {}, requestId, actorId, cryptoObject = globalThis.crypto } = {}) {
-  const availability = catalogManagementWriteAvailability({ supabaseUrl, canManage });
+  const availability = catalogManagementWriteAvailability({ supabaseUrl, canManage, client, actorId });
   if (!availability.enabled) {
     const kind = availability.reason === 'forbidden' ? 'forbidden' : 'production_locked';
     return Object.freeze({ ok: false, status: kind === 'forbidden' ? 403 : 503, kind, message: catalogManagementResultMessage(kind) });
@@ -133,7 +190,7 @@ export async function invokeStagingCatalogManagement({ client, supabaseUrl = '',
 
   if (invoked?.error || invoked?.data?.ok !== true) {
     const details = invoked?.error ? await edgeErrorDetails(invoked.error) : { status: 0, code: text(invoked?.data?.error?.code || invoked?.data?.error) };
-    const kind = classify(details.code);
+    const kind = details.status === 401 ? 'auth_required' : details.status === 403 ? 'forbidden' : classify(details.code);
     return Object.freeze({ ok: false, status: details.status, kind, code: details.code, message: catalogManagementResultMessage(kind), command });
   }
 

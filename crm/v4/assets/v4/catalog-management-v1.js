@@ -15,6 +15,8 @@ import {
 import {
   catalogManagementIdempotencyKey,
   catalogManagementWriteAvailability,
+  checkCatalogManagementAccess,
+  clearCatalogManagementAccess,
   invokeStagingCatalogManagement
 } from './catalog-management-staging-transport-v1.js';
 
@@ -37,6 +39,7 @@ const state = {
   editorRaw: null,
   editorBase: null,
   conflict: null,
+  accessNotice: '',
   filters: { search: '', category: 'all', status: 'all', sort: 'sort_order' }
 };
 
@@ -49,6 +52,7 @@ subscribeState(() => {
   const next = identity();
   if (next === currentIdentity) return;
   currentIdentity = next;
+  clearCatalogManagementAccess(supabaseClient);
   generation += 1;
   historyGeneration += 1;
   Object.assign(state, { rows: [], logs: [], selectedId: '', loaded: false, busy: false, historyBusy: false, historyUnavailable: false, editorMode: 'view', saveBusy: false, saveNotice: '', pendingSaveKey: '', pendingSave: null, editorRaw: null, editorBase: null, conflict: null });
@@ -140,7 +144,7 @@ function canManageCatalog() {
 function writeAvailability() {
   return catalogManagementWriteAvailability({
     supabaseUrl: V4_CONFIG.supabaseUrl,
-    canManage: canManageCatalog()
+    canManage: canManageCatalog(), client: supabaseClient, actorId: v4State.user?.id
   });
 }
 
@@ -237,7 +241,7 @@ function editorHtml(raw, operation) {
   const row = { ...initial, ...(state.editorRaw || {}) };
   return `<aside class="v4-catalog-detail">
     <h3>${operation === 'create' ? 'Новая позиция' : `Редактирование: ${esc(row.name)}`}</h3>
-    <p class="v4-catalog-muted">Сохранение доступно в тестовой среде. Изменения цены сохраняются вместе с историей.</p>
+    <p class="v4-catalog-muted">Изменения сохраняются в общем прайсе вместе с историей.</p>
     ${state.saveNotice ? `<div class="v4-catalog-note ${state.saveNotice.startsWith('Ошибка:') ? 'is-error' : ''}">${esc(state.saveNotice)}</div>` : ''}
     ${state.conflict ? `<div class="v4-catalog-note" role="alert">${state.conflict.keys.map(key => `<p><b>${esc(FIELD_LABELS[key] || key)}</b>: актуальное значение — ${esc(state.conflict.latest[key])}; ваше — ${esc(row[key])}</p>`).join('')}<button type="button" id="catalogUseCurrent">Принять актуальные значения</button> <button type="button" id="catalogKeepMine">Оставить мои значения</button></div>` : ''}
     <form id="catalogManagementEditor" class="v4-catalog-editor" data-operation="${operation}">
@@ -288,7 +292,7 @@ function detailHtml() {
     </dl>
     ${availability.enabled
       ? '<button id="catalogManagementEditBtn" type="button" class="v4-primary">Редактировать</button>'
-      : '<div class="v4-catalog-note"><b>Прайс доступен для просмотра.</b><br>Цены можно использовать в расчётах. Редактирование рабочего прайса ещё не включено.</div>'}
+      : '<div class="v4-catalog-note"><b>Прайс доступен для просмотра.</b><br>Цены можно использовать в расчётах. Для изменения нужны подтверждённые сервером права руководителя.</div>'}
     <h4>История цены</h4>${historyHtml()}
   </aside>`;
 }
@@ -302,7 +306,7 @@ function render() {
   const summary = catalogManagementSummary(state.rows);
   const rows = visibleRows();
   host.innerHTML = `
-    <div class="v4-catalog-note"><b>Прайс для расчётов.</b> ${availability.enabled ? 'В тестовой среде руководитель может редактировать позиции. История цен сохраняется.' : 'Рабочий прайс доступен для просмотра и подготовки расчётов.'}</div>
+    <div class="v4-catalog-note"><b>Прайс для расчётов.</b> ${availability.enabled ? 'Можно редактировать позиции. История изменений сохраняется; готовые расчёты и КП сохраняют свои цены.' : esc(state.accessNotice || 'Прайс доступен для просмотра и подготовки расчётов.')}</div>
     <div class="v4-catalog-stats"><div><span>Всего</span><b>${summary.total}</b></div><div><span>Активных</span><b>${summary.active}</b></div><div><span>Выключено</span><b>${summary.inactive}</b></div><div><span>Категорий</span><b>${summary.categories}</b></div></div>
     <div class="v4-catalog-filters">
       <label>Поиск<input id="catalogManagementSearch" type="search" value="${esc(state.filters.search)}" placeholder="Название, категория, описание"></label>
@@ -375,6 +379,10 @@ async function load(force = false) {
     if (token !== generation || !canReadCatalog()) return;
     if (response.error) throw response.error;
     state.rows = response.data || [];
+    render();
+    const access = await checkCatalogManagementAccess({ client: supabaseClient, supabaseUrl: V4_CONFIG.supabaseUrl, canManage: canManageCatalog(), actorId: v4State.user?.id, force });
+    if (token !== generation || !canReadCatalog()) return;
+    state.accessNotice = !access.ok && canManageCatalog() ? 'Не удалось подтвердить доступ к редактированию. Обновите каталог, чтобы повторить проверку; просмотр доступен.' : '';
     state.loaded = true;
     if (state.selectedId && !state.rows.some((row) => row.id === state.selectedId)) state.selectedId = '';
     render();

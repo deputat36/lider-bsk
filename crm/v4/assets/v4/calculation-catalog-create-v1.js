@@ -39,7 +39,7 @@ export function createCalculationCatalogAttempt({ input, actorId, cryptoObject =
   return Object.freeze({ actorId, input: Object.freeze({ ...input }), patch: Object.freeze({ ...validation.payload, settings: Object.freeze({}) }), idempotencyKey: catalogManagementIdempotencyKey('create', '', cryptoObject), requestId: cryptoObject.randomUUID(), reason: 'Добавлено из расчёта' });
 }
 export async function createCalculationCatalogItem({ supabaseClient, supabaseUrl = '', input, allowWrite = false, actorId, attempt } = {}) {
-  const availability = catalogManagementWriteAvailability({ supabaseUrl, canManage: allowWrite });
+  const availability = catalogManagementWriteAvailability({ supabaseUrl, canManage: allowWrite, client: supabaseClient, actorId });
   if (!availability.enabled) return { ok: false, row: null, error: { code: 'catalog_write_not_allowed', message: 'Добавление позиции в рабочий прайс ещё не включено.' } };
   let snapshot = attempt;
   try { snapshot ||= createCalculationCatalogAttempt({ input, actorId }); }

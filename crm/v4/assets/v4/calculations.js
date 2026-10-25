@@ -12,7 +12,7 @@ import { catalogRowToDraftItem, catalogRowToTypicalDraftItem, legacyCatalogFallb
 import { createCalculationCatalogItem, createCalculationCatalogAttempt } from './calculation-catalog-create-v1.js';
 import { canPerformV4Action, CRM_V4_ACTIONS } from './action-permissions-v1.js';
 import { contractorQuoteDraftItem, contractorQuoteDraftValidation } from './calculation-contractor-quote-model-v1.js';
-import { catalogManagementWriteAvailability } from './catalog-management-staging-transport-v1.js';
+import { catalogManagementWriteAvailability, checkCatalogManagementAccess, clearCatalogManagementAccess } from './catalog-management-staging-transport-v1.js';
 import { compositeDraftValidation } from './calculation-composite-model-v1.js';
 import { quoteEnvironment, quoteCalculationItems } from './quote-workspace-model-v1.js';
 
@@ -143,11 +143,11 @@ function catalogSourceLabel() {
 }
 
 function canManageCalculationCatalog() {
-  return catalogManagementWriteAvailability({ supabaseUrl: V4_CONFIG.supabaseUrl, canManage: canPerformV4Action(CRM_V4_ACTIONS.CATALOG_MANAGE) }).enabled;
+  return catalogManagementWriteAvailability({ supabaseUrl: V4_CONFIG.supabaseUrl, canManage: canPerformV4Action(CRM_V4_ACTIONS.CATALOG_MANAGE), client: supabaseClient, actorId: v4State.user?.id }).enabled;
 }
 
 function renderCatalogCreatePanel() {
-  if (!catalogManagementWriteAvailability({ supabaseUrl: V4_CONFIG.supabaseUrl, canManage: true }).enabled) return '<div class="v4-calc-mode-help">Рабочий прайс доступен для просмотра. Разовую работу можно добавить своей позицией; изменение прайса ещё не включено.</div>';
+  if (!catalogManagementWriteAvailability({ supabaseUrl: V4_CONFIG.supabaseUrl, canManage: true, client: supabaseClient, actorId: v4State.user?.id }).enabled) return '<div class="v4-calc-mode-help">Прайс доступен для просмотра. Для добавления номенклатуры нужен подтверждённый сервером доступ. Разовую работу можно добавить своей позицией.</div>';
   if (!canManageCalculationCatalog()) {
     return '<div class="v4-calc-mode-help">Новой номенклатурой управляет руководитель. Разовую работу можно добавить режимом «Ручная позиция».</div>';
   }
@@ -1548,16 +1548,28 @@ export function bootCalculations() {
   if (window.LeaderV4CalculationsBooted) return;
   window.LeaderV4CalculationsBooted = true;
   let context = catalogCreateContext();
+  let accessIdentity = JSON.stringify([v4State.user?.id,v4State.profile?.role,v4State.profile?.is_active,v4State.profileLoaded,v4State.crmReady]);
+  const checkAccess = async () => {
+    const expected = catalogCreateContext();
+    if (!v4State.crmReady) return;
+    if (canManageCalculationCatalog()) return;
+    const access = await checkCatalogManagementAccess({ client: supabaseClient, supabaseUrl: V4_CONFIG.supabaseUrl, canManage: canPerformV4Action(CRM_V4_ACTIONS.CATALOG_MANAGE), actorId: v4State.user?.id });
+    if (access.ok && expected === catalogCreateContext()) renderCalculations();
+  };
   subscribeState(() => {
     const next = catalogCreateContext();
     if (next === context) return;
     context = next; catalogCreateGeneration++;
+    const nextIdentity = JSON.stringify([v4State.user?.id,v4State.profile?.role,v4State.profile?.is_active,v4State.profileLoaded,v4State.crmReady]);
+    if (nextIdentity !== accessIdentity) { accessIdentity = nextIdentity; clearCatalogManagementAccess(supabaseClient); }
     pendingCatalogCreate = null; catalogCreateDraft = {}; catalogCreateBusy = false;
     byId('calcCatalogCreatePanel')?.remove();
+    void checkAccess();
   });
   ensureCalculationCatalog();
   bindCalculationEvents();
   renderCalculations();
+  void checkAccess();
   if (v4State.crmReady && v4State.route.leadId) loadCalculations(v4State.route.leadId);
 }
 
