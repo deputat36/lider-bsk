@@ -1,6 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 
 import {
+  CATALOG_ACCESS_CONTRACT,
   CATALOG_ACTION,
   CATALOG_EDGE_CONTRACT_VERSION,
   CATALOG_PERMISSION,
@@ -10,6 +11,7 @@ import {
   projectRefFromUrl,
   rpcStatus,
   validateCatalogRequest,
+  isCatalogAccessRequest,
 } from './contract.ts'
 
 const corsHeaders = {
@@ -110,7 +112,8 @@ Deno.serve(async (req: Request) => {
   let input: unknown
   try { input = await req.json() } catch { return json(400, { error: 'invalid_payload' }) }
 
-  const validation = validateCatalogRequest(input)
+  const accessProbe = isCatalogAccessRequest(input)
+  const validation = accessProbe ? { ok: true as const, request: asObject(input)! } : validateCatalogRequest(input)
   if (!validation.ok) {
     return json(rpcStatus(validation.code), {
       ok: false,
@@ -128,6 +131,21 @@ Deno.serve(async (req: Request) => {
       permission: CATALOG_PERMISSION,
       contract: CATALOG_EDGE_CONTRACT_VERSION,
     })
+  }
+
+  if (accessProbe) {
+    // Empty payload fails RPC validation before any row/receipt mutation.
+    // This also detects a stopped/missing RPC without a business fixture.
+    const response = await serviceFetch(supabaseUrl, serviceRole, '/rest/v1/rpc/leader_manage_catalog_rpc', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_payload: {} }),
+    })
+    const probe = response.ok ? asObject(await response.json()) : null
+    if (probe?.ok !== false || asObject(probe.error)?.code !== 'invalid_payload') {
+      return json(503, { error: 'catalog_access_unavailable' })
+    }
+    return json(200, { ok: true, can_manage: true, request_id: asObject(input)!.request_id,
+      actor_id: checked.user.id, project_ref: STAGING_PROJECT_REF, contract: CATALOG_ACCESS_CONTRACT })
   }
 
   const rpcResponse = await serviceFetch(supabaseUrl, serviceRole, '/rest/v1/rpc/leader_manage_catalog_rpc', {
