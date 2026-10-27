@@ -18,7 +18,7 @@ Private pepper может находиться в Edge environment или в з�
 
 Исправлены два ложных CI отказа: grep сам обнаруживал строку проверки в третьем guard workflow. Запрет автоматического production deploy сохранён. TypeScript проходит реальный strip+syntax, поскольку node --check с TS-файлом не удаляет типы в текущем runtime.
 
-Три затронутых browser jobs используют проверенный образ Playwright 1.55.0 с закреплённым digest. Повторный apt install Chromium/fonts из них удалён; npm package остаётся той же версии. Security/business checks не отключены.
+Для первого HEAD manifest Registry вернул digest устаревшей схемы: Docker его отклонил. Получен schema-v2 manifest list с явным Accept; запрос по новому digest вернул 200. Три затронутых browser jobs используют этот образ Playwright 1.55.0 с закреплённым digest. Повторный apt install Chromium/fonts из них удалён; npm package остаётся той же версии. Security/business checks не отключены.
 
 ## Граница текущего checkpoint
 

@@ -29,7 +29,7 @@ jobs:
   browser-check:
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.55.0-noble@sha256:d9e3d94f347b3c479789a9fefdfc43b755a0b22d6b9d98139873d354f981ef19
+      image: mcr.microsoft.com/playwright:v1.55.0-noble@sha256:b27e719ecbfef153e13fd24e8341736733bf2658b229677eb21ff57ff5d7fb29
       options: --ipc=host
     timeout-minutes: 10
     steps:
