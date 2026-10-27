@@ -23,3 +23,15 @@ Private pepper может находиться в Edge environment или в з�
 ## Граница текущего checkpoint
 
 Production rollout публичного intake, уведомлений, quotes, архива и новых финансовых операций в этом checkpoint ещё не заявляется. Результаты каждого последующего этапа добавляются здесь после native readback и проверки сценария.
+
+## Production intake завершён
+
+Установлены runtime migration 20261027182713 и leader_public_intake_acl_v2; deployed Edge leader-public-lead v11 ACTIVE, verify_jwt=false, bundle ee12fb0d743ae38e9b7308f123c1ebe0fa7a3caa20d4b5305584ffa411ae2a10. Перед cutover сохранён private metadata backup public-intake-20261027-v2 и точный исходник прежнего Edge v10.
+
+Actual production POST: 3001 → 400/message_too_long; honeypot → 200 без лида; 3000 → 200 и ровно 3000 символов + UTM в одной строке, повтор → 200/duplicate=true. Audit accepted/duplicate подтверждён. Anonymous table/column INSERT на leads/audit закрыт, authenticated manual INSERT сохранён; публичная INSERT-policy leads ограничена активным authenticated CRM-профилем и 3000 символами.
+
+Обычный execute_sql cleanup дважды получил Invalid or expired requestState; независимое чтение подтвердило остаток. Та же строго ограниченная очистка с проверкой имени/пути и отсутствия заказа выполнена через native data migration leader_public_intake_acceptance_cleanup_v2. Независимый SELECT: 19 лидов, 0/0/0 synthetic leads/audit/receipts. Реальные строки и финансы не изменялись.
+
+## Notifications WIP
+
+Добавлены Edge sender с fresh Auth и одноразовым worker ticket, npm web-push 3.6.7 + package-lock, push-only SW без кеширования CRM, PWA manifest и настройки на 360/390/1440. Actual Edge unit proof проверяет шифрованный Web Push запрос без внешней отправки, denied actor, worker ticket и SSRF guard. Browser проверяет пользовательский жест разрешения, повтор test request_id, смену аккаунта и logout. Настройка/доставка в production ещё не включены. Native SQL/CI/closed-tab SW proof продолжаются.

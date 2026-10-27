@@ -23,7 +23,9 @@
 
 ## Последний результат / следующий шаг
 
-Сохранён исходный SQL уже установленных уведомлений. До повторного применения сравнить историю/объекты. Следующий шаг: согласовать лимит приёма заявки и подготовить воспроизводимую проверку существующего защищённого candidate. В production установлена только закрытая конфигурация/rate-limit runtime, migration 20261027182713 leader_public_intake_runtime_v2; Edge v10 и anon grant до cutover сохранены. Возврат ответа прервался, результат подтверждён независимым чтением. Повторно не устанавливать.
+Production intake завершён: Edge v11, private config/rate limit и ACL установлены, фактические POST 3000/3001/duplicate проверены, synthetic cleanup 0/0/0 и 19 исходных лидов подтверждены. Не повторять установку.
+
+Уведомления: historical staging схема сохранена; новый Edge/SW/PWA source и unit/browser tests — WIP. Production notifications ещё не установлены/не включены. Следующий шаг: завершить notifications native SQL/closed-tab SW tests, затем пакет/Edge/opt-in. Подробные доказательства в CRM_RECOVERY_DELIVERY_2026-10-27.md. Далее quotes, документы, финансы, итоговый аудит.
 
 ## Правила продолжения
 
