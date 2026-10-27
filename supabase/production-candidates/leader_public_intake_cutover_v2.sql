@@ -3,8 +3,8 @@ begin;
 insert into leader_private.leader_rollout_backups(id,created_at,project_ref,data_snapshot,metadata_snapshot,edge_snapshot)
 select 'public-intake-20261027-v2',now(),'ofewxuqfjhamgerwzull',
  jsonb_build_object('leads',(select count(*) from public.leader_leads),'audit',(select count(*) from public.leader_public_lead_audit)),
- jsonb_build_object('policies',(select jsonb_agg(to_jsonb(p)) from pg_policies p where schemaname='public' and tablename in ('leader_leads','leader_public_lead_audit')),
- '[]'::jsonb)
+ jsonb_build_object('policies',(select jsonb_agg(to_jsonb(p)) from pg_policies p where schemaname='public' and tablename in ('leader_leads','leader_public_lead_audit'))),
+ '[]'::jsonb
 on conflict(id) do nothing;
 revoke insert on public.leader_leads,public.leader_public_lead_audit from anon;
 do $$ declare r record; begin
