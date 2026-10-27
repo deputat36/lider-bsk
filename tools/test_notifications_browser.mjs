@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import os from 'node:os';
 import { createServer } from 'node:http';
 import { chromium } from 'playwright';
 const root = process.cwd(), actor = '90000000-0000-4000-8000-000000000901', second = '90000000-0000-4000-8000-000000000904', device = '90000000-0000-4000-8000-000000000905';
@@ -63,22 +64,28 @@ try {
   await page.waitForFunction(()=>window.fixtureMetrics.messages.at(-1)?.actor===null);
   await context.close();
  }
- const native=await browser.newContext();await native.grantPermissions(['notifications'],{origin});
+ const nativeDirectory=await fs.mkdtemp(path.join(os.tmpdir(),'leader-push-worker-'));
+ const native=await chromium.launchPersistentContext(nativeDirectory,{headless:true});await native.grantPermissions(['notifications'],{origin});
  const first=await native.newPage();await first.goto(origin+'/crm/v4/widget-fixture.html');
  const waiting=native.waitForEvent('serviceworker');
  await first.evaluate(async id=>{await navigator.serviceWorker.register('/crm/v4/sw.js',{scope:'/crm/v4/'});const reg=await navigator.serviceWorker.ready;reg.active.postMessage({type:'leader:set-actor',actor:id})},actor);
  const worker=await waiting;
  await worker.evaluate(async id=>{for(let n=0;n<30;n++){if(await identity()===id)return;await new Promise(r=>setTimeout(r,20))}throw Error('actor not persisted')},actor);
+ // Headless Chromium does not expose the desktop notification center to worker
+ // permission overrides. Stub that browser API boundary explicitly; this still
+ // executes the actual registered SW, IndexedDB and PushEvent with no CRM tab.
+ await worker.evaluate(()=>{self.nativeProof={calls:[]};let notices=[];self.registration.showNotification=async(title,options)=>{self.nativeProof.calls.push({title,options});const item={data:options.data,close:()=>{notices=notices.filter(n=>n!==item)}};notices.push(item)};self.registration.getNotifications=async()=>notices});
  await first.close();
  const pushed=await worker.evaluate(async ({actor,origin})=>{
   const send=async id=>{const event=new PushEvent('push',{data:JSON.stringify({actor_id:id,title:'Лидер — тест',body:'Откройте CRM',tag:'leader-native-proof',url:origin+'/crm/v4/?tab=leads&lead=90000000-0000-4000-8000-000000000904'})});let done;event.waitUntil=value=>{done=value};self.dispatchEvent(event);await done};
   await send(actor);let notices=await self.registration.getNotifications();const one=notices.length===1&&notices[0].data.actor_id===actor;
   await send('90000000-0000-4000-8000-000000000999');notices=await self.registration.getNotifications();return {one,afterOtherActor:notices.length};
  },{actor,origin});
+
  assert.deepEqual(pushed,{one:true,afterOtherActor:1},'Actual SW receives a synthetic push without an open tab and rejects another actor');
  const secondPage=await native.newPage();await secondPage.goto(origin+'/crm/v4/widget-fixture.html');
  await secondPage.evaluate(async()=>{const reg=await navigator.serviceWorker.ready;reg.active.postMessage({type:'leader:set-actor',actor:null})});
  await worker.evaluate(async()=>{for(let n=0;n<30;n++){if(await identity()===null&&(await self.registration.getNotifications()).length===0)return;await new Promise(r=>setTimeout(r,20))}throw Error('logout did not clear notification')});
- await native.close();
- console.log('Actual notification widget: 360/390/1440, permission, exact retry, profile/actor/logout and mobile layout PASS. Native service worker: synthetic PushEvent with the tab closed, persisted actor, other-actor rejection and logout cleanup PASS; remote push-service/Android delivery remains a separate device check.');
+ await native.close();await fs.rm(nativeDirectory,{recursive:true,force:true});
+ console.log('Actual notification widget: 360/390/1440, permission, exact retry, profile/actor/logout and mobile layout PASS. Registered service worker with stubbed headless notification API: synthetic PushEvent with the tab closed, persisted actor, other-actor rejection and logout cleanup PASS; remote push-service/Android delivery remains a separate device check.');
 }finally{await browser.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}

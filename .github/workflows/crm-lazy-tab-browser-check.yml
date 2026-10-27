@@ -24,11 +24,18 @@ permissions:
 jobs:
   browser-check:
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.55.0-noble@sha256:b27e719ecbfef153e13fd24e8341736733bf2658b229677eb21ff57ff5d7fb29
+      options: --ipc=host
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - name: Validate browser runner syntax
         run: node --check tools/run_crm_lazy_tab_browser_check.mjs
+      - name: Use the pinned browser instead of the runner Chrome installation
+        run: |
+          npm install --no-save --package-lock=false playwright@1.55.0
+          node -e "require('node:fs').appendFileSync(process.env.GITHUB_ENV, 'CHROME_BIN=' + require('playwright').chromium.executablePath() + '\n')"
       - name: Run isolated desktop and mobile browser checks
         id: browser
         shell: bash

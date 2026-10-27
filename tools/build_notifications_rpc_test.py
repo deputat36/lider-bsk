@@ -6,6 +6,7 @@ prefix = """
 create schema extensions; create extension pgcrypto with schema extensions;
 create schema leader_private; create schema net; create schema cron;
 create role anon; create role authenticated; create role service_role bypassrls;
+grant usage on schema extensions to service_role;
 create table public.leader_user_profiles(user_id uuid primary key,role text,is_active boolean,full_name text);
 create table public.leader_leads(id uuid primary key default gen_random_uuid(),name text,status text,assigned_to uuid);
 grant select,insert,update on public.leader_leads,public.leader_user_profiles to service_role;
