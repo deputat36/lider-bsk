@@ -1,4 +1,4 @@
-import { checkPublicIntakeRateLimit, publicIntakeRateLimitIdentity } from './rate-limit.ts'
+import { checkPublicIntakeRateLimit, publicIntakeRateLimitIdentity, publicIntakeRateLimitSalt } from './rate-limit.ts'
 
 const DEFAULT_ALLOWED_ORIGINS = [
   'https://www.lider-bsk.ru',
@@ -120,6 +120,7 @@ async function writeAudit(params: {
   try {
     const auditRes = await fetch(params.supabaseUrl + '/rest/v1/leader_public_lead_audit', {
       method: 'POST',
+      signal: AbortSignal.timeout(8000),
       headers: {
         ...params.backendHeaders,
         'Content-Type': 'application/json',
@@ -171,15 +172,26 @@ Deno.serve(async (req: Request) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const credential = backendCredential()
-  const rateLimitSalt = (Deno.env.get('LEADER_PUBLIC_RATE_LIMIT_SALT') || '').trim()
-  if (!supabaseUrl || !credential || rateLimitSalt.length < 16) {
+  let rateLimitSalt = (Deno.env.get('LEADER_PUBLIC_RATE_LIMIT_SALT') || '').trim()
+  if (!supabaseUrl || !credential) {
     return json(req, 500, { error: 'server_not_configured' })
   }
 
   let body: Record<string, unknown>
-  try { body = await req.json() } catch (_) { return json(req, 400, { error: 'bad_json' }) }
+  try {
+    const raw = await req.text()
+    if (new TextEncoder().encode(raw).length > MAX_BODY_BYTES) return json(req, 413, { error: 'payload_too_large' })
+    body = JSON.parse(raw)
+    if (!body || typeof body !== 'object' || Array.isArray(body)) return json(req, 400, { error: 'bad_json' })
+  } catch (_) { return json(req, 400, { error: 'bad_json' }) }
+
+  // Validate before quota/audit writes: the form must retain the complete input.
+  if (typeof body.message !== 'undefined' && typeof body.message !== 'string') return json(req, 400, { error: 'message_invalid' })
+  if (String(body.message ?? '').trim().length > 3000) return json(req, 400, { error: 'message_too_long', max_length: 3000, request_id: requestIdFromBody(body) })
 
   const requestId = requestIdFromBody(body)
+  if (requestId.length < 8 || requestId.length > 120) return json(req, 400, { error: 'request_id_invalid' })
+  if (supabaseUrl === 'https://otulfnouybahfnsycxqn.supabase.co' && !/^staging-public-intake-[0-9]{10,}-/.test(requestId)) return json(req, 403, { error: 'staging_fixture_required' })
   const phone = cleanText(body.phone, 80)
   const phoneNormalized = normalizePhone(phone)
   const pageUrl = cleanText(body.page_url, 1000)
@@ -206,6 +218,7 @@ Deno.serve(async (req: Request) => {
 
   let rateIdentity: { ipHash: string; phoneHash: string | null }
   try {
+    rateLimitSalt = await publicIntakeRateLimitSalt(supabaseUrl, credential.headers, rateLimitSalt)
     rateIdentity = await publicIntakeRateLimitIdentity(req, phoneNormalized, rateLimitSalt)
   } catch (_) {
     return json(req, 500, { error: 'server_not_configured', request_id: requestId })
@@ -305,15 +318,19 @@ Deno.serve(async (req: Request) => {
     payload,
   }
 
-  const res = await fetch(supabaseUrl + '/rest/v1/leader_leads', {
+  let res: Response
+  try { res = await fetch(supabaseUrl + '/rest/v1/leader_leads', {
     method: 'POST',
+    signal: AbortSignal.timeout(8000),
     headers: {
       ...credential.headers,
       'Content-Type': 'application/json',
       'Prefer': 'return=minimal',
     },
     body: JSON.stringify(insertBody),
-  })
+  }) } catch (_) {
+    return json(req, 503, { error: 'insert_unconfirmed', request_id: requestId })
+  }
 
   if (!res.ok) {
     const details = await res.text()

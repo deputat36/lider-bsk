@@ -137,3 +137,4 @@ exception when invalid_text_representation then return jsonb_build_object('ok',f
 end $$;
 
 commit;
+

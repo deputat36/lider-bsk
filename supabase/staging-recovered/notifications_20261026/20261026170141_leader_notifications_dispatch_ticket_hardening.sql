@@ -116,3 +116,4 @@ end $$;
 
 revoke all on function leader_private.leader_notification_worker_ticket() from public,anon,authenticated,service_role;
 commit;
+
