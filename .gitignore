@@ -11,3 +11,12 @@
 /artifacts/design-task-staging-stale-order-sql-bundle.json
 /artifacts/design-task-staging-stale-order-evidence.json
 /auth-e2e-plan.json
+
+# Local dependencies, runtime artifacts and credentials are not source.
+node_modules/
+/build/
+/artifacts/
+.env
+.env.*
+!.env.example
+!.env.template
