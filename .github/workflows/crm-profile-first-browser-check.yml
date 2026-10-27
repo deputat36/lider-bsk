@@ -28,6 +28,9 @@ permissions:
 jobs:
   browser-check:
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.55.0-noble@sha256:d9e3d94f347b3c479789a9fefdfc43b755a0b22d6b9d98139873d354f981ef19
+      options: --ipc=host
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -59,7 +62,6 @@ jobs:
       - name: Install pinned recovery browser runtime
         run: |
           npm install --no-save --package-lock=false playwright@1.55.0
-          npx playwright install --with-deps chromium
       - name: Check slow profile retry denial and late responses
         run: node tools/test_profile_recovery_browser.mjs
       - name: Upload profile recovery fixture screenshots
