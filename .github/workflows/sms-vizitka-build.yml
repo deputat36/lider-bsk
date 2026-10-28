@@ -2,7 +2,7 @@ name: Build SMS Vizitka Android
 
 on:
   push:
-    branches: ["sms-vizitka-build"]
+    branches: ["sms-vizitka-v061-sms-fix"]
   workflow_dispatch:
 
 jobs:
@@ -135,7 +135,13 @@ jobs:
           python android/sms-card-v060/v060_perf_patch.py
           cp android/sms-card-v060/README.md android/build-src/sms-card-app/README.md
 
-          grep -q 'versionName = "0.6.0"' android/build-src/sms-card-app/app/build.gradle.kts
+          python android/sms-card-v061/v061_sms_address_fix.py
+          cp android/sms-card-v061/SmsRecipientFormatTest.java android/build-src/sms-card-app/app/src/test/java/ru/etagi/borisoglebsk/smscard/SmsRecipientFormatTest.java
+          cp android/sms-card-v061/README.md android/build-src/sms-card-app/README.md
+          grep -q 'String smsRecipient = PhoneNormalizer.toSmsRecipient(normalized)' android/build-src/sms-card-app/app/src/main/java/ru/etagi/borisoglebsk/smscard/SmsComposeActivity.java
+          grep -q 'String smsRecipient = PhoneNormalizer.toSmsRecipient(recipient.phone)' android/build-src/sms-card-app/app/src/main/java/ru/etagi/borisoglebsk/smscard/BulkCampaignActivity.java
+
+          grep -q 'versionName = "0.6.1"' android/build-src/sms-card-app/app/build.gradle.kts
           grep -q 'SqliteStores' android/build-src/sms-card-app/app/src/main/java/ru/etagi/borisoglebsk/smscard/HistoryStore.java
           grep -q 'android:allowBackup="false"' android/build-src/sms-card-app/app/src/main/AndroidManifest.xml
           grep -q 'after_call_cards_popup_v3' android/build-src/sms-card-app/app/src/main/java/ru/etagi/borisoglebsk/smscard/NotificationHelper.java
@@ -161,9 +167,9 @@ jobs:
           cd android/build-src/sms-card-app
           gradle wrapper --gradle-version 9.6.0 --distribution-type bin
           cd ..
-          zip -qr ../../sms-card-etagi-v0.6.0-source.zip sms-card-app -x 'sms-card-app/.gradle/*' 'sms-card-app/build/*' 'sms-card-app/app/build/*'
+          zip -qr ../../sms-card-etagi-v0.6.1-source.zip sms-card-app -x 'sms-card-app/.gradle/*' 'sms-card-app/build/*' 'sms-card-app/app/build/*'
           cd ../..
-          sha256sum sms-card-etagi-v0.6.0-source.zip
+          sha256sum sms-card-etagi-v0.6.1-source.zip
 
       - name: Test, lint and build APKs
         working-directory: android/build-src/sms-card-app
@@ -175,7 +181,7 @@ jobs:
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: sms-vizitka-v0.6.0-debug
+          name: sms-vizitka-v0.6.1-debug
           path: android/build-src/sms-card-app/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
@@ -206,20 +212,20 @@ jobs:
       - name: Upload signed release APK
         uses: actions/upload-artifact@v4
         with:
-          name: sms-vizitka-v0.6.0-release-signed
+          name: sms-vizitka-v0.6.1-release-signed
           path: android/build-src/sms-card-app/app/build/outputs/apk/release/app-release-signed.apk
           if-no-files-found: ignore
 
       - name: Upload unsigned release APK
         uses: actions/upload-artifact@v4
         with:
-          name: sms-vizitka-v0.6.0-release-unsigned
+          name: sms-vizitka-v0.6.1-release-unsigned
           path: android/build-src/sms-card-app/app/build/outputs/apk/release/app-release-unsigned.apk
           if-no-files-found: error
 
       - name: Upload exact source
         uses: actions/upload-artifact@v4
         with:
-          name: sms-vizitka-v0.6.0-source
-          path: sms-card-etagi-v0.6.0-source.zip
+          name: sms-vizitka-v0.6.1-source
+          path: sms-card-etagi-v0.6.1-source.zip
           if-no-files-found: error
