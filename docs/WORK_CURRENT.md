@@ -6,7 +6,7 @@
 
 - PR #596 уже MERGED: https://github.com/deputat36/lider-bsk/pull/596 . Head 23725e3247117242b890b214d351846f7c54ed80, merge d536b29cba68dfa2a2bb7a1ac27628147e3b318b. Старую agent/complete-recovery-20261027 не продолжать как незавершённый PR.
 - PR: 114 success + 1 штатный skipped IndexNow. Main merge: 119/119 success; Pages 40656395095 success.
-- После публикации source 44015a72cb61cb3beea6716524699e4bd831826f сверён с 41 публичным файлом: 41/41 SHA256 совпали с первой попытки, run 40657143371 success. Cloud workflow .github/workflows/recovery-runtime-readback.yml теперь проверяет эти файлы после успешного Pages. Сам workflow не пишет в базу.
+- После публикации source 44015a72cb61cb3beea6716524699e4bd831826f сверён с 41 публичным файлом: 41/41 SHA256 совпали с первой попытки, run 40657143371 success. Cloud workflow .github/workflows/recovery-runtime-readback.yml теперь на каждом push в main дожидается Pages для exact SHA (не более 120s) и сверяет эти файлы, общий deadline 8min. Сам workflow не пишет в базу.
 - Production intake Edge v11: 3000 символов, отказ 3001, безопасный повтор; anon direct INSERT закрыт. Техническая production-проверка и очистка выполнены 27.10.
 - Production/staging notifications: schema/RPC и Edge v1 установлены, enabled=true, dispatch_url верный, cron active. Worker HMAC ticket; browser fresh Auth/canonical role. Actual Android/FCM не доказан.
 - Quotes: production Edge v1, staging v2; workspace package установлен; native create/respond/version/accept/selection/template/replay/deny PASS.
