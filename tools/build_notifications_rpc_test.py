@@ -18,7 +18,7 @@ create function cron.schedule(text,text,text) returns bigint language sql as $$ 
 source = (root / 'supabase/production-candidates/leader_notifications_v1.sql').read_text()
 # The isolated PostgreSQL image does not ship pg_net/pg_cron. Only their two IO
 # entrypoints above are stubs; the actual tables, RPCs, triggers and grants execute.
-source = re.sub(r'^create extension if not exists (?:pg_net|pg_cron);\s*$', '', source, flags=re.M)
+source = re.sub(r'^create extension if not exists (?:pg_net|pg_cron)(?: with schema (?:extensions|pg_catalog))?;\s*$', '', source, flags=re.M)
 target = root / 'build/notifications-rpc-test.sql'
 target.parent.mkdir(exist_ok=True)
 target.write_text(prefix + source + (root / 'supabase/staging-tests/20261027_notifications_acceptance.sql').read_text())

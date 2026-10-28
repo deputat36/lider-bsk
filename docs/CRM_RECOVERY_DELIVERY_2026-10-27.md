@@ -41,3 +41,7 @@ Actual production POST: 3001 → 400/message_too_long; honeypot → 200 без �
 Восстановлен точный remote HEAD 5f70c4b PR #596, а не незакоммиченный каталог предыдущей среды. Все 71 check runs на этом head завершились success. Чтение staging подтвердило прежние четыре notification migrations, disabled config и нулевые очереди. Notification Edge отсутствовал: повторной установки неизвестного результата не было.
 
 Установлен staging leader-crm-notifications v1 ACTIVE, verify_jwt=false: браузерные команды проверяют fresh Auth внутри, worker — одноразовый HMAC ticket. Readback обоих файлов полностью совпал. Actual POST status без JWT вернул 401/auth_required. Рабочая база на этой контрольной точке не изменялась.
+
+Native staging acceptance 28.10 прошёл внутри BEGIN/ROLLBACK: права/получатели/одноразовый ticket/отзыв профиля/410/stale finish. Независимый SELECT подтвердил 0 profiles/subscriptions/events/outbox.
+
+Production preflight: 19 лидов, 17 клиентов, 69 позиций прайса, 2 заказа, 1 оплата, 0 расходов; notifications/quotes/documents отсутствуют. pg_net/pg_cron ещё не установлены. Production package теперь содержит только последние версии функций, retention одноразовых tickets и закрывает browser-доступ к новым net/cron IO. Он останавливается при неожиданно существующем shared extension, чтобы не менять чужие ACL. Private worker_secret остаётся только в закрытой конфигурации. Активация включает только возможность добровольной подписки, без подписок от имени сотрудников и без уведомлений по старым заявкам.
