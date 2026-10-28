@@ -59,7 +59,7 @@ export async function openDocumentArchive(orderId){
  if(!orderId||!canPerformV4Action('documents.read'))return;
  closeDrawer();opener=document.activeElement;const actor=context();
  drawer=document.createElement('div');drawer.style.cssText='position:fixed;inset:0;background:#172033bb;z-index:820;display:grid;place-items:center;padding:12px';
- drawer.innerHTML='<section role="dialog" aria-modal="true" aria-label="Архив документов" style="box-sizing:border-box;width:min(900px,100%);max-height:94vh;overflow:auto;padding:20px;background:white;border-radius:16px"><div style="display:flex;justify-content:space-between;gap:12px"><h2>Архив документов заказа</h2><button type="button" data-archive-close>Закрыть</button></div><p data-archive-list-status role="status">Загружаю…</p><div data-archive-rows></div><button type="button" data-archive-more hidden>Показать ещё</button></section>';
+ drawer.innerHTML='<section role="dialog" aria-modal="true" aria-label="Архив документов" style="box-sizing:border-box;width:min(900px,100%);max-height:94vh;overflow:auto;padding:20px;background:white;border-radius:16px"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px"><h2 style="font-size:20px;line-height:1.25;margin:0;min-width:0">Архив документов заказа</h2><button style="flex:0 0 auto;padding:10px" type="button" data-archive-close>Закрыть</button></div><p data-archive-list-status role="status">Загружаю…</p><div data-archive-rows></div><button type="button" data-archive-more hidden>Показать ещё</button></section>';
  document.body.append(drawer);const current=drawer,rows=new Map();let offset=0,busy=false;
  const status=()=>current.querySelector('[data-archive-list-status]');
  async function load(){

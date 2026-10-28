@@ -10,7 +10,13 @@ const bounded = (promise, ms = 12000) => {
 };
 const errors = { disabled: 'Отправка уведомлений ещё не подключена.', forbidden: 'Для вашей роли уведомления недоступны.', auth_required: 'Войдите в CRM и повторите проверку.', device_limit: 'Достигнут предел 10 устройств. Отключите ненужное устройство.', device_owner_conflict: 'Подписка принадлежит другому аккаунту. Отключите её на этом устройстве и включите снова.', rate_limited: 'Проверочное уведомление можно отправлять раз в минуту.', key_changed: 'Настройки уведомлений изменились. Обновите проверку и включите их снова.', notification_service_unavailable: 'Сервис уведомлений временно не отвечает. Повторите проверку.' };
 async function worker() {
-  if (!registration) registration = bounded(navigator.serviceWorker.register('/crm/v4/sw.js', { scope: '/crm/v4/' }).then(() => navigator.serviceWorker.ready)).catch(error => { registration = null; throw error; });
+  if (!registration) registration = bounded(navigator.serviceWorker.register('/crm/v4/sw.js', { scope: '/crm/v4/', updateViaCache: 'none' }).then(reg => {
+    if(reg.active)return reg;
+    return new Promise((resolve,reject)=>{const installing=reg.installing||reg.waiting;if(!installing){reject(Error('Сервис уведомлений ещё не готов. Повторите проверку.'));return;}
+      const changed=()=>{if(installing.state==='activated'){installing.removeEventListener('statechange',changed);resolve(reg);}else if(installing.state==='redundant'){installing.removeEventListener('statechange',changed);reject(Error('Сервис уведомлений не установился. Повторите проверку.'));}};
+      installing.addEventListener('statechange',changed);changed();
+    });
+  })).catch(error => { registration = null; throw error; });
   return registration;
 }
 async function actorMessage(actor, ticket) {

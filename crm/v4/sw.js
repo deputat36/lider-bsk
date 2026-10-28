@@ -34,7 +34,7 @@ self.addEventListener('push', event => event.waitUntil((async () => {
     if (!data || !actor || data.actor_id !== actor) return;
     await self.registration.showNotification(String(data.title || 'Новая заявка в CRM «Лидер»').slice(0, 120), {
       body: String(data.body || 'Откройте CRM, чтобы посмотреть обращение.').slice(0, 180),
-      icon: '/assets/brand/logo-lider-mark.svg', tag: String(data.tag || 'leader-new-lead').slice(0, 120),
+      icon: '/crm/v4/icons/icon192.png', tag: String(data.tag || 'leader-new-lead').slice(0, 120),
       data: { url: crmUrl(data.url), actor_id: actor }, renotify: false,
     });
   } catch (_) { /* Invalid payload/identity never opens another account's card. */ }

@@ -81,3 +81,11 @@ Package и JWT Edge v1 установлены в обоих контурах. Na
 Read-only проверка показала: leader_has_access означает лишь активный профиль. Старые permissive lead policies тем самым не ограничивали роли canonical leads.read/create/update. Подготовлены дополнительные restrictive policies, сохраняющие прежние policies/grants и разрешённое создание owner/admin/manager. Service-only intake не зависит от browser RLS. До применения сохранён native RLS proof owner/manager/contractor с полным ROLLBACK.
 
 Новые document/quote FK advisories адресованы scoped индексами. Прочие проекты общей базы и исторические индексы не меняются.
+
+## Аудит прав, установки и кеша — 28.10
+
+Дополнительные restrictive lead policies установлены в staging/production. Native owner/manager create и contractor read/create/update denial прошли; fixture profiles/leads=0 после ROLLBACK. Глобальные Auth/роли и прежние политики не удалялись. Новые FK индексы применены в обоих контурах.
+
+Подготовлен единый cache release 20261028-recovery-1 для всех изменённых CRM modules и их старых URL aliases; graph не создаёт второй экземпляр одного изменённого модуля. PWA получила 192/512 PNG из точного исходного SVG/растрового логотипа владельца с его alpha matrix. Неизменённый бренд сохранён; растровый fallback соответствует официальному install manifest guidance https://web.dev/articles/add-manifest . Worker ждёт именно свою регистрацию, а не произвольный root serviceWorker.ready, и обновляет source без HTTP-cache.
+
+CI screenshots архивов/уведомлений/переноса 360 и 1440 скачаны и просмотрены. Browser fixtures синтетические; они не подменяют фактическую доставку на Android или настоящий вход владельца.

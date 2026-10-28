@@ -21,7 +21,9 @@ do $$ declare changed integer;begin
   insert into public.leader_leads(id,name,message,status) values('90000000-0000-4000-8000-000000000496','Synthetic forbidden lead','Synthetic role proof','Новая');
   raise exception 'contractor_creates_leads';
  exception when insufficient_privilege then null;end;
- update public.leader_leads set message='Synthetic forbidden change' where id='90000000-0000-4000-8000-000000000494';get diagnostics changed=row_count;
+ changed:=0;begin
+  update public.leader_leads set message='Synthetic forbidden change' where id='90000000-0000-4000-8000-000000000494';get diagnostics changed=row_count;
+ exception when insufficient_privilege then changed:=0;end;
  if changed<>0 then raise exception 'contractor_updates_leads';end if;
 end $$;
 reset role;
