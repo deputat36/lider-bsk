@@ -21,7 +21,7 @@ def build():
             assert re.fullmatch(r'[a-z_]+', name)
             definitions.append(f'  {name} {kind}' + (f' default {default}' if default else '') + (' not null' if nullable == 'NO' else ''))
         sql.append(f'create table {table} (\n' + ',\n'.join(definitions) + '\n);')
-    for constraint in snapshot['constraints']:
+    for constraint in sorted(snapshot['constraints'], key=lambda c: c['definition'].startswith('FOREIGN KEY')):
         table = constraint['table']
         if '.' not in table:
             table = 'public.' + table

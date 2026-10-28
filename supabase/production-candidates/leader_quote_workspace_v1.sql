@@ -73,23 +73,11 @@ create table leader_private.leader_quote_receipts (
   created_at timestamp with time zone default clock_timestamp() not null
 );
 
-alter table public.leader_quote_events add constraint leader_quote_events_actor_id_fkey FOREIGN KEY (actor_id) REFERENCES public.leader_user_profiles(user_id);
-
 alter table public.leader_quote_events add constraint leader_quote_events_pkey PRIMARY KEY (id);
-
-alter table public.leader_quote_events add constraint leader_quote_events_task_id_fkey FOREIGN KEY (task_id) REFERENCES public.leader_quote_requests(id);
 
 alter table leader_private.leader_quote_receipts add constraint leader_quote_receipts_pkey PRIMARY KEY (actor_id, request_id);
 
-alter table public.leader_quote_requests add constraint leader_quote_requests_assignee_id_fkey FOREIGN KEY (assignee_id) REFERENCES public.leader_user_profiles(user_id);
-
 alter table public.leader_quote_requests add constraint leader_quote_requests_brief_check CHECK (((length(brief) >= 1) AND (length(brief) <= 10000)));
-
-alter table public.leader_quote_requests add constraint leader_quote_requests_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.leader_user_profiles(user_id);
-
-alter table public.leader_quote_requests add constraint leader_quote_requests_lead_id_fkey FOREIGN KEY (lead_id) REFERENCES public.leader_leads(id);
-
-alter table public.leader_quote_requests add constraint leader_quote_requests_need_id_fkey FOREIGN KEY (need_id) REFERENCES public.leader_lead_needs(id);
 
 alter table public.leader_quote_requests add constraint leader_quote_requests_pkey PRIMARY KEY (id);
 
@@ -99,19 +87,31 @@ alter table public.leader_quote_requests add constraint leader_quote_requests_ti
 
 alter table public.leader_quote_requests add constraint leader_quote_requests_vendor_name_check CHECK (((length(vendor_name) >= 1) AND (length(vendor_name) <= 300)));
 
-alter table public.leader_quote_revisions add constraint leader_quote_revisions_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.leader_user_profiles(user_id);
-
 alter table public.leader_quote_revisions add constraint leader_quote_revisions_pkey PRIMARY KEY (id);
 
-alter table public.leader_quote_revisions add constraint leader_quote_revisions_task_id_fkey FOREIGN KEY (task_id) REFERENCES public.leader_quote_requests(id);
-
 alter table public.leader_quote_revisions add constraint leader_quote_revisions_task_id_version_key UNIQUE (task_id, version);
-
-alter table public.leader_quote_templates add constraint leader_quote_templates_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.leader_user_profiles(user_id);
 
 alter table public.leader_quote_templates add constraint leader_quote_templates_name_check CHECK (((length(name) >= 1) AND (length(name) <= 300)));
 
 alter table public.leader_quote_templates add constraint leader_quote_templates_pkey PRIMARY KEY (id);
+
+alter table public.leader_quote_events add constraint leader_quote_events_actor_id_fkey FOREIGN KEY (actor_id) REFERENCES public.leader_user_profiles(user_id);
+
+alter table public.leader_quote_events add constraint leader_quote_events_task_id_fkey FOREIGN KEY (task_id) REFERENCES public.leader_quote_requests(id);
+
+alter table public.leader_quote_requests add constraint leader_quote_requests_assignee_id_fkey FOREIGN KEY (assignee_id) REFERENCES public.leader_user_profiles(user_id);
+
+alter table public.leader_quote_requests add constraint leader_quote_requests_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.leader_user_profiles(user_id);
+
+alter table public.leader_quote_requests add constraint leader_quote_requests_lead_id_fkey FOREIGN KEY (lead_id) REFERENCES public.leader_leads(id);
+
+alter table public.leader_quote_requests add constraint leader_quote_requests_need_id_fkey FOREIGN KEY (need_id) REFERENCES public.leader_lead_needs(id);
+
+alter table public.leader_quote_revisions add constraint leader_quote_revisions_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.leader_user_profiles(user_id);
+
+alter table public.leader_quote_revisions add constraint leader_quote_revisions_task_id_fkey FOREIGN KEY (task_id) REFERENCES public.leader_quote_requests(id);
+
+alter table public.leader_quote_templates add constraint leader_quote_templates_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.leader_user_profiles(user_id);
 
 alter table public.leader_quote_templates add constraint leader_quote_templates_source_quote_id_fkey FOREIGN KEY (source_quote_id) REFERENCES public.leader_quote_revisions(id);
 
