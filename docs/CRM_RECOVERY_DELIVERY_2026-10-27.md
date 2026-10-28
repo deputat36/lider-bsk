@@ -53,3 +53,5 @@ Package SQL и Edge v1 установлены. Readback index.ts/deno.json то�
 Тонкость hosted pg_net: объекты принадлежат supabase_admin; REVOKE, выполненный postgres, не снял default PUBLIC ACL. Не утверждаем закрытие этих ACL по одному SQL source. Постоянный worker_secret никогда не передаётся через очередь, только одноразовый двухминутный ticket. Отдельная проверка фактической API-экспозиции и административное усиление pg_net остаются пунктом аудита; запрещён обход через серверные файлы/ОС или чужие роли.
 
 Для quotes подготовлен воспроизводимый additive package из snapshot со всеми FK/CHECK, service-only RPC/RLS и индексами. Новый deadline освобождает UI при потерянном ответе; повтор использует исходный request_id. Production installation пока не выполнена.
+
+Quote staging acceptance (actual RPC) прошёл 28.10, все четыре таблицы/receipts пусты после ROLLBACK. Обновление Edge остановилось на скачивании ненужного runtime-импорта JSR с декларациями типов (10-секундный timeout), а не на бизнес-логике. Импорт заменён локальной TypeScript-декларацией: Edge не имеет внешних runtime dependencies. Повтор будет выполняться с изменённым пакетом после сохранения source.

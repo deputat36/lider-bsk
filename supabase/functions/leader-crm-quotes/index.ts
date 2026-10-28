@@ -1,4 +1,5 @@
-import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
+// Runtime uses only built-in APIs; deployment never fetches a type-only JSR package.
+declare const Deno: { env: { get(name: string): string | undefined }; serve(handler: (request: Request) => Response | Promise<Response>): void };
 const HEADERS = {'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization,apikey,content-type,x-client-info','Access-Control-Allow-Methods':'POST,OPTIONS','Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'};
 const reply = (status:number,body:unknown)=>new Response(JSON.stringify(body),{status,headers:HEADERS});
 const uuid = (v:unknown)=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
