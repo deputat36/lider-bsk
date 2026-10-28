@@ -55,3 +55,11 @@ Package SQL и Edge v1 установлены. Readback index.ts/deno.json то�
 Для quotes подготовлен воспроизводимый additive package из snapshot со всеми FK/CHECK, service-only RPC/RLS и индексами. Новый deadline освобождает UI при потерянном ответе; повтор использует исходный request_id. Production installation пока не выполнена.
 
 Quote staging acceptance (actual RPC) прошёл 28.10, все четыре таблицы/receipts пусты после ROLLBACK. Обновление Edge остановилось на скачивании ненужного runtime-импорта JSR с декларациями типов (10-секундный timeout), а не на бизнес-логике. Импорт заменён локальной TypeScript-декларацией: Edge не имеет внешних runtime dependencies. Повтор будет выполняться с изменённым пакетом после сохранения source.
+
+## Quotes production — 28.10
+
+Установлены воспроизводимый package leader_quote_workspace_v1 и JWT Edge v1 без внешних зависимостей. Native acceptance прошёл целиком в рабочей базе внутри ROLLBACK; requests/quotes/templates/receipts/fixture profiles = 0, исходных лидов 19. RPC browser EXECUTE=false; readback Edge точный. CI actual package PostgreSQL и editor browser 360/390/1440 success на 48fb058.
+
+## Архив документов — разработка
+
+Подготовлены новый additive package/RPC, приватные реквизиты и receipts, годовые атомарные номера актов/договоров, версии, hash snapshot и terminal signed/void. Никакие рабочие документы/номера/реквизиты пока не создавались. PostgreSQL/Edge/browser проверка и установка продолжаются. Вариант НДС 22% добавлен по подтверждению ФНС https://www.nalog.gov.ru/rn39/ifns/imns39_10/info/16596254/ ; действующая настройка организации автоматически не меняется, историческая формулировка 20% сохранена.

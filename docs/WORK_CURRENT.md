@@ -11,13 +11,13 @@
 - Четыре исторические staging-миграции уведомлений сохранены. 28.10: config disabled, keys/url отсутствуют, subscriptions/events/outbox/wakeups = 0.
 - 28.10 установлен staging leader-crm-notifications v1 ACTIVE; index.ts/deno.json побайтно совпали. POST status без JWT → 401/auth_required. Самостоятельная Auth/worker-ticket проверка внутри функции; verify_jwt=false нужен для вызова очередью.
 - HEAD 5f70c4b: 71/71 CI checks success, в том числе Edge/browser/transactions уведомлений.
-- 28.10: production notifications package и Edge v1 установлены; включена возможность добровольной подписки. Native очередь/ACL/410/replay проверены внутри ROLLBACK; 0 fixture/subscriptions/events/outbox/wakeups, исходные 19 лидов сохранены. Запросы подрядчикам и постоянный архив ещё не установлены. Новые возвраты/переплаты не реализованы.
+- 28.10: production notifications package и Edge v1 установлены; включена возможность добровольной подписки. Native очередь/ACL/410/replay проверены внутри ROLLBACK; 0 fixture/subscriptions/events/outbox/wakeups, исходные 19 лидов сохранены. Production quotes: additive schema + Edge v1 установлены, readback точный; native create/respond/update/accept/selection/template/replay/deny прошли, fixtures и четыре quote таблицы пусты. Постоянный архив ещё не установлен; исходники готовятся в этой ветке. Новые возвраты/переплаты не реализованы.
 
 ## Следующее действие
 
 1. Production notifications готовы к публикации интерфейса PR #596. Runtime файлы и браузерный пакет проверены CI; получить финальную проверку head перед merge.
 2. Проверить пользовательскую подписку после публикации. Физический Android проверить отдельно; серверное accepted не означает доставку на устройство.
-3. Подключить quotes с проверкой Auth/RBAC и транзакционных сценариев.
+3. Quotes production установлены. Проверить финальный runtime/browser head перед публикацией интерфейса.
 4. Постоянный архив документов, общие подтверждённые реквизиты, версии/номера.
 5. Возвраты/переплаты; исторические разрывы классифицировать без создания фиктивных заказов и изменения согласованных сумм.
 6. Полный итоговый аудит source/CI/deployment/базы/интерфейса и список улучшений. Недоступные реальные входы/материалы/устройство не блокируют независимые этапы.

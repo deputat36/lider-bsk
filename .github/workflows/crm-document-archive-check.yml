@@ -1,0 +1,31 @@
+name: CRM persistent document archive
+on:
+  pull_request:
+    branches: [main]
+    paths: ['crm/v4/assets/v4/*document*','crm/v4/assets/v4/order-act*','crm/v4/assets/v4/order-contract*','crm/v4/assets/v4/company-legal*','supabase/functions/leader-crm-documents/**','supabase/production-candidates/leader_document_workspace_v1.sql','supabase/staging-tests/document_archive_acceptance.sql','tools/*document*','.github/workflows/crm-document-archive-check.yml']
+  push:
+    branches: [main]
+    paths: ['crm/v4/assets/v4/*document*','crm/v4/assets/v4/order-act*','crm/v4/assets/v4/order-contract*','crm/v4/assets/v4/company-legal*','supabase/functions/leader-crm-documents/**','supabase/production-candidates/leader_document_workspace_v1.sql','supabase/staging-tests/document_archive_acceptance.sql','tools/*document*','.github/workflows/crm-document-archive-check.yml']
+permissions:
+  contents: read
+concurrency:
+  group: documents-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  document-transactions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    services:
+      postgres:
+        image: postgres:17
+        env: {POSTGRES_PASSWORD: isolated-ci-only, POSTGRES_DB: documents_test}
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: node tools/check_typescript_syntax.mjs supabase/functions/leader-crm-documents/index.ts
+      - run: python3 tools/build_document_rpc_test.py
+      - run: psql -h localhost -U postgres -d documents_test -v ON_ERROR_STOP=1 -f build/document-rpc-test.sql
+        env: {PGPASSWORD: isolated-ci-only}
