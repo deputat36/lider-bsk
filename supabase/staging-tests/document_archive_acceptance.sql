@@ -9,8 +9,7 @@ insert into public.leader_user_profiles(user_id,role,is_active,full_name) values
 update public.leader_user_profiles set is_active=true,role=case user_id when '90000000-0000-4000-8000-000000000601' then 'owner' else 'manager' end
  where user_id in ('90000000-0000-4000-8000-000000000601','90000000-0000-4000-8000-000000000602');
 insert into public.leader_orders(id,owner_id,project_name,client_name,client_total)
- select '90000000-0000-4000-8000-000000000603',user_id,'Synthetic archive order','Synthetic customer',100
- from public.leader_user_profiles where role='owner' and is_active and user_id::text not like '90000000%' limit 1;
+ values('90000000-0000-4000-8000-000000000603','90000000-0000-4000-8000-000000000601','Synthetic archive order','Synthetic customer',100);
 set local role service_role;
 do $$
 declare actor uuid:='90000000-0000-4000-8000-000000000601';manager_id uuid:='90000000-0000-4000-8000-000000000602';

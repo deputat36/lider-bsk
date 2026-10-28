@@ -50,7 +50,7 @@ grant select,insert,update on leader_private.leader_document_company,leader_priv
 grant select,insert on leader_private.leader_document_receipts,public.leader_order_document_events to service_role;
 
 create function public.leader_document_workspace_rpc(p_payload jsonb)
-returns jsonb language plpgsql security invoker set search_path='' as $$
+returns jsonb language plpgsql security invoker set search_path='' set lock_timeout='3s' as $$
 declare actor uuid:=(p_payload->>'actor_id')::uuid; cmd jsonb:=p_payload->'request';
  op text:=cmd->>'operation';data jsonb:=cmd->'payload';req uuid;
  receipt leader_private.leader_document_receipts;company leader_private.leader_document_company;
