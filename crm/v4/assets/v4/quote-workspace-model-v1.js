@@ -3,7 +3,7 @@ export const QUOTE_WRITES = Object.freeze(['create','respond','clarify','change'
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 export const quoteUuid = value => typeof value === 'string' && UUID.test(value);
 export function quoteEnvironment(url) {
-  try { return new URL(url).origin === 'https://otulfnouybahfnsycxqn.supabase.co'; } catch (_) { return false; }
+  try { return ['https://otulfnouybahfnsycxqn.supabase.co','https://ofewxuqfjhamgerwzull.supabase.co'].includes(new URL(url).origin); } catch (_) { return false; }
 }
 export function quoteNumber(value, { positive = false, max = 1e9, precision = 2 } = {}) {
   const text = String(value ?? '').trim().replace(',', '.');
@@ -36,5 +36,5 @@ export function quoteCalculationItems(selection, { template = false } = {}) {
   }));
 }
 export function quoteErrorMessage(code) {
-  return ({ source_changed: 'Задание изменилось. Ваш ввод сохранён. Обновите карточку и сверьте актуальное ТЗ.', forbidden: 'Недостаточно прав.', not_found: 'Задание недоступно или не найдено.', quote_expired: 'Срок цены истёк. Запросите новый ответ подрядчика.', quote_not_accepted: 'Сначала примите расчёт подрядчика.', invalid_transition: 'Действие уже недоступно для этого статуса. Обновите карточку.', idempotency_conflict: 'Повтор запроса отличается от первоначального.', invalid_assignee: 'Выберите действующего подрядчика.', invalid_payload: 'Проверьте поля формы.', invalid_items: 'Проверьте позиции ответа.', invalid_selection: 'Выберите позиции из текущей версии ответа.', auth_required: 'Требуется действующий вход.', environment_locked: 'Запросы расчёта доступны в тестовой среде до включения рабочего сервера.', response_source_required: 'Укажите, откуда получен ответ подрядчика.' })[code] || 'Не удалось получить подтверждение сервера. Повторите тот же запрос; введённые данные сохранены.';
+  return ({ source_changed: 'Задание изменилось. Ваш ввод сохранён. Обновите карточку и сверьте актуальное ТЗ.', forbidden: 'Недостаточно прав.', not_found: 'Задание недоступно или не найдено.', quote_expired: 'Срок цены истёк. Запросите новый ответ подрядчика.', quote_not_accepted: 'Сначала примите расчёт подрядчика.', invalid_transition: 'Действие уже недоступно для этого статуса. Обновите карточку.', idempotency_conflict: 'Повтор запроса отличается от первоначального.', invalid_assignee: 'Выберите действующего подрядчика.', invalid_payload: 'Проверьте поля формы.', invalid_items: 'Проверьте позиции ответа.', invalid_selection: 'Выберите позиции из текущей версии ответа.', auth_required: 'Требуется действующий вход.', environment_locked: 'Сервис расчётов недоступен для этого адреса CRM.', response_source_required: 'Укажите, откуда получен ответ подрядчика.' })[code] || 'Не удалось получить подтверждение сервера. Повторите тот же запрос; введённые данные сохранены.';
 }

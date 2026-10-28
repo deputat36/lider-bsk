@@ -3,7 +3,8 @@ import { quoteNumber, quoteItems, quoteCalculationItems, quoteEnvironment } from
 import { quoteCommand, invokeQuoteCommand } from '../crm/v4/assets/v4/quote-workspace-transport-v1.js';
 const id='90000000-0000-4000-8000-000000000601',actor='90000000-0000-4000-8000-000000000602';
 assert.equal(quoteEnvironment('https://otulfnouybahfnsycxqn.supabase.co'),true);
-for(const url of ['https://ofewxuqfjhamgerwzull.supabase.co','http://otulfnouybahfnsycxqn.supabase.co','https://otulfnouybahfnsycxqn.supabase.co.evil.test'])assert.equal(quoteEnvironment(url),false);
+assert.equal(quoteEnvironment('https://ofewxuqfjhamgerwzull.supabase.co'),true);
+for(const url of ['https://wrong-project.supabase.co','http://otulfnouybahfnsycxqn.supabase.co','https://otulfnouybahfnsycxqn.supabase.co.evil.test'])assert.equal(quoteEnvironment(url),false);
 assert.equal(quoteNumber('0'),0);assert.equal(quoteNumber('1,25'),1.25);
 for(const v of ['',null,'NaN','-1','1.0001','1000000001'])assert.throws(()=>quoteNumber(v));
 const item={id,name:'Печать',unit:'м',qty:2.5,unit_cost:120.5,specification:'Плёнка'};
@@ -16,7 +17,8 @@ let calls=0;const client={auth:{getSession:async()=>({data:{session:{user:{id:ac
 const options={client,actorId:actor,command,allowed:true,supabaseUrl:'https://otulfnouybahfnsycxqn.supabase.co'};
 assert.equal((await invokeQuoteCommand(options)).ok,true);assert.equal(calls,1);
 assert.equal((await invokeQuoteCommand({...options,actorId:id})).code,'auth_required');assert.equal(calls,1);
-assert.equal((await invokeQuoteCommand({...options,supabaseUrl:'https://ofewxuqfjhamgerwzull.supabase.co'})).code,'environment_locked');assert.equal(calls,1);
+assert.equal((await invokeQuoteCommand({...options,supabaseUrl:'https://wrong-project.supabase.co'})).code,'environment_locked');assert.equal(calls,1);
 client.functions.invoke=async()=>{throw Error('lost')};assert.equal((await invokeQuoteCommand(options)).uncertain,true);
 client.functions.invoke=async()=>({error:{context:new Response(JSON.stringify({error:{code:'source_changed'}}),{status:409})}});assert.equal((await invokeQuoteCommand(options)).code,'source_changed');
-console.log('Quote models and transport: validation, units, source privacy, actor binding, production gate and uncertainty PASS');
+client.functions.invoke=async()=>new Promise(()=>{});assert.equal((await invokeQuoteCommand({...options,deadlineMs:15})).uncertain,true,'Unanswered command releases UI with the exact retry still available');
+console.log('Quote models and transport: validation, units, source privacy, actor binding, environment allowlist, deadline and uncertainty PASS');

@@ -8,6 +8,12 @@ insert into public.leader_user_profiles(user_id,role,is_active,full_name) values
  ('90000000-0000-4000-8000-000000000901','owner',true,'Synthetic notification owner'),
  ('90000000-0000-4000-8000-000000000902','manager',true,'Synthetic notification manager'),
  ('90000000-0000-4000-8000-000000000903','contractor',true,'Synthetic forbidden actor');
+-- Production invite guard intentionally creates every new profile inactive.
+-- Set roles only on the reserved synthetic rows inside this rolled-back transaction.
+update public.leader_user_profiles set is_active=true,role=case user_id
+ when '90000000-0000-4000-8000-000000000901' then 'owner'
+ when '90000000-0000-4000-8000-000000000902' then 'manager' else 'contractor' end
+ where user_id in ('90000000-0000-4000-8000-000000000901','90000000-0000-4000-8000-000000000902','90000000-0000-4000-8000-000000000903');
 update leader_private.leader_notification_config set enabled=true,dispatch_url='https://otulfnouybahfnsycxqn.supabase.co/functions/v1/leader-crm-notifications' where id=1;
 do $$ begin perform set_config('leader.test_notification_ticket',leader_private.leader_notification_worker_ticket(),true);end $$;
 set local role service_role;

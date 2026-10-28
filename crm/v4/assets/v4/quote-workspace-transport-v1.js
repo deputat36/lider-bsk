@@ -13,20 +13,23 @@ export function quoteCommand(operation, payload = {}, { requestId, revision } = 
   }
   return command;
 }
-export async function invokeQuoteCommand({ client, supabaseUrl, actorId, command, allowed = false }) {
+export async function invokeQuoteCommand({ client, supabaseUrl, actorId, command, allowed = false, deadlineMs = 12000 }) {
   const fail = code => ({ ok: false, code, uncertain: code === 'quote_command_failed', message: quoteErrorMessage(code) });
   if (!quoteEnvironment(supabaseUrl)) return fail('environment_locked');
   if (!allowed) return fail('forbidden');
+  let timer;
+  const deadline = new Promise((_, reject) => { timer = setTimeout(() => reject(Error('quote_timeout')), deadlineMs); });
+  const bounded = promise => Promise.race([promise, deadline]);
   try {
-    const session = await client.auth.getSession();
+    const session = await bounded(client.auth.getSession());
     const current = session?.data?.session;
     if (session?.error || !actorId || current?.user?.id !== actorId || !current?.access_token) return fail('auth_required');
-    const response = await client.functions.invoke('leader-crm-quotes', { body: command, headers: { Authorization: `Bearer ${current.access_token}` } });
+    const response = await bounded(client.functions.invoke('leader-crm-quotes', { body: command, headers: { Authorization: `Bearer ${current.access_token}` } }));
     let data = response?.data;
     if (response?.error) {
       try { data = await response.error.context.clone().json(); } catch (_) { return fail('quote_command_failed'); }
     }
     if (data?.ok !== true) return fail(data?.error?.code || 'quote_command_failed');
     return data;
-  } catch (_) { return fail('quote_command_failed'); }
+  } catch (_) { return fail('quote_command_failed'); } finally { clearTimeout(timer); }
 }

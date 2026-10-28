@@ -45,3 +45,11 @@ Actual production POST: 3001 → 400/message_too_long; honeypot → 200 без �
 Native staging acceptance 28.10 прошёл внутри BEGIN/ROLLBACK: права/получатели/одноразовый ticket/отзыв профиля/410/stale finish. Независимый SELECT подтвердил 0 profiles/subscriptions/events/outbox.
 
 Production preflight: 19 лидов, 17 клиентов, 69 позиций прайса, 2 заказа, 1 оплата, 0 расходов; notifications/quotes/documents отсутствуют. pg_net/pg_cron ещё не установлены. Production package теперь содержит только последние версии функций, retention одноразовых tickets и закрывает browser-доступ к новым net/cron IO. Он останавливается при неожиданно существующем shared extension, чтобы не менять чужие ACL. Private worker_secret остаётся только в закрытой конфигурации. Активация включает только возможность добровольной подписки, без подписок от имени сотрудников и без уведомлений по старым заявкам.
+
+## Notifications production — 28.10
+
+Package SQL и Edge v1 установлены. Readback index.ts/deno.json точный, HTTP status без JWT → 401/auth_required. Native acceptance прошёл после учёта существующего invite trigger: он переводит новые профили в inactive manager; тест явно настраивает только зарезервированные synthetic rows внутри ROLLBACK. Guard/приглашения/Auth и настоящие профили не менялись. После проверки fixtures/subscriptions/events/outbox/wakeups = 0, исходных лидов 19. Активирован dispatch_url/enabled=true, выделенный cron active; существующие сотрудники автоматически не подписаны.
+
+Тонкость hosted pg_net: объекты принадлежат supabase_admin; REVOKE, выполненный postgres, не снял default PUBLIC ACL. Не утверждаем закрытие этих ACL по одному SQL source. Постоянный worker_secret никогда не передаётся через очередь, только одноразовый двухминутный ticket. Отдельная проверка фактической API-экспозиции и административное усиление pg_net остаются пунктом аудита; запрещён обход через серверные файлы/ОС или чужие роли.
+
+Для quotes подготовлен воспроизводимый additive package из snapshot со всеми FK/CHECK, service-only RPC/RLS и индексами. Новый deadline освобождает UI при потерянном ответе; повтор использует исходный request_id. Production installation пока не выполнена.

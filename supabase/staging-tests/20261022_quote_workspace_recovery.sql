@@ -9,6 +9,10 @@ INSERT INTO public.leader_user_profiles(user_id,role,is_active,full_name) VALUES
  ('90000000-0000-4000-8000-000000000701','manager',true,'Synthetic quote manager'),
  ('90000000-0000-4000-8000-000000000702','contractor',true,'Synthetic quote contractor'),
  ('90000000-0000-4000-8000-000000000703','contractor',true,'Synthetic unassigned contractor');
+-- Reserved synthetic profiles only; respect the production invite guard.
+UPDATE public.leader_user_profiles SET is_active=true,role=CASE user_id
+ WHEN '90000000-0000-4000-8000-000000000701' THEN 'manager' ELSE 'contractor' END
+ WHERE user_id IN ('90000000-0000-4000-8000-000000000701','90000000-0000-4000-8000-000000000702','90000000-0000-4000-8000-000000000703');
 INSERT INTO public.leader_leads(id,name) VALUES('90000000-0000-4000-8000-000000000704','Synthetic quote recovery');
 INSERT INTO public.leader_lead_needs(id,lead_id,title) VALUES('90000000-0000-4000-8000-000000000705','90000000-0000-4000-8000-000000000704','Synthetic banner');
 SET LOCAL ROLE service_role;
