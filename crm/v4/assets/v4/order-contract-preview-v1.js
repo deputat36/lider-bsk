@@ -252,7 +252,7 @@ function printCss() {
 }
 
 function printHtml(draft) {
-  const sections = orderContractSections(draft).map((section) => `<section class="section"><h2>${esc(section.title)}</h2>${section.paragraphs.map((paragraph) => `<p>${esc(paragraph)}</p>`).join('')}</section>`).join('');
+  const sections = (draft.frozenSections || orderContractSections(draft)).map((section) => `<section class="section"><h2>${esc(section.title)}</h2>${section.paragraphs.map((paragraph) => `<p>${esc(paragraph)}</p>`).join('')}</section>`).join('');
   const rows = draft.items.map((item, index) => `<tr><td class="num">${index + 1}</td><td>${esc(item.name)}</td><td class="num">${esc(item.quantity)} ${esc(item.unit)}</td><td class="num">${Number(item.price).toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:6})} ₽</td><td class="num"><b>${money(item.sum)}</b></td></tr>`).join('');
   const total = orderContractTotal(draft);
   const executorLabel = [draft.executorRole, draft.executorRepresentative].filter(Boolean).join(' — ');

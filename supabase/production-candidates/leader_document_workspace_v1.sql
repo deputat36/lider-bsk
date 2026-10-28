@@ -138,6 +138,13 @@ begin
      (1,'tax_id','ИНН'),(2,'registration_number','Регистрационный номер'),(3,'legal_address','Адрес'),(4,'postal_address','Почтовый адрес'),(5,'phone','Телефон'),(6,'email','Email'),(7,'bank_name','Банк'),(8,'bank_account','Р/с'),(9,'correspondent_account','К/с'),(10,'bank_code','БИК')) x(position,key,label)) details where length(coalesce(val,''))>0;
    content:=content||jsonb_build_object('executorDetails',coalesce(comment_value,''),'signatory',company.value->>'signatory_name','signatoryRole',coalesce(company.value->>'signatory_role','Представитель исполнителя'),'executorRepresentative',company.value->>'signatory_name','executorRole',coalesce(company.value->>'signatory_role','Представитель исполнителя'));
   end if;
+  if data->>'kind'='contract' then
+   if jsonb_typeof(data->'resolved_sections') is distinct from 'array' or jsonb_array_length(data->'resolved_sections') not between 1 and 40 then raise exception 'document_incomplete';end if;
+   for item in select value from jsonb_array_elements(data->'resolved_sections') loop
+    if jsonb_typeof(item) is distinct from 'object' or length(coalesce(item->>'title','')) not between 1 and 300 or jsonb_typeof(item->'paragraphs') is distinct from 'array' or jsonb_array_length(item->'paragraphs')>40 then raise exception 'invalid_payload';end if;
+    if exists(select from jsonb_array_elements(item->'paragraphs') p where jsonb_typeof(p)<>'string' or length(p#>>'{}')>8000) then raise exception 'invalid_payload';end if;
+   end loop;
+  end if;
   group_id:=coalesce(nullif(data->>'group_id','')::uuid,gen_random_uuid());
   perform pg_advisory_xact_lock(hashtextextended(group_id::text,281027));
   select * into previous from public.leader_order_documents where document_group_id=group_id order by version desc limit 1 for update;
@@ -157,7 +164,7 @@ begin
   content:=content||jsonb_build_object('items',clean_items,'number',coalesce(number_value,'ЧЕРНОВИК'));
   snapshot_value:=jsonb_build_object('schema_version',1,'kind',data->>'kind','draft',content,'company',company.value,'company_revision',company.revision,
    'order',jsonb_build_object('id',ord.id,'number',ord.order_number,'updated_at',ord.updated_at,'project_name',ord.project_name),
-   'currency','RUB','total',total_value,'registered',requested_status='generated');
+   'contract_sections',case when data->>'kind'='contract' then data->'resolved_sections' else null end,'currency','RUB','total',total_value,'registered',requested_status='generated');
   insert into public.leader_order_documents(document_group_id,previous_version_id,version,order_id,client_id,document_type,document_number,document_date,status,total,snapshot,snapshot_hash,created_by)
    values(group_id,previous.id,next_version,ord.id,ord.client_id,data->>'kind',number_value,date_value,requested_status,total_value,snapshot_value,encode(extensions.digest(snapshot_value::text,'sha256'),'hex'),actor) returning * into doc;
   insert into public.leader_order_document_events(document_id,order_id,event_type,new_status,created_by) values(doc.id,ord.id,'created',requested_status,actor);

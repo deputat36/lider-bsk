@@ -1,3 +1,4 @@
+import { orderContractSections } from './order-contract-model-v1.js';
 import { v4State, subscribeState } from './state.js';
 import { canPerformV4Action } from './action-permissions-v1.js';
 import { registerDocumentPreview } from './document-draft-session-v1.js';
@@ -35,7 +36,7 @@ function attachEditor({form,order,kind,getDraft}){
    if(!form.reportValidity())return;
    const register=button.hasAttribute('data-document-register');
    if(register&&!window.confirm('Зарегистрировать текущую версию и присвоить ей постоянный номер? Подписание отмечается отдельно.'))return;
-   prepared=documentArchiveCommand('save',{kind,order_id:order.id,expected_order_updated_at:order.updated_at,draft:captureArchiveDraft(kind,getDraft()),register,
+   prepared=documentArchiveCommand('save',{kind,order_id:order.id,expected_order_updated_at:order.updated_at,draft:captureArchiveDraft(kind,getDraft()),resolved_sections:kind==='contract'?orderContractSections(getDraft()):null,register,
     ...(form.dataset.archiveGroup?{group_id:form.dataset.archiveGroup,expected_version:Number(form.dataset.archiveVersion)}:{})});
    if(!storePending(order.id,prepared)){prepared=null;message(note,'Не удалось сохранить попытку в этой вкладке. Освободите место в браузере и повторите.');return;}
   }
@@ -97,7 +98,7 @@ export async function openDocumentArchive(orderId){
   if(!popup){message(status(),'Разрешите всплывающее окно для открытия документа.');return;}
   const doc=result.document,module=await import(doc.document_type==='act'?'./order-act-preview-v1.js':'./order-contract-preview-v1.js');
   if(actor!==context()){popup.close();return;}
-  const html=module.archivedDocumentHtml({...doc.snapshot.draft,tax:doc.snapshot.draft.taxMode,archived:true,archiveStatus:DOCUMENT_STATUS[doc.status],archiveVersion:doc.version,number:doc.document_number||'ЧЕРНОВИК'});
+  const html=module.archivedDocumentHtml({...doc.snapshot.draft,frozenSections:doc.snapshot.contract_sections,tax:doc.snapshot.draft.taxMode,archived:true,archiveStatus:DOCUMENT_STATUS[doc.status],archiveVersion:doc.version,number:doc.document_number||'ЧЕРНОВИК'});
   popup.document.open();popup.document.write(html);popup.document.close();
  });
  await load();current.querySelector('[data-archive-close]')?.focus();
