@@ -188,7 +188,7 @@ begin
  insert into leader_private.leader_document_receipts(actor_id,request_id,request,response) values(actor,req,cmd,result);
  return result;
 exception when others then
- return jsonb_build_object('ok',false,'error',jsonb_build_object('code',case when SQLERRM in ('forbidden','invalid_payload','idempotency_conflict','source_changed','not_found','company_confirmation_required','company_incomplete','company_changed','invalid_items','line_total_mismatch','order_total_mismatch','document_incomplete','terminal_document','comment_required','invalid_transition','invalid_operation') then SQLERRM when SQLSTATE in ('22P02','22007','22008','22003','23502','23503','23514') then 'invalid_payload' else 'document_command_failed' end));
+ return jsonb_build_object('ok',false,'error',jsonb_build_object('code',case when SQLERRM in ('forbidden','invalid_payload','idempotency_conflict','source_changed','not_found','company_confirmation_required','company_incomplete','company_changed','invalid_items','line_total_mismatch','order_total_mismatch','document_incomplete','terminal_document','comment_required','invalid_transition','invalid_operation') then SQLERRM when SQLSTATE in ('22P02','22007','22008','22003','23502','23503','23514') then 'invalid_payload' else 'document_command_failed' end,'diagnostic',SQLSTATE));
 end $$;
 revoke all on function public.leader_document_workspace_rpc(jsonb) from public,anon,authenticated;
 grant execute on function public.leader_document_workspace_rpc(jsonb) to service_role;
