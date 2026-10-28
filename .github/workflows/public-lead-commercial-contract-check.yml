@@ -79,6 +79,12 @@ jobs:
   validate-public-lead-commercial-contract:
     runs-on: ubuntu-latest
     timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        width: [1440, 390]
+    env:
+      LEADER_TEST_WIDTH: ${{ matrix.width }}
     defaults:
       run:
         shell: bash
@@ -117,6 +123,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: public-lead-submission-browser
+          name: public-lead-submission-browser-${{ matrix.width }}
           path: artifacts/public-lead/
           retention-days: 7
