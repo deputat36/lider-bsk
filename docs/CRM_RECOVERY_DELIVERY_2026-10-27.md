@@ -75,3 +75,9 @@ Quote staging acceptance (actual RPC) прошёл 28.10, все четыре т
 Package и JWT Edge v1 установлены в обоих контурах. Native acceptance в staging и production прошёл: фактический возврат/точный replay/конфликт payload/ограничение переплаты/парный перенос и парная отмена/защита исходного платежа/подтверждение и автоматическое снятие полноты расходов. Тесты полностью ROLLBACK; новые реальные платежи, расходы и реквизиты не создавались. Независимый postflight подтверждает исходные counts и нулевые adjustments/confirmations/receipts/events.
 
 В интерфейсе старого writer неопределённый 500 при попытке отдельно отменить защищённый платёж уточняется чтением связи через новый endpoint; подтверждённый запрет не удерживает форму в бесконечном retry. Обычные неизвестные результаты сохраняют тот же ключ. Native PostgreSQL и мобильные/desktop browser tests корректировок success на d7c0ae4.
+
+## Итоговый аудит: дополнительная защита заявок
+
+Read-only проверка показала: leader_has_access означает лишь активный профиль. Старые permissive lead policies тем самым не ограничивали роли canonical leads.read/create/update. Подготовлены дополнительные restrictive policies, сохраняющие прежние policies/grants и разрешённое создание owner/admin/manager. Service-only intake не зависит от browser RLS. До применения сохранён native RLS proof owner/manager/contractor с полным ROLLBACK.
+
+Новые document/quote FK advisories адресованы scoped индексами. Прочие проекты общей базы и исторические индексы не меняются.
