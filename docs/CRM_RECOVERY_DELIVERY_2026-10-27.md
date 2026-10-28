@@ -35,3 +35,9 @@ Actual production POST: 3001 → 400/message_too_long; honeypot → 200 без �
 ## Notifications WIP
 
 Добавлены Edge sender с fresh Auth и одноразовым worker ticket, npm web-push 3.6.7 + package-lock, push-only SW без кеширования CRM, PWA manifest и настройки на 360/390/1440. Actual Edge unit proof проверяет шифрованный Web Push запрос без внешней отправки, denied actor, worker ticket и SSRF guard. Browser проверяет пользовательский жест разрешения, повтор test request_id, смену аккаунта и logout. Настройка/доставка в production ещё не включены. Native SQL/CI/closed-tab SW proof продолжаются.
+
+## 28.10: восстановление после обрыва
+
+Восстановлен точный remote HEAD 5f70c4b PR #596, а не незакоммиченный каталог предыдущей среды. Все 71 check runs на этом head завершились success. Чтение staging подтвердило прежние четыре notification migrations, disabled config и нулевые очереди. Notification Edge отсутствовал: повторной установки неизвестного результата не было.
+
+Установлен staging leader-crm-notifications v1 ACTIVE, verify_jwt=false: браузерные команды проверяют fresh Auth внутри, worker — одноразовый HMAC ticket. Readback обоих файлов полностью совпал. Actual POST status без JWT вернул 401/auth_required. Рабочая база на этой контрольной точке не изменялась.
