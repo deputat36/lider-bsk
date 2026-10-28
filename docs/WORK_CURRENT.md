@@ -7,16 +7,24 @@
 - Production intake: Edge leader-public-lead v11, лимит 3000/3001 и безопасный повтор проверены 27.10; анонимная запись в таблицы закрыта.
 - Notifications: production и staging package/RPC, Edge v1, enabled=true, dispatch_url установлен, cron active. Подписки только добровольные; автоматически никто не подписан. Native очередь/права/410/replay прошли в ROLLBACK. Android по фактической доставке ещё не проверен.
 - Quotes: production Edge v1, staging v2; additive schema/RLS/service-only RPC установлены. Native create/respond/update/accept/selection/template/replay/deny прошёл; все fixture строки откатились.
-- Документы: production/staging package, private общие реквизиты и counters, RPC, JWT Edge v1 установлены. Native register/replay/hash/permissions/sign/terminal прошёл. Документов/номеров/реальных реквизитов не создано; company revision=0. Исправлена коллизия переменной с реальным orders.data.
+- Документы: production/staging package, private общие реквизиты и counters, RPC, JWT Edge v2 установлены. Native register/replay/hash/permissions/sign/terminal прошёл. Документов/номеров/реальных реквизитов не создано; company revision=0. Исправлена коллизия переменной с реальным orders.data.
 - Финансовые корректировки: production/staging package и JWT Edge v1 установлены. Native refund/replay/paired allocation/cap/void/protected payment/expense confirmation invalidation прошёл. Новых постоянных движений не создано.
 - Рабочие прайс, клиенты, заказы, финансы, дизайн, производство и монтаж были установлены раньше; не устанавливать прежние пакеты заново.
 
+## Последняя проверенная точка
+
+- Source notifications/quotes/documents/finance-adjustments совпал с 8/8 Edge readbacks обеих баз. Docs обработчик обновлён до v2.
+- Production lead canonical RLS и scoped FK indexes установлены. Последний notification FK index migration 20261028075410; новых Leader unindexed FK нет.
+- Безопасный anonymous GET limit=0: net/private schema 406, docs/quotes tables 401. Секреты не читались.
+- 28.10 10:53 МСК: 19 leads / 17 clients / 69 catalog / 2 orders / 1 payment / 0 expenses. Новые fixture rows=0. Notifications enabled, cron=1, subscriptions=0; company revision=0.
+- HEAD 3c3ce304 — 85/85 success. Mobile archive/finance/notification artifacts просмотрены, последние layout fixes подтверждены.
+- Итоговый аудит создан: FINAL_AUDIT_2026-10-28.md, в том числе 35 issues, historical gaps, security и развитие. STATUS/DECISIONS актуализированы. Все 227 YAML парсятся; оставшихся playwright install больше нет.
+
 ## Что делать дальше
 
-1. Сверить финальный readback всех новых Edge с текущим source; docs Edge нужно обновить до текущего обработчика технических ошибок.
-2. Проверить cache release и полный финальный CI. Исправлены три ложных отказа, проверявших буквальный старый ternary прибыли; проверки поведения сохранены. Новые SQL/browser finance tests уже success.
-3. Завершить итоговый аудит основного/дополнительного repo, 35 issues, текущих grants/advisors, опубликованных файлов и исторических данных. Исторические суммы/заказы автоматически не исправлять без доказанной бизнес-классификации.
-4. Обновить STATUS/DECISIONS и итоговый отчёт, снять draft #596, merge только после успешных проверок, проверить main/Pages и фактические runtime bytes.
+1. Сохранить финальный audit/CI checkpoint, проверить последний CI и merge #596 только на exact проверенном HEAD.
+2. Проверить main/Pages и GET runtime bytes, manifest/icons. Зафиксировать merge SHA, CI и URL в этом файле. Не переустанавливать уже сверенные серверные блоки.
+3. Завершить owner/Метрика Auth через защищённый browserAuth, если владелец даст данные; в текущем cloud browser обе сессии отсутствуют. Android и реквизиты/историческая классификация остаются реальной приёмкой.
 
 ## Потребует участия владельца
 

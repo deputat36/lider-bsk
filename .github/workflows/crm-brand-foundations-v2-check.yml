@@ -29,9 +29,17 @@ on:
       - 'tools/check_crm_brand_preview.py'
       - '.github/workflows/crm-brand-foundations-v2-check.yml'
 
+concurrency:
+  group: browser-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 8
+    container:
+      image: mcr.microsoft.com/playwright:v1.55.0-noble@sha256:b27e719ecbfef153e13fd24e8341736733bf2658b229677eb21ff57ff5d7fb29
+      options: --ipc=host
     steps:
       - uses: actions/checkout@v4
       - name: Validate CRM brand foundations v2
@@ -44,7 +52,6 @@ jobs:
       - name: Install pinned browser accessibility tools
         run: |
           npm install --no-save --package-lock=false playwright@1.55.0 axe-core@4.10.3
-          npx playwright install --with-deps chromium
       - name: Verify product accessibility and responsive layout
         run: node tools/test_product_visual_browser.mjs
       - name: Upload responsive accessibility evidence

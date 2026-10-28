@@ -89,3 +89,14 @@ Read-only проверка показала: leader_has_access означает 
 Подготовлен единый cache release 20261028-recovery-1 для всех изменённых CRM modules и их старых URL aliases; graph не создаёт второй экземпляр одного изменённого модуля. PWA получила 192/512 PNG из точного исходного SVG/растрового логотипа владельца с его alpha matrix. Неизменённый бренд сохранён; растровый fallback соответствует официальному install manifest guidance https://web.dev/articles/add-manifest . Worker ждёт именно свою регистрацию, а не произвольный root serviceWorker.ready, и обновляет source без HTTP-cache.
 
 CI screenshots архивов/уведомлений/переноса 360 и 1440 скачаны и просмотрены. Browser fixtures синтетические; они не подменяют фактическую доставку на Android или настоящий вход владельца.
+
+
+## 28 октября — финальная серверная сверка и аудит
+
+8/8 readbacks notifications/quotes/documents/finance-adjustments совпали с сохранённым source. Documents Edge v2 в обеих средах возвращает технические сбои как 503. Последние production migrations: canonical lead role policies 20261028074218, scoped FK indexes 20261028074219, notification event FK index 20261028075410. В новых Leader объектах unindexed FK=0. Security advisors: прежние 9 INFO/53 WARN/1 WARN, без новых findings.
+
+Anonymous GET limit=0 подтвердил: net и leader_private не экспонируются PostgREST (406), документы и quotes не читаются anon (401). В 10:53 МСК бизнес-счётчики прежние 19/17/69/2/1/0, новые fixtures/receipts/documents/counters/adjustments/subscriptions=0. Исторический read-only срез: 5 leads со статусом заказа без заказа, 5 calculations, 5 согласованных offers без order_id, 11 calculations без need_id, 3 расхождения totals (одно с позициями); наборы пересекаются.
+
+HEAD 3c3ce304 прошёл 85/85 check runs; artifact 12799747205 (documents) и 12799229810 (finance), SHA256 ZIP проверены. Последние mobile screenshots после layout fixes просмотрены; notification mobile artifact также принят ранее. Все 227 workflow YAML парсятся. Оставшиеся семь browser workflows переведены на тот же pinned container с timeout/concurrency, playwright install --with-deps больше не используется ни одним workflow.
+
+Итоговая оценка и продолжение развития: FINAL_AUDIT_2026-10-28.md. Source финального релиза и статус публикации записываются в WORK_CURRENT после CI/merge. Настоящих owner/Метрика сессий нет; проверка Android, юридические реквизиты и классификация истории не подменялись синтетикой.
