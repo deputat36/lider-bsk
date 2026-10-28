@@ -274,4 +274,8 @@ function bootQuickStart() {
 if (typeof document !== 'undefined') {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootQuickStart);
   else bootQuickStart();
+  // Optional sidecar; it never blocks the authenticated workspace or adds an eager entrypoint.
+  if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+    import('./notifications-pwa-v1.js?v=20261027-1').then(module => module.initNotificationsPwa()).catch(() => {});
+  }
 }

@@ -15,6 +15,8 @@ on:
       - 'supabase/staging-recovered/**'
       - 'tools/test_crm_recovery_browser.mjs'
       - 'tools/test_quote_workspace.mjs'
+      - 'supabase/production-candidates/leader_quote_workspace_v1.sql'
+      - 'tools/build_quote*'
       - '.github/workflows/crm-recovery-check.yml'
   push:
     branches: [main]
@@ -31,12 +33,20 @@ on:
       - 'supabase/staging-recovered/**'
       - 'tools/test_crm_recovery_browser.mjs'
       - 'tools/test_quote_workspace.mjs'
+      - 'supabase/production-candidates/leader_quote_workspace_v1.sql'
+      - 'tools/build_quote*'
       - '.github/workflows/crm-recovery-check.yml'
 permissions:
   contents: read
+concurrency:
+  group: recovery-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   recovery:
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.55.0-noble@sha256:b27e719ecbfef153e13fd24e8341736733bf2658b229677eb21ff57ff5d7fb29
+      options: --ipc=host
     timeout-minutes: 7
     steps:
       - uses: actions/checkout@v4
@@ -53,7 +63,6 @@ jobs:
       - name: Install pinned browser
         run: |
           npm install --no-save --package-lock=false playwright@1.55.0
-          npx playwright install --with-deps chromium
       - name: Real editors and calculator with blocked external HTTP
         run: node tools/test_crm_recovery_browser.mjs
       - name: Preserve synthetic browser evidence
@@ -64,3 +73,18 @@ jobs:
           path: artifacts/crm-recovery/
           if-no-files-found: warn
           retention-days: 7
+
+  quote-transactions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    services:
+      postgres:
+        image: postgres:17
+        env: {POSTGRES_PASSWORD: isolated-ci-only, POSTGRES_DB: quotes_test}
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tools/build_quote_rpc_test.py
+      - run: psql -h localhost -U postgres -d quotes_test -v ON_ERROR_STOP=1 -f build/quote-rpc-test.sql
+        env: {PGPASSWORD: isolated-ci-only}

@@ -1,4 +1,5 @@
 import { supabaseClient } from './supabase-client.js';
+import { documentArchiveCommand, invokeDocumentArchive } from './document-archive-transport-v1.js';
 import { v4State, subscribeState } from './state.js';
 import { readCompanyDocumentDraft } from './document-draft-session-v1.js';
 
@@ -85,6 +86,9 @@ export async function loadCompanyLegalSettings({ force = false } = {}) {
   const context=companyContext(),ticket=++generation;
   pending = (async () => {
     try {
+      const shared = await invokeDocumentArchive(documentArchiveCommand('company.get'));
+      if(context!==companyContext()||ticket!==generation)return {...DEFAULT_COMPANY_LEGAL_SETTINGS};
+      if(shared.ok && shared.configured){cached={...normalizeCompanyLegalSettings(shared.company),configured:true};return cached;}
       const response = await supabaseClient
         .from('leader_settings')
         .select('value')

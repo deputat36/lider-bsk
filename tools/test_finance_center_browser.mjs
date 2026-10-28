@@ -22,7 +22,8 @@ class Query {
  }
  then(a,b){return this.result().then(a,b);}
 }
-export const supabaseClient={auth:{getSession:async()=>({data:{session:{access_token:'synthetic-fixture-token'}},error:null})},from:t=>new Query(t),functions:{invoke:async(name,{body})=>{
+export const supabaseClient={auth:{getSession:async()=>({data:{session:{user:(await import('./state.js')).v4State.user,access_token:'synthetic-fixture-token'}},error:null})},from:t=>new Query(t),functions:{invoke:async(name,{body})=>{
+ if(name==='leader-crm-finance-adjustments')return{data:{ok:true,rows:[]}};
  m.writes.push({name,action:body.action});
  const p=body.payload||{},order=m.leader_orders.find(x=>x.id===p.order_id);
  if(body.action==='finance.payment.create')m.leader_payments.push({id:crypto.randomUUID(),order_id:order.id,amount:p.amount,payment_status:'Проведён',payment_type:'Приход',is_confirmed:true,payment_date:p.date,updated_at:'2026-10-14T05:00:01Z'});

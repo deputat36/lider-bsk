@@ -1,0 +1,17 @@
+-- Read-only aggregate proof; no secrets or customer text.
+begin read only;set local statement_timeout='15s';
+select jsonb_build_object(
+'checked_at',now(),
+'counts',jsonb_build_object('leads',(select count(*) from public.leader_leads),'clients',(select count(*) from public.leader_clients),'catalog',(select count(*) from public.leader_catalog),'orders',(select count(*) from public.leader_orders),'payments',(select count(*) from public.leader_payments),'expenses',(select count(*) from public.leader_expenses)),
+'historical',jsonb_build_object('leads_created_without_order',(select count(*) from public.leader_leads l where l.status='Создан заказ' and not exists(select from public.leader_orders o where o.id=l.converted_order_id or o.lead_id=l.id or o.data->>'lead_id'=l.id::text)),
+'calculations_created_without_order',(select count(*) from public.leader_lead_calculations c where c.status='Создан заказ' and c.order_id is null),
+'accepted_offers_without_order',(select count(*) from public.leader_commercial_offers where status in ('Согласовано','Принято') and order_id is null),
+'calculations_without_need',(select count(*) from public.leader_lead_calculations where need_id is null),
+'calculation_total_mismatches',(select count(*) from public.leader_lead_calculations c left join(select calculation_id,count(*) n,sum(client_sum) client_sum from public.leader_lead_calculation_items group by calculation_id)i on i.calculation_id=c.id where abs(coalesce(c.client_total,0)-coalesce(i.client_sum,0))>0.01),
+'calculation_total_mismatches_with_lines',(select count(*) from public.leader_lead_calculations c join(select calculation_id,sum(client_sum) client_sum from public.leader_lead_calculation_items group by calculation_id)i on i.calculation_id=c.id where abs(coalesce(c.client_total,0)-coalesce(i.client_sum,0))>0.01)),
+'offer_statuses',(select jsonb_object_agg(status,n) from(select status,count(*) n from public.leader_commercial_offers group by status)s),
+'new_rows',jsonb_build_object('subscriptions',(select count(*) from leader_private.leader_push_subscriptions),'notification_events',(select count(*) from leader_private.leader_notification_events),'outbox',(select count(*) from leader_private.leader_notification_outbox),'documents',(select count(*) from public.leader_order_documents),'document_events',(select count(*) from public.leader_order_document_events),'document_receipts',(select count(*) from leader_private.leader_document_receipts),'document_counters',(select count(*) from leader_private.leader_document_number_counters),'company_revision',(select revision from leader_private.leader_document_company where id=1),'adjustments',(select count(*) from leader_private.leader_finance_adjustments),'confirmations',(select count(*) from leader_private.leader_expense_confirmations),'finance_receipts',(select count(*) from leader_private.leader_finance_adjustment_receipts)),
+'notifications',jsonb_build_object('enabled',(select enabled from leader_private.leader_notification_config where id=1),'correct_dispatch_url',(select dispatch_url='https://ofewxuqfjhamgerwzull.supabase.co/functions/v1/leader-crm-notifications' from leader_private.leader_notification_config where id=1),'active_cron',(select count(*) from cron.job where jobname like 'leader%notification%' and active)),
+'lead_role_policies',(select jsonb_agg(jsonb_build_object('name',policyname,'command',cmd,'permissive',permissive)) from pg_policies where schemaname='public' and tablename='leader_leads')
+) audit;
+rollback;

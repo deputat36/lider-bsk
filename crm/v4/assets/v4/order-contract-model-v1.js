@@ -96,7 +96,7 @@ export function normalizeOrderContractItems(rawItems = []) {
       name: clean(item?.name || 'Работы по заказу', MAX.itemName),
       quantity,
       unit: clean(item?.unit || 'шт.', MAX.itemUnit),
-      price: Math.round(price * 100) / 100,
+      price: Math.round(price * 1e6) / 1e6,
       sum: Math.round(sum * 100) / 100
     });
   }).filter((item) => item.name);

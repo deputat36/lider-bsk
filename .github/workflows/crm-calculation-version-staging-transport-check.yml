@@ -51,9 +51,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: calculation-transport-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate-calculation-staging-transport:
     runs-on: ubuntu-latest
+    timeout-minutes: 6
     steps:
       - uses: actions/checkout@v4
 
@@ -80,10 +85,10 @@ jobs:
           deno-version: v2.x
 
       - name: Check Edge source after permission sync
-        run: deno check supabase/functions/leader-crm-calculations/index.ts
+        run: timeout 60s deno check supabase/functions/leader-crm-calculations/index.ts
 
       - name: Test Edge contract after permission sync
-        run: deno test supabase/functions/leader-crm-calculations/contract_test.ts
+        run: timeout 60s deno test supabase/functions/leader-crm-calculations/contract_test.ts
 
       - name: Compile source checkers
         run: |

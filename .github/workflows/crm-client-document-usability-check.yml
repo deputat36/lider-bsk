@@ -31,6 +31,9 @@ permissions:
 jobs:
   client-document-browser:
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.55.0-noble@sha256:b27e719ecbfef153e13fd24e8341736733bf2658b229677eb21ff57ff5d7fb29
+      options: --ipc=host
     timeout-minutes: 6
     steps:
       - uses: actions/checkout@v4
@@ -46,7 +49,6 @@ jobs:
       - name: Install pinned browser test runtime
         run: |
           npm install --no-save --package-lock=false playwright@1.55.0
-          npx playwright install --with-deps chromium
       - name: Exercise client and document editors with blocked external HTTP
         run: node tools/test_client_document_usability_browser.mjs
       - name: Upload screenshots and fixture print previews

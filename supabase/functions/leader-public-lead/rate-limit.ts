@@ -21,6 +21,20 @@ function clean(value: unknown, max = 1000) {
   return String(value ?? '').trim().slice(0, max)
 }
 
+// Keep the pepper private even when the host cannot provision an extra Edge secret.
+// Only service_role may call this RPC; its result is never returned to the browser.
+export async function publicIntakeRateLimitSalt(supabaseUrl: string, backendHeaders: Record<string, string>, configured: string) {
+  if (configured.trim().length >= 16) return configured.trim()
+  const response = await fetch(`${supabaseUrl}/rest/v1/rpc/leader_public_intake_config_rpc`, {
+    method: 'POST', headers: { ...backendHeaders, 'Content-Type': 'application/json' },
+    body: '{}', signal: AbortSignal.timeout(8000),
+  })
+  if (!response.ok) throw new Error('rate_limit_config_unavailable')
+  const result = await response.json()
+  if (typeof result?.salt !== 'string' || result.salt.length < 16) throw new Error('rate_limit_config_unavailable')
+  return result.salt
+}
+
 function clientIp(req: Request) {
   const forwarded = clean(req.headers.get('x-forwarded-for'), 500)
   if (forwarded) return forwarded.split(',')[0].trim()
@@ -47,6 +61,7 @@ export async function checkPublicIntakeRateLimit(params: RateLimitParams): Promi
   try {
     const response = await fetch(`${params.supabaseUrl}/rest/v1/rpc/leader_public_intake_rate_limit_rpc`, {
       method: 'POST',
+      signal: AbortSignal.timeout(8000),
       headers: {
         ...params.backendHeaders,
         'Content-Type': 'application/json',

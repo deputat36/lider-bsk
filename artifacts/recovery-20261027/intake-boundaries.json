@@ -1,0 +1,38 @@
+{
+  "run": "staging-public-intake-1793125122632",
+  "out": [
+    {
+      "length": 2000,
+      "status": 200,
+      "ok": true
+    },
+    {
+      "length": 2001,
+      "status": 200,
+      "ok": true
+    },
+    {
+      "length": 3000,
+      "status": 200,
+      "ok": true
+    },
+    {
+      "length": 3001,
+      "status": 400,
+      "error": "message_too_long"
+    },
+    {
+      "duplicate": true,
+      "status": 200
+    },
+    {
+      "cleanup": {
+        "ok": true,
+        "run_id": "staging-public-intake-1793125122632",
+        "audit_deleted": 4,
+        "leads_deleted": 3,
+        "receipts_deleted": 3
+      }
+    }
+  ]
+}

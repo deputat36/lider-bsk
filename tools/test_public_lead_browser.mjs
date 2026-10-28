@@ -8,6 +8,9 @@ await import('../assets/leader-service-catalog.js');
 const commercial = JSON.parse(await readFile('data/commercial-services.json', 'utf8'));
 const useCases = JSON.parse(await readFile('data/service-use-cases.json', 'utf8')).cases;
 const catalog = globalThis.LeaderServiceCatalog;
+const widthSetting=process.env.LEADER_TEST_WIDTH;
+assert.ok(!widthSetting || ['1440','390'].includes(widthSetting),'Known browser matrix width');
+const widths=widthSetting?[Number(widthSetting)]:[1440,390];
 const publicForms=[];
 for(const name of (await readdir(root)).filter(name=>name.endsWith('.html')).sort()){
   if((await readFile(name,'utf8')).includes('assets/public-lead-form.js?v=36'))publicForms.push(name);
@@ -44,10 +47,13 @@ async function assertConfirmation(page,requestId){
   assert.ok(bounds.left>=0&&bounds.right<=bounds.width,'Reference stays within the viewport');
 }
 try {
-  for (const width of [1440,390]) {
+  for (const width of widths) {
+    console.log('Public form browser: start width '+width+'; requests stay local.');
     const context = await browser.newContext({viewport:{width,height:900}});
     await context.addInitScript(()=>{window.__leaderTestGoals=[];window.addEventListener('leader:goal',event=>window.__leaderTestGoals.push(event.detail));});
     const page = await context.newPage();
+    page.setDefaultTimeout(12000);
+    page.setDefaultNavigationTimeout(12000);
     const payloads = [];
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
@@ -376,6 +382,7 @@ try {
       await page.screenshot({path:`artifacts/public-lead/confirmation-duplicate-${w}-${h}.png`});
     }
     assert.equal(errors.length,0,errors.join('\n'));
+    console.log('Public form browser: all scenarios PASS at width '+width);
     await context.close();
   }
   console.log('PASS: all 64 forms on desktop/mobile, fully visible focused confirmations, server references and duplicate responses on small/landscape screens, native contact validation, correction/reset/retry, full message/brief, campaign and service selection; zero production requests forwarded.');

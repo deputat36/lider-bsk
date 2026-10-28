@@ -1,5 +1,4 @@
-import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
-
+// Deno.env and Deno.serve use built-in Deno types; no remote type-only import.
 import {
   CALCULATION_ACTION,
   CALCULATION_EDGE_CONTRACT_VERSION,

@@ -12,6 +12,9 @@ on:
       - 'docs/PUBLIC_INTAKE_RATE_LIMIT_CANDIDATE_V1_2026-07-24.md'
       - 'docs/PUBLIC_INTAKE_SERVICE_ROLE_CUTOVER_CANDIDATE_V1_2026-07-24.md'
       - 'tools/check_public_intake_rate_limit_candidate.py'
+      - 'tools/test_public_intake_runtime_v2.mjs'
+      - 'tools/check_typescript_syntax.mjs'
+      - 'supabase/production-candidates/leader_public_intake_*_v2.sql'
       - '.github/workflows/public-intake-rate-limit-candidate-check.yml'
   push:
     branches: [main]
@@ -24,6 +27,9 @@ on:
       - 'docs/PUBLIC_INTAKE_RATE_LIMIT_CANDIDATE_V1_2026-07-24.md'
       - 'docs/PUBLIC_INTAKE_SERVICE_ROLE_CUTOVER_CANDIDATE_V1_2026-07-24.md'
       - 'tools/check_public_intake_rate_limit_candidate.py'
+      - 'tools/test_public_intake_runtime_v2.mjs'
+      - 'tools/check_typescript_syntax.mjs'
+      - 'supabase/production-candidates/leader_public_intake_*_v2.sql'
       - '.github/workflows/public-intake-rate-limit-candidate-check.yml'
 
 permissions:
@@ -39,15 +45,19 @@ jobs:
         run: python3 tools/check_public_intake_rate_limit_candidate.py
       - name: Validate TypeScript syntax
         run: |
-          node --experimental-strip-types --check supabase/functions/leader-public-lead/rate-limit.ts
-          node --experimental-strip-types --check supabase/functions/leader-public-lead/index.ts
+          node tools/check_typescript_syntax.mjs supabase/functions/leader-public-lead/rate-limit.ts
+          node tools/check_typescript_syntax.mjs supabase/functions/leader-public-lead/index.ts
+      - name: Actual Edge boundaries and failure recovery
+        run: node --experimental-strip-types tools/test_public_intake_runtime_v2.mjs
       - name: Confirm no production automation
         run: |
           ! grep -R \
             --exclude='public-intake-rate-limit-candidate-check.yml' \
+            --exclude='public-intake-production-cutover-readiness-check.yml' \
             --exclude='public-intake-service-role-candidate-check.yml' \
             "supabase functions deploy leader-public-lead" .github/workflows
           ! grep -R \
             --exclude='public-intake-rate-limit-candidate-check.yml' \
+            --exclude='public-intake-production-cutover-readiness-check.yml' \
             --exclude='public-intake-service-role-candidate-check.yml' \
             "supabase db push" .github/workflows

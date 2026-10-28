@@ -6,9 +6,20 @@ on:
   pull_request:
     branches: [main]
     paths: ['crm/v4/index.html', 'crm/v4/assets/v4/needs.js', 'crm/v4/assets/v4/needs-brief.css', 'crm/v4/assets/v4/calculations.js', 'crm/v4/assets/v4/calculations.css', 'crm/v4/assets/v4/need-calculation-prefill-v1.js', 'tools/test_need_calculation_prefill.mjs', 'tools/test_need_calculation_handoff.mjs', 'tools/test_need_calculation_browser.mjs', 'tools/check_crm_need_calculation_flow.py', '.github/workflows/crm-need-calculation-flow-check.yml']
+concurrency:
+  group: browser-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   need-calculation-flow:
     runs-on: ubuntu-latest
+    timeout-minutes: 8
+    defaults:
+      run:
+        shell: bash
+    container:
+      image: mcr.microsoft.com/playwright:v1.55.0-noble@sha256:b27e719ecbfef153e13fd24e8341736733bf2658b229677eb21ff57ff5d7fb29
+      options: --ipc=host
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,7 +35,6 @@ jobs:
       - name: Install browser regression dependency
         run: |
           npm install --no-save --package-lock=false playwright@1.55.0
-          npx playwright install --with-deps chromium
       - name: Verify need handoff without production requests
         run: node tools/test_need_calculation_browser.mjs
       - uses: actions/upload-artifact@v4

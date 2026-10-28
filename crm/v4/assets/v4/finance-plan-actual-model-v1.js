@@ -92,17 +92,18 @@ export function buildOrderFinanceSnapshot(order = {}, payments = [], expenses = 
   const ignoredExpenseRows = expenseEffects.filter(({ effect }) => !effect.included).length;
   const cashResult = currency(confirmedNetReceipts - confirmedExpenses);
   const debt = currency(Math.max(plannedRevenue - confirmedNetReceipts, 0));
-  const expenseEvidenceCompleteEnough = plannedCost <= 0 || confirmedExpenseRows > 0;
+  const expensesConfirmed=options.expensesConfirmed===true;
+  const expenseEvidenceCompleteEnough = expensesConfirmed || plannedCost <= 0 || confirmedExpenseRows > 0;
   const terminal = options.terminal === true;
   const statusKnown = options.statusKnown !== false;
 
   let actualProfitState = 'unknown';
-  if (expenseEvidenceCompleteEnough) actualProfitState = terminal ? 'provisional' : 'partial';
+  if (expenseEvidenceCompleteEnough) actualProfitState = terminal ? (expensesConfirmed?'confirmed':'provisional') : 'partial';
   const actualProfit = actualProfitState === 'unknown' ? null : cashResult;
   const planFactDiff = actualProfit === null ? null : currency(actualProfit - plannedProfit);
   const warnings = [];
   if (!statusKnown) warnings.push('Статус заказа не распознан. Проверьте его перед завершением заказа.');
-  if (plannedCost > 0 && confirmedExpenseRows === 0) warnings.push('Нет подтверждённых расходов: фактическая прибыль не рассчитана.');
+  if (plannedCost > 0 && confirmedExpenseRows === 0 && !expensesConfirmed) warnings.push('Нет подтверждённых расходов: фактическая прибыль не рассчитана.');
   if (ignoredPaymentRows > 0) warnings.push(`Не учтено непроведённых, неподтверждённых, неизвестных или отменённых платежей: ${ignoredPaymentRows}.`);
   if (unknownPaymentStatusRows > 0) warnings.push(`Платежей с неизвестным статусом: ${unknownPaymentStatusRows}.`);
   if (notPostedPaymentRows > 0) warnings.push(`Плановых платежей, ещё не включённых в факт: ${notPostedPaymentRows}.`);
@@ -116,6 +117,7 @@ export function buildOrderFinanceSnapshot(order = {}, payments = [], expenses = 
     status: String(order.status || 'Новый'),
     terminal,
     statusKnown,
+    expensesConfirmed,
     plannedRevenue,
     plannedCost,
     plannedProfit,
@@ -165,7 +167,7 @@ export function buildFinancePortfolioSnapshot(orders = [], payments = [], expens
       order,
       paymentsByOrder.get(String(order.id || '')) || [],
       expensesByOrder.get(String(order.id || '')) || [],
-      { terminal: status.terminal === true, statusKnown: status.known !== false }
+      { terminal: status.terminal === true, statusKnown: status.known !== false,expensesConfirmed:options.expenseConfirmations?.[String(order.id)]===true }
     );
   });
 
@@ -195,7 +197,7 @@ export function buildFinancePortfolioSnapshot(orders = [], payments = [], expens
     acc.notPostedPaymentRows += item.notPostedPaymentRows;
     acc.ignoredExpenseRows += item.ignoredExpenseRows;
     if (item.plannedCost > 0) acc.costBearingOrders += 1;
-    if (item.plannedCost > 0 && item.confirmedExpenseRows > 0) acc.ordersWithExpenseEvidence += 1;
+    if (item.plannedCost > 0 && (item.confirmedExpenseRows > 0 || item.expensesConfirmed)) acc.ordersWithExpenseEvidence += 1;
     if (item.actualProfitState === 'unknown') acc.unknownActualProfitOrders += 1;
     if (item.actualProfitState === 'partial') acc.partialActualProfitOrders += 1;
     return acc;
@@ -223,9 +225,9 @@ export function buildFinancePortfolioSnapshot(orders = [], payments = [], expens
     ? 'unknown'
     : totals.partialActualProfitOrders > 0
       ? 'partial'
-      : 'provisional';
+      : orderSnapshots.length&&orderSnapshots.every(item=>item.actualProfitState==='confirmed')?'confirmed':'provisional';
   const actualProfit = actualProfitState === 'unknown' ? null : totals.cashResult;
-  const riskRank = { unknown: 0, partial: 1, provisional: 2 };
+  const riskRank = { unknown: 0, partial: 1, provisional: 2,confirmed:3 };
   const sortedOrders = [...orderSnapshots].sort((a, b) => {
     const stateDiff = riskRank[a.actualProfitState] - riskRank[b.actualProfitState];
     if (stateDiff) return stateDiff;
@@ -251,6 +253,7 @@ export function buildFinancePortfolioSnapshot(orders = [], payments = [], expens
 }
 
 export function actualProfitStateLabel(state) {
+  if(state==='confirmed')return 'Результат при подтверждённых расходах';
   if (state === 'provisional') return 'Предварительная факт. прибыль';
   if (state === 'partial') return 'Предварительный результат';
   return 'Фактическая прибыль не рассчитана';

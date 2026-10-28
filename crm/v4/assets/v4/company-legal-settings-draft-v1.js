@@ -4,6 +4,9 @@ export const COMPANY_LEGAL_TAX_MODES = Object.freeze([
   'Без НДС',
   'НДС не облагается',
   'НДС 5%',
+  'НДС 7%',
+  'НДС 10%',
+  'НДС 22%',
   'НДС 20%'
 ]);
 

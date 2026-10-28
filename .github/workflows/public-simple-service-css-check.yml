@@ -42,9 +42,20 @@ on:
       - 'tools/check_public_simple_service_css.py'
       - '.github/workflows/public-simple-service-css-check.yml'
 
+concurrency:
+  group: browser-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate-shared-simple-service-css:
     runs-on: ubuntu-latest
+    timeout-minutes: 8
+    defaults:
+      run:
+        shell: bash
+    container:
+      image: mcr.microsoft.com/playwright:v1.55.0-noble@sha256:b27e719ecbfef153e13fd24e8341736733bf2658b229677eb21ff57ff5d7fb29
+      options: --ipc=host
     steps:
       - uses: actions/checkout@v4
       - name: Validate eleven service pages and shared stylesheet
@@ -56,7 +67,6 @@ jobs:
       - name: Install browser test dependency
         run: |
           npm install --no-save --package-lock=false playwright@1.55.0
-          npx playwright install --with-deps chromium
       - name: Check five service landings without production writes
         run: |
           node tools/test_public_homepage_browser.mjs --signs

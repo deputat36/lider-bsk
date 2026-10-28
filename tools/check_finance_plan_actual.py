@@ -22,7 +22,7 @@ checks = {
         "from './payment-record-status-model-v1.js'",
         'confirmedPaymentEffect', 'confirmedExpenseEffect',
         'buildOrderFinanceSnapshot', 'buildFinancePortfolioSnapshot',
-        "actualProfitState = 'unknown'", "actualProfitState = terminal ? 'provisional' : 'partial'",
+        "actualProfitState = 'unknown'", "actualProfitStateLabel", "options.expensesConfirmed",
         'confirmedNetReceipts', 'confirmedExpenses', 'cashResult',
         'expenseEvidenceCompleteEnough', 'unknownActualProfitOrders',
         'confirmedUnattributedPayments', 'confirmedUnattributedExpenses',

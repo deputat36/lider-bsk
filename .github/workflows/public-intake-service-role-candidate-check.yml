@@ -54,8 +54,10 @@ jobs:
           ! grep -R \
             --exclude='public-intake-service-role-candidate-check.yml' \
             --exclude='public-intake-rate-limit-candidate-check.yml' \
+            --exclude='public-intake-production-cutover-readiness-check.yml' \
             "supabase functions deploy leader-public-lead" .github/workflows
           ! grep -R \
             --exclude='public-intake-service-role-candidate-check.yml' \
             --exclude='public-intake-rate-limit-candidate-check.yml' \
+            --exclude='public-intake-production-cutover-readiness-check.yml' \
             "supabase db push" .github/workflows

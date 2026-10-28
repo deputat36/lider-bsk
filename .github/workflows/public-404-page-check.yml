@@ -22,9 +22,20 @@ on:
       - 'docs/PUBLIC_UTILITY_PAGES_CSS_2026-07-15.md'
       - '.github/workflows/public-404-page-check.yml'
 
+concurrency:
+  group: browser-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate-public-404-page:
     runs-on: ubuntu-latest
+    timeout-minutes: 8
+    defaults:
+      run:
+        shell: bash
+    container:
+      image: mcr.microsoft.com/playwright:v1.55.0-noble@sha256:b27e719ecbfef153e13fd24e8341736733bf2658b229677eb21ff57ff5d7fb29
+      options: --ipc=host
     steps:
       - uses: actions/checkout@v4
       - name: Validate branded recovery page and external CSS
@@ -39,7 +50,6 @@ jobs:
       - name: Install isolated browser test dependency
         run: |
           npm install --no-save --package-lock=false playwright@1.55.0
-          npx playwright install --with-deps chromium
       - name: Verify nested 404 recovery at desktop, tablet and mobile widths
         run: node tools/test_public_404_browser.mjs
       - name: Upload responsive screenshots

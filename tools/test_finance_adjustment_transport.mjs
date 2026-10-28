@@ -1,0 +1,25 @@
+import {buildOrderFinanceSnapshot} from '../crm/v4/assets/v4/finance-plan-actual-model-v1.js';
+import assert from 'node:assert/strict';
+import {prepareAdjustment,invokeAdjustment,completeAdjustment} from '../crm/v4/assets/v4/finance-adjustment-transport-v1.js';
+import {invokeFinanceCommand} from '../crm/v4/assets/v4/finance-record-transport-v1.js';
+const actor='90000000-0000-4000-8000-000000000551',order='90000000-0000-4000-8000-000000000552';
+const rows=new Map(),storage={getItem:k=>rows.get(k),setItem:(k,v)=>rows.set(k,v),removeItem:k=>rows.delete(k)};
+const payload={order_id:order,expected_updated_at:'2026-10-28T01:00:00Z',amount:12.34,date:'2026-10-28',reason:'Synthetic refund',payment_id:order,method:'Наличные'};
+const first=await prepareAdjustment({actorId:actor,operation:'refund',payload,storage});
+const repeat=await prepareAdjustment({actorId:actor,operation:'refund',payload:{...payload,expected_updated_at:'2026-10-28T02:00:00Z'},storage});
+assert.deepEqual(repeat.command,first.command,'Reload keeps original nonce and source revision for the same financial operation');
+assert(![...rows.values()].join('').includes('12.34'),'Browser storage contains no amounts or reasons');
+let writes=0;const client={auth:{getSession:async()=>({data:{session:{user:{id:actor},access_token:'synthetic'}}})},functions:{invoke:async(slug,{body,headers})=>{assert.equal(slug,'leader-crm-finance-adjustments');assert.equal(headers.Authorization,'Bearer synthetic');assert.deepEqual(body,first.command);writes++;return{data:{ok:true}};}}};
+const options={client,url:'https://ofewxuqfjhamgerwzull.supabase.co',actorId:actor,command:first.command};
+assert.equal((await invokeAdjustment(options)).ok,true);assert.equal(writes,1);
+assert.equal((await invokeAdjustment({...options,actorId:order})).code,'auth_required');assert.equal(writes,1);
+client.functions.invoke=async()=>({error:{context:new Response(JSON.stringify({ok:false,error:{code:'allocation_exceeds_overpayment'}}),{status:400})}});
+assert.equal((await invokeAdjustment(options)).uncertain,false);
+client.auth.getSession=async()=>new Promise(()=>{});
+assert.equal((await invokeAdjustment({...options,timeoutMs:15})).uncertain,true,'Stalled session cannot freeze the form');
+assert.equal((await invokeFinanceCommand({client,url:options.url,allowed:true,actorId:actor,command:{},timeoutMs:15})).uncertain,true,'Original finance writer also bounds session acquisition');
+completeAdjustment(first.key,storage);assert.equal(rows.size,0);
+console.log('Financial adjustments: exact recovery, technical-only storage, actor-bound JWT, deterministic rejection and bounded session PASS.');
+
+const confirmed=buildOrderFinanceSnapshot({client_total:100,contractor_cost:50},[{amount:100,payment_type:'Приход',payment_status:'Проведён',is_confirmed:true}],[],{terminal:true,expensesConfirmed:true});
+assert.equal(confirmed.actualProfitState,'confirmed');assert.equal(confirmed.actualProfit,100);assert(!confirmed.warnings.some(w=>w.includes('не рассчитана')));

@@ -1,0 +1,51 @@
+name: CRM notification delivery and PWA
+on:
+  pull_request:
+    branches: [main]
+    paths: ['crm/v4/**', 'supabase/functions/leader-crm-notifications/**', 'supabase/production-candidates/leader_notifications_v1.sql', 'supabase/staging-tests/20261027_notifications_acceptance.sql', 'tools/*notifications*', '.github/workflows/crm-notifications-check.yml']
+  push:
+    branches: [main]
+    paths: ['crm/v4/**', 'supabase/functions/leader-crm-notifications/**', 'supabase/production-candidates/leader_notifications_v1.sql', 'supabase/staging-tests/20261027_notifications_acceptance.sql', 'tools/*notifications*', '.github/workflows/crm-notifications-check.yml']
+permissions:
+  contents: read
+concurrency:
+  group: notifications-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  edge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm ci --ignore-scripts --no-audit --no-fund --prefix supabase/functions/leader-crm-notifications
+      - run: node tools/check_typescript_syntax.mjs supabase/functions/leader-crm-notifications/index.ts
+      - run: node tools/test_notifications_edge.mjs
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    container:
+      image: mcr.microsoft.com/playwright:v1.55.0-noble@sha256:b27e719ecbfef153e13fd24e8341736733bf2658b229677eb21ff57ff5d7fb29
+      options: --ipc=host
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm install --no-save --package-lock=false playwright@1.55.0
+      - run: node tools/test_notifications_browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: notifications-browser, path: artifacts/notifications/, if-no-files-found: warn}
+  transactions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    services:
+      postgres:
+        image: postgres:17
+        env: {POSTGRES_PASSWORD: isolated-ci-only, POSTGRES_DB: notifications_test}
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tools/build_notifications_rpc_test.py
+      - run: psql -h localhost -U postgres -d notifications_test -v ON_ERROR_STOP=1 -f build/notifications-rpc-test.sql
+        env: {PGPASSWORD: isolated-ci-only}

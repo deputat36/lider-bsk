@@ -85,7 +85,7 @@ export function mountFinanceWriter(root, { order, payments, expenses, client, ur
       fieldset.disabled = true; submit.disabled = true; dismiss.disabled = true;
       root.querySelectorAll('[data-finance-new],[data-finance-void]').forEach(button => { button.disabled = true; });
       setMessage('Сохраняем…');
-      const result = await invokeFinanceCommand({ client, url, allowed: canWrite(), command: prepared.command });
+      const result = await invokeFinanceCommand({ client, url, allowed: canWrite(), actorId, command: prepared.command });
       if (result.ok) {
         saved = true;
         completeFinanceCommand(prepared.key);

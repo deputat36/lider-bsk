@@ -6,6 +6,7 @@ import { v4State, subscribeState } from './state.js';
 import { documentActorContext, canPrepareDocument, clearActorDocumentDrafts, mountDocumentDraft, registerDocumentPreview, updateDocumentLine, validateDocumentLines, validateDocumentText } from './document-draft-session-v1.js';
 import './order-act-company-settings-v1.js';
 import './order-contract-preview-v1.js';
+import './document-archive-v1.js';
 
 const HOST_ID = 'orderActPreviewV1';
 const STYLE_ID = 'orderActPreviewV1Styles';
@@ -129,7 +130,7 @@ function itemRow(item = {}) {
   const quantity = num(item.quantity) || 1;
   const sum = num(item.client_sum);
   const price = quantity ? sum / quantity : sum;
-  return `<tr data-act-item-row><td data-label="Наименование"><input aria-label="Наименование позиции" maxlength="700" data-act-item-name value="${esc(item.name || 'Работы по заказу')}"></td><td data-label="Количество" class="number"><input aria-label="Количество" data-act-item-qty inputmode="decimal" value="${esc(quantity)}"></td><td data-label="Единица" class="unit"><input aria-label="Единица измерения" maxlength="50" data-act-item-unit value="${esc(item.unit || 'шт')}"></td><td data-label="Цена" class="amount"><input aria-label="Цена за единицу" data-act-item-price inputmode="decimal" value="${esc(Math.round(price * 100) / 100)}"></td><td data-label="Сумма" class="amount"><input aria-label="Сумма позиции" data-act-item-sum inputmode="decimal" value="${esc(Math.round(sum * 100) / 100)}"></td><td><button type="button" data-act-remove-row aria-label="Удалить позицию">×</button></td></tr>`;
+  return `<tr data-act-item-row><td data-label="Наименование"><input aria-label="Наименование позиции" maxlength="700" data-act-item-name value="${esc(item.name || 'Работы по заказу')}"></td><td data-label="Количество" class="number"><input aria-label="Количество" data-act-item-qty inputmode="decimal" value="${esc(quantity)}"></td><td data-label="Единица" class="unit"><input aria-label="Единица измерения" maxlength="50" data-act-item-unit value="${esc(item.unit || 'шт')}"></td><td data-label="Цена" class="amount"><input aria-label="Цена за единицу" data-act-item-price inputmode="decimal" value="${esc(Math.round(price * 1e6) / 1e6)}"></td><td data-label="Сумма" class="amount"><input aria-label="Сумма позиции" data-act-item-sum inputmode="decimal" value="${esc(Math.round(sum * 100) / 100)}"></td><td><button type="button" data-act-remove-row aria-label="Удалить позицию">×</button></td></tr>`;
 }
 
 function customerDetails(bundle) {
@@ -147,6 +148,8 @@ function renderEditor(bundle) {
   recalculateDraft();
   const form = document.getElementById('orderActDraftForm');
   draftSession = mountDocumentDraft({form,kind:'act',order,itemRow,onRestore:recalculateDraft,onReset:()=>openEditor(order.id),onClose:()=>closeEditor()});
+  form.dataset.orderId=order.id;
+  document.dispatchEvent(new CustomEvent('leader-v4:document-editor-ready',{detail:{form,order,kind:'act',getDraft:readDraft}}));
 }
 
 function draftRows() {
@@ -173,6 +176,26 @@ function recalculateDraft() {
 
 const value = (id) => document.getElementById(id)?.value?.trim() || '';
 
+function readDraft() {
+  return {
+    number: value('actDraftNumber') || 'БЕЗ НОМЕРА',
+    date: value('actDraftDate'),
+    basis: value('actDraftBasis'),
+    executor: value('actDraftExecutor'),
+    executorDetails: value('actDraftExecutorDetails'),
+    customer: value('actDraftCustomer'),
+    customerDetails: value('actDraftCustomerDetails'),
+    tax: value('actDraftTax'),
+    signatory: value('actDraftSignatory'),
+    signatoryRole: value('actDraftSignatoryRole'),
+    completionDate: value('actDraftCompletionDate'),
+    completionText: value('actDraftCompletionText'),
+    claimsText: value('actDraftClaimsText'),
+    note: value('actDraftNote'),
+    items: draftRows()
+  };
+}
+
 function printCss() {
   return `*{box-sizing:border-box}.page,.page td,.party{overflow-wrap:anywhere}body{margin:0;background:#e5e7eb;color:#111827;font-family:Arial,Helvetica,sans-serif}.page{width:210mm;min-height:297mm;margin:0 auto;background:#fff;padding:15mm 16mm;position:relative}.brand{display:flex;justify-content:space-between;gap:20px;border-bottom:3px solid #ea580c;padding-bottom:8mm}.brand h1{margin:0;font-size:25px;text-transform:uppercase}.meta{text-align:right;font-size:12px}.meta strong{display:block;font-size:16px}.parties{display:grid;grid-template-columns:1fr 1fr;gap:8mm;margin:9mm 0}.party{border:1px solid #d1d5db;border-radius:10px;padding:10px}.party span{display:block;color:#6b7280;text-transform:uppercase;font-size:10px;font-weight:900}.party b{display:block;margin-top:5px}.party p{margin:5px 0 0;font-size:12px;white-space:pre-wrap}.basis{margin:0 0 7mm;font-size:12px}.items{width:100%;border-collapse:collapse;font-size:11px}.items th{background:#111827;color:#fff;padding:8px;text-align:left}.items td{border-bottom:1px solid #d1d5db;padding:8px;vertical-align:top}.items .num{text-align:right;white-space:nowrap}.items .total td{font-weight:900;background:#fff7ed}.items .total td:last-child{color:#c2410c;font-size:14px}.statement{margin-top:8mm;font-size:12px;line-height:1.55}.statement p{margin:0 0 5px}.tax{font-weight:900}.signatures{display:grid;grid-template-columns:1fr 1fr;gap:18mm;margin-top:20mm}.signature{border-top:1px solid #111827;padding-top:5px;font-size:11px}.footer{position:static;margin-top:12mm;border-top:1px solid #d1d5db;padding-top:4px;font-size:9px;color:#6b7280;display:flex;justify-content:space-between}.draft{color:#b91c1c;font-weight:900}.print-actions{position:fixed;right:16px;top:16px;display:flex;gap:8px;z-index:4}.print-actions button{border:0;border-radius:999px;background:#ea580c;color:#fff;padding:10px 14px;font-weight:900;cursor:pointer}.print-actions .secondary{background:#111827}@page{size:A4;margin:16mm 18mm}thead{display:table-header-group}tr{break-inside:avoid}@media print{body{background:#fff}.page{width:auto;min-height:0;margin:0;padding:0}.print-actions{display:none}}`;
 }
@@ -180,7 +203,7 @@ function printCss() {
 function printHtml(data) {
   const rows = data.items.map((item, index) => `<tr><td class="num">${index + 1}</td><td>${esc(item.name)}</td><td class="num">${esc(item.quantity)} ${esc(item.unit)}</td><td class="num">${Number(item.price).toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:6})} ₽</td><td class="num"><b>${money(item.sum)}</b></td></tr>`).join('');
   const total = data.items.reduce((sum, item) => sum + item.sum, 0);
-  return `<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>${esc(`akt-vypolnennyh-rabot-${data.number}`)}</title><style>${printCss()}</style></head><body><div class="print-actions"><button onclick="window.print()">Печать / PDF</button><button class="secondary" onclick="window.close()">Закрыть</button></div><main class="page"><header class="brand"><div><h1>Акт выполненных работ</h1><p class="draft">Предварительный черновик · не зарегистрирован в CRM</p></div><div class="meta"><strong>№ ${esc(data.number)}</strong><div>от ${esc(dateRu(data.date))}</div><div>Работы выполнены: ${esc(dateRu(data.completionDate))}</div></div></header><section class="parties"><div class="party"><span>Исполнитель</span><b>${esc(data.executor)}</b><p>${esc(data.executorDetails || 'Реквизиты не указаны')}</p></div><div class="party"><span>Заказчик</span><b>${esc(data.customer)}</b><p>${esc(data.customerDetails || 'Реквизиты не указаны')}</p></div></section><p class="basis"><b>Основание:</b> ${esc(data.basis)}</p><table class="items"><thead><tr><th>№</th><th>Наименование работ</th><th>Количество</th><th>Цена</th><th>Сумма</th></tr></thead><tbody>${rows}<tr class="total"><td colspan="4">Итого</td><td class="num">${money(total)}</td></tr></tbody></table><section class="statement"><p><b>Всего выполнено работ на сумму:</b> ${money(total)}.</p><p class="tax">${esc(data.tax)}</p><p>${esc(data.completionText)}</p><p>${esc(data.claimsText)}</p>${data.note ? `<p><b>Примечание:</b> ${esc(data.note)}</p>` : ''}</section><section class="signatures"><div class="signature">${esc(data.signatoryRole)} / ${esc(data.signatory || '________________')}</div><div class="signature">Заказчик / ________________________</div></section><footer class="footer"><span>РА «Лидер» · документ сформирован в CRM</span><span>Черновик не зарегистрирован в CRM</span></footer></main></body></html>`;
+  return `<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>${esc(`akt-vypolnennyh-rabot-${data.number}`)}</title><style>${printCss()}</style></head><body><div class="print-actions"><button onclick="window.print()">Печать / PDF</button><button class="secondary" onclick="window.close()">Закрыть</button></div><main class="page"><header class="brand"><div><h1>Акт выполненных работ</h1><p class="draft">${data.archived?esc('Архив CRM · '+data.archiveStatus+' · версия '+data.archiveVersion):'Предварительный черновик · не зарегистрирован в CRM'}</p></div><div class="meta"><strong>№ ${esc(data.number)}</strong><div>от ${esc(dateRu(data.date))}</div><div>Работы выполнены: ${esc(dateRu(data.completionDate))}</div></div></header><section class="parties"><div class="party"><span>Исполнитель</span><b>${esc(data.executor)}</b><p>${esc(data.executorDetails || 'Реквизиты не указаны')}</p></div><div class="party"><span>Заказчик</span><b>${esc(data.customer)}</b><p>${esc(data.customerDetails || 'Реквизиты не указаны')}</p></div></section><p class="basis"><b>Основание:</b> ${esc(data.basis)}</p><table class="items"><thead><tr><th>№</th><th>Наименование работ</th><th>Количество</th><th>Цена</th><th>Сумма</th></tr></thead><tbody>${rows}<tr class="total"><td colspan="4">Итого</td><td class="num">${money(total)}</td></tr></tbody></table><section class="statement"><p><b>Всего выполнено работ на сумму:</b> ${money(total)}.</p><p class="tax">${esc(data.tax)}</p><p>${esc(data.completionText)}</p><p>${esc(data.claimsText)}</p>${data.note ? `<p><b>Примечание:</b> ${esc(data.note)}</p>` : ''}</section><section class="signatures"><div class="signature">${esc(data.signatoryRole)} / ${esc(data.signatory || '________________')}</div><div class="signature">Заказчик / ________________________</div></section><footer class="footer"><span>РА «Лидер» · документ сформирован в CRM</span><span>${data.archived?esc(data.archiveStatus):'Черновик не зарегистрирован в CRM'}</span></footer></main></body></html>`;
 }
 
 function openPrintPreview() {
@@ -204,23 +227,7 @@ function openPrintPreview() {
   draftSession?.save();registerDocumentPreview(popup);
   try { popup.opener = null; } catch (_) {}
 
-  const data = {
-    number: value('actDraftNumber') || 'БЕЗ НОМЕРА',
-    date: value('actDraftDate'),
-    basis: value('actDraftBasis'),
-    executor: value('actDraftExecutor'),
-    executorDetails: value('actDraftExecutorDetails'),
-    customer: value('actDraftCustomer'),
-    customerDetails: value('actDraftCustomerDetails'),
-    tax: value('actDraftTax'),
-    signatory: value('actDraftSignatory'),
-    signatoryRole: value('actDraftSignatoryRole'),
-    completionDate: value('actDraftCompletionDate'),
-    completionText: value('actDraftCompletionText'),
-    claimsText: value('actDraftClaimsText'),
-    note: value('actDraftNote'),
-    items
-  };
+  const data = readDraft();
   popup.document.open();
   popup.document.write(printHtml(data));
   popup.document.close();
@@ -322,3 +329,14 @@ function bind() {
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind);
 else bind();
+
+export const archivedDocumentHtml = data => printHtml(data);
+document.addEventListener('leader-v4:restore-archived-document',async event=>{
+ const doc=event.detail;if(doc?.document_type!=='act'||['signed','void'].includes(doc.status))return;
+ const context=documentActorContext();await openEditor(doc.order_id);
+ const form=document.getElementById('orderActDraftForm');if(!form||form.dataset.orderId!==doc.order_id||context!==documentActorContext())return;
+ const draft=doc.snapshot.draft,map={number:'Number',date:'Date',basis:'Basis',executor:'Executor',executorDetails:'ExecutorDetails',customer:'Customer',customerDetails:'CustomerDetails',taxMode:'Tax',signatory:'Signatory',signatoryRole:'SignatoryRole',completionDate:'CompletionDate',completionText:'CompletionText',claimsText:'ClaimsText',note:'Note'};
+ for(const [key,suffix] of Object.entries(map)){const field=form.querySelector('#actDraft'+suffix);if(field)field.value=draft[key]??'';}
+ form.querySelector('#actDraftItems').innerHTML=draft.items.map(item=>itemRow({...item,client_sum:item.sum})).join('');
+ form.dataset.archiveGroup=doc.document_group_id;form.dataset.archiveVersion=doc.version;recalculateDraft();document.dispatchEvent(new CustomEvent('leader-v4:document-draft-changed'));
+});

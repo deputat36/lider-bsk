@@ -1,3 +1,5 @@
+import { clearCompanyLegalSettingsCache } from './company-legal-settings-v1.js';
+import { documentArchiveCommand, documentArchiveError, invokeDocumentArchive } from './document-archive-transport-v1.js';
 import {
   companyLegalDetailsText,
   companyLegalName,
@@ -182,7 +184,21 @@ async function openPreview() {
   const note = mode === COMPANY_LEGAL_SETTINGS_ENTRY_MODES.DOCUMENT
     ? 'Проверенные реквизиты применяются к открытому черновику и сохраняются для следующих документов в этой вкладке на срок до 3 суток. Общие настройки CRM не изменяются.'
     : esc(copy.note);
-  host().innerHTML = `<div class="v4-company-settings-modal" role="dialog" aria-modal="true" aria-label="${esc(copy.title)}"><div class="v4-company-settings-card"><header class="v4-company-settings-head"><div><h2>${esc(copy.title)}</h2><p>${esc(copy.subtitle)}</p></div><button type="button" data-company-settings-close>Закрыть</button></header><form id="companyLegalSettingsPreviewForm" data-company-settings-entry-mode="${esc(mode)}"><div class="v4-company-settings-grid">${groups}</div><div class="v4-company-settings-result"><section class="v4-company-settings-preview"><b>Предпросмотр блока исполнителя</b><pre data-company-settings-preview-text></pre></section><section data-company-settings-validation class="v4-company-settings-validation"></section></div>${jsonBlock}<div class="v4-company-settings-note">${note}</div><div class="v4-company-settings-actions"><button type="submit" class="primary">${esc(copy.action)}</button><button type="button" data-company-settings-close>Отмена</button></div></form></div></div>`;
+  host().innerHTML = `<div class="v4-company-settings-modal" role="dialog" aria-modal="true" aria-label="${esc(copy.title)}"><div class="v4-company-settings-card"><header class="v4-company-settings-head"><div><h2>${esc(copy.title)}</h2><p>${esc(copy.subtitle)}</p></div><button type="button" data-company-settings-close>Закрыть</button></header><form id="companyLegalSettingsPreviewForm" data-company-settings-entry-mode="${esc(mode)}"><div class="v4-company-settings-grid">${groups}</div><div class="v4-company-settings-result"><section class="v4-company-settings-preview"><b>Предпросмотр блока исполнителя</b><pre data-company-settings-preview-text></pre></section><section data-company-settings-validation class="v4-company-settings-validation"></section></div>${jsonBlock}<div class="v4-company-settings-note">${note}</div><div class="v4-company-settings-actions"><button type="submit" class="primary">${esc(copy.action)}</button><button type="button" data-company-shared-save disabled>Сохранить общие реквизиты</button><button type="button" data-company-settings-close>Отмена</button></div></form></div></div>`;
+  const sharedForm=document.getElementById('companyLegalSettingsPreviewForm'),sharedButton=sharedForm.querySelector('[data-company-shared-save]');
+  const sharedNote=document.createElement('p');sharedNote.setAttribute('role','status');sharedButton.parentElement.after(sharedNote);
+  const sharedContext=documentActorContext();let sharedRevision=null,sharedCommand=null,sharedBusy=false;
+  void invokeDocumentArchive(documentArchiveCommand('company.get')).then(result=>{if(sharedContext!==documentActorContext()||!sharedForm.isConnected)return;if(result.ok){sharedRevision=result.revision;sharedButton.disabled=false;}else sharedNote.textContent='Общие реквизиты пока не загрузились. Рабочую копию можно сохранить в этой вкладке.';});
+  sharedButton.addEventListener('click',async()=>{
+    if(sharedBusy||sharedRevision===null||!requireV4Action(CRM_V4_ACTIONS.SETTINGS_MANAGE))return;
+    const checked=renderResult();if(!checked.valid)return;
+    if(!sharedCommand){if(!window.confirm('Подтверждаете правильность реквизитов? Они будут доступны команде для новых документов. Сохранённые документы сохранят прежние данные.'))return;sharedCommand=documentArchiveCommand('company.save',{company:checked.value,expected_revision:sharedRevision,confirmed:true});}
+    sharedBusy=true;sharedButton.disabled=true;sharedForm.querySelectorAll('input,select,textarea').forEach(field=>field.disabled=true);sharedNote.textContent='Сохраняю общие реквизиты…';
+    const result=await invokeDocumentArchive(sharedCommand);if(sharedContext!==documentActorContext()||!sharedForm.isConnected)return;
+    sharedBusy=false;sharedButton.disabled=false;
+    if(result.ok){sharedRevision=result.revision;sharedCommand=null;sharedForm.querySelectorAll('input,select,textarea').forEach(field=>field.disabled=false);clearCompanyLegalSettingsCache();saveCompanyDocumentDraft(checked.value);sharedNote.textContent='Общие реквизиты сохранены. Следующие документы команды смогут их использовать.';}
+    else{sharedNote.textContent=documentArchiveError(result.code);sharedButton.textContent=result.uncertain?'Повторить сохранение общих реквизитов':'Сохранить общие реквизиты';if(!result.uncertain){sharedCommand=null;sharedForm.querySelectorAll('input,select,textarea').forEach(field=>field.disabled=false);}}
+  });
   initialValues=JSON.stringify(readDraft());
   renderResult();
   host().querySelector('input,select,textarea')?.focus();
@@ -199,7 +215,7 @@ function injectAdminEntry() {
   const card = document.createElement('section');
   card.setAttribute(ADMIN_ENTRY_ATTR, '1');
   card.className = 'v4-company-settings-admin-entry';
-  card.innerHTML = '<div><h3>Реквизиты документов</h3><p>Подготовьте данные исполнителя для актов и договоров. Рабочие реквизиты сохраняются в этой вкладке; общие настройки CRM пока не изменяются.</p></div><button type="button" data-company-settings-open>Открыть реквизиты</button>';
+  card.innerHTML = '<div><h3>Реквизиты документов</h3><p>Подготовьте данные исполнителя для актов и договоров. Рабочую копию можно применить в этой вкладке; подтверждённые общие реквизиты сохраняются отдельной кнопкой для команды.</p></div><button type="button" data-company-settings-open>Открыть реквизиты</button>';
   content.prepend(card);
 }
 

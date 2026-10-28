@@ -1,0 +1,46 @@
+name: CRM refunds and overpayment allocation
+on:
+  pull_request:
+    branches: [main]
+    paths: ['crm/v4/assets/v4/finance-*','crm/v4/assets/v4/order-card-v1.js','supabase/functions/leader-crm-finance-adjustments/**','supabase/production-candidates/leader_finance_adjustments_v1.sql','supabase/staging-tests/finance_adjustments_acceptance.sql','tools/*finance_adjustment*','.github/workflows/crm-finance-adjustments-check.yml']
+  push:
+    branches: [main]
+    paths: ['crm/v4/assets/v4/finance-*','crm/v4/assets/v4/order-card-v1.js','supabase/functions/leader-crm-finance-adjustments/**','supabase/production-candidates/leader_finance_adjustments_v1.sql','supabase/staging-tests/finance_adjustments_acceptance.sql','tools/*finance_adjustment*','.github/workflows/crm-finance-adjustments-check.yml']
+permissions:
+  contents: read
+concurrency:
+  group: finance-adjustments-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  finance-adjustment-transactions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    services:
+      postgres:
+        image: postgres:17
+        env: {POSTGRES_PASSWORD: isolated-ci-only, POSTGRES_DB: finance_adjustments_test}
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: node tools/test_finance_adjustment_transport.mjs
+      - run: node tools/check_typescript_syntax.mjs supabase/functions/leader-crm-finance-adjustments/index.ts
+      - run: python3 tools/build_finance_adjustment_rpc_test.py
+      - run: psql -h localhost -U postgres -d finance_adjustments_test -v ON_ERROR_STOP=1 -f build/finance-adjustment-rpc-test.sql
+        env: {PGPASSWORD: isolated-ci-only}
+
+  finance-adjustment-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    container:
+      image: mcr.microsoft.com/playwright:v1.55.0-noble@sha256:b27e719ecbfef153e13fd24e8341736733bf2658b229677eb21ff57ff5d7fb29
+      options: --ipc=host
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm install --no-save --package-lock=false playwright@1.55.0
+      - run: node tools/test_finance_adjustment_browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: finance-adjustment-browser, path: artifacts/finance-adjustments/, if-no-files-found: warn}
