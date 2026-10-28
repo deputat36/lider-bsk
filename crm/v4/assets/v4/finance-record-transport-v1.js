@@ -43,19 +43,19 @@ export function completeFinanceCommand(key, storage = globalThis.sessionStorage)
   try { storage.removeItem(key); } catch (_) { /* A retained key safely replays the existing operation. */ }
 }
 
-export async function invokeFinanceCommand({ client, url, allowed, command, timeoutMs = 20000 }) {
+export async function invokeFinanceCommand({ client, url, allowed, command, actorId, timeoutMs = 20000 }) {
   if (!financeWriteAvailable(url, allowed)) return { ok: false, code: 'production_locked', uncertain: false };
-  const session = await client.auth.getSession();
-  if (session?.error || !session?.data?.session?.access_token) return { ok: false, code: 'missing_or_invalid_jwt', uncertain: false };
   let timer;
+  const deadline=new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('network_error')),timeoutMs);});
+  const bounded=promise=>Promise.race([promise,deadline]);
   try {
-    const result = await Promise.race([
-      client.functions.invoke('leader-crm-finance', { body: command }),
-      new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('network_error')), timeoutMs); })
-    ]);
+    const session=await bounded(client.auth.getSession());
+    const current=session?.data?.session;
+    if(session?.error||!current?.access_token||actorId&&current?.user?.id!==actorId)return {ok:false,code:'missing_or_invalid_jwt',uncertain:false};
+    const result = await bounded(client.functions.invoke('leader-crm-finance', { body: command,headers:{Authorization:`Bearer ${current.access_token}`} }));
     if (result.error) {
       let body = null;
-      try { body = await result.error.context?.clone?.().json(); } catch (_) { /* network failure */ }
+      try { body = await bounded(result.error.context?.clone?.().json()); } catch (_) { /* network failure */ }
       const code = body?.error?.code || body?.error || 'network_error';
       return { ok: false, code, uncertain: !body || Number(result.error.context?.status) >= 500 };
     }

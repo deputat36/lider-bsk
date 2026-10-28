@@ -1,3 +1,4 @@
+import { readExpenseConfirmations } from './finance-adjustment-transport-v1.js';
 import { supabaseClient } from './supabase-client.js';
 import { v4State, subscribeState } from './state.js';
 import { canOpenV4Tab } from './role-tab-permissions-v1.js';
@@ -189,7 +190,9 @@ async function load(force = false) {
       readRows('leader_expenses', EXPENSE_FIELDS)
     ]);
     if (request !== generation || context !== readContext()) return;
-    snapshot = buildFinancePortfolioSnapshot(orders, payments, expenses, { statusResolver: orderStatusUiModel });
+    const expenseConfirmations=await readExpenseConfirmations({client:supabaseClient,url:V4_CONFIG.supabaseUrl,actorId:v4State.user?.id,orderIds:orders.map(order=>order.id)});
+    if(request!==generation||context!==readContext())return;
+    snapshot = buildFinancePortfolioSnapshot(orders, payments, expenses, { statusResolver: orderStatusUiModel,expenseConfirmations });
     loadedAt = Date.now();
   } catch (error) {
     console.warn('CRM finance plan/actual read warning:', error);

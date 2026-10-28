@@ -104,7 +104,7 @@ export async function openDocumentArchive(orderId){
  await load();current.querySelector('[data-archive-close]')?.focus();
 }
 function injectOrderButton(){
- const footer=document.querySelector('#v4OrderCardModal .v4-order-modal-footer');
+ const footer=document.querySelector('.v4-order-modal-card .v4-order-modal-actions');
  if(!footer||footer.querySelector('[data-open-document-archive]')||!activeOrder||!canPerformV4Action('documents.read'))return;
  const button=document.createElement('button');button.type='button';button.dataset.openDocumentArchive='';button.textContent='Архив документов';button.addEventListener('click',()=>openDocumentArchive(activeOrder));footer.prepend(button);
 }

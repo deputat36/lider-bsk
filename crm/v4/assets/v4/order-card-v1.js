@@ -1,3 +1,5 @@
+import { mountFinanceAdjustments } from './finance-adjustment-ui-v1.js';
+import { readExpenseConfirmations } from './finance-adjustment-transport-v1.js';
 import { orderOperationsAvailable } from './operational-server-contract-v1.js';
 import { renderOrderOperations, mountOrderOperations } from './order-operation-ui-v1.js';
 import { invokeLeaderFunction } from './functions-client.js';
@@ -26,7 +28,7 @@ import {
 
 const ORDER_FIELDS = 'id,order_number,project_name,status,deadline,client_name,client_phone,client_total,contractor_cost,profit,balance,payment_status,layout_status,production_status,lead_id,client_id,created_at,updated_at,data';
 const ITEM_FIELDS = 'id,order_id,name,unit,quantity,contractor_price,contractor_sum,client_sum,comment,category,item_type,data,created_at';
-const PAYMENT_FIELDS = 'id,order_id,amount,method,payment_date,comment,payment_status,payment_type,finance_category,counterparty_name,is_confirmed,created_at,updated_at';
+const PAYMENT_FIELDS = 'id,order_id,amount,method,payment_date,comment,payment_status,payment_type,related_entity_type,finance_category,counterparty_name,is_confirmed,created_at,updated_at';
 const EXPENSE_FIELDS = 'id,order_id,amount,method,expense_date,category,status,comment,created_at,updated_at';
 
 let busy = false;
@@ -153,7 +155,8 @@ async function fetchFinance(orderId) {
       fetchAllOrderFinance(supabaseClient, 'leader_expenses', EXPENSE_FIELDS, orderId)
     ]);
     const recent = (a, b) => String(b.payment_date || b.expense_date || '').localeCompare(String(a.payment_date || a.expense_date || '')) || String(b.created_at).localeCompare(String(a.created_at));
-    return { payments: payments.sort(recent), expenses: expenses.sort(recent), financeError: '' };
+    const confirmations=await readExpenseConfirmations({client:supabaseClient,url:V4_CONFIG.supabaseUrl,actorId:v4State.user?.id,orderIds:[orderId]});
+    return { payments: payments.sort(recent), expenses: expenses.sort(recent), expensesConfirmed:confirmations[orderId]===true,financeError: '' };
   } catch (error) {
     host().dataset.errorCode = String(error?.code || 'finance_read_failed').replace(/[^a-z0-9_]/gi, '').slice(0, 64);
     return { payments: [], expenses: [], financeError: 'Не удалось загрузить оплаты и расходы. Финансовые итоги временно недоступны.' };
@@ -193,20 +196,20 @@ function renderExpenseRows(expenses) {
   }).join('');
 }
 
-function renderFinance(order, payments, expenses, financeError) {
+function renderFinance(order, payments, expenses, financeError, expensesConfirmed=false) {
   if (!canReadFinance()) return '';
   if (financeError) return `<section class="v4-order-modal-section" data-order-finance><h3 id="orderFinanceTitle" tabindex="-1">Финансы заказа</h3><p role="status">${esc(financeError)}</p><button type="button" data-order-finance-reload>Повторить загрузку</button></section>`;
   const statusModel = orderStatusUiModel(order.status);
   const total = buildOrderFinanceSnapshot(order, payments, expenses, {
     terminal: statusModel.terminal,
-    statusKnown: statusModel.known
+    statusKnown: statusModel.known,expensesConfirmed
   });
   const actualValue = total.actualProfit === null ? 'Не рассчитана' : moneyExact(total.actualProfit);
   const diffClass = total.planFactDiff === null ? '' : total.planFactDiff >= 0 ? 'is-good' : 'is-danger';
   const diffValue = total.planFactDiff === null ? '—' : moneyExact(total.planFactDiff);
   const notes = total.warnings.length
     ? `<div class="v4-order-finance-note">${total.warnings.map(esc).join(' ')}</div>`
-    : '<div class="v4-order-finance-note">Результат предварительный: отдельного признака полноты всех расходов в текущей схеме нет.</div>';
+    : '<div class="v4-order-finance-note">Полноту расходов можно подтвердить в разделе «Возвраты, переплата и полнота расходов».</div>';
   const controls = writeEnabled() ? '<div class="v4-order-modal-actions"><button type="button" data-finance-new="payment">Внести оплату</button><button type="button" data-finance-new="expense">Внести расход</button></div><div data-finance-editor></div>' : (canWriteFinance() ? '<p>Ввод оплат и расходов пока не включён в рабочем контуре.</p>' : '');
   const history = (rows, render) => render(rows.slice(0, 10)) + (rows.length > 10 ? `<details class="v4-order-finance-summary"><summary>Ещё ${rows.length - 10} записей</summary>${render(rows.slice(10))}</details>` : '');
   return `<section class="v4-order-modal-section" data-order-finance><h3 id="orderFinanceTitle" tabindex="-1">План и подтверждённый факт</h3><p data-finance-saved role="status" aria-live="polite"></p><div class="v4-order-modal-grid v4-order-finance-totals"><div><span>План клиенту</span><b>${moneyExact(total.plannedRevenue)}</b></div><div><span>Чистые поступления</span><b data-finance-total="receipts">${moneyExact(total.confirmedNetReceipts)}</b></div><div><span>Долг клиента</span><b data-finance-total="debt">${moneyExact(total.debt)}</b></div><div><span>Подтв. расходы</span><b data-finance-total="expenses">${moneyExact(total.confirmedExpenses)}</b></div><div><span>Денежный результат</span><b data-finance-total="cash">${moneyExact(total.cashResult)}</b></div><div><span>${esc(total.actualProfitState === 'unknown' ? 'Фактическая прибыль' : actualProfitStateLabel(total.actualProfitState))}</span><b>${esc(actualValue)}</b></div></div>${controls}<details class="v4-order-finance-summary"><summary>План / факт и движение денег</summary><div class="v4-order-modal-grid"><div><span>План себестоимость</span><b>${moneyExact(total.plannedCost)}</b></div><div><span>План прибыль</span><b>${moneyExact(total.plannedProfit)}</b></div><div><span>Подтверждено приходов</span><b>${moneyExact(total.confirmedIncoming)}</b></div><div><span>Возвраты / исходящие</span><b>${moneyExact(total.confirmedPaymentOutflow)}</b></div><div class="v4-order-finance-diff ${diffClass}"><span>План / факт</span><b>${esc(diffValue)}</b></div></div></details>${notes}<div class="v4-order-finance-list"><div><h4>Оплаты · ${payments.length}</h4>${history(payments, renderPaymentRows)}</div><div><h4>Расходы · ${expenses.length}</h4>${history(expenses, renderExpenseRows)}</div></div></section>`;
@@ -327,14 +330,16 @@ async function copyExceptionNote(button) {
   }
 }
 
-function renderCard(order, items, payments, expenses, financeError = '') {
+function renderCard(order, items, payments, expenses, financeError = '', expensesConfirmed=false) {
   const orderType = order.data?.order_type || order.data?.orderType || '—';
   const statusModel = orderStatusUiModel(order.status);
   const statusWarning = statusModel.known ? '' : `<div class="v4-order-modal-empty" data-unknown-order-status="${esc(statusModel.raw)}">${esc(statusModel.warning)}</div>`;
   currentBundle = { order, items, payments, expenses, statusModel, financeError };
-  host().innerHTML = `<div class="v4-order-modal"><div class="v4-order-modal-card" role="dialog" aria-modal="true" aria-labelledby="orderCardTitle"><div class="v4-order-modal-head"><div><p class="v4-kicker">Карточка заказа</p><h2 id="orderCardTitle" tabindex="-1">№${esc(order.order_number || shortId(order.id))} — ${esc(order.project_name || 'Заказ')}</h2><p>${esc(order.client_name || 'Клиент не указан')} · ${esc(order.client_phone || 'телефон не указан')} · создано ${dateRu(order.created_at)}</p></div><button type="button" data-order-card-close>Закрыть</button></div><div class="v4-order-modal-grid"><div><span>Статус</span><b title="${esc(statusModel.known ? `Registry: ${statusModel.key}` : statusModel.warning)}">${esc(statusModel.label)}</b></div><div><span>Оплата</span><b>${esc(order.payment_status || 'Не оплачено')}</b></div><div><span>Срок</span><b>${dateRu(order.deadline)}</b></div><div><span>Дизайн / макет</span><b>${esc(order.layout_status || '—')}</b></div><div><span>Производство</span><b>${esc(order.production_status || '—')}</b></div><div><span>Тип</span><b>${esc(orderType)}</b></div><div><span>План клиенту</span><b>${money(order.client_total)}</b></div></div>${statusWarning}${renderOrderOperations(order, orderOperationsAvailable(V4_CONFIG.supabaseUrl), canPerformV4Action(CRM_V4_ACTIONS.ORDERS_TRANSITION), canPerformV4Action(CRM_V4_ACTIONS.ORDERS_UPDATE))}${renderPrimaryGuidance(order, statusModel, expenses)}${renderExceptionAssistant()}<div class="v4-order-modal-actions">${order.lead_id ? `<button type="button" data-order-card-open-lead="${esc(order.lead_id)}">Открыть связанную заявку</button>` : ''}<button type="button" data-order-card-close>Закрыть</button></div>${renderDesign(order)}${renderFinance(order, payments, expenses, financeError)}<section class="v4-order-modal-section"><h3>Позиции заказа</h3><div class="v4-order-modal-items">${renderItems(items)}</div></section></div></div>`;
+  host().innerHTML = `<div class="v4-order-modal"><div class="v4-order-modal-card" role="dialog" aria-modal="true" aria-labelledby="orderCardTitle"><div class="v4-order-modal-head"><div><p class="v4-kicker">Карточка заказа</p><h2 id="orderCardTitle" tabindex="-1">№${esc(order.order_number || shortId(order.id))} — ${esc(order.project_name || 'Заказ')}</h2><p>${esc(order.client_name || 'Клиент не указан')} · ${esc(order.client_phone || 'телефон не указан')} · создано ${dateRu(order.created_at)}</p></div><button type="button" data-order-card-close>Закрыть</button></div><div class="v4-order-modal-grid"><div><span>Статус</span><b title="${esc(statusModel.known ? `Registry: ${statusModel.key}` : statusModel.warning)}">${esc(statusModel.label)}</b></div><div><span>Оплата</span><b>${esc(order.payment_status || 'Не оплачено')}</b></div><div><span>Срок</span><b>${dateRu(order.deadline)}</b></div><div><span>Дизайн / макет</span><b>${esc(order.layout_status || '—')}</b></div><div><span>Производство</span><b>${esc(order.production_status || '—')}</b></div><div><span>Тип</span><b>${esc(orderType)}</b></div><div><span>План клиенту</span><b>${money(order.client_total)}</b></div></div>${statusWarning}${renderOrderOperations(order, orderOperationsAvailable(V4_CONFIG.supabaseUrl), canPerformV4Action(CRM_V4_ACTIONS.ORDERS_TRANSITION), canPerformV4Action(CRM_V4_ACTIONS.ORDERS_UPDATE))}${renderPrimaryGuidance(order, statusModel, expenses)}${renderExceptionAssistant()}<div class="v4-order-modal-actions">${order.lead_id ? `<button type="button" data-order-card-open-lead="${esc(order.lead_id)}">Открыть связанную заявку</button>` : ''}<button type="button" data-order-card-close>Закрыть</button></div>${renderDesign(order)}${renderFinance(order, payments, expenses, financeError,expensesConfirmed)}<section class="v4-order-modal-section"><h3>Позиции заказа</h3><div class="v4-order-modal-items">${renderItems(items)}</div></section></div></div>`;
   orderWriter = mountOrderOperations(host().querySelector('[data-order-operations]'), { order, client: supabaseClient, url: V4_CONFIG.supabaseUrl, actorId: v4State.profile?.user_id, role: v4State.profile?.role, refresh: message => openOrderCard(order.id, message, true) });
-  financeWriter = mountFinanceWriter(host().querySelector('[data-order-finance]'), { order, payments, expenses, client: supabaseClient, url: V4_CONFIG.supabaseUrl, actorId: v4State.profile?.user_id, canWrite: canWriteFinance, refresh: message => openOrderCard(order.id, message || '', true) });
+  const writerOptions={order,payments,expenses,client:supabaseClient,url:V4_CONFIG.supabaseUrl,actorId:v4State.user?.id||v4State.profile?.user_id,canWrite:canWriteFinance,refresh:message=>openOrderCard(order.id,message||'',true)};
+  const basicWriter=mountFinanceWriter(host().querySelector('[data-order-finance]'),writerOptions),adjustments=mountFinanceAdjustments(host().querySelector('[data-order-finance]'),writerOptions);
+  financeWriter={...basicWriter,isBusy:()=>basicWriter.isBusy()||adjustments.isBusy()};
   document.dispatchEvent(new CustomEvent('leader-v4:order-card-rendered', {
     detail: { orderId: String(order.id || '') }
   }));
@@ -368,7 +373,7 @@ async function openOrderCard(orderId, message = '', refresh = false, trigger = n
     }
     if (request !== cardRequest) return;
     if (!canPerformV4Action(CRM_V4_ACTIONS.ORDERS_READ) || context !== readCardContext()) return;
-    renderCard(order, items, finance.payments, finance.expenses, finance.financeError);
+    renderCard(order, items, finance.payments, finance.expenses, finance.financeError,finance.expensesConfirmed);
     const target = host().querySelector(refresh ? '#orderFinanceTitle' : '#orderCardTitle');
     target?.focus();
     if (!finance.financeError && writeEnabled() && ['payment', 'expense'].includes(financeKind)) {

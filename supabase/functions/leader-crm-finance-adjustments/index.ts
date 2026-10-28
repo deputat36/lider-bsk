@@ -26,6 +26,6 @@ Deno.serve(async request => {
   const response=await fetch(url+'/rest/v1/rpc/leader_finance_adjustment_rpc',{method:'POST',headers:{apikey:service,Authorization:`Bearer ${service}`,'Content-Type':'application/json'},body:JSON.stringify({p_payload:{actor_id:user.id,request:command}}),signal:AbortSignal.timeout(10000)});
   if(!response.ok)return reply(503,{ok:false,error:{code:'finance_adjustment_failed'}});
   const result=await response.json(),code=result?.error?.code;
-  return reply(result.ok?200:code==='forbidden'?403:code==='not_found'?404:['source_changed','idempotency_conflict','terminal_document'].includes(code)?409:400,result);
+  return reply(result.ok?200:code?.endsWith('_failed')?503:code==='forbidden'?403:code==='not_found'?404:['source_changed','idempotency_conflict','terminal_document'].includes(code)?409:400,result);
  }catch{return reply(503,{ok:false,error:{code:'finance_adjustment_failed'}});}
 });
