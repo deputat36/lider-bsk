@@ -64,6 +64,9 @@ begin
   or exists(select from jsonb_object_keys(cmd) k where k not in ('operation','request_id','payload')) then raise exception 'invalid_payload'; end if;
  permission_value:=case op when 'company.save' then 'settings.manage' when 'save' then 'documents.create' else 'documents.read' end;
  if not leader_private.leader_actor_has_crm_action(actor,permission_value) then raise exception 'forbidden';end if;
+ if op='transition' and not leader_private.leader_actor_has_crm_action(actor,case data->>'status' when 'sent' then 'documents.send' when 'signed' then 'documents.sign' when 'void' then 'documents.void' else 'documents.invalid' end) then raise exception 'forbidden';end if;
+ if op='save' and data->>'register'='true' and not leader_private.leader_actor_has_crm_action(actor,'documents.generate') then raise exception 'forbidden';end if;
+ if op='save' and nullif(data->>'group_id','') is not null and not leader_private.leader_actor_has_crm_action(actor,'documents.update') then raise exception 'forbidden';end if;
  if op in ('save','company.save','transition') then
   req:=(cmd->>'request_id')::uuid;if req is null then raise exception 'invalid_payload';end if;
   perform pg_advisory_xact_lock(hashtextextended(actor::text||req::text,281026));
@@ -128,6 +131,13 @@ begin
   date_value:=(content->>'date')::date;if date_value is null then raise exception 'document_incomplete';end if;
   select * into company from leader_private.leader_document_company where id=1;
   if requested_status='generated' and company.revision=0 then raise exception 'company_incomplete';end if;
+  if requested_status='generated' then
+   if content->>'executor' is distinct from company.value->>'legal_name' or content->>'taxMode' is distinct from company.value->>'tax_mode' then raise exception 'company_changed';end if;
+   select string_agg(label||': '||val,E'\n' order by position) into comment_value from
+    (select x.position,x.label,company.value->>x.key val from (values
+     (1,'tax_id','ИНН'),(2,'registration_number','Регистрационный номер'),(3,'legal_address','Адрес'),(4,'postal_address','Почтовый адрес'),(5,'phone','Телефон'),(6,'email','Email'),(7,'bank_name','Банк'),(8,'bank_account','Р/с'),(9,'correspondent_account','К/с'),(10,'bank_code','БИК')) x(position,key,label)) details where length(coalesce(val,''))>0;
+   content:=content||jsonb_build_object('executorDetails',coalesce(comment_value,''),'signatory',company.value->>'signatory_name','signatoryRole',coalesce(company.value->>'signatory_role','Представитель исполнителя'),'executorRepresentative',company.value->>'signatory_name','executorRole',coalesce(company.value->>'signatory_role','Представитель исполнителя'));
+  end if;
   group_id:=coalesce(nullif(data->>'group_id','')::uuid,gen_random_uuid());
   perform pg_advisory_xact_lock(hashtextextended(group_id::text,281027));
   select * into previous from public.leader_order_documents where document_group_id=group_id order by version desc limit 1 for update;
@@ -171,7 +181,7 @@ begin
  insert into leader_private.leader_document_receipts(actor_id,request_id,request,response) values(actor,req,cmd,result);
  return result;
 exception when others then
- return jsonb_build_object('ok',false,'error',jsonb_build_object('code',case when SQLERRM in ('forbidden','invalid_payload','idempotency_conflict','source_changed','not_found','company_confirmation_required','company_incomplete','invalid_items','line_total_mismatch','order_total_mismatch','document_incomplete','terminal_document','comment_required','invalid_transition','invalid_operation') then SQLERRM when SQLSTATE in ('22P02','22007','22008','22003','23502','23503','23514') then 'invalid_payload' else 'document_command_failed' end));
+ return jsonb_build_object('ok',false,'error',jsonb_build_object('code',case when SQLERRM in ('forbidden','invalid_payload','idempotency_conflict','source_changed','not_found','company_confirmation_required','company_incomplete','company_changed','invalid_items','line_total_mismatch','order_total_mismatch','document_incomplete','terminal_document','comment_required','invalid_transition','invalid_operation') then SQLERRM when SQLSTATE in ('22P02','22007','22008','22003','23502','23503','23514') then 'invalid_payload' else 'document_command_failed' end));
 end $$;
 revoke all on function public.leader_document_workspace_rpc(jsonb) from public,anon,authenticated;
 grant execute on function public.leader_document_workspace_rpc(jsonb) to service_role;

@@ -29,3 +29,17 @@ jobs:
       - run: python3 tools/build_document_rpc_test.py
       - run: psql -h localhost -U postgres -d documents_test -v ON_ERROR_STOP=1 -f build/document-rpc-test.sql
         env: {PGPASSWORD: isolated-ci-only}
+
+  document-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    container:
+      image: mcr.microsoft.com/playwright:v1.55.0-noble@sha256:b27e719ecbfef153e13fd24e8341736733bf2658b229677eb21ff57ff5d7fb29
+      options: --ipc=host
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm install --no-save --package-lock=false playwright@1.55.0
+      - run: node tools/test_document_archive_browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: document-archive-browser, path: artifacts/document-archive/, if-no-files-found: warn}
