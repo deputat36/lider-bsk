@@ -174,16 +174,6 @@ end $$;
 -- Superseded historical definition omitted; recovered migration source remains unchanged.
 
 
-revoke all on function leader_private.leader_notification_actor_allowed(uuid,uuid),
-  leader_private.leader_notification_wake(),leader_private.leader_notification_enqueue(),
-  leader_private.leader_notification_capture_lead(),leader_private.leader_notification_tick(),
-  public.leader_notifications_command_rpc(uuid,text,jsonb),public.leader_notification_worker_rpc(text,text,jsonb)
-  from public,anon,authenticated;
-grant execute on function leader_private.leader_notification_actor_allowed(uuid,uuid),leader_private.leader_notification_wake(),
-  public.leader_notifications_command_rpc(uuid,text,jsonb),public.leader_notification_worker_rpc(text,text,jsonb) to service_role;
-
--- Disabled config makes this new, dedicated job a no-op until scoped activation.
-select cron.schedule('leader-notifications-retry-v1','* * * * *','select leader_private.leader_notification_tick();');
 comment on table leader_private.leader_notification_outbox is 'Push-service acceptance only. sent does not mean device delivery or human acknowledgement.';
 
 
@@ -397,5 +387,16 @@ begin
 end $$;
 
 revoke all on function leader_private.leader_notification_worker_ticket() from public,anon,authenticated,service_role;
+
+revoke all on function leader_private.leader_notification_actor_allowed(uuid,uuid),
+  leader_private.leader_notification_wake(),leader_private.leader_notification_enqueue(),
+  leader_private.leader_notification_capture_lead(),leader_private.leader_notification_tick(),
+  public.leader_notifications_command_rpc(uuid,text,jsonb),public.leader_notification_worker_rpc(text,text,jsonb)
+  from public,anon,authenticated;
+grant execute on function leader_private.leader_notification_actor_allowed(uuid,uuid),leader_private.leader_notification_wake(),
+  public.leader_notifications_command_rpc(uuid,text,jsonb),public.leader_notification_worker_rpc(text,text,jsonb) to service_role;
+
+-- Disabled config makes this new, dedicated job a no-op until scoped activation.
+select cron.schedule('leader-notifications-retry-v1','* * * * *','select leader_private.leader_notification_tick();');
 
 commit;
