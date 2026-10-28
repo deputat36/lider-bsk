@@ -105,3 +105,6 @@ HEAD 3c3ce304 прошёл 85/85 check runs; artifact 12799747205 (documents) и
 
 
 На ca3a251 WCAG contrast устранён: violations=0 на 25 сочетаниях страниц/ширин. Performance checker учитывал нативный prefetch невидимых loading=lazy изображений в «начальном» лимите; уточнён first-viewport metric (250 KB сохранён), полный transferred и deferredImageBytes остаются в report. Это не оптимизация/изменение оригинальных фото. Длинный public-form browser suite разделён на 1440/390 matrix с отдельными artifact, bounded locator/navigation timeout и сообщениями этапов; оба набора и все 64 страницы сохранены.
+
+
+На 943a603 прошли browser suite обеих ширин и accessibility 25/25 (0 violations, max critical 195748 B, max total 447427 B, deferred photo 267189 B). Последним оставалось старое calculation staging transport задание: Deno check завис на JSR type-only import и job не имел timeout. Лишняя внешняя type-зависимость удалена, native Deno globals используются без изменений runtime-логики; check/test сохранены с timeout 60s, job 6min/concurrency. Это source/CI fix, ранее установленный сервер расчётов не заменяется.

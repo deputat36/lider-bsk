@@ -22,7 +22,7 @@
 
 ## Что делать дальше
 
-1. Проверить финальный CI и merge #596 только на exact проверенном HEAD. На cc61cf3 было 87 success/2 failures: старый контраст creative-kicker и Bash default после container migration. Исправлены source/CSS cache, generators/source contracts и bundled Chromium path; код фиксируется следующим checkpoint. Проверки не отключены. На ca3a251 WCAG=0; уточняется first-viewport budget без lazy-prefetch, полный transferred остаётся в report. Public form browser suite делится на 1440/390 matrix с deadline; coverage 64 страниц сохраняется.
+1. Проверить финальный CI и merge #596 только на exact проверенном HEAD. На cc61cf3 было 87 success/2 failures: старый контраст creative-kicker и Bash default после container migration. Исправлены source/CSS cache, generators/source contracts и bundled Chromium path; код фиксируется следующим checkpoint. Проверки не отключены. На ca3a251 WCAG=0; уточняется first-viewport budget без lazy-prefetch, полный transferred остаётся в report. Public form browser suite делится на 1440/390 matrix с deadline; coverage 64 страниц сохраняется. На 943a603 осталось одно старое зависшее задание Deno, обращавшееся к JSR только за типами. Лишний import снят, native Deno check/test сохранены, команды ограничены 60s, job 6min с concurrency. Сервер расчётов не переустанавливается.
 2. Проверить main/Pages и GET runtime bytes, manifest/icons. Зафиксировать merge SHA, CI и URL в этом файле. Не переустанавливать уже сверенные серверные блоки.
 3. Завершить owner/Метрика Auth через защищённый browserAuth, если владелец даст данные; в текущем cloud browser обе сессии отсутствуют. Android и реквизиты/историческая классификация остаются реальной приёмкой.
 
