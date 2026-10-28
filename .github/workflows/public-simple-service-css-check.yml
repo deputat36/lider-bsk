@@ -50,6 +50,9 @@ jobs:
   validate-shared-simple-service-css:
     runs-on: ubuntu-latest
     timeout-minutes: 8
+    defaults:
+      run:
+        shell: bash
     container:
       image: mcr.microsoft.com/playwright:v1.55.0-noble@sha256:b27e719ecbfef153e13fd24e8341736733bf2658b229677eb21ff57ff5d7fb29
       options: --ipc=host

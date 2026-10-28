@@ -37,6 +37,9 @@ jobs:
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 8
+    defaults:
+      run:
+        shell: bash
     container:
       image: mcr.microsoft.com/playwright:v1.55.0-noble@sha256:b27e719ecbfef153e13fd24e8341736733bf2658b229677eb21ff57ff5d7fb29
       options: --ipc=host
@@ -75,7 +78,7 @@ jobs:
             sleep 0.5
           done
           curl -fsS http://127.0.0.1:8000/crm/v4/brand-preview.html >/dev/null
-          chrome="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          chrome="$(node -e 'process.stdout.write(require("playwright").chromium.executablePath())')"
           test -n "$chrome"
           mkdir -p artifacts/crm-brand-preview
           "$chrome" --headless --disable-gpu --no-sandbox --hide-scrollbars --window-size=1440,1800 --screenshot=artifacts/crm-brand-preview/desktop-1440.png http://127.0.0.1:8000/crm/v4/brand-preview.html

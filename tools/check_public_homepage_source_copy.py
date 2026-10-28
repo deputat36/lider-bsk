@@ -95,7 +95,7 @@ def main() -> None:
         'assets/public-lead-form.css?v=30',
         'assets/public-homepage.css?v=5',
         'assets/public-commercial-services.css?v=1',
-        'assets/public-creative-services.css?v=1',
+        'assets/public-creative-services.css?v=20261028-contrast-1',
         'assets/public-product-system.css?v=1',
     ]
     if parser.stylesheets != expected_stylesheets:
