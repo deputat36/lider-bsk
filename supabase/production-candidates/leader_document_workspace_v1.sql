@@ -52,7 +52,7 @@ grant select,insert on leader_private.leader_document_receipts,public.leader_ord
 create function public.leader_document_workspace_rpc(p_payload jsonb)
 returns jsonb language plpgsql security invoker set search_path='' set lock_timeout='3s' as $$
 declare actor uuid:=(p_payload->>'actor_id')::uuid; cmd jsonb:=p_payload->'request';
- op text:=cmd->>'operation';data jsonb:=cmd->'payload';req uuid;
+ op text:=cmd->>'operation';input_data jsonb:=cmd->'payload';req uuid;
  receipt leader_private.leader_document_receipts;company leader_private.leader_document_company;
  ord public.leader_orders;doc public.leader_order_documents;previous public.leader_order_documents;
  content jsonb;fields jsonb;item jsonb;clean_items jsonb:='[]';snapshot_value jsonb;result jsonb;
@@ -60,13 +60,13 @@ declare actor uuid:=(p_payload->>'actor_id')::uuid; cmd jsonb:=p_payload->'reque
  group_id uuid;next_version integer;number_value text;seq bigint;year_value integer;date_value date;
  requested_status text;permission_value text;comment_value text;offset_value integer;allowed_keys text[];
 begin
- if actor is null or jsonb_typeof(cmd) is distinct from 'object' or jsonb_typeof(data) is distinct from 'object' or octet_length(cmd::text)>262144
+ if actor is null or jsonb_typeof(cmd) is distinct from 'object' or jsonb_typeof(input_data) is distinct from 'object' or octet_length(cmd::text)>262144
   or exists(select from jsonb_object_keys(cmd) k where k not in ('operation','request_id','payload')) then raise exception 'invalid_payload'; end if;
  permission_value:=case op when 'company.save' then 'settings.manage' when 'save' then 'documents.create' else 'documents.read' end;
  if not leader_private.leader_actor_has_crm_action(actor,permission_value) then raise exception 'forbidden';end if;
- if op='transition' and not leader_private.leader_actor_has_crm_action(actor,case data->>'status' when 'sent' then 'documents.send' when 'signed' then 'documents.sign' when 'void' then 'documents.void' else 'documents.invalid' end) then raise exception 'forbidden';end if;
- if op='save' and data->>'register'='true' and not leader_private.leader_actor_has_crm_action(actor,'documents.generate') then raise exception 'forbidden';end if;
- if op='save' and nullif(data->>'group_id','') is not null and not leader_private.leader_actor_has_crm_action(actor,'documents.update') then raise exception 'forbidden';end if;
+ if op='transition' and not leader_private.leader_actor_has_crm_action(actor,case input_data->>'status' when 'sent' then 'documents.send' when 'signed' then 'documents.sign' when 'void' then 'documents.void' else 'documents.invalid' end) then raise exception 'forbidden';end if;
+ if op='save' and input_data->>'register'='true' and not leader_private.leader_actor_has_crm_action(actor,'documents.generate') then raise exception 'forbidden';end if;
+ if op='save' and nullif(input_data->>'group_id','') is not null and not leader_private.leader_actor_has_crm_action(actor,'documents.update') then raise exception 'forbidden';end if;
  if op in ('save','company.save','transition') then
   req:=(cmd->>'request_id')::uuid;if req is null then raise exception 'invalid_payload';end if;
   perform pg_advisory_xact_lock(hashtextextended(actor::text||req::text,281026));
@@ -81,9 +81,9 @@ begin
   return jsonb_build_object('ok',true,'company',company.value,'revision',company.revision,'configured',company.revision>0);
  elsif op='company.save' then
   select * into company from leader_private.leader_document_company where id=1 for update;
-  if (data->>'expected_revision')::integer is distinct from company.revision then raise exception 'source_changed';end if;
-  fields:=data->'company';
-  if data->>'confirmed' is distinct from 'true' or jsonb_typeof(fields) is distinct from 'object' then raise exception 'company_confirmation_required';end if;
+  if (input_data->>'expected_revision')::integer is distinct from company.revision then raise exception 'source_changed';end if;
+  fields:=input_data->'company';
+  if input_data->>'confirmed' is distinct from 'true' or jsonb_typeof(fields) is distinct from 'object' then raise exception 'company_confirmation_required';end if;
   if exists(select from jsonb_each(fields) f where f.key not in ('brand_name','legal_name','tax_id','registration_number','legal_address','postal_address','phone','email','bank_name','bank_account','correspondent_account','bank_code','tax_mode','signatory_name','signatory_role','schema_version')
    or (f.key<>'schema_version' and (jsonb_typeof(f.value)<>'string' or length(f.value#>>'{}')>1000))) then raise exception 'invalid_payload';end if;
   if length(btrim(coalesce(fields->>'legal_name','')))=0 or length(btrim(coalesce(fields->>'tax_id','')))=0
@@ -93,24 +93,24 @@ begin
   insert into public.leader_order_document_events(event_type,created_by,comment) values('company.updated',actor,'Общие реквизиты подтверждены');
   result:=jsonb_build_object('ok',true,'revision',company.revision);
  elsif op='list' then
-  if not exists(select from public.leader_orders where id=(data->>'order_id')::uuid) then raise exception 'not_found';end if;
-  offset_value:=greatest(0,least(10000,coalesce((data->>'offset')::integer,0)));
+  if not exists(select from public.leader_orders where id=(input_data->>'order_id')::uuid) then raise exception 'not_found';end if;
+  offset_value:=greatest(0,least(10000,coalesce((input_data->>'offset')::integer,0)));
   select coalesce(jsonb_agg(to_jsonb(d) order by d.created_at desc,d.id),'[]') into result from
    (select id,order_id,document_group_id,version,document_type,document_number,document_date,status,total,snapshot_hash,created_at
-    from public.leader_order_documents where order_id=(data->>'order_id')::uuid order by created_at desc,id limit 100 offset offset_value) d;
+    from public.leader_order_documents where order_id=(input_data->>'order_id')::uuid order by created_at desc,id limit 100 offset offset_value) d;
   return jsonb_build_object('ok',true,'rows',result,'has_more',jsonb_array_length(result)=100);
  elsif op='get' then
-  select * into doc from public.leader_order_documents where id=(data->>'id')::uuid;
+  select * into doc from public.leader_order_documents where id=(input_data->>'id')::uuid;
   if not found then raise exception 'not_found';end if;
   return jsonb_build_object('ok',true,'document',to_jsonb(doc),'events',coalesce((select jsonb_agg(to_jsonb(e)-'created_by' order by e.created_at,e.id) from public.leader_order_document_events e where e.document_id=doc.id),'[]'));
  elsif op='save' then
-  if data->>'kind' not in ('act','contract') then raise exception 'invalid_payload';end if;
-  requested_status:=case when data->>'register'='true' then 'generated' else 'draft' end;
+  if input_data->>'kind' not in ('act','contract') then raise exception 'invalid_payload';end if;
+  requested_status:=case when input_data->>'register'='true' then 'generated' else 'draft' end;
   if requested_status='generated' and not leader_private.leader_actor_has_crm_action(actor,'documents.generate') then raise exception 'forbidden';end if;
-  select * into ord from public.leader_orders where id=(data->>'order_id')::uuid for update;
+  select * into ord from public.leader_orders where id=(input_data->>'order_id')::uuid for update;
   if not found then raise exception 'not_found';end if;
-  if (data->>'expected_order_updated_at')::timestamptz is distinct from ord.updated_at then raise exception 'source_changed';end if;
-  content:=data->'draft';
+  if (input_data->>'expected_order_updated_at')::timestamptz is distinct from ord.updated_at then raise exception 'source_changed';end if;
+  content:=input_data->'draft';
   if jsonb_typeof(content) is distinct from 'object' then raise exception 'invalid_payload';end if;
   allowed_keys:=array['number','date','basis','executor','executorDetails','customer','customerDetails','taxMode','signatory','signatoryRole','completionDate','completionText','claimsText','note','items','templateId','city','executorRepresentative','executorRole','customerRepresentative','customerAuthority','subject','workAddress','paymentMode','paymentDays','deadlineDays','deadlineBasis','acceptanceDays','warrantyMonths','penaltyPercent','additionalTerms'];
   if exists(select from jsonb_each(content) f where not(f.key=any(allowed_keys)) or (f.key<>'items' and (jsonb_typeof(f.value) not in ('string','number') or length(f.value#>>'{}')>16000))) then raise exception 'invalid_payload';end if;
@@ -138,46 +138,46 @@ begin
      (1,'tax_id','ИНН'),(2,'registration_number','Регистрационный номер'),(3,'legal_address','Адрес'),(4,'postal_address','Почтовый адрес'),(5,'phone','Телефон'),(6,'email','Email'),(7,'bank_name','Банк'),(8,'bank_account','Р/с'),(9,'correspondent_account','К/с'),(10,'bank_code','БИК')) x(position,key,label)) details where length(coalesce(val,''))>0;
    content:=content||jsonb_build_object('executorDetails',coalesce(comment_value,''),'signatory',company.value->>'signatory_name','signatoryRole',coalesce(company.value->>'signatory_role','Представитель исполнителя'),'executorRepresentative',company.value->>'signatory_name','executorRole',coalesce(company.value->>'signatory_role','Представитель исполнителя'));
   end if;
-  if data->>'kind'='contract' then
-   if jsonb_typeof(data->'resolved_sections') is distinct from 'array' or jsonb_array_length(data->'resolved_sections') not between 1 and 40 then raise exception 'document_incomplete';end if;
-   for item in select value from jsonb_array_elements(data->'resolved_sections') loop
+  if input_data->>'kind'='contract' then
+   if jsonb_typeof(input_data->'resolved_sections') is distinct from 'array' or jsonb_array_length(input_data->'resolved_sections') not between 1 and 40 then raise exception 'document_incomplete';end if;
+   for item in select value from jsonb_array_elements(input_data->'resolved_sections') loop
     if jsonb_typeof(item) is distinct from 'object' or length(coalesce(item->>'title','')) not between 1 and 300 or jsonb_typeof(item->'paragraphs') is distinct from 'array' or jsonb_array_length(item->'paragraphs')>40 then raise exception 'invalid_payload';end if;
     if exists(select from jsonb_array_elements(item->'paragraphs') p where jsonb_typeof(p)<>'string' or length(p#>>'{}')>8000) then raise exception 'invalid_payload';end if;
    end loop;
   end if;
-  group_id:=coalesce(nullif(data->>'group_id','')::uuid,gen_random_uuid());
+  group_id:=coalesce(nullif(input_data->>'group_id','')::uuid,gen_random_uuid());
   perform pg_advisory_xact_lock(hashtextextended(group_id::text,281027));
   select * into previous from public.leader_order_documents where document_group_id=group_id order by version desc limit 1 for update;
   if found then
-   if previous.order_id<>ord.id or previous.document_type<>data->>'kind' then raise exception 'invalid_payload';end if;
+   if previous.order_id<>ord.id or previous.document_type<>input_data->>'kind' then raise exception 'invalid_payload';end if;
    if previous.status in ('signed','void') then raise exception 'terminal_document';end if;
    if not leader_private.leader_actor_has_crm_action(actor,'documents.update') then raise exception 'forbidden';end if;
-   if (data->>'expected_version')::integer is distinct from previous.version then raise exception 'source_changed';end if;
-  elsif coalesce((data->>'expected_version')::integer,0)<>0 then raise exception 'source_changed';end if;
+   if (input_data->>'expected_version')::integer is distinct from previous.version then raise exception 'source_changed';end if;
+  elsif coalesce((input_data->>'expected_version')::integer,0)<>0 then raise exception 'source_changed';end if;
   next_version:=coalesce(previous.version,0)+1;
   if requested_status='generated' then
    year_value:=extract(year from date_value)::integer;
-   insert into leader_private.leader_document_number_counters(document_type,number_year,last_value) values(data->>'kind',year_value,1)
+   insert into leader_private.leader_document_number_counters(document_type,number_year,last_value) values(input_data->>'kind',year_value,1)
     on conflict(document_type,number_year) do update set last_value=leader_private.leader_document_number_counters.last_value+1 returning last_value into seq;
-   number_value:=case data->>'kind' when 'act' then 'АВР' else 'ДГВ' end||'-'||year_value::text||'-'||lpad(seq::text,4,'0');
+   number_value:=case input_data->>'kind' when 'act' then 'АВР' else 'ДГВ' end||'-'||year_value::text||'-'||lpad(seq::text,4,'0');
   end if;
   content:=content||jsonb_build_object('items',clean_items,'number',coalesce(number_value,'ЧЕРНОВИК'));
-  snapshot_value:=jsonb_build_object('schema_version',1,'kind',data->>'kind','draft',content,'company',company.value,'company_revision',company.revision,
+  snapshot_value:=jsonb_build_object('schema_version',1,'kind',input_data->>'kind','draft',content,'company',company.value,'company_revision',company.revision,
    'order',jsonb_build_object('id',ord.id,'number',ord.order_number,'updated_at',ord.updated_at,'project_name',ord.project_name),
-   'contract_sections',case when data->>'kind'='contract' then data->'resolved_sections' else null end,'currency','RUB','total',total_value,'registered',requested_status='generated');
+   'contract_sections',case when input_data->>'kind'='contract' then input_data->'resolved_sections' else null end,'currency','RUB','total',total_value,'registered',requested_status='generated');
   insert into public.leader_order_documents(document_group_id,previous_version_id,version,order_id,client_id,document_type,document_number,document_date,status,total,snapshot,snapshot_hash,created_by)
-   values(group_id,previous.id,next_version,ord.id,ord.client_id,data->>'kind',number_value,date_value,requested_status,total_value,snapshot_value,encode(extensions.digest(snapshot_value::text,'sha256'),'hex'),actor) returning * into doc;
+   values(group_id,previous.id,next_version,ord.id,ord.client_id,input_data->>'kind',number_value,date_value,requested_status,total_value,snapshot_value,encode(extensions.digest(snapshot_value::text,'sha256'),'hex'),actor) returning * into doc;
   insert into public.leader_order_document_events(document_id,order_id,event_type,new_status,created_by) values(doc.id,ord.id,'created',requested_status,actor);
   result:=jsonb_build_object('ok',true,'id',doc.id,'group_id',group_id,'version',doc.version,'number',doc.document_number,'status',doc.status,'snapshot_hash',doc.snapshot_hash);
  elsif op='transition' then
-  select * into doc from public.leader_order_documents where id=(data->>'id')::uuid for update;
+  select * into doc from public.leader_order_documents where id=(input_data->>'id')::uuid for update;
   if not found then raise exception 'not_found';end if;
-  requested_status:=data->>'status';comment_value:=btrim(coalesce(data->>'comment',''));
+  requested_status:=input_data->>'status';comment_value:=btrim(coalesce(input_data->>'comment',''));
   permission_value:=case requested_status when 'sent' then 'documents.send' when 'signed' then 'documents.sign' when 'void' then 'documents.void' else null end;
   if permission_value is null or not leader_private.leader_actor_has_crm_action(actor,permission_value) then raise exception 'forbidden';end if;
   if length(comment_value) not between 3 and 2000 then raise exception 'comment_required';end if;
   if doc.status in ('signed','void') then raise exception 'terminal_document';end if;
-  if doc.status is distinct from data->>'expected_status' or exists(select from public.leader_order_documents where document_group_id=doc.document_group_id and version>doc.version) then raise exception 'source_changed';end if;
+  if doc.status is distinct from input_data->>'expected_status' or exists(select from public.leader_order_documents where document_group_id=doc.document_group_id and version>doc.version) then raise exception 'source_changed';end if;
   if not((requested_status='void') or (requested_status='sent' and doc.status='generated') or (requested_status='signed' and doc.status in ('generated','sent'))) then raise exception 'invalid_transition';end if;
   insert into public.leader_order_document_events(document_id,order_id,event_type,old_status,new_status,comment,created_by) values(doc.id,doc.order_id,'status',doc.status,requested_status,comment_value,actor);
   update public.leader_order_documents set status=requested_status,updated_at=now(),sent_at=case when requested_status='sent' then now() else sent_at end,

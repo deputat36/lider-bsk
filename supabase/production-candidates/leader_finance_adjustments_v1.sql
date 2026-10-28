@@ -79,18 +79,18 @@ create trigger leader_expense_confirmation_invalidate after insert or update or 
 
 create function public.leader_finance_adjustment_rpc(p_payload jsonb)
 returns jsonb language plpgsql security invoker set search_path='' set lock_timeout='3s' as $$
-declare actor uuid:=(p_payload->>'actor_id')::uuid;cmd jsonb:=p_payload->'request';op text:=cmd->>'operation';data jsonb:=cmd->'payload';req uuid;
+declare actor uuid:=(p_payload->>'actor_id')::uuid;cmd jsonb:=p_payload->'request';op text:=cmd->>'operation';input_data jsonb:=cmd->'payload';req uuid;
  receipt leader_private.leader_finance_adjustment_receipts;adj leader_private.leader_finance_adjustments;
  source_ord public.leader_orders;target_ord public.leader_orders;payment public.leader_payments;
- source_id uuid:=(data->>'order_id')::uuid;target_id uuid;amount_value numeric;reason_value text;date_value date;method_value text;
+ source_id uuid:=(input_data->>'order_id')::uuid;target_id uuid;amount_value numeric;reason_value text;date_value date;method_value text;
  net_value numeric;available numeric;adjustment_id uuid;out_id uuid;in_id uuid;result jsonb;rows_value jsonb;oid uuid;
 begin
- if actor is null or jsonb_typeof(cmd) is distinct from 'object' or jsonb_typeof(data) is distinct from 'object' or octet_length(cmd::text)>32768 or exists(select from jsonb_object_keys(cmd) k where k not in ('operation','request_id','payload')) then raise exception 'invalid_payload';end if;
+ if actor is null or jsonb_typeof(cmd) is distinct from 'object' or jsonb_typeof(input_data) is distinct from 'object' or octet_length(cmd::text)>32768 or exists(select from jsonb_object_keys(cmd) k where k not in ('operation','request_id','payload')) then raise exception 'invalid_payload';end if;
  if not leader_private.leader_actor_has_crm_action(actor,case when op in ('options','closures') then 'finance.read' else 'finance.write' end) then raise exception 'forbidden';end if;
  if op='closures' then
-  if jsonb_typeof(data->'order_ids') is distinct from 'array' or jsonb_array_length(data->'order_ids')>250 then raise exception 'invalid_payload';end if;
+  if jsonb_typeof(input_data->'order_ids') is distinct from 'array' or jsonb_array_length(input_data->'order_ids')>250 then raise exception 'invalid_payload';end if;
   select coalesce(jsonb_agg(jsonb_build_object('order_id',c.order_id,'confirmed',c.confirmed_at is not null and c.expense_hash=leader_private.leader_expense_hash_v1(c.order_id),'confirmed_at',c.confirmed_at)),'[]') into rows_value
-   from leader_private.leader_expense_confirmations c where data->'order_ids' ? c.order_id::text;
+   from leader_private.leader_expense_confirmations c where input_data->'order_ids' ? c.order_id::text;
   return jsonb_build_object('ok',true,'rows',rows_value);
  end if;
  if op='options' then
@@ -111,30 +111,30 @@ begin
   if receipt.request is distinct from cmd then raise exception 'idempotency_conflict';end if;
   return receipt.response||jsonb_build_object('replay',true);
  end if;
- reason_value:=btrim(coalesce(data->>'reason',''));if length(reason_value) not between 3 and 2000 then raise exception 'reason_required';end if;
+ reason_value:=btrim(coalesce(input_data->>'reason',''));if length(reason_value) not between 3 and 2000 then raise exception 'reason_required';end if;
  if op='void' then
-  select * into adj from leader_private.leader_finance_adjustments where id=(data->>'adjustment_id')::uuid and source_order_id=source_id;
+  select * into adj from leader_private.leader_finance_adjustments where id=(input_data->>'adjustment_id')::uuid and source_order_id=source_id;
   if not found then raise exception 'not_found';end if;target_id:=adj.target_order_id;
- elsif op='allocate' then target_id:=(data->>'target_order_id')::uuid;if target_id is null or target_id=source_id then raise exception 'invalid_payload';end if;
+ elsif op='allocate' then target_id:=(input_data->>'target_order_id')::uuid;if target_id is null or target_id=source_id then raise exception 'invalid_payload';end if;
  end if;
  -- Every multi-order operation takes order locks in UUID order.
  perform id from public.leader_orders where id in (source_id,target_id) order by id for update;
  select * into source_ord from public.leader_orders where id=source_id;
  if not found or source_ord.is_archived then raise exception 'not_found';end if;
- if (data->>'expected_updated_at')::timestamptz is distinct from source_ord.updated_at then raise exception 'source_changed';end if;
+ if (input_data->>'expected_updated_at')::timestamptz is distinct from source_ord.updated_at then raise exception 'source_changed';end if;
  if target_id is not null then
   select * into target_ord from public.leader_orders where id=target_id;
   if not found or target_ord.is_archived then raise exception 'not_found';end if;
-  if op='allocate' and (data->>'expected_target_updated_at')::timestamptz is distinct from target_ord.updated_at then raise exception 'source_changed';end if;
+  if op='allocate' and (input_data->>'expected_target_updated_at')::timestamptz is distinct from target_ord.updated_at then raise exception 'source_changed';end if;
  end if;
  if op in ('refund','allocate') then
-  if jsonb_typeof(data->'amount') is distinct from 'number' then raise exception 'invalid_payload';end if;
-  amount_value:=(data->>'amount')::numeric;date_value:=(data->>'date')::date;
+  if jsonb_typeof(input_data->'amount') is distinct from 'number' then raise exception 'invalid_payload';end if;
+  amount_value:=(input_data->>'amount')::numeric;date_value:=(input_data->>'date')::date;
   if amount_value is null or amount_value<=0 or amount_value>1000000000 or amount_value<>round(amount_value,2) or date_value is null or date_value<'2000-01-01' or date_value>(current_timestamp at time zone 'Europe/Moscow')::date then raise exception 'invalid_payload';end if;
   adjustment_id:=gen_random_uuid();out_id:=gen_random_uuid();
   if op='refund' then
-   method_value:=data->>'method';if method_value is null or method_value not in ('Наличные','Перевод','Безналичный расчёт','Карта','Другое') then raise exception 'invalid_payload';end if;
-   select * into payment from public.leader_payments where id=(data->>'payment_id')::uuid and order_id=source_id for update;
+   method_value:=input_data->>'method';if method_value is null or method_value not in ('Наличные','Перевод','Безналичный расчёт','Карта','Другое') then raise exception 'invalid_payload';end if;
+   select * into payment from public.leader_payments where id=(input_data->>'payment_id')::uuid and order_id=source_id for update;
    if not found or not payment.is_confirmed or lower(btrim(payment.payment_status)) not in ('проведён','проведен','posted') or lower(coalesce(payment.payment_type,''))~'(возврат|расход|исход)' or payment.related_entity_type in ('allocation_in','allocation_out','refund') then raise exception 'invalid_source_payment';end if;
    select payment.amount-coalesce(sum(amount),0) into available from leader_private.leader_finance_adjustments where source_payment_id=payment.id and kind='refund' and state='posted';
    if amount_value>available or amount_value>leader_private.leader_finance_net_v1(source_id) then raise exception 'refund_exceeds_receipts';end if;
@@ -161,7 +161,7 @@ begin
   perform set_config('leader.finance_adjustment_write','off',true);
   update leader_private.leader_finance_adjustments set state='void',voided_by=actor,voided_at=now() where id=adj.id;
  else
-  if data->>'confirmed' is distinct from 'true' then raise exception 'expense_confirmation_required';end if;
+  if input_data->>'confirmed' is distinct from 'true' then raise exception 'expense_confirmation_required';end if;
   if exists(select from public.leader_expenses where order_id=source_id and lower(btrim(status)) not in ('проведён','проведен','posted','отменён','отменен','cancelled')) then raise exception 'expenses_unresolved';end if;
   insert into leader_private.leader_expense_confirmations(order_id,confirmed_by,confirmed_at,expense_hash,reason) values(source_id,actor,now(),leader_private.leader_expense_hash_v1(source_id),reason_value)
    on conflict(order_id) do update set confirmed_by=actor,confirmed_at=now(),expense_hash=excluded.expense_hash,reason=excluded.reason;
