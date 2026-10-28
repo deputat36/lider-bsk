@@ -1,3 +1,4 @@
+import { invokeAdjustment } from './finance-adjustment-transport-v1.js';
 import { orderOperationsAvailable } from './operational-server-contract-v1.js';
 import { FINANCE_ACTIONS } from './finance-record-model-v1.js';
 
@@ -8,6 +9,7 @@ export function financeWriteAvailable(url, allowed) {
 }
 export function financeErrorMessage(code) {
   return ({
+    cancel_finance_adjustment_first: 'Платёж связан с возвратом или переносом. Сначала отмените связанную операцию в разделе «Возвраты, переплата и полнота расходов».',
     source_changed: 'Заказ или запись уже изменились. Обновите карточку перед повторным вводом.',
     forbidden: 'У вашей роли нет права изменять финансы.',
     inactive_profile: 'Доступ профиля отключён. Запись не сохранена.',
@@ -57,6 +59,13 @@ export async function invokeFinanceCommand({ client, url, allowed, command, acto
       let body = null;
       try { body = await bounded(result.error.context?.clone?.().json()); } catch (_) { /* network failure */ }
       const code = body?.error?.code || body?.error || 'network_error';
+      // The database guard makes this rejection deterministic, even when the
+      // older finance endpoint reports its generic 500 response.
+      if(command.action==='finance.record.void'&&command.payload?.kind==='payment'&&Number(result.error.context?.status)>=500){
+        const guard=await invokeAdjustment({client,url,actorId:actorId||current.user?.id,timeoutMs:5000,command:{operation:'options',payload:{order_id:command.payload.order_id}}});
+        if(guard.ok&&(guard.protected_payment_ids||[]).includes(command.payload.record_id))return {ok:false,code:'cancel_finance_adjustment_first',uncertain:false};
+      }
+
       return { ok: false, code, uncertain: !body || Number(result.error.context?.status) >= 500 };
     }
     if (result.data?.ok !== true) return { ok: false, code: result.data?.error?.code || 'finance_write_failed', uncertain: true };

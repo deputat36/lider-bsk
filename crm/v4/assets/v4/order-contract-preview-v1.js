@@ -1,3 +1,4 @@
+import './document-archive-v1.js';
 import { supabaseClient } from './supabase-client.js';
 import { timeout, friendlyError } from './api.js';
 import { toast, setStatus } from './ui.js';
