@@ -29,9 +29,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: calculation-candidate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate-calculation-version-candidate:
     runs-on: ubuntu-latest
+    timeout-minutes: 6
     steps:
       - uses: actions/checkout@v4
 
@@ -40,10 +45,10 @@ jobs:
           deno-version: v2.x
 
       - name: Type-check calculation Edge Function
-        run: deno check supabase/functions/leader-crm-calculations/index.ts
+        run: timeout 60s deno check supabase/functions/leader-crm-calculations/index.ts
 
       - name: Run calculation contract behavior tests
-        run: deno test supabase/functions/leader-crm-calculations/contract_test.ts
+        run: timeout 60s deno test supabase/functions/leader-crm-calculations/contract_test.ts
 
       - name: Compile source checker
         run: python3 -m py_compile tools/check_crm_calculation_version_candidate.py

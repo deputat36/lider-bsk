@@ -108,3 +108,6 @@ HEAD 3c3ce304 прошёл 85/85 check runs; artifact 12799747205 (documents) и
 
 
 На 943a603 прошли browser suite обеих ширин и accessibility 25/25 (0 violations, max critical 195748 B, max total 447427 B, deferred photo 267189 B). Последним оставалось старое calculation staging transport задание: Deno check завис на JSR type-only import и job не имел timeout. Лишняя внешняя type-зависимость удалена, native Deno globals используются без изменений runtime-логики; check/test сохранены с timeout 60s, job 6min/concurrency. Это source/CI fix, ранее установленный сервер расчётов не заменяется.
+
+
+Deno на aefb2f4 успешно проверил source и 9 поведенческих contract tests. Остался ложный source marker, требовавший именно сетевой type import: checker обновлён на built-in Deno.serve/env и запрет возвращения ненужного import; проверки canonical permissions, exact environment и RPC-only writes сохранены. Второе старое candidate Deno job также ограничено 6min/60s и concurrency.

@@ -89,7 +89,8 @@ forbid('sql', [
 ])
 
 require('edge', [
-    "import 'jsr:@supabase/functions-js/edge-runtime.d.ts'",
+    'Deno.serve(',
+    'Deno.env.get(',
     'if (projectRef !== STAGING_PROJECT_REF)',
     "error: 'wrong_environment'",
     '/auth/v1/user',
@@ -105,6 +106,7 @@ require('edge', [
     'result.idempotent_replay === true ? 200 : 201',
 ])
 forbid('edge', [
+    "import 'jsr:@supabase/functions-js/edge-runtime.d.ts'",
     'leader_user_profiles?user_id=',
     'activeProfile(',
     'canWriteCalculation',
