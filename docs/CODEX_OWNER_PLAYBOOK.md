@@ -1,3 +1,5 @@
+> Историческая инструкция своей даты. Для новых задач использовать [WORK_CURRENT.md](WORK_CURRENT.md) и [WORKFLOW.md](WORKFLOW.md); более поздние явные решения владельца имеют приоритет.
+
 # Codex owner playbook — RA Lider
 
 Date: 2026-06-28.
