@@ -1,35 +1,39 @@
 # Точка продолжения РА «Лидер»
 
-Обновлено: 28.10.2026. Репозиторий deputat36/lider-bsk, PR #596, ветка agent/complete-recovery-20261027. Владелец поручил завершить восстановление, выполнить итоговый аудит и разрешил доступные инструменты. Повторные общие разрешения не нужны.
+Обновлено: 28.10.2026. Главная ветка — main в deputat36/lider-bsk. Пользователь поручил завершить восстановление, выполнить аудит и разрешил доступные инструменты; общие разрешения повторно не спрашивать.
 
-## Что установлено и повторять нельзя
+## Опубликованный результат
 
-- Production intake: Edge leader-public-lead v11, лимит 3000/3001 и безопасный повтор проверены 27.10; анонимная запись в таблицы закрыта.
-- Notifications: production и staging package/RPC, Edge v1, enabled=true, dispatch_url установлен, cron active. Подписки только добровольные; автоматически никто не подписан. Native очередь/права/410/replay прошли в ROLLBACK. Android по фактической доставке ещё не проверен.
-- Quotes: production Edge v1, staging v2; additive schema/RLS/service-only RPC установлены. Native create/respond/update/accept/selection/template/replay/deny прошёл; все fixture строки откатились.
-- Документы: production/staging package, private общие реквизиты и counters, RPC, JWT Edge v2 установлены. Native register/replay/hash/permissions/sign/terminal прошёл. Документов/номеров/реальных реквизитов не создано; company revision=0. Исправлена коллизия переменной с реальным orders.data.
-- Финансовые корректировки: production/staging package и JWT Edge v1 установлены. Native refund/replay/paired allocation/cap/void/protected payment/expense confirmation invalidation прошёл. Новых постоянных движений не создано.
-- Рабочие прайс, клиенты, заказы, финансы, дизайн, производство и монтаж были установлены раньше; не устанавливать прежние пакеты заново.
+- PR #596 уже MERGED: https://github.com/deputat36/lider-bsk/pull/596 . Head 23725e3247117242b890b214d351846f7c54ed80, merge d536b29cba68dfa2a2bb7a1ac27628147e3b318b. Старую agent/complete-recovery-20261027 не продолжать как незавершённый PR.
+- PR: 114 success + 1 штатный skipped IndexNow. Main merge: 119/119 success; Pages 40656395095 success.
+- После публикации source 44015a72cb61cb3beea6716524699e4bd831826f сверён с 41 публичным файлом: 41/41 SHA256 совпали с первой попытки, run 40657143371 success. Cloud workflow .github/workflows/recovery-runtime-readback.yml теперь проверяет эти файлы после успешного Pages. Сам workflow не пишет в базу.
+- Production intake Edge v11: 3000 символов, отказ 3001, безопасный повтор; anon direct INSERT закрыт. Техническая production-проверка и очистка выполнены 27.10.
+- Production/staging notifications: schema/RPC и Edge v1 установлены, enabled=true, dispatch_url верный, cron active. Worker HMAC ticket; browser fresh Auth/canonical role. Actual Android/FCM не доказан.
+- Quotes: production Edge v1, staging v2; workspace package установлен; native create/respond/version/accept/selection/template/replay/deny PASS.
+- Documents: обе базы schema/RPC и JWT Edge v2; общие private реквизиты/CAS, постоянный архив/номера/версии/печать/история. Native register/replay/hash/permissions/sign/terminal PASS.
+- Finance-adjustments: обе базы package и JWT Edge v1; возврат, парный перенос переплаты и отмена, защита исходных платежей, подтверждение расходов и invalidation. Native acceptance PASS.
+- Canonical restrictive lead RLS установлен: owner/manager allowed, contractor read/create/update denied. Все новые Leader FK покрыты индексами. Data API net/private=406, anon docs/quotes=401.
+- 8/8 Edge readbacks новых четырёх функций совпали с source. Все native fixtures откатились ROLLBACK.
 
-## Последняя проверенная точка
+Последний production read-only срез 28.10 11:23 МСК: 19 leads / 17 clients / 69 catalog / 2 orders / 1 payment / 0 expenses. Новых subscriptions/events/outbox/documents/counters/receipts/adjustments/confirmations=0; company revision=0. Не вносить вымышленные реквизиты и не создавать номера документов ради проверки.
 
-- Source notifications/quotes/documents/finance-adjustments совпал с 8/8 Edge readbacks обеих баз. Docs обработчик обновлён до v2.
-- Production lead canonical RLS и scoped FK indexes установлены. Последний notification FK index migration 20261028075410; новых Leader unindexed FK нет.
-- Безопасный anonymous GET limit=0: net/private schema 406, docs/quotes tables 401. Секреты не читались.
-- 28.10 10:53 МСК: 19 leads / 17 clients / 69 catalog / 2 orders / 1 payment / 0 expenses. Новые fixture rows=0. Notifications enabled, cron=1, subscriptions=0; company revision=0.
-- HEAD 3c3ce304 — 85/85 success. Mobile archive/finance/notification artifacts просмотрены, последние layout fixes подтверждены.
-- Итоговый аудит создан: FINAL_AUDIT_2026-10-28.md, в том числе 35 issues, historical gaps, security и развитие. STATUS/DECISIONS актуализированы. Все 227 YAML парсятся; оставшихся playwright install больше нет.
+## Что действительно осталось
 
-## Что делать дальше
+1. После восстановления браузерной среды: безопасный реальный вход владельца/менеджера; проверить catalog.access и UI прайса, карточку заказа, документы/финансы. Пароли и OTP в чат не запрашивать; использовать browserAuth. В этой сессии CRM показала «Нужен вход», сессии нет.
+2. Android: добровольная подписка, закрытая вкладка, реальное появление push; SW/browser test этого не доказывает.
+3. Метрика: кабинет/счётчик/цели требуют входа. Здесь открылась публичная страница с «Войти»; подходящего плагина не найдено. Настройки не менялись.
+4. Подтверждённые юридические реквизиты, NAP и реальные материалы портфолио.
+5. Классификация истории: 5 leads «Создан заказ» без заказа; 5 calculations и 5 согласованных offers без order_id; 11 calculations без need; 3 total mismatch (одно с позициями). Наборы пересекаются. Массовый reset/создание заказов/пересчёт по текущему прайсу не выполнять без основания.
+6. Дальнейшие приоритеты итогового аудита: legacy RBAC/backend (#202/#204) до приглашения новых ролей, восстановление резервных копий, единые статусы/CI, затем рост сайта по целевым обращениям.
 
-1. Проверить финальный CI и merge #596 только на exact проверенном HEAD. На cc61cf3 было 87 success/2 failures: старый контраст creative-kicker и Bash default после container migration. Исправлены source/CSS cache, generators/source contracts и bundled Chromium path; код фиксируется следующим checkpoint. Проверки не отключены. На ca3a251 WCAG=0; уточняется first-viewport budget без lazy-prefetch, полный transferred остаётся в report. Public form browser suite делится на 1440/390 matrix с deadline; coverage 64 страниц сохраняется. На 943a603 осталось одно старое зависшее задание Deno, обращавшееся к JSR только за типами. Лишний import снят, native Deno check/test сохранены, команды ограничены 60s, job 6min с concurrency. На aefb2f4 native Deno check и 9 contract tests прошли; старый source checker требовал именно удалённый JSR import. Он актуализирован: built-in Deno.serve/env обязательны, лишний import запрещён; проверки прав/SQL не снимались. Оба calculation Deno jobs получили timeout/concurrency. Сервер расчётов не переустанавливается.
-2. Проверить main/Pages и GET runtime bytes, manifest/icons. Зафиксировать merge SHA, CI и URL в этом файле. Не переустанавливать уже сверенные серверные блоки.
-3. Завершить owner/Метрика Auth через защищённый browserAuth, если владелец даст данные; в текущем cloud browser обе сессии отсутствуют. Android и реквизиты/историческая классификация остаются реальной приёмкой.
+Это реальные данные/учётная запись/устройство, а не недостающие общие разрешения.
 
-## Потребует участия владельца
+## Документы и точный следующий шаг
 
-Реальный вход в CRM/Метрику, если сессии нет; Android с закрытой вкладкой для фактического push; подтверждённые юридические реквизиты; классификация спорных исторических цепочек и реальные материалы портфолио. Это не новые разрешения на плагины. Независимую разработку эти пункты не останавливают.
+[Итоговый аудит и все 35 issues](FINAL_AUDIT_2026-10-28.md), [подробная установка и проверки](CRM_RECOVERY_DELIVERY_2026-10-27.md), [актуальный статус](STATUS.md), [решения](DECISIONS.md). Read-only SQL: supabase/production-tests/20261028_recovery_final_readonly.sql.
 
-## После обрыва
+Локальный exec-server и cloud browser стали unavailable на финише. Это не откат сервера/публикации. Независимая проверка завершена через GitHub Actions. После восстановления начать с актуального main и этого файла; следующий продуктовый шаг — реальная приёмка из пунктов 1–3, затем адресные задачи нового аудита. Не начинать новый полный аудит и не переустанавливать уже сверенные функции.
 
-Прочитать этот файл и CRM_RECOVERY_DELIVERY_2026-10-27.md. Сверить remote HEAD #596 и фактический результат последнего действия через migration history/Edge readback/receipt. Не повторять неизвестную запись вслепую. Код и SQL сохранять в удалённую ветку ДО изменения сервера; после блока записывать результат и следующий шаг. Один чат записывает ветку/базу. Shell-команды ограничивать timeout, одинаковую ошибку не повторять более двух раз без диагностики/смены подхода. Секреты/клиентские данные не сохранять в public source.
+## Правила восстановления
+
+Source сохранить удалённым commit ДО server changes; после потерянного ответа сначала migration history/Edge readback/receipt, затем решение о повторе. Не повторять неизвестную запись вслепую. Один активный writer для ветки/базы. Новые команды сохраняют прежний request_id/payload; SQL/HTTP и очередь ограничены временем/числом попыток. Все browser workflows используют pinned Playwright container, без повторных browser/apt downloads. Старые Deno calculation jobs исправлены: лишний JSR type import удалён, native check/test сохранены, 60s на команду/6min job. Секреты и тексты клиентов не сохранять в public source.
