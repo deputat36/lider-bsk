@@ -1,3 +1,4 @@
+import {buildOrderFinanceSnapshot} from '../crm/v4/assets/v4/finance-plan-actual-model-v1.js';
 import assert from 'node:assert/strict';
 import {prepareAdjustment,invokeAdjustment,completeAdjustment} from '../crm/v4/assets/v4/finance-adjustment-transport-v1.js';
 import {invokeFinanceCommand} from '../crm/v4/assets/v4/finance-record-transport-v1.js';
@@ -19,3 +20,6 @@ assert.equal((await invokeAdjustment({...options,timeoutMs:15})).uncertain,true,
 assert.equal((await invokeFinanceCommand({client,url:options.url,allowed:true,actorId:actor,command:{},timeoutMs:15})).uncertain,true,'Original finance writer also bounds session acquisition');
 completeAdjustment(first.key,storage);assert.equal(rows.size,0);
 console.log('Financial adjustments: exact recovery, technical-only storage, actor-bound JWT, deterministic rejection and bounded session PASS.');
+
+const confirmed=buildOrderFinanceSnapshot({client_total:100,contractor_cost:50},[{amount:100,payment_type:'Приход',payment_status:'Проведён',is_confirmed:true}],[],{terminal:true,expensesConfirmed:true});
+assert.equal(confirmed.actualProfitState,'confirmed');assert.equal(confirmed.actualProfit,100);assert(!confirmed.warnings.some(w=>w.includes('не рассчитана')));
