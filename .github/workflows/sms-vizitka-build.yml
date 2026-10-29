@@ -2,7 +2,7 @@ name: Build SMS Vizitka Android
 
 on:
   push:
-    branches: ["sms-vizitka-stable-signing-bootstrap"]
+    branches: ["sms-vizitka-archived-bootstrap-no-trigger"]
   workflow_dispatch:
 
 jobs:
@@ -177,68 +177,6 @@ jobs:
           gradle :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleRelease --stacktrace
           echo "===== LINT TEXT REPORT ====="
           cat app/build/reports/lint-results-debug.txt || true
-
-      - name: Bootstrap permanent signing key securely
-        shell: bash
-        run: |
-          set -euo pipefail
-          work="$(mktemp -d)"
-          trap 'rm -rf "$work"' EXIT
-          umask 077
-          password="$(openssl rand -hex 32)"
-          keytool -genkeypair -v -keystore "$work/sms-vizitka-release.p12" -storetype PKCS12 -storepass "$password" -keypass "$password" -alias smsvizitka -keyalg RSA -keysize 3072 -sigalg SHA256withRSA -validity 36500 -dname "CN=SMS Vizitka App Releases, O=Borisoglebsk, C=RU" > /dev/null 2>&1
-          signer="$(find "$ANDROID_HOME/build-tools" -maxdepth 2 -name apksigner -type f | sort -V | tail -n 1)"
-          align="$(find "$ANDROID_HOME/build-tools" -maxdepth 2 -name zipalign -type f | sort -V | tail -n 1)"
-          test -x "$signer" && test -x "$align"
-          "$align" -f -p 4 android/build-src/sms-card-app/app/build/outputs/apk/release/app-release-unsigned.apk "$work/aligned.apk"
-          "$signer" sign --ks "$work/sms-vizitka-release.p12" --ks-type PKCS12 --ks-key-alias smsvizitka --ks-pass "pass:$password" --key-pass "pass:$password" --min-sdk-version 29 --out stable-release-v0.6.1.apk "$work/aligned.apk"
-          "$signer" verify --verbose --print-certs --min-sdk-version 29 stable-release-v0.6.1.apk
-          printf "%s" "$password" > "$work/keystore-password.txt"
-          cat > "$work/transport.crt" <<'PUBLIC_CERT'
-          -----BEGIN CERTIFICATE-----
-          MIIEUzCCArugAwIBAgIUPZRLKlUsO9kQ6h7m2Iouy6WsmmcwDQYJKoZIhvcNAQEL
-          BQAwOTE3MDUGA1UEAwwuVGVtcG9yYXJ5IFNNUyBWaXppdGthIFNpZ25pbmcgQmFj
-          a3VwIFRyYW5zcG9ydDAeFw0yNjEwMjkwNzA1NTZaFw0yNjExMDEwNzA1NTZaMDkx
-          NzA1BgNVBAMMLlRlbXBvcmFyeSBTTVMgVml6aXRrYSBTaWduaW5nIEJhY2t1cCBU
-          cmFuc3BvcnQwggGiMA0GCSqGSIb3DQEBAQUAA4IBjwAwggGKAoIBgQDF2xZ7UFYx
-          5LlfNqqPOFJ1daWMROXrWXE79wgl8GaS6k80iPXdVTaFbZV5Rew8qJxk4jVwWwsB
-          d/ZLE9BB7xx5xms1o2t03Er8Sbp5Y/9Pgw05wxTwyeqScG4nqQ5Yr3GuaNP1s1yM
-          ft2ZeEgS7+PNksdX4qEMQkdILuUpGv/gQ7i4kSFWWuv5TfLGkFmfxkzNbp/o6yI9
-          +xkwzz0iVldy3i1j2Ul9EjByeUTt3mEU6sE3U0vBcOqF56qLNc1B9TsPBwfZm+UE
-          w4mY4oAD5W5C6dxBA5d0AepdEWBRbEH41ZsvQOT3JW/DpLfCouG7Y5I05/gK5hQP
-          nlLY3ucdW7Ufh0nY8ZOFfB8v4u2pt47ZLuBlRwb4yo93Ikkx+6vcw77aECRAakyF
-          sJplLwDorDyUFaxMqMtBBaBbhb3bkeWJkU23KyW4s+/ViKRmQrIkcClAj9Trsh+v
-          gIhtGnAnUQGQlid7faJmiqBXz7cDoDDTFMwWyOb03YeN1ltxYDhu78kCAwEAAaNT
-          MFEwHQYDVR0OBBYEFCgNEtNnGP6VB+Snvx0b80ggmG2eMB8GA1UdIwQYMBaAFCgN
-          EtNnGP6VB+Snvx0b80ggmG2eMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcNAQEL
-          BQADggGBACBkHxgNNCQktEWscTj/ndlvUU5l24U7O/tZxHpqeIOAZEmoh6Gm2jPj
-          aaNVO/4DOWfqkXdt6N5v6UkIRcnFIIh1fx7Iui3AmIs5I9JgSHc3AkzqK6b59RyA
-          JNtWJPM+UjtnxulgjXIWA9TWzSVUk8K260skuzsR3ozjS82QB1ZtKcg9ijxXmoix
-          OD7Eeb4NywqEQPOZ3XYYMdQFO7DlPRRtuSaB4tgpyN5TdHjnc69sJK6Y+MKTeOzW
-          q+pwQAJ4r6tIClUxkKT8YHpW7uVn1vdUm02n7wh6cHYayBhNl5ol4tietZezdZoz
-          Ib+d8TaOHAVHsPWL6d4HGmX85lgOa0CofDGwNrRdLyKd50SCgOwudzQa5VNaZyEg
-          0bG5zRJUhIxMURqbFgcPABI0iYKJYeUidQ7gDhiYnABG52gcOhGx+D3YwZqnUqkl
-          FPJTQnyMhaHykfEoV9N5sAsNod8bBfrI7eyFSK41I/JCMjNFDoIMSiCswHFEltly
-          W0Ebyg6zYA==
-          -----END CERTIFICATE-----
-          PUBLIC_CERT
-          tar -czf "$work/backup.tar.gz" -C "$work" sms-vizitka-release.p12 keystore-password.txt
-          openssl cms -encrypt -aes-256-cbc -binary -outform DER -in "$work/backup.tar.gz" -out signing-backup-encrypted.cms -recip "$work/transport.crt"
-          echo "One-time signing key generated; encrypted backup can only be opened with the offline transport private key."
-      
-      - name: Upload stable signed APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: sms-vizitka-v0.6.1-stable-release
-          path: stable-release-v0.6.1.apk
-          if-no-files-found: error
-
-      - name: Upload encrypted signing backup
-        uses: actions/upload-artifact@v4
-        with:
-          name: sms-vizitka-v0.6.1-encrypted-key-backup
-          path: signing-backup-encrypted.cms
-          if-no-files-found: error
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
