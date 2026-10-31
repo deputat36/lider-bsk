@@ -25,6 +25,7 @@ on:
       - 'tools/check_crm_leads_action_permissions.py'
       - 'tools/check_crm_offer_order_safe_projection.py'
       - 'tools/check_crm_leads_order_list_projections.py'
+      - 'tools/test_crm_leads_handler.mjs'
       - 'crm/v4/assets/v4/action-permissions-v1.js'
       - 'crm/v4/assets/v4/offer-order-create-v1.js'
       - 'supabase/functions/leader-crm-leads/index.ts'
@@ -54,6 +55,7 @@ on:
       - 'tools/check_crm_leads_action_permissions.py'
       - 'tools/check_crm_offer_order_safe_projection.py'
       - 'tools/check_crm_leads_order_list_projections.py'
+      - 'tools/test_crm_leads_handler.mjs'
       - 'crm/v4/assets/v4/action-permissions-v1.js'
       - 'crm/v4/assets/v4/offer-order-create-v1.js'
       - 'supabase/functions/leader-crm-leads/index.ts'
@@ -88,3 +90,9 @@ jobs:
           python3 tools/check_crm_leads_action_permissions.py
           python3 tools/check_crm_offer_order_safe_projection.py
           python3 tools/check_crm_leads_order_list_projections.py
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Exercise the actual leads handler with isolated REST fixtures
+        run: node --test tools/test_crm_leads_handler.mjs

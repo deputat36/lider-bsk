@@ -1,0 +1,1 @@
+2026-10-31 staging v3 / bootstrap v39: canonical orders read field intersection, no grant widening

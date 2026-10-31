@@ -1,0 +1,305 @@
+{
+  "date": "2026-10-31",
+  "baseline_commit": "9f0572f397ac4740f08a5ab4983a5f147c2ee268",
+  "project_id": "ofewxuqfjhamgerwzull",
+  "scope": "Leader Edge sources only; no migrations or bulk redeploy",
+  "functions": [
+    {
+      "slug": "leader-crm-catalog",
+      "version": 2,
+      "files": [
+        {
+          "path": "leader-crm-catalog/index.ts",
+          "remote_sha256": "eee9e2cdd7d3e47d3a6f85783ff91cce840d22333cc139fb5d59079260547dba",
+          "baseline_paths": []
+        },
+        {
+          "path": "leader-crm-catalog/contract.ts",
+          "remote_sha256": "4d685ab83a2420d9b00634fe8e9ce65489b1b5c944856c202f16970e732db44d",
+          "baseline_paths": []
+        }
+      ],
+      "deployment_action": "unchanged",
+      "warning": "Production environment adaptation. Do not deploy supabase/functions unmodified; compare fresh installed source and environment guards."
+    },
+    {
+      "slug": "leader-crm-clients",
+      "version": 1,
+      "files": [
+        {
+          "path": "leader-crm-clients/index.ts",
+          "remote_sha256": "f6bc6f9ddd9f78e03b36784aa6c90af1d918e5a5e11664cc70f41e14d4ac86e1",
+          "baseline_paths": [
+            "supabase/functions/leader-crm-clients/index.ts"
+          ]
+        }
+      ],
+      "deployment_action": "unchanged"
+    },
+    {
+      "slug": "leader-crm-design",
+      "version": 1,
+      "files": [
+        {
+          "path": "leader-crm-design/index.ts",
+          "remote_sha256": "9367d0d301b000ba5656af107e20bd37b19f515f4accc96cfe94b57aadc46555",
+          "baseline_paths": [
+            "supabase/production-candidates/functions/leader-crm-design/index.ts"
+          ]
+        }
+      ],
+      "deployment_action": "unchanged"
+    },
+    {
+      "slug": "leader-crm-documents",
+      "version": 2,
+      "files": [
+        {
+          "path": "leader-crm-documents/index.ts",
+          "remote_sha256": "5f86c7c389b3d79df99644c6e2b79e53936da9fc06b4b1f77bbb5e7d6cf29274",
+          "baseline_paths": [
+            "supabase/functions/leader-crm-documents/index.ts"
+          ]
+        }
+      ],
+      "deployment_action": "unchanged"
+    },
+    {
+      "slug": "leader-crm-finance-adjustments",
+      "version": 1,
+      "files": [
+        {
+          "path": "leader-crm-finance-adjustments/index.ts",
+          "remote_sha256": "d6304047c69be7a71a98d7eac9ffae61672e0ae3b5c318bb0138949028cba428",
+          "baseline_paths": [
+            "supabase/functions/leader-crm-finance-adjustments/index.ts"
+          ]
+        }
+      ],
+      "deployment_action": "unchanged"
+    },
+    {
+      "slug": "leader-crm-finance",
+      "version": 1,
+      "files": [
+        {
+          "path": "leader-crm-finance/index.ts",
+          "remote_sha256": "aaade72fb381d82bc3b46486566b478a3e84a74d78b5ae52dfa430d361e30f8c",
+          "baseline_paths": []
+        }
+      ],
+      "deployment_action": "unchanged",
+      "warning": "Production environment adaptation. Do not deploy supabase/functions unmodified; compare fresh installed source and environment guards."
+    },
+    {
+      "slug": "leader-crm-installation-create",
+      "version": 1,
+      "files": [
+        {
+          "path": "leader-crm-installation-create/index.ts",
+          "remote_sha256": "6564f1feba40ee46cfc8ff9d0951e0a14febcf269657def59f2cf5b04b0cdbe2",
+          "baseline_paths": [
+            "supabase/production-candidates/functions/leader-crm-installation-create/index.ts"
+          ]
+        },
+        {
+          "path": "leader-crm-installation-create/contract.ts",
+          "remote_sha256": "88c63312289cb750cccdad63977c28f7d075d1756fd9f65554cde72f502f4e5f",
+          "baseline_paths": [
+            "supabase/production-candidates/functions/leader-crm-installation-create/contract.ts"
+          ]
+        }
+      ],
+      "deployment_action": "unchanged"
+    },
+    {
+      "slug": "leader-crm-installation",
+      "version": 1,
+      "files": [
+        {
+          "path": "leader-crm-installation/index.ts",
+          "remote_sha256": "8aa70aa58628f1ce02dd92587797212a6df8a3c2fb377786ef5052efdb66e795",
+          "baseline_paths": [
+            "supabase/production-candidates/functions/leader-crm-installation/index.ts"
+          ]
+        },
+        {
+          "path": "leader-crm-installation/contract.ts",
+          "remote_sha256": "176e6c421949efcd08f05dd5bbe8fd5ed09275653331c6d8523d400e19e775d1",
+          "baseline_paths": [
+            "supabase/production-candidates/functions/leader-crm-installation/contract.ts"
+          ]
+        }
+      ],
+      "deployment_action": "unchanged"
+    },
+    {
+      "slug": "leader-crm-leads",
+      "version": 12,
+      "files": [
+        {
+          "path": "leader-crm-leads/index.ts",
+          "remote_sha256": "e431702af4a7443a1f1c4afd2512df46663b65dc35177cfea1f870747c53bf86",
+          "baseline_paths": []
+        }
+      ],
+      "deployment_action": "replace only after staging HTTP proof",
+      "candidate_source": "supabase/functions/leader-crm-leads/index.ts",
+      "rollback_source": "supabase/production-candidates/rollback/20261031-leader-crm-leads-v12/index.ts"
+    },
+    {
+      "slug": "leader-crm-notifications",
+      "version": 1,
+      "files": [
+        {
+          "path": "leader-crm-notifications/index.ts",
+          "remote_sha256": "4fc2e72f33fd8275b22d6302408e754fce36497a89f52226d57d6806dba83f55",
+          "baseline_paths": [
+            "supabase/functions/leader-crm-notifications/index.ts"
+          ]
+        },
+        {
+          "path": "leader-crm-notifications/deno.json",
+          "remote_sha256": "24694f2901b2bf3532a870ce1a11270666e65d3a1f9ea38566ca1b576d915b56",
+          "baseline_paths": [
+            "supabase/functions/leader-crm-notifications/deno.json"
+          ]
+        }
+      ],
+      "deployment_action": "unchanged"
+    },
+    {
+      "slug": "leader-crm-offer-transitions",
+      "version": 1,
+      "files": [
+        {
+          "path": "leader-crm-offer-transitions/index.ts",
+          "remote_sha256": "822a2f0800e5aa6351941471b4ae72ed8dbe519bea803c0536e10d7c39c07149",
+          "baseline_paths": [
+            "supabase/functions/leader-crm-offer-transitions/index.ts"
+          ]
+        }
+      ],
+      "deployment_action": "unchanged"
+    },
+    {
+      "slug": "leader-crm-orders",
+      "version": 3,
+      "files": [
+        {
+          "path": "leader-crm-orders/index.ts",
+          "remote_sha256": "81105fbdc3dab0214f37701babc2dce7d333d33d730c5664d4219e0bc8c8e240",
+          "baseline_paths": [
+            "supabase/staging-functions/leader-crm-orders/index.ts"
+          ]
+        },
+        {
+          "path": "_shared/order-operations-edge-v1.js",
+          "remote_sha256": "869be051404c1a15779443e02504d3a88c4a6f35debf917563b48ac66283003a",
+          "baseline_paths": [
+            "supabase/staging-functions/_shared/order-operations-edge-v1.js"
+          ]
+        },
+        {
+          "path": "_shared/crm-canonical-action-map-v1.js",
+          "remote_sha256": "3a7a580895fb24f4c62a7cac06ca5000176a7eac7bff9bb032b0c13f685f1d00",
+          "baseline_paths": [
+            "supabase/staging-functions/_shared/crm-canonical-action-map-v1.js"
+          ]
+        },
+        {
+          "path": "_shared/order-detail-read-v1.js",
+          "remote_sha256": "3aadd9e28d5cee55c18eaa10b53ffcf667e6f43d68eb483c4fb56ce720f3decf",
+          "baseline_paths": [
+            "supabase/staging-functions/_shared/order-detail-read-v1.js"
+          ]
+        },
+        {
+          "path": "_shared/canonical-edge-wrapper-v1.js",
+          "remote_sha256": "977785371eb1a479f4f087c66b9daa3a1a26529dbf3f2363ee553a5d6d6bb307",
+          "baseline_paths": [
+            "supabase/staging-functions/_shared/canonical-edge-wrapper-v1.js"
+          ]
+        }
+      ],
+      "deployment_action": "unchanged"
+    },
+    {
+      "slug": "leader-crm-production-create",
+      "version": 1,
+      "files": [
+        {
+          "path": "leader-crm-production-create/index.ts",
+          "remote_sha256": "2840d2b16fa9be6a954feea97df6d4ba923680d5306364250acba87cbba97588",
+          "baseline_paths": [
+            "supabase/production-candidates/functions/leader-crm-production-create/index.ts"
+          ]
+        },
+        {
+          "path": "leader-crm-production-create/contract.ts",
+          "remote_sha256": "d999027d0beaf973a41dce7ee002ddb59fde5ba5cf229635440a9e4fe64973f9",
+          "baseline_paths": [
+            "supabase/production-candidates/functions/leader-crm-production-create/contract.ts"
+          ]
+        }
+      ],
+      "deployment_action": "unchanged"
+    },
+    {
+      "slug": "leader-crm-production",
+      "version": 1,
+      "files": [
+        {
+          "path": "leader-crm-production/index.ts",
+          "remote_sha256": "3d5c037bbc4a3a44ecb102d59d12f6c54c4a1dc33e890997fad59ae69ce88722",
+          "baseline_paths": [
+            "supabase/production-candidates/functions/leader-crm-production/index.ts"
+          ]
+        },
+        {
+          "path": "leader-crm-production/contract.ts",
+          "remote_sha256": "d5a653ee61f89d98e2f97cb68589aae93db43ce30c58fc455a089c7bbdcbbbc5",
+          "baseline_paths": [
+            "supabase/production-candidates/functions/leader-crm-production/contract.ts"
+          ]
+        }
+      ],
+      "deployment_action": "unchanged"
+    },
+    {
+      "slug": "leader-crm-quotes",
+      "version": 1,
+      "files": [
+        {
+          "path": "leader-crm-quotes/index.ts",
+          "remote_sha256": "7285c74b35386ed3a09add993d00f642f3a4ac90b837508c14d19d9707ea62bb",
+          "baseline_paths": [
+            "supabase/functions/leader-crm-quotes/index.ts"
+          ]
+        }
+      ],
+      "deployment_action": "unchanged"
+    },
+    {
+      "slug": "leader-public-lead",
+      "version": 11,
+      "files": [
+        {
+          "path": "leader-public-lead/index.ts",
+          "remote_sha256": "79e492a30fd048c98c773140db53b371b73f6f68d2ed31cf8e52712d3c299498",
+          "baseline_paths": [
+            "supabase/functions/leader-public-lead/index.ts"
+          ]
+        },
+        {
+          "path": "leader-public-lead/rate-limit.ts",
+          "remote_sha256": "ed6dfcc9a7c4b692ba54d292e0ccdec546e6cd66c7f2daf2a18e77929c287c5c",
+          "baseline_paths": [
+            "supabase/functions/leader-public-lead/rate-limit.ts"
+          ]
+        }
+      ],
+      "deployment_action": "unchanged"
+    }
+  ]
+}

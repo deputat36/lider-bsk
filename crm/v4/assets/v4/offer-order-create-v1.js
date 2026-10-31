@@ -3,6 +3,7 @@ import { invokeLeaderFunction } from './functions-client.js';
 import { friendlyError } from './api.js';
 import { v4State, setState } from './state.js';
 import { setStatus, toast } from './ui.js';
+import { canPerformV4Action } from './action-permissions-v1.js';
 
 const OFFER_FIELDS = 'id,lead_id,calculation_id,client_id,order_id,offer_number,offer_type,title,total_sum,status,created_at,updated_at';
 const CALC_FIELDS = 'id,lead_id,need_id,client_id,title,status,client_total,contractor_cost,profit,margin_percent,warning_level,public_comment,internal_comment,commercial_offer_id,order_id,created_at,updated_at';
@@ -117,12 +118,12 @@ function renderForm(bundle) {
         <label>Статус макета
           <select id="offerOrderLayoutStatus"><option>Макета нет</option><option>Нужен дизайн</option><option>Клиент прислал макет</option><option>В работе у дизайнера</option><option>На согласовании</option><option>Согласован</option></select>
         </label>
-        <label>Предоплата, ₽
+        ${canPerformV4Action('finance.write') ? `<label>Предоплата, ₽
           <input id="offerOrderPrepayment" type="number" step="1" value="0">
         </label>
         <label>Статус оплаты
           <select id="offerOrderPaymentStatus"><option>Не оплачено</option><option>Предоплата</option><option>Частично оплачено</option><option>Оплачено</option></select>
-        </label>
+        </label>` : '<p class="wide">Заказ создаётся без оплаты. Факт оплаты вносится отдельно сотрудником с финансовыми правами.</p>'}
         <label class="wide">Комментарий к заказу
           <textarea id="offerOrderComment" rows="3" placeholder="Важные условия, доставка, монтаж, особенности производства">${esc(comment)}</textarea>
         </label>
