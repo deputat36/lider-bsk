@@ -6,8 +6,8 @@ import { setStatus, toast } from './ui.js';
 import { canPerformV4Action } from './action-permissions-v1.js';
 
 const OFFER_FIELDS = 'id,lead_id,calculation_id,client_id,order_id,offer_number,offer_type,title,total_sum,status,created_at,updated_at';
-const CALC_FIELDS = 'id,lead_id,need_id,client_id,title,status,client_total,contractor_cost,profit,margin_percent,warning_level,public_comment,internal_comment,commercial_offer_id,order_id,created_at,updated_at';
-const ITEM_FIELDS = 'id,calculation_id,lead_id,catalog_id,category,item_type,name,unit,qty,contractor_price,contractor_sum,markup_percent,client_price,client_sum,profit,margin_percent,comment,data,sort_order';
+const CALC_FIELDS = 'id,lead_id,need_id,client_id,title,status,client_total,public_comment,order_id,updated_at';
+const ITEM_FIELDS = 'id,calculation_id,lead_id,name,unit,qty,client_price,client_sum,sort_order';
 const LEAD_FIELDS = 'id,name,phone,source,status,converted_order_id,converted_client_id,converted_at,created_at,updated_at';
 const NEED_FIELDS = 'id,lead_id,client_id,need_type,title,description,structured_data,need_design,need_installation,deadline_date,status';
 
@@ -31,7 +31,7 @@ function orderTitleFromOffer(offer, calculation) {
   return raw.replace(/^КП:\s*/i, '').replace(/^Коммерческое предложение[:\s-]*/i, '').trim() || raw;
 }
 function host() { return document.querySelector('#offerCardV1 .v4-offer-modal-card'); }
-function currentOfferId() { return document.querySelector('#offerCardV1 [data-edit-type="offer"][data-edit-id]')?.dataset.editId || ''; }
+function currentOfferId() { return document.getElementById('offerCardV1')?.dataset.offerId || ''; }
 function ensureStyles() {
   if (document.getElementById('offerOrderCreateV1Styles')) return;
   const style = document.createElement('style');

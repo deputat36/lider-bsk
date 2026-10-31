@@ -1,7 +1,7 @@
 import { canPerformV4Action } from './action-permissions-v1.js';
 import { offerStatusUiModel } from './offer-status-ui-model-v1.js';
-import { transitionOffer, offerTransitionAvailable } from './offer-transition-transport-v1.js';
-import { v4State, setState } from './state.js';
+import { transitionOffer, offerTransitionAvailable, updateOffer, offerEditReason, OFFER_EDIT_LIMITS } from './offer-transition-transport-v1.js';
+import { v4State, setState, subscribeState } from './state.js';
 import { orderOperationsAvailable } from './operational-server-contract-v1.js';
 import { supabaseClient } from './supabase-client.js';
 import { friendlyError } from './api.js';
@@ -11,7 +11,12 @@ import { V4_CONFIG } from './config.js';
 let busy = false;
 let returnFocus = null;
 let cardGeneration = 0;
+let cardActor = null;
+let editGeneration = 0;
 let currentOffer = null;
+let currentCalculation = null;
+let editor = null;
+let editBusy = false;
 let transitionBusy = false;
 let booted = false;
 let lastEnhanceAt = 0;
@@ -46,6 +51,7 @@ function ensureStyles() {
     .v4-offer-text{white-space:pre-wrap;border:1px solid #e2e8f0;background:#f8fafc;border-radius:14px;padding:12px;max-height:420px;overflow:auto;font-family:Arial,sans-serif;line-height:1.45}.v4-offer-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}.v4-offer-tabs button.is-active{background:#ea580c;color:#fff;border-color:#ea580c}
     .v4-offer-row{border:1px solid #e2e8f0;border-radius:14px;padding:10px;margin:8px 0;background:#f8fafc}.v4-offer-row-head{display:flex;justify-content:space-between;gap:10px}.v4-offer-row-head b{overflow-wrap:anywhere}
     .v4-offer-actions-line{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.v4-offer-empty{border:1px dashed #cbd5e1;border-radius:14px;padding:12px;color:#64748b;background:#f8fafc}.v4-offer-close{white-space:nowrap}
+    .v4-offer-editor{border:2px solid #ea580c;border-radius:16px;padding:14px;margin:14px 0}.v4-offer-editor fieldset{border:0;padding:0;margin:0;min-width:0}.v4-offer-editor label{display:grid;gap:6px;margin:12px 0}.v4-offer-editor input,.v4-offer-editor textarea{font:inherit;width:100%;min-width:0;box-sizing:border-box;padding:10px;border:1px solid #94a3b8;border-radius:8px}.v4-offer-editor textarea{min-height:110px;resize:vertical}.v4-offer-editor [role=status]{white-space:pre-wrap}.v4-offer-editor [data-offer-review-check]{display:flex;align-items:flex-start;gap:8px}.v4-offer-editor [type=checkbox]{width:22px;min-height:22px;flex-shrink:0}.v4-offer-editor pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:200px;overflow:auto}.v4-offer-editor button{min-height:44px}
     @media(max-width:860px){.v4-offer-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.v4-offer-grid div{min-width:0}.v4-offer-grid b{overflow-wrap:anywhere}.v4-offer-modal-card{padding:12px;border-radius:18px}.v4-offer-head,.v4-offer-columns{display:grid;grid-template-columns:1fr}.v4-offer-actions-line button,.v4-offer-tabs button{width:100%}}
   `;
   document.head.appendChild(style);
@@ -60,8 +66,12 @@ function host() {
   return element;
 }
 function closeCard() {
-  if (transitionBusy) return;
+  if (transitionBusy || editBusy || (editor && !saveOfferDraft())) return;
+  editor = null;
   currentOffer = null;
+  currentCalculation = null;
+  cardActor = null;
+  delete host().dataset.offerId;
   cardGeneration++;
   returnFocus?.focus?.();
   host().innerHTML = '';
@@ -90,7 +100,8 @@ async function fetchLead(leadId) {
 }
 async function fetchCalculation(calculationId) {
   if (!calculationId) return null;
-  const response = await supabaseClient.from('leader_lead_calculations').select('id,title,status,client_total,contractor_cost,profit,margin_percent,public_comment,created_at').eq('id', calculationId).single();
+  const fields = 'id,title,status,client_total,is_current_revision,order_id' + (canPerformV4Action('costs.read') ? ',margin_percent' : '');
+  const response = await supabaseClient.from('leader_lead_calculations').select(fields).eq('id', calculationId).single();
   return response.error ? null : response.data;
 }
 async function fetchItems(calculationId) {
@@ -126,12 +137,14 @@ function renderEvents(events) {
   return events.map((event) => `<div class="v4-offer-row"><div class="v4-offer-row-head"><b>${esc(event.event_type || 'Событие')}</b><span>${dateTimeRu(event.created_at)}</span></div><p>${event.old_status || event.new_status ? `${esc(event.old_status || '—')} → ${esc(event.new_status || '—')}` : esc(event.comment || 'Без комментария')}</p>${event.created_by_email ? `<small>${esc(event.created_by_email)}</small>` : ''}</div>`).join('');
 }
 function renderRelation(lead, calculation, order) {
-  return `<section class="v4-offer-section"><h3>Связи</h3>${lead ? `<div class="v4-offer-row"><b>Заявка</b><p>${esc(lead.name || lead.phone || lead.service || 'Заявка')} · ${esc(lead.status || '—')}</p><div class="v4-offer-actions-line"><button type="button" data-open-lead="${esc(lead.id)}" data-offer-card-close>Открыть заявку</button></div></div>` : '<div class="v4-offer-empty">Заявка не найдена.</div>'}${calculation ? `<div class="v4-offer-row"><b>Расчёт</b><p>${esc(calculation.title || 'Расчёт')} · ${money(calculation.client_total)} · маржа ${Math.round(Number(calculation.margin_percent || 0))}%</p></div>` : '<div class="v4-offer-empty">Расчёт не найден.</div>'}${order ? `<div class="v4-offer-row"><b>Заказ</b><p>№${esc(order.order_number || shortId(order.id))} · ${esc(order.status || 'Новый')} · ${money(order.client_total)}</p><div class="v4-offer-actions-line"><button type="button" data-open-order="${esc(order.id)}" data-offer-card-close>Открыть заказ</button></div></div>` : '<div class="v4-offer-empty">Заказ по этому КП ещё не создан.</div>'}</section>`;
+  return `<section class="v4-offer-section"><h3>Связи</h3>${lead ? `<div class="v4-offer-row"><b>Заявка</b><p>${esc(lead.name || lead.phone || lead.service || 'Заявка')} · ${esc(lead.status || '—')}</p><div class="v4-offer-actions-line"><button type="button" data-open-lead="${esc(lead.id)}" data-offer-card-close>Открыть заявку</button></div></div>` : '<div class="v4-offer-empty">Заявка не найдена.</div>'}${calculation ? `<div class="v4-offer-row"><b>Расчёт</b><p>${esc(calculation.title || 'Расчёт')} · ${money(calculation.client_total)}${canPerformV4Action('costs.read') && calculation.margin_percent != null ? ' · маржа ' + Math.round(Number(calculation.margin_percent)) + '%' : ''}</p></div>` : '<div class="v4-offer-empty">Расчёт не найден.</div>'}${order ? `<div class="v4-offer-row"><b>Заказ</b><p>№${esc(order.order_number || shortId(order.id))} · ${esc(order.status || 'Новый')} · ${money(order.client_total)}</p><div class="v4-offer-actions-line"><button type="button" data-open-order="${esc(order.id)}" data-offer-card-close>Открыть заказ</button></div></div>` : '<div class="v4-offer-empty">Заказ по этому КП ещё не создан.</div>'}</section>`;
 }
 function renderCard({ offer, lead, calculation, items, order, events }) {
   const full = offer.full_text || '';
   const short = offer.short_text || '';
   currentOffer = offer;
+  currentCalculation = calculation;
+  host().dataset.offerId = offer.id;
   host().innerHTML = `<div class="v4-offer-modal"><div class="v4-offer-modal-card" role="dialog" aria-modal="true" aria-label="Карточка КП"><div class="v4-offer-head"><div><p class="v4-kicker">Карточка КП</p><h2>${esc(offer.title || 'Коммерческое предложение')}</h2><p>№${esc(offer.offer_number || shortId(offer.id))} · ${esc(offer.offer_type || 'КП')} · создано ${dateTimeRu(offer.created_at)}</p></div><button type="button" class="v4-offer-close" data-offer-card-close>Закрыть</button></div><div class="v4-offer-grid"><div><span>Статус</span><b>${esc(offer.status || 'Черновик')}</b></div><div><span>Сумма</span><b>${money(offer.total_sum)}</b></div><div><span>Действует до</span><b>${dateRu(offer.valid_until)}</b></div><div><span>Отправлено</span><b>${dateTimeRu(offer.sent_at)}</b></div><div><span>Согласовано</span><b>${dateTimeRu(offer.approved_at)}</b></div><div><span>Заказ</span><b>${order ? 'создан' : 'нет'}</b></div></div><div class="v4-offer-actions-line">${offerStatusControls(offer)}<button type="button" data-edit-type="offer" data-edit-id="${esc(offer.id)}">Редактировать КП</button>${lead ? `<button type="button" data-open-lead="${esc(lead.id)}" data-offer-card-close>Открыть заявку</button>` : ''}${order ? `<button type="button" data-open-order="${esc(order.id)}" data-offer-card-close>Открыть заказ</button>` : ''}<button type="button" data-offer-copy="full">Копировать полное</button><button type="button" data-offer-copy="short">Копировать короткое</button></div><div class="v4-offer-columns"><section class="v4-offer-section"><h3>Текст КП</h3><div class="v4-offer-tabs"><button type="button" class="is-active" data-offer-text-tab="full">Полное КП</button><button type="button" data-offer-text-tab="short">Короткое сообщение</button></div><pre class="v4-offer-text" data-offer-full="${esc(full)}" data-offer-short="${esc(short)}">${esc(full || 'Полный текст КП не заполнен.')}</pre></section><div>${renderRelation(lead, calculation, order)}<section class="v4-offer-section" style="margin-top:12px"><h3>История КП</h3>${renderEvents(events)}</section></div></div><section class="v4-offer-section" style="margin-top:12px"><h3>Состав из расчёта</h3>${renderItems(items)}</section></div></div>`;
   const card = host().querySelector('.v4-offer-modal-card');
   const actions = card.querySelector('.v4-offer-actions-line');
@@ -141,9 +154,103 @@ function renderCard({ offer, lead, calculation, items, order, events }) {
   const summary = document.createElement('summary');
   summary.textContent = 'Дополнительные действия';
   secondary.append(summary);
-  actions.querySelectorAll('[data-edit-type], [data-open-lead], [data-offer-copy]').forEach(button=>secondary.append(button));
+  actions.querySelectorAll('[data-open-lead], [data-offer-copy]').forEach(button=>secondary.append(button));
   actions.append(secondary);
 
+  const edit = card.querySelector('[data-edit-type="offer"]');
+  const reason = offerEditReason(offer, calculation);
+  if (!canPerformV4Action('offers.write') || reason || !offerTransitionAvailable(V4_CONFIG.supabaseUrl)) edit?.remove();
+  if (reason) {
+    const notice = document.createElement('p');
+    notice.textContent = reason;
+    notice.className = 'v4-offer-edit-reason';
+    grid.after(notice);
+  }
+
+}
+
+const offerDraftKey = (actor, id) => `leader-offer-edit-draft-v1:${actor}:${id}`;
+function editorValues() {
+  return Object.fromEntries(['title','short_text','full_text','valid_until'].map(k => [k, editor.form.elements.namedItem(k).value]));
+}
+function editNotice(message) {
+  const notice = editor?.form.querySelector('[data-offer-edit-notice]');
+  if (notice) notice.textContent = message;
+}
+function saveOfferDraft() {
+  if (!editor || v4State.user?.id !== editor.actor || !canPerformV4Action('offers.write')) return false;
+  try {
+    sessionStorage.setItem(offerDraftKey(editor.actor, editor.offer.id), JSON.stringify({ actor:editor.actor, id:editor.offer.id, revision:editor.offer.updated_at, values:editorValues(), savedAt:Date.now() }));
+    return true;
+  } catch (_) { editNotice('Черновик не удалось сохранить в этой вкладке. Скопируйте правки перед закрытием.'); return false; }
+}
+function lockEditorControls() {
+  host().querySelectorAll('[data-offer-transition],[data-edit-type],[data-create-order-from-offer]').forEach(b => b.disabled = Boolean(editor));
+  host().querySelectorAll('[data-offer-card-close]').forEach(b => b.disabled = editBusy);
+}
+function showOfferComparison(latest, calculation) {
+  if (!editor) return;
+  editor.latest = latest;
+  editor.needsReview = true;
+  const box = editor.form.querySelector('[data-offer-comparison]');
+  const reason = offerEditReason(latest, calculation);
+  box.innerHTML = `<details open><summary>Актуальное КП в CRM — сравните с вашими правками</summary><p><b>${esc(latest.title)}</b> · действует до ${esc(latest.valid_until || '')}</p><h4>Короткий текст</h4><pre>${esc(latest.short_text || '')}</pre><h4>Полный текст</h4><pre>${esc(latest.full_text || '')}</pre></details>${reason ? `<p>${esc(reason)}</p>` : '<label data-offer-review-check><input type="checkbox" data-offer-edit-reviewed> Я сравнил(а) версии и хочу применить мои правки к актуальному черновику.</label>'}`;
+  editor.form.querySelector('[type=submit]').disabled = true;
+}
+function openOfferEditor() {
+  if (editor || editBusy || transitionBusy || !canPerformV4Action('offers.write') || offerEditReason(currentOffer, currentCalculation)) return;
+  const form = document.createElement('form');
+  form.className = 'v4-offer-editor';form.id = 'offerEditForm';
+  const offer = currentOffer;
+  form.innerHTML = `<fieldset><legend><b>Редактировать черновик КП</b></legend><p>Меняются только название, тексты и срок действия. Сумма и состав расчёта сохранятся.</p><label>Название<input name="title" required maxlength="${OFFER_EDIT_LIMITS.title}" value="${esc(offer.title || '')}"></label><label>Действует до<input name="valid_until" type="date" required value="${esc(offer.valid_until || '')}"></label><label>Короткое сообщение<textarea name="short_text" maxlength="${OFFER_EDIT_LIMITS.short_text}" rows="4">${esc(offer.short_text || '')}</textarea></label><label>Полный текст КП<textarea name="full_text" maxlength="${OFFER_EDIT_LIMITS.full_text}" rows="10">${esc(offer.full_text || '')}</textarea></label><div data-offer-comparison></div><p data-offer-edit-notice role="status" aria-live="polite">Правки сохраняются как черновик в этой вкладке. В CRM они попадут после сохранения.</p><div class="v4-offer-actions-line"><button type="submit" class="v4-primary">Сохранить КП</button><button type="button" data-offer-edit-close>Закрыть редактор</button><button type="button" data-offer-edit-reset>Отменить правки</button></div></fieldset>`;
+  host().querySelector('.v4-offer-grid').before(form);
+  editor = { form, actor:v4State.user?.id, offer, needsReview:false };
+  try {
+    const draft = JSON.parse(sessionStorage.getItem(offerDraftKey(editor.actor, offer.id)) || 'null');
+    if (draft?.actor === editor.actor && draft.id === offer.id && draft.savedAt <= Date.now() && Date.now()-draft.savedAt < 3*86400000 && draft.values && typeof draft.revision === 'string') {
+      for (const k of ['title','short_text','full_text','valid_until']) if (typeof draft.values[k] === 'string') form.elements.namedItem(k).value = draft.values[k];
+      editNotice('Восстановлены ваши правки из этой вкладки. Проверьте их перед сохранением.');
+      if (draft.revision !== offer.updated_at) {
+        editor.offer = { ...offer, updated_at:draft.revision };
+        showOfferComparison(offer, currentCalculation);
+      }
+    }
+  } catch (_) { editNotice('Хранилище вкладки недоступно. Скопируйте важные правки перед закрытием.'); }
+  lockEditorControls();form.elements.namedItem('title').focus();
+}
+function closeOfferEditor(purge = false) {
+  if (!editor || editBusy) return;
+  if (!purge && !saveOfferDraft()) return;
+  if (purge) { try { sessionStorage.removeItem(offerDraftKey(editor.actor, editor.offer.id)); } catch (_) {} }
+  const id=editor.offer.id;
+  editor.form.remove();editor=null;lockEditorControls();
+  host().querySelector('[data-edit-type="offer"]')?.focus();
+  openOfferCard(id);
+}
+async function saveOfferEditor(event) {
+  event.preventDefault();
+  if (!editor || editBusy || editor.needsReview || !canPerformV4Action('offers.write') || editor.actor !== v4State.user?.id || !editor.form.reportValidity()) return;
+  const editing = editor;
+  const operation = ++editGeneration;
+  const values = editorValues();
+  if (!saveOfferDraft()) return;
+  editBusy = true;editing.form.querySelector('fieldset').disabled=true;lockEditorControls();editNotice('Сохраняю КП…');
+  try {
+    const result = await updateOffer({ client:supabaseClient, url:V4_CONFIG.supabaseUrl, offer:editing.offer, patch:values, canInvokeNow:() => editor === editing && v4State.user?.id === editing.actor && canPerformV4Action('offers.write') });
+    if (editor !== editing || v4State.user?.id !== editing.actor || !canPerformV4Action('offers.write')) return;
+    setState({ offers:(v4State.offers || []).map(o => o.id === result.offer.id ? { ...o,...result.offer } : o) });
+    try { sessionStorage.removeItem(offerDraftKey(editing.actor, editing.offer.id)); } catch (_) {}
+    editor=null;editBusy=false;await openOfferCard(result.offer.id);
+    const notice = document.createElement('p');notice.setAttribute('role','status');notice.dataset.offerEditSaved='true';notice.textContent='Изменения КП сохранены.';
+    host().querySelector('.v4-offer-head')?.after(notice);
+    document.dispatchEvent(new CustomEvent('leader-v4:offer-changed',{detail:{offerId:result.offer.id}}));
+  } catch (error) {
+    editNotice(error.message);
+    if (error.code === 'conflict') {
+      try { const latest=await fetchOffer(editing.offer.id);const calculation=await fetchCalculation(latest.calculation_id);if(editor===editing)showOfferComparison(latest,calculation); }
+      catch (_) { editNotice(error.message+' Актуальную версию загрузить не удалось; ваши правки остаются в редакторе.'); }
+    }
+  } finally { if(operation===editGeneration){editBusy=false;if(editor===editing)editing.form.querySelector('fieldset').disabled=false;lockEditorControls();} }
 }
 
 function offerStatusControls(offer) {
@@ -152,24 +259,29 @@ function offerStatusControls(offer) {
   return offerStatusUiModel(offer.status).actions.map(a=>`<button type="button" data-offer-transition="${esc(a.label)}">${labels[a.key]||esc(a.label)}</button>`).join('')+'<p data-offer-transition-notice role="status" aria-live="polite"></p>';
 }
 async function changeCardStatus(status) {
-  if (transitionBusy || !currentOffer || !canPerformV4Action('offers.transition')) return;
+  if (transitionBusy || editor || editBusy || !currentOffer || !canPerformV4Action('offers.transition')) return;
   if (status==='Отклонено' && !window.confirm('Отметить отказ клиента от этого КП?')) return;
-  transitionBusy=true;const offer=currentOffer;
+  transitionBusy=true;const offer=currentOffer,actor=cardActor,generation=cardGeneration;
   host().querySelectorAll('button').forEach(b=>b.disabled=true);
   const notice=host().querySelector('[data-offer-transition-notice]');if(notice)notice.textContent='Сохраняю статус…';
   try {
     const result=await transitionOffer({client:supabaseClient,url:V4_CONFIG.supabaseUrl,offer,status});
+    if(generation!==cardGeneration || actor!==v4State.user?.id || !canPerformV4Action('offers.transition'))return;
     setState({offers:(v4State.offers||[]).map(o=>o.id===offer.id?{...o,...result.offer}:o),currentLead:v4State.currentLead?.id===result.lead?.id?{...v4State.currentLead,...result.lead}:v4State.currentLead});
     transitionBusy=false;await openOfferCard(offer.id);
     document.dispatchEvent(new CustomEvent('leader-v4:offer-changed',{detail:{offerId:offer.id}}));
   } catch(error){if(notice)notice.textContent=error.message;}
-  finally{transitionBusy=false;host().querySelectorAll('button').forEach(b=>b.disabled=false);}
+  finally{if(actor===cardActor){transitionBusy=false;host().querySelectorAll('button').forEach(b=>b.disabled=false);}}
 }
 
 async function openOfferCard(offerId) {
-  if (!offerId || busy) return;
+  if (!offerId || busy || !v4State.user?.id || !canPerformV4Action('offers.read')) return;
+  if (editor && !saveOfferDraft()) return;
+  editor=null;
+  delete host().dataset.offerId;
   busy = true;
   const generation = ++cardGeneration;
+  cardActor = v4State.user.id;
   if (!host().querySelector('[role=dialog]')) returnFocus = document.activeElement;
   ensureStyles();
   loading();
@@ -177,10 +289,11 @@ async function openOfferCard(offerId) {
     const offer = await fetchOffer(offerId);
     const [lead, calculation, order, events] = await Promise.all([fetchLead(offer.lead_id), fetchCalculation(offer.calculation_id), fetchOrder(offer.order_id), fetchEvents(offer.id)]);
     const items = await fetchItems(offer.calculation_id);
-    if (generation !== cardGeneration) return;
+    if (generation !== cardGeneration || cardActor !== v4State.user?.id || !canPerformV4Action('offers.read')) return;
     renderCard({ offer, lead, calculation, items, order, events });
     host().querySelector('[data-offer-transition], [data-offer-card-close]')?.focus();
-    await import('./offer-order-create-v1.js?v=20261002-offers-1');
+    await import('./offer-order-create-v1.js?v=20261031-offer-editor-1');
+    if (generation !== cardGeneration || cardActor !== v4State.user?.id || !canPerformV4Action('offers.read')) return;
     document.dispatchEvent(new CustomEvent('leader-v4:offer-card-rendered',{detail:{offerId:offer.id}}));
   } catch (error) {
     if (generation === cardGeneration) errorBox(friendlyError(error));
@@ -230,7 +343,20 @@ function enhance() {
 function bind() {
   if (booted) return;
   booted = true;
+  subscribeState(() => {
+    if (!cardActor || (cardActor === v4State.user?.id && canPerformV4Action('offers.read'))) return;
+    // Input has already been stored under the original actor on each edit. Hide
+    // their card immediately and ignore late responses after logout/role change.
+    cardGeneration++;editGeneration++;cardActor=null;currentOffer=null;currentCalculation=null;
+    editor=null;busy=false;editBusy=false;transitionBusy=false;
+    const card=document.getElementById('offerCardV1');
+    if(card){delete card.dataset.offerId;card.replaceChildren();}
+  });
   document.addEventListener('click', (event) => {
+    const edit=event.target.closest?.('[data-edit-type="offer"]');
+    if(edit && host().contains(edit)){event.preventDefault();openOfferEditor();return;}
+    if(event.target.closest?.('[data-offer-edit-close]')){closeOfferEditor();return;}
+    if(event.target.closest?.('[data-offer-edit-reset]')){closeOfferEditor(true);return;}
     const statusButton=event.target.closest?.('[data-offer-transition]');
     if(statusButton){event.preventDefault();changeCardStatus(statusButton.dataset.offerTransition);return;}
     const close = event.target.closest?.('[data-offer-card-close]');
@@ -251,12 +377,21 @@ function bind() {
       box.textContent = tab.dataset.offerTextTab === 'short' ? (box.dataset.offerShort || 'Короткий текст не заполнен.') : (box.dataset.offerFull || 'Полный текст КП не заполнен.');
     }
   });
+  document.addEventListener('submit',event => {if(event.target===editor?.form)saveOfferEditor(event);});
+  document.addEventListener('input',event => {if(editor?.form.contains(event.target))saveOfferDraft();});
+  document.addEventListener('change',event => {
+    if(event.target.matches?.('[data-offer-edit-reviewed]') && editor?.latest){
+      editor.needsReview=!event.target.checked;
+      if(!editor.needsReview)editor.offer=editor.latest;
+      editor.form.querySelector('[type=submit]').disabled=editor.needsReview;saveOfferDraft();
+    }
+  });
   document.addEventListener('keydown', (event) => {
     const dialog = host().querySelector('[role=dialog]');
     if (!dialog) return;
     if (event.key === 'Escape') { event.preventDefault(); closeCard(); return; }
     if (event.key !== 'Tab') return;
-    const nodes = [...dialog.querySelectorAll('button:not(:disabled),a[href],input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex="0"]')].filter(n=>n.getClientRects().length);
+    const nodes = [...dialog.querySelectorAll('button:not(:disabled),summary,a[href],input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex="0"]')].filter(n=>n.getClientRects().length);
     const first=nodes[0],last=nodes.at(-1);
     if (!first) {event.preventDefault();return;}
     if (event.shiftKey && (document.activeElement===first || !dialog.contains(document.activeElement))) {event.preventDefault();last.focus();}

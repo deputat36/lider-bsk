@@ -1,8 +1,8 @@
-name: CRM leads hardening staging HTTP
+name: CRM server staging HTTP
 on:
   push:
-    branches: [agent/601-leads-server-hardening]
-    paths: ['tools/run-crm-leads-hardening-staging.txt']
+    branches: [agent/601-leads-server-hardening, agent/602-offer-editor]
+    paths: ['tools/run-crm-leads-hardening-staging.txt', 'tools/run-crm-offer-editor-staging.txt']
 permissions:
   contents: read
   id-token: write
@@ -13,15 +13,36 @@ jobs:
   staging-http:
     runs-on: ubuntu-latest
     timeout-minutes: 8
+    container:
+      image: mcr.microsoft.com/playwright:v1.55.0-noble@sha256:b27e719ecbfef153e13fd24e8341736733bf2658b229677eb21ff57ff5d7fb29
+      options: --ipc=host
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
       - name: Exercise actual handler before real HTTP
+        if: github.ref == 'refs/heads/agent/601-leads-server-hardening'
         run: node --test tools/test_crm_leads_handler.mjs
       - name: Verify roles, object checks and description against staging
+        if: github.ref == 'refs/heads/agent/601-leads-server-hardening'
         env:
           HARDENING_RECOVER_MARKER: SYNTH-CRM-E2E-41231757204-1-e0b0a4b12b27
           HARDENING_FIXTURE_FILE: ${{ runner.temp }}/leads-hardening-fixture.json
         run: node tools/run_crm_leads_hardening_staging.mjs
+      - name: Offer handler and pinned browser dependency
+        if: github.ref == 'refs/heads/agent/602-offer-editor'
+        run: |
+          node tools/test_offer_operations_edge.mjs
+          node tools/test_offer_edit.mjs
+          npm install --no-save --package-lock=false playwright@1.55.0
+      - name: Verify real offer editing UI and HTTP permissions
+        if: github.ref == 'refs/heads/agent/602-offer-editor'
+        run: node tools/run_offer_editor_staging.mjs
+      - uses: actions/upload-artifact@v4
+        if: always() && github.ref == 'refs/heads/agent/602-offer-editor'
+        with:
+          name: offer-editor-staging
+          path: artifacts/offer-editor-staging/
+          if-no-files-found: warn
+          retention-days: 7

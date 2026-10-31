@@ -1,0 +1,1 @@
+2026-11-01 staging Edge v2 / bootstrap v40: verify saved-card state, reopen editor and complete role/CAS/approval proof
