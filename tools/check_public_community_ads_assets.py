@@ -5,7 +5,6 @@ import re
 ROOT = Path(__file__).resolve().parents[1]
 PAGE = ROOT / 'reklama-v-soobshchestvah-borisoglebska.html'
 CSS = ROOT / 'assets' / 'public-community-ads.css'
-JS = ROOT / 'assets' / 'public-community-ads.js'
 
 
 def require(text: str, marker: str, source: Path) -> None:
@@ -16,13 +15,11 @@ def require(text: str, marker: str, source: Path) -> None:
 def main() -> None:
     html = PAGE.read_text(encoding='utf-8')
     css = CSS.read_text(encoding='utf-8')
-    js = JS.read_text(encoding='utf-8')
 
     for marker in (
         '<link rel="stylesheet" href="assets/public-lead-form.css?v=30">',
-        '<link rel="stylesheet" href="assets/public-community-ads.css?v=1">',
+        '<link rel="stylesheet" href="assets/public-community-ads.css?v=2">',
         '<script src="assets/public-lead-form.js?v=36"></script>',
-        '<script src="assets/public-community-ads.js?v=1"></script>',
         '<link rel="canonical" href="https://www.lider-bsk.ru/reklama-v-soobshchestvah-borisoglebska.html">',
         '<meta name="robots" content="index, follow">',
         'id="packages"',
@@ -32,10 +29,8 @@ def main() -> None:
     ):
         require(html, marker, PAGE)
 
-    if html.index('public-lead-form.css?v=30') > html.index('public-community-ads.css?v=1'):
+    if html.index('public-lead-form.css?v=30') > html.index('public-community-ads.css?v=2'):
         raise SystemExit('Page CSS must load after shared form CSS')
-    if html.index('public-lead-form.js?v=36') > html.index('public-community-ads.js?v=1'):
-        raise SystemExit('Page preset must load after shared form JS')
     if '<style>' in html or '</style>' in html:
         raise SystemExit('Inline style block remains on community ads page')
     if re.search(r'<script(?![^>]*type=["\']application/ld\+json["\'])[^>]*>\s*[^<\s]', html, re.I):
@@ -71,13 +66,8 @@ def main() -> None:
     ):
         require(css, marker, CSS)
 
-    for marker in (
-        "el.value='Соцсети и контент'",
-        'Страница: реклама в сообществах Борисоглебска ВК/ОК.',
-        'setTimeout',
-        '700',
-    ):
-        require(js, marker, JS)
+    if 'public-community-ads.js' in html:
+        raise SystemExit('Obsolete delayed preset must not override the shared form')
 
     print('Public community advertising assets contract is valid.')
 
