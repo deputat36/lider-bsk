@@ -108,6 +108,11 @@ html body .leader-site-header .menu-btn {
   border-radius: 10px;
   cursor: pointer;
 }
+html body .leader-site-header .menu-btn .leader-icon {
+  display: block;
+  flex-shrink: 0;
+  pointer-events: none;
+}
 html body .leader-site-header :is(a, button):focus-visible {
   outline: 3px solid var(--focus-color, #c84f00);
   outline-offset: 3px;

@@ -49,8 +49,9 @@ def apply_navigation(text, page_name):
             text = text.replace(shared, CSS + '\n' + shared, 1)
         else:
             text = text.replace('</head>', CSS + '\n</head>', 1)
-    if SCRIPT not in text:
-        text = text.replace('</body>', SCRIPT + '\n</body>', 1)
+    # Legacy templates used both deferred and regular script tags.
+    text = re.sub(r'<script\b[^>]*src="assets/packages-link\.js\?v=2"[^>]*>\s*</script>\s*', '', text)
+    text = text.replace('</body>', SCRIPT + '\n</body>', 1)
     return text
 
 

@@ -70,6 +70,10 @@ try {
         if (width <= 1060) {
           assert.equal(await nav.isVisible(), false, sample);
           await button.click();
+          if (!await nav.isVisible()) {
+            console.log(JSON.stringify({ sample, width, navigation: await page.locator('.leader-site-header').evaluate(el => ({ classes: el.className, expanded: el.querySelector('button').getAttribute('aria-expanded'), display: getComputedStyle(el.querySelector('nav')).display, focus: document.activeElement?.outerHTML, scripts: [...document.scripts].map(s => s.src).filter(s => s.includes('packages-link')) })) }));
+            await page.screenshot({ path: `artifacts/public-homepage/customer-menu-failure-${width}.png` });
+          }
           assert.equal(await nav.isVisible(), true, sample);
           await page.keyboard.press('Tab');
           assert.equal(await page.evaluate(() => document.activeElement.getAttribute('href')), 'uslugi.html');
@@ -252,7 +256,8 @@ try {
       assert.equal(await page.evaluate(() => document.activeElement.classList.contains('menu-btn')), true);
       await button.click();
       await nav.getByRole('link', { name: 'Услуги', exact: true }).click();
-      assert.equal(await page.evaluate(() => document.activeElement.id), 'services');
+      assert.equal(new URL(page.url()).pathname, '/uslugi.html');
+      await page.goBack();
       assert.equal(await nav.isVisible(), false);
       await button.click();
       await page.screenshot({ path: `artifacts/public-homepage/menu-${width}.png`, fullPage: false });
