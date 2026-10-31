@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Render static commercial pages from authored copy and the shared service registry."""
 from pathlib import Path
+from public_navigation import apply_navigation
 from html import escape as esc
 import json,re,subprocess,sys
 from service_explainers import CSS as EXPLAINER_CSS, render_block
@@ -25,7 +26,7 @@ def render(p):
  proof=''
  if s['id'] in {'visualization-3d','modeling-3d'}:
   proof='''<section class="section creative-proof"><div class="wrap creative-split"><figure class="creative-photo"><img src="assets/portfolio/volume-letters-production/letters-production.jpg" width="1264" height="1536" alt="Объёмные розовые буквы «ЦВЕТЫ» на рабочем столе в мастерской" loading="lazy" decoding="async"><figcaption>Фотография. Этап производства объёмных букв.</figcaption></figure><div><h2>Внешний вид можно обсудить до изготовления</h2><p>На фотографии показано реальное изделие в мастерской. 3D-модель и визуализацию создаём отдельно: они помогают заранее обсудить форму, пропорции и размещение рекламы.</p><a href="nashi-raboty.html">Посмотреть материалы работ</a></div></div></section>'''
- return f'''<!doctype html>
+ result = f'''<!doctype html>
 <html lang="ru"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{e(title)}</title><meta name="description" content="{e(description)}">
@@ -56,6 +57,8 @@ def render(p):
 <script src="assets/packages-link.js?v=2" defer></script><script src="assets/leader-service-catalog.js?v=4"></script><script src="assets/public-lead-form.js?v=36"></script>
 </body></html>
 '''
+ return apply_navigation(result, name)
+
 errors=[]
 for page in copy:
  target=ROOT/services[page['id']]['pages'][0];result=render(page)

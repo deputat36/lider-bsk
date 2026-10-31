@@ -13,10 +13,10 @@ URLS_FILE = ROOT / 'tools' / 'public-indexnow-urls.txt'
 WORKFLOW = ROOT / '.github' / 'workflows' / 'public-indexnow-notify.yml'
 SITEMAP = ROOT / 'sitemap.xml'
 EXPECTED_LASTMOD = {
-    "/uslugi.html": "2026-10-13",
-    "/dizayn-maketov.html": "2026-10-13",
-    "/tablichki-borisoglebsk.html": "2026-10-13",
-    "/nakleyki-plotternaya-rezka-borisoglebsk.html": "2026-10-13"
+    "/uslugi.html": "2026-10-31",
+    "/dizayn-maketov.html": "2026-10-31",
+    "/tablichki-borisoglebsk.html": "2026-10-31",
+    "/nakleyki-plotternaya-rezka-borisoglebsk.html": "2026-10-31"
 }
 
 

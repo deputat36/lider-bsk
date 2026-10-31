@@ -8,7 +8,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 PAGE = ROOT / "prices.html"
 CSS = ROOT / "assets" / "public-prices.css"
-CSS_LINK = '<link rel="stylesheet" href="assets/public-prices.css?v=1">'
+CSS_LINK = '<link rel="stylesheet" href="assets/public-prices.css?v=2">'
 FORM_CSS_LINK = '<link rel="stylesheet" href="assets/public-lead-form.css?v=30">'
 FORM_SCRIPT = '<script src="assets/public-lead-form.js?v=36"></script>'
 

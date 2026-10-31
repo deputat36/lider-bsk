@@ -79,7 +79,8 @@ catalog_targets = (
 for target in catalog_targets:
     if catalog.count(f'href="{target}"') != 1:
         raise SystemExit(f'Catalog target mismatch: {target}')
-if catalog.count('<a href=') != 11:
-    raise SystemExit(f'Catalog must preserve back link plus ten product links, found {catalog.count("<a href=")}')
+catalog_content = re.sub(r'<!-- public-navigation:start -->.*?<!-- public-navigation:end -->', '', catalog, flags=re.S)
+if catalog_content.count('<a href=') != 11:
+    raise SystemExit(f'Catalog must preserve back link plus ten product links, found {catalog_content.count("<a href=")}')
 
 print('Shared print navigation CSS contract is valid for hub and catalog pages.')

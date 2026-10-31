@@ -16,6 +16,7 @@ const landingName = Object.keys(landingCases).find(name => process.argv.includes
 const landing = landingCases[landingName];
 const landingOnly = Boolean(landing);
 const servicesOnly = process.argv.includes('--services');
+const customerPath = process.argv.includes('--customer-path');
 const types = { '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.png': 'image/png', '.json': 'application/json', '.html': 'text/html; charset=utf-8' };
 const server = createServer(async (req, res) => {
   let file = path.resolve(root, '.' + new URL(req.url, 'http://localhost').pathname);
@@ -49,6 +50,72 @@ try {
       }
       return route.abort();
     });
+    if (customerPath) {
+      const samples = [
+        '/index.html', '/uslugi.html', '/vizitki-borisoglebsk.html',
+        '/menyu-dlya-kafe-borisoglebsk.html', '/prices.html', '/request.html',
+        '/kontakty.html', '/privacy.html', '/poligrafiya-katalog.html',
+        '/nashi-raboty.html', '/promoutery-borisoglebsk.html',
+      ];
+      for (const sample of samples) {
+        await page.goto(origin + sample);
+        const nav = page.getByRole('navigation', { name: 'Основная навигация' });
+        const button = page.getByRole('button', { name: 'Открыть меню', exact: true });
+        assert.equal(await page.locator('.leader-site-header').count(), 1, sample);
+        assert.deepEqual(await nav.locator('a').allTextContents(), ['Услуги', 'Решения', 'Работы', 'Цены', 'Контакты']);
+        assert.equal(await nav.getByRole('link', { name: 'Работы', exact: true }).getAttribute('href'), 'nashi-raboty.html');
+        assert.equal(await page.locator('.brand-logo').evaluate(el => el.complete && el.naturalWidth > 0), true, sample);
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, sample + ' overflow');
+        if (width <= 1060) {
+          assert.equal(await nav.isVisible(), false, sample);
+          await button.click();
+          assert.equal(await nav.isVisible(), true, sample);
+          await page.keyboard.press('Tab');
+          assert.equal(await page.evaluate(() => document.activeElement.getAttribute('href')), 'uslugi.html');
+          await page.keyboard.press('Escape');
+          assert.equal(await nav.isVisible(), false, sample);
+          assert.equal(await button.getAttribute('aria-expanded'), 'false');
+        } else assert.equal(await nav.isVisible(), true, sample);
+        if ([1440, 390].includes(width)) {
+          await page.screenshot({ path: `artifacts/public-homepage/customer-${sample.slice(1)}-${width}.png` });
+        }
+      }
+      await page.goto(origin + '/vizitki-borisoglebsk.html');
+      await page.locator('[name="message"]').fill('Позвоните после 14 часов.');
+      await page.locator('#card-qty').selectOption({ label: '1000 шт.' });
+      await page.locator('#card-sides').selectOption({ label: 'Две стороны' });
+      await page.locator('#send-card-summary').click();
+      assert.equal(await page.locator('[name="quantity"]').inputValue(), '1000 шт.');
+      assert.equal(await page.locator('[name="mockup"]').inputValue(), 'Макет готов');
+      let message = await page.locator('[name="message"]').inputValue();
+      assert(message.includes('Тираж: 1000 шт.') && message.includes('Позвоните после 14 часов.'));
+      await page.locator('[name="message"]').fill(message + '\nБез глянцевой ламинации.');
+      await page.locator('#card-qty').selectOption({ label: 'Другой тираж' });
+      await page.locator('#card-custom-qty').fill('0');
+      await page.locator('#send-card-summary').click();
+      assert.equal(await page.locator('[name="quantity"]').inputValue(), '1000 шт.');
+      await page.locator('#card-custom-qty').fill('1.5');
+      assert.equal(await page.locator('#card-custom-qty').evaluate(el => el.checkValidity()), false);
+      await page.locator('#card-custom-qty').fill('2500');
+      await page.locator('#card-design').selectOption({ label: 'Нужен дизайн с нуля' });
+      await page.locator('#send-card-summary').click();
+      message = await page.locator('[name="message"]').inputValue();
+      assert.equal(await page.locator('[name="quantity"]').inputValue(), '2500 шт.');
+      assert.equal(await page.locator('[name="mockup"]').inputValue(), 'Макета нет, нужен дизайн');
+      assert.equal(message.split('Заказ: визитки').length, 2, 'Repeated transfer must update its own block');
+      assert(message.includes('Тираж: 2500 шт.') && message.includes('Без глянцевой ламинации.'));
+      assert(message.includes('Позвоните после 14 часов.'));
+      await page.goto(origin + '/prices.html');
+      assert.deepEqual(await page.locator('#price-examples .price').allTextContents(), ['1 000 ₽ за проект', '1 500 ₽ за проект', '2 500 ₽ за проект']);
+      if (width <= 1060) await page.getByRole('button', { name: 'Открыть меню', exact: true }).click();
+      await page.getByRole('navigation', { name: 'Основная навигация' }).getByRole('link', { name: 'Работы', exact: true }).click();
+      assert.equal(new URL(page.url()).pathname, '/nashi-raboty.html');
+      assert.equal(await page.getByRole('heading', { name: 'Объёмные буквы «ЦВЕТЫ»', exact: true }).count(), 1);
+      assert.deepEqual(errors, []); assert.deepEqual(failed, []); assert.deepEqual(writes, []);
+      console.log(JSON.stringify({ page: 'customer-path', width, navigationPages: samples.length, customQuantity: true, designSynced: true, notesPreserved: true, writes }));
+      await page.close();
+      continue;
+    }
     await page.goto(origin + (landingOnly ? landing.path : servicesOnly ? '/uslugi.html' : '/'));
     if (landingOnly) {
       await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -178,7 +245,7 @@ try {
       assert.equal(await button.getAttribute('aria-expanded'), 'true');
       assert.equal(await nav.isVisible(), true);
       await page.keyboard.press('Tab');
-      assert.equal(await page.evaluate(() => document.activeElement.getAttribute('href')), '#services');
+      assert.equal(await page.evaluate(() => document.activeElement.getAttribute('href')), 'uslugi.html');
       await page.keyboard.press('Escape');
       assert.equal(await page.locator('.menu-btn').getAttribute('aria-expanded'), 'false');
       assert.equal(await page.evaluate(() => document.activeElement.classList.contains('menu-btn')), true);

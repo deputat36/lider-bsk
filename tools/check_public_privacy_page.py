@@ -90,7 +90,7 @@ def main() -> None:
         errors.append(f"privacy.html must have exactly index,follow robots meta, got {parser.robots!r}")
     if parser.canonicals != ["https://www.lider-bsk.ru/privacy.html"]:
         errors.append(f"privacy.html has unexpected canonical URLs: {parser.canonicals!r}")
-    if parser.stylesheets != ["assets/public-utility-pages.css?v=1"]:
+    if parser.stylesheets != ["assets/public-utility-pages.css?v=1", "assets/public-site-navigation.css?v=1"]:
         errors.append(f"privacy.html has unexpected stylesheets: {parser.stylesheets!r}")
     if "page-privacy" not in parser.body_classes:
         errors.append("privacy.html must use body class page-privacy")

@@ -86,7 +86,8 @@ def main() -> None:
         if not (ROOT / page).is_file():
             errors.append(f'Missing priority public page: {page}')
         actual = entries.get(page)
-        expected = UPDATED_SERVICE_LASTMOD.get(page, PRIORITY_LASTMOD)
+        # The shared static navigation changed all public pages on this date.
+        expected = max(UPDATED_SERVICE_LASTMOD.get(page, PRIORITY_LASTMOD), date(2026, 10, 31))
         if actual != expected:
             errors.append(
                 f'{page}: expected truthful lastmod {expected}, found {actual}'

@@ -7,3 +7,6 @@ html body.page-business-card-builder .field select{box-sizing:border-box;min-wid
 html body.page-business-card-builder .leader-lead-widget{box-sizing:border-box;min-width:0;max-width:100%}
 html body.page-business-card-builder .summary{overflow-wrap:anywhere}
 @media(max-width:900px){html body.page-business-card-builder .grid,html body.page-business-card-builder .calc,html body.page-business-card-builder .cta{grid-template-columns:minmax(0,1fr)}}
+html body.page-business-card-builder .field input{box-sizing:border-box;width:100%;max-width:100%;min-height:44px;border:1px solid #98a2b3;border-radius:10px;padding:10px;font:inherit;font-size:16px}
+html body.page-business-card-builder .field small{display:block;margin-top:6px;font-size:13px;color:#475664}
+html body.page-business-card-builder [hidden]{display:none!important}

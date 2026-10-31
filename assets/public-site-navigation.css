@@ -1,0 +1,131 @@
+@import url("brand/leader-tokens.css?v=1");
+@import url("brand/leader-logo.css?v=4");
+
+html body .header.leader-site-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  padding: 0;
+  margin: 0;
+  background: #fff;
+  color: var(--text-primary, #171717);
+  border-bottom: 1px solid var(--border-default, #e5e7eb);
+  font-family: var(--font-brand, Arial, sans-serif);
+  line-height: 1.4;
+}
+html body .leader-site-header .leader-header-inner {
+  box-sizing: border-box;
+  width: min(100% - 32px, 1168px);
+  min-height: 114px;
+  margin: 0 auto;
+  padding: 8px 0;
+  display: grid;
+  grid-template-columns: 108px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 20px;
+}
+html body .leader-site-header .brand {
+  grid-column: 1;
+  grid-row: 1;
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+}
+html body .leader-site-header .brand-logo { display: block; }
+html body .leader-site-header a { text-decoration: none; }
+html body .leader-site-header .nav {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 22px;
+  margin: 0;
+  padding: 0;
+  width: auto;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+html body .leader-site-header .nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 0;
+  color: var(--text-primary, #171717);
+  font-size: 14px;
+  font-weight: 700;
+}
+html body .leader-site-header .nav a:hover,
+html body .leader-site-header .nav a[aria-current="page"] {
+  color: var(--link-color, #a34308);
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+html body .leader-site-header .leader-header-actions {
+  grid-column: 3;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+}
+html body .leader-site-header .phone {
+  color: var(--text-primary, #171717);
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+html body .leader-site-header .btn {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  margin: 0;
+  padding: 12px 16px;
+  background: var(--action-primary, #ff6a00);
+  color: var(--action-text, #171717);
+  border: 1px solid var(--action-primary, #ff6a00);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+html body .leader-site-header .btn:hover { background: var(--action-hover, #e85f00); }
+html body .leader-site-header .menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 46px;
+  height: 48px;
+  padding: 10px;
+  background: #fff;
+  color: #171717;
+  border: 1px solid #98a2b3;
+  border-radius: 10px;
+  cursor: pointer;
+}
+html body .leader-site-header :is(a, button):focus-visible {
+  outline: 3px solid var(--focus-color, #c84f00);
+  outline-offset: 3px;
+}
+@media (max-width: 1060px) {
+  html body .leader-site-header .leader-header-inner { grid-template-columns: 108px minmax(0, 1fr); gap: 0 16px; }
+  html body .leader-site-header .leader-header-actions { grid-column: 2; justify-content: flex-end; }
+  html body .leader-site-header .nav { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; padding: 8px 0; }
+  html body .leader-site-header.navigation-ready .menu-btn { display: inline-flex; }
+  html body .leader-site-header.navigation-ready .nav { display: none; }
+  html body .leader-site-header.navigation-ready.open .nav { display: flex; }
+}
+@media (max-width: 720px) {
+  html body .leader-site-header .leader-header-inner { grid-template-columns: 82px minmax(0, 1fr); min-height: 84px; padding: 5px 0; }
+  html body .leader-site-header .brand-logo { width: 82px; height: 74.7px; }
+  html body .leader-site-header .leader-header-actions { gap: 8px; }
+  html body .leader-site-header .leader-header-actions .phone { display: none; }
+  html body .leader-site-header .btn { font-size: 13px; padding: 10px 12px; }
+  html body .leader-site-header .nav { flex-direction: column; align-items: stretch; gap: 0; }
+  html body .leader-site-header .nav a { padding: 10px 8px; }
+}

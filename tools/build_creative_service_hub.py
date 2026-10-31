@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Author the creative hub and verified portfolio from owner-supplied materials."""
 from pathlib import Path
+from public_navigation import apply_navigation
 from html import escape
 import json
 import re
@@ -25,7 +26,7 @@ def page(name, title, description, content, service_id):
         {'@type': 'BreadcrumbList', 'itemListElement': [
             {'@type': 'ListItem', 'position': 1, 'name': 'Главная', 'item': ORIGIN},
             {'@type': 'ListItem', 'position': 2, 'name': title, 'item': url}]}]}
-    return f'''<!doctype html>
+    result = f'''<!doctype html>
 <html lang="ru"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{escape(title)} | РА Лидер</title><meta name="description" content="{escape(description,quote=True)}">
@@ -44,6 +45,7 @@ def page(name, title, description, content, service_id):
 <script src="assets/packages-link.js?v=2" defer></script><script src="assets/leader-service-catalog.js?v=4"></script><script src="assets/public-lead-form.js?v=36"></script>
 </body></html>
 '''
+    return apply_navigation(result, name)
 
 hub = f'''
 <section class="hero"><div class="wrap creative-split"><div><a class="back" href="uslugi.html">Все услуги</a><p class="commercial-direction">От идеи до материалов для рекламы</p><h1>Дизайн, 3D-визуализация и анимация</h1><p>Сначала увидеть будущую вывеску. Согласовать конструкцию. Подготовить макет или ролик — и только затем переходить к изготовлению и размещению.</p><div class="service-actions"><a class="btn" href="#formats">Выбрать задачу</a><a class="service-secondary" href="#request">Обсудить проект</a></div></div><figure class="creative-photo"><img src="assets/portfolio/volume-letters-production/letters-production.jpg" width="1264" height="1536" alt="Объёмные розовые буквы «ЦВЕТЫ» на рабочем столе в мастерской" fetchpriority="high"><figcaption>Объёмные буквы «ЦВЕТЫ». Фото этапа производства.</figcaption></figure></div></section>
