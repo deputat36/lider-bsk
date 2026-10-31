@@ -1,1 +1,1 @@
-2026-10-31 exact candidate 409c36b343243c383f6c5eb9769b4532bfa1d66aabae6f1996fa0bec3ba973a4 staging v1 / bootstrap v38 numeric fixture
+2026-10-31 staging v2 / bootstrap v39: guarded service update, synthetic manual cleanup, recover previous fixture
