@@ -6,7 +6,7 @@ page = (root / 'vizitki-borisoglebsk.html').read_text(encoding='utf-8')
 builder = (root / 'assets' / 'public-business-card-builder.js').read_text(encoding='utf-8')
 
 page_markers = [
-    'assets/public-business-card-builder.js?v=1',
+    'assets/public-business-card-builder.js?v=2',
     'id="send-card-summary"',
     'id="leader-lead-form" data-leader-lead-form',
 ]

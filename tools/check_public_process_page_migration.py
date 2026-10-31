@@ -95,7 +95,7 @@ def main() -> None:
         if marker not in page_js:
             errors.append(f'Order process JS missing marker: {marker}')
 
-    sitemap_marker = f'<loc>{EXPECTED_URL}</loc><lastmod>2026-07-12</lastmod>'
+    sitemap_marker = f'<loc>{EXPECTED_URL}</loc><lastmod>2026-10-31</lastmod>'
     if sitemap and sitemap_marker not in sitemap:
         errors.append('Sitemap does not contain the current process-page lastmod')
 

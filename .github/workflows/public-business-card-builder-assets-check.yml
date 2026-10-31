@@ -7,6 +7,9 @@ on:
       - 'vizitki-borisoglebsk.html'
       - 'assets/public-business-card-builder.css'
       - 'assets/public-business-card-builder.js'
+      - 'assets/public-site-navigation.css'
+      - 'tools/public_navigation.py'
+      - 'tools/test_public_homepage_browser.mjs'
       - 'tools/check_public_business_card_builder_assets.py'
       - '.github/workflows/public-business-card-builder-assets-check.yml'
   push:
@@ -15,6 +18,9 @@ on:
       - 'vizitki-borisoglebsk.html'
       - 'assets/public-business-card-builder.css'
       - 'assets/public-business-card-builder.js'
+      - 'assets/public-site-navigation.css'
+      - 'tools/public_navigation.py'
+      - 'tools/test_public_homepage_browser.mjs'
       - 'tools/check_public_business_card_builder_assets.py'
       - '.github/workflows/public-business-card-builder-assets-check.yml'
 
@@ -30,3 +36,21 @@ jobs:
         run: python3 tools/check_public_business_card_builder_assets.py
       - name: Validate JavaScript syntax
         run: node --check assets/public-business-card-builder.js
+      - name: Check shared navigation on every public page
+        run: python3 tools/public_navigation.py --check
+  customer-path-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    container:
+      image: mcr.microsoft.com/playwright:v1.55.0-noble@sha256:b27e719ecbfef153e13fd24e8341736733bf2658b229677eb21ff57ff5d7fb29
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm install --no-save --package-lock=false playwright@1.55.0
+      - name: Check desktop and mobile customer paths without real submissions
+        run: node tools/test_public_homepage_browser.mjs --customer-path
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: public-customer-path-browser
+          path: artifacts/public-homepage/
+          retention-days: 3

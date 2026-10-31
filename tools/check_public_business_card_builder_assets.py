@@ -31,7 +31,7 @@ for marker in (
     "'Вид: ' + valueOf('kind')",
     "'Макет / дизайн: ' + valueOf('design')",
     "ensureOption(service, 'Визитки')",
-    "message.value = buildSummary()",
+    "var nextSummary = buildSummary()",
     "requestSection.scrollIntoView({behavior:'smooth'})",
 ):
     if marker not in js:
@@ -46,10 +46,10 @@ if re.search(r'<script(?![^>]*\bsrc=)(?![^>]*type=["\']application/ld\+json["\']
 
 assets = (
     'assets/public-lead-form.css?v=30',
-        'assets/public-business-card-builder.css?v=2',
+        'assets/public-business-card-builder.css?v=3',
     'assets/public-lead-form.js?v=36',
     'assets/public-related-services.js?v=1',
-    'assets/public-business-card-builder.js?v=1',
+    'assets/public-business-card-builder.js?v=2',
 )
 for asset in assets:
     if html.count(asset) != 1:

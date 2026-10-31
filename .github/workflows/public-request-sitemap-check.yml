@@ -25,6 +25,6 @@ jobs:
           sitemap='sitemap.xml'
           test -f "$sitemap"
           grep -Fq '<loc>https://www.lider-bsk.ru/request.html</loc>' "$sitemap"
-          grep -Fq '<lastmod>2026-06-29</lastmod>' "$sitemap"
+          grep -Fq '<lastmod>2026-10-31</lastmod>' "$sitemap"
           grep -Fq '<changefreq>monthly</changefreq>' "$sitemap"
           grep -Fq '<priority>0.98</priority>' "$sitemap"

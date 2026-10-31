@@ -9,7 +9,7 @@ builder = (root / 'assets' / 'public-business-card-builder.js').read_text(encodi
 checks = [
     ('public-lead-form.js has service option', '\"label\": \"Визитки\"' in (root / 'assets' / 'leader-service-catalog.js').read_text(encoding='utf-8')),
     ('public-lead-form.js has page preset', 'vizitki-borisoglebsk.html' in form and "service:'Визитки'" in form),
-    ('vizitki page loads external builder', 'assets/public-business-card-builder.js?v=1' in page),
+    ('vizitki page loads external builder', 'assets/public-business-card-builder.js?v=2' in page),
     ('builder selects VIZITKI service', "ensureOption(service, 'Визитки')" in builder and "service.value = 'Визитки'" in builder),
 ]
 failed = [name for name, ok in checks if not ok]

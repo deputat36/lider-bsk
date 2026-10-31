@@ -22,12 +22,20 @@
   <meta name="twitter:description" content="Выберите параметры визиток, а заявка уйдет с готовым описанием заказа.">
   <meta name="twitter:image" content="https://www.lider-bsk.ru/assets/og-lider-default.png">
   <link rel="stylesheet" href="assets/public-lead-form.css?v=30">
-  <link rel="stylesheet" href="assets/public-business-card-builder.css?v=2">
+  <link rel="stylesheet" href="assets/public-business-card-builder.css?v=3">
 <link rel="icon" type="image/svg+xml" href="assets/brand/logo-lider-mark.svg?v=4">
+<link rel="stylesheet" href="assets/public-site-navigation.css?v=1">
 <link rel="stylesheet" href="assets/public-service-explainers.css?v=2">
 <link rel="stylesheet" href="assets/public-product-system.css?v=1">
 </head>
 <body class="page-business-card-builder">
+<!-- public-navigation:start -->
+<header class="header leader-site-header"><div class="leader-header-inner">
+<a class="brand" href="index.html" aria-label="РА Лидер — на главную"><img class="brand-logo" src="assets/brand/logo-lider-header.svg?v=4" width="108" height="98.4" alt="Лидер — рекламное агентство"></a>
+<div class="header__cta leader-header-actions"><a class="phone" href="tel:+79802457471">8 980 245-74-71</a><a class="btn btn--accent" href="#request">Рассчитать заказ</a><button class="menu-btn" type="button" aria-label="Открыть меню" aria-expanded="false" aria-controls="main-navigation"><svg class="leader-icon" width="24" height="24" aria-hidden="true" focusable="false"><use href="assets/brand/leader-icons.svg#icon-menu"></use></svg></button></div>
+<nav class="nav" id="main-navigation" aria-label="Основная навигация"><a href="uslugi.html">Услуги</a><a href="reklama-dlya-biznesa.html">Решения</a><a href="nashi-raboty.html">Работы</a><a href="prices.html">Цены</a><a href="kontakty.html">Контакты</a></nav>
+</div></header>
+<!-- public-navigation:end -->
 <header class="hero"><div class="wrap"><a class="back-link" href="uslugi.html">← Все услуги</a><h1>Визитки в Борисоглебске</h1><p>Выберите параметры визиток. Цена на странице не показывается: заявка уйдет с готовым описанием заказа.</p></div></header>
 <main>
 <!-- service-explainer:start -->
@@ -41,7 +49,8 @@
 <div class="field"><label for="card-kind">Вид визиток</label><select id="card-kind" data-calc="kind"><option>Стандартные</option><option>Квадратные</option><option>Складные</option></select></div>
 <div class="field"><label for="card-format">Формат</label><select id="card-format" data-calc="format"><option>90 × 50 мм</option><option>85 × 55 мм</option><option>Другой формат</option></select></div>
 <div class="field"><label for="card-sides">Стороны печати</label><select id="card-sides" data-calc="sides"><option>Одна сторона</option><option>Две стороны</option></select></div>
-<div class="field"><label for="card-qty">Тираж</label><select id="card-qty" data-calc="qty"><option>100 шт.</option><option>200 шт.</option><option>300 шт.</option><option>500 шт.</option><option>Другой тираж</option></select></div>
+<div class="field"><label for="card-qty">Тираж</label><select id="card-qty" data-calc="qty"><option>100 шт.</option><option>200 шт.</option><option>300 шт.</option><option>500 шт.</option><option>1000 шт.</option><option>Другой тираж</option></select></div>
+<div class="field" id="card-custom-qty-field" hidden><label for="card-custom-qty">Свой тираж, шт.</label><input id="card-custom-qty" type="number" min="1" max="1000000" step="1" inputmode="numeric" disabled aria-describedby="card-custom-qty-hint"><small id="card-custom-qty-hint">Укажите целое количество от 1 до 1 000 000.</small></div>
 <div class="field"><label for="card-paper">Бумага</label><select id="card-paper" data-calc="paper"><option>Картон мелованный 300 г/м²</option><option>Матовая бумага / картон</option><option>Дизайнерская бумага</option><option>Нужно подобрать</option></select></div>
 <div class="field"><label for="card-lamination">Ламинация</label><select id="card-lamination" data-calc="lamination"><option>Без ламинации</option><option>Ламинация двухсторонняя</option><option>Нужно обсудить</option></select></div>
 <div class="field"><label for="card-corners">Скругление углов</label><select id="card-corners" data-calc="corners"><option>Не нужно</option><option>Нужно</option></select></div>
@@ -52,6 +61,7 @@
 <script src="assets/leader-service-catalog.js?v=4"></script>
 <script src="assets/public-lead-form.js?v=36"></script>
 <script src="assets/public-related-services.js?v=1"></script>
-<script src="assets/public-business-card-builder.js?v=1"></script>
+<script src="assets/public-business-card-builder.js?v=2"></script>
+<script src="assets/packages-link.js?v=2"></script>
 </body>
 </html>

@@ -105,7 +105,7 @@ jobs:
           grep -Fq '<meta property="og:image:type" content="image/png">' "$privacy"
           grep -Fq '<meta name="twitter:card" content="summary_large_image">' "$privacy"
 
-          grep -Fq '<lastmod>2026-06-26</lastmod>' sitemap.xml
+          grep -Fq '<lastmod>2026-10-31</lastmod>' sitemap.xml
           grep -Fq 'https://www.lider-bsk.ru/' sitemap.xml
           grep -Fq 'https://www.lider-bsk.ru/privacy.html' sitemap.xml
 
