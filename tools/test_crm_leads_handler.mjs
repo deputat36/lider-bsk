@@ -31,8 +31,14 @@ function fixture(role = 'owner', options = {}) {
     }
     if (path === '/rest/v1/rpc/leader_actor_has_crm_action_rpc') return response(options.canonicalDenied ? false : body.p_action !== 'finance.write' || ['owner', 'admin'].includes(role));
     if (path === '/rest/v1/leader_leads') {
-      assert.equal(headers.get('authorization'), 'Bearer caller-token', 'lead data must respect caller RLS');
-      assert.equal(headers.get('apikey'), 'public-key');
+      if (method !== 'PATCH') {
+        assert.equal(headers.get('authorization'), 'Bearer caller-token', 'lead reads/create must respect caller RLS');
+        assert.equal(headers.get('apikey'), 'public-key');
+      } else {
+        const visibleRead = state.calls.find(c => c.path === path && c.method === 'GET' && c.endpoint.searchParams.get('id') === 'eq.' + leadId);
+        assert(visibleRead, 'service patch must follow a caller-visible object check');
+        assert.equal(visibleRead.headers.get('authorization'), 'Bearer caller-token');
+      }
       if (options.hiddenLead) return response([]);
       if (method === 'POST') state.lead = { ...body, id: leadId };
       if (method === 'PATCH') state.lead = { ...state.lead, ...body };

@@ -297,7 +297,7 @@ async function createLead(supabaseUrl: string, serviceRole: RestAccess, body: Re
   return json(200, { ok: true, lead: Array.isArray(rows) ? rows[0] : null })
 }
 
-async function updateLead(supabaseUrl: string, serviceRole: RestAccess, body: Record<string, unknown>) {
+async function updateLead(supabaseUrl: string, serviceRole: string, body: Record<string, unknown>, caller: RestAccess) {
   const id = cleanText(body.id, 80)
   if (!id) return json(400, { error: 'id_required' })
   const patch: Record<string, unknown> = {}
@@ -312,6 +312,9 @@ async function updateLead(supabaseUrl: string, serviceRole: RestAccess, body: Re
   }
   if ('reject_reason' in body) patch.reject_reason = cleanText(body.reject_reason, 300)
   if (!Object.keys(patch).length) return json(400, { error: 'no_update_fields' })
+  // Direct UPDATE is closed in staging. Keep the service write behind role/action,
+  // caller-visible object and explicit field guards instead of widening table grants.
+  if (!await canReadObject(supabaseUrl, caller, 'leader_leads', id)) return json(404, { error: 'not_found' })
   const res = await rest(supabaseUrl, serviceRole, '/rest/v1/leader_leads?id=eq.' + encodeURIComponent(id) + '&select=' + encodeURIComponent(leadFields), { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Prefer': 'return=representation' }, body: JSON.stringify(patch) })
   if (!res.ok) return json(500, { error: 'lead_update_failed', details: await res.text() })
   const rows = await res.json()
@@ -432,7 +435,7 @@ Deno.serve(async (req: Request) => {
   if (action === 'list') return await listLeads(supabaseUrl, caller, body)
   if (action === 'list_orders') return await listOrders(supabaseUrl, caller, checked.profile)
   if (action === 'create') return await createLead(supabaseUrl, caller, body)
-  if (action === 'update') return await updateLead(supabaseUrl, caller, body)
+  if (action === 'update') return await updateLead(supabaseUrl, serviceRole, body, caller)
   if (action === 'ensure_client') return await ensureClientResponse(supabaseUrl, serviceRole, ownerId, body, caller)
   if (action === 'create_order') return await createOrder(supabaseUrl, serviceRole, ownerId, body, caller)
   if (action === 'create_order_from_offer') return await createOrderFromOffer(supabaseUrl, serviceRole, ownerId, actorEmail, body)

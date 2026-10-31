@@ -91,7 +91,21 @@ async function deleteUser(id:string){return await service(`/auth/v1/admin/users/
 async function prepare(key:string){const suffix=crypto.randomUUID().replaceAll('-','').slice(0,12);const marker=`SYNTH-CRM-E2E-${key.replace(':','-')}-${suffix}`;const email=`crm-e2e-${key.replace(':','-')}-${suffix}@example.invalid`;const pass=password();const created=await createUser(email,pass,key);const userId=text(created.body.id||(created.body.user as JsonObject|undefined)?.id);if(!created.ok||!userId)throw new Error(`auth_create_failed:${created.status}`);try{const fixture=await rpc('leader_prepare_authenticated_e2e_rpc',{p_run_key:key,p_user_id:userId,p_email:email,p_marker:marker});if(!fixture.ok||fixture.body.ok!==true)throw new Error(`fixture_prepare_failed:${fixture.status}`);return{ok:true,action:'prepare',run_key:key,marker,email,password:pass,user_id:userId,lead_id:fixture.body.lead_id,role:'manager'}}catch(error){await deleteUser(userId).catch(()=>undefined);throw error}}
 async function inspect(marker:string):Promise<JsonObject>{const result=await rpc('leader_inspect_authenticated_e2e_rpc',{p_marker:marker});if(!result.ok||result.body.ok!==true)throw new Error(`fixture_inspect_failed:${result.status}`);return{ok:true,action:'inspect',marker,...result.body}}
 async function setRole(marker:string,role:string){const inspected=await inspect(marker);const userId=text(inspected.user_id);if(!userId)throw new Error('fixture_user_not_found');const result=await rpc('leader_set_authenticated_e2e_role_rpc',{p_user_id:userId,p_marker:marker,p_role:role});if(!result.ok||result.body.ok!==true)throw new Error(`fixture_role_failed:${result.status}`);return{ok:true,action:'set_role',role:text(result.body.role)}}
-async function cleanup(marker:string){const cleaned=await rpc('leader_cleanup_authenticated_e2e_rpc',{p_marker:marker});if(!cleaned.ok||cleaned.body.ok!==true)throw new Error(`fixture_cleanup_failed:${cleaned.status}`);const userId=text(cleaned.body.auth_user_id);if(userId){const deleted=await deleteUser(userId);if(!deleted.ok&&deleted.status!==404)throw new Error(`auth_delete_failed:${deleted.status}`)}const residue=(cleaned.body.residue||{}) as JsonObject;for(const count of Object.values(residue))if(Number(count)!==0)throw new Error('fixture_cleanup_residue');return{ok:true,action:'cleanup',marker,residue,auth_user_deleted:true}}
+async function markManualHardeningFixtures(marker:string){
+  // Manual create intentionally rejects arbitrary payload. Bind only this run's
+  // own synthetic children before the existing lifecycle cleanup removes them.
+  const fixture=await inspect(marker)
+  if(!fixture.user_id)return
+  const result=await service('/rest/v1/leader_leads?select=id,name,payload,source,page_url&name=like.'+encodeURIComponent(marker+'-manual-*'))
+  if(!result.ok||!Array.isArray(result.body))throw new Error('manual_fixture_read_failed')
+  for(const row of result.body as unknown as JsonObject[]){
+    const payload=row.payload as JsonObject|undefined
+    if(payload?.manual!==true||payload?.created_from!=='crm_v2'||row.source!=='Synthetic E2E'||row.page_url!=='manual://crm-v2')throw new Error('manual_fixture_binding_failed')
+    const changed=await service('/rest/v1/leader_leads?id=eq.'+encodeURIComponent(text(row.id)),{method:'PATCH',body:JSON.stringify({payload:{...payload,synthetic_marker:marker}})})
+    if(!changed.ok)throw new Error('manual_fixture_binding_write_failed')
+  }
+}
+async function cleanup(marker:string){await markManualHardeningFixtures(marker);const cleaned=await rpc('leader_cleanup_authenticated_e2e_rpc',{p_marker:marker});if(!cleaned.ok||cleaned.body.ok!==true)throw new Error(`fixture_cleanup_failed:${cleaned.status}`);const userId=text(cleaned.body.auth_user_id);if(userId){const deleted=await deleteUser(userId);if(!deleted.ok&&deleted.status!==404)throw new Error(`auth_delete_failed:${deleted.status}`)}const residue=(cleaned.body.residue||{}) as JsonObject;for(const count of Object.values(residue))if(Number(count)!==0)throw new Error('fixture_cleanup_residue');return{ok:true,action:'cleanup',marker,residue,auth_user_deleted:true}}
 
 const workers=workerFixtureTools({service,rpc,inspect})
 

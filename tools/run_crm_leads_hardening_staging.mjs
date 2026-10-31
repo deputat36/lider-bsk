@@ -23,18 +23,13 @@ async function cleanup() {
   if (!fixture) return;
   await bootstrap('set_worker_active', { marker: fixture.marker, active: true });
   await bootstrap('set_role', { marker: fixture.marker, role: 'owner' });
-  for (const id of created) {
-    assert(/^[0-9a-f-]{36}$/i.test(id), 'manual_fixture_id_invalid');
-    const result = await request('/rest/v1/leader_leads?id=eq.' + id + '&name=like.' + encodeURIComponent(fixture.marker + '*'), undefined, token, 'DELETE');
-    assert.equal(result.status, 200, 'manual_fixture_cleanup_failed');
-    assert.equal(result.body?.length, 1, 'manual_fixture_cleanup_count');
-  }
   const cleaned = await bootstrap('cleanup', { marker: fixture.marker });
   assert(Object.values(cleaned.residue).every(value => value === 0), 'fixture_residue');
   console.log(JSON.stringify({ ok: true, cleanup: true, auth_user_deleted: cleaned.auth_user_deleted, residue: cleaned.residue }));
 }
 async function main() {
   assert(/^\d+:\d+$/.test(runKey), 'github_run_required');
+  if (process.env.HARDENING_RECOVER_MARKER) await bootstrap('cleanup', { marker: process.env.HARDENING_RECOVER_MARKER });
   fixture = await bootstrap('prepare');
   try {
   // Only a runner-local marker is retained for emergency cleanup, never credentials or tokens.
@@ -104,6 +99,7 @@ async function main() {
     assert.equal(pending.body.profile.is_active, false);
     assert.equal((await request('/functions/v1/' + slug, { action: 'list' })).status, 401);
     console.log(JSON.stringify({ ok: true, project_ref: 'otulfnouybahfnsycxqn', real_http: true, full_description_roundtrip: [2001, 3000], overlimit_denied: 3001, finance_fields_denied: true, idempotent_conversion: true, inactive_denied: true, no_production_calls: true }));
-  } finally { await cleanup(); }
+  } catch (error) { console.error('scenario_failed:' + error.message); throw error; }
+  finally { await cleanup(); }
 }
 main().catch(error => { console.error(String(error.message).slice(0, 250)); process.exitCode = 1; });

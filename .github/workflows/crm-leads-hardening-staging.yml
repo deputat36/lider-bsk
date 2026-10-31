@@ -22,5 +22,6 @@ jobs:
         run: node --test tools/test_crm_leads_handler.mjs
       - name: Verify roles, object checks and description against staging
         env:
+          HARDENING_RECOVER_MARKER: SYNTH-CRM-E2E-41231757204-1-e0b0a4b12b27
           HARDENING_FIXTURE_FILE: ${{ runner.temp }}/leads-hardening-fixture.json
         run: node tools/run_crm_leads_hardening_staging.mjs
