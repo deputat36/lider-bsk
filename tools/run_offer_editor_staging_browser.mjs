@@ -43,7 +43,7 @@ try{
  await page.locator('#offerEditForm [name=title]').fill(title);await page.locator('#offerEditForm [name=short_text]').fill(short);await page.locator('#offerEditForm [name=full_text]').fill(full);await page.locator('#offerEditForm [name=valid_until]').fill('2030-01-01');
  await page.locator('#offerEditForm [type=submit]').click();await page.waitForSelector('[data-offer-edit-saved]');
  await page.screenshot({path:path.join(out,'saved-390.png'),fullPage:true});
- await page.click('[data-offer-edit-close]');await page.waitForSelector('#offerEditForm',{state:'detached'});
+ // A successful save closes the editor and reloads the card; reopen it from that state.
  await page.click('[data-offer-card-close]');await page.click('#open');await page.waitForSelector('[data-edit-type="offer"]:not([disabled])');await page.click('[data-edit-type="offer"]');
  assert.equal(await page.locator('#offerEditForm [name=title]').inputValue(),title);
  assert.equal(await page.locator('#offerEditForm [name=short_text]').inputValue(),short);
