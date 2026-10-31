@@ -1,0 +1,1 @@
+2026-11-01 staging migration20261031225331 / offer Edge v2 / bootstrap v40: real editor UI + HTTP role/CAS/replay proof
