@@ -1,0 +1,26 @@
+name: CRM leads hardening staging HTTP
+on:
+  push:
+    branches: [agent/601-leads-server-hardening]
+    paths: ['tools/run-crm-leads-hardening-staging.txt']
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: crm-leads-hardening-staging
+  cancel-in-progress: false
+jobs:
+  staging-http:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Exercise actual handler before real HTTP
+        run: node --test tools/test_crm_leads_handler.mjs
+      - name: Verify roles, object checks and description against staging
+        env:
+          HARDENING_FIXTURE_FILE: ${{ runner.temp }}/leads-hardening-fixture.json
+        run: node tools/run_crm_leads_hardening_staging.mjs

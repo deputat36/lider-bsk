@@ -31,6 +31,9 @@ const CATALOG_WORKFLOW_REFS=new Set([
   `${REPOSITORY}/.github/workflows/crm-staging-catalog-authenticated-e2e.yml@${CATALOG_BRANCH_REF}`,
 ])
 const TRUSTED_CONTEXTS=new Map<string,{eventName:string,workflowRefs:Set<string>}>([
+  ['refs/heads/agent/601-leads-server-hardening',{eventName:'push',workflowRefs:new Set([
+    `${REPOSITORY}/.github/workflows/crm-leads-hardening-staging.yml@refs/heads/agent/601-leads-server-hardening`,
+  ])}],
   [WORKSPACE_BRANCH_REF,{eventName:'push',workflowRefs:new Set([
     `${REPOSITORY}/.github/workflows/crm-staging-authenticated-e2e-dispatch.yml@${WORKSPACE_BRANCH_REF}`,
     `${REPOSITORY}/.github/workflows/crm-staging-authenticated-e2e.yml@${WORKSPACE_BRANCH_REF}`,
@@ -92,4 +95,24 @@ async function cleanup(marker:string){const cleaned=await rpc('leader_cleanup_au
 
 const workers=workerFixtureTools({service,rpc,inspect})
 
-Deno.serve(async(req:Request)=>{if(req.method!=='POST')return response(405,{ok:false,error:'method_not_allowed'});try{const verified=await claims(req);const body=await req.json().catch(()=>({})) as JsonObject;const action=text(body.action);console.log('authenticated_e2e_bootstrap',action,verified.runKey,verified.ref,verified.workflowRef);const supplied=text(body.run_key);if(supplied&&supplied!==verified.runKey)throw new Error('run_key_claim_mismatch');if(action==='prepare')return response(201,await prepare(verified.runKey));const marker=text(body.marker);if(!/^SYNTH-CRM-E2E-[A-Za-z0-9-]+$/.test(marker))throw new Error('marker_invalid');if(action==='prepare_workers')return response(201,await workers.prepare(marker,verified.runKey));if(action==='advance_workers')return response(200,await workers.advance(marker,verified.runKey,text(body.target)));if(action==='set_worker_active')return response(200,await workers.active(marker,verified.runKey,body.active));if(action==='inspect_workers')return response(200,await workers.verify(marker,verified.runKey));if(action==='inspect')return response(200,await inspect(marker));if(action==='set_role')return response(200,await setRole(marker,text(body.role)));if(action==='cleanup')return response(200,await cleanup(marker));return response(400,{ok:false,error:'unknown_action'})}catch(error){const message=text((error as Error)?.message||'oidc_bootstrap_failed').slice(0,180);console.error('authenticated_e2e_bootstrap',message);return response(403,{ok:false,error:message})}})
+// Explicit synthetic snapshots for the HTTP hardening test; never a real approval.
+async function prepareLeadsHardening(marker:string,runKey:string){
+  const fixture=await inspect(marker)
+  const userId=text(fixture.user_id),leadId=text(fixture.lead_id)
+  const profile=await service('/rest/v1/leader_user_profiles?select=permissions&user_id=eq.'+encodeURIComponent(userId))
+  const values=profile.body as unknown as JsonObject[]
+  const permissions=values?.[0]?.permissions as JsonObject|undefined
+  if(!profile.ok||permissions?.synthetic_marker!==marker||permissions?.run_key!==runKey)throw new Error('hardening_run_binding_failed')
+  async function insert(table:string,value:JsonObject){
+    const result=await service('/rest/v1/'+table,{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify(value)})
+    const rows=result.body as unknown as JsonObject[]
+    if(!result.ok||!rows?.[0]?.id)throw new Error('hardening_fixture_insert_failed:'+table+':'+result.status)
+    return rows[0]
+  }
+  const calculation=await insert('leader_lead_calculations',{lead_id:leadId,title:marker,status:'Согласован',version_number:1,client_total:10,contractor_cost:5,profit:5,created_by:userId,updated_by:userId})
+  await insert('leader_lead_calculation_items',{calculation_id:calculation.id,lead_id:leadId,name:marker,unit:'шт',qty:1,contractor_price:5,contractor_sum:5,client_price:10,client_sum:10,profit:5,sort_order:0})
+  const offer=await insert('leader_commercial_offers',{lead_id:leadId,calculation_id:calculation.id,offer_number:marker,title:marker,total_sum:10,status:'Согласовано',created_by:userId,updated_by:userId})
+  return{ok:true,action:'prepare_leads_hardening',offer_id:offer.id}
+}
+
+Deno.serve(async(req:Request)=>{if(req.method!=='POST')return response(405,{ok:false,error:'method_not_allowed'});try{const verified=await claims(req);const body=await req.json().catch(()=>({})) as JsonObject;const action=text(body.action);console.log('authenticated_e2e_bootstrap',action,verified.runKey,verified.ref,verified.workflowRef);const supplied=text(body.run_key);if(supplied&&supplied!==verified.runKey)throw new Error('run_key_claim_mismatch');if(action==='prepare')return response(201,await prepare(verified.runKey));const marker=text(body.marker);if(!/^SYNTH-CRM-E2E-[A-Za-z0-9-]+$/.test(marker))throw new Error('marker_invalid');if(action==='prepare_leads_hardening'){if(verified.ref!=='refs/heads/agent/601-leads-server-hardening')throw new Error('hardening_context_required');return response(201,await prepareLeadsHardening(marker,verified.runKey))}if(action==='prepare_workers')return response(201,await workers.prepare(marker,verified.runKey));if(action==='advance_workers')return response(200,await workers.advance(marker,verified.runKey,text(body.target)));if(action==='set_worker_active')return response(200,await workers.active(marker,verified.runKey,body.active));if(action==='inspect_workers')return response(200,await workers.verify(marker,verified.runKey));if(action==='inspect')return response(200,await inspect(marker));if(action==='set_role')return response(200,await setRole(marker,text(body.role)));if(action==='cleanup')return response(200,await cleanup(marker));return response(400,{ok:false,error:'unknown_action'})}catch(error){const message=text((error as Error)?.message||'oidc_bootstrap_failed').slice(0,180);console.error('authenticated_e2e_bootstrap',message);return response(403,{ok:false,error:message})}})

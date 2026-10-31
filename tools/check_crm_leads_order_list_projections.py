@@ -97,7 +97,7 @@ for marker in (
     "if (!fields) return forbidden('list_orders', profile)",
     "encodeURIComponent(fields)",
     "if (!canUseGenericLeads(checked.profile, action)) return forbidden(action, checked.profile)",
-    "if (action === 'list_orders') return await listOrders(supabaseUrl, serviceRole, checked.profile)",
+    "if (action === 'list_orders') return await listOrders(supabaseUrl, caller, checked.profile)",
 ):
     require(source, marker, "source")
 
