@@ -1,1 +1,1 @@
-2026-10-31 staging v2 / bootstrap v39: guarded service update, synthetic manual cleanup, recover previous fixture
+2026-10-31 staging v3 / bootstrap v39: canonical orders read field intersection, no grant widening
