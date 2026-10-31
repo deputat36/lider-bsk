@@ -22,10 +22,12 @@ const server=createServer(async(req,res)=>{
 });
 await new Promise(r=>server.listen(0,'127.0.0.1',r));
 const browser=await chromium.launch();
+let page;const errors=[],writes=[],failed=[];
 try{
  await mkdir(out,{recursive:true});
- const page=await browser.newPage({viewport:{width:390,height:900}}),errors=[],writes=[];
+ page=await browser.newPage({viewport:{width:390,height:900}});
  page.on('pageerror',e=>errors.push(e.message));
+ page.on('response',r=>{if(r.status()>=400)failed.push({path:new URL(r.url()).pathname,status:r.status()})});
  await page.route('**/*',route=>{
   const request=route.request(),target=new URL(request.url());
   if(target.origin===url){if(!['GET','OPTIONS'].includes(request.method())){assert.equal(target.pathname,'/functions/v1/leader-crm-offer-transitions');writes.push(target.pathname)}return route.continue()}
@@ -35,6 +37,7 @@ try{
  await page.goto(`http://127.0.0.1:${server.address().port}/test`);await page.waitForFunction(()=>globalThis.ready);
  await page.click('#open');await page.waitForSelector('[data-edit-type="offer"]:not([disabled])');
  assert.equal(await page.getByText(/маржа/).count(),0);
+ await page.locator('[data-edit-type="offer"]').focus();await page.keyboard.press('Tab');assert.equal(await page.evaluate(()=>document.activeElement.tagName),'SUMMARY','additional actions remain keyboard reachable');
  await page.click('[data-edit-type="offer"]');
  const title='Synthetic UI edit',short='Synthetic short text',full='Полный текст: '+ 'Я'.repeat(3000);
  await page.locator('#offerEditForm [name=title]').fill(title);await page.locator('#offerEditForm [name=short_text]').fill(short);await page.locator('#offerEditForm [name=full_text]').fill(full);await page.locator('#offerEditForm [name=valid_until]').fill('2030-01-01');
@@ -50,4 +53,7 @@ try{
  assert.deepEqual(errors,[]);assert.equal(writes.length,1);
  const evidence={ok:true,real_staging_api:true,actual_editor:true,saved_and_reopened:true,full_text_length:full.length,one_write:true,margin_hidden:true,errors:[]};
  await writeFile(path.join(out,'browser.json'),JSON.stringify(evidence,null,2));console.log(JSON.stringify(evidence));
+}catch(error){
+ if(page){await page.screenshot({path:path.join(out,'failure-390.png'),fullPage:true}).catch(()=>{});await writeFile(path.join(out,'failure.json'),JSON.stringify({message:error.message.slice(0,300),errors,failed,text:(await page.locator('body').innerText().catch(()=>'' )).slice(0,5000)},null,2));}
+ throw error;
 }finally{await browser.close();await new Promise(r=>server.close(r))}

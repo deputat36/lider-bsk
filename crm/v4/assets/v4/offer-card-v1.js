@@ -154,7 +154,7 @@ function renderCard({ offer, lead, calculation, items, order, events }) {
   const summary = document.createElement('summary');
   summary.textContent = 'Дополнительные действия';
   secondary.append(summary);
-  actions.querySelectorAll('[data-edit-type], [data-open-lead], [data-offer-copy]').forEach(button=>secondary.append(button));
+  actions.querySelectorAll('[data-open-lead], [data-offer-copy]').forEach(button=>secondary.append(button));
   actions.append(secondary);
 
   const edit = card.querySelector('[data-edit-type="offer"]');
@@ -391,7 +391,7 @@ function bind() {
     if (!dialog) return;
     if (event.key === 'Escape') { event.preventDefault(); closeCard(); return; }
     if (event.key !== 'Tab') return;
-    const nodes = [...dialog.querySelectorAll('button:not(:disabled),a[href],input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex="0"]')].filter(n=>n.getClientRects().length);
+    const nodes = [...dialog.querySelectorAll('button:not(:disabled),summary,a[href],input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex="0"]')].filter(n=>n.getClientRects().length);
     const first=nodes[0],last=nodes.at(-1);
     if (!first) {event.preventDefault();return;}
     if (event.shiftKey && (document.activeElement===first || !dialog.contains(document.activeElement))) {event.preventDefault();last.focus();}
