@@ -301,5 +301,23 @@
       ],
       "deployment_action": "unchanged"
     }
-  ]
+  ],
+  "verified_release": {
+    "commit": "c9ee4b92e0a104903e1d65b4c39accc1b693b853",
+    "pr": 600,
+    "changed_function": "leader-crm-leads",
+    "installed_version": 13,
+    "verify_jwt": true,
+    "source": "supabase/functions/leader-crm-leads/index.ts",
+    "source_sha256": "a43517e468899c206fed8a808e831240ae7748dd21c6dfb3c8982b27b8798394",
+    "independent_readback": true,
+    "staging_http_run": 41232253984,
+    "staging_candidate_version": 3,
+    "staging_bootstrap_version": 39,
+    "pr_checks_success": 67,
+    "pages_run": 41232498691,
+    "runtime_readback_run": 41232500500,
+    "production_data_mutated": false,
+    "schema_grants_auth_settings_mutated": false
+  }
 }

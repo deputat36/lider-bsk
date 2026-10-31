@@ -1,11 +1,16 @@
 # Статус проекта РА «Лидер»
 
-## 2026-10-31 — подготовлен пакет защиты сервера заявок
+## 2026-10-31 — серверные права и полный текст заявки установлены
 
-Исправление роли/action/RLS и лимита 3000 символов реализовано в ветке
-agent/601-leads-server-hardening. [План установки и откат](CRM_LEADS_HARDENING_2026-10-31.md).
-Это промежуточный статус: production v12 пока не заменена. Сохранены source
-rollback и карта 16 действующих Leader Edge функций; DDL не требуется.
+[PR #600](https://github.com/deputat36/lider-bsk/pull/600), main c9ee4b92.
+Production leader-crm-leads v13: canonical role/action, object и field guards,
+описание3000 без усечения, безопасная manager-конвертация из КП. Прямые grants
+не расширялись. Independent source readback exact; 17 handler tests, staging
+HTTP7×8/roundtrip/replay/cleanup0 и browser owner/manager5 widths PASS.
+PR67/67, Pages41232498691 и runtime readback41232500500 success. Production
+данные/профили/permission RPC без изменения, advisors без новых findings.
+[Полный receipt и откат](CRM_LEADS_HARDENING_2026-10-31.md). Реальная приёмка
+владельцем отдельно. Следующий пакет — рабочий редактор черновика КП.
 
 ## 2026-10-31 — единый вход в услуги и исправление параметров визиток
 
