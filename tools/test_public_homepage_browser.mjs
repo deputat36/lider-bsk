@@ -87,6 +87,26 @@ try {
           await page.screenshot({ path: `artifacts/public-homepage/customer-${sample.slice(1)}-${width}.png` });
         }
       }
+      // A page-specific timer used to replace the query/button choice after 700ms.
+      await page.goto(origin + '/reklama-v-soobshchestvah-borisoglebska.html?service=campaign');
+      await page.locator('[name="message"]').fill('Нужны публикации к открытию кафе, материалы готовы.');
+      await page.waitForTimeout(850);
+      assert.equal(await page.locator('[name="service"]').inputValue(), 'Комплексная реклама');
+      await page.getByRole('link', { name: 'Рассчитать размещение', exact: true }).click();
+      assert.equal(await page.locator('[name="service"]').inputValue(), 'Соцсети и контент');
+      await page.getByRole('link', { name: 'Рассчитать комплекс', exact: true }).click();
+      await page.waitForTimeout(850);
+      assert.equal(await page.locator('[name="service"]').inputValue(), 'Комплексная реклама');
+      assert.equal(await page.locator('[name="message"]').inputValue(), 'Нужны публикации к открытию кафе, материалы готовы.');
+      const table = page.getByRole('region', { name: 'Сообщества для размещения рекламы', exact: true });
+      if (await table.evaluate(el => el.scrollWidth > el.clientWidth)) {
+        await table.focus();
+        await page.keyboard.press('ArrowRight');
+        await page.waitForFunction(() => document.querySelector('.table-wrap').scrollLeft > 0);
+      }
+      assert.equal(await page.locator('.hero-actions .btn').first().evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(255, 106, 0)');
+      assert.equal(await page.locator('.community-price-card.main').first().evaluate(el => getComputedStyle(el).borderTopColor), 'rgb(255, 106, 0)');
+      if ([1440, 390].includes(width)) await table.screenshot({ path: `artifacts/public-homepage/community-table-${width}.png` });
       await page.goto(origin + '/vizitki-borisoglebsk.html');
       await page.locator('[name="message"]').fill('Позвоните после 14 часов.');
       await page.locator('#card-qty').selectOption({ label: '1000 шт.' });

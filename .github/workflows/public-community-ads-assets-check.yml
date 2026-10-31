@@ -26,4 +26,3 @@ jobs:
       - name: Validate page assets and contract
         run: |
           python3 tools/check_public_community_ads_assets.py
-          node --check assets/public-community-ads.js
