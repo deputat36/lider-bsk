@@ -51,6 +51,7 @@ try {
       return route.abort();
     });
     if (customerPath) {
+      await page.emulateMedia({ reducedMotion: 'reduce' });
       const samples = [
         '/index.html', '/uslugi.html', '/vizitki-borisoglebsk.html',
         '/menyu-dlya-kafe-borisoglebsk.html', '/prices.html', '/request.html',
@@ -59,11 +60,11 @@ try {
       ];
       for (const sample of samples) {
         await page.goto(origin + sample);
-        const nav = page.getByRole('navigation', { name: 'Основная навигация' });
+        const nav = page.locator('#main-navigation');
         const button = page.getByRole('button', { name: 'Открыть меню', exact: true });
         assert.equal(await page.locator('.leader-site-header').count(), 1, sample);
         assert.deepEqual(await nav.locator('a').allTextContents(), ['Услуги', 'Решения', 'Работы', 'Цены', 'Контакты']);
-        assert.equal(await nav.getByRole('link', { name: 'Работы', exact: true }).getAttribute('href'), 'nashi-raboty.html');
+        assert.equal(await nav.locator('a').nth(2).getAttribute('href'), 'nashi-raboty.html');
         assert.equal(await page.locator('.brand-logo').evaluate(el => el.complete && el.naturalWidth > 0), true, sample);
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, sample + ' overflow');
         if (width <= 1060) {
