@@ -95,9 +95,9 @@ for marker in (
     "return ORDER_LIST_FIELDS_BY_ROLE[profileRole(profile)] || ''",
     "const fields = orderListFields(profile)",
     "if (!fields) return forbidden('list_orders', profile)",
-    "encodeURIComponent(fields)",
+    "encodeURIComponent(permittedFields)",
     "if (!canUseGenericLeads(checked.profile, action)) return forbidden(action, checked.profile)",
-    "if (action === 'list_orders') return await listOrders(supabaseUrl, caller, checked.profile)",
+    "if (action === 'list_orders') return await listOrders(supabaseUrl, serviceRole, checked.profile, ownerId)",
 ):
     require(source, marker, "source")
 

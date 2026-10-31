@@ -14,6 +14,8 @@ on:
       - 'tools/test_catalog_access.mjs'
       - 'supabase/staging-recovered/**'
       - 'tools/test_crm_recovery_browser.mjs'
+      - 'tools/test_offer_card_browser.mjs'
+      - 'crm/v4/assets/v4/offer-order-create-v1.js'
       - 'tools/test_quote_workspace.mjs'
       - 'supabase/production-candidates/leader_quote_workspace_v1.sql'
       - 'tools/build_quote*'
@@ -32,6 +34,8 @@ on:
       - 'tools/test_catalog_access.mjs'
       - 'supabase/staging-recovered/**'
       - 'tools/test_crm_recovery_browser.mjs'
+      - 'tools/test_offer_card_browser.mjs'
+      - 'crm/v4/assets/v4/offer-order-create-v1.js'
       - 'tools/test_quote_workspace.mjs'
       - 'supabase/production-candidates/leader_quote_workspace_v1.sql'
       - 'tools/build_quote*'
@@ -65,12 +69,16 @@ jobs:
           npm install --no-save --package-lock=false playwright@1.55.0
       - name: Real editors and calculator with blocked external HTTP
         run: node tools/test_crm_recovery_browser.mjs
+      - name: Offer card and finance field permissions
+        run: node tools/test_offer_card_browser.mjs
       - name: Preserve synthetic browser evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: crm-recovery
-          path: artifacts/crm-recovery/
+          path: |
+            artifacts/crm-recovery/
+            artifacts/offer-card/
           if-no-files-found: warn
           retention-days: 7
 

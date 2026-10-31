@@ -273,10 +273,19 @@ async function listLeads(supabaseUrl: string, serviceRole: RestAccess, body: Rec
   return json(200, { ok: true, leads: await leadsRes.json() })
 }
 
-async function listOrders(supabaseUrl: string, serviceRole: RestAccess, profile: Record<string, unknown> | null | undefined) {
+async function listOrders(supabaseUrl: string, serviceRole: string, profile: Record<string, unknown> | null | undefined, actorId: string) {
   const fields = orderListFields(profile)
   if (!fields) return forbidden('list_orders', profile)
-  const res = await rest(supabaseUrl, serviceRole, '/rest/v1/leader_orders?select=' + encodeURIComponent(fields) + '&order=created_at.desc&limit=80')
+  // As in the installed canonical orders endpoint, direct SELECT is closed.
+  // Intersect the role projection with the current server permissions.
+  const [costs, finance, clients] = await Promise.all(['costs.read', 'finance.read', 'clients.read'].map(permission => hasCanonicalPermission(supabaseUrl, serviceRole, actorId, permission)))
+  const permittedFields = fields.split(',').filter(field => {
+    if (['contractor_cost', 'profit'].includes(field)) return costs
+    if (['client_total', 'payment_status', 'prepayment', 'balance'].includes(field)) return finance
+    if (['client_name', 'client_phone'].includes(field)) return clients
+    return true
+  }).join(',')
+  const res = await rest(supabaseUrl, serviceRole, '/rest/v1/leader_orders?select=' + encodeURIComponent(permittedFields) + '&order=created_at.desc&limit=80')
   if (!res.ok) return json(500, { error: 'orders_read_failed', details: await res.text() })
   return json(200, { ok: true, orders: await res.json() })
 }
@@ -433,7 +442,7 @@ Deno.serve(async (req: Request) => {
   const actorEmail = cleanText(checked.user.email || checked.profile?.email, 200)
   if (action === 'dashboard') return await dashboard(supabaseUrl, caller)
   if (action === 'list') return await listLeads(supabaseUrl, caller, body)
-  if (action === 'list_orders') return await listOrders(supabaseUrl, caller, checked.profile)
+  if (action === 'list_orders') return await listOrders(supabaseUrl, serviceRole, checked.profile, ownerId)
   if (action === 'create') return await createLead(supabaseUrl, caller, body)
   if (action === 'update') return await updateLead(supabaseUrl, serviceRole, body, caller)
   if (action === 'ensure_client') return await ensureClientResponse(supabaseUrl, serviceRole, ownerId, body, caller)

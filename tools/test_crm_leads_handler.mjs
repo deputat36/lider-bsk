@@ -29,7 +29,7 @@ function fixture(role = 'owner', options = {}) {
       if (method === 'POST') { state.profile = body; return response([body]); }
       return response(options.noProfile || !state.profile.is_active && endpoint.searchParams.get('is_active') ? [] : [state.profile]);
     }
-    if (path === '/rest/v1/rpc/leader_actor_has_crm_action_rpc') return response(options.canonicalDenied ? false : body.p_action !== 'finance.write' || ['owner', 'admin'].includes(role));
+    if (path === '/rest/v1/rpc/leader_actor_has_crm_action_rpc') return response(options.canonicalDenied || options.deniedPermissions?.includes(body.p_action) ? false : body.p_action !== 'finance.write' || ['owner', 'admin'].includes(role));
     if (path === '/rest/v1/leader_leads') {
       if (method !== 'PATCH') {
         assert.equal(headers.get('authorization'), 'Bearer caller-token', 'lead reads/create must respect caller RLS');
@@ -135,16 +135,20 @@ test('unknown, empty update, inaccessible row and malformed requests have explic
   assert.equal((await fixture('owner', { networkFailure: true }).invoke({ action: 'list' })).body.error, 'temporarily_unavailable');
 });
 
-test('manager order list omits financial fields and uses caller RLS; accountant stays narrow', async () => {
+test('order list intersects role fields and current server permissions; accountant stays narrow', async () => {
   for (const role of ['manager', 'accountant', 'owner']) {
     const f = fixture(role);
     const result = await f.invoke({ action: 'list_orders' });
     assert.equal(result.status, 200);
     const read = f.calls.find(c => c.path === '/rest/v1/leader_orders');
-    assert.equal(read.headers.get('authorization'), 'Bearer caller-token');
+    assert.equal(read.headers.get('authorization'), 'Bearer service-key');
     if (role === 'manager') for (const key of ['client_total', 'contractor_cost', 'profit', 'prepayment', 'balance', 'payment_status', 'data']) assert.equal(key in result.body.orders[0], false);
     if (role === 'accountant') assert.equal('client_phone' in result.body.orders[0], false);
   }
+  const f = fixture('owner', { deniedPermissions: ['finance.read', 'costs.read', 'clients.read'] });
+  const result = await f.invoke({ action: 'list_orders' });
+  assert.equal(result.status, 200);
+  for (const key of ['client_name', 'client_phone', 'client_total', 'contractor_cost', 'profit', 'prepayment', 'balance', 'payment_status']) assert.equal(key in result.body.orders[0], false, 'revoked permission:' + key);
 });
 
 test('approved-offer route preserves manager path, verifies object and strips private response', async () => {
