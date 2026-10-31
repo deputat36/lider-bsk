@@ -4,17 +4,28 @@
 
 Порядок выполнения новых задач: [WORKFLOW.md](WORKFLOW.md). Исторические инструкции июня/июля не заменяют этот регламент и действующие указания владельца.
 
-## Активный пакет: сервер заявок, 31.10.2026
+## Сервер заявок установлен, следующий пакет — редактор КП
 
-Ветка agent/601-leads-server-hardening. Первый этап нового задания — закрыть
-расхождение production leader-crm-leads v12 и source RBAC, сохранить 3000
-символов, проверить реальные HTTP roles в staging, затем адресно установить.
-[Пакет, карта установки и откат](CRM_LEADS_HARDENING_2026-10-31.md).
-Локальные handler tests пройдены; серверные шаги пока не выполнены.
-Следующий шаг — сохранить remote commit, развернуть изолированный staging
-candidate и узкий bootstrap, запустить HTTP workflow и проверить cleanup.
-После этого exact CI/merge, production readback и обновление этой точки.
-Следующая продуктовая задача — рабочее «Редактировать КП», затем поиск услуги.
+[PR #600](https://github.com/deputat36/lider-bsk/pull/600) объединён; main
+c9ee4b92e0a104903e1d65b4c39accc1b693b853. Production leader-crm-leads v13,
+verify_jwt=true; source a43517e468899c206fed8a808e831240ae7748dd21c6dfb3c8982b27b8798394
+подтверждён independent readback. Роли/actions, допустимые поля и видимость
+объектов проверяются до служебной записи; description3000 не обрезается.
+Прямые grants не расширены. [Установка, карта источников, откат](CRM_LEADS_HARDENING_2026-10-31.md).
+
+Автоматически: 17 handler tests, staging HTTP7×8/text roundtrip/replay/cleanup0
+(run41232253984), owner/manager browser5 widths; PR67/67 success. Pages41232498691
+и readback41232500500 success. Production counts20/17/2/1/0 и профили не менялись,
+advisors без новых findings. Реальная приёмка владельцем остаётся отдельно.
+Staging candidate leads-hardening v3 / bootstrap v39 — изолированные тестовые
+источники; основной staging wrapper не заменялся, fixtures/Auth users0.
+
+Следующий разрешённый пакет готовится в отдельном worktree/ветке
+agent/602-offer-editor: «Редактировать КП» для актуального черновика через
+service-only CAS/receipt RPC, защита согласованного снимка и отказ прямому
+UPDATE/DELETE browser. Схема/Edge второго пакета пока не установлены.
+После него — поиск услуги, смежные переходы и первая группа коммерческих
+страниц. Не начинать новый общий аудит и не расширять роли до проверки.
 
 ## Выпуск публичного сайта от 31.10.2026
 

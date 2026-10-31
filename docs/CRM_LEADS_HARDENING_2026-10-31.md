@@ -93,8 +93,48 @@ staging-константы или выполнять общий db push. Ост�
 пакетом не переустанавливаются. Migration history, глобальный Auth и чужие
 префиксы общей базы не изменяются.
 
-## Текущее состояние
+## Итог установки
 
-Реализовано и локально проверено. HTTP staging proof, exact CI, merge,
-production version/hash, advisors и финальный результат будут дописаны после
-их выполнения. Этот промежуточный статус сохраняется до серверных изменений.
+Реализовано и объединено: [PR #600](https://github.com/deputat36/lider-bsk/pull/600),
+head e4be9285b97736f86c19339712de7ad6f6728152, 67/67 success.
+Main release c9ee4b92e0a104903e1d65b4c39accc1b693b853. Pages
+41232498691 success; runtime readback 41232500500 success проверил 42 файла,
+включая index.html CRM и изменённый offer-order-create-v1.js.
+
+Установлено: production leader-crm-leads **v13**, verify_jwt=true,
+индекс SHA-256 **a43517e468899c206fed8a808e831240ae7748dd21c6dfb3c8982b27b8798394**.
+Независимый get_edge_function после установки подтвердил точный source.
+Остальные 15 production функций не переустанавливались. На момент postflight:
+20 заявок, 17 клиентов, 2 заказа, 1 платёж, 0 расходов; количество/активность
+профилей и fingerprint permission RPC совпали с preflight. Реальные записи
+и глобальный Auth не изменялись. Новых findings advisors нет: 5 Leader private
+RLS-no-policy намеренны, чужие 53 security-definer grants/12 FK не затрагивались;
+84 unused Leader indexes не удалять по одному счётчику. 5 multiple SELECT
+policies требуют отдельной оценки, а не автоматического удаления.
+
+Проверено автоматически:
+
+- 17 tests настоящего handler с isolated mocks, включая unknown/inactive role,
+  отзыв разрешения, неподдерживаемые поля и RLS-видимость объекта.
+- [Staging HTTP run 41232253984](https://github.com/deputat36/lider-bsk/actions/runs/41232253984):
+  candidate alias v3 exact source, 7 ролей × 8 actions, реальное создание и
+  редактирование 2001/3000 символов с readback, 3001 отказ до записи, manager
+  conversion и owner/admin/manager replay одного заказа, финансовые отказы,
+  inactive/anon deny. Cleanup и независимый SQL: profiles/leads/orders/offers/
+  Auth fixtures = 0. Предыдущие неудачные fixtures также очищены.
+- [Pinned browser run 41232257824](https://github.com/deputat36/lider-bsk/actions/runs/41232257824):
+  owner/manager × 5 ширин, КП→заказ, доступность финансовых полей, Escape/focus.
+
+Проверка выявила закрытые direct UPDATE leads и SELECT orders в staging.
+Вместо расширения grants исправлен служебный путь с canonical permission,
+object/field guards. Изолированный staging alias leader-crm-leads-hardening v3
+и bootstrap v39 остаются для воспроизводимости; основной staging wrapper
+не заменялся. Bootstrap context ограничен веткой agent/601-leads-server-hardening
+и точным workflow; helpers работают только с синтетическим run marker.
+
+Принято в реальной работе: отдельно. Авторизованная UI-сессия владельца и
+реальный рабочий сценарий здесь не подменяются HTTP/mocks.
+
+Следующий пакет — editor только актуального черновика КП, серверные CAS/replay
+и защита согласованного снимка; затем поиск услуги и предметная подача пяти
+приоритетных страниц. Общее разрешение повторно не требуется.
