@@ -66,6 +66,7 @@ try {
         assert.deepEqual(await nav.locator('a').allTextContents(), ['Услуги', 'Решения', 'Работы', 'Цены', 'Контакты']);
         assert.equal(await nav.locator('a').nth(2).getAttribute('href'), 'nashi-raboty.html');
         assert.equal(await page.locator('.brand-logo').evaluate(el => el.complete && el.naturalWidth > 0), true, sample);
+        assert.equal(await page.locator('.leader-header-actions .btn').isVisible(), true, sample + ' request link');
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, sample + ' overflow');
         if (width <= 1060) {
           assert.equal(await nav.isVisible(), false, sample);
@@ -117,6 +118,11 @@ try {
       assert.equal(new URL(page.url()).pathname, '/nashi-raboty.html');
       assert.equal(await page.getByRole('heading', { name: 'Объёмные буквы «ЦВЕТЫ»', exact: true }).count(), 1);
       assert.deepEqual(errors, []); assert.deepEqual(failed, []); assert.deepEqual(writes, []);
+      const noScript = await browser.newPage({ viewport: { width, height: 900 }, javaScriptEnabled: false });
+      await noScript.goto(origin + '/vizitki-borisoglebsk.html');
+      assert.equal(await noScript.locator('#main-navigation').isVisible(), true, 'Navigation without JavaScript');
+      assert.equal(await noScript.locator('.menu-btn').isVisible(), false, 'No inactive toggle without JavaScript');
+      await noScript.close();
       console.log(JSON.stringify({ page: 'customer-path', width, navigationPages: samples.length, customQuantity: true, designSynced: true, notesPreserved: true, writes }));
       await page.close();
       continue;

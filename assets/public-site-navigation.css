@@ -33,10 +33,11 @@ html body .leader-site-header .brand {
 }
 html body .leader-site-header .brand-logo { display: block; }
 html body .leader-site-header a { text-decoration: none; }
-html body .leader-site-header .nav {
+html body .header.leader-site-header .nav {
   grid-column: 2;
   grid-row: 1;
-  display: flex;
+  /* The legacy form stylesheet hides every .nav with !important. */
+  display: flex !important;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
@@ -94,8 +95,8 @@ html body .leader-site-header .btn {
   white-space: nowrap;
 }
 html body .leader-site-header .btn:hover { background: var(--action-hover, #e85f00); }
-html body .leader-site-header .menu-btn {
-  display: none;
+html body .header.leader-site-header .menu-btn {
+  display: none !important;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
@@ -120,10 +121,10 @@ html body .leader-site-header :is(a, button):focus-visible {
 @media (max-width: 1060px) {
   html body .leader-site-header .leader-header-inner { grid-template-columns: 108px minmax(0, 1fr); gap: 0 16px; }
   html body .leader-site-header .leader-header-actions { grid-column: 2; justify-content: flex-end; }
-  html body .leader-site-header .nav { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; padding: 8px 0; }
-  html body .leader-site-header.navigation-ready .menu-btn { display: inline-flex; }
-  html body .leader-site-header.navigation-ready .nav { display: none; }
-  html body .leader-site-header.navigation-ready.open .nav { display: flex; }
+  html body .header.leader-site-header .nav { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; padding: 8px 0; max-height: 60vh; overflow-y: auto; }
+  html body .header.leader-site-header.navigation-ready .menu-btn { display: inline-flex !important; }
+  html body .header.leader-site-header.navigation-ready .nav { display: none !important; }
+  html body .header.leader-site-header.navigation-ready.open .nav { display: flex !important; }
 }
 @media (max-width: 720px) {
   html body .leader-site-header .leader-header-inner { grid-template-columns: 82px minmax(0, 1fr); min-height: 84px; padding: 5px 0; }
