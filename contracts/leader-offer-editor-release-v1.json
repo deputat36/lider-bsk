@@ -1,0 +1,51 @@
+{
+  "date": "2026-11-01",
+  "production_project": "ofewxuqfjhamgerwzull",
+  "staging_project": "otulfnouybahfnsycxqn",
+  "pr": 603,
+  "head": "93d73057eb0fdbba95834172936efadf907965d6",
+  "merge": "0b15743b4ab3d2a2a428ae32fe21ec47db1edbbb",
+  "checks_success": 68,
+  "migration": {
+    "source": "supabase/migrations/20261031180000_leader_offer_editor_v1.sql",
+    "sha256": "313e6e6845a7b9dec42bafb93cfa5e5338cdb783b0dfda70538f671dadcdf036",
+    "name": "leader_offer_editor_v1",
+    "staging_history_version": "20261031225331",
+    "production_history_version": "20261031230704",
+    "rpc_md5": "f56b2dd39e8dd1b8a9e79531da4f81b1"
+  },
+  "edge": {
+    "name": "leader-crm-offer-transitions",
+    "staging_version": 2,
+    "production_version": 2,
+    "verify_jwt": true,
+    "source_sha256": "701dd7076e2e3fa7d72836d20151d0b6a4dd6b893af994eb04e5eda33ee4a808",
+    "independent_readback": true
+  },
+  "proof": {
+    "real_staging_ui_http_run": 41250687586,
+    "full_text_length": 3014,
+    "roles": 7,
+    "concurrent_statuses": [
+      200,
+      409
+    ],
+    "cleanup_and_auth_zero": true,
+    "pages_run": 41251104397,
+    "runtime_readback_run": 41251105631,
+    "ui_files_exact": 5
+  },
+  "data": {
+    "offer_rows": 15,
+    "before_after_rows_md5": "ab074e88fcc79ff5149df0ee6d53feec",
+    "private_backup_saved": true,
+    "production_dml_performed": false,
+    "production_edit_receipts": 0
+  },
+  "rollback": {
+    "safe_stop_sql": "supabase/production-candidates/rollback/20261031_offer_editor_stop.sql",
+    "preceding_edge": "supabase/production-candidates/rollback/20261101-leader-crm-offer-transitions-v1/index.ts",
+    "broad_browser_writes_must_remain_closed": true
+  },
+  "real_owner_acceptance": "pending"
+}

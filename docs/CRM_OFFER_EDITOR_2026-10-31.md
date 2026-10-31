@@ -39,3 +39,38 @@
 ## Безопасный stop / rollback
 
 Файл `supabase/production-candidates/rollback/20261031_offer_editor_stop.sql` отзывает service EXECUTE только нового edit RPC. Затем вернуть прежние проверенные UI и Edge версии по сохранённому readback. Редактирование остановится; уже сохранённые данные/история/receipts и закрытые browser UPDATE/DELETE сохранятся. Широкие browser ACL автоматически не возвращать. Старый Edge продолжит выполнять переходы статуса, content guard допускает их. Для повторного включения после исправления отдельно вернуть EXECUTE service_role и пройти тот же acceptance.
+
+## Установка и проверка 01.11.2026
+
+[PR #603](https://github.com/deputat36/lider-bsk/pull/603) merged, main
+0b15743b4ab3d2a2a428ae32fe21ec47db1edbbb. Exact head93d73057:68/68success.
+Native PostgreSQL исполняет реальную миграцию в отдельной DB; owner/manager
+browser5 widths проверяет сохранение/сеть/конфликт/readonly/keyboard.
+
+Real staging run41250687586: настоящий редактор и API сохранили и повторно
+открыли полный текст3014 символов; одна запись, 7 ролей, stale/concurrent CAS,
+replay, forbidden fields/direct API/RPC, inactive/anon и approved readonly PASS.
+Cleanup и независимый SQL: fixtures/Auth/offers/events/receipts0. Первый runtime
+выявил скрытое edit-действие; оно вынесено в основную строку, summary включён
+в keyboard trap. Вторая остановка была неверным ожиданием теста: успешное
+сохранение закрывает форму и перечитывает карточку. После уточнения тест PASS.
+
+Production Edge **v2**, verify_jwt=true, SHA256
+**701dd7076e2e3fa7d72836d20151d0b6a4dd6b893af994eb04e5eda33ee4a808**,
+independent source readback exact. Function RPC md5f56b2dd39e8dd1b8a9e79531da4f81b1
+совпадает в двух окружениях. Source migration20261031180000:
+SHA256313e6e6845a7b9dec42bafb93cfa5e5338cdb783b0dfda70538f671dadcdf036;
+history stage20261031225331 / production20261031230704, nameleader_offer_editor_v1.
+Не делать общий db push по отличию timestamps и не применять SQL повторно.
+
+Production15 исходных КП совпали с приватным preflight-снимком по hash;
+20 leads/2 orders/1 payment/0 expenses и edit receipts0. При установке не
+фиксировались оплаты, отправки, согласования или редактирование реальных КП.
+Service-only execute, browser UPDATE/DELETE и anon access denied;
+прежние office SELECT/INSERT сохранены. Старые cached INSERT получают автора
+из Auth, чужой автор/fake approved INSERT запрещён. Новых advisors findings нет.
+Снимок с клиентскими данными сохранён приватно и не включён в GitHub.
+
+Pages41251104397 и runtime41251105631 success; отдельная сверка всех5 изменённых
+UI файлов5/5 exact. JSON receipt: contracts/leader-offer-editor-release-v1.json.
+Реальная приёмка владельцем не подменяется компонентным тестом.

@@ -180,7 +180,10 @@
           ]
         }
       ],
-      "deployment_action": "unchanged"
+      "deployment_action": "installed through PR603; baseline retained below",
+      "installed_version": 2,
+      "installed_source": "supabase/functions/leader-crm-offer-transitions/index.ts",
+      "installed_source_sha256": "701dd7076e2e3fa7d72836d20151d0b6a4dd6b893af994eb04e5eda33ee4a808"
     },
     {
       "slug": "leader-crm-orders",

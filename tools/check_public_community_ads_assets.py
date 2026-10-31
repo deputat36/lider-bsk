@@ -29,7 +29,6 @@ def main() -> None:
         'id="communities"',
         '<div id="leader-lead-form"></div>',
         'Рассчитать рекламу в сообществах',
-        'Не включены площадки из исходного списка',
     ):
         require(html, marker, PAGE)
 
@@ -48,6 +47,14 @@ def main() -> None:
         raise SystemExit('Expected exactly six visible FAQ items')
     if html.count('<div class="step">') != 4:
         raise SystemExit('Expected exactly four request preparation steps')
+    if any(marker in html for marker in ('предоставленной выгрузке', 'актуальному списку из файла', 'Не включены площадки из исходного списка')):
+        raise SystemExit('Internal import notes must stay out of customer copy')
+    if '<th>Подписчики</th>' in html or 'class="aud"' in html:
+        raise SystemExit('Undated historical audience counts must not look current')
+    table = re.search(r'<table>.*?</table>', html, re.S).group()
+    for row in re.findall(r'<tr>.*?</tr>', table, re.S):
+        if len(re.findall(r'<t[hd]\b', row)) != 4:
+            raise SystemExit('Each community row must keep four complete cells')
     if html.count('<tr>') < 20:
         raise SystemExit('Community table has unexpectedly few rows')
     if html.count('target="_blank"') != html.count('rel="noopener"'):
