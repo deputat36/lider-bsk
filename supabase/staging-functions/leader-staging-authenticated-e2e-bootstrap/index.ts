@@ -111,7 +111,7 @@ async function prepareLeadsHardening(marker:string,runKey:string){
   }
   const calculation=await insert('leader_lead_calculations',{lead_id:leadId,title:marker,status:'Согласован',version_number:1,client_total:10,contractor_cost:5,profit:5,created_by:userId,updated_by:userId})
   await insert('leader_lead_calculation_items',{calculation_id:calculation.id,lead_id:leadId,name:marker,unit:'шт',qty:1,contractor_price:5,contractor_sum:5,client_price:10,client_sum:10,profit:5,sort_order:0})
-  const offer=await insert('leader_commercial_offers',{lead_id:leadId,calculation_id:calculation.id,offer_number:marker,title:marker,total_sum:10,status:'Согласовано',created_by:userId,updated_by:userId})
+  const offer=await insert('leader_commercial_offers',{lead_id:leadId,calculation_id:calculation.id,offer_number:Date.now(),title:marker,total_sum:10,status:'Согласовано',created_by:userId,updated_by:userId})
   return{ok:true,action:'prepare_leads_hardening',offer_id:offer.id}
 }
 
