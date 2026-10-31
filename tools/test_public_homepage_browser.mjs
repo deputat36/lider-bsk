@@ -57,6 +57,7 @@ try {
         '/menyu-dlya-kafe-borisoglebsk.html', '/prices.html', '/request.html',
         '/kontakty.html', '/privacy.html', '/poligrafiya-katalog.html',
         '/nashi-raboty.html', '/promoutery-borisoglebsk.html',
+        '/reklama-v-soobshchestvah-borisoglebska.html',
       ];
       for (const sample of samples) {
         await page.goto(origin + sample);

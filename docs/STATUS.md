@@ -1,17 +1,21 @@
 # Статус проекта РА «Лидер»
 
-## 2026-11-01 — поиск услуг опубликован, редактор КП проходит установку
+## 2026-11-01 — рабочий редактор КП установлен
 
-[PR #602](https://github.com/deputat36/lider-bsk/pull/602) merged, main e169ad8d.
-Поиск названий/синонимов, возврат к запросу, creative quick-link и предметные
-дополнения на 11 страницах печати проверены: PR61success+1штатный skipped,
-browser5 widths, Pages41248974367/runtime41248975195, отдельные 15/15 hashes.
-Формы и действующие URL сохранены, запрос поиска не уходит в URL/аналитику.
+[PR #603](https://github.com/deputat36/lider-bsk/pull/603), main0b15743b.
+Production offer-transitions v2 и service-only CAS/receipt RPC установлены,
+source/RPC fingerprints exact. Черновик редактируется, ввод сохраняется,
+отправленные/согласованные условия защищены, лишние прямые ACL закрыты.
+68/68 CI; native SQL, browser5 widths, real staging UI/API3014/reopen,
+7roles/concurrent/replay/deny PASS; fixtures/Auth0. Production15КП не менялись,
+приватный снимок сохранён. Pages41251104397/runtime41251105631 и UI5/5 hashes
+success. [Установка/rollback](CRM_OFFER_EDITOR_2026-10-31.md).
 
-Редактор КП подготовлен в [PR #603](https://github.com/deputat36/lider-bsk/pull/603):
-настоящая форма, CAS/receipt, защита отправленного/согласованного снимка,
-canonical RLS и закрытие лишних прямых ACL. Первоначальный candidate прошёл
-CI56/56; staging migration и реальный UI/HTTP proof ещё выполняются.
+Поиск [PR #602](https://github.com/deputat36/lider-bsk/pull/602) опубликован:
+синонимы/Back/четыре предметных дополнения, public15/15 exact. Текущий клиентский
+пакет уточняет повторный тираж/сезонный комплект, убирает import-заметки и
+недатированные показатели аудитории; ссылки, формы, цены и бренд сохранены.
+Реальная приёмка владельцем, Android и кабинет аналитики — отдельно.
 
 ## 2026-10-31 — серверные права и полный текст заявки установлены
 
