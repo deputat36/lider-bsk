@@ -449,7 +449,9 @@ async function createOffer() {
           full_text: texts.fullText,
           total_sum: calculation.client_total,
           valid_until: validUntil,
-          status: 'Черновик'
+          status: 'Черновик',
+          created_by: v4State.user?.id,
+          updated_by: v4State.user?.id
         })
         .select(OFFER_FIELDS)
         .single(),
@@ -643,6 +645,7 @@ function bindOfferEvents() {
   });
 
   document.addEventListener('leader-v4:lead-card-rendered', () => renderOffers());
+  document.addEventListener('leader-v4:offer-changed', () => renderOffers());
   document.addEventListener('leader-v4:route-change', (event) => {
     activeOfferId = null;
     selectedCalculationId = '';
