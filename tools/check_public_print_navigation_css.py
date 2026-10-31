@@ -43,7 +43,7 @@ hub_markers = (
     '<h2>Рассчитать полиграфию</h2>',
     'assets/public-lead-form.css?v=30',
     'assets/public-lead-form.js?v=36',
-    'assets/public-related-services.js?v=2',
+    'assets/public-related-services.js?v=3',
     'assets/public-print-product.js?v=1',
     'id="leader-lead-form" data-leader-lead-form',
 )
