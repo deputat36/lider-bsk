@@ -200,6 +200,38 @@ try {
       assert.equal(await page.locator('.service-list a').count(), 56);
       assert.equal(await page.locator('.service-cards a[data-service-explanation]').count(), 27, 'All services and the creative design cross-link are visible in the catalog');
       assert.equal(await page.locator('#leader-lead-form form').count(), 1);
+      const search = page.locator('#service-search-input');
+      await search.waitFor({ state: 'visible' });
+      for (const [query, expected] of [
+        ['1000 визиток', 'vizitki-borisoglebsk.html'],
+        ['вывеска', 'vyveski-borisoglebsk.html'],
+        ['оформить вход', 'oformlenie-vhoda-borisoglebsk.html'],
+        ['реклама в группе', 'reklama-v-soobshchestvah-borisoglebska.html'],
+        ['QR меню для кафе', 'qr-katalogi-onlayn-zapis.html'],
+        ['растяжка', 'bannery-borisoglebsk.html'],
+      ]) {
+        await search.fill(query);
+        assert.equal(await page.locator('#service-search-results a').first().getAttribute('href'), expected, query);
+      }
+      await search.fill('визитки1000');
+      await page.locator('#service-search-results a').first().click();
+      assert.equal(new URL(page.url()).pathname, '/vizitki-borisoglebsk.html');
+      await page.goBack();
+      assert.equal(await page.locator('#service-search-input').inputValue(), 'визитки1000', 'Back restores the catalog search without exposing it in the URL');
+      await page.locator('#service-search-input').fill('облачные драконы');
+      assert.equal(await page.locator('#service-search-results a').getAttribute('href'), '#request');
+      await page.locator('[data-search-clear]').click();
+      assert.equal(await page.locator('#service-search-input').inputValue(), '');
+      assert.equal(await page.locator('#service-search-results').isVisible(), false);
+      assert.equal(await page.evaluate(() => document.activeElement.id), 'service-search-input');
+      for (const sample of ['vizitki-borisoglebsk.html', 'menyu-dlya-kafe-borisoglebsk.html', 'razdatochnye-materialy-borisoglebsk.html']) {
+        await page.goto(origin + '/' + sample);
+        const related = page.locator('#leader-related-services a');
+        assert.equal(await related.count(), 4, sample);
+        for (const href of await related.evaluateAll(nodes => nodes.map(node => node.getAttribute('href')))) assert.notEqual(href, sample, 'Related services must not link to the current page');
+      }
+      await page.goto(origin + '/uslugi.html');
+      assert.equal(await page.locator('.quick-links a[href="#creative"]').count(), 1);
       await page.screenshot({ path: `artifacts/public-homepage/services-${width}.png` });
       if (width <= 1060) {
         assert.equal(await nav.isVisible(), false);
@@ -232,7 +264,7 @@ try {
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
       await page.screenshot({ path: `artifacts/public-homepage/services-form-${width}.png` });
       assert.deepEqual(errors, []); assert.deepEqual(failed, []); assert.deepEqual(writes, []);
-      console.log(JSON.stringify({ page: 'services', width, menu: true, detailsKeyboard: true, formMounted: true, errors, failed, writes }));
+      console.log(JSON.stringify({ page: 'services', width, searchAliases: true, searchBack: true, noSelfRelated: true, menu: true, detailsKeyboard: true, formMounted: true, errors, failed, writes }));
       await page.close();
       continue;
     }
