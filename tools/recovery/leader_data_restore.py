@@ -9,6 +9,7 @@ import argparse
 import base64
 import hashlib
 import json
+import os
 import re
 from pathlib import Path
 
@@ -171,8 +172,23 @@ def marker(snapshot):
     return 'Leader data restore drill v1; ' + snapshot['captured_at']
 
 
+def environment_guard():
+    return """DO $target$ BEGIN
+IF to_regclass('leader_staging.environment_guard') IS NULL THEN
+  RAISE EXCEPTION 'restore_requires_leader_staging';
+END IF;
+IF (SELECT count(*) FROM leader_staging.environment_guard) <> 1 OR NOT EXISTS(
+ SELECT 1 FROM leader_staging.environment_guard WHERE singleton
+ AND project_ref='otulfnouybahfnsycxqn' AND environment_name='staging'
+ AND repository='deputat36/lider-bsk') THEN
+ RAISE EXCEPTION 'restore_target_identity_mismatch';
+END IF;
+END $target$;
+"""
+
+
 def begin():
-    return "BEGIN;\nSET LOCAL lock_timeout='3s';\nSET LOCAL statement_timeout='45s';\nSET LOCAL timezone='UTC';\nSET LOCAL search_path=pg_catalog;\n"
+    return "BEGIN;\nSET LOCAL lock_timeout='3s';\nSET LOCAL statement_timeout='45s';\nSET LOCAL timezone='UTC';\nSET LOCAL search_path=pg_catalog;\n" + environment_guard()
 
 
 def guard(snapshot, schema):
@@ -199,7 +215,7 @@ def prepare(snapshot, schema):
                 if not seq:
                     raise ValueError('Missing IDENTITY sequence')
                 kind = {'d': 'BY DEFAULT', 'a': 'ALWAYS'}[c['identity']]
-                decl += f" GENERATED {kind} AS IDENTITY (SEQUENCE NAME {ns}.{ident(seq['name'])} START WITH {int(seq['start'])} INCREMENT BY {int(seq['increment'])})"
+                decl += f" GENERATED {kind} AS IDENTITY (SEQUENCE NAME {ns}.{ident(seq['name'])} START WITH {int(seq['start'])} INCREMENT BY {int(seq['increment'])} MINVALUE {int(seq['min'])} MAXVALUE {int(seq['max'])} CACHE {int(seq['cache'])})"
             elif c['default'] and c['default'].startswith('nextval('):
                 m = re.fullmatch(r"nextval\('(?:public\.)?([a-z_][a-z_0-9]*)'::regclass\)", c['default'])
                 if not m or ('public.' + m[1]) not in sequences:
@@ -262,7 +278,35 @@ def verify(snapshot, schema):
         key = table_key(t); row = snapshot['data'][key]
         n, sha = (0, digest('[]')) if key in EXCLUDED else (row['rows'], row['sha256'])
         checks.append(f"SELECT {literal(key)} name,count(*)={int(n)} count_ok,encode(extensions.digest(coalesce(jsonb_agg(to_jsonb(t.*) order by to_jsonb(t.*)::text),'[]'::jsonb)::text,'sha256'),'hex')={literal(sha)} digest_ok FROM {ns}.{ident(t['name'])} t")
-    return "SET timezone='UTC';\n" + guard(snapshot, schema) + f"WITH checks AS ({' UNION ALL '.join(checks)}), objects AS (SELECT c.* FROM pg_class c WHERE c.relnamespace={literal(schema)}::regnamespace) SELECT jsonb_build_object('tables',(select jsonb_agg(to_jsonb(checks)) from checks),'all_rows_exact',(select bool_and(count_ok and digest_ok) from checks),'table_count',(select count(*) from objects where relkind='r'),'rls_enabled',(select bool_and(relrowsecurity) from objects where relkind='r'),'fk_count',(select count(*) from pg_constraint c join objects o on o.oid=c.conrelid where c.contype='f'),'fk_validated',(select bool_and(c.convalidated and cr.relnamespace={literal(schema)}::regnamespace) from pg_constraint c join objects o on o.oid=c.conrelid join pg_class cr on cr.oid=c.confrelid where c.contype='f'),'business_triggers',(select count(*) from pg_trigger t join objects o on o.oid=t.tgrelid where not t.tgisinternal),'policies',(select count(*) from pg_policies where schemaname={literal(schema)}),'role_access',(select jsonb_object_agg(role,jsonb_build_object('schema_usage',has_schema_privilege(role,{literal(schema)},'USAGE'),'table_access',(select count(*) from objects o where relkind='r' and (has_table_privilege(role,o.oid,'SELECT') or has_table_privilege(role,o.oid,'INSERT') or has_table_privilege(role,o.oid,'UPDATE') or has_table_privilege(role,o.oid,'DELETE'))),'sequence_access',(select count(*) from objects o where relkind='S' and (has_sequence_privilege(role,o.oid,'USAGE') or has_sequence_privilege(role,o.oid,'SELECT') or has_sequence_privilege(role,o.oid,'UPDATE'))))) from (values ('anon'),('authenticated'),('service_role')) r(role))) result;\n"
+    sequence_checks = []
+    for seq in snapshot['sequences']:
+        maxima = []
+        for t in tables:
+            for c in t['columns']:
+                identity = (t['schema'],t['name'],c['name']) == (seq['owned_schema'],seq['owned_table'],seq['owned_column'])
+                default = c['default'] and re.fullmatch(r"nextval\('(?:public\.)?"+re.escape(seq['name'])+r"'::regclass\)", c['default'])
+                if identity or default:
+                    maxima.append(f"coalesce((select max({ident(c['name'])})::numeric from {ns}.{ident(t['name'])}),{int(seq['min'])-1})")
+        maximum = 'greatest(' + ','.join(maxima) + ')' if maxima else str(int(seq['min'])-1)
+        parameters = ' AND '.join(f"p.{column}::text={literal(seq[field])}" for field,column in [('start','seqstart'),('increment','seqincrement'),('min','seqmin'),('max','seqmax'),('cache','seqcache')])
+        sequence_checks.append(f"SELECT jsonb_build_object('name',{literal(table_key(seq))},'state_exact',v.last_value::text={literal(seq['last_value'])} AND v.is_called={str(seq['is_called']).lower()},'parameters_exact',{parameters} AND p.seqcycle={str(seq['cycle']).lower()} AND format_type(p.seqtypid,null)={literal(seq['type'])},'next_above_rows',(case when v.is_called then v.last_value::numeric+p.seqincrement else v.last_value::numeric end)>{maximum}) value FROM {ns}.{ident(seq['name'])} v JOIN pg_sequence p ON p.seqrelid={literal(schema+'.'+seq['name'])}::regclass")
+    sequences_sql = ' UNION ALL '.join(sequence_checks) or 'SELECT null::jsonb value WHERE false'
+    return "SET timezone='UTC';\n" + environment_guard() + guard(snapshot, schema) + f"""WITH checks AS ({' UNION ALL '.join(checks)}),
+objects AS (SELECT c.* FROM pg_class c WHERE c.relnamespace={literal(schema)}::regnamespace),
+sequence_checks AS ({sequences_sql})
+SELECT jsonb_build_object(
+ 'tables',(select jsonb_agg(to_jsonb(checks)) from checks),
+ 'all_rows_exact',(select bool_and(count_ok and digest_ok) from checks),
+ 'sequences',(select jsonb_agg(value) from sequence_checks),
+ 'all_sequences_exact',(select coalesce(bool_and((value->>'state_exact')::boolean AND (value->>'parameters_exact')::boolean AND (value->>'next_above_rows')::boolean),true) from sequence_checks),
+ 'table_count',(select count(*) from objects where relkind='r'),
+ 'rls_enabled',(select bool_and(relrowsecurity) from objects where relkind='r'),
+ 'fk_count',(select count(*) from pg_constraint c join objects o on o.oid=c.conrelid where c.contype='f'),
+ 'fk_validated',(select bool_and(c.convalidated and cr.relnamespace={literal(schema)}::regnamespace) from pg_constraint c join objects o on o.oid=c.conrelid join pg_class cr on cr.oid=c.confrelid where c.contype='f'),
+ 'business_triggers',(select count(*) from pg_trigger t join objects o on o.oid=t.tgrelid where not t.tgisinternal),
+ 'policies',(select count(*) from pg_policies where schemaname={literal(schema)}),
+ 'role_access',(select jsonb_object_agg(role,jsonb_build_object('schema_usage',has_schema_privilege(role,{literal(schema)},'USAGE'),'table_access',(select count(*) from objects o where relkind='r' and (has_table_privilege(role,o.oid,'SELECT') or has_table_privilege(role,o.oid,'INSERT') or has_table_privilege(role,o.oid,'UPDATE') or has_table_privilege(role,o.oid,'DELETE'))),'sequence_access',(select count(*) from objects o where relkind='S' and (has_sequence_privilege(role,o.oid,'USAGE') or has_sequence_privilege(role,o.oid,'SELECT') or has_sequence_privilege(role,o.oid,'UPDATE'))))) from (values ('anon'),('authenticated'),('service_role')) r(role))) result;
+"""
 
 
 def cleanup(snapshot, schema):
@@ -279,12 +323,19 @@ def cleanup(snapshot, schema):
     return ''.join(out)
 
 
+def private_write(path, data):
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(fd,'wb') as stream:
+        stream.write(data if isinstance(data,bytes) else data.encode())
+
+
 def seal_response(response, destination):
     """Offline RSA-OAEP wraps the one-time PGP data key. Private key never SQL."""
     from cryptography.hazmat.primitives.asymmetric import rsa, padding
     from cryptography.hazmat.primitives import hashes, serialization
     import os
-    destination.mkdir(parents=True, exist_ok=True)
+    destination.mkdir(parents=True, exist_ok=True, mode=0o700)
     if any((destination / n).exists() for n in ('snapshot.pgp', 'envelope.json', 'recovery-private-key.pem')):
         raise ValueError('Never replace a sealed bundle/key implicitly')
     ciphertext = base64.b64decode(response['ciphertext'], validate=False)
@@ -297,7 +348,7 @@ def seal_response(response, destination):
     receipt = {k: v for k, v in response.items() if k not in {'ciphertext', 'data_key'}}
     receipt.update({'format': FORMAT, 'project': PRODUCTION, 'wrapping': 'RSA-3072-OAEP-SHA256', 'data_encryption': 'OpenPGP AES256 with MDC', 'public_key_sha256': hashlib.sha256(public).hexdigest(), 'wrapped_data_key': base64.b64encode(wrapped).decode()})
     for name, data in [('snapshot.pgp', ciphertext), ('envelope.json', (json.dumps(receipt, indent=2)+'\n').encode()), ('recovery-private-key.pem', pem)]:
-        p=destination/name;p.write_bytes(data);os.chmod(p,0o600)
+        private_write(destination/name,data)
     return receipt
 
 
@@ -313,16 +364,16 @@ def decrypt_bundle(directory, output):
         raise ValueError('Ciphertext digest mismatch')
     private = serialization.load_pem_private_key((directory/'recovery-private-key.pem').read_bytes(),password=None)
     data_key = private.decrypt(base64.b64decode(envelope['wrapped_data_key']),padding.OAEP(mgf=padding.MGF1(hashes.SHA256()),algorithm=hashes.SHA256(),label=None))
-    with tempfile.TemporaryDirectory(prefix='ldr-decrypt-') as home:
-        secret = Path(home)/'passphrase';secret.write_bytes(data_key);secret.chmod(0o600)
-        result = subprocess.run(['gpg','--homedir',home,'--batch','--pinentry-mode','loopback','--no-symkey-cache','--passphrase-file',str(secret),'--output',str(output),'--decrypt',str(directory/'snapshot.pgp')],capture_output=True,timeout=45)
+    with tempfile.TemporaryDirectory(prefix='ldr-decrypt-',dir=output.parent) as home:
+        secret = Path(home)/'passphrase';private_write(secret,data_key)
+        clear = Path(home)/'verified-clear'
+        result = subprocess.run(['gpg','--homedir',home,'--batch','--pinentry-mode','loopback','--no-symkey-cache','--passphrase-file',str(secret),'--output',str(clear),'--decrypt',str(directory/'snapshot.pgp')],capture_output=True,timeout=45,umask=0o077)
         if result.returncode:
-            output.unlink(missing_ok=True)
             raise ValueError('GPG integrity/decryption verification failed')
-    os.chmod(output,0o600)
-    if hashlib.sha256(output.read_bytes()).hexdigest()!=envelope['plaintext_sha256']:
-        output.unlink(missing_ok=True)
-        raise ValueError('Decrypted snapshot digest mismatch')
+        data = clear.read_bytes()
+        if hashlib.sha256(data).hexdigest()!=envelope['plaintext_sha256']:
+            raise ValueError('Decrypted snapshot digest mismatch')
+        private_write(output,data)
     return envelope
 
 
@@ -341,9 +392,9 @@ def main():
         print(json.dumps({'plaintext_sha256':result['plaintext_sha256'],'verified':True}))
     else:
         snapshot=json.loads(a.input.read_text());validate(snapshot,a.schema)
-        a.output.mkdir(parents=True,exist_ok=True)
+        a.output.mkdir(parents=True,exist_ok=True,mode=0o700)
         for name,fn in [('prepare',prepare),('load',load),('finalize',finalize),('verify',verify),('cleanup',cleanup)]:
-            path=a.output/(name+'.sql');path.write_text(fn(snapshot,a.schema));path.chmod(0o600)
+            private_write(a.output/(name+'.sql'),fn(snapshot,a.schema))
         print(json.dumps({'tables':len(snapshot['metadata']['tables']),'copied_tables':len(set(snapshot['data'])-set(EXCLUDED)),'excluded':{k:v for k,v in EXCLUDED.items() if k in snapshot['data']},'fk':sum(c['type']=='f' for t in snapshot['metadata']['tables'] for c in t['constraints'])}))
 
 if __name__=='__main__':

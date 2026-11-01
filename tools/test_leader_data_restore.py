@@ -80,6 +80,10 @@ try:drill.prepare(bad,NS)
 except ValueError:pass
 else:raise AssertionError('Corrupt snapshot accepted')
 prepare=drill.prepare(snapshot,NS)
+assert 'restore_requires_leader_staging' in sql(prepare,fail=True)
+sql("CREATE SCHEMA leader_staging; CREATE TABLE leader_staging.environment_guard(singleton boolean,project_ref text,environment_name text,repository text); INSERT INTO leader_staging.environment_guard VALUES(true,'wrong-project','staging','deputat36/lider-bsk')")
+assert 'restore_target_identity_mismatch' in sql(prepare,fail=True)
+sql("UPDATE leader_staging.environment_guard SET project_ref='otulfnouybahfnsycxqn'")
 assert 'leader_fixture_side_effect' not in prepare and 'auth.uid' not in prepare
 sql(prepare)
 assert 'already exists' in sql(prepare,fail=True)
@@ -87,7 +91,7 @@ sql(drill.load(snapshot,NS))
 assert '23505' in sql(drill.load(snapshot,NS),fail=True)
 sql(drill.finalize(snapshot,NS))
 proof=json.loads(sql(drill.verify(snapshot,NS)))
-assert proof['all_rows_exact'] and proof['table_count']==5
+assert proof['all_rows_exact'] and proof['all_sequences_exact'] and proof['table_count']==5
 assert proof['fk_count']==3 and proof['fk_validated'] and proof['rls_enabled']
 assert proof['business_triggers']==0 and proof['policies']==0
 for role,access in proof['role_access'].items():
@@ -109,4 +113,4 @@ sql('DROP TABLE public.leader_external_counter')
 sql(drill.cleanup(snapshot,NS))
 assert sql(f"select to_regnamespace('{NS}') is null")=='t'
 assert sql('select n from public.leader_sentinel')=='99'
-print(json.dumps({'synthetic_native_restore':'PASS','tables':5,'foreign_keys':3,'precise_numeric':True,'cycle':True,'identity_and_order_counters':True,'source_trigger_not_copied':True,'excluded_live_config':True,'three_roles_denied':True,'external_view_and_default_preserved':True,'cleanup':True}))
+print(json.dumps({'synthetic_native_restore':'PASS','tables':5,'foreign_keys':3,'precise_numeric':True,'cycle':True,'identity_and_order_counters':True,'server_target_guard':True,'source_trigger_not_copied':True,'excluded_live_config':True,'three_roles_denied':True,'external_view_and_default_preserved':True,'cleanup':True}))
