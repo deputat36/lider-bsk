@@ -1,5 +1,8 @@
-document.addEventListener('DOMContentLoaded',function(){
-  window.setTimeout(function(){
+(function(){
+  function applyContactsPreset(){
+    var query=new URLSearchParams(location.search);
+    var catalog=window.LeaderServiceCatalog;
+    if((catalog&&catalog.find(query.get('service')))||query.get('scenario'))return;
     var form=document.querySelector('[data-leader-lead-widget]');
     if(!form)return;
     var service=form.querySelector('[name="service"]');
@@ -15,5 +18,6 @@ document.addEventListener('DOMContentLoaded',function(){
     if(message&&!message.value){
       message.value='Страница контактов. Нужна консультация и расчёт рекламной задачи.';
     }
-  },120);
-});
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',applyContactsPreset);else applyContactsPreset();
+})();

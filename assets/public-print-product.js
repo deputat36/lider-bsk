@@ -1,5 +1,8 @@
 (function(){
   function applyPrintProductPreset(){
+    var query=new URLSearchParams(location.search);
+    var catalog=window.LeaderServiceCatalog;
+    if((catalog&&catalog.find(query.get('service')))||query.get('scenario'))return;
     var page=document.body;
     if(!page||(!page.hasAttribute('data-lead-service')&&!page.hasAttribute('data-lead-message')))return;
     var serviceName=page.getAttribute('data-lead-service')||'Полиграфия';
@@ -18,5 +21,5 @@
     }
     if(message&&!message.value&&defaultMessage)message.value=defaultMessage;
   }
-  document.addEventListener('DOMContentLoaded',function(){setTimeout(applyPrintProductPreset,120);});
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',applyPrintProductPreset);else applyPrintProductPreset();
 })();

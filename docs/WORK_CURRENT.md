@@ -78,9 +78,19 @@ validate20261101070834 / cleanup20261101085258; namespace/relations0,Auth0.
 
 [Receipt/границы](LEADER_DATA_RESTORE_DRILL_2026-11-01.md),
 [machine receipt](../contracts/leader-data-restore-drill-20261101.json).
-Приватные файлы — в рабочей базе владельца; ключ не публиковать в GitHub.
+Приватные файлы — только владельцу в личном чате; ссылки на snapshot/key не
+публиковать в общих Docs или GitHub. В рабочих документах только итоги/receipt.
 Старый ZIP41345bytes был только подготовкой. Snapshot/data restore выполнены;
 полное DR/Auth/файлы/Edge/config activation и полный RTO не доказаны.
+
+## Следующий клиентский пакет
+
+Ветка agent/608-public-preset-preservation устраняет ещё три legacy side effects:
+print/contacts120ms и related80ms сбрасывали явно выбранную услугу. Дефект
+воспроизведён исполнением прежних скриптов. Page defaults применяются один раз
+при init и уважают service/scenario; related helper оставлен только для ссылок.
+Сохраняются обычные defaults, текст клиента и текущие URL/формы/цены.
+Проверить browser query/scenario/быстрый выбор на5 ширинах, затем Pages/readback.
 
 ## Следующая единая очередь
 
