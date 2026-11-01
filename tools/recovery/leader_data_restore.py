@@ -14,7 +14,7 @@ from pathlib import Path
 
 PRODUCTION = 'ofewxuqfjhamgerwzull'
 FORMAT = 'leader-scoped-snapshot-v1'
-TYPES = {'uuid', 'text', 'text[]', 'boolean', 'integer', 'bigint', 'numeric',
+TYPES = {'uuid', 'text', 'text[]', 'jsonb', 'boolean', 'integer', 'bigint', 'numeric',
          'numeric(14,2)', 'date', 'time without time zone', 'timestamp with time zone'}
 EXCLUDED = {
     'public.leader_backups': 'Historical nested backups, kept in the encrypted snapshot only',
