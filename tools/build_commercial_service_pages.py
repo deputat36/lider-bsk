@@ -23,6 +23,14 @@ def render(p):
  faqs=''.join(f'<details><summary>{e(q)}</summary><p>{e(a)}</p></details>' for q,a in p['faq'])
  related=''.join(f'<a href="{e(services[id]["pages"][0])}">{e(services[id]["label"])}</a>' for id in p['related'])
  demo=p['demo'];cards=''.join(f'<div class="demo-card"><span>{i:02d}</span><h3>{e(a)}</h3><p>{e(b)}</p></div>' for i,(a,b) in enumerate(demo['cards'],1))
+ sample=''
+ sample_css='<link rel="stylesheet" href="assets/public-service-work-samples.css?v=1">\n' if s['id']=='prepress' else ''
+ if s['id']=='prepress':
+  sample='''<section class="section soft service-work-sample" id="work-sample" data-owner-material="bormash-decal-design" data-work-kind="layout" aria-labelledby="work-sample-title"><div class="wrap service-explainer-grid">
+<figure class="service-explainer-figure"><a href="assets/portfolio/bormash-decal-design/bormash-decal.webp" aria-label="Открыть макет наклейки БОРМАШ крупнее"><img src="assets/portfolio/bormash-decal-design/bormash-decal.webp" width="2048" height="544" alt="Сине-серый макет наклейки с надписью «БОРМАШ — Борисоглебское машиностроение»" loading="lazy" decoding="async"></a><figcaption>2D-макет. Графический материал.</figcaption></figure>
+<div class="service-explainer-copy"><p class="service-explainer-label">Пример материала для обсуждения</p><h2 id="work-sample-title">Что проверить в макете наклейки</h2><p>На примере макета «БОРМАШ» можно обсудить размер, компоновку и форму будущего изделия. Для проверки пригодности к печати нужен исходный файл и требования производства.</p><p>В заявке укажите место печати, размер и тираж. Файл и требования можно передать при обсуждении заказа; после проверки согласуем необходимые доработки.</p><div class="service-actions"><a class="service-explainer-action" href="#request" data-service="Подготовка макетов к печати и ретушь">Обсудить похожую задачу</a><a class="service-secondary" href="nashi-raboty.html#bormash-decal-design">Все фото и макеты</a></div></div>
+</div></section>
+'''
  proof=''
  if s['id'] in {'visualization-3d','modeling-3d'}:
   proof='''<section class="section creative-proof"><div class="wrap creative-split"><figure class="creative-photo"><img src="assets/portfolio/volume-letters-production/letters-production.jpg" width="1264" height="1536" alt="Объёмные розовые буквы «ЦВЕТЫ» на рабочем столе в мастерской" loading="lazy" decoding="async"><figcaption>Фотография. Этап производства объёмных букв.</figcaption></figure><div><h2>Внешний вид можно обсудить до изготовления</h2><p>На фотографии показано реальное изделие в мастерской. 3D-модель и визуализацию создаём отдельно: они помогают заранее обсудить форму, пропорции и размещение рекламы.</p><a href="nashi-raboty.html">Посмотреть материалы работ</a></div></div></section>'''
@@ -38,13 +46,13 @@ def render(p):
 <link rel="stylesheet" href="assets/public-lead-form.css?v=30"><link rel="stylesheet" href="assets/public-simple-service.css?v=7"><link rel="stylesheet" href="assets/public-commercial-services.css?v=1"><link rel="stylesheet" href="assets/public-creative-services.css?v=20261028-contrast-1">
 <script type="application/ld+json">{json.dumps(ld,ensure_ascii=False,separators=(',',':'))}</script>
 <link rel="icon" type="image/svg+xml" href="assets/brand/logo-lider-mark.svg?v=4">
-{EXPLAINER_CSS}
+{sample_css}{EXPLAINER_CSS}
 <link rel="stylesheet" href="assets/public-product-system.css?v=1">
 </head><body class="page-service-modern page-commercial-service" data-commercial-service="{e(s['id'])}">
 {header}
 <section class="hero"><div class="wrap"><a class="back" href="uslugi.html">Все услуги</a><p class="commercial-direction">{e(direction)}</p><h1>{e(p['title'])}</h1><p>{e(description)}</p><div class="service-actions"><a class="btn" href="#request">Обсудить задачу</a><a class="service-secondary" href="#formats">Выбрать вариант</a></div><p class="service-note">Начать можно с описания задачи — готовое техническое задание не требуется.</p></div></section>
 {render_block(s['id'],s['label'])}
-<section class="section" id="formats"><div class="wrap"><h2>Выберите подходящий вариант</h2><p>{e(p['audience'])}</p><div class="grid service-formats">{formats}</div></div></section>
+{sample}<section class="section" id="formats"><div class="wrap"><h2>Выберите подходящий вариант</h2><p>{e(p['audience'])}</p><div class="grid service-formats">{formats}</div></div></section>
 {proof}
 <section class="section soft"><div class="wrap service-estimate"><div><h2>Что входит в работу</h2><ul class="commercial-includes">{includes}</ul></div><div><h3>Состав согласуем заранее</h3><p>В расчёте будут понятны результат, объём работ и отдельные дополнительные позиции. Дату и стоимость подтвердим после уточнения задачи.</p><a href="#request">Подобрать состав для меня</a></div></div></section>
 <section class="section" id="demo"><div class="wrap"><div class="commercial-demo"><p class="demo-label">Демонстрационный пример</p><h2>{e(demo['title'])}</h2><p>{e(demo['task'])}</p><div class="demo-grid">{cards}</div><p class="demo-caption">{e(demo['note'])} Не является выполненным проектом.</p><a href="#request">Обсудить похожую задачу</a></div></div></section>

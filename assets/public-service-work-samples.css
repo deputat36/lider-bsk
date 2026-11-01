@@ -1,0 +1,9 @@
+/* Existing owner materials shown within their relevant service. */
+html body .service-work-sample{scroll-margin-top:150px}
+html body .service-work-sample .service-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px}
+html body .service-work-sample .service-secondary{display:inline-flex;align-items:center;min-height:44px;line-height:1.4}
+html body .service-work-sample .service-explainer-figure a{display:block;border-radius:20px}
+html body .service-work-sample .service-explainer-figure a:focus-visible{outline:3px solid #ff6a00;outline-offset:4px}
+html body .service-work-sample[data-work-kind="layout"] .service-explainer-figure{align-self:center}
+html body .service-work-sample[data-work-kind="layout"] img{aspect-ratio:auto;box-sizing:border-box;padding:clamp(16px,2vw,28px);background:#151920}
+@media(max-width:760px){html body .service-work-sample{scroll-margin-top:110px}}
