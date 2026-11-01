@@ -87,7 +87,7 @@ def snapshot_sql(tables, sequences, metadata_sql=None, structure_sql=None):
     rows = []
     for t in tables:
         key = table_key(t); schema, name = scope_key(key)
-        rows.append(f"select {literal(key)} name, count(*) n, coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text),'[]'::jsonb)::text data_json from {ident(schema)}.{ident(name)} t")
+        rows.append(f"select {literal(key)} name, count(*) n, coalesce(jsonb_agg(to_jsonb(t.*) order by to_jsonb(t.*)::text),'[]'::jsonb)::text data_json from {ident(schema)}.{ident(name)} t")
     seqrows = []
     for seq in sequences:
         key = table_key(seq); schema, name = scope_key(key)
@@ -133,8 +133,10 @@ def validate(snapshot, schema):
         if digest(row['data_json']) != row['sha256']:
             raise ValueError('Snapshot table digest mismatch')
         # Preserve numeric lexical data_json. Never parse/reencode floats here.
-        count = len(json.loads(row['data_json'], parse_float=str))
-        if count != row['rows']:
+        parsed = json.loads(row['data_json'], parse_float=str)
+        if not isinstance(parsed,list) or any(not isinstance(r,dict) or set(r)!=set(c['name'] for c in t['columns']) for r in parsed):
+            raise ValueError('Snapshot must contain complete row objects')
+        if len(parsed) != row['rows']:
             raise ValueError('Snapshot row count mismatch')
         for col in t['columns']:
             ident(col['name'])
@@ -259,7 +261,7 @@ def verify(snapshot, schema):
     for t in tables:
         key = table_key(t); row = snapshot['data'][key]
         n, sha = (0, digest('[]')) if key in EXCLUDED else (row['rows'], row['sha256'])
-        checks.append(f"SELECT {literal(key)} name,count(*)={int(n)} count_ok,encode(extensions.digest(coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text),'[]'::jsonb)::text,'sha256'),'hex')={literal(sha)} digest_ok FROM {ns}.{ident(t['name'])} t")
+        checks.append(f"SELECT {literal(key)} name,count(*)={int(n)} count_ok,encode(extensions.digest(coalesce(jsonb_agg(to_jsonb(t.*) order by to_jsonb(t.*)::text),'[]'::jsonb)::text,'sha256'),'hex')={literal(sha)} digest_ok FROM {ns}.{ident(t['name'])} t")
     return "SET timezone='UTC';\n" + guard(snapshot, schema) + f"WITH checks AS ({' UNION ALL '.join(checks)}), objects AS (SELECT c.* FROM pg_class c WHERE c.relnamespace={literal(schema)}::regnamespace) SELECT jsonb_build_object('tables',(select jsonb_agg(to_jsonb(checks)) from checks),'all_rows_exact',(select bool_and(count_ok and digest_ok) from checks),'table_count',(select count(*) from objects where relkind='r'),'rls_enabled',(select bool_and(relrowsecurity) from objects where relkind='r'),'fk_count',(select count(*) from pg_constraint c join objects o on o.oid=c.conrelid where c.contype='f'),'fk_validated',(select bool_and(c.convalidated and cr.relnamespace={literal(schema)}::regnamespace) from pg_constraint c join objects o on o.oid=c.conrelid join pg_class cr on cr.oid=c.confrelid where c.contype='f'),'business_triggers',(select count(*) from pg_trigger t join objects o on o.oid=t.tgrelid where not t.tgisinternal),'policies',(select count(*) from pg_policies where schemaname={literal(schema)}),'role_access',(select jsonb_object_agg(role,jsonb_build_object('schema_usage',has_schema_privilege(role,{literal(schema)},'USAGE'),'table_access',(select count(*) from objects o where relkind='r' and (has_table_privilege(role,o.oid,'SELECT') or has_table_privilege(role,o.oid,'INSERT') or has_table_privilege(role,o.oid,'UPDATE') or has_table_privilege(role,o.oid,'DELETE'))),'sequence_access',(select count(*) from objects o where relkind='S' and (has_sequence_privilege(role,o.oid,'USAGE') or has_sequence_privilege(role,o.oid,'SELECT') or has_sequence_privilege(role,o.oid,'UPDATE'))))) from (values ('anon'),('authenticated'),('service_role')) r(role))) result;\n"
 
 

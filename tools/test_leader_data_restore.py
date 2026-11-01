@@ -59,7 +59,7 @@ meta=json.loads(sql((Path(__file__).parent/'recovery/inventory.sql').read_text()
 data={}
 for t in meta['tables']:
     key=drill.table_key(t)
-    item=json.loads(sql(f"select jsonb_build_object('data_json',coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text),'[]'::jsonb)::text,'rows',count(*)) from {drill.ident(t['schema'])}.{drill.ident(t['name'])} t"))
+    item=json.loads(sql(f"select jsonb_build_object('data_json',coalesce(jsonb_agg(to_jsonb(t.*) order by to_jsonb(t.*)::text),'[]'::jsonb)::text,'rows',count(*)) from {drill.ident(t['schema'])}.{drill.ident(t['name'])} t"))
     item['sha256']=drill.digest(item['data_json']);data[key]=item
 sequences=json.loads(sql("""select jsonb_agg(value) from (
 select jsonb_build_object('schema','public','name','leader_order_number_seq','last_value',last_value::text,'is_called',is_called,'type','bigint','start','1000','increment','1','min','1','max','9223372036854775807','cache','1','cycle',false,'owned_schema',null,'owned_table',null,'owned_column',null,'dependency_type',null) value from public.leader_order_number_seq

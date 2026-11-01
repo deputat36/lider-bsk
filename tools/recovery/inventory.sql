@@ -15,7 +15,7 @@ select jsonb_build_object(
  'captured_at',clock_timestamp(),
  'project','ofewxuqfjhamgerwzull',
  'mode','schema metadata; data and encryption supplied by the snapshot wrapper',
- 'tables',(select coalesce(jsonb_agg(to_jsonb(t)-'oid' order by t.name),'[]') from leader_tables t),
+ 'tables',(select coalesce(jsonb_agg(to_jsonb(t.*)-'oid' order by t.name),'[]') from leader_tables t),
  'functions',(select coalesce(jsonb_agg(to_jsonb(f) order by f.schema,f.name,f.args),'[]') from leader_functions f),
  'sequences',(select coalesce(jsonb_agg(jsonb_build_object('schema',n.nspname,'name',c.relname,'type',format_type(s.seqtypid,null),'start',s.seqstart::text,'increment',s.seqincrement::text,'min',s.seqmin::text,'max',s.seqmax::text,'cache',s.seqcache::text,'cycle',s.seqcycle)),'[]') from pg_class c join pg_namespace n on n.oid=c.relnamespace join pg_sequence s on s.seqrelid=c.oid where (n.nspname='public' and left(c.relname,7)='leader_') or n.nspname='leader_private'),
  'policies',(select coalesce(jsonb_agg(jsonb_build_object('schema',schemaname,'table',tablename,'name',policyname,'permissive',permissive,'roles',roles,'command',cmd,'using',qual,'check',with_check) order by tablename,policyname),'[]') from pg_policies where (schemaname='public' and left(tablename,7)='leader_') or left(schemaname,7)='leader_')
