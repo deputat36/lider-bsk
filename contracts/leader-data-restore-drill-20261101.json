@@ -1,0 +1,132 @@
+{
+  "date_moscow": "2026-11-01",
+  "pr": 607,
+  "source_head_tested": "5a9c181d79cadbf7d4c61433fb78cfac9687c810",
+  "native_run": 41283418373,
+  "native_job": 124779788481,
+  "source_project": "ofewxuqfjhamgerwzull",
+  "test_project": "otulfnouybahfnsycxqn",
+  "namespace": "leader_restore_drill_20261101",
+  "snapshot": {
+    "captured_at": "2026-11-01T06:55:03.260178+00:00",
+    "tables": 67,
+    "rows": 301,
+    "plaintext_bytes": 1383478,
+    "plaintext_sha256": "edac2e5e13eb160debb5c6ede5b93b589cd0c979553c5e245eae7a963631449e",
+    "ciphertext_sha256": "db8026f6128d8bef71cfe325b453436c4f9253af1f264dc2a2708c7f0f57ce2e",
+    "encrypted_archive_bytes": 171854,
+    "encrypted_archive_sha256": "a282816120fcf62dde171a555eb9659ce9586e155835473abce70b23aa5c8250",
+    "durably_saved": true,
+    "separate_private_key_saved": true,
+    "independent_decrypt_sha256_exact": true,
+    "sql_function_sources": 79,
+    "sequences": 2
+  },
+  "restore": {
+    "created_tables": 67,
+    "copied_tables": 58,
+    "copied_rows": 290,
+    "excluded_tables": 9,
+    "excluded_rows": 11,
+    "all_columns_and_rows_sha256_exact": true,
+    "foreign_keys": 78,
+    "all_fk_validated": true,
+    "all_sequences_exact": true,
+    "rls": true,
+    "source_business_triggers_installed": 0,
+    "policies": 0,
+    "role_access": {
+      "anon": {
+        "schema_usage": false,
+        "table_access": 0,
+        "sequence_access": 0
+      },
+      "service_role": {
+        "schema_usage": false,
+        "table_access": 0,
+        "sequence_access": 0
+      },
+      "authenticated": {
+        "schema_usage": false,
+        "table_access": 0,
+        "sequence_access": 0
+      }
+    },
+    "real_role_denials": [
+      {
+        "role": "anon",
+        "expected_denial": true
+      },
+      {
+        "role": "authenticated",
+        "expected_denial": true
+      },
+      {
+        "role": "service_role",
+        "expected_denial": true
+      }
+    ],
+    "isolation": {
+      "rules": 0,
+      "views": 0,
+      "documents": 0,
+      "functions": 0,
+      "max_offer": 24,
+      "max_order": 1002,
+      "next_offer": 25,
+      "next_order": 1006,
+      "document_counters": 0,
+      "outside_check_functions": 0,
+      "outside_default_functions": 0,
+      "outside_default_relations": 0
+    }
+  },
+  "cleanup": {
+    "migration_history": [
+      {
+        "name": "leader_restore_drill_20261101_prepare",
+        "version": "20261101070747"
+      },
+      {
+        "name": "leader_restore_drill_20261101_validate",
+        "version": "20261101070834"
+      },
+      {
+        "name": "leader_restore_drill_20261101_cleanup",
+        "version": "20261101085258"
+      }
+    ],
+    "namespace_absent": true,
+    "remaining_relations": 0,
+    "auth_users_after": 0,
+    "core_staging_fingerprint_before": "b80635135d13ba1e7ced7e1ff60eff4e62ca40c098403e3012f45971d88b8c2a",
+    "core_staging_fingerprint_after": "b80635135d13ba1e7ced7e1ff60eff4e62ca40c098403e3012f45971d88b8c2a",
+    "cron_unchanged": true,
+    "confirmation_expired_then_reissued": true,
+    "cleanup_readback_at": "2026-11-01T08:54:34.835448+00:00"
+  },
+  "production": {
+    "rows": 301,
+    "tables": 67,
+    "fingerprint": "6bf8b172ce1453672ae8c361187702f62816e67664b86e9099e048926f0db28a",
+    "all_tables_unchanged": true,
+    "dml_performed": false
+  },
+  "advisors": {
+    "security": true,
+    "performance": true,
+    "observation_timestamps_excluded": true
+  },
+  "boundaries": {
+    "full_disaster_recovery_proven": false,
+    "auth_accounts_restored": false,
+    "external_files_restored": false,
+    "edge_runtime_restored": false,
+    "live_config_restored": false,
+    "full_rto_measured": false,
+    "notification_workers_started": false,
+    "real_owner_acceptance": false
+  },
+  "started": "2026-11-01T07:07:47.088Z",
+  "ended": "2026-11-01T08:54:34.864Z"
+}

@@ -60,17 +60,27 @@ keyboard scroll, цвета; mobile hero/table просмотрены, artifact 
 Тарифы и площадки сохранены. Docs00/02 обновлены и содержат исходный аудит,
 результаты PR600/602/603/604/605, приватный снимок КП и подготовку восстановления.
 
-## Подготовка восстановления
+## Защищённый снимок и проверка восстановления данных
 
-Read-only inventory01.11: 67 таблиц (49public+18private), все RLS; 301 строка
-с настройками/справочниками в27 непустых таблицах; 78FK,79functions,115policies,
-247indexes,34triggers,8views,1sequence,1Leader cron. Подготовлены metadata/ACL,
-function hashes, точные counts, исходные SELECT и сценарий isolated restore;
-ZIP41345bytes/SHA256bf51531ff822209ad50a2ea5ed08e5d23cda68f0e37dfe021dde0e5dac6620c8
-сохранён приватно, ссылка в документе02. В нём нет клиентских строк/секретов.
-Config keys/salt/push auth, Auth UUID безFK, файлы/внешние URLs, receipts и
-счётчики учтены отдельно. Полный data backup/изолированный restore и RPO/RTO
-не выполнены. Не называть inventory или снимок15КП полноценной аварийной копией.
+PR607: единый MVCC snapshot67 таблиц/301 строка,79 SQL sources,2 sequence
+(включая IDENTITY номера КП, пропущенный старым inventory). Ciphertext и
+отдельный RSA private key сохранены приватно; полный GPG decrypt/SHA256 exact.
+Read-only production: все67 таблиц/301 строка неизменны после испытания.
+
+Реальный stage data restore67 typed tables/RLS,58 выбранных таблиц/290 строк;
+остальные9/11 (архивы/config/queues) только в encrypted snapshot. Полные поля/hash,
+78FK validated,2 sequence state/parameters/next>max exact; три реальные role
+SELECT-denials, ACL закрыты и для BYPASSRLS. Business triggers/functions0;
+внешних default/CHECK dependencies0. Native run41283418373, exact5a9c181d:19/19.
+Cleanup RESTRICT с guard завершён: stage history prepare20261101070747 /
+validate20261101070834 / cleanup20261101085258; namespace/relations0,Auth0.
+50 рабочих stage таблиц и cron неизменны; advisors findings до/после совпадают.
+
+[Receipt/границы](LEADER_DATA_RESTORE_DRILL_2026-11-01.md),
+[machine receipt](../contracts/leader-data-restore-drill-20261101.json).
+Приватные файлы — в рабочей базе владельца; ключ не публиковать в GitHub.
+Старый ZIP41345bytes был только подготовкой. Snapshot/data restore выполнены;
+полное DR/Auth/файлы/Edge/config activation и полный RTO не доказаны.
 
 ## Следующая единая очередь
 
@@ -98,10 +108,9 @@ Config keys/salt/push auth, Auth UUID безFK, файлы/внешние URLs, 
   GSC Wizard ранее вернул payment_required — не повторять без изменения доступа
   и не покупать подписку без конкретного бюджета. Реальный Android push ещё
   не принят; не писать PWA заново из-за отсутствия физической проверки.
-- Следующий доступный технический пакет: согласованный приватный снимок по
-  подготовленному inventory → isolated restore → связи/суммы/ACL/counters →
-  фактическое время и cleanup. На восстанавливаемом стенде до проверки
-  выключить исходящие workers/cron; действующий production не отключать.
+- Базовый snapshot/data restore завершён. Дальше — отдельная проверка правил
+  приложения/Auth/файлов/Edge в полноценном изолированном целевом окружении;
+  общий production и Auth не откатывать, новые расходы без бюджета не создавать.
   Не восстанавливать реальные данные в public staging или публичном CI.
   Продолжать предметные примеры/подачу пяти приоритетных услуг по обращениям;
   использовать реальные материалы, цены с конфигурацией/датой/источником.

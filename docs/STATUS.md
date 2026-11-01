@@ -1,5 +1,18 @@
 # Статус проекта РА «Лидер»
 
+## 2026-11-01 — защищённый снимок и реальное испытание восстановления данных
+
+PR607:67 таблиц/301 строка в encrypted snapshot, separate RSA private key,
+целый GPG decrypt/SHA256 exact. Учтены оба sequence, включая IDENTITY КП.
+Stage67 typed tables/RLS,58/290 восстановлены без потерь,78 FK validated,
+оба counters exact/next>max, реальные deny anon/authenticated/service_role.
+9/11 config/queues/archives остаются в encrypted snapshot, не активировались.
+Cleanup history20261101085258, namespace/relations0/Auth0. Production67/301,
+50 настоящих stage таблиц и cron неизменны, advisors findings совпадают.
+Native exact5a9c181d:19/19, run41283418373; итоговый CI текущего SHA — в PR.
+Полное DR/Auth/files/Edge/RTO этим не заявляются.
+[Receipt](LEADER_DATA_RESTORE_DRILL_2026-11-01.md).
+
 ## 2026-11-01 — уточнены клиентские страницы и исторические связи
 
 PR604 main187d9723 опубликован: понятное продолжение заказа визиток,
