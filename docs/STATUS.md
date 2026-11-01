@@ -7,6 +7,11 @@ print/contacts120ms и related80ms заменяли query/scenario/быстры�
 Начальная установка defaults выполняется синхронно и уважает явный маршрут;
 related helper занимается только предметными ссылками. Browser customer-path
 проверяет выбор/текст и обычные defaults на5 ширинах без отправки заявок.
+Опубликовано через [PR608](https://github.com/deputat36/lider-bsk/pull/608),
+main49d71a16;61/61 exact headdf83e82e. Pages41292714247/runtime41292715230
+success;15/15 public files (12HTML/3JS) HTTP200/SHA256 exact. Docs00/02
+обновлены и перечитаны; параметры, ручной выбор и заметки не сбрасываются.
+[Receipt](../contracts/public-preset-preservation-release-20261101.json).
 
 ## 2026-11-01 — защищённый снимок и реальное испытание восстановления данных
 
@@ -18,6 +23,9 @@ Stage67 typed tables/RLS,58/290 восстановлены без потерь,7
 Cleanup history20261101085258, namespace/relations0/Auth0. Production67/301,
 50 настоящих stage таблиц и cron неизменны, advisors findings совпадают.
 Native exact5a9c181d:19/19, run41283418373; итоговый CI текущего SHA — в PR.
+PR607 merged main74d5382f:37/37 exact head10a36aaa; Pages41291382842 и
+runtime41291383707 success. В рабочих Docs только итоги, приватный snapshot
+и отдельный ключ предоставляются владельцу лично, без ссылок в общих файлах.
 Полное DR/Auth/files/Edge/RTO этим не заявляются.
 [Receipt](LEADER_DATA_RESTORE_DRILL_2026-11-01.md).
 

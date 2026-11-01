@@ -1,0 +1,131 @@
+{
+  "merge_sha": "49d71a16dabab1826237d582716a7f74db7ebd0d",
+  "verified_at_utc": "2026-11-01T09:22:47.049820+00:00",
+  "files": [
+    {
+      "path": "assets/public-contacts.js",
+      "status": 200,
+      "sha256": "4c0ed1a69e201eb96fcdc8202fac69d7d9ea1499859b0a5ab5488d83c9bc950f",
+      "expected_sha256": "4c0ed1a69e201eb96fcdc8202fac69d7d9ea1499859b0a5ab5488d83c9bc950f",
+      "match": true
+    },
+    {
+      "path": "assets/public-print-product.js",
+      "status": 200,
+      "sha256": "0822f7898730fccc4746842475d7ede2dc40ad7c3b8f757d171663da0419ff70",
+      "expected_sha256": "0822f7898730fccc4746842475d7ede2dc40ad7c3b8f757d171663da0419ff70",
+      "match": true
+    },
+    {
+      "path": "assets/public-related-services.js",
+      "status": 200,
+      "sha256": "a701015ebce1af360639bfc62677fedc3871627f2bf00d0f53a17ce9a494f500",
+      "expected_sha256": "a701015ebce1af360639bfc62677fedc3871627f2bf00d0f53a17ce9a494f500",
+      "match": true
+    },
+    {
+      "path": "birki-etiketki-borisoglebsk.html",
+      "status": 200,
+      "sha256": "af806632152a31b8979d0771965eac4c1d89a1abbeeae45e6ae5830806056a8d",
+      "expected_sha256": "af806632152a31b8979d0771965eac4c1d89a1abbeeae45e6ae5830806056a8d",
+      "match": true
+    },
+    {
+      "path": "blanki-borisoglebsk.html",
+      "status": 200,
+      "sha256": "62105b5b36b3300a28ca4bd564601fd59184585e79acbbbc6daccc815a40b3c6",
+      "expected_sha256": "62105b5b36b3300a28ca4bd564601fd59184585e79acbbbc6daccc815a40b3c6",
+      "match": true
+    },
+    {
+      "path": "buklety-borisoglebsk.html",
+      "status": 200,
+      "sha256": "7c5ba57b1c70334f6fb6da320845b0e8cf9738a532f626eb36d905e15a465e2f",
+      "expected_sha256": "7c5ba57b1c70334f6fb6da320845b0e8cf9738a532f626eb36d905e15a465e2f",
+      "match": true
+    },
+    {
+      "path": "gramoty-borisoglebsk.html",
+      "status": 200,
+      "sha256": "c4d8ab9c096e473329a8f48b76f6f57e28b669f19a4425c8c922e0c6a53bed45",
+      "expected_sha256": "c4d8ab9c096e473329a8f48b76f6f57e28b669f19a4425c8c922e0c6a53bed45",
+      "match": true
+    },
+    {
+      "path": "kalendari-borisoglebsk.html",
+      "status": 200,
+      "sha256": "dd6133988b754d2c8d3e3384788b9a47921bd7c1c5a46c89bfd8ac67a412d4f1",
+      "expected_sha256": "dd6133988b754d2c8d3e3384788b9a47921bd7c1c5a46c89bfd8ac67a412d4f1",
+      "match": true
+    },
+    {
+      "path": "kontakty.html",
+      "status": 200,
+      "sha256": "8e4cb22e5a76067e565f42f16b6745e4dbe43b31f55d1a06715245c68ee47552",
+      "expected_sha256": "8e4cb22e5a76067e565f42f16b6745e4dbe43b31f55d1a06715245c68ee47552",
+      "match": true
+    },
+    {
+      "path": "menyu-dlya-kafe-borisoglebsk.html",
+      "status": 200,
+      "sha256": "20617db334800cfa6020931ca1662b4285f6e9e21c8e0d1a71e47a98e5c95d21",
+      "expected_sha256": "20617db334800cfa6020931ca1662b4285f6e9e21c8e0d1a71e47a98e5c95d21",
+      "match": true
+    },
+    {
+      "path": "otkrytki-priglasheniya-borisoglebsk.html",
+      "status": 200,
+      "sha256": "54ef41dbfcfd39d9f1e990146c2ea138b2c1ed42410aacfa5e5301358f279f02",
+      "expected_sha256": "54ef41dbfcfd39d9f1e990146c2ea138b2c1ed42410aacfa5e5301358f279f02",
+      "match": true
+    },
+    {
+      "path": "papki-konverty-borisoglebsk.html",
+      "status": 200,
+      "sha256": "76f1600787d53a391fb418f47a2acccd09e8b3d0cbcd3492fb0f1cd395a786e0",
+      "expected_sha256": "76f1600787d53a391fb418f47a2acccd09e8b3d0cbcd3492fb0f1cd395a786e0",
+      "match": true
+    },
+    {
+      "path": "poligrafiya-borisoglebsk.html",
+      "status": 200,
+      "sha256": "2cba19d95f961b68c3b61873335c1ab0bbb032c26be360ce56729fb72429dfa9",
+      "expected_sha256": "2cba19d95f961b68c3b61873335c1ab0bbb032c26be360ce56729fb72429dfa9",
+      "match": true
+    },
+    {
+      "path": "razdatochnye-materialy-borisoglebsk.html",
+      "status": 200,
+      "sha256": "3eac14d94b62c6f7a32ba1c46800bbe9b23c9e7f2b3a23bdc1690db74071c852",
+      "expected_sha256": "3eac14d94b62c6f7a32ba1c46800bbe9b23c9e7f2b3a23bdc1690db74071c852",
+      "match": true
+    },
+    {
+      "path": "vizitki-borisoglebsk.html",
+      "status": 200,
+      "sha256": "26a4e8de4096fbd57193470c5322b6b45f73749bdc403c10f00a2c205e083ccb",
+      "expected_sha256": "26a4e8de4096fbd57193470c5322b6b45f73749bdc403c10f00a2c205e083ccb",
+      "match": true
+    }
+  ],
+  "pull_request": 608,
+  "checked_head_sha": "df83e82eb13e4d673a961c6fe79d7b9cbf6ac3e8",
+  "successful_checks": 61,
+  "pages_run": 41292714247,
+  "runtime_readback_run": 41292715230,
+  "browser_widths": [
+    1440,
+    1024,
+    768,
+    390,
+    360
+  ],
+  "public_lead_submissions": 0,
+  "business_data_writes": 0,
+  "scope": "Preserve service/scenario links, subsequent manual selection, notes and ordinary defaults on print/contact pages. Related-services helper only renders links.",
+  "limitations": [
+    "No measured conversion uplift yet.",
+    "Yandex Metrika counter 109387236 cabinet goals require secure sign-in; source events alone do not prove goals.",
+    "No actual Android closed-tab push acceptance."
+  ]
+}

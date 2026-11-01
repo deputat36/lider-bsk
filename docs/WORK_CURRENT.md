@@ -62,7 +62,9 @@ keyboard scroll, цвета; mobile hero/table просмотрены, artifact 
 
 ## Защищённый снимок и проверка восстановления данных
 
-PR607: единый MVCC snapshot67 таблиц/301 строка,79 SQL sources,2 sequence
+[PR607](https://github.com/deputat36/lider-bsk/pull/607), main74d5382f,
+37/37 exact head10a36aaa; Pages41291382842/runtime41291383707 success.
+Единый MVCC snapshot67 таблиц/301 строка,79 SQL sources,2 sequence
 (включая IDENTITY номера КП, пропущенный старым inventory). Ciphertext и
 отдельный RSA private key сохранены приватно; полный GPG decrypt/SHA256 exact.
 Read-only production: все67 таблиц/301 строка неизменны после испытания.
@@ -83,14 +85,18 @@ validate20261101070834 / cleanup20261101085258; namespace/relations0,Auth0.
 Старый ZIP41345bytes был только подготовкой. Snapshot/data restore выполнены;
 полное DR/Auth/файлы/Edge/config activation и полный RTO не доказаны.
 
-## Следующий клиентский пакет
+## Сохранение выбора услуги опубликовано
 
-Ветка agent/608-public-preset-preservation устраняет ещё три legacy side effects:
+[PR608](https://github.com/deputat36/lider-bsk/pull/608), main49d71a16,
+61/61 exact headdf83e82e. Устранены ещё три legacy side effects:
 print/contacts120ms и related80ms сбрасывали явно выбранную услугу. Дефект
 воспроизведён исполнением прежних скриптов. Page defaults применяются один раз
 при init и уважают service/scenario; related helper оставлен только для ссылок.
 Сохраняются обычные defaults, текст клиента и текущие URL/формы/цены.
-Проверить browser query/scenario/быстрый выбор на5 ширинах, затем Pages/readback.
+Browser query/scenario/быстрый выбор и notes/defaults на5 ширинах PASS.
+Pages41292714247/runtime41292715230 success; все15 изменённых public files
+(12HTML/3JS) HTTP200/SHA256 exact. Docs00/02 обновлены и перечитаны.
+[Машинный receipt](../contracts/public-preset-preservation-release-20261101.json).
 
 ## Следующая единая очередь
 
@@ -115,6 +121,8 @@ print/contacts120ms и related80ms сбрасывали явно выбранн�
   или производство без факта. Счёт/проекты договора/акта уже подготовлены.
 - Аналитика: кабинет Метрики/настроенные цели и actual Android/FCM требуют
   отдельной проверки. Событие в коде не равно цели; клик по телефону не звонок.
+  Проверка01.11: в доступном браузере Яндекс показывает форму входа; кабинет
+  счётчика109387236 ещё не открыт. Нужен browserAuth, пароль/OTP не просить в чат.
   GSC Wizard ранее вернул payment_required — не повторять без изменения доступа
   и не покупать подписку без конкретного бюджета. Реальный Android push ещё
   не принят; не писать PWA заново из-за отсутствия физической проверки.
