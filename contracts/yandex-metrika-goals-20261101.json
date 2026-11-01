@@ -1,0 +1,82 @@
+{
+  "counter_id": 109387236,
+  "counter_name": "РА Лидер",
+  "domain": "lider-bsk.ru",
+  "observed_date": "2026-11-01",
+  "verification_method": "Authenticated browser UI; saved goal rows reread after reload",
+  "timezone": "Europe/Moscow",
+  "created_goals": [
+    {
+      "event": "lead_confirmed",
+      "goal_id": 677481529,
+      "name": "Обращение принято сервером",
+      "condition": "equals",
+      "type": "event"
+    },
+    {
+      "event": "messenger_click",
+      "goal_id": 677482187,
+      "name": "Переход в мессенджер",
+      "condition": "equals",
+      "type": "event"
+    },
+    {
+      "event": "email_click",
+      "goal_id": 677482564,
+      "name": "Клик по email",
+      "condition": "equals",
+      "type": "event"
+    },
+    {
+      "event": "form_view",
+      "goal_id": 677482669,
+      "name": "Форма заявки видна",
+      "condition": "equals",
+      "type": "event"
+    },
+    {
+      "event": "form_start",
+      "goal_id": 677482849,
+      "name": "Начато заполнение формы",
+      "condition": "equals",
+      "type": "event"
+    },
+    {
+      "event": "form_submit_attempt",
+      "goal_id": 677482852,
+      "name": "Попытка отправки формы",
+      "condition": "equals",
+      "type": "event"
+    }
+  ],
+  "reused_phone_click_goal_id": 562191036,
+  "preserved_goal_ids": [
+    562190963,
+    562191036,
+    562191092,
+    562191146,
+    562193093,
+    562193094,
+    562507996,
+    562507997,
+    569181024,
+    676647728
+  ],
+  "new_goals_read_back_after_reload": 6,
+  "previous_goals_present_after_reload": 10,
+  "manual_goals_after": 10,
+  "automatic_goals_after": 6,
+  "reports_contain_visits": true,
+  "business_data_writes": 0,
+  "synthetic_success_events": 0,
+  "new_static_revenue_values": 0,
+  "filters_changed": false,
+  "existing_goals_changed": false,
+  "limitations": [
+    "No new natural lead_confirmed delivery has been verified.",
+    "No conversion uplift or order revenue attribution has been established.",
+    "The debug overlay was not observed in the browser, so live goal-delivery proof remains unknown.",
+    "Webmaster linkage and the existing filter have not been audited.",
+    "Recorded traffic baseline and account screenshot are private owner materials, not published here."
+  ]
+}
