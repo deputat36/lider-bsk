@@ -48,7 +48,7 @@ assets = (
     'assets/public-lead-form.css?v=30',
         'assets/public-business-card-builder.css?v=3',
     'assets/public-lead-form.js?v=36',
-    'assets/public-related-services.js?v=3',
+    'assets/public-related-services.js?v=4',
     'assets/public-business-card-builder.js?v=2',
 )
 for asset in assets:
