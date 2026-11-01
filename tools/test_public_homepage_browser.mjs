@@ -87,6 +87,32 @@ try {
           await page.screenshot({ path: `artifacts/public-homepage/customer-${sample.slice(1)}-${width}.png` });
         }
       }
+      // Page presets must preserve explicit routes and any subsequent choice.
+      for (const [sample, expected] of [
+        ['/menyu-dlya-kafe-borisoglebsk.html?service=campaign', 'Комплексная реклама'],
+        ['/razdatochnye-materialy-borisoglebsk.html?scenario=cafe', 'Комплексная реклама'],
+        ['/kontakty.html?service=maps', 'Яндекс Карты и 2ГИС'],
+        ['/kontakty.html?service=unknown-service', 'Другое'],
+      ]) {
+        await page.goto(origin + sample);
+        assert.equal(await page.locator('[name="service"]').inputValue(), expected, sample);
+        await page.locator('[name="message"]').fill('Сохранить мои пожелания и выбранное направление.');
+        await page.waitForTimeout(180);
+        assert.equal(await page.locator('[name="service"]').inputValue(), expected, sample + ' delayed preset');
+        assert.equal(await page.locator('[name="message"]').inputValue(), 'Сохранить мои пожелания и выбранное направление.');
+      }
+      for (const [sample, initial] of [
+        ['/menyu-dlya-kafe-borisoglebsk.html', 'Полиграфия'],
+        ['/kontakty.html', 'Другое'],
+      ]) {
+        await page.goto(origin + sample);
+        assert.equal(await page.locator('[name="service"]').inputValue(), initial);
+        await page.locator('[name="message"]').fill('Нужен комплексный заказ, текст оставить.');
+        await page.locator('[name="service"]').selectOption('Комплексная реклама');
+        await page.waitForTimeout(180);
+        assert.equal(await page.locator('[name="service"]').inputValue(), 'Комплексная реклама');
+        assert.equal(await page.locator('[name="message"]').inputValue(), 'Нужен комплексный заказ, текст оставить.');
+      }
       // A page-specific timer used to replace the query/button choice after 700ms.
       await page.goto(origin + '/reklama-v-soobshchestvah-borisoglebska.html?service=campaign');
       await page.locator('[name="message"]').fill('Нужны публикации к открытию кафе, материалы готовы.');

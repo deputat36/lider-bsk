@@ -92,7 +92,7 @@ for marker in (
     "page.getAttribute('data-lead-message')||''",
     "document.querySelector('[data-leader-lead-widget]')",
     "service.add(new Option(serviceName,serviceName))",
-    'setTimeout(applyPrintProductPreset,120)',
+    "document.addEventListener('DOMContentLoaded',applyPrintProductPreset)",
 ):
     if marker not in js:
         raise SystemExit(f'Missing JS contract marker: {marker}')
@@ -103,8 +103,8 @@ for forbidden in ('fetch(', 'XMLHttpRequest', 'localStorage', 'sessionStorage'):
 form_css = 'assets/public-lead-form.css?v=30'
 shared_css = 'assets/public-print-product.css?v=1'
 form_js = 'assets/public-lead-form.js?v=36'
-related_js = 'assets/public-related-services.js?v=3'
-preset_js = 'assets/public-print-product.js?v=1'
+related_js = 'assets/public-related-services.js?v=4'
+preset_js = 'assets/public-print-product.js?v=2'
 
 def assert_no_executable_inline(page_name: str, html: str) -> None:
     if re.search(r'<script(?![^>]*\bsrc=)(?![^>]*type=["\']application/ld\+json["\'])[^>]*>', html, flags=re.I):

@@ -12,7 +12,7 @@ JS = ROOT / "assets" / "public-contacts.js"
 FORM_CSS = 'assets/public-lead-form.css?v=30'
 PAGE_CSS = 'assets/public-contacts.css?v=1'
 FORM_JS = 'assets/public-lead-form.js?v=36'
-PAGE_JS = 'assets/public-contacts.js?v=1'
+PAGE_JS = 'assets/public-contacts.js?v=2'
 
 
 def main() -> None:
