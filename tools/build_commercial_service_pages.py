@@ -24,6 +24,7 @@ def render(p):
  related=''.join(f'<a href="{e(services[id]["pages"][0])}">{e(services[id]["label"])}</a>' for id in p['related'])
  demo=p['demo'];cards=''.join(f'<div class="demo-card"><span>{i:02d}</span><h3>{e(a)}</h3><p>{e(b)}</p></div>' for i,(a,b) in enumerate(demo['cards'],1))
  sample=''
+ sample_css='<link rel="stylesheet" href="assets/public-service-work-samples.css?v=1">\n' if s['id']=='prepress' else ''
  if s['id']=='prepress':
   sample='''<section class="section soft service-work-sample" id="work-sample" data-owner-material="bormash-decal-design" data-work-kind="layout" aria-labelledby="work-sample-title"><div class="wrap service-explainer-grid">
 <figure class="service-explainer-figure"><a href="assets/portfolio/bormash-decal-design/bormash-decal.webp" aria-label="Открыть макет наклейки БОРМАШ крупнее"><img src="assets/portfolio/bormash-decal-design/bormash-decal.webp" width="2048" height="544" alt="Сине-серый макет наклейки с надписью «БОРМАШ — Борисоглебское машиностроение»" loading="lazy" decoding="async"></a><figcaption>2D-макет. Графический материал.</figcaption></figure>
@@ -47,7 +48,7 @@ def render(p):
 <link rel="icon" type="image/svg+xml" href="assets/brand/logo-lider-mark.svg?v=4">
 {EXPLAINER_CSS}
 <link rel="stylesheet" href="assets/public-product-system.css?v=1">
-</head><body class="page-service-modern page-commercial-service" data-commercial-service="{e(s['id'])}">
+{sample_css}</head><body class="page-service-modern page-commercial-service" data-commercial-service="{e(s['id'])}">
 {header}
 <section class="hero"><div class="wrap"><a class="back" href="uslugi.html">Все услуги</a><p class="commercial-direction">{e(direction)}</p><h1>{e(p['title'])}</h1><p>{e(description)}</p><div class="service-actions"><a class="btn" href="#request">Обсудить задачу</a><a class="service-secondary" href="#formats">Выбрать вариант</a></div><p class="service-note">Начать можно с описания задачи — готовое техническое задание не требуется.</p></div></section>
 {render_block(s['id'],s['label'])}

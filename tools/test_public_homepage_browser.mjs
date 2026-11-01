@@ -172,6 +172,10 @@ try {
         assert.equal(await sampleBlock.getAttribute('data-work-kind'), kind);
         assert.equal(await sampleBlock.locator('figcaption').isVisible(), true);
         assert.equal(await sampleBlock.locator('img').evaluate(el => getComputedStyle(el).objectFit), 'contain', 'Show the whole photograph or layout');
+        assert.equal(await sampleBlock.locator('.service-actions a').evaluateAll(links => links.every(link => {
+          const box = link.getBoundingClientRect();
+          return link.getClientRects().length === 1 && box.height >= 44 && box.left >= 0 && box.right <= innerWidth;
+        })), true, 'Each action has one complete touch target inside the viewport');
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, sample + ' portfolio overflow');
         if ([1440, 390].includes(width)) await sampleBlock.screenshot({ path: `artifacts/public-homepage/work-${sample}-${width}.png` });
         await page.locator('[name="message"]').fill('Мои пожелания нужно сохранить при переходе от примера к заявке.');
