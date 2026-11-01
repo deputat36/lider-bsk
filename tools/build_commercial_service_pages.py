@@ -46,9 +46,9 @@ def render(p):
 <link rel="stylesheet" href="assets/public-lead-form.css?v=30"><link rel="stylesheet" href="assets/public-simple-service.css?v=7"><link rel="stylesheet" href="assets/public-commercial-services.css?v=1"><link rel="stylesheet" href="assets/public-creative-services.css?v=20261028-contrast-1">
 <script type="application/ld+json">{json.dumps(ld,ensure_ascii=False,separators=(',',':'))}</script>
 <link rel="icon" type="image/svg+xml" href="assets/brand/logo-lider-mark.svg?v=4">
-{EXPLAINER_CSS}
+{sample_css}{EXPLAINER_CSS}
 <link rel="stylesheet" href="assets/public-product-system.css?v=1">
-{sample_css}</head><body class="page-service-modern page-commercial-service" data-commercial-service="{e(s['id'])}">
+</head><body class="page-service-modern page-commercial-service" data-commercial-service="{e(s['id'])}">
 {header}
 <section class="hero"><div class="wrap"><a class="back" href="uslugi.html">Все услуги</a><p class="commercial-direction">{e(direction)}</p><h1>{e(p['title'])}</h1><p>{e(description)}</p><div class="service-actions"><a class="btn" href="#request">Обсудить задачу</a><a class="service-secondary" href="#formats">Выбрать вариант</a></div><p class="service-note">Начать можно с описания задачи — готовое техническое задание не требуется.</p></div></section>
 {render_block(s['id'],s['label'])}
