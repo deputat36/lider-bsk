@@ -17,7 +17,7 @@ const landing = landingCases[landingName];
 const landingOnly = Boolean(landing);
 const servicesOnly = process.argv.includes('--services');
 const customerPath = process.argv.includes('--customer-path');
-const types = { '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.png': 'image/png', '.json': 'application/json', '.html': 'text/html; charset=utf-8' };
+const types = { '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.json': 'application/json', '.html': 'text/html; charset=utf-8' };
 const server = createServer(async (req, res) => {
   let file = path.resolve(root, '.' + new URL(req.url, 'http://localhost').pathname);
   if (file === root) file = path.join(root, 'index.html');
@@ -158,6 +158,31 @@ try {
       assert.equal(message.split('Заказ: визитки').length, 2, 'Repeated transfer must update its own block');
       assert(message.includes('Тираж: 2500 шт.') && message.includes('Без глянцевой ламинации.'));
       assert(message.includes('Позвоните после 14 часов.'));
+      // A relevant real material must lead to the right service without losing notes.
+      for (const [sample, material, kind, expectedService] of [
+        ['vyveski-borisoglebsk.html', 'volume-letters-production', 'photo', 'Вывеска / наружная реклама'],
+        ['dizayn-maketov.html', 'bormash-decal-design', 'layout', 'Дизайн макета'],
+        ['podgotovka-maketov-k-pechati.html', 'bormash-decal-design', 'layout', 'Подготовка макетов к печати и ретушь'],
+      ]) {
+        await page.goto(origin + '/' + sample + '?service=campaign');
+        const sampleBlock = page.locator('#work-sample');
+        await sampleBlock.scrollIntoViewIfNeeded();
+        await page.waitForFunction(() => { const image = document.querySelector('#work-sample img'); return image?.complete && image.naturalWidth > 0; });
+        assert.equal(await sampleBlock.getAttribute('data-owner-material'), material);
+        assert.equal(await sampleBlock.getAttribute('data-work-kind'), kind);
+        assert.equal(await sampleBlock.locator('figcaption').isVisible(), true);
+        assert.equal(await sampleBlock.locator('img').evaluate(el => getComputedStyle(el).objectFit), 'contain', 'Show the whole photograph or layout');
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, sample + ' portfolio overflow');
+        if ([1440, 390].includes(width)) await sampleBlock.screenshot({ path: `artifacts/public-homepage/work-${sample}-${width}.png` });
+        await page.locator('[name="message"]').fill('Мои пожелания нужно сохранить при переходе от примера к заявке.');
+        await sampleBlock.getByRole('link', { name: 'Обсудить похожую задачу', exact: true }).click();
+        assert.equal(await page.locator('[name="service"]').inputValue(), expectedService);
+        assert.equal(await page.locator('[name="message"]').inputValue(), 'Мои пожелания нужно сохранить при переходе от примера к заявке.');
+        await sampleBlock.getByRole('link', { name: 'Все фото и макеты', exact: true }).click();
+        assert.equal(new URL(page.url()).pathname, '/nashi-raboty.html');
+        assert.equal(new URL(page.url()).hash, '#' + material);
+        assert.equal(await page.locator('#' + material).getAttribute('data-work-kind'), kind);
+      }
       await page.goto(origin + '/prices.html');
       assert.deepEqual(await page.locator('#price-examples .price').allTextContents(), ['1 000 ₽ за проект', '1 500 ₽ за проект', '2 500 ₽ за проект']);
       if (width <= 1060) await page.getByRole('button', { name: 'Открыть меню', exact: true }).click();

@@ -72,11 +72,26 @@
   "new_static_revenue_values": 0,
   "filters_changed": false,
   "existing_goals_changed": false,
+  "filter_audit": {
+    "observed_date": "2026-11-01",
+    "active_rules": [
+      {
+        "action": "include_only",
+        "field": "page_url",
+        "condition": "site_and_additional_addresses"
+      }
+    ],
+    "other_rules_or_operations": 0,
+    "exclude_my_visits": false,
+    "filter_behavioral_robots": false,
+    "mutations": 0
+  },
   "limitations": [
     "No new natural lead_confirmed delivery has been verified.",
     "No conversion uplift or order revenue attribution has been established.",
     "The debug overlay was not observed in the browser, so live goal-delivery proof remains unknown.",
-    "Webmaster linkage and the existing filter have not been audited.",
+    "Webmaster linkage has not been verified.",
+    "Technical visits may be included in reports and are not evidence of customer demand.",
     "Recorded traffic baseline and account screenshot are private owner materials, not published here."
   ]
 }
