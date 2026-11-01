@@ -57,8 +57,10 @@ cryptography, а не обходом ограничений среды или с
 7. Убедиться, что нет ссылок/defaults/triggers на настоящее приложение,
    исходящих функций/cron или browser grants. Сверить настоящие staging/prod
    таблицы и cron с preflight.
-8. Cleanup migration проверяет точный marker namespace и запрещает удаление
-   при внешнем FK/view/function dependency; удаляет только созданный namespace.
+8. Cleanup migration проверяет точный marker и удаляет точный список своих
+   таблиц/последовательностей/schema только RESTRICT в одной транзакции. Любая
+   внешняя зависимость (включая DEFAULT/rowtype/function) или неизвестный объект
+   блокирует очистку целиком; CASCADE не используется.
    После unknown outcome — readback. Подтвердить ноль остатков и advisors.
 
 ## Установочный receipt

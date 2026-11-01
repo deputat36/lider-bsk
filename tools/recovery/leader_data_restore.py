@@ -266,16 +266,17 @@ def verify(snapshot, schema):
 
 
 def cleanup(snapshot, schema):
-    ns, _ = validate(snapshot, schema)
-    return begin() + guard(snapshot, schema) + f"""DO $cleanup$ BEGIN
-IF EXISTS(SELECT 1 FROM pg_constraint c JOIN pg_class target ON target.oid=c.confrelid JOIN pg_class origin ON origin.oid=c.conrelid WHERE target.relnamespace={literal(schema)}::regnamespace AND origin.relnamespace<>{literal(schema)}::regnamespace)
-OR EXISTS(SELECT 1 FROM pg_depend d JOIN pg_rewrite r ON r.oid=d.objid AND d.classid='pg_rewrite'::regclass JOIN pg_class origin ON origin.oid=r.ev_class JOIN pg_class target ON d.refclassid='pg_class'::regclass AND target.oid=d.refobjid WHERE target.relnamespace={literal(schema)}::regnamespace AND origin.relnamespace<>{literal(schema)}::regnamespace)
-OR EXISTS(SELECT 1 FROM pg_depend d JOIN pg_proc p ON p.oid=d.objid AND d.classid='pg_proc'::regclass JOIN pg_type ty ON d.refclassid='pg_type'::regclass AND ty.oid=d.refobjid WHERE ty.typnamespace={literal(schema)}::regnamespace AND p.pronamespace<>{literal(schema)}::regnamespace)
-THEN RAISE EXCEPTION 'external_dependencies_prevent_cleanup'; END IF;
-END $cleanup$;
-DROP SCHEMA {ns} CASCADE;
-COMMIT;
-"""
+    ns, tables = validate(snapshot, schema)
+    # PostgreSQL must enforce the full dependency graph. CASCADE is forbidden:
+    # hand-written checks can miss defaults, composite types or SQL functions.
+    targets = ','.join(ns + '.' + ident(t['name']) for t in tables)
+    out = [begin(), guard(snapshot, schema), f'DROP TABLE {targets} RESTRICT;\n']
+    for seq in snapshot['sequences']:
+        # IDENTITY sequences disappear with their owning tables.
+        if seq['dependency_type'] != 'i':
+            out.append(f"DROP SEQUENCE {ns}.{ident(seq['name'])} RESTRICT;\n")
+    out += [f'DROP SCHEMA {ns} RESTRICT;\n', 'COMMIT;\n']
+    return ''.join(out)
 
 
 def seal_response(response, destination):

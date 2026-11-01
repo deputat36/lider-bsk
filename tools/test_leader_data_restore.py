@@ -99,9 +99,14 @@ assert sql(f"select nextval('{NS}.leader_commercial_offers_offer_number_seq')>(s
 assert sql(f'select count(*) from {NS}.leader_notification_config')=='0'
 # A cross-namespace dependency must stop cleanup, never cascade into public.
 sql(f'CREATE VIEW public.leader_external_dependency AS SELECT id FROM {NS}.leader_clients')
-assert 'external_dependencies_prevent_cleanup' in sql(drill.cleanup(snapshot,NS),fail=True)
+assert '2BP01' in sql(drill.cleanup(snapshot,NS),fail=True)
 sql('DROP VIEW public.leader_external_dependency')
+sql(f"CREATE TABLE public.leader_external_counter(id bigint DEFAULT nextval('{NS}.leader_order_number_seq'))")
+assert '2BP01' in sql(drill.cleanup(snapshot,NS),fail=True)
+assert NS in sql("select pg_get_expr(adbin,adrelid) from pg_attrdef where adrelid='public.leader_external_counter'::regclass")
+assert json.loads(sql(drill.verify(snapshot,NS)))['all_rows_exact']
+sql('DROP TABLE public.leader_external_counter')
 sql(drill.cleanup(snapshot,NS))
 assert sql(f"select to_regnamespace('{NS}') is null")=='t'
 assert sql('select n from public.leader_sentinel')=='99'
-print(json.dumps({'synthetic_native_restore':'PASS','tables':5,'foreign_keys':3,'precise_numeric':True,'cycle':True,'identity_and_order_counters':True,'source_trigger_not_copied':True,'excluded_live_config':True,'three_roles_denied':True,'external_dependency_cleanup_guard':True,'cleanup':True}))
+print(json.dumps({'synthetic_native_restore':'PASS','tables':5,'foreign_keys':3,'precise_numeric':True,'cycle':True,'identity_and_order_counters':True,'source_trigger_not_copied':True,'excluded_live_config':True,'three_roles_denied':True,'external_view_and_default_preserved':True,'cleanup':True}))
