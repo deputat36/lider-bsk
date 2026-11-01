@@ -65,10 +65,40 @@ cryptography, а не обходом ограничений среды или с
 
 ## Установочный receipt
 
-До фактического выполнения ниже не заявляются установленный snapshot,
-успешный staging restore, cleanup или время восстановления. Финальные hashes,
-coverage/exclusions, версии migration history и результаты добавляются после
-readback; приватные ID/данные/ключи не публикуются в GitHub.
+Защищённый snapshot создан одним SELECT 01.11.2026 06:55:03 UTC / 09:55 МСК:
+67 таблиц,301 строка,79 SQL function sources,2 последовательности. Целый payload
+1383478bytes/SHA256edac2e5e13eb160debb5c6ede5b93b589cd0c979553c5e245eae7a963631449e
+прошёл независимый GPG decrypt и hash. Ciphertext и закрытый RSA key сохранены
+раздельно и приватно. Приватные ссылки/строки/ключи в GitHub не включены.
+
+Native exact source head5a9c181d:19/19 success; PostgreSQL run41283418373,
+job124779788481. Исправлены обнаруженные тестами пропуск JSONB и совпадение
+SQL alias с именем колонки; теперь проверяется полный состав row objects.
+По независимому review cleanup использует только RESTRICT; environment guard,
+оба counters и создание файлов0600/O_EXCL включены до реального испытания.
+
+Реальное восстановление:67 typed tables/RLS,58 выбранных таблиц/290 строк;
+9 таблиц/11 строк исключены из испытания (архивы,live config/queues), сохранены
+в зашифрованном snapshot. Полные поля/hash,78 FK validated и оба sequence
+state/parameters/next>max exact. Три реальные role-denials; schema/table/sequence
+access отсутствует, включая service_role BYPASSRLS. Source triggers/functions/
+views/rules и внешние default/CHECK dependencies0. На изолированной копии
+следующие номера1006 и25 выше текущих максимумов1002 и24. Document tables и
+counters пусты как в источнике; положительный выпуск реального документа не
+проверялся этим сценарием.
+
+Staging migration history: prepare20261101070747 / validate20261101070834 /
+cleanup20261101085258. Первый запрос подтверждения cleanup истёк; readback
+подтвердил наличие namespace и отсутствие cleanup history. Повторён тот же
+ограниченный запрос; после подтверждения выполнен успешно. На08:54:34 UTC
+namespace/relations0,Auth users0,50 настоящих staging таблиц и действующий
+cron совпали с preflight. Все67 production таблиц/301 строка совпали со снимком;
+production DML не выполнялся. Security/performance findings одинаковы до/после
+(исключены только observed_at). Ожидание подтверждения не является RTO.
+
+Machine receipt: contracts/leader-data-restore-drill-20261101.json. Это проверка
+сохранности данных; Auth/файлы/Edge/config activation и полноценное восстановление
+рабочей CRM остаются отдельными задачами.
 
 ## Источники
 
