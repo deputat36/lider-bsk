@@ -1,0 +1,270 @@
+{
+  "checked_at": "2026-11-12",
+  "source_baseline": "b6290d1896fd70b13084d373e0cd00da7642df48",
+  "project_ref": "ofewxuqfjhamgerwzull",
+  "scope": [
+    "leader_lead_calculations",
+    "leader_lead_calculation_items"
+  ],
+  "data_modified": false,
+  "before": {
+    "items": {
+      "count": 40,
+      "sha256": "a0d9cf34b6e78bef8469bc5a119d3524240d3f2b00a24555a4ff5737188f6d47"
+    },
+    "grants": [
+      {
+        "grantee": "anon",
+        "table_name": "leader_lead_calculation_items",
+        "privilege_type": "DELETE"
+      },
+      {
+        "grantee": "anon",
+        "table_name": "leader_lead_calculation_items",
+        "privilege_type": "INSERT"
+      },
+      {
+        "grantee": "anon",
+        "table_name": "leader_lead_calculation_items",
+        "privilege_type": "REFERENCES"
+      },
+      {
+        "grantee": "anon",
+        "table_name": "leader_lead_calculation_items",
+        "privilege_type": "SELECT"
+      },
+      {
+        "grantee": "anon",
+        "table_name": "leader_lead_calculation_items",
+        "privilege_type": "TRIGGER"
+      },
+      {
+        "grantee": "anon",
+        "table_name": "leader_lead_calculation_items",
+        "privilege_type": "TRUNCATE"
+      },
+      {
+        "grantee": "anon",
+        "table_name": "leader_lead_calculation_items",
+        "privilege_type": "UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "leader_lead_calculation_items",
+        "privilege_type": "DELETE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "leader_lead_calculation_items",
+        "privilege_type": "INSERT"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "leader_lead_calculation_items",
+        "privilege_type": "REFERENCES"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "leader_lead_calculation_items",
+        "privilege_type": "SELECT"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "leader_lead_calculation_items",
+        "privilege_type": "TRIGGER"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "leader_lead_calculation_items",
+        "privilege_type": "TRUNCATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "leader_lead_calculation_items",
+        "privilege_type": "UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "leader_lead_calculation_items",
+        "privilege_type": "DELETE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "leader_lead_calculation_items",
+        "privilege_type": "INSERT"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "leader_lead_calculation_items",
+        "privilege_type": "REFERENCES"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "leader_lead_calculation_items",
+        "privilege_type": "SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "leader_lead_calculation_items",
+        "privilege_type": "TRIGGER"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "leader_lead_calculation_items",
+        "privilege_type": "TRUNCATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "leader_lead_calculation_items",
+        "privilege_type": "UPDATE"
+      },
+      {
+        "grantee": "anon",
+        "table_name": "leader_lead_calculations",
+        "privilege_type": "DELETE"
+      },
+      {
+        "grantee": "anon",
+        "table_name": "leader_lead_calculations",
+        "privilege_type": "INSERT"
+      },
+      {
+        "grantee": "anon",
+        "table_name": "leader_lead_calculations",
+        "privilege_type": "REFERENCES"
+      },
+      {
+        "grantee": "anon",
+        "table_name": "leader_lead_calculations",
+        "privilege_type": "SELECT"
+      },
+      {
+        "grantee": "anon",
+        "table_name": "leader_lead_calculations",
+        "privilege_type": "TRIGGER"
+      },
+      {
+        "grantee": "anon",
+        "table_name": "leader_lead_calculations",
+        "privilege_type": "TRUNCATE"
+      },
+      {
+        "grantee": "anon",
+        "table_name": "leader_lead_calculations",
+        "privilege_type": "UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "leader_lead_calculations",
+        "privilege_type": "DELETE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "leader_lead_calculations",
+        "privilege_type": "INSERT"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "leader_lead_calculations",
+        "privilege_type": "REFERENCES"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "leader_lead_calculations",
+        "privilege_type": "SELECT"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "leader_lead_calculations",
+        "privilege_type": "TRIGGER"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "leader_lead_calculations",
+        "privilege_type": "TRUNCATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "leader_lead_calculations",
+        "privilege_type": "UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "leader_lead_calculations",
+        "privilege_type": "DELETE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "leader_lead_calculations",
+        "privilege_type": "INSERT"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "leader_lead_calculations",
+        "privilege_type": "REFERENCES"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "leader_lead_calculations",
+        "privilege_type": "SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "leader_lead_calculations",
+        "privilege_type": "TRIGGER"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "leader_lead_calculations",
+        "privilege_type": "TRUNCATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "leader_lead_calculations",
+        "privilege_type": "UPDATE"
+      }
+    ],
+    "tables": [
+      {
+        "relacl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+        "relname": "leader_lead_calculation_items",
+        "relrowsecurity": true,
+        "relforcerowsecurity": false
+      },
+      {
+        "relacl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+        "relname": "leader_lead_calculations",
+        "relrowsecurity": true,
+        "relforcerowsecurity": false
+      }
+    ],
+    "policies": [
+      {
+        "cmd": "ALL",
+        "qual": "leader_private.leader_has_access()",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "leader_lead_calculation_items",
+        "permissive": "PERMISSIVE",
+        "policyname": "leader_lead_calculation_items_app",
+        "with_check": "leader_private.leader_has_access()"
+      },
+      {
+        "cmd": "ALL",
+        "qual": "leader_private.leader_has_access()",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "leader_lead_calculations",
+        "permissive": "PERMISSIVE",
+        "policyname": "leader_lead_calculations_app",
+        "with_check": "leader_private.leader_has_access()"
+      }
+    ],
+    "calculations": {
+      "count": 18,
+      "sha256": "7e66af6ebf97c2359d87f18438d40e0047e5769ff3ce636c663fd2ff8a647d3e"
+    }
+  }
+}

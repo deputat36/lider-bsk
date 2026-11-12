@@ -44,7 +44,7 @@ def apply_navigation(text, page_name):
     else:
         text = re.sub(r'(<body\b[^>]*>)', lambda m: m.group(1) + '\n' + header, text, count=1)
     if CSS not in text:
-        shared = '<link rel="stylesheet" href="assets/public-product-system.css?v=1">'
+        shared = '<link rel="stylesheet" href="assets/public-product-system.css?v=2">'
         if shared in text:
             text = text.replace(shared, CSS + '\n' + shared, 1)
         else:
