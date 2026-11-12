@@ -16,6 +16,11 @@ html body .hero-card { border-radius: var(--radius-lg); background: #242424; box
 html body .badge, html body .eyebrow { border: 0; background: none; padding: 0; letter-spacing: 0; text-transform: none; color: #e5e7eb; }
 html body .btn, html body .brand-button, html body .ghost-link { min-height: var(--control-height); border-radius: var(--radius-sm); font-weight: 700; box-shadow: none; }
 html body .btn:hover { transform: none; box-shadow: none; }
+/* Keep legacy primary controls readable on the brand orange and white. */
+html body .btn:not(.btn--ghost):not(.btn--dark):not(.btn-dark), html body .tag { color: var(--action-text); }
+html body .contact, html body .card .price, html body article .price { color: var(--link-color); }
+html body .demo-card > span { color: var(--text-secondary); }
+html body .hero .back { color: var(--text-inverse); }
 html body .btn--accent, html body .brand-button--primary, html body.page-service-modern .btn { background: var(--action-primary); border-color: var(--action-primary); color: var(--action-text); }
 html body .btn--accent:hover, html body .brand-button--primary:hover, html body.page-service-modern .btn:hover { background: var(--action-hover); border-color: var(--action-hover); color: var(--action-text); }
 html body .card, html body .scenario-card, html body .info-box, html body .check,

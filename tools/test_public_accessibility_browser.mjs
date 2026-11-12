@@ -19,6 +19,10 @@ try{
   for(const url of urls){
    const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
    await page.goto(origin+url,{waitUntil:'load'});await page.addScriptTag({path:require.resolve('axe-core/axe.min.js')});
+   if(url==='/prices.html'&&width===360){
+    await page.locator('table.table').focus();await page.keyboard.press('ArrowRight');
+    await page.waitForFunction(()=>document.querySelector('table.table').scrollLeft>0,null,{timeout:3000});
+   }
    const data=await page.evaluate(async()=>{
     const axe=await window.axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}});
     return {overflow:document.documentElement.scrollWidth>innerWidth,scrollWidth:document.documentElement.scrollWidth,violations:axe.violations.map(v=>({id:v.id,impact:v.impact,help:v.help,nodes:v.nodes.slice(0,5).map(n=>({target:n.target,summary:n.failureSummary,html:n.html.slice(0,200)}))})),brokenImages:[...document.images].filter(i=>i.complete&&i.naturalWidth===0).map(i=>i.getAttribute('src'))};
