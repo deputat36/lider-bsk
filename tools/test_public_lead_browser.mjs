@@ -13,7 +13,7 @@ assert.ok(!widthSetting || ['1440','390'].includes(widthSetting),'Known browser 
 const widths=widthSetting?[Number(widthSetting)]:[1440,390];
 const publicForms=[];
 for(const name of (await readdir(root)).filter(name=>name.endsWith('.html')).sort()){
-  if((await readFile(name,'utf8')).includes('assets/public-lead-form.js?v=36'))publicForms.push(name);
+  if((await readFile(name,'utf8')).includes('assets/public-lead-form.js?v=37'))publicForms.push(name);
 }
 assert.equal(publicForms.length,64,'Exercise the actual release on all public form pages');
 const server = createServer(async (req, res) => {
@@ -203,6 +203,54 @@ try {
       await page.goto(origin+'/dizayn-maketov.html?'+query);
       await page.locator('[name="service"]').waitFor();
       assert.equal(await page.locator('[data-leader-offer-note]').isVisible(),false);
+    }
+    // Compare the actual card against both the visible selection and intercepted CRM payload.
+    for (const name of ['index', 'reklama-dlya-magazina-borisoglebsk', 'reklama-dlya-kafe-borisoglebsk',
+      'reklama-dlya-salona-krasoty-borisoglebsk', 'reklama-dlya-servisa-masterskoy-borisoglebsk',
+      'reklama-v-soobshchestvah-borisoglebska']) {
+      await page.goto(origin + '/' + name + '.html?utm_source=vk&utm_campaign=package-test');
+      const actions = page.locator('a[data-package]');
+      assert.equal(await actions.count(),3,name);
+      const community = name === 'reklama-v-soobshchestvah-borisoglebska';
+      const expectedService = catalog.find(community ? 'Соцсети и контент' : 'Комплексная реклама');
+      const message = page.locator('[name="message"]');
+      const note = page.locator('[data-leader-offer-note]');
+      const clear = page.getByRole('button', {name:'Убрать выбранный состав'});
+      const task = 'Нужен расчёт к открытию, макет уже есть.';
+      for (const action of await actions.all()) {
+        await message.fill(task);
+        await action.click();
+        const label = await action.getAttribute('data-package');
+        const items = await action.locator('xpath=ancestor::article[1]//ul/li').allTextContents();
+        if (!community) assert.ok(items.length);
+        assert.equal(await message.inputValue(),task);
+        assert.ok((await note.textContent()).includes(label));
+        await page.locator('[name="phone"]').fill('+7 900 000-00-00');
+        await Promise.all([
+          page.waitForResponse(res => res.url().endsWith('/leader-public-lead') && res.request().method() === 'POST'),
+          page.locator('button[type="submit"]').click(),
+        ]);
+        await page.locator('[data-leader-lead-status].ok').waitFor();
+        await page.waitForFunction(() => document.querySelector('[data-leader-lead-widget]').dataset.submitting === '0');
+        const sent = payloads.at(-1);
+        assert.equal(sent.service_id,expectedService.id);
+        assert.equal(sent.utm_campaign,'package-test');
+        assert.ok(sent.message.includes('Состав заказа: '+label));
+        for (const item of items) assert.ok(sent.message.includes(item.trim().replace(/[.;]+$/,'')));
+        assert.ok(sent.message.includes('Задача клиента: '+task));
+      }
+      await message.fill(task);
+      await actions.first().click();
+      await actions.last().click();
+      assert.ok(!(await note.textContent()).includes(await actions.first().getAttribute('data-package')));
+      await clear.click();
+      assert.equal(await note.isVisible(),false);
+      assert.equal(await message.inputValue(),task);
+      assert.equal(await page.locator('[name="service"]').inputValue(),expectedService.label);
+      await actions.first().click();
+      await page.locator('[name="service"]').selectOption('Наклейки');
+      assert.equal(await note.isVisible(),false);
+      assert.equal(await message.inputValue(),task);
     }
     for(const service of catalog.services.filter(item=>item.brief)){
       await page.goto(origin+'/'+service.pages[0]);

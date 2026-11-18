@@ -1,4 +1,4 @@
-import { leadCustomerTask, leadDirectionLabel } from './lead-client-context-v1.js';
+import { leadCustomerTask, leadDirectionLabel, leadSelectedOffer } from './lead-client-context-v1.js';
 import { supabaseClient } from './supabase-client.js';
 import { timeout, friendlyError } from './api.js';
 import { v4State, setState, setRoute, subscribeState } from './state.js';
@@ -133,6 +133,7 @@ function renderLeadDetails(lead) {
   const stage = lead.converted_order_id ? 'order' : ['Согласовано', 'КП отправлено', 'Ждём ответ'].includes(lead.status) ? 'offer' : ['Расчёт подготовлен', 'Нужно пересчитать'].includes(lead.status) ? 'calculation' : 'need';
   const firstContactDraft = buildFirstContactDraft(lead);
   const customerTask = leadCustomerTask(lead);
+  const selectedOffer = leadSelectedOffer(lead);
   const directionLabel = leadDirectionLabel(lead);
   return `
     <div class="v4-lead-card-view">
@@ -156,6 +157,7 @@ function renderLeadDetails(lead) {
       </dl>
       <section class="v4-client-task" aria-label="Задача клиента"><h3>Что нужно клиенту</h3>
         <p>${esc(customerTask.slice(0, 260))}${customerTask.length > 260 ? '…' : ''}</p>
+        ${selectedOffer ? `<p><strong>Выбранный состав</strong><br>${esc(selectedOffer.label)}${selectedOffer.items ? `<br>${esc(selectedOffer.items)}` : ''}</p>` : ''}
         ${lead.message && (lead.message !== customerTask || customerTask.length > 260) ? `<details><summary>Сообщение полностью</summary><p>${esc(lead.message)}</p></details>` : ''}
       </section>
       <section class="v4-subcard v4-action-panel">

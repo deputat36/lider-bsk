@@ -83,3 +83,5 @@ Confirmation visibility checkpoint before this update (2026-10-11): form v35 foc
 Current service explanation and Metrika integration (2026-10-11): form v36 retains the confirmation visibility behavior, observes form visibility, counts confirmed references once per session, separates new and duplicate server records, and sends only catalog values and URL paths as custom goal parameters. Cabinet goal configuration remains unverified while the Yandex Metrika cabinet is unavailable.
 
 Current use-case integration (2026-10-13): all 64 public forms and four shared CRM importers load catalog v4. The three creative offers remain available; three further selections explain presentations/CP, visitor navigation and separate car decals. Query selection is visible and preserved in the intake message alongside the customer task; incompatible selections clear on a service change. Form JS v36 and form CSS v30 are retained. Explanatory image/layout CSS is v2. Production records are untouched.
+
+2026-11-18. Все 64 страницы используют `assets/public-lead-form.js?v=37`. Выбранный комплект и его позиции передаются вместе с текстом клиента.

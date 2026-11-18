@@ -5,6 +5,12 @@ export function leadDirectionLabel(lead = {}) {
   return service ? globalThis.LeaderServiceCatalog.directions[service.direction] : '';
 }
 
+export function leadSelectedOffer(lead = {}) {
+  const message = String(lead.message || '').replace(/\r\n/g, '\n');
+  const match = message.match(/^Источник: сайт РА Лидер\n(?:Страница: [^\n]*\n)?Услуга: [^\n]+\n(?:Направление: [^\n]*\n)?Состав заказа: ([^\n]+)(?:\nПозиции для расчёта: ([^\n]+))?/);
+  return match ? { label: match[1].trim(), items: (match[2] || '').trim() } : null;
+}
+
 // Public forms append technical attribution before the client's own words.
 // Keep the complete message available, but start the card with the actual task.
 export function leadCustomerTask(lead = {}) {

@@ -63,7 +63,7 @@ def main() -> None:
     for marker in (
         'Current creative offer integration',
         '64 public form pages',
-        'assets/public-lead-form.js?v=36',
+        'assets/public-lead-form.js?v=37',
         'assets/leader-service-catalog.js?v=4',
     ):
         require(core_bust, marker, CORE_BUST)
@@ -80,7 +80,7 @@ def main() -> None:
 
     for marker in (
         'MIN_VERSION = 5',
-        'CORE_VERSION = 36',
+        'CORE_VERSION = 37',
         "'index.html'",
         "'request.html'",
         "'uslugi.html'",

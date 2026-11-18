@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
-import { leadCustomerTask, leadDirectionLabel } from '../crm/v4/assets/v4/lead-client-context-v1.js';
+import { leadCustomerTask, leadDirectionLabel, leadSelectedOffer } from '../crm/v4/assets/v4/lead-client-context-v1.js';
 
 const source = await readFile(new URL('../crm/v4/assets/v4/lead-card.js', import.meta.url), 'utf8');
 const nodes = Object.fromEntries(['need', 'calculation', 'offer', 'order'].map(key => [key, { textContent: '' }]));
@@ -13,7 +13,7 @@ const state = {
 };
 const context = vm.createContext({
   v4State: state,
-  leadCustomerTask, leadDirectionLabel,
+  leadCustomerTask, leadDirectionLabel, leadSelectedOffer,
   leadPrimaryAction: () => ({ type: 'open_need', label: 'Потребность', hint: '' }),
   leadResponsibilityState: () => ({ key: 'self', label: 'Вы' }),
   buildFirstContactDraft: () => '',
@@ -56,3 +56,12 @@ assert.equal(leadCustomerTask({message:'Позвоните после 18',servic
 const webHtml=context.api.renderLeadDetails(webLead);
 assert.match(webHtml, /Что нужно клиенту<\/h3>\s*<p>Убрать повторный ввод/);
 assert.match(webHtml, /<details><summary>Сообщение полностью<\/summary>/);
+
+const packageLead = {service:'Комплексная реклама', message:[
+  'Источник: сайт РА Лидер', 'Услуга: Комплексная реклама', 'Состав заказа: Комплект для кафе',
+  'Позиции для расчёта: меню, баннер', 'Задача клиента: К открытию 25 ноября',
+].join('\n')};
+assert.deepEqual(leadSelectedOffer(packageLead), {label:'Комплект для кафе', items:'меню, баннер'});
+assert.match(context.api.renderLeadDetails(packageLead), /Выбранный состав<\/strong><br>Комплект для кафе<br>меню, баннер/);
+assert.equal(leadSelectedOffer({message:webLead.message+'\nСостав заказа: часть комментария'}),null);
+assert.equal(leadSelectedOffer({message:'Состав заказа: ручная запись'}),null);
