@@ -100,6 +100,7 @@ function orderTitle(order) {
 }
 
 function orderStateText(order) {
+  if (snapshot.verificationUnavailable && order.terminal) return 'Сверка недоступна';
   if (order.actualProfitState === 'unknown') return 'Факт. прибыль не рассчитана';
   if (order.actualProfitState === 'confirmed') return `Сверено · ${money(order.actualProfit)}`;
   return `Предварительно ${money(order.actualProfit)}`;
@@ -113,7 +114,7 @@ function orderRow(order) {
     provisional: 'Заказ закрыт. Осталось подтвердить полноту расходов.',
     confirmed: 'Заказ закрыт. Полнота расходов подтверждена.'
   };
-  const reason = reasons[order.actualProfitState];
+  const reason = snapshot.verificationUnavailable && order.terminal ? 'Не удалось загрузить подтверждение полноты расходов.' : reasons[order.actualProfitState];
   const overpayment = Math.max(0, Math.round((order.confirmedNetReceipts - order.plannedRevenue) * 100) / 100);
   const canOpen = canPerformV4Action(CRM_V4_ACTIONS.ORDERS_READ) && canOpenV4Tab('orders');
   const canWrite = canOpen && financeWriteAvailable(V4_CONFIG.supabaseUrl, canPerformV4Action(CRM_V4_ACTIONS.FINANCE_WRITE));
@@ -138,7 +139,8 @@ function renderOrderList() {
 function renderDirections(directions) {
   if (!directions) return '<p class="v4-plan-actual-empty">Разбивка по направлениям недоступна. Проверьте доступ или нажмите «Обновить факт».</p>';
   if (!directions.groups.length) return '';
-  const rows = directions.groups.map(group => `<li><strong>${esc(group.label)}${group.fromLeads ? `<small>По услуге из заявки · ${group.fromLeads}</small>` : ''}</strong><span>Сверено ${group.confirmedOrders} из ${group.orders}</span><span>План прибыли · ${money(group.plannedProfit)}</span><span>${group.confirmedOrders ? 'Денежный результат · ' + money(group.confirmedCash) : 'Пока нет сверенных заказов'}</span></li>`).join('');
+  const available = !snapshot.verificationUnavailable;
+  const rows = directions.groups.map(group => `<li><strong>${esc(group.label)}${group.fromLeads ? `<small>По услуге из заявки · ${group.fromLeads}</small>` : ''}</strong><span>${available ? `Сверено ${group.confirmedOrders} из ${group.orders}` : `Заказов · ${group.orders}`}</span><span>План прибыли · ${money(group.plannedProfit)}</span><span>${!available ? 'Сверка недоступна' : group.confirmedOrders ? 'Денежный результат · ' + money(group.confirmedCash) : 'Пока нет сверенных заказов'}</span></li>`).join('');
   return `<details class="v4-finance-directions"><summary>Результат по направлениям работ</summary><p>План включает все заказы вне архива. Денежный результат учитывает поступления за вычетом возвратов и расходов по закрытым заказам с подтверждённой полнотой расходов. Направление берётся из позиций заказа. Если они без конкретной категории, используется известная услуга доступной заявки. Смешанный заказ учитывается один раз.</p><ul>${rows}</ul></details>`;
 }
 
@@ -159,20 +161,22 @@ function render() {
     return;
   }
 
-  const actualValue = snapshot.actualProfit === null ? 'Не рассчитана' : money(snapshot.actualProfit);
+  if (snapshot.verificationUnavailable && filter === 'expenses') filter = 'all';
+  const actualValue = snapshot.verificationUnavailable ? 'Сверка недоступна' : snapshot.actualProfit === null ? 'Не рассчитана' : money(snapshot.actualProfit);
   const actualType = snapshot.actualProfit === null || snapshot.actualProfit < 0 ? 'is-danger' : snapshot.actualProfitState === 'confirmed' ? 'is-good' : 'is-warn';
   const groups = snapshot.directions?.groups || [];
   if (!groups.some(group => group.key === directionFilter)) directionFilter = '';
   const directionSelect = groups.length ? `<label>Направление работ<select data-finance-direction><option value="">Все направления</option>${groups.map(group => `<option value="${esc(group.key)}"${group.key === directionFilter ? ' selected' : ''}>${esc(group.label)}</option>`).join('')}</select></label>` : '';
   const warnings = [];
+  if (snapshot.verificationUnavailable) warnings.push('Не удалось загрузить подтверждения полноты расходов. План и проведённые движения доступны. Для повторной сверки нажмите «Обновить факт».');
   if (snapshot.linkedServicesUnavailable) warnings.push('Услуги связанных заявок временно недоступны. Часть заказов может отображаться без направления.');
-  if (snapshot.actualProfit === null) warnings.push(`Фактическая прибыль не рассчитана по ${snapshot.unknownActualProfitOrders} заказам: отсутствуют подтверждённые расходы.`);
+  if (!snapshot.verificationUnavailable && snapshot.actualProfit === null) warnings.push(`Фактическая прибыль не рассчитана по ${snapshot.unknownActualProfitOrders} заказам: отсутствуют подтверждённые расходы.`);
   if (snapshot.confirmedUnattributedPayments) warnings.push(`Есть подтверждённые платежи без активного заказа: ${money(snapshot.confirmedUnattributedPayments)}.`);
   if (snapshot.confirmedUnattributedExpenses) warnings.push(`Есть подтверждённые расходы без активного заказа: ${money(snapshot.confirmedUnattributedExpenses)}.`);
   if (snapshot.ignoredPaymentRows) warnings.push(`Не учтено неподтверждённых или отменённых платежей: ${snapshot.ignoredPaymentRows}.`);
   if (snapshot.ignoredExpenseRows) warnings.push(`Не учтено неподтверждённых, неизвестных или отменённых расходов: ${snapshot.ignoredExpenseRows}.`);
 
-  panel.innerHTML = `<div class="v4-plan-actual-head"><div><h3>План и подтверждённый факт</h3><p>План берётся из заказов. Факт учитывает только подтверждённые движения и не подменяет отсутствие расходов нулевой себестоимостью.</p></div><button type="button" data-plan-actual-refresh>Обновить факт</button></div><div class="v4-plan-actual-grid">${stat('План выручка', money(snapshot.plannedRevenue))}${stat('План себестоимость', money(snapshot.plannedCost))}${stat('План прибыль', money(snapshot.plannedProfit), snapshot.plannedProfit >= 0 ? 'is-good' : 'is-danger')}${stat('Подтверждено оплат', money(snapshot.confirmedNetReceipts), snapshot.confirmedNetReceipts ? 'is-good' : 'is-warn')}${stat('Подтв. расходы', money(snapshot.confirmedExpenses), snapshot.confirmedExpenses ? '' : 'is-warn')}${stat('Денежный результат', money(snapshot.cashResult), snapshot.cashResult >= 0 ? 'is-good' : 'is-danger')}${stat(actualProfitStateLabel(snapshot.actualProfitState), actualValue, actualType)}${stat('Долг клиентов', money(snapshot.debt), snapshot.debt ? 'is-danger' : 'is-good')}${stat('Покрытие оплат', `${snapshot.paymentCoveragePercent}%`)}${stat('Покрытие расходов', `${snapshot.expenseCoveragePercent}%`, snapshot.expenseCoveragePercent < 100 ? 'is-danger' : 'is-good')}</div>${warnings.length ? `<div class="v4-plan-actual-note is-danger">${warnings.map(esc).join(' ')}</div>` : snapshot.orderCount && snapshot.actualProfitState !== 'confirmed' ? '<div class="v4-plan-actual-note">Финансовый результат остаётся предварительным до закрытия заказов и подтверждения полноты расходов.</div>' : ''}${renderDirections(snapshot.directions)}<div class="v4-finance-filters"><label>Найти заказ<input type="search" data-finance-search value="${esc(search)}" placeholder="Номер, название или статус"></label><label>Показать<select data-finance-filter>${[["all","Все заказы"],["debt","Есть долг"],["overpayment","Есть переплата"],["expenses","Нет подтверждённых расходов"],["closed","Завершённые"]].map(([value,label])=>`<option value="${value}"${filter===value?" selected":""}>${label}</option>`).join('')}</select></label>${directionSelect}</div><p data-finance-result-count role="status" aria-live="polite"></p><div class="v4-plan-actual-list" data-finance-order-list></div>`;
+  panel.innerHTML = `<div class="v4-plan-actual-head"><div><h3>План и подтверждённый факт</h3><p>План берётся из заказов. Факт учитывает только подтверждённые движения и не подменяет отсутствие расходов нулевой себестоимостью.</p></div><button type="button" data-plan-actual-refresh>Обновить факт</button></div><div class="v4-plan-actual-grid">${stat('План выручка', money(snapshot.plannedRevenue))}${stat('План себестоимость', money(snapshot.plannedCost))}${stat('План прибыль', money(snapshot.plannedProfit), snapshot.plannedProfit >= 0 ? 'is-good' : 'is-danger')}${stat('Подтверждено оплат', money(snapshot.confirmedNetReceipts), snapshot.confirmedNetReceipts ? 'is-good' : 'is-warn')}${stat('Подтв. расходы', money(snapshot.confirmedExpenses), snapshot.confirmedExpenses ? '' : 'is-warn')}${stat('Денежный результат', money(snapshot.cashResult), snapshot.cashResult >= 0 ? 'is-good' : 'is-danger')}${stat(snapshot.verificationUnavailable ? 'Полнота расходов' : actualProfitStateLabel(snapshot.actualProfitState), actualValue, actualType)}${stat('Долг клиентов', money(snapshot.debt), snapshot.debt ? 'is-danger' : 'is-good')}${stat('Покрытие оплат', `${snapshot.paymentCoveragePercent}%`)}${stat('Покрытие расходов', snapshot.verificationUnavailable ? '—' : `${snapshot.expenseCoveragePercent}%`, snapshot.verificationUnavailable || snapshot.expenseCoveragePercent < 100 ? 'is-danger' : 'is-good')}</div>${warnings.length ? `<div class="v4-plan-actual-note is-danger">${warnings.map(esc).join(' ')}</div>` : snapshot.orderCount && snapshot.actualProfitState !== 'confirmed' ? '<div class="v4-plan-actual-note">Финансовый результат остаётся предварительным до закрытия заказов и подтверждения полноты расходов.</div>' : ''}${renderDirections(snapshot.directions)}<div class="v4-finance-filters"><label>Найти заказ<input type="search" data-finance-search value="${esc(search)}" placeholder="Номер, название или статус"></label><label>Показать<select data-finance-filter>${[["all","Все заказы"],["debt","Есть долг"],["overpayment","Есть переплата"],["expenses","Нет подтверждённых расходов"],["closed","Завершённые"]].filter(([value]) => value !== 'expenses' || !snapshot.verificationUnavailable).map(([value,label])=>`<option value="${value}"${filter===value?" selected":""}>${label}</option>`).join('')}</select></label>${directionSelect}</div><p data-finance-result-count role="status" aria-live="polite"></p><div class="v4-plan-actual-list" data-finance-order-list></div>`;
   renderOrderList();
 }
 
@@ -224,7 +228,7 @@ async function load(force = false) {
     const orderIds = activeOrders.map(order => order.id);
     const leadIds = [...new Set(activeOrders.map(order => order.lead_id).filter(Boolean))];
     const [expenseConfirmations, orderItems, leadServices] = await Promise.all([
-      readExpenseConfirmations({ client: supabaseClient, url: V4_CONFIG.supabaseUrl, actorId: v4State.user?.id, orderIds }),
+      readExpenseConfirmations({ client: supabaseClient, url: V4_CONFIG.supabaseUrl, actorId: v4State.user?.id, orderIds, requireComplete: true }),
       canPerformV4Action(CRM_V4_ACTIONS.ORDERS_READ) ? readLinkedRows('leader_order_items', 'id,order_id,category', 'order_id', orderIds, context).catch(() => null) : null,
       canPerformV4Action(CRM_V4_ACTIONS.LEADS_READ) ? readLinkedRows('leader_leads', 'id,service', 'id', leadIds, context).catch(() => null) : []
     ]);
@@ -232,7 +236,7 @@ async function load(force = false) {
     const serviceByLead = new Map((leadServices || []).map(lead => [lead.id, lead.service]));
     const serviceByOrder = new Map(activeOrders.map(order => [String(order.id), serviceByLead.get(order.lead_id)]));
     const portfolio = buildFinancePortfolioSnapshot(orders, payments, expenses, { statusResolver: orderStatusUiModel, expenseConfirmations, orderItems, serviceByOrder });
-    snapshot = { ...portfolio, linkedServicesUnavailable: leadServices === null };
+    snapshot = { ...portfolio, verificationUnavailable: expenseConfirmations === null, linkedServicesUnavailable: leadServices === null };
     loadedAt = Date.now();
   } catch (error) {
     console.warn('CRM finance plan/actual read warning:', error);

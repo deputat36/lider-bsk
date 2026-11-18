@@ -24,6 +24,7 @@ class Query {
  then(a,b){return this.result().then(a,b);}
 }
 export const supabaseClient={auth:{getSession:async()=>({data:{session:{user:(await import('./state.js')).v4State.user,access_token:'synthetic-fixture-token'}},error:null})},from:t=>new Query(t),functions:{invoke:async(name,{body})=>{
+ if(name==='leader-crm-finance-adjustments'&&m.failClosures)return{data:{ok:false,error:{code:'unavailable'}}};
  if(name==='leader-crm-finance-adjustments')return{data:{ok:true,rows:m.closures.filter(row=>body.payload.order_ids.includes(row.order_id))}};
  m.writes.push({name,action:body.action});
  const p=body.payload||{},order=m.leader_orders.find(x=>x.id===p.order_id);
@@ -148,7 +149,14 @@ try {
  await page.evaluate(()=>window.__loadFinance(true));
  assert.ok((await page.locator('#financePlanActualPanelV1').textContent()).includes('Разбивка по направлениям недоступна'));
  assert.equal(await page.locator('[data-finance-order]').count(),3,'Category failure preserves balances');
- await page.evaluate(()=>{window.__financeMock.failItems=false;});
+ await page.evaluate(()=>{window.__financeMock.failItems=false;window.__financeMock.failClosures=true;});
+ await page.evaluate(()=>window.__loadFinance(true));
+ const unavailable=page.locator('#financePlanActualPanelV1');
+ assert.ok((await unavailable.textContent()).includes('Не удалось загрузить подтверждения полноты расходов'));
+ assert.equal(await unavailable.locator('[data-finance-order]').count(),3);
+ assert.equal(await unavailable.locator('[data-finance-filter] option[value="expenses"]').count(),0);
+ assert.ok(!(await unavailable.locator('.v4-finance-directions').textContent()).includes('Пока нет сверенных заказов'));
+ await page.evaluate(()=>{window.__financeMock.failClosures=false;});
  await page.evaluate(()=>{window.__financeMock.hold=true;window.__pendingLoad=window.__loadFinance(true);});
  await page.waitForFunction(()=>window.__financeMock.pending.length>0);
  await page.evaluate(()=>{window.__setRole('designer');const m=window.__financeMock;m.hold=false;m.pending.splice(0).forEach(r=>r());});

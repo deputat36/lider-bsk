@@ -22,12 +22,18 @@ export async function invokeAdjustment({client,url,actorId,command,allowed=true,
  }catch{return{ok:false,code:'finance_adjustment_failed',uncertain:true};}finally{clearTimeout(timer);}
 }
 
-export async function readExpenseConfirmations({client,url,actorId,orderIds}){
- const confirmed={},deadline=Date.now()+10000;
- for(let offset=0;offset<orderIds.length;offset+=250){
-  const remaining=deadline-Date.now();if(remaining<500)break;
-  const result=await invokeAdjustment({client,url,actorId,timeoutMs:remaining,command:{operation:'closures',payload:{order_ids:orderIds.slice(offset,offset+250)}}});
-  if(!result.ok)break;for(const row of result.rows||[])confirmed[row.order_id]=row.confirmed===true;
- }
- return confirmed;
+export async function readExpenseConfirmations({ client, url, actorId, orderIds, requireComplete = false }) {
+  const confirmed = {};
+  const deadline = Date.now() + 10000;
+  for (let offset = 0; offset < orderIds.length; offset += 250) {
+    const remaining = deadline - Date.now();
+    if (remaining < 500) return requireComplete ? null : confirmed;
+    const result = await invokeAdjustment({
+      client, url, actorId, timeoutMs: remaining,
+      command: { operation: 'closures', payload: { order_ids: orderIds.slice(offset, offset + 250) } }
+    });
+    if (!result.ok || !Array.isArray(result.rows)) return requireComplete ? null : confirmed;
+    for (const row of result.rows) confirmed[row.order_id] = row.confirmed === true;
+  }
+  return confirmed;
 }
