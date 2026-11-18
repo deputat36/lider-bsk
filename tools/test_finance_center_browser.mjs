@@ -9,21 +9,22 @@ await mkdir(output, { recursive: true });
 const mockSource = `
 const m=window.__financeMock;
 class Query {
- constructor(table){this.table=table;this.start=0;this.end=99999;this.equal=[];this.one=false;}
- select(){return this;}order(){return this;}limit(n){this.end=n-1;return this;}
+ constructor(table){this.table=table;this.start=0;this.end=99999;this.equal=[];this.within=[];this.one=false;}
+ select(fields){this.fields=fields;return this;}in(k,ids){this.within.push([k,ids]);return this;}order(){return this;}limit(n){this.end=n-1;return this;}
  eq(k,v){this.equal.push([k,v]);return this;}range(a,b){this.start=a;this.end=b;return this;}
  single(){this.one=true;return this.result();}
  async result(){
-  m.reads.push({table:this.table,start:this.start});
+  m.reads.push({table:this.table,start:this.start,fields:this.fields,within:this.within});
   if(m.hold)await new Promise(r=>m.pending.push(r));
   if(m.failPage&&this.table==='leader_payments'&&this.start>=500)return{error:{message:'synthetic page failure'}};
-  const rows=(m[this.table]||[]).filter(x=>this.equal.every(([k,v])=>x[k]===v)).slice(this.start,this.end+1);
+  if(m.failItems&&this.table==='leader_order_items')return{error:{message:'categories failed'}};
+  const rows=(m[this.table]||[]).filter(x=>this.equal.every(([k,v])=>x[k]===v)&&this.within.every(([k,ids])=>ids.includes(x[k]))).slice(this.start,this.end+1);
   return{data:this.one?rows[0]:structuredClone(rows),error:null};
  }
  then(a,b){return this.result().then(a,b);}
 }
 export const supabaseClient={auth:{getSession:async()=>({data:{session:{user:(await import('./state.js')).v4State.user,access_token:'synthetic-fixture-token'}},error:null})},from:t=>new Query(t),functions:{invoke:async(name,{body})=>{
- if(name==='leader-crm-finance-adjustments')return{data:{ok:true,rows:[]}};
+ if(name==='leader-crm-finance-adjustments')return{data:{ok:true,rows:m.closures.filter(row=>body.payload.order_ids.includes(row.order_id))}};
  m.writes.push({name,action:body.action});
  const p=body.payload||{},order=m.leader_orders.find(x=>x.id===p.order_id);
  if(body.action==='finance.payment.create')m.leader_payments.push({id:crypto.randomUUID(),order_id:order.id,amount:p.amount,payment_status:'Проведён',payment_type:'Приход',is_confirmed:true,payment_date:p.date,updated_at:'2026-10-14T05:00:01Z'});
@@ -36,10 +37,10 @@ const fixture = role => `<!doctype html><html lang="ru"><meta charset="utf-8"><m
 import {setState,v4State} from '/crm/v4/assets/v4/state.js';
 const id='90000000-0000-4000-8000-000000000501',second='90000000-0000-4000-8000-000000000502';
 window.__financeMock={reads:[],writes:[],details:[],pending:[],hold:new URL(location).searchParams.has('hold'),leader_orders:[
- {id,order_number:101,project_name:'Вывеска магазина',status:'Новый',client_total:10000,contractor_cost:5000,profit:5000,is_archived:false,payment_status:'Частично оплачено',updated_at:'2026-10-14T05:00:00.123456Z',data:{}},
+ {id,lead_id:'lead-sign',order_number:101,project_name:'Вывеска магазина',status:'Новый',client_total:10000,contractor_cost:5000,profit:5000,is_archived:false,payment_status:'Частично оплачено',updated_at:'2026-10-14T05:00:00.123456Z',data:{}},
  {id:second,order_number:102,project_name:'Таблички для офиса',status:'Закрыт',client_total:10000,contractor_cost:5000,profit:5000,is_archived:false,payment_status:'Оплачено',updated_at:'2026-10-14T05:00:00.123456Z',data:{}},
  {id:'90000000-0000-4000-8000-000000000503',order_number:103,project_name:'Длинное название заказа '.repeat(6)+'<img src=x onerror=alert(1)>',status:'Новый',client_total:3000,contractor_cost:1000,profit:2000,is_archived:false,updated_at:'2026-10-14T05:00:00.123456Z',data:{}}
-],leader_payments:[{id:'payment-one',order_id:id,amount:2000,payment_status:'Проведён',payment_type:'Приход',is_confirmed:true,payment_date:'2026-10-13'},{id:'payment-two',order_id:second,amount:11000,payment_status:'Проведён',payment_type:'Приход',is_confirmed:true,payment_date:'2026-10-13'}],leader_expenses:[{id:'expense-one',order_id:id,amount:1000,status:'Проведён',expense_date:'2026-10-13'}]};
+],closures:[{order_id:second,confirmed:true}],leader_order_items:[{id:'item-first',order_id:id,category:'Ручная позиция'},{id:'item-second',order_id:second,category:'Навигация'}],leader_leads:[{id:'lead-sign',service:'Вывеска'}],leader_payments:[{id:'payment-one',order_id:id,amount:2000,payment_status:'Проведён',payment_type:'Приход',is_confirmed:true,payment_date:'2026-10-13'},{id:'payment-two',order_id:second,amount:11000,payment_status:'Проведён',payment_type:'Приход',is_confirmed:true,payment_date:'2026-10-13'}],leader_expenses:[{id:'expense-one',order_id:id,amount:1000,status:'Проведён',expense_date:'2026-10-13'}]};
 window.__setRole=(role,user='90000000-0000-4000-8000-000000000599')=>setState({user:{id:user},profile:{user_id:user,role,is_active:true},profileLoaded:true,crmReady:true});
 window.__setRole('${role}');
 const loader=await import('/crm/v4/assets/v4/crm-v4-tab-loader-v1.js');
@@ -73,12 +74,29 @@ try {
   await page.goto(origin+'/fixture?role='+role);await page.waitForFunction(()=>window.__ready===true);
   const panel=page.locator('#financePlanActualPanelV1');
   assert.equal(await panel.locator('[data-finance-order]').count(),3);
+  const directions=panel.locator('.v4-finance-directions');
+  await directions.locator('summary').click();
+  const verified=directions.locator('li').filter({hasText:'Навигация'});
+  assert.match((await verified.textContent()).replace(/\s/g,''),/Сверено1из1.*11000₽/);
+  assert.ok(await directions.getByText('Пока нет сверенных заказов').first().isVisible());
+  const leadReads=await page.evaluate(()=>window.__financeMock.reads.filter(r=>r.table==='leader_leads'));
+  if(role==='accountant')assert.equal(leadReads.length,0);
+  else{
+   assert.ok(await directions.getByText('Вывески').isVisible());
+   assert.equal(leadReads.length,1);
+   assert.equal(leadReads[0].fields,'id,service');
+   assert.deepEqual(leadReads[0].within,[['id',['lead-sign']]]);
+  }
+  await panel.locator('[data-finance-direction]').selectOption('category:навигация');
+  assert.equal(await panel.locator('[data-finance-order]').count(),1);
+  assert.match((await panel.locator('[data-finance-order-list]').textContent()).replace(/\s/g,''),/Сверено·11000₽/);
+  await panel.locator('[data-finance-direction]').selectOption('');
   await panel.locator('[data-finance-search]').fill('101');assert.equal(await panel.locator('[data-finance-order]').count(),1);
   const debt=panel.locator('.v4-plan-actual-metric').filter({hasText:'Долг клиента'});
   assert.equal((await debt.textContent()).replace(/\s/g,''),'Долгклиента8000₽','Debt subtracts the confirmed partial payment');
   await panel.locator('[data-finance-search]').fill('');await panel.locator('[data-finance-filter]').selectOption('overpayment');
   assert.equal(await panel.locator('[data-finance-order]').count(),1);assert.ok((await panel.textContent()).includes('Переплата: 1'));
-  await panel.locator('[data-finance-filter]').selectOption('expenses');assert.equal(await panel.locator('[data-finance-order]').count(),2);
+  await panel.locator('[data-finance-filter]').selectOption('expenses');assert.equal(await panel.locator('[data-finance-order]').count(),1,'A confirmed zero-expense order is reconciled');
   assert.equal(await panel.locator('img').count(),0,'Order titles are text');
   await panel.locator('[data-finance-filter]').selectOption('closed');assert.equal(await panel.locator('[data-finance-order]').count(),1);
   assert.ok((await panel.locator('[data-finance-order-list]').textContent()).includes('№102'));
@@ -126,6 +144,11 @@ try {
  assert.equal(await page.locator('[data-finance-order]').count(),0,'A failed page never produces a partial balance');
  await page.evaluate(()=>{window.__financeMock.failPage=false;});await page.locator('[data-plan-actual-refresh]').click();await page.locator('[data-finance-order]').first().waitFor();
  assert.ok(await page.evaluate(()=>window.__financeMock.reads.some(x=>x.table==='leader_payments'&&x.start===1000)),'Reads continue beyond 1000 rows');
+ await page.evaluate(()=>{window.__financeMock.failItems=true;});
+ await page.evaluate(()=>window.__loadFinance(true));
+ assert.ok((await page.locator('#financePlanActualPanelV1').textContent()).includes('Разбивка по направлениям недоступна'));
+ assert.equal(await page.locator('[data-finance-order]').count(),3,'Category failure preserves balances');
+ await page.evaluate(()=>{window.__financeMock.failItems=false;});
  await page.evaluate(()=>{window.__financeMock.hold=true;window.__pendingLoad=window.__loadFinance(true);});
  await page.waitForFunction(()=>window.__financeMock.pending.length>0);
  await page.evaluate(()=>{window.__setRole('designer');const m=window.__financeMock;m.hold=false;m.pending.splice(0).forEach(r=>r());});

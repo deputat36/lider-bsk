@@ -14,7 +14,7 @@ import {
 const PANEL_ID = 'financePlanActualPanelV1';
 const STYLE_ID = 'financePlanActualPanelV1Styles';
 const CACHE_MS = 60000;
-const ORDER_FIELDS = 'id,order_number,project_name,status,client_total,contractor_cost,profit,is_archived,created_at';
+const ORDER_FIELDS = 'id,order_number,project_name,status,client_total,contractor_cost,profit,is_archived,created_at,lead_id';
 const PAYMENT_FIELDS = 'id,order_id,amount,payment_status,payment_type,is_confirmed,payment_date';
 const EXPENSE_FIELDS = 'id,order_id,amount,status,category,expense_date';
 
@@ -24,6 +24,7 @@ let snapshot = null;
 let errorText = '';
 let search = '';
 let filter = 'all';
+let directionFilter = '';
 let generation = 0;
 let contextKey = '';
 
@@ -43,6 +44,7 @@ function resetContext() {
   errorText = '';
   search = '';
   filter = 'all';
+  directionFilter = '';
   const panel = document.getElementById(PANEL_ID);
   if (panel) panel.innerHTML = '';
 }
@@ -55,7 +57,7 @@ function money(value, empty = '—') {
   if (value === null || value === undefined) return empty;
   const number = Number(value);
   if (!Number.isFinite(number)) return empty;
-  return `${Math.round(number).toLocaleString('ru-RU')} ₽`;
+  return `${number.toLocaleString('ru-RU', { maximumFractionDigits: 2 })} ₽`;
 }
 
 function ensureStyles() {
@@ -63,6 +65,7 @@ function ensureStyles() {
   const style = document.createElement('style');
   style.id = STYLE_ID;
   style.textContent = `.v4-plan-actual{margin:16px 0;border:1px solid #c7d2fe;background:linear-gradient(180deg,#f8faff 0%,#fff 100%);border-radius:20px;padding:15px;display:grid;gap:13px}.v4-plan-actual-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.v4-plan-actual-head h3{margin:0;color:#312e81}.v4-plan-actual-head p{margin:5px 0 0;color:#64748b}.v4-plan-actual button{border:1px solid #c7d2fe;background:#fff;color:#3730a3;border-radius:11px;padding:8px 11px;font-weight:900;cursor:pointer}.v4-plan-actual-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:8px}.v4-plan-actual-stat{border:1px solid #e0e7ff;background:#fff;border-radius:14px;padding:10px}.v4-plan-actual-stat span{display:block;color:#64748b;font-size:11px;font-weight:900;text-transform:uppercase}.v4-plan-actual-stat b{display:block;margin-top:4px;font-size:20px;color:#1e1b4b}.v4-plan-actual-stat.is-danger{border-color:#fecaca;background:#fff7f7}.v4-plan-actual-stat.is-danger b{color:#991b1b}.v4-plan-actual-stat.is-warn{border-color:#fde68a;background:#fffdf3}.v4-plan-actual-stat.is-good{border-color:#bbf7d0;background:#f0fdf4}.v4-plan-actual-note{border:1px dashed #a5b4fc;background:#eef2ff;color:#3730a3;border-radius:13px;padding:10px;font-weight:800}.v4-plan-actual-note.is-danger{border-color:#fca5a5;background:#fff1f2;color:#991b1b}.v4-plan-actual-list{display:grid;gap:8px}.v4-plan-actual-row{border:1px solid #e0e7ff;background:#fff;border-radius:15px;padding:11px;display:grid;grid-template-columns:minmax(200px,1.3fr) repeat(4,minmax(85px,.65fr)) minmax(160px,1fr) minmax(150px,.8fr);gap:9px;align-items:center}.v4-plan-actual-row{min-width:0;overflow-wrap:anywhere}.v4-finance-row-actions{display:grid;gap:7px}.v4-finance-filters{display:flex;gap:12px;flex-wrap:wrap;margin:20px 0 10px}.v4-finance-filters label{display:grid;gap:6px;font-weight:700;min-width:0;flex:1 1 220px}.v4-finance-filters input,.v4-finance-filters select{width:100%;min-width:0;box-sizing:border-box;font:inherit;padding:10px;min-height:44px;border:1px solid #cbd5e1;border-radius:9px}.v4-plan-actual-row.is-danger{border-color:#fecaca;background:#fffafa}.v4-plan-actual-title b,.v4-plan-actual-title small{display:block}.v4-plan-actual-title small{margin-top:3px;color:#64748b}.v4-plan-actual-metric span{display:block;color:#64748b;font-size:10px;font-weight:900;text-transform:uppercase}.v4-plan-actual-metric b{display:block;margin-top:3px;color:#0f172a}.v4-plan-actual-empty,.v4-plan-actual-error{border:1px dashed #cbd5e1;background:#f8fafc;border-radius:14px;padding:13px;color:#64748b}.v4-plan-actual-error{border-color:#fecaca;background:#fff1f2;color:#991b1b;font-weight:800}@media(max-width:980px){.v4-plan-actual-row{grid-template-columns:repeat(2,1fr)}.v4-plan-actual-title,.v4-finance-row-actions{grid-column:1/-1}.v4-plan-actual-row button{width:100%}}@media(max-width:640px){.v4-plan-actual-head{display:grid}.v4-plan-actual-head button{width:100%}.v4-plan-actual-row{grid-template-columns:1fr}}`;
+  style.textContent += `.v4-finance-directions{min-width:0;border:1px solid #c7d2fe;border-radius:14px;padding:0 12px;background:#fff}.v4-finance-directions summary{cursor:pointer;padding:13px 0;font-weight:800;color:#312e81}.v4-finance-directions p{margin:0 0 10px;color:#475569}.v4-finance-directions ul{list-style:none;padding:0;margin:0 0 8px}.v4-finance-directions li{display:grid;grid-template-columns:minmax(0,1.2fr) repeat(3,minmax(0,1fr));gap:6px 12px;padding:10px 0;border-top:1px solid #e0e7ff;align-items:baseline;overflow-wrap:anywhere}.v4-finance-directions li small{display:block;font-weight:400;color:#475569}.v4-finance-directions li span{color:#334155}@media(max-width:720px){.v4-finance-directions li{grid-template-columns:repeat(2,minmax(0,1fr))}.v4-finance-directions li strong{grid-column:1/-1}}@media(max-width:420px){.v4-finance-directions li{grid-template-columns:1fr}}`;
   document.head.appendChild(style);
 }
 
@@ -98,17 +101,19 @@ function orderTitle(order) {
 
 function orderStateText(order) {
   if (order.actualProfitState === 'unknown') return 'Факт. прибыль не рассчитана';
-  if (order.actualProfitState === 'partial') return `Предварительно ${money(order.actualProfit)}`;
+  if (order.actualProfitState === 'confirmed') return `Сверено · ${money(order.actualProfit)}`;
   return `Предварительно ${money(order.actualProfit)}`;
 }
 
 function orderRow(order) {
   const danger = order.actualProfitState === 'unknown' || order.debt > 0;
-  const reason = order.actualProfitState === 'unknown'
-    ? 'Нет подтверждённых расходов при наличии плановой себестоимости.'
-    : order.terminal
-      ? 'Заказ закрыт, но полнота расходов не имеет отдельного системного подтверждения.'
-      : 'Заказ не закрыт: результат будет меняться.';
+  const reasons = {
+    unknown: 'При плановой себестоимости пока нет проведённых расходов.',
+    partial: 'Заказ открыт. Результат может измениться.',
+    provisional: 'Заказ закрыт. Осталось подтвердить полноту расходов.',
+    confirmed: 'Заказ закрыт. Полнота расходов подтверждена.'
+  };
+  const reason = reasons[order.actualProfitState];
   const overpayment = Math.max(0, Math.round((order.confirmedNetReceipts - order.plannedRevenue) * 100) / 100);
   const canOpen = canPerformV4Action(CRM_V4_ACTIONS.ORDERS_READ) && canOpenV4Tab('orders');
   const canWrite = canOpen && financeWriteAvailable(V4_CONFIG.supabaseUrl, canPerformV4Action(CRM_V4_ACTIONS.FINANCE_WRITE));
@@ -123,10 +128,18 @@ function renderOrderList() {
   const rows = snapshot.orders.filter(order => {
     const haystack = `${orderTitle(order)} ${order.status}`.toLocaleLowerCase('ru-RU').replace(/ё/g, 'е');
     if (text && !haystack.includes(text)) return false;
-    return filter === 'debt' ? order.debt > 0 : filter === 'overpayment' ? order.confirmedNetReceipts > order.plannedRevenue : filter === 'expenses' ? order.plannedCost > 0 && !order.confirmedExpenseRows : filter === 'closed' ? order.terminal : true;
+    if (directionFilter && snapshot.directions?.orderKeys[order.orderId] !== directionFilter) return false;
+    return filter === 'debt' ? order.debt > 0 : filter === 'overpayment' ? order.confirmedNetReceipts > order.plannedRevenue : filter === 'expenses' ? order.plannedCost > 0 && !order.confirmedExpenseRows && !order.expensesConfirmed : filter === 'closed' ? order.terminal : true;
   });
   panel.querySelector('[data-finance-order-list]').innerHTML = rows.map(orderRow).join('') || '<div class="v4-plan-actual-empty">Нет заказов по выбранным условиям.</div>';
   panel.querySelector('[data-finance-result-count]').textContent = `Найдено ${rows.length} из ${snapshot.orderCount}. Сводка выше включает все загруженные заказы.`;
+}
+
+function renderDirections(directions) {
+  if (!directions) return '<p class="v4-plan-actual-empty">Разбивка по направлениям недоступна. Проверьте доступ или нажмите «Обновить факт».</p>';
+  if (!directions.groups.length) return '';
+  const rows = directions.groups.map(group => `<li><strong>${esc(group.label)}${group.fromLeads ? `<small>По услуге из заявки · ${group.fromLeads}</small>` : ''}</strong><span>Сверено ${group.confirmedOrders} из ${group.orders}</span><span>План прибыли · ${money(group.plannedProfit)}</span><span>${group.confirmedOrders ? 'Денежный результат · ' + money(group.confirmedCash) : 'Пока нет сверенных заказов'}</span></li>`).join('');
+  return `<details class="v4-finance-directions"><summary>Результат по направлениям работ</summary><p>План включает все заказы вне архива. Денежный результат учитывает поступления за вычетом возвратов и расходов по закрытым заказам с подтверждённой полнотой расходов. Направление берётся из позиций заказа. Если они без конкретной категории, используется известная услуга доступной заявки. Смешанный заказ учитывается один раз.</p><ul>${rows}</ul></details>`;
 }
 
 function render() {
@@ -147,28 +160,45 @@ function render() {
   }
 
   const actualValue = snapshot.actualProfit === null ? 'Не рассчитана' : money(snapshot.actualProfit);
-  const actualType = snapshot.actualProfit === null ? 'is-danger' : 'is-warn';
+  const actualType = snapshot.actualProfit === null || snapshot.actualProfit < 0 ? 'is-danger' : snapshot.actualProfitState === 'confirmed' ? 'is-good' : 'is-warn';
+  const groups = snapshot.directions?.groups || [];
+  if (!groups.some(group => group.key === directionFilter)) directionFilter = '';
+  const directionSelect = groups.length ? `<label>Направление работ<select data-finance-direction><option value="">Все направления</option>${groups.map(group => `<option value="${esc(group.key)}"${group.key === directionFilter ? ' selected' : ''}>${esc(group.label)}</option>`).join('')}</select></label>` : '';
   const warnings = [];
+  if (snapshot.linkedServicesUnavailable) warnings.push('Услуги связанных заявок временно недоступны. Часть заказов может отображаться без направления.');
   if (snapshot.actualProfit === null) warnings.push(`Фактическая прибыль не рассчитана по ${snapshot.unknownActualProfitOrders} заказам: отсутствуют подтверждённые расходы.`);
   if (snapshot.confirmedUnattributedPayments) warnings.push(`Есть подтверждённые платежи без активного заказа: ${money(snapshot.confirmedUnattributedPayments)}.`);
   if (snapshot.confirmedUnattributedExpenses) warnings.push(`Есть подтверждённые расходы без активного заказа: ${money(snapshot.confirmedUnattributedExpenses)}.`);
   if (snapshot.ignoredPaymentRows) warnings.push(`Не учтено неподтверждённых или отменённых платежей: ${snapshot.ignoredPaymentRows}.`);
   if (snapshot.ignoredExpenseRows) warnings.push(`Не учтено неподтверждённых, неизвестных или отменённых расходов: ${snapshot.ignoredExpenseRows}.`);
 
-  panel.innerHTML = `<div class="v4-plan-actual-head"><div><h3>План и подтверждённый факт</h3><p>План берётся из заказов. Факт учитывает только подтверждённые движения и не подменяет отсутствие расходов нулевой себестоимостью.</p></div><button type="button" data-plan-actual-refresh>Обновить факт</button></div><div class="v4-plan-actual-grid">${stat('План выручка', money(snapshot.plannedRevenue))}${stat('План себестоимость', money(snapshot.plannedCost))}${stat('План прибыль', money(snapshot.plannedProfit), snapshot.plannedProfit >= 0 ? 'is-good' : 'is-danger')}${stat('Подтверждено оплат', money(snapshot.confirmedNetReceipts), snapshot.confirmedNetReceipts ? 'is-good' : 'is-warn')}${stat('Подтв. расходы', money(snapshot.confirmedExpenses), snapshot.confirmedExpenses ? '' : 'is-warn')}${stat('Денежный результат', money(snapshot.cashResult), snapshot.cashResult >= 0 ? 'is-good' : 'is-danger')}${stat(actualProfitStateLabel(snapshot.actualProfitState), actualValue, actualType)}${stat('Долг клиентов', money(snapshot.debt), snapshot.debt ? 'is-danger' : 'is-good')}${stat('Покрытие оплат', `${snapshot.paymentCoveragePercent}%`)}${stat('Покрытие расходов', `${snapshot.expenseCoveragePercent}%`, snapshot.expenseCoveragePercent < 100 ? 'is-danger' : 'is-good')}</div>${warnings.length ? `<div class="v4-plan-actual-note is-danger">${warnings.map(esc).join(' ')}</div>` : '<div class="v4-plan-actual-note">Финансовый результат остаётся предварительным до подтверждения полноты всех расходов.</div>'}<div class="v4-finance-filters"><label>Найти заказ<input type="search" data-finance-search value="${esc(search)}" placeholder="Номер, название или статус"></label><label>Показать<select data-finance-filter>${[["all","Все заказы"],["debt","Есть долг"],["overpayment","Есть переплата"],["expenses","Нет подтверждённых расходов"],["closed","Завершённые"]].map(([value,label])=>`<option value="${value}"${filter===value?" selected":""}>${label}</option>`).join('')}</select></label></div><p data-finance-result-count role="status" aria-live="polite"></p><div class="v4-plan-actual-list" data-finance-order-list></div>`;
+  panel.innerHTML = `<div class="v4-plan-actual-head"><div><h3>План и подтверждённый факт</h3><p>План берётся из заказов. Факт учитывает только подтверждённые движения и не подменяет отсутствие расходов нулевой себестоимостью.</p></div><button type="button" data-plan-actual-refresh>Обновить факт</button></div><div class="v4-plan-actual-grid">${stat('План выручка', money(snapshot.plannedRevenue))}${stat('План себестоимость', money(snapshot.plannedCost))}${stat('План прибыль', money(snapshot.plannedProfit), snapshot.plannedProfit >= 0 ? 'is-good' : 'is-danger')}${stat('Подтверждено оплат', money(snapshot.confirmedNetReceipts), snapshot.confirmedNetReceipts ? 'is-good' : 'is-warn')}${stat('Подтв. расходы', money(snapshot.confirmedExpenses), snapshot.confirmedExpenses ? '' : 'is-warn')}${stat('Денежный результат', money(snapshot.cashResult), snapshot.cashResult >= 0 ? 'is-good' : 'is-danger')}${stat(actualProfitStateLabel(snapshot.actualProfitState), actualValue, actualType)}${stat('Долг клиентов', money(snapshot.debt), snapshot.debt ? 'is-danger' : 'is-good')}${stat('Покрытие оплат', `${snapshot.paymentCoveragePercent}%`)}${stat('Покрытие расходов', `${snapshot.expenseCoveragePercent}%`, snapshot.expenseCoveragePercent < 100 ? 'is-danger' : 'is-good')}</div>${warnings.length ? `<div class="v4-plan-actual-note is-danger">${warnings.map(esc).join(' ')}</div>` : snapshot.orderCount && snapshot.actualProfitState !== 'confirmed' ? '<div class="v4-plan-actual-note">Финансовый результат остаётся предварительным до закрытия заказов и подтверждения полноты расходов.</div>' : ''}${renderDirections(snapshot.directions)}<div class="v4-finance-filters"><label>Найти заказ<input type="search" data-finance-search value="${esc(search)}" placeholder="Номер, название или статус"></label><label>Показать<select data-finance-filter>${[["all","Все заказы"],["debt","Есть долг"],["overpayment","Есть переплата"],["expenses","Нет подтверждённых расходов"],["closed","Завершённые"]].map(([value,label])=>`<option value="${value}"${filter===value?" selected":""}>${label}</option>`).join('')}</select></label>${directionSelect}</div><p data-finance-result-count role="status" aria-live="polite"></p><div class="v4-plan-actual-list" data-finance-order-list></div>`;
   renderOrderList();
 }
 
-async function readRows(table, fields) {
+async function readRows(table, fields, ids, column) {
   const rows = [];
   for (let offset = 0; offset < 100000; offset += 500) {
-    const { data, error } = await supabaseClient.from(table).select(fields).order('id', { ascending: true }).range(offset, offset + 499);
+    let query = supabaseClient.from(table).select(fields);
+    if (ids) query = query.in(column, ids);
+    const { data, error } = await query.order('id', { ascending: true }).range(offset, offset + 499);
     if (error) throw error;
     if (!Array.isArray(data)) throw new Error('finance_response_invalid');
     rows.push(...data);
     if (data.length < 500) return rows;
   }
   throw new Error('finance_read_limit');
+}
+
+async function readLinkedRows(table, fields, column, ids, context) {
+  const rows = [];
+  for (let offset = 0; offset < ids.length; offset += 100) {
+    if (context !== readContext()) return [];
+    const batch = ids.slice(offset, offset + 100);
+    const page = await readRows(table, fields, batch, column);
+    for (const row of page) rows.push(row);
+  }
+  return rows;
 }
 
 async function load(force = false) {
@@ -190,9 +220,19 @@ async function load(force = false) {
       readRows('leader_expenses', EXPENSE_FIELDS)
     ]);
     if (request !== generation || context !== readContext()) return;
-    const expenseConfirmations=await readExpenseConfirmations({client:supabaseClient,url:V4_CONFIG.supabaseUrl,actorId:v4State.user?.id,orderIds:orders.map(order=>order.id)});
-    if(request!==generation||context!==readContext())return;
-    snapshot = buildFinancePortfolioSnapshot(orders, payments, expenses, { statusResolver: orderStatusUiModel,expenseConfirmations });
+    const activeOrders = orders.filter(order => !order.is_archived);
+    const orderIds = activeOrders.map(order => order.id);
+    const leadIds = [...new Set(activeOrders.map(order => order.lead_id).filter(Boolean))];
+    const [expenseConfirmations, orderItems, leadServices] = await Promise.all([
+      readExpenseConfirmations({ client: supabaseClient, url: V4_CONFIG.supabaseUrl, actorId: v4State.user?.id, orderIds }),
+      canPerformV4Action(CRM_V4_ACTIONS.ORDERS_READ) ? readLinkedRows('leader_order_items', 'id,order_id,category', 'order_id', orderIds, context).catch(() => null) : null,
+      canPerformV4Action(CRM_V4_ACTIONS.LEADS_READ) ? readLinkedRows('leader_leads', 'id,service', 'id', leadIds, context).catch(() => null) : []
+    ]);
+    if (request !== generation || context !== readContext()) return;
+    const serviceByLead = new Map((leadServices || []).map(lead => [lead.id, lead.service]));
+    const serviceByOrder = new Map(activeOrders.map(order => [String(order.id), serviceByLead.get(order.lead_id)]));
+    const portfolio = buildFinancePortfolioSnapshot(orders, payments, expenses, { statusResolver: orderStatusUiModel, expenseConfirmations, orderItems, serviceByOrder });
+    snapshot = { ...portfolio, linkedServicesUnavailable: leadServices === null };
     loadedAt = Date.now();
   } catch (error) {
     console.warn('CRM finance plan/actual read warning:', error);
@@ -214,6 +254,7 @@ function mount() {
     if (event.target.matches?.('[data-finance-search]')) { search = event.target.value; renderOrderList(); }
   });
   document.addEventListener('change', event => {
+    if (event.target.matches?.('[data-finance-direction]')) { directionFilter = event.target.value; renderOrderList(); }
     if (event.target.matches?.('[data-finance-filter]')) { filter = event.target.value; renderOrderList(); }
   });
   document.addEventListener('leader-v4:finance-changed', () => { loadedAt = 0; if (document.body.getAttribute('data-v4-tab') === 'finance_control') load(true); });
