@@ -129,4 +129,39 @@ assert.equal(empty.orderCount, 0);
 assert.equal(empty.paymentCoveragePercent, 100);
 assert.equal(empty.expenseCoveragePercent, 100);
 
+const extraOrders = ['empty', 'loss', 'incomplete', 'mixed', 'legacy', 'other'].map(id => ({
+  id, status: 'Закрыт', client_total: 20, contractor_cost: 4, profit: 16
+}));
+const byWork = buildFinancePortfolioSnapshot([...orders, ...extraOrders], payments, [
+  ...expenses, { order_id: 'loss', amount: 10.25, status: 'Проведён' }
+], {
+  statusResolver, expenseConfirmations: { o1: true, empty: true, loss: true },
+  serviceByOrder: new Map([['legacy', 'Вывеска'], ['other', 'Другое'], ['mixed', 'Баннер'], ['incomplete', 'Баннер']]),
+  orderItems: [
+    { order_id: 'o1', category: 'Баннеры' }, { order_id: 'o1', category: '  баннеры ' },
+    { order_id: 'o2', category: 'Печать  фото' }, { order_id: 'o3', category: 'Архивная' },
+    { order_id: 'loss', category: 'Дизайн' }, { order_id: 'incomplete', category: '' },
+    { order_id: 'incomplete', category: 'Дизайн' }, { order_id: 'mixed', category: 'Баннеры' },
+    { order_id: 'mixed', category: 'Дизайн' }, { order_id: 'legacy', category: 'Ручная позиция' },
+    { order_id: 'other', category: 'Подрядный расчёт' }
+  ]
+});
+const group = id => byWork.directions.groups.find(item => item.key === byWork.directions.orderKeys[id]);
+assert.equal(group('o1').confirmedCash, 35000, 'Verified cash excludes unassigned and unposted movements');
+assert.equal(group('o1').plannedProfit, 40000);
+assert.equal(group('o1').orders, 1);
+assert.equal(group('o2').confirmedCash, null);
+assert.equal(group('o2').label, 'Печать фото');
+assert.equal(group('loss').confirmedCash, -10.25);
+assert.equal(group('empty').confirmedCash, 0, 'An explicit zero remains visible');
+assert.equal(group('incomplete').key, 'incomplete');
+assert.equal(group('mixed').key, 'mixed');
+assert.equal(group('legacy').label, 'Вывески');
+assert.equal(group('legacy').fromLeads, 1);
+assert.equal(group('other').key, 'missing');
+assert.equal(group('o3'), undefined);
+assert.equal(byWork.directions.groups.reduce((sum, item) => sum + item.orders, 0), byWork.orderCount);
+assert.equal(byWork.directions.groups.reduce((sum, item) => sum + item.plannedProfit, 0), byWork.plannedProfit);
+assert.equal(portfolio.directions, null, 'An unavailable item read leaves the portfolio usable');
+
 console.log('Finance plan/actual model behavior is valid.');

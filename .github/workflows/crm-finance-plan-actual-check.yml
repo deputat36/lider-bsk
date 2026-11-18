@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
     paths:
+      - 'assets/leader-service-catalog.js'
       - 'crm/v4/assets/v4/finance-record-*.js'
       - 'crm/v4/assets/v4/finance-control-v2.js'
       - 'tools/test_finance_records.mjs'
@@ -37,6 +38,7 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - 'assets/leader-service-catalog.js'
       - 'crm/v4/assets/v4/finance-record-*.js'
       - 'crm/v4/assets/v4/finance-control-v2.js'
       - 'tools/test_finance_records.mjs'

@@ -1,3 +1,4 @@
+import '../../../../assets/leader-service-catalog.js?v=4';
 import { paymentRecordStatusModel } from './payment-record-status-model-v1.js';
 
 const CANCELLED_TOKENS = ['отмен', 'аннулир', 'сторнир'];
@@ -141,6 +142,59 @@ export function buildOrderFinanceSnapshot(order = {}, payments = [], expenses = 
   });
 }
 
+const SERVICE_CATEGORIES = new Map();
+for (const service of globalThis.LeaderServiceCatalog.services) {
+  for (const label of [service.id, service.category, service.label, ...service.label.split(' / ')]) {
+    SERVICE_CATEGORIES.set(text(label), service.category);
+  }
+}
+const GENERIC_CATEGORIES = new Set(['', 'ручная позиция', 'подрядный расчёт', 'подрядный расчет', 'другое', 'прочее']);
+
+function financeDirections(orders, items, serviceByOrder = new Map()) {
+  if (!Array.isArray(items)) return null;
+  const categories = new Map();
+  for (const item of items) {
+    const id = String(item.order_id || '');
+    const raw = String(item.category || '').trim().replace(/\s+/g, ' ');
+    const label = GENERIC_CATEGORIES.has(text(raw)) ? '' : SERVICE_CATEGORIES.get(text(raw)) || raw;
+    if (!categories.has(id)) categories.set(id, new Map());
+    categories.get(id).set(text(label), label);
+  }
+  const orderKeys = Object.create(null);
+  const groups = new Map();
+  for (const order of orders) {
+    const labels = categories.get(order.orderId);
+    let key = 'missing';
+    let label = 'Направление не определено';
+    let fromLead = false;
+    if (labels && labels.size > 1) {
+      const incomplete = labels.has('') && labels.size === 2;
+      key = incomplete ? 'incomplete' : 'mixed';
+      label = incomplete ? 'Часть позиций без направления' : 'Несколько направлений';
+    } else {
+      const itemLabel = labels?.values().next().value;
+      const leadLabel = SERVICE_CATEGORIES.get(text(serviceByOrder.get(order.orderId)));
+      const category = itemLabel || leadLabel;
+      if (category && !GENERIC_CATEGORIES.has(text(category))) {
+        key = 'category:' + text(category);
+        label = category;
+        fromLead = !itemLabel;
+      }
+    }
+    orderKeys[order.orderId] = key;
+    if (!groups.has(key)) groups.set(key, { key, label, orders: 0, fromLeads: 0, plannedProfit: 0, confirmedOrders: 0, confirmedCash: null });
+    const group = groups.get(key);
+    group.orders++;
+    if (fromLead) group.fromLeads++;
+    group.plannedProfit = currency(group.plannedProfit + order.plannedProfit);
+    if (order.actualProfitState === 'confirmed') {
+      group.confirmedOrders++;
+      group.confirmedCash = currency((group.confirmedCash ?? 0) + order.cashResult);
+    }
+  }
+  return { groups: [...groups.values()].sort((a, b) => a.label.localeCompare(b.label, 'ru')), orderKeys };
+}
+
 export function buildFinancePortfolioSnapshot(orders = [], payments = [], expenses = [], options = {}) {
   const statusResolver = typeof options.statusResolver === 'function'
     ? options.statusResolver
@@ -237,6 +291,7 @@ export function buildFinancePortfolioSnapshot(orders = [], payments = [], expens
   return Object.freeze({
     orderCount: orderSnapshots.length,
     orders: Object.freeze(sortedOrders),
+    directions: financeDirections(orderSnapshots, options.orderItems, options.serviceByOrder),
     ...totals,
     confirmedUnattributedPayments,
     confirmedUnattributedExpenses,

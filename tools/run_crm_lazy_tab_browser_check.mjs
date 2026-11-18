@@ -2,7 +2,7 @@
 
 import { createServer } from 'node:http';
 import { spawn } from 'node:child_process';
-import { access, cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { constants as fsConstants } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -302,6 +302,9 @@ export async function runLazyTabBrowserCheck({ repoRoot = path.resolve('.') } = 
   try {
     const tempCrm = path.join(tempRoot, 'crm', 'v4');
     await cp(path.join(repoRoot, 'crm', 'v4'), tempCrm, { recursive: true });
+    await mkdir(path.join(tempRoot, 'assets'), { recursive: true });
+    const serviceCatalog = path.join('assets', 'leader-service-catalog.js');
+    await cp(path.join(repoRoot, serviceCatalog), path.join(tempRoot, serviceCatalog));
     const indexPath = path.join(tempCrm, 'index.html');
     await writeFile(indexPath, injectHarness(await readFile(indexPath, 'utf8')), 'utf8');
     await writeFile(path.join(tempCrm, 'assets', 'v4', 'supabase-client.js'), mockSupabaseSource(), 'utf8');
