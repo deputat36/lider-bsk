@@ -285,6 +285,10 @@ try {
         ['реклама в группе', 'reklama-v-soobshchestvah-borisoglebska.html'],
         ['QR меню для кафе', 'qr-katalogi-onlayn-zapis.html'],
         ['растяжка', 'bannery-borisoglebsk.html'],
+        ['нам нужны визитки', 'vizitki-borisoglebsk.html'],
+        ['монтаж вывески', 'vyveski-borisoglebsk.html'],
+        ['монтаж баннера', 'bannery-borisoglebsk.html'],
+        ['поклейка пленки', 'pechat-na-plenke-borisoglebsk.html'],
       ]) {
         await search.fill(query);
         assert.equal(await page.locator('#service-search-results a').first().getAttribute('href'), expected, query);
@@ -296,6 +300,13 @@ try {
       assert.equal(await page.locator('#service-search-input').inputValue(), 'визитки1000', 'Back restores the catalog search without exposing it in the URL');
       await page.locator('#service-search-input').fill('облачные драконы');
       assert.equal(await page.locator('#service-search-results a').getAttribute('href'), '#request');
+      await page.locator('#service-search-results a').click();
+      assert.equal(await page.locator('[name="message"]').inputValue(), 'облачные драконы', 'Unmatched request is kept in the form');
+      await page.locator('[name="message"]').fill('Мои ранее введённые пожелания');
+      await search.fill('<img src=x onerror=alert(1)>');
+      assert.equal(await page.locator('#service-search-results img').count(), 0, 'Query is never inserted as HTML');
+      await page.locator('#service-search-results a').click();
+      assert.equal(await page.locator('[name="message"]').inputValue(), 'Мои ранее введённые пожелания', 'Existing customer notes are preserved');
       await page.locator('[data-search-clear]').click();
       assert.equal(await page.locator('#service-search-input').inputValue(), '');
       assert.equal(await page.locator('#service-search-results').isVisible(), false);

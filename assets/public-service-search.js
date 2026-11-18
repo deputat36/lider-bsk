@@ -9,20 +9,21 @@
   const clear = host.querySelector('[data-search-clear]');
   const aliases = {
     'vizitki-borisoglebsk.html': 'визитка визитки визиток карточки контакты печать напечатать распечатать тираж',
-    'vyveski-borisoglebsk.html': 'вывеска вывески световая буквы фасад наружная реклама',
+    'vyveski-borisoglebsk.html': 'вывеска вывески световая буквы фасад наружная реклама монтаж установка замер',
     'oformlenie-vhoda-borisoglebsk.html': 'оформление вход входная группа новая точка открытие магазин',
     'reklama-v-soobshchestvah-borisoglebska.html': 'размещение разместить реклама группа группы сообщество сообщества паблик вк vk телеграм telegram',
     'reklamnye-posty-vk-borisoglebsk.html': 'написать пост текст вк vk объявление акция',
     'qr-katalogi-onlayn-zapis.html': 'qr куар кьюар qr-меню меню кафе электронное цифровое каталог онлайн запись',
     'menyu-dlya-kafe-borisoglebsk.html': 'печатное меню кафе ресторан бумажное печать',
-    'bannery-borisoglebsk.html': 'баннер баннеры растяжка печать полотно люверсы',
+    'bannery-borisoglebsk.html': 'баннер баннеры растяжка печать полотно люверсы монтаж крепление установка',
+    'pechat-na-plenke-borisoglebsk.html': 'пленка витрина оклейка поклейка монтаж нанесение установка',
     'poligrafiya-borisoglebsk.html': 'печать напечатать распечатать листовка флаер буклет тираж полиграфия',
     'nakleyki-plotternaya-rezka-borisoglebsk.html': 'наклейка наклейки стикер этикетка пленка винил плоттер',
     'tablichki-borisoglebsk.html': 'табличка таблички указатель навигация кабинет режим работы',
     'dizayn-maketov.html': 'дизайн макет логотип оформление нарисовать разработать',
     'sozdanie-saytov.html': 'сайт сайты лендинг landing страница интернет',
   };
-  const stop = new Set(['для', 'мне', 'хочу', 'нужно', 'нужен', 'нужна', 'где', 'как', 'можно', 'сделать', 'заказать', 'шт', 'штук']);
+  const stop = new Set(['для', 'мне', 'нам', 'хочу', 'хотим', 'нужно', 'нужен', 'нужна', 'нужны', 'где', 'как', 'можно', 'сделать', 'заказать', 'шт', 'штук']);
   const normalize = value => String(value || '').toLocaleLowerCase('ru-RU').replace(/ё/g, 'е').replace(/([а-я])(\d)/g, '$1 $2').replace(/(\d)([а-я])/g, '$1 $2').replace(/[^a-zа-я0-9]+/g, ' ').trim();
   const words = value => normalize(value).split(/\s+/).filter(term => term.length > 1 && !/^\d+$/.test(term) && !stop.has(term));
   const stem = value => /^[а-я]+$/.test(value) ? value.slice(0, 5) : value;
@@ -63,6 +64,13 @@
     if (!matches.length) {
       const link = document.createElement('a');
       link.href = '#request'; link.textContent = 'Помогите подобрать услугу';
+      link.addEventListener('click', () => {
+        const message = document.querySelector('#leader-lead-form [name="message"]');
+        if (message && !message.value.trim()) {
+          message.value = query.trim();
+          message.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      });
       results.appendChild(link);
     }
   }

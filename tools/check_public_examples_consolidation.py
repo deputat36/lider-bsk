@@ -71,7 +71,7 @@ def main() -> None:
         'assets/public-lead-form.css?v=30',
         'assets/public-examples.css?v=2',
         'assets/public-site-navigation.css?v=1',
-        'assets/public-product-system.css?v=1',
+        'assets/public-product-system.css?v=2',
     ]
     if parser.stylesheets != expected_stylesheets:
         raise SystemExit(f'Unexpected examples stylesheet order: {parser.stylesheets}')

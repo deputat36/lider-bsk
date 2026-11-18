@@ -37,7 +37,7 @@ for item in DATA['services']:
 
 def with_css(text):
     text = re.sub(r'\n?<link rel="stylesheet" href="assets/public-service-explainers.css\?v=\d+">', '', text)
-    shared = '<link rel="stylesheet" href="assets/public-product-system.css?v=1">'
+    shared = '<link rel="stylesheet" href="assets/public-product-system.css?v=2">'
     if shared not in text:
         raise ValueError('Missing shared product stylesheet')
     return text.replace(shared, CSS + '\n' + shared, 1)

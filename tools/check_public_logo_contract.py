@@ -34,7 +34,7 @@ for page in pages:
     if 'assets/public-lead-form.css?' in text:
         assert 'assets/public-lead-form.css?v=30' in text, f'{page.name}: stale shared form CSS'
         styles = re.findall(r'<link[^>]+rel="stylesheet"[^>]+href="([^"]+)"', text)
-        assert styles[-1] == 'assets/public-product-system.css?v=1', f'{page.name}: shared system must load last'
+        assert styles[-1] == 'assets/public-product-system.css?v=2', f'{page.name}: shared system must load last'
     assert 'logo-lider-light.svg' not in text, f'{page.name}: obsolete asset'
 css = (ROOT / 'assets/brand/leader-logo.css').read_text()
 assert '108px' in css and '82px' in css and 'object-fit: contain' in css
