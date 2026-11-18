@@ -58,7 +58,7 @@ def main() -> None:
         '"@type":"Service"',
         'id="leader-lead-form" data-leader-lead-form',
         'data-service="Баннер"',
-        'assets/public-lead-form.js?v=36',
+        'assets/public-lead-form.js?v=37',
         'privacy.html',
     ):
         require(text, marker)

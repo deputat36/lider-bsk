@@ -8,7 +8,7 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parents[1]
 FORM_SCRIPT = ROOT / 'assets' / 'public-lead-form.js'
 SITEMAP = ROOT / 'sitemap.xml'
-EXPECTED_SCRIPT = 'assets/public-lead-form.js?v=36'
+EXPECTED_SCRIPT = 'assets/public-lead-form.js?v=37'
 EXPECTED_LASTMOD = '2026-10-31'
 PAGES = {
     'banner-dlya-magazina-borisoglebsk.html': "'banner-dlya-magazina-borisoglebsk.html':{service:'Баннер'",

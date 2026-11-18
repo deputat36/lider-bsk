@@ -88,7 +88,7 @@ def main() -> None:
     expected_scripts = [
         'assets/public-lead-reference-v1.js?v=1',
         'assets/leader-service-catalog.js?v=4',
-        'assets/public-lead-form.js?v=36',
+        'assets/public-lead-form.js?v=37',
         'assets/packages-link.js?v=2',
     ]
     if parser.scripts != expected_scripts:

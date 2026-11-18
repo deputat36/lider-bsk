@@ -18,8 +18,8 @@ def main() -> None:
 
     for marker in (
         '<link rel="stylesheet" href="assets/public-lead-form.css?v=30">',
-        '<link rel="stylesheet" href="assets/public-community-ads.css?v=2">',
-        '<script src="assets/public-lead-form.js?v=36"></script>',
+        '<link rel="stylesheet" href="assets/public-community-ads.css?v=3">',
+        '<script src="assets/public-lead-form.js?v=37"></script>',
         '<link rel="canonical" href="https://www.lider-bsk.ru/reklama-v-soobshchestvah-borisoglebska.html">',
         '<meta name="robots" content="index, follow">',
         'id="packages"',
@@ -29,7 +29,7 @@ def main() -> None:
     ):
         require(html, marker, PAGE)
 
-    if html.index('public-lead-form.css?v=30') > html.index('public-community-ads.css?v=2'):
+    if html.index('public-lead-form.css?v=30') > html.index('public-community-ads.css?v=3'):
         raise SystemExit('Page CSS must load after shared form CSS')
     if '<style>' in html or '</style>' in html:
         raise SystemExit('Inline style block remains on community ads page')

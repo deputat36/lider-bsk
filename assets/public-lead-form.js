@@ -197,11 +197,11 @@
       const service=form.querySelector('[name="service"]');
       const message=form.querySelector('[name="message"]');
       if(service&&preset.service)service.value=preset.service;
-      form.__leaderOfferId=preset.offer_id||'';
+      form.__leaderOffer=preset.offer||null;
       renderSelectedOffer(form);
-      if(message&&preset.text&&!message.value.trim()){
-        message.value=preset.text;
-        form.__leaderAutoMessage=preset.text;
+      if(message&&(!message.value.trim()||message.value===form.__leaderAutoMessage)){
+        message.value=preset.text||'';
+        form.__leaderAutoMessage=message.value;
       }
       renderServiceBrief(form);
       updateMessageBudget(form);
@@ -216,23 +216,26 @@
     const item=selected||(catalog&&catalog.forPage(pageKey()));
     if(!item)return legacy||null;
     const offer=catalog.findOffer&&catalog.findOffer(q.offer);
-    return{service:item.label,text:selected?'Услуга выбрана по ссылке: '+item.label:(legacy?legacy.text:'Интересует: '+item.label),offer_id:offer&&offer.service_id===item.id?offer.id:''};
+    return{service:item.label,text:selected?'Услуга выбрана по ссылке: '+item.label:(legacy?legacy.text:'Интересует: '+item.label),offer};
   }
 
   function selectedOffer(form){
-    const offer=catalog&&catalog.findOffer&&catalog.findOffer(form.__leaderOfferId);
+    const offer=form.__leaderOffer;
     const service=catalog&&catalog.find(field(form,'service'));
     return offer&&service&&offer.service_id===service.id?offer:null;
   }
 
   function renderSelectedOffer(form){
     const offer=selectedOffer(form);
-    if(!offer)form.__leaderOfferId='';
+    if(!offer)form.__leaderOffer=null;
     const note=form.querySelector('[data-leader-offer-note]');
     if(note){
       note.hidden=!offer;
-      note.textContent=offer?'Выбранный состав: «'+offer.label+'». Стоимость и сроки согласуем после уточнения задачи.':'';
+      const contents=offer&&offer.items?.length?'Вариант включает '+offer.items.join(', ')+'. ':'';
+      note.textContent=offer?'Выбранный состав: «'+offer.label+'». '+contents+'Стоимость и сроки согласуем после уточнения задачи.':'';
     }
+    const clear=form.querySelector('[data-leader-clear-offer]');
+    if(clear)clear.hidden=!offer;
   }
 
   // Keep optional answers in this form only; changing a service never mixes briefs.
@@ -276,6 +279,7 @@
     if(!compact&&serviceInfo)parts.push('Направление: '+catalog.directions[serviceInfo.direction]);
     const offer=selectedOffer(form);
     if(offer)parts.push('Состав заказа: '+offer.label);
+    if(offer&&offer.items?.length)parts.push('Позиции для расчёта: '+offer.items.join(', '));
     if(serviceInfo&&serviceInfo.brief){
       serviceInfo.questions.forEach((question,i)=>{
         const answer=field(form,'brief_'+i);
@@ -416,7 +420,7 @@
       <div class="leader-lead-grid">
         <div class="leader-lead-span-6"><label for="${id}-name">Имя / организация</label><input id="${id}-name" name="name" type="text" autocomplete="name" maxlength="200" placeholder="Например, Алексей"></div>
         <div class="leader-lead-span-6"><label for="${id}-phone">Телефон</label><input id="${id}-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="80" placeholder="+7..." required></div>
-        <div class="leader-lead-span-12"><label for="${id}-service">Что нужно?</label><select id="${id}-service" name="service" required>${catalog?catalog.services.map(item=>`<option value="${item.label}"${item.id==='other'?' selected':''}>${item.label}</option>`).join(''):'<option value="">Услуги временно недоступны</option>'}</select><div class="leader-lead-note" data-leader-offer-note role="status" hidden></div></div>
+        <div class="leader-lead-span-12"><label for="${id}-service">Что нужно?</label><select id="${id}-service" name="service" required>${catalog?catalog.services.map(item=>`<option value="${item.label}"${item.id==='other'?' selected':''}>${item.label}</option>`).join(''):'<option value="">Услуги временно недоступны</option>'}</select><div class="leader-lead-note" data-leader-offer-note role="status" hidden></div><button class="leader-lead-more" type="button" data-leader-clear-offer hidden>Убрать выбранный состав</button></div>
         <div class="leader-lead-span-12"><label for="${id}-message">Коротко опишите задачу</label><textarea id="${id}-message" name="message" maxlength="2000" rows="3" aria-describedby="${id}-message-budget" placeholder="Например: нужен рекламный пост, баннер или наклейки"></textarea><div id="${id}-message-budget" class="leader-lead-note" data-leader-message-budget role="status" aria-live="polite" hidden></div></div>
       </div>
       <button class="leader-lead-more" type="button" data-leader-more aria-expanded="false" aria-controls="${id}-details">Добавить подробности для точного расчёта ↓</button>
@@ -458,10 +462,16 @@
     form.addEventListener('change',markFormStart);
     form.addEventListener('input',()=>updateMessageBudget(form));
     form.addEventListener('change',()=>updateMessageBudget(form));
+    form.querySelector('[data-leader-clear-offer]').addEventListener('click',()=>{
+      form.__leaderOffer=null;
+      renderSelectedOffer(form);
+      updateMessageBudget(form);
+      form.querySelector('[name="service"]').focus();
+    });
     form.querySelector('[name="service"]').addEventListener('change',()=>{
       goal('service_select',{service:field(form,'service')});
       const message=form.querySelector('[name="message"]');
-      if(message&&message.value===form.__leaderAutoMessage&&/^Интересует:|^Услуга выбрана/.test(message.value)){
+      if(message&&message.value&&message.value===form.__leaderAutoMessage){
         message.value='Интересует: '+field(form,'service');
         form.__leaderAutoMessage=message.value;
       }
@@ -641,21 +651,6 @@
     bar.addEventListener('click',function(e){const a=e.target.closest('a');if(!a)return;goal(a.href.indexOf('tel:')===0?'mobile_phone_click':'mobile_cta_click',{page:location.href,page_path:location.pathname});});
   }
 
-  function injectCommunityPrices(){
-    if(pageKey()!=='reklama-v-soobshchestvah-borisoglebska.html'||document.getElementById('community-price-block'))return;
-    const anchor=document.getElementById('formats')||document.getElementById('communities')||document.getElementById('request');
-    if(!anchor)return;
-    const style=document.createElement('style');
-    style.id='community-price-style';
-    style.textContent='.community-price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.community-price-card{border:1px solid #e5e7eb;border-radius:24px;padding:24px;background:#fff;box-shadow:0 18px 48px rgba(15,23,42,.10)}.community-price-card.main{border:2px solid #f6c343}.community-price-card h3{margin:0 0 8px;font-size:23px}.community-price-value{font-size:34px;line-height:1;font-weight:900;margin:10px 0;color:#111827}.community-price-card p{color:#667085}.community-price-note{margin-top:18px;background:#fff7d6;border:1px solid #fde68a;border-radius:22px;padding:18px;color:#5a3b00;font-weight:800}@media(max-width:900px){.community-price-grid{grid-template-columns:1fr}}';
-    document.head.appendChild(style);
-    const section=document.createElement('section');
-    section.id='community-price-block';
-    section.className='section soft';
-    section.innerHTML='<div class="wrap"><h2>Цены на размещение рекламы</h2><p class="lead">Ориентиры по стоимости. Итог зависит от выбранных сообществ, количества публикаций, закрепа, сроков и сложности изображения.</p><div class="community-price-grid"><article class="community-price-card main"><h3>Разовый рекламный пост</h3><div class="community-price-value">от 300 ₽</div><p>Один пост в подходящем сообществе. Подходит для акции, объявления, открытия, услуги или проверки спроса.</p><a class="btn btn-dark" data-service="Соцсети и контент" href="#request">Заказать пост</a></article><article class="community-price-card main"><h3>Пакет размещений</h3><div class="community-price-value">от 1200 ₽</div><p>Несколько публикаций в разных группах или серия выходов по одной теме. Подходит для охвата и мероприятий.</p><a class="btn btn-dark" data-service="Соцсети и контент" href="#request">Подобрать пакет</a></article><article class="community-price-card"><h3>Закреп поста</h3><div class="community-price-value">от 1000 ₽</div><p>Стоимость за неделю, если закреп доступен в выбранном сообществе.</p><a class="btn btn-dark" data-service="Соцсети и контент" href="#request">Уточнить закреп</a></article><article class="community-price-card"><h3>Текст к посту</h3><div class="community-price-value">в подарок</div><p>Подготовим понятный рекламный текст: что предлагаете, где находится, как связаться и почему стоит обратиться сейчас.</p></article><article class="community-price-card"><h3>Простое изображение</h3><div class="community-price-value">бесплатно</div><p>Карточка к посту: заголовок, фото или фон, контакты, цена, акция или дата мероприятия.</p></article><article class="community-price-card"><h3>Сложное изображение</h3><div class="community-price-value">от 300 ₽</div><p>Афиша, коллаж, несколько объектов, обработка фото или более сложная композиция.</p></article></div><div class="community-price-note">Текст к посту и простое изображение можно подготовить без доплаты. Если нужен сложный дизайн или серия разных макетов — рассчитаем отдельно.</div></div>';
-    anchor.parentNode.insertBefore(section,anchor);
-  }
-
   function initClicks(){
     document.addEventListener('click',e=>{
       const a=e.target.closest&&e.target.closest('a');
@@ -665,8 +660,13 @@
       if(href==='#request'||href==='#leader-lead-form'||href==='/#request')goal('request_block_click',{service:field(document.querySelector('[data-leader-lead-widget]')||document,'service'),placement});
       if(href.indexOf('tel:')===0)goal('phone_click',{channel:'phone',placement});
       if(href.indexOf('mailto:')===0)goal('email_click',{channel:'email',placement});
-      if(a.dataset&&a.dataset.service){e.preventDefault();applyServicePreset({service:a.dataset.service,text:'Услуга выбрана кнопкой: '+a.dataset.service},true)}
-      if(a.dataset&&a.dataset.scenario){e.preventDefault();applyScenario(a.dataset.scenario,true)}
+      if(a.dataset&&a.dataset.package){
+        e.preventDefault();
+        const items=Array.from(a.closest('article').querySelectorAll('ul > li'),li=>li.textContent.trim().replace(/[.;]+$/,''));
+        const service=catalog.find(a.dataset.service||'campaign');
+        if(service)applyServicePreset({service:service.label,offer:{label:a.dataset.package,service_id:service.id,items}},true);
+      }else if(a.dataset&&a.dataset.service){e.preventDefault();applyServicePreset({service:a.dataset.service,text:'Услуга выбрана кнопкой: '+a.dataset.service},true)}
+      else if(a.dataset&&a.dataset.scenario){e.preventDefault();applyScenario(a.dataset.scenario,true)}
       try{
         const target=new URL(href,location.href);
         const host=target.hostname.toLowerCase();
@@ -689,7 +689,6 @@
     document.querySelectorAll('#leader-lead-form,[data-leader-lead-form]').forEach(mount);
     const s=qs().scenario;
     if(s)applyScenario(s,false);else applyServicePreset(currentPreset(),false);
-    injectCommunityPrices();
     injectMobileStickyCta();
   }
 
