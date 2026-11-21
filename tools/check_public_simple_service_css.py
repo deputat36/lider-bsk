@@ -167,7 +167,9 @@ for page_name, expected in PAGES.items():
     if f'<h2>{expected["cta"]}</h2>' not in html:
         raise SystemExit(f'{page_name}: CTA heading changed')
     expected_cards = 3 if 'page-service-modern' in expected['body_class'] else 6
-    if html.count('class="card"') != expected_cards:
+    if page_name == 'vyveski-borisoglebsk.html':
+        expected_cards = 4
+    if len(re.findall(r'class="card(?: sign-card)?"', html)) != expected_cards:
         raise SystemExit(f'{page_name}: expected {expected_cards} service cards')
     if html.count('id="leader-lead-form"') != 1:
         raise SystemExit(f'{page_name}: lead form container mismatch')

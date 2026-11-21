@@ -93,9 +93,17 @@
     "pages": [
       "vyveski-borisoglebsk.html",
       "outdoor-advertising-borisoglebsk.html",
-      "oformlenie-vhoda-borisoglebsk.html"
+      "oformlenie-vhoda-borisoglebsk.html",
+      "remont-vyvesok.html",
+      "vyveski-na-russkom.html"
     ],
-    "questions": []
+    "brief": true,
+    "questions": [
+      "Какую работу нужно рассчитать?",
+      "Какой текст или элемент нужно изготовить или заменить?",
+      "Какие размеры и условия доступа к фасаду известны?",
+      "К какому сроку нужны работы и коммерческое предложение?"
+    ]
   },
   {
     "id": "design",

@@ -34,14 +34,27 @@ class PublicIndexNowTest(unittest.TestCase):
         value = public_indexnow.payload()
         self.assertEqual(value['host'], 'www.lider-bsk.ru')
         self.assertEqual(set(value['urlList']), {
+            'https://www.lider-bsk.ru/',
             'https://www.lider-bsk.ru/uslugi.html',
-            'https://www.lider-bsk.ru/dizayn-maketov.html',
-            'https://www.lider-bsk.ru/tablichki-borisoglebsk.html',
-            'https://www.lider-bsk.ru/nakleyki-plotternaya-rezka-borisoglebsk.html',
+            'https://www.lider-bsk.ru/vyveski-borisoglebsk.html',
+            'https://www.lider-bsk.ru/remont-vyvesok.html',
+            'https://www.lider-bsk.ru/vyveski-na-russkom.html',
+            'https://www.lider-bsk.ru/outdoor-advertising-borisoglebsk.html',
+            'https://www.lider-bsk.ru/prices.html',
+            'https://www.lider-bsk.ru/primery-rabot-kejsy.html',
         })
         self.assertEqual(len(value['urlList']), len(set(value['urlList'])))
         self.assertTrue(all(url.startswith('https://www.lider-bsk.ru/') for url in value['urlList']))
         self.assertTrue(all('?' not in url and '#' not in url for url in value['urlList']))
+
+    def test_waits_for_updated_sitemap(self) -> None:
+        updated = (public_indexnow.ROOT / 'sitemap.xml').read_text()
+        responses = [FakeResponse('stale'), FakeResponse(updated)]
+        with patch.object(public_indexnow, 'urlopen', side_effect=responses) as fetch:
+            self.assertEqual(public_indexnow.wait_for_sitemap(2, 0), 0)
+            self.assertEqual(fetch.call_count, 2)
+        with patch.object(public_indexnow, 'urlopen', return_value=FakeResponse('stale')):
+            self.assertEqual(public_indexnow.wait_for_sitemap(1, 0), 1)
 
     def test_submit_waits_for_key_and_accepts_202(self) -> None:
         requests = []

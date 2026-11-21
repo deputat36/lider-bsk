@@ -46,6 +46,9 @@ def with_css(text):
 def update_page(text, service_ids):
     text = re.sub(r'\n?' + re.escape(START) + r'.*?' + re.escape(END), '', text, flags=re.S)
     blocks = '\n'.join(render_block(sid, labels[sid]) for sid in service_ids)
+    marker = '<!-- service-explainer-position -->'
+    if marker in text:
+        return with_css(text.replace(marker, marker + '\n' + blocks, 1))
     main = re.search(r'<main\b[^>]*>', text)
     if not main:
         raise ValueError('Service page needs a main element')

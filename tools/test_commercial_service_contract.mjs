@@ -60,8 +60,11 @@ for (const page of fs.readdirSync('.').filter(p => p.endsWith('.html'))) {
   const html = fs.readFileSync(page, 'utf8');
   if (html.includes('src="assets/public-lead-form.js')) {
     assert.ok(html.includes('src="assets/public-lead-form.js?v=37"'), page);
-    assert.ok(html.indexOf('src="assets/leader-service-catalog.js?v=4"') >= 0, page);
-    assert.ok(html.indexOf('src="assets/leader-service-catalog.js?v=4"') < html.indexOf('src="assets/public-lead-form.js'), page);
+    const signPages = ['vyveski-borisoglebsk.html', 'remont-vyvesok.html', 'vyveski-na-russkom.html'];
+    const version = signPages.includes(page) ? '5' : '4';
+    const catalogScript = 'src="assets/leader-service-catalog.js?v=' + version + '"';
+    assert.ok(html.includes(catalogScript), page);
+    assert.ok(html.indexOf(catalogScript) < html.indexOf('src="assets/public-lead-form.js'), page);
   }
 }
 console.log('PASS: shared site/form/CRM/analytics catalog, all page mappings, explicit demo labels and service-specific first contact.');

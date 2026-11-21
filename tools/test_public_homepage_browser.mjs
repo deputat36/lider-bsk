@@ -214,7 +214,7 @@ try {
       assert.equal(await page.locator('#leader-lead-form form').count(), 1);
       assert.equal(await page.locator('[name="service"]').inputValue(), landing.service);
       await page.screenshot({ path: `artifacts/public-homepage/${landingName}-${width}.png` });
-      assert.equal(await page.locator('.service-formats article').count(), 3);
+      assert.equal(await page.locator('.service-formats article').count(), landingName === 'signs' ? 4 : 3);
       await page.locator('#formats').screenshot({ path: `artifacts/public-homepage/${landingName}-formats-${width}.png` });
       assert.equal(await page.locator('.service-related a').count(), 3);
       if (landingName === 'stickers') {
@@ -287,6 +287,9 @@ try {
         ['растяжка', 'bannery-borisoglebsk.html'],
         ['нам нужны визитки', 'vizitki-borisoglebsk.html'],
         ['монтаж вывески', 'vyveski-borisoglebsk.html'],
+        ['ремонт вывески Поворино', 'remont-vyvesok.html'],
+        ['перевод вывески на русский', 'vyveski-na-russkom.html'],
+        ['буквы без подсветки Грибановский', 'vyveski-borisoglebsk.html'],
         ['монтаж баннера', 'bannery-borisoglebsk.html'],
         ['поклейка пленки', 'pechat-na-plenke-borisoglebsk.html'],
       ]) {

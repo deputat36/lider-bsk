@@ -15,7 +15,7 @@ const publicForms=[];
 for(const name of (await readdir(root)).filter(name=>name.endsWith('.html')).sort()){
   if((await readFile(name,'utf8')).includes('assets/public-lead-form.js?v=37'))publicForms.push(name);
 }
-assert.equal(publicForms.length,64,'Exercise the actual release on all public form pages');
+assert.equal(publicForms.length,66,'Exercise the actual release on all public form pages');
 const server = createServer(async (req, res) => {
   const pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
   const file = path.resolve(root, '.' + (pathname === '/' ? '/index.html' : pathname));
@@ -430,6 +430,37 @@ try {
       await page.screenshot({path:`artifacts/public-lead/confirmation-duplicate-${w}-${h}.png`});
     }
     assert.equal(errors.length,0,errors.join('\n'));
+    const signCases = [
+      ['vyveski-borisoglebsk.html', 'Изготовление вывески', 'Борисоглебск'],
+      ['remont-vyvesok.html', 'Ремонт существующей вывески', 'Поворино'],
+      ['vyveski-na-russkom.html', 'Замена иностранной надписи на русскую', 'Грибановский'],
+    ];
+    for (const [path, task, town] of signCases) {
+      await page.goto(origin + '/' + path + '?utm_source=local&utm_campaign=signs');
+      const signForm = page.locator('#leader-lead-form form');
+      assert.equal(await signForm.locator('[name="brief_0"]').inputValue(), task);
+      assert.equal(await signForm.locator('[name="message"]').inputValue(), '');
+      assert.ok(await signForm.locator('[name="city"]').isVisible());
+      assert.ok(await signForm.locator('[name="delivery"]').isVisible());
+      assert.equal(await page.locator('.sign-hero img').evaluate(image => image.complete && image.naturalWidth > 0), true);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+      await signForm.locator('[name="city"]').fill(town);
+      await signForm.locator('[name="delivery"]').selectOption('Нужен монтаж');
+      await signForm.locator('[name="message"]').fill('Согласовать работы по адресу');
+      const quote = page.locator('.sign-card [data-package]').first();
+      const choice = await quote.getAttribute('data-package');
+      await quote.click();
+      await signForm.locator('[name="phone"]').fill('+7 900 000-00-00');
+      await signForm.locator('button[type="submit"]').click();
+      await signForm.locator('[data-leader-lead-status].ok').waitFor();
+      const sent = payloads.at(-1);
+      assert.equal(sent.service_id, 'signs');
+      assert.equal(sent.page_path, '/' + path);
+      assert.equal(sent.city, town);
+      assert.equal(sent.delivery, 'Нужен монтаж');
+      assert.equal(sent.utm_campaign, 'signs');
+      for (const value of [task, choice, 'Согласовать работы по адресу']) assert.ok(sent.message.includes(value), value);
+    }
     console.log('Public form browser: all scenarios PASS at width '+width);
     await context.close();
   }

@@ -36,10 +36,10 @@ def load_config() -> dict[str, Any]:
 
 
 def build_block(config: dict[str, Any], page: dict[str, str]) -> str:
-    image = config["image"]
-    image_type = config["image_type"]
-    image_width = config["image_width"]
-    image_height = config["image_height"]
+    image = page.get("image", config["image"])
+    image_type = page.get("image_type", config["image_type"])
+    image_width = page.get("image_width", config["image_width"])
+    image_height = page.get("image_height", config["image_height"])
     site_name = config["site_name"]
     locale = config["locale"]
 
@@ -96,14 +96,16 @@ def insert_block(document: str, config: dict[str, Any], page: dict[str, str]) ->
 
 
 def validate_page_text(text: str, config: dict[str, Any], page: dict[str, str]) -> list[str]:
+    image = page.get("image", config["image"])
+    image_type = page.get("image_type", config["image_type"])
     required = {
         f'<meta property="og:url" content="{page["url"]}">': "og:url",
         f'<meta property="og:title" content="{page["title"]}">': "og:title",
         f'<meta property="og:description" content="{page["description"]}">': "og:description",
-        f'<meta property="og:image" content="{config["image"]}">': "og:image",
-        f'<meta property="og:image:type" content="{config["image_type"]}">': "og:image:type",
+        f'<meta property="og:image" content="{image}">': "og:image",
+        f'<meta property="og:image:type" content="{image_type}">': "og:image:type",
         '<meta name="twitter:card" content="summary_large_image">': "twitter:card",
-        f'<meta name="twitter:image" content="{config["image"]}">': "twitter:image",
+        f'<meta name="twitter:image" content="{image}">': "twitter:image",
     }
     missing = [label for marker, label in required.items() if marker not in text]
     return missing

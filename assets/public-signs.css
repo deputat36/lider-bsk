@@ -1,0 +1,68 @@
+.sign-hero-grid, .sign-feature {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(24px, 4vw, 62px);
+}
+body.page-service-modern .sign-hero h1 { max-width: 19ch; margin: 12px 0 16px; }
+body.page-service-modern .sign-hero .sign-area {
+  margin: 22px 0 8px;
+  color: #ffbd8d;
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.sign-crumb, .sign-crumb a { color: #f4f4f4; font-size: 15px; }
+.sign-crumb a:hover { text-decoration: underline; }
+.sign-figure { margin: 0; min-width: 0; }
+.sign-figure picture, .sign-figure img { display: block; width: 100%; }
+.sign-figure img { height: auto; aspect-ratio: 3 / 2; border-radius: 14px; }
+.sign-figure figcaption { margin-top: 8px; color: #4c4c4c; font-size: 14px; line-height: 1.45; }
+.sign-hero .sign-figure figcaption { color: #e2e2e2; }
+.sign-routes { background: #fff3e8; border-bottom: 1px solid #e3cbb4; }
+.sign-routes-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.sign-routes-grid a {
+  display: grid;
+  align-content: center;
+  min-height: 86px;
+  gap: 3px;
+  padding: 12px clamp(12px, 1.8vw, 26px);
+  color: #261a11;
+  text-decoration: none;
+  border-inline-start: 1px solid #e3cbb4;
+}
+.sign-routes-grid a:last-child { border-inline-end: 1px solid #e3cbb4; }
+.sign-routes-grid strong { font-size: 17px; }
+.sign-routes-grid span { color: #59483a; font-size: 14px; }
+.sign-routes-grid a[aria-current="page"] { box-shadow: inset 0 -4px #a0440a; }
+.sign-routes-grid a:hover, .sign-routes-grid a:focus-visible { background: #ffe0c0; }
+.sign-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 22px 0 0; }
+.sign-card { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
+.sign-card h3 { margin-top: 0; }
+.sign-card ul { margin: 4px 0 16px; padding-left: 1.2em; }
+.sign-card li, .sign-card p { line-height: 1.52; }
+.sign-card .sign-link { margin-top: auto; display: inline-flex; align-items: center; min-height: 44px; }
+.sign-link, .sign-feature a, .sign-sources a { color: #783100; text-decoration: underline; text-underline-offset: .18em; font-weight: 700; }
+.sign-feature h2 { margin-top: 0; }
+.sign-feature p, .sign-law p { line-height: 1.65; }
+.sign-sources { font-size: 15px; }
+.sign-home { background: #fff3e8; color: #291d13; }
+section.sign-home { padding: 30px 0; }
+.sign-home .sign-home-inner { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); align-items: center; gap: 18px 38px; }
+.sign-home h2 { margin: 0 0 6px; }
+.sign-home p { margin: 0; color: #564437; }
+.sign-home-links { display: flex; flex-wrap: wrap; gap: 8px; }
+.sign-home-links a { display: inline-flex; align-items: center; padding: 10px 14px; min-height: 44px; border-radius: 6px; border: 1px solid #926a4f; color: #3f2513; background: #fff; font-weight: 700; text-decoration: none; }
+.sign-home-links a:hover, .sign-home-links a:focus-visible { background: #ffdbb8; }
+@media (max-width: 820px) {
+  .sign-hero-grid, .sign-feature, .sign-home .sign-home-inner { grid-template-columns: minmax(0, 1fr); }
+  .sign-routes-grid { grid-template-columns: minmax(0, 1fr); }
+  .sign-routes-grid a { min-height: 61px; padding: 8px 12px; border: 0; border-bottom: 1px solid #e3cbb4; }
+  .sign-routes-grid a:last-child { border-inline-end: 0; }
+  .sign-routes-grid a[aria-current="page"] { box-shadow: inset 4px 0 #a0440a; }
+}
+@media (max-width: 600px) {
+  .sign-options { grid-template-columns: minmax(0, 1fr); }
+  body.page-service-modern .sign-hero .sign-area { margin-top: 14px; }
+  .sign-home-links a { flex: 1 1 210px; }
+}

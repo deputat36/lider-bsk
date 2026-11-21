@@ -81,8 +81,12 @@
     {
       "path": "vyveski-borisoglebsk.html",
       "url": "https://www.lider-bsk.ru/vyveski-borisoglebsk.html",
-      "title": "Вывески и наружная реклама в Борисоглебске — РА Лидер",
-      "description": "Оформление входа, фасада, точки продаж и наружной рекламы: вывески, указатели, таблички, баннеры и монтажные решения."
+      "title": "Изготовление вывесок в Борисоглебске, Поворино и Грибановском | РА Лидер",
+      "description": "Световые буквы, короба и несветовые вывески для магазинов и организаций. Макет на фото фасада, изготовление и монтаж. Запросите расчёт в РА «Лидер».",
+      "image": "https://www.lider-bsk.ru/assets/signs/light.jpg",
+      "image_type": "image/jpeg",
+      "image_width": "1080",
+      "image_height": "720"
     },
     {
       "path": "nakleyki-plotternaya-rezka-borisoglebsk.html",
@@ -173,6 +177,26 @@
       "url": "https://www.lider-bsk.ru/reklama-dlya-servisa-masterskoy-borisoglebsk.html",
       "title": "Реклама для сервиса и мастерской — РА Лидер",
       "description": "Вывески, баннеры, таблички, прайсы, наклейки, соцсети, Яндекс Карты и 2ГИС для сервиса, ремонта и мастерской."
+    },
+    {
+      "path": "remont-vyvesok.html",
+      "url": "https://www.lider-bsk.ru/remont-vyvesok.html",
+      "title": "Ремонт вывесок и подсветки в Борисоглебске, Поворино и Грибановском | РА Лидер",
+      "description": "Погасли буквы, выцвела панель или повреждён короб? Ремонт наружных вывесок для организаций. Сравним восстановление и замену, рассчитаем доступ и монтаж.",
+      "image": "https://www.lider-bsk.ru/assets/signs/repair.jpg",
+      "image_type": "image/jpeg",
+      "image_width": "1080",
+      "image_height": "720"
+    },
+    {
+      "path": "vyveski-na-russkom.html",
+      "url": "https://www.lider-bsk.ru/vyveski-na-russkom.html",
+      "title": "Замена вывесок на русский язык в Борисоглебске, Поворино и Грибановском | РА Лидер",
+      "description": "Обновим иностранную надпись на вывеске или витрине. Подберём русский текст, покажем макет, рассчитаем замену букв, панели или плёнки и монтаж для юрлиц.",
+      "image": "https://www.lider-bsk.ru/assets/signs/russian.jpg",
+      "image_type": "image/jpeg",
+      "image_width": "1080",
+      "image_height": "720"
     }
   ]
 }

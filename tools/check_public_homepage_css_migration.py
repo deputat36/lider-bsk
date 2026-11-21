@@ -43,6 +43,7 @@ def main() -> None:
         'assets/public-creative-services.css?v=20261028-contrast-1',
         'assets/public-site-navigation.css?v=1',
         'assets/public-product-system.css?v=2',
+        'assets/public-signs.css?v=1',
     ]
     if parser.stylesheets != expected_stylesheets:
         raise SystemExit(f'Unexpected homepage stylesheet order: {parser.stylesheets}')
