@@ -24,8 +24,8 @@ def main() -> None:
         if text.count(FORM_SCRIPT) != 1 or FORM_CSS not in text:
             raise SystemExit(f'{path.name}: shared contact guard cache release is incomplete')
         pages.append(path.name)
-    if len(pages) != 64:
-        raise SystemExit(f'Expected 64 shared public forms, found {len(pages)}')
+    if len(pages) != 66:
+        raise SystemExit(f'Expected 66 shared public forms, found {len(pages)}')
 
     request = (ROOT / 'request.html').read_text()
     ordered = ['assets/public-lead-reference-v1.js?v=1', 'assets/leader-service-catalog.js?v=4', FORM_SCRIPT]
@@ -59,7 +59,7 @@ def main() -> None:
     for marker in ('64', 'v35', 'HTML5 constraint validation', 'событие '+chr(96)+'invalid'+chr(96), 'production-заявка не создаётся', 'Edge Function и Supabase production не меняются'):
         if marker not in doc:
             raise SystemExit(f'Contact guard document is missing: {marker}')
-    print('Shared contact method guard is deployed to all 64 forms with JS v35 / CSS v30.')
+    print('Shared contact method guard is deployed to all 66 forms with JS v37 / CSS v30.')
 
 
 if __name__ == '__main__':

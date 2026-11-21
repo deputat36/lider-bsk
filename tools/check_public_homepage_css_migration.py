@@ -42,6 +42,7 @@ def main() -> None:
         'assets/public-commercial-services.css?v=1',
         'assets/public-creative-services.css?v=20261028-contrast-1',
         'assets/public-site-navigation.css?v=1',
+        'assets/public-signs.css?v=1',
         'assets/public-product-system.css?v=2',
     ]
     if parser.stylesheets != expected_stylesheets:

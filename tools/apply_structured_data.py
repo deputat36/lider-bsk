@@ -77,11 +77,13 @@ def breadcrumb_node(config: dict[str, Any], page: dict[str, Any]) -> dict[str, A
             "item": config["business"]["url"],
         }
     ]
+    if parent := page.get("parent"):
+        items.append({"@type": "ListItem", "position": 2, "name": parent["name"], "item": parent["url"]})
     if page["url"] != config["business"]["url"]:
         items.append(
             {
                 "@type": "ListItem",
-                "position": 2,
+                "position": len(items) + 1,
                 "name": page["breadcrumb"],
                 "item": page["url"],
             }
@@ -100,7 +102,7 @@ def service_node(config: dict[str, Any], page: dict[str, Any]) -> dict[str, Any]
         "description": page["description"],
         "url": page["url"],
         "provider": {"@id": config["business"]["id"]},
-        "areaServed": config["business"]["areaServed"],
+        "areaServed": page.get("areaServed", config["business"]["areaServed"]),
     }
 
 

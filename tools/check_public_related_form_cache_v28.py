@@ -75,16 +75,16 @@ def main() -> None:
             errors.append(f'assets/public-lead-form.js: missing preset for {page_name}')
 
         url = f'https://www.lider-bsk.ru/{page_name}'
-        if sitemap_entries.get(url) != EXPECTED_LASTMOD:
-            errors.append(f'{page_name}: sitemap lastmod must equal {EXPECTED_LASTMOD}')
+        expected = '2026-11-21' if page_name == 'outdoor-advertising-borisoglebsk.html' else EXPECTED_LASTMOD
+        if sitemap_entries.get(url) != expected:
+            errors.append(f'{page_name}: sitemap lastmod must equal {expected}')
 
     if errors:
         print('\n'.join(errors))
         sys.exit(1)
 
     print(
-        f'Related commercial form cache is valid: {len(PAGES)} pages on v28 '
-        f'with sitemap lastmod {EXPECTED_LASTMOD}.'
+        f'Related commercial form cache and sitemap dates are valid for {len(PAGES)} pages.'
     )
 
 

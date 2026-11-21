@@ -58,7 +58,12 @@ UPDATED_SERVICE_LASTMOD.update({page: date(2026, 10, 13) for page in (
     'uslugi.html', 'dizayn-maketov.html', 'tablichki-borisoglebsk.html',
     'nakleyki-plotternaya-rezka-borisoglebsk.html',
 )})
-PRIORITY_PAGES |= EXPLAINER_PAGES
+SIGN_SERVICE_PAGES = {
+    'vyveski-borisoglebsk.html', 'remont-vyvesok.html', 'vyveski-na-russkom.html',
+    'uslugi.html', 'outdoor-advertising-borisoglebsk.html', 'prices.html', 'primery-rabot-kejsy.html',
+}
+UPDATED_SERVICE_LASTMOD.update({page: date(2026, 11, 21) for page in SIGN_SERVICE_PAGES})
+PRIORITY_PAGES |= EXPLAINER_PAGES | SIGN_SERVICE_PAGES
 
 def main() -> None:
     errors: list[str] = []

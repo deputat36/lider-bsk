@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import hashlib
 from http.client import RemoteDisconnected
 import json
 from pathlib import Path
@@ -53,6 +54,25 @@ def wait_for_published_key(attempts: int = 18, delay_seconds: int = 10) -> None:
     raise RuntimeError('IndexNow key was not available on the public site in time')
 
 
+def wait_for_sitemap(attempts: int = 42, delay_seconds: int = 10) -> int:
+    expected = (ROOT / 'sitemap.xml').read_bytes()
+    release = hashlib.sha256(expected).hexdigest()[:16]
+    for attempt in range(attempts):
+        # Each probe gets a fresh cache entry while Pages switches to the new release.
+        url = f'{ORIGIN}/sitemap.xml?indexnow={release}-{attempt}'
+        try:
+            with urlopen(Request(url, headers={'Cache-Control': 'no-cache'}), timeout=15) as response:
+                if response.read() == expected:
+                    print('Published sitemap matches the reviewed release.')
+                    return 0
+        except (OSError, HTTPError, URLError, RemoteDisconnected):
+            pass
+        if attempt + 1 < attempts:
+            time.sleep(delay_seconds)
+    print('Updated sitemap is not available yet. IndexNow notification deferred.', file=sys.stderr)
+    return 1
+
+
 def submit(attempts: int = 3, delay_seconds: int = 5) -> int:
     wait_for_published_key()
     body = json.dumps(payload(), ensure_ascii=True, separators=(',', ':')).encode('utf-8')
@@ -92,7 +112,10 @@ def submit(attempts: int = 3, delay_seconds: int = 5) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description='Build or submit the public IndexNow payload.')
     parser.add_argument('--submit', action='store_true', help='Wait for the key and notify participating search engines.')
+    parser.add_argument('--wait-for-sitemap', action='store_true', help='Check Pages publication before notifying IndexNow.')
     args = parser.parse_args()
+    if args.wait_for_sitemap:
+        return wait_for_sitemap()
     if args.submit:
         return submit()
     print(json.dumps(payload(), ensure_ascii=False, indent=2))

@@ -13,10 +13,14 @@ URLS_FILE = ROOT / 'tools' / 'public-indexnow-urls.txt'
 WORKFLOW = ROOT / '.github' / 'workflows' / 'public-indexnow-notify.yml'
 SITEMAP = ROOT / 'sitemap.xml'
 EXPECTED_LASTMOD = {
-    "/uslugi.html": "2026-10-31",
-    "/dizayn-maketov.html": "2026-10-31",
-    "/tablichki-borisoglebsk.html": "2026-10-31",
-    "/nakleyki-plotternaya-rezka-borisoglebsk.html": "2026-10-31"
+    "/": "2026-11-21",
+    "/uslugi.html": "2026-11-21",
+    "/vyveski-borisoglebsk.html": "2026-11-21",
+    "/remont-vyvesok.html": "2026-11-21",
+    "/vyveski-na-russkom.html": "2026-11-21",
+    "/outdoor-advertising-borisoglebsk.html": "2026-11-21",
+    "/prices.html": "2026-11-21",
+    "/primery-rabot-kejsy.html": "2026-11-21",
 }
 
 
@@ -37,7 +41,7 @@ def main() -> None:
             errors.append('Root IndexNow key file is missing or does not match the declared key')
 
     if set(paths) != set(EXPECTED_LASTMOD) or len(set(paths)) != len(paths):
-        errors.append('IndexNow URL list must match the four reviewed use-case page paths')
+        errors.append('IndexNow URL list must match the reviewed public page paths')
 
     sitemap_root = ET.parse(SITEMAP).getroot()
     namespace = {'sm': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
@@ -48,7 +52,7 @@ def main() -> None:
     }
 
     for path in paths:
-        page_name = path.removeprefix('/')
+        page_name = path.removeprefix('/') or 'index.html'
         url = f'https://www.lider-bsk.ru{path}'
         if not path.startswith('/') or '?' in path or '#' in path:
             errors.append(f'IndexNow path must be canonical and parameter-free: {path}')
