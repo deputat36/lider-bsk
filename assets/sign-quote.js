@@ -30,14 +30,13 @@
     function preset() {
       if (form.elements.service.value !== 'Вывеска / наружная реклама') return;
       message.placeholder = host.dataset.signPlaceholder;
-      if (explicitChoice.has('service') || explicitChoice.has('offer') || explicitChoice.has('scenario')) return;
+      if (explicitChoice.has('offer') || explicitChoice.has('scenario')) return;
       const task = form.elements.namedItem('brief_0');
       if (task && !task.value) task.value = host.dataset.signTask;
       if (message.value === form.__leaderAutoMessage) {
         message.value = '';
         form.__leaderAutoMessage = '';
       }
-      form.dispatchEvent(new Event('input', { bubbles: true }));
     }
     preset();
     form.addEventListener('reset', () => queueMicrotask(preset));

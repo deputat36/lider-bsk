@@ -438,6 +438,7 @@ try {
     for (const [path, task, town] of signCases) {
       await page.goto(origin + '/' + path + '?utm_source=local&utm_campaign=signs');
       const signForm = page.locator('#leader-lead-form form');
+      assert.equal(await page.evaluate(() => window.__leaderTestGoals.filter(event => event.goal === 'form_start').length), 0, 'Opening a sign page is not a form interaction');
       assert.equal(await signForm.locator('[name="brief_0"]').inputValue(), task);
       assert.equal(await signForm.locator('[name="message"]').inputValue(), '');
       assert.ok(await signForm.locator('[name="city"]').isVisible());
@@ -461,8 +462,9 @@ try {
       assert.equal(sent.utm_campaign, 'signs');
       for (const value of [task, choice, 'Согласовать работы по адресу']) assert.ok(sent.message.includes(value), value);
     }
+    assert.equal(errors.length, 0, errors.join('\n'));
     console.log('Public form browser: all scenarios PASS at width '+width);
     await context.close();
   }
-  console.log('PASS: all 64 forms on desktop/mobile, fully visible focused confirmations, server references and duplicate responses on small/landscape screens, native contact validation, correction/reset/retry, full message/brief, campaign and service selection; zero production requests forwarded.');
+  console.log('PASS: all 66 forms on desktop/mobile, fully visible focused confirmations, server references and duplicate responses on small/landscape screens, native contact validation, correction/reset/retry, full message/brief, campaign and service selection; zero production requests forwarded.');
 } finally { await browser.close(); server.close(); }
